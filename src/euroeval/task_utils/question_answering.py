@@ -62,6 +62,7 @@ class QuestionAnsweringTrainer(Trainer):
 
         # Get the CLS token id for the tokenizer
         if self.tokenizer is not None:
+            breakpoint()
             assert isinstance(self.tokenizer, PreTrainedTokenizer)
             special_token_metadata = get_special_token_metadata(self.tokenizer)
             self.cls_token_id = special_token_metadata["cls_token_id"]
