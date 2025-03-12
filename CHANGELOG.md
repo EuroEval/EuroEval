@@ -53,6 +53,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   `PreTrainedTokenizerBase` instead.
 - Newer versions of the `transformers` package changed the model output format, causing
   errors when evaluating encoder models on some tasks. This has been fixed now.
+- Added `setuptools` to the dependencies, as it is required for the package to be
+  installed correctly.
 
 
 ## [v15.2.0] - 2025-02-28

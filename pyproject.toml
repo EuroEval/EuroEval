@@ -36,6 +36,7 @@ dependencies = [
     "bert-score>=0.3.13",
     "levenshtein>=0.24.0",
     "scikit-learn<1.6.0",
+    "setuptools>=75.8.2",
 ]
 
 [project.optional-dependencies]
