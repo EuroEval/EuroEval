@@ -8,6 +8,7 @@ from pathlib import Path
 
 import pytest
 import torch
+from requests.exceptions import RequestException
 
 from euroeval.benchmarker import (
     Benchmarker,
@@ -43,7 +44,7 @@ def test_benchmark_encoder(
                 model=encoder_model_id, task=task.name, language=language.code
             )
             break
-        except HuggingFaceHubDown:
+        except (HuggingFaceHubDown, RequestException):
             time.sleep(5)
     else:
         pytest.skip(reason="Hugging Face Hub is down, so we skip this test.")
@@ -67,7 +68,7 @@ def test_benchmark_generative(
                 model=generative_model_id, task=task.name, language=language.code
             )
             break
-        except HuggingFaceHubDown:
+        except (HuggingFaceHubDown, RequestException):
             time.sleep(5)
     else:
         pytest.skip(reason="Hugging Face Hub is down, so we skip this test.")
@@ -96,7 +97,7 @@ def test_benchmark_generative_adapter(
                 language=language.code,
             )
             break
-        except HuggingFaceHubDown:
+        except (HuggingFaceHubDown, RequestException):
             time.sleep(5)
     else:
         pytest.skip(reason="Hugging Face Hub is down, so we skip this test.")
