@@ -12,7 +12,7 @@
       
       
       <link rel="icon" href="../../../../gfx/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.5">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.7">
     
     
       
@@ -570,6 +570,8 @@
       
         
           
+        
+      
         
       
         
@@ -2091,7 +2093,11 @@
 <span class="normal">1168</span>
 <span class="normal">1169</span>
 <span class="normal">1170</span>
-<span class="normal">1171</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Generative models using the vLLM inference framework.&quot;&quot;&quot;</span>
+<span class="normal">1171</span>
+<span class="normal">1172</span>
+<span class="normal">1173</span>
+<span class="normal">1174</span>
+<span class="normal">1175</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Generative models using the vLLM inference framework.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">c</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">importlib.util</span>
@@ -3244,7 +3250,7 @@
     <span class="p">):</span>
         <span class="n">log_once</span><span class="p">(</span>
             <span class="n">message</span><span class="o">=</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;Detected reasoning token </span><span class="si">{</span><span class="n">reasoning_token</span><span class="si">!r}</span><span class="s2"> and end of reasoning &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;Detected reasoning token </span><span class="si">{</span><span class="n">reasoning_token</span><span class="si">!r}</span><span class="s2"> and end-of-reasoning &quot;</span>
                 <span class="sa">f</span><span class="s2">&quot;token </span><span class="si">{</span><span class="n">end_of_reasoning_token</span><span class="si">!r}</span><span class="s2">, but one of them is not registered &quot;</span>
                 <span class="s2">&quot;as a special token, so assuming it is not a real reasoning token.&quot;</span>
             <span class="p">),</span>
@@ -3253,7 +3259,11 @@
         <span class="k">return</span> <span class="kc">None</span>
 
     <span class="n">log_once</span><span class="p">(</span>
-        <span class="n">message</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;Detected reasoning token </span><span class="si">{</span><span class="n">reasoning_token</span><span class="si">!r}</span><span class="s2">.&quot;</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span>
+        <span class="n">message</span><span class="o">=</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;Detected reasoning token </span><span class="si">{</span><span class="n">reasoning_token</span><span class="si">!r}</span><span class="s2"> and end-of-reasoning &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;token </span><span class="si">{</span><span class="n">end_of_reasoning_token</span><span class="si">!r}</span><span class="s2">.&quot;</span>
+        <span class="p">),</span>
+        <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
     <span class="p">)</span>
 
     <span class="c1"># Encode the end of reasoning token and return its ID</span>
@@ -3321,7 +3331,7 @@
     <script id="__config" type="application/json">{"base": "../../../..", "features": ["navigation.top", "navigation.path", "navigation.prune", "navigation.indexes", "navigation.tabs", "navigation.tabs.sticky", "navigation.instant", "navigation.instant.prefetch", "navigation.instant.progress", "navigation.tracking", "navigation.sections"], "search": "../../../../assets/javascripts/workers/search.f8cc74c7.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
     
     
-      <script src="../../../../assets/javascripts/bundle.f1b6f286.min.js"></script>
+      <script src="../../../../assets/javascripts/bundle.c8b220af.min.js"></script>
       
         <script src="../../../../javascript/mkapi.js"></script>
       

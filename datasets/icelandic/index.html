@@ -12,11 +12,11 @@
         <link rel="prev" href="../german/">
       
       
-        <link rel="next" href="../norwegian/">
+        <link rel="next" href="../italian/">
       
       
       <link rel="icon" href="../../gfx/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.5">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.7">
     
     
       
@@ -598,6 +598,8 @@
       
         
       
+        
+      
     
     
       
@@ -967,9 +969,18 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#arc-is" class="md-nav__link">
+  <a href="#icelandicknowledge" class="md-nav__link">
     <span class="md-ellipsis">
-      ARC-is
+      IcelandicKnowledge
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#unofficial-arc-is" class="md-nav__link">
+    <span class="md-ellipsis">
+      Unofficial: ARC-is
     </span>
   </a>
   
@@ -979,15 +990,6 @@
   <a href="#unofficial-mmlu-is" class="md-nav__link">
     <span class="md-ellipsis">
       Unofficial: MMLU-is
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#unofficial-icelandicknowledge" class="md-nav__link">
-    <span class="md-ellipsis">
-      Unofficial: IcelandicKnowledge
     </span>
   </a>
   
@@ -1059,6 +1061,28 @@
   
 </nav>
       
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../italian/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    🇮🇹 Italian
+    
+  </span>
+  
+
+      </a>
     </li>
   
 
@@ -1392,9 +1416,18 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#arc-is" class="md-nav__link">
+  <a href="#icelandicknowledge" class="md-nav__link">
     <span class="md-ellipsis">
-      ARC-is
+      IcelandicKnowledge
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#unofficial-arc-is" class="md-nav__link">
+    <span class="md-ellipsis">
+      Unofficial: ARC-is
     </span>
   </a>
   
@@ -1404,15 +1437,6 @@
   <a href="#unofficial-mmlu-is" class="md-nav__link">
     <span class="md-ellipsis">
       Unofficial: MMLU-is
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#unofficial-icelandicknowledge" class="md-nav__link">
-    <span class="md-ellipsis">
-      Unofficial: IcelandicKnowledge
     </span>
   </a>
   
@@ -1826,7 +1850,7 @@ Spurning: {question}
 </code></pre></div>
 <h3 id="unofficial-icelandicqa">Unofficial: IcelandicQA</h3>
 <p>This dataset was published
-<a href="https://huggingface.co/datasets/mideind/icelandic_qa_euroeval">here</a> and consists of
+<a href="https://huggingface.co/datasets/mideind/icelandic_qa_scandeval">here</a> and consists of
 an automatically created Icelandic question-answering dataset based on the Icelandic
 Wikipedia as well as Icelandic news articles from the RÚV corpus.</p>
 <p>Both questions and answers were generated automatically, meaning that the answers might
@@ -1887,7 +1911,81 @@ Spurning: {question}
 <div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>icelandic-qa
 </code></pre></div>
 <h2 id="knowledge">Knowledge</h2>
-<h3 id="arc-is">ARC-is</h3>
+<h3 id="icelandicknowledge">IcelandicKnowledge</h3>
+<p>This dataset was published
+<a href="https://huggingface.co/datasets/mideind/icelandic_qa_scandeval">here</a> and consists of
+an automatically created Icelandic question-answering dataset based on the Icelandic
+Wikipedia as well as Icelandic news articles from the RÚV corpus.</p>
+<p>The dataset was converted into a multiple-choice knowledge dataset by removing the
+contexts and using GPT-4o to generate 3 plausible wrong answers for each correct answer,
+using the following prompt for each <code>row</code> in the original dataset:</p>
+<div class="highlight"><pre><span></span><code><span class="n">messages</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="p">{</span>
+        <span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;user&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;For the question: </span><span class="si">{</span><span class="n">row</span><span class="o">.</span><span class="n">question</span><span class="si">}</span><span class="s2"> where the correct answer is: </span><span class="si">{</span><span class="n">row</span><span class="o">.</span><span class="n">answer</span><span class="si">}</span><span class="s2">, please provide 3 plausible alternatives in Icelandic. You should return the alternatives in a JSON dictionary, with keys &#39;first&#39;, &#39;second&#39;, and &#39;third&#39;. The values should be the alternatives only, without any numbering or formatting. The alternatives should be unique and not contain the correct answer.&quot;</span>
+    <span class="p">}</span>
+<span class="p">]</span>
+
+<span class="n">completion</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">beta</span><span class="o">.</span><span class="n">chat</span><span class="o">.</span><span class="n">completions</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span>
+    <span class="n">model</span><span class="o">=</span><span class="s2">&quot;gpt-4o&quot;</span><span class="p">,</span> <span class="n">messages</span><span class="o">=</span><span class="n">messages</span><span class="p">,</span> <span class="n">response_format</span><span class="o">=</span><span class="n">CandidateAnswers</span>
+<span class="p">)</span>
+</code></pre></div>
+<p>where <code>CandidateAnswers</code> is a Pydantic model that is used to ensure <a href="https://platform.openai.com/docs/guides/structured-outputs">structured outputs</a>.</p>
+<p>The original dataset has 2,000 samples, but only 1,994 unique questions, and the total
+length of this dataset is therefore 1,994. The split is given by 842 / 128 / 1024 for
+train, val, and test, respectively.</p>
+<p>Here are a few examples from the training split:</p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Hver var talinn heilagur maður eftir dauða sinn, er tákngervingur alþýðuhreyfingar vestanlands og talinn góður til áheita?\nSvarmöguleikar:\na. Þórður Jónsson helgi\nb. Guðmundur Arason\nc. Snorri Þorgrímsson\nd. Jón Hreggviðsson&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;a&quot;</span>
+<span class="p">}</span><span class="err">```</span>
+<span class="err">```jso</span><span class="kc">n</span>
+<span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Í kringum hvaða ár hófst verslun á Arngerðareyri?\nSvarmöguleikar:\na. 1895\nb. 1884\nc. 1870\nd. 1902&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;b&quot;</span>
+<span class="p">}</span><span class="err">```</span>
+<span class="err">```jso</span><span class="kc">n</span>
+<span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Hvenær var ákveðið að uppstigningardagur skyldi vera kirkjudagur aldraðra á Íslandi?\nSvarmöguleikar:\na. Árið 1975\nb. Árið 1985\nc. Árið 1982\nd. Árið 1990&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;c&quot;</span>
+<span class="p">}</span><span class="err">```</span>
+
+<span class="err">Whe</span><span class="kc">n</span><span class="w"> </span><span class="err">evalua</span><span class="kc">t</span><span class="err">i</span><span class="kc">n</span><span class="err">g</span><span class="w"> </span><span class="err">ge</span><span class="kc">nerat</span><span class="err">ive</span><span class="w"> </span><span class="err">models</span><span class="p">,</span><span class="w"> </span><span class="err">we</span><span class="w"> </span><span class="err">use</span><span class="w"> </span><span class="kc">t</span><span class="err">he</span><span class="w"> </span><span class="kc">f</span><span class="err">ollowi</span><span class="kc">n</span><span class="err">g</span><span class="w"> </span><span class="err">se</span><span class="kc">tu</span><span class="err">p</span><span class="w"> </span><span class="err">(see</span><span class="w"> </span><span class="kc">t</span><span class="err">he</span>
+<span class="p">[</span><span class="err">me</span><span class="kc">t</span><span class="err">hodology</span><span class="p">]</span><span class="err">(/me</span><span class="kc">t</span><span class="err">hodology)</span><span class="w"> </span><span class="kc">f</span><span class="err">or</span><span class="w"> </span><span class="err">more</span><span class="w"> </span><span class="err">i</span><span class="kc">nf</span><span class="err">orma</span><span class="kc">t</span><span class="err">io</span><span class="kc">n</span><span class="w"> </span><span class="err">o</span><span class="kc">n</span><span class="w"> </span><span class="err">how</span><span class="w"> </span><span class="kc">t</span><span class="err">hese</span><span class="w"> </span><span class="err">are</span><span class="w"> </span><span class="err">used)</span><span class="p">:</span>
+
+<span class="mi">-</span><span class="w"> </span><span class="err">Number</span><span class="w"> </span><span class="err">o</span><span class="kc">f</span><span class="w"> </span><span class="kc">fe</span><span class="err">w</span><span class="mi">-</span><span class="err">sho</span><span class="kc">t</span><span class="w"> </span><span class="err">examples</span><span class="p">:</span><span class="w"> </span><span class="mi">5</span>
+<span class="mi">-</span><span class="w"> </span><span class="err">Pre</span><span class="kc">f</span><span class="err">ix</span><span class="w"> </span><span class="err">promp</span><span class="kc">t</span><span class="p">:</span>
+<span class="w">  </span><span class="err">```</span>
+<span class="w">  </span><span class="err">E</span><span class="kc">ft</span><span class="err">ir</span><span class="kc">faran</span><span class="err">di</span><span class="w"> </span><span class="err">eru</span><span class="w"> </span><span class="kc">f</span><span class="err">jölvalsspur</span><span class="kc">n</span><span class="err">i</span><span class="kc">n</span><span class="err">gar</span><span class="w"> </span><span class="err">(með</span><span class="w"> </span><span class="err">svörum).</span>
+<span class="w">  </span><span class="err">```</span>
+<span class="mi">-</span><span class="w"> </span><span class="err">Base</span><span class="w"> </span><span class="err">promp</span><span class="kc">t</span><span class="w"> </span><span class="kc">te</span><span class="err">mpla</span><span class="kc">te</span><span class="p">:</span>
+<span class="w">  </span><span class="err">```</span>
+<span class="w">  </span><span class="err">Spur</span><span class="kc">n</span><span class="err">i</span><span class="kc">n</span><span class="err">gar</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="kc">te</span><span class="err">x</span><span class="kc">t</span><span class="p">}</span>
+<span class="w">  </span><span class="err">Svarmöguleikar</span><span class="p">:</span>
+<span class="w">  </span><span class="err">a.</span><span class="w"> </span><span class="p">{</span><span class="err">op</span><span class="kc">t</span><span class="err">io</span><span class="kc">n</span><span class="err">_a</span><span class="p">}</span>
+<span class="w">  </span><span class="err">b.</span><span class="w"> </span><span class="p">{</span><span class="err">op</span><span class="kc">t</span><span class="err">io</span><span class="kc">n</span><span class="err">_b</span><span class="p">}</span>
+<span class="w">  </span><span class="err">c.</span><span class="w"> </span><span class="p">{</span><span class="err">op</span><span class="kc">t</span><span class="err">io</span><span class="kc">n</span><span class="err">_c</span><span class="p">}</span>
+<span class="w">  </span><span class="err">d.</span><span class="w"> </span><span class="p">{</span><span class="err">op</span><span class="kc">t</span><span class="err">io</span><span class="kc">n</span><span class="err">_d</span><span class="p">}</span>
+<span class="w">  </span><span class="err">Svara</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="err">label</span><span class="p">}</span>
+<span class="w">  </span><span class="err">```</span>
+<span class="mi">-</span><span class="w"> </span><span class="err">I</span><span class="kc">nstru</span><span class="err">c</span><span class="kc">t</span><span class="err">io</span><span class="kc">n</span><span class="mi">-</span><span class="kc">tune</span><span class="err">d</span><span class="w"> </span><span class="err">promp</span><span class="kc">t</span><span class="w"> </span><span class="kc">te</span><span class="err">mpla</span><span class="kc">te</span><span class="p">:</span>
+<span class="w">  </span><span class="err">```</span>
+<span class="w">  </span><span class="err">Spur</span><span class="kc">n</span><span class="err">i</span><span class="kc">n</span><span class="err">gar</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="kc">te</span><span class="err">x</span><span class="kc">t</span><span class="p">}</span>
+<span class="w">  </span><span class="err">Svarmöguleikar</span><span class="p">:</span>
+<span class="w">  </span><span class="err">a.</span><span class="w"> </span><span class="p">{</span><span class="err">op</span><span class="kc">t</span><span class="err">io</span><span class="kc">n</span><span class="err">_a</span><span class="p">}</span>
+<span class="w">  </span><span class="err">b.</span><span class="w"> </span><span class="p">{</span><span class="err">op</span><span class="kc">t</span><span class="err">io</span><span class="kc">n</span><span class="err">_b</span><span class="p">}</span>
+<span class="w">  </span><span class="err">c.</span><span class="w"> </span><span class="p">{</span><span class="err">op</span><span class="kc">t</span><span class="err">io</span><span class="kc">n</span><span class="err">_c</span><span class="p">}</span>
+<span class="w">  </span><span class="err">d.</span><span class="w"> </span><span class="p">{</span><span class="err">op</span><span class="kc">t</span><span class="err">io</span><span class="kc">n</span><span class="err">_d</span><span class="p">}</span>
+
+<span class="w">  </span><span class="err">Svaraðu</span><span class="w"> </span><span class="err">e</span><span class="kc">ft</span><span class="err">ir</span><span class="kc">faran</span><span class="err">di</span><span class="w"> </span><span class="err">spur</span><span class="kc">n</span><span class="err">i</span><span class="kc">n</span><span class="err">gum</span><span class="w"> </span><span class="err">með</span><span class="w"> </span><span class="err">&#39;a&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;b&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;c&#39;</span><span class="w"> </span><span class="err">eða</span><span class="w"> </span><span class="err">&#39;d&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">og</span><span class="w"> </span><span class="err">e</span><span class="kc">n</span><span class="err">gu</span><span class="w"> </span><span class="err">öðru.</span>
+<span class="w">  </span><span class="err">```</span>
+
+<span class="err">You</span><span class="w"> </span><span class="err">ca</span><span class="kc">n</span><span class="w"> </span><span class="err">evalua</span><span class="kc">te</span><span class="w"> </span><span class="kc">t</span><span class="err">his</span><span class="w"> </span><span class="err">da</span><span class="kc">taset</span><span class="w"> </span><span class="err">direc</span><span class="kc">tl</span><span class="err">y</span><span class="w"> </span><span class="err">as</span><span class="w"> </span><span class="kc">f</span><span class="err">ollows</span><span class="p">:</span>
+
+<span class="err">```bash</span>
+<span class="err">$</span><span class="w"> </span><span class="err">euroeval</span><span class="w"> </span><span class="mi">--</span><span class="err">model</span><span class="w"> </span><span class="err">&lt;model</span><span class="mi">-</span><span class="err">id&gt;</span><span class="w"> </span><span class="mi">--</span><span class="err">da</span><span class="kc">taset</span><span class="w"> </span><span class="err">icela</span><span class="kc">n</span><span class="err">dic</span><span class="mi">-</span><span class="err">k</span><span class="kc">n</span><span class="err">owledge</span>
+</code></pre></div>
+<h3 id="unofficial-arc-is">Unofficial: ARC-is</h3>
 <p>This dataset is a machine translated version of the English <a href="https://doi.org/10.48550/arXiv.1803.05457">ARC
 dataset</a> and features US grade-school science
 questions. The dataset was translated by Miðeind using the Claude 3.5 Sonnet model.</p>
@@ -1996,67 +2094,6 @@ Svaraðu eftirfarandi spurningum með &#39;a&#39;, &#39;b&#39;, &#39;c&#39; eða
 </ul>
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>mmlu-is
-</code></pre></div>
-<h3 id="unofficial-icelandicknowledge">Unofficial: IcelandicKnowledge</h3>
-<p>This dataset is based on the IcelandicQA dataset, which was published <a href="https://huggingface.co/,datasets/mideind/icelandic_qa_euroeval">here</a>, but is here phrased as a knowledge dataset. The candidate answers has been generated by GPT-4o, using the following prompt for each <code>row</code> in the original dataset:</p>
-<p><div class="highlight"><pre><span></span><code><span class="n">messages</span> <span class="o">=</span> <span class="p">[</span>
-    <span class="p">{</span>
-        <span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;user&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;For the question: </span><span class="si">{</span><span class="n">row</span><span class="o">.</span><span class="n">question</span><span class="si">}</span><span class="s2"> where the correct answer is: </span><span class="si">{</span><span class="n">row</span><span class="o">.</span><span class="n">answer</span><span class="si">}</span><span class="s2">, please provide 3 plausible alternatives in Icelandic.&quot;</span><span class="p">,</span>
-    <span class="p">}</span>
-<span class="p">]</span>
-
-<span class="n">completion</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">beta</span><span class="o">.</span><span class="n">chat</span><span class="o">.</span><span class="n">completions</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span>
-    <span class="n">model</span><span class="o">=</span><span class="s2">&quot;gpt-4o&quot;</span><span class="p">,</span> <span class="n">messages</span><span class="o">=</span><span class="n">messages</span><span class="p">,</span> <span class="n">response_format</span><span class="o">=</span><span class="n">CandidateAnswers</span>
-<span class="p">)</span>
-</code></pre></div>
-where <code>CandidateAnswers</code> is a Pydantic model that is used to ensure <a href="https://platform.openai.com/docs/guides/structured-outputs">structured outputs</a>.</p>
-<p>The original dataset has 2,000 samples, but only 1,997 unique questions, and the total length of this dataset is therefore 1,997. The split is given by 845 / 128 / 1024 for train, val, and test, respectively.</p>
-<p>Here are a few examples from the training split:</p>
-<p><div class="highlight"><pre><span></span><code><span class="p">{</span>
-<span class="w">    </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Hvaða gamla verðeining var jafngildi einnar kýr að verðmæti?\nSvarmöguleikar:\na. Sauðfé\nb. Kúgildi\nc. Mjólkurtollur\nd. Hrossgildi&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;b&quot;</span>
-<span class="p">}</span>
-</code></pre></div>
-<div class="highlight"><pre><span></span><code><span class="p">{</span>
-<span class="w">    </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Hvenær komu Íslendingar fyrst til Gimli í Manitoba?\nSvarmöguleikar:\na. 15. september 1875\nb. 25. október 1874\nc. 10. október 1876\nd. 21. október 1875&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;d&quot;</span>
-<span class="p">}</span>
-</code></pre></div>
-<div class="highlight"><pre><span></span><code><span class="p">{</span>
-<span class="w">    </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Hvaða ár var byggingin sem gaf Barónsstíg í Reykjavík nafn reist?\nSvarmöguleikar:\na. 1901\nb. 1897\nc. 1899\nd. 1898&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;c&quot;</span>
-<span class="p">}</span>
-</code></pre></div></p>
-<p>When evaluating generative models, we use the following setup (see the
-<a href="/methodology">methodology</a> for more information on how these are used):</p>
-<ul>
-<li>Number of few-shot examples: 5</li>
-<li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>Eftirfarandi eru fjölvalsspurningar (með svörum).
-</code></pre></div></li>
-<li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>Spurningar: {text}
-Svarmöguleikar:
-a. {option_a}
-b. {option_b}
-c. {option_c}
-d. {option_d}
-Svara: {label}
-</code></pre></div></li>
-<li>Instruction-tuned prompt template:
-  <div class="highlight"><pre><span></span><code>Spurningar: {text}
-Svarmöguleikar:
-a. {option_a}
-b. {option_b}
-c. {option_c}
-d. {option_d}
-
-Svaraðu eftirfarandi spurningum með &#39;a&#39;, &#39;b&#39;, &#39;c&#39; eða &#39;d&#39;, og engu öðru.
-</code></pre></div></li>
-</ul>
-<p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>icelandic-knowledge
 </code></pre></div>
 <h2 id="common-sense-reasoning">Common-sense Reasoning</h2>
 <h3 id="winogrande-is">Winogrande-is</h3>
@@ -2267,7 +2304,7 @@ Skrifaðu samantekt um ofangreindu grein.
     <script id="__config" type="application/json">{"base": "../..", "features": ["navigation.top", "navigation.path", "navigation.prune", "navigation.indexes", "navigation.tabs", "navigation.tabs.sticky", "navigation.instant", "navigation.instant.prefetch", "navigation.instant.progress", "navigation.tracking", "navigation.sections"], "search": "../../assets/javascripts/workers/search.f8cc74c7.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
     
     
-      <script src="../../assets/javascripts/bundle.f1b6f286.min.js"></script>
+      <script src="../../assets/javascripts/bundle.c8b220af.min.js"></script>
       
         <script src="../../javascript/mkapi.js"></script>
       

@@ -16,7 +16,7 @@
       
       
       <link rel="icon" href="../../gfx/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.5">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.7">
     
     
       
@@ -598,6 +598,8 @@
       
         
       
+        
+      
     
     
       
@@ -1036,6 +1038,28 @@
   
   <span class="md-ellipsis">
     🇮🇸 Icelandic
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../italian/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    🇮🇹 Italian
     
   </span>
   
@@ -1807,55 +1831,63 @@ Besvar ovenstående spørgsmål ved at svare med &#39;a&#39;, &#39;b&#39;, &#39;
 </code></pre></div>
 <h3 id="danish-citizen-tests">Danish Citizen Tests</h3>
 <p>This dataset was created by scraping the Danish citizenship tests (indfødsretsprøven)
-and permanent residency tests (medborgerskabsprøven) from 2016 to 2023. These are
+and permanent residency tests (medborgerskabsprøven) from 2016 to 2024. These are
 available on the <a href="https://danskogproever.dk/">official website of the Danish Ministry of International Recruitment
 and Integration</a>.</p>
-<p>The original full dataset consists of 720 samples. We use an 80 / 128 / 512 split for
-training, validation and testing, respectively (so 720 samples used in total).</p>
+<p>The original full dataset consists of 870 samples. We use an 345 / 90 / 525 split for
+training, validation and testing, respectively. Here all the citizenship tests belong to
+the test split, as well as the newest permanent residency tests. The validation split
+contains the newer permanent residency tests after the ones in the test split, and the
+training split contains the oldest permanent residency tests.</p>
 <p>Here are a few examples from the training split:</p>
 <p><div class="highlight"><pre><span></span><code><span class="p">{</span>
-<span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Hvilke lande er med i rigsfællesskab et?\nSvarmuligheder:\na. Danmark, Grønland og Færøerne\nb. Danmark, Island og Norge&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Hvilket parti tilhørte Lars Løkke Rasmussen, da han var statsminister i perioderne 2009-11 og 2015-19?\nSvarmuligheder:\na. Venstre\nb. Socialdemokratiet\nc. Det Konservative Folkeparti&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;a&quot;</span>
 <span class="p">}</span>
 </code></pre></div>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
-<span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Hvor mange medlemmer har Folketinget?\nSvarmuligheder:\na. 87\nb. 179\nc. 265&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Hvilket af følgende områder har kommunerne ansvaret for driften af?\nSvarmuligheder:\na. Domstole\nb. Vuggestuer\nc. Sygehuse&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;b&quot;</span>
-<span class="p">}</span>
-</code></pre></div>
-<div class="highlight"><pre><span></span><code><span class="p">{</span>
-<span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Hvem kan blive biskop i den danske folkekirke?\nSvarmuligheder:\na. Kun mænd\nb. Kun kvinder\nc. Både m ænd og kvinder&quot;</span><span class="p">,</span>
+<span class="p">}</span><span class="err">```</span>
+<span class="err">```jso</span><span class="kc">n</span>
+<span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Hvilken organisation blev Danmark medlem af i 1945?\nSvarmuligheder:\na. Verdenshandelsorganisationen (WTO)\nb. Den Europæiske Union (EU)\nc. De Forenede Nationer (FN)&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;c&quot;</span>
-<span class="p">}</span>
-</code></pre></div></p>
-<p>When evaluating generative models, we use the following setup (see the
-<a href="/methodology">methodology</a> for more information on how these are used):</p>
-<ul>
-<li>Number of few-shot examples: 5</li>
-<li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>Følgende er multiple choice spørgsmål (med svar).
-</code></pre></div></li>
-<li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>Spørgsmål: {text}
-Svarmuligheder:
-a. {option_a}
-b. {option_b}
-c. {option_c}
-Svar: {label}
-</code></pre></div></li>
-<li>Instruction-tuned prompt template:
-  <div class="highlight"><pre><span></span><code>Spørgsmål: {text}
-Svarmuligheder:
-a. {option_a}
-b. {option_b}
-c. {option_c}
+<span class="p">}</span><span class="err">```</span>
 
-Besvar ovenstående spørgsmål ved at svare med &#39;a&#39;, &#39;b&#39;, &#39;c&#39; eller &#39;d&#39;, og intet andet.
-</code></pre></div></li>
-</ul>
-<p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>danish-citizen-tests
-</code></pre></div>
+<span class="err">Whe</span><span class="kc">n</span><span class="w"> </span><span class="err">evalua</span><span class="kc">t</span><span class="err">i</span><span class="kc">n</span><span class="err">g</span><span class="w"> </span><span class="err">ge</span><span class="kc">nerat</span><span class="err">ive</span><span class="w"> </span><span class="err">models</span><span class="p">,</span><span class="w"> </span><span class="err">we</span><span class="w"> </span><span class="err">use</span><span class="w"> </span><span class="kc">t</span><span class="err">he</span><span class="w"> </span><span class="kc">f</span><span class="err">ollowi</span><span class="kc">n</span><span class="err">g</span><span class="w"> </span><span class="err">se</span><span class="kc">tu</span><span class="err">p</span><span class="w"> </span><span class="err">(see</span><span class="w"> </span><span class="kc">t</span><span class="err">he</span>
+<span class="p">[</span><span class="err">me</span><span class="kc">t</span><span class="err">hodology</span><span class="p">]</span><span class="err">(/me</span><span class="kc">t</span><span class="err">hodology)</span><span class="w"> </span><span class="kc">f</span><span class="err">or</span><span class="w"> </span><span class="err">more</span><span class="w"> </span><span class="err">i</span><span class="kc">nf</span><span class="err">orma</span><span class="kc">t</span><span class="err">io</span><span class="kc">n</span><span class="w"> </span><span class="err">o</span><span class="kc">n</span><span class="w"> </span><span class="err">how</span><span class="w"> </span><span class="kc">t</span><span class="err">hese</span><span class="w"> </span><span class="err">are</span><span class="w"> </span><span class="err">used)</span><span class="p">:</span>
+
+<span class="mi">-</span><span class="w"> </span><span class="err">Number</span><span class="w"> </span><span class="err">o</span><span class="kc">f</span><span class="w"> </span><span class="kc">fe</span><span class="err">w</span><span class="mi">-</span><span class="err">sho</span><span class="kc">t</span><span class="w"> </span><span class="err">examples</span><span class="p">:</span><span class="w"> </span><span class="mi">5</span>
+<span class="mi">-</span><span class="w"> </span><span class="err">Pre</span><span class="kc">f</span><span class="err">ix</span><span class="w"> </span><span class="err">promp</span><span class="kc">t</span><span class="p">:</span>
+<span class="w">  </span><span class="err">```</span>
+<span class="w">  </span><span class="err">Følge</span><span class="kc">n</span><span class="err">de</span><span class="w"> </span><span class="err">er</span><span class="w"> </span><span class="err">mul</span><span class="kc">t</span><span class="err">iple</span><span class="w"> </span><span class="err">choice</span><span class="w"> </span><span class="err">spørgsmål</span><span class="w"> </span><span class="err">(med</span><span class="w"> </span><span class="err">svar).</span>
+<span class="w">  </span><span class="err">```</span>
+<span class="mi">-</span><span class="w"> </span><span class="err">Base</span><span class="w"> </span><span class="err">promp</span><span class="kc">t</span><span class="w"> </span><span class="kc">te</span><span class="err">mpla</span><span class="kc">te</span><span class="p">:</span>
+<span class="w">  </span><span class="err">```</span>
+<span class="w">  </span><span class="err">Spørgsmål</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="kc">te</span><span class="err">x</span><span class="kc">t</span><span class="p">}</span>
+<span class="w">  </span><span class="err">Svarmuligheder</span><span class="p">:</span>
+<span class="w">  </span><span class="err">a.</span><span class="w"> </span><span class="p">{</span><span class="err">op</span><span class="kc">t</span><span class="err">io</span><span class="kc">n</span><span class="err">_a</span><span class="p">}</span>
+<span class="w">  </span><span class="err">b.</span><span class="w"> </span><span class="p">{</span><span class="err">op</span><span class="kc">t</span><span class="err">io</span><span class="kc">n</span><span class="err">_b</span><span class="p">}</span>
+<span class="w">  </span><span class="err">c.</span><span class="w"> </span><span class="p">{</span><span class="err">op</span><span class="kc">t</span><span class="err">io</span><span class="kc">n</span><span class="err">_c</span><span class="p">}</span>
+<span class="w">  </span><span class="err">Svar</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="err">label</span><span class="p">}</span>
+<span class="w">  </span><span class="err">```</span>
+<span class="mi">-</span><span class="w"> </span><span class="err">I</span><span class="kc">nstru</span><span class="err">c</span><span class="kc">t</span><span class="err">io</span><span class="kc">n</span><span class="mi">-</span><span class="kc">tune</span><span class="err">d</span><span class="w"> </span><span class="err">promp</span><span class="kc">t</span><span class="w"> </span><span class="kc">te</span><span class="err">mpla</span><span class="kc">te</span><span class="p">:</span>
+<span class="w">  </span><span class="err">```</span>
+<span class="w">  </span><span class="err">Spørgsmål</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="kc">te</span><span class="err">x</span><span class="kc">t</span><span class="p">}</span>
+<span class="w">  </span><span class="err">Svarmuligheder</span><span class="p">:</span>
+<span class="w">  </span><span class="err">a.</span><span class="w"> </span><span class="p">{</span><span class="err">op</span><span class="kc">t</span><span class="err">io</span><span class="kc">n</span><span class="err">_a</span><span class="p">}</span>
+<span class="w">  </span><span class="err">b.</span><span class="w"> </span><span class="p">{</span><span class="err">op</span><span class="kc">t</span><span class="err">io</span><span class="kc">n</span><span class="err">_b</span><span class="p">}</span>
+<span class="w">  </span><span class="err">c.</span><span class="w"> </span><span class="p">{</span><span class="err">op</span><span class="kc">t</span><span class="err">io</span><span class="kc">n</span><span class="err">_c</span><span class="p">}</span>
+
+<span class="w">  </span><span class="err">Besvar</span><span class="w"> </span><span class="err">ove</span><span class="kc">nst</span><span class="err">åe</span><span class="kc">n</span><span class="err">de</span><span class="w"> </span><span class="err">spørgsmål</span><span class="w"> </span><span class="err">ved</span><span class="w"> </span><span class="err">a</span><span class="kc">t</span><span class="w"> </span><span class="err">svare</span><span class="w"> </span><span class="err">med</span><span class="w"> </span><span class="err">&#39;a&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;b&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;c&#39;</span><span class="w"> </span><span class="err">eller</span><span class="w"> </span><span class="err">&#39;d&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">og</span><span class="w"> </span><span class="err">i</span><span class="kc">ntet</span><span class="w"> </span><span class="err">a</span><span class="kc">n</span><span class="err">de</span><span class="kc">t</span><span class="err">.</span>
+<span class="w">  </span><span class="err">```</span>
+
+<span class="err">You</span><span class="w"> </span><span class="err">ca</span><span class="kc">n</span><span class="w"> </span><span class="err">evalua</span><span class="kc">te</span><span class="w"> </span><span class="kc">t</span><span class="err">his</span><span class="w"> </span><span class="err">da</span><span class="kc">taset</span><span class="w"> </span><span class="err">direc</span><span class="kc">tl</span><span class="err">y</span><span class="w"> </span><span class="err">as</span><span class="w"> </span><span class="kc">f</span><span class="err">ollows</span><span class="p">:</span>
+
+<span class="err">```bash</span>
+<span class="err">$</span><span class="w"> </span><span class="err">euroeval</span><span class="w"> </span><span class="mi">--</span><span class="err">model</span><span class="w"> </span><span class="err">&lt;model</span><span class="mi">-</span><span class="err">id&gt;</span><span class="w"> </span><span class="mi">--</span><span class="err">da</span><span class="kc">taset</span><span class="w"> </span><span class="err">da</span><span class="kc">n</span><span class="err">ish</span><span class="mi">-</span><span class="err">ci</span><span class="kc">t</span><span class="err">ize</span><span class="kc">n</span><span class="mi">-</span><span class="kc">tests</span>
+</code></pre></div></p>
 <h3 id="unofficial-mmlu-da">Unofficial: MMLU-da</h3>
 <p>This dataset is a machine translated version of the English <a href="https://openreview.net/forum?id=d7KBjmI3GmQ">MMLU
 dataset</a> and features questions within 57
@@ -2118,7 +2150,7 @@ Skriv et resumé af ovenstående artikel.
     <script id="__config" type="application/json">{"base": "../..", "features": ["navigation.top", "navigation.path", "navigation.prune", "navigation.indexes", "navigation.tabs", "navigation.tabs.sticky", "navigation.instant", "navigation.instant.prefetch", "navigation.instant.progress", "navigation.tracking", "navigation.sections"], "search": "../../assets/javascripts/workers/search.f8cc74c7.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
     
     
-      <script src="../../assets/javascripts/bundle.f1b6f286.min.js"></script>
+      <script src="../../assets/javascripts/bundle.c8b220af.min.js"></script>
       
         <script src="../../javascript/mkapi.js"></script>
       
