@@ -8,7 +8,7 @@ from collections import defaultdict
 import evaluate
 import numpy as np
 from evaluate import EvaluationModule
-from transformers import PreTrainedTokenizer
+from transformers import PreTrainedTokenizer, PreTrainedTokenizerBase
 from transformers.trainer import Trainer
 
 from ..data_models import BenchmarkConfig, DatasetConfig, GenerativeModelOutput
@@ -23,7 +23,6 @@ if t.TYPE_CHECKING:
     from transformers import (
         EvalPrediction,
         PreTrainedModel,
-        PreTrainedTokenizerBase,
         TrainerCallback,
         TrainingArguments,
     )
@@ -62,8 +61,7 @@ class QuestionAnsweringTrainer(Trainer):
 
         # Get the CLS token id for the tokenizer
         if self.tokenizer is not None:
-            breakpoint()
-            assert isinstance(self.tokenizer, PreTrainedTokenizer)
+            assert isinstance(self.tokenizer, PreTrainedTokenizerBase)
             special_token_metadata = get_special_token_metadata(self.tokenizer)
             self.cls_token_id = special_token_metadata["cls_token_id"]
 
