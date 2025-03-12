@@ -9,14 +9,14 @@ from copy import deepcopy
 import evaluate
 import numpy as np
 from evaluate import EvaluationModule
-from transformers import EvalPrediction, PreTrainedTokenizer
+from transformers import PreTrainedTokenizer
 
 from ..data_models import BenchmarkConfig, DatasetConfig, GenerativeModelOutput
 from ..exceptions import InvalidBenchmark, NeedsExtraInstalled
 from ..utils import raise_if_model_output_contains_nan_values
 
 if t.TYPE_CHECKING:
-    from transformers import BatchEncoding
+    from transformers import BatchEncoding, EvalPrediction
 
     from ..types import Labels, Predictions
 
@@ -28,7 +28,7 @@ logger = logging.getLogger("euroeval")
 
 
 def compute_metrics(
-    model_outputs_and_labels: tuple["Predictions", "Labels"] | EvalPrediction,
+    model_outputs_and_labels: tuple["Predictions", "Labels"] | "EvalPrediction",
     has_misc_tags: bool,
     dataset_config: "DatasetConfig",
     benchmark_config: "BenchmarkConfig",

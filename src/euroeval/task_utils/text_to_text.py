@@ -6,7 +6,6 @@ import typing as t
 import evaluate
 import numpy as np
 from evaluate import EvaluationModule
-from transformers import EvalPrediction
 
 from ..constants import METRIC_ATTRIBUTES_TAKING_UP_MEMORY
 from ..data_models import BenchmarkConfig, DatasetConfig, GenerativeModelOutput
@@ -18,6 +17,8 @@ from ..utils import (
 )
 
 if t.TYPE_CHECKING:
+    from transformers import EvalPrediction
+
     from ..types import Labels, Predictions
 
 
@@ -25,7 +26,7 @@ logger = logging.getLogger("euroeval")
 
 
 def compute_metrics(
-    model_outputs_and_labels: tuple["Predictions", "Labels"] | EvalPrediction,
+    model_outputs_and_labels: tuple["Predictions", "Labels"] | "EvalPrediction",
     dataset_config: "DatasetConfig",
     benchmark_config: "BenchmarkConfig",
 ) -> dict[str, float]:

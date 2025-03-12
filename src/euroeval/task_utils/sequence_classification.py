@@ -8,12 +8,13 @@ import evaluate
 import Levenshtein
 import numpy as np
 from evaluate import EvaluationModule
-from transformers import EvalPrediction
 
 from ..data_models import BenchmarkConfig, GenerativeModelOutput
 from ..utils import log_once, raise_if_model_output_contains_nan_values
 
 if t.TYPE_CHECKING:
+    from transformers import EvalPrediction
+
     from ..data_models import DatasetConfig
     from ..types import Labels, Predictions
 
