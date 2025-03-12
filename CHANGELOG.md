@@ -48,6 +48,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Fixed
 - A bug caused fresh encoder models to not be benchmarkable on the speed benchmark -
   this has been fixed now.
+- Some encoder models were not able to be evaluated on reading comprehensions, if their
+  tokenizers were not subclassing `PreTrainedTokenizer`. This has been relaxed to
+  `PreTrainedTokenizerBase` instead.
 
 
 ## [v15.2.0] - 2025-02-28
