@@ -42,7 +42,6 @@ def compute_metrics(
     """
     model_outputs, labels = model_outputs_and_labels
     label2id = {label: idx for idx, label in dataset_config.id2label.items()}
-    raise_if_model_output_contains_nan_values(model_output=model_outputs)
 
     metrics = {
         metric_cfg.name: (
@@ -60,6 +59,8 @@ def compute_metrics(
         predictions = np.asarray(model_outputs).argmax(axis=-1)
     else:
         predictions = model_outputs
+
+    raise_if_model_output_contains_nan_values(model_output=model_outputs)
 
     prompt_label_to_label_mapping = {
         prompt_label: label

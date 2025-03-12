@@ -9,7 +9,7 @@ from copy import deepcopy
 import evaluate
 import numpy as np
 from evaluate import EvaluationModule
-from transformers import PreTrainedTokenizer
+from transformers import EvalPrediction, PreTrainedTokenizer
 
 from ..data_models import BenchmarkConfig, DatasetConfig, GenerativeModelOutput
 from ..exceptions import InvalidBenchmark, NeedsExtraInstalled
@@ -28,7 +28,7 @@ logger = logging.getLogger("euroeval")
 
 
 def compute_metrics(
-    model_outputs_and_labels: tuple["Predictions", "Labels"],
+    model_outputs_and_labels: tuple["Predictions", "Labels"] | EvalPrediction,
     has_misc_tags: bool,
     dataset_config: "DatasetConfig",
     benchmark_config: "BenchmarkConfig",
@@ -51,7 +51,6 @@ def compute_metrics(
         values.
     """
     model_outputs, labels = model_outputs_and_labels
-    raise_if_model_output_contains_nan_values(model_output=model_outputs)
 
     metrics = {
         metric_cfg.name: (
@@ -92,6 +91,8 @@ def compute_metrics(
 
     else:
         predictions = model_outputs  # type: ignore[assignment]
+
+    raise_if_model_output_contains_nan_values(model_output=predictions)
 
     # Replace predicted tag with either MISC or O tags if they are not part of the
     # dataset
