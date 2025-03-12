@@ -41,6 +41,7 @@ def compute_metrics(
         values.
     """
     model_outputs, labels = model_outputs_and_labels
+    breakpoint()
     label2id = {label: idx for idx, label in dataset_config.id2label.items()}
     raise_if_model_output_contains_nan_values(model_output=model_outputs)
 
