@@ -51,6 +51,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Some encoder models were not able to be evaluated on reading comprehensions, if their
   tokenizers were not subclassing `PreTrainedTokenizer`. This has been relaxed to
   `PreTrainedTokenizerBase` instead.
+- Newer versions of the `transformers` package changed the model output format, causing
+  errors when evaluating encoder models on some tasks. This has been fixed now.
 
 
 ## [v15.2.0] - 2025-02-28
