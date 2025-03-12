@@ -45,6 +45,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   machine translated ARC-is dataset. It has also been improved, as some of the generated
   alternative answers were formatted incorrectly.
 
+### Fixed
+- A bug caused fresh encoder models to not be benchmarkable on the speed benchmark -
+  this has been fixed now.
+
 
 ## [v15.2.0] - 2025-02-28
 ### Changed
