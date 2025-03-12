@@ -50,6 +50,7 @@ def compute_metrics(
         A dictionary with the names of the metrics as keys and the metric values as
         values.
     """
+    breakpoint()
     model_outputs, labels = model_outputs_and_labels
     raise_if_model_output_contains_nan_values(model_output=model_outputs)
 

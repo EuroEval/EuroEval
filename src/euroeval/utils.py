@@ -324,7 +324,6 @@ def raise_if_model_output_contains_nan_values(model_output: "Predictions") -> No
             if any(x != x for x in model_output):
                 raise NaNValueInModelOutput()
         elif len(model_output[0]) > 0:
-            breakpoint()
             if any(x != x for sublist in model_output for x in sublist):
                 raise NaNValueInModelOutput()
 
