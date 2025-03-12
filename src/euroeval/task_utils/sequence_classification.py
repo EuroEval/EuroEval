@@ -66,6 +66,7 @@ def compute_metrics(
     else:
         predictions = model_outputs
 
+    assert not isinstance(model_outputs, tuple)
     raise_if_model_output_contains_nan_values(model_output=model_outputs)
 
     prompt_label_to_label_mapping = {
