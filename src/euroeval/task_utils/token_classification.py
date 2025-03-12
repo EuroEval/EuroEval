@@ -52,6 +52,11 @@ def compute_metrics(
     """
     model_outputs, labels = model_outputs_and_labels
 
+    # If the model outputs is a pair, then the first element corresponds to the model
+    # predictions
+    if isinstance(model_outputs, tuple) and len(model_outputs) == 2:
+        model_outputs = model_outputs[0]
+
     metrics = {
         metric_cfg.name: (
             evaluate.load(

@@ -8,6 +8,7 @@ import evaluate
 import Levenshtein
 import numpy as np
 from evaluate import EvaluationModule
+from transformers import EvalPrediction
 
 from ..data_models import BenchmarkConfig, GenerativeModelOutput
 from ..utils import log_once, raise_if_model_output_contains_nan_values
@@ -21,7 +22,7 @@ logger = logging.getLogger("euroeval")
 
 
 def compute_metrics(
-    model_outputs_and_labels: tuple["Predictions", "Labels"],
+    model_outputs_and_labels: tuple["Predictions", "Labels"] | EvalPrediction,
     dataset_config: "DatasetConfig",
     benchmark_config: "BenchmarkConfig",
 ) -> dict[str, float]:
@@ -42,6 +43,11 @@ def compute_metrics(
     """
     model_outputs, labels = model_outputs_and_labels
     label2id = {label: idx for idx, label in dataset_config.id2label.items()}
+
+    # If the model outputs is a pair, then the first element corresponds to the model
+    # predictions
+    if isinstance(model_outputs, tuple) and len(model_outputs) == 2:
+        model_outputs = model_outputs[0]
 
     metrics = {
         metric_cfg.name: (
