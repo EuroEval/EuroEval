@@ -26,7 +26,7 @@ logger = logging.getLogger("euroeval")
 
 
 def compute_metrics(
-    model_outputs_and_labels: tuple["Predictions", "Labels"] | "EvalPrediction",
+    model_outputs_and_labels: "tuple[Predictions, Labels] | EvalPrediction",
     dataset_config: "DatasetConfig",
     benchmark_config: "BenchmarkConfig",
 ) -> dict[str, float]:
