@@ -12,7 +12,7 @@ from .dataset_configs import get_all_dataset_configs
 from .enums import Device
 from .exceptions import InvalidBenchmark
 from .languages import get_all_languages
-from .tasks import get_all_tasks
+from .tasks import SPEED, get_all_tasks
 from .utils import log_once
 
 if t.TYPE_CHECKING:
@@ -294,7 +294,7 @@ def prepare_tasks_and_datasets(
     # Create the list of dataset tasks
     try:
         if task is None:
-            tasks = list(task_mapping.values())
+            tasks = [t for t in task_mapping.values() if t != SPEED]
         elif isinstance(task, str):
             tasks = [task_mapping[task]]
         else:

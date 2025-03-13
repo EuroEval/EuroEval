@@ -13,6 +13,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   do not support structured generation, and their output are always {"input": actual
   dictionary}. This has been fixed now.
 
+### Changed
+- Now does not include the speed benchmark by default, as it is not used in the official
+  leaderboards. It can still be used by including `--task speed` when benchmarking a
+  model, or by using the `task` argument if using the `Benchmarker` API.
+
 
 ## [v15.3.1] - 2025-03-13
 ### Fixed
