@@ -207,7 +207,7 @@ def extract_labels_from_generation(
     raw_predictions = model_output.sequences
 
     # Attempt to extract the JSON dictionary from the predictions
-    json_regex = r"\{.+?\}"
+    json_regex = r"\{[^{}]+?\}"
     json_matches = [
         re.search(pattern=json_regex, string=raw_prediction, flags=re.DOTALL)
         or raw_prediction

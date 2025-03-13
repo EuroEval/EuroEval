@@ -7,7 +7,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 
 ## [Unreleased]
-
+### Fixed
+- When models output nested JSON dictionaries and structured generation isn't available,
+  we use the inner-most dictionary. This caused issues with Anthropic models, since they
+  do not support structured generation, and their output are always {"input": actual
+  dictionary}. This has been fixed now.
 
 
 ## [v15.3.1] - 2025-03-13
