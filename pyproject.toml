@@ -37,11 +37,11 @@ dependencies = [
     "levenshtein>=0.24.0",
     "scikit-learn<1.6.0",
     "setuptools>=75.8.2",
+    "demjson3>=3.0.6",
 ]
 
 [project.optional-dependencies]
 generative = [
-    "demjson3>=3.0.6",
     "bitsandbytes>=0.43.1; platform_system == 'Linux'",
     "vllm>=0.6.3,<0.6.5; platform_system == 'Linux'",
     "fbgemm-gpu>=1.0.0; platform_system == 'Linux'",
@@ -50,7 +50,6 @@ human_evaluation = [
     "gradio>=4.26.0",
 ]
 all = [
-    "demjson3>=3.0.6",
     "bitsandbytes>=0.43.1; platform_system == 'Linux'",
     "vllm>=0.6.3,<0.6.5; platform_system == 'Linux'",
     "fbgemm-gpu>=1.0.0; platform_system == 'Linux'",

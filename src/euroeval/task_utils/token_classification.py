@@ -1,27 +1,24 @@
 """Utility functions related to the token-classification task group."""
 
-import importlib.util
 import logging
 import re
 import typing as t
 from copy import deepcopy
 
+import demjson3
 import evaluate
 import numpy as np
 from evaluate import EvaluationModule
 from transformers import PreTrainedTokenizer
 
 from ..data_models import BenchmarkConfig, DatasetConfig, GenerativeModelOutput
-from ..exceptions import InvalidBenchmark, NeedsExtraInstalled
+from ..exceptions import InvalidBenchmark
 from ..utils import raise_if_model_output_contains_nan_values
 
 if t.TYPE_CHECKING:
     from transformers import BatchEncoding, EvalPrediction
 
     from ..types import Labels, Predictions
-
-if importlib.util.find_spec("demjson3") is not None:
-    import demjson3
 
 
 logger = logging.getLogger("euroeval")
@@ -201,9 +198,6 @@ def extract_labels_from_generation(
     Returns:
         The predicted labels.
     """
-    if importlib.util.find_spec("demjson3") is None:
-        raise NeedsExtraInstalled(extra="generative")
-
     raw_predictions = model_output.sequences
 
     # Attempt to extract the JSON dictionary from the predictions
