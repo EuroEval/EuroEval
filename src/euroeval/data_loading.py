@@ -10,7 +10,7 @@ from huggingface_hub.errors import HfHubHTTPError
 from numpy.random import Generator
 
 from .data_models import BenchmarkConfig, DatasetConfig
-from .exceptions import InvalidBenchmark
+from .exceptions import HuggingFaceHubDown, InvalidBenchmark
 from .utils import unscramble
 
 logger = logging.getLogger("euroeval")
@@ -31,6 +31,12 @@ def load_data(
 
     Returns:
         A list of bootstrapped datasets, one for each iteration.
+
+    Raises:
+        InvalidBenchmark:
+            If the dataset cannot be loaded.
+        HuggingFaceHubDown:
+            If the Hugging Face Hub is down.
     """
     num_attempts = 5
     for _ in range(num_attempts):
@@ -41,14 +47,14 @@ def load_data(
                 token=unscramble("HjccJFhIozVymqXDVqTUTXKvYhZMTbfIjMxG_"),
             )
             break
-        except (FileNotFoundError, DatasetsError):
+        except (FileNotFoundError, DatasetsError, ConnectionError):
             logger.warning(
                 f"Failed to load dataset {dataset_config.huggingface_id!r}. Retrying..."
             )
             time.sleep(1)
             continue
         except HfHubHTTPError:
-            raise InvalidBenchmark("The Hugging Face Hub seems to be down.")
+            raise HuggingFaceHubDown()
     else:
         raise InvalidBenchmark(
             f"Failed to load dataset {dataset_config.huggingface_id!r} after "

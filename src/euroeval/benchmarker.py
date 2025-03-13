@@ -18,7 +18,7 @@ from .data_loading import load_data
 from .data_models import BenchmarkConfigParams, BenchmarkResult
 from .dataset_configs import get_all_dataset_configs
 from .enums import Device, ModelType
-from .exceptions import InvalidBenchmark, InvalidModel
+from .exceptions import HuggingFaceHubDown, InvalidBenchmark, InvalidModel
 from .finetuning import finetune
 from .generation import generate
 from .model_config import get_model_config
@@ -769,22 +769,20 @@ class Benchmarker:
                 logger.debug(f"Results:\n{results}")
                 return record
 
+            except HuggingFaceHubDown:
+                wait_time = 30
+                logger.debug(
+                    f"The Hugging Face Hub seems to be down. Retrying in {wait_time} "
+                    "seconds."
+                )
+                sleep(wait_time)
+                continue
+
             except (InvalidBenchmark, InvalidModel) as e:
                 # If the model ID is not valid then raise an error
                 model_err_msg = "does not exist on the Hugging Face Hub"
                 if benchmark_config.raise_errors and model_err_msg in str(e):
                     raise e
-
-                # Otherwise, if the error is due to Hugging Face Hub being down, then
-                # wait a bit and try again
-                elif "The Hugging Face Hub seems to be down." in str(e):
-                    wait_time = 30
-                    logger.debug(
-                        "The Hugging Face Hub seems to be down. Retrying in "
-                        f"{wait_time} seconds."
-                    )
-                    sleep(wait_time)
-                    continue
 
                 # Otherwise, if the error is due to the MPS fallback not being enabled,
                 # then raise an error asking the user to enable it
