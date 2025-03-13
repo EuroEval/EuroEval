@@ -7,7 +7,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 
 ## [Unreleased]
-
+### Changed
+- Moved the `demjson3` dependency from the `generative` extra to the main dependencies,
+  to allow benchmarking API-based models without any extras.
 
 
 ## [v15.3.1] - 2025-03-13
