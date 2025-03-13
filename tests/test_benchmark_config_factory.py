@@ -16,7 +16,7 @@ from euroeval.dataset_configs import get_all_dataset_configs
 from euroeval.enums import Device
 from euroeval.exceptions import InvalidBenchmark
 from euroeval.languages import DA, EN, NB, NN, NO, get_all_languages
-from euroeval.tasks import LA, NER, SENT, get_all_tasks
+from euroeval.tasks import LA, NER, SENT, SPEED, get_all_tasks
 
 
 @pytest.fixture(scope="module")
@@ -113,7 +113,7 @@ def test_prepare_languages(
             None,
             None,
             list(get_all_languages().values()),
-            list(get_all_tasks().values()),
+            [t for t in get_all_tasks().values() if t != SPEED],
             "all_official_dataset_names",
         ),
         (
@@ -127,7 +127,7 @@ def test_prepare_languages(
             None,
             "scala-da",
             list(get_all_languages().values()),
-            list(get_all_tasks().values()),
+            [t for t in get_all_tasks().values() if t != SPEED],
             ["scala-da"],
         ),
         (
