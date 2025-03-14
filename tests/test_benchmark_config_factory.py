@@ -22,7 +22,11 @@ from euroeval.tasks import LA, NER, SENT, SPEED, get_all_tasks
 @pytest.fixture(scope="module")
 def all_official_dataset_names() -> Generator[list[str], None, None]:
     """Fixture for all linguistic acceptability dataset configurations."""
-    yield [cfg.name for cfg in get_all_dataset_configs().values() if not cfg.unofficial]
+    yield [
+        cfg.name
+        for cfg in get_all_dataset_configs().values()
+        if not cfg.unofficial and cfg.task != SPEED
+    ]
 
 
 @pytest.fixture(scope="module")
