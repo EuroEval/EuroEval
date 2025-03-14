@@ -41,7 +41,7 @@ The columns that follow the rank columns are metadata about the model:
 
 After these metadata columns, the individual scores for each dataset is shown. Each
 dataset has a primary and secondary score - see what these are on the [task
-page](/tasks). Lastly, the final columns show the ScandEval version used to benchmark
+page](/tasks). Lastly, the final columns show the EuroEval version used to benchmark
 the given model on each of the datasets.
 
 To read more about the individual datasets, see the [datasets](/datasets) page. Uf

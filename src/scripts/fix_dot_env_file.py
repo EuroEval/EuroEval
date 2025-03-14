@@ -6,12 +6,14 @@ from pathlib import Path
 DESIRED_ENVIRONMENT_VARIABLES = dict(
     GIT_NAME="Enter your full name, to be shown in Git commits:\n> ",
     GIT_EMAIL="Enter your email, as registered on your Github account:\n> ",
-    PYPI_API_TOKEN="Enter your PyPI API token, or leave empty if you do not want "
-    "to use it:\n> ",
+    EUROEVAL_PYPI_API_TOKEN="Enter your EuroEval PyPI API token, or leave empty "
+    "if you do not want to use it:\n> ",
+    SCANDEVAL_PYPI_API_TOKEN="Enter your ScandEval PyPI API token, or leave empty "
+    "if you do not want to use it:\n> ",
 )
 
 
-def fix_dot_env_file():
+def fix_dot_env_file() -> None:
     """Ensures that the .env file exists and contains all desired variables."""
     # Create path to the .env file
     env_file_path = Path(".env")

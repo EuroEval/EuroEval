@@ -7,6 +7,112 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 
 ## [Unreleased]
+### Fixed
+- When models output nested JSON dictionaries and structured generation isn't available,
+  we use the inner-most dictionary. This caused issues with Anthropic models, since they
+  do not support structured generation, and their output are always {"input": actual
+  dictionary}. This has been fixed now.
+- Now handles `ReadTimeout`s when loading datasets, rather than aborting evaluations.
+
+### Changed
+- Moved the `demjson3` dependency from the `generative` extra to the main dependencies,
+  to allow benchmarking API-based models without any extras.
+- Now does not include the speed benchmark by default, as it is not used in the official
+  leaderboards. It can still be used by including `--task speed` when benchmarking a
+  model, or by using the `task` argument if using the `Benchmarker` API.
+
+
+## [v15.3.1] - 2025-03-13
+### Fixed
+- Now handles `ConnectionError`s when loading datasets, rather than aborting evaluations.
+
+
+## [v15.3.0] - 2025-03-12
+### Added
+- Added support for evaluating Italian 🇮🇹! This includes the reading comprehension
+  dataset [SQuAD-it](https://hf.co/datasets/crux82/squad_it), the summarization
+  dataset [IlPost](https://hf.co/datasets/ARTeLab/ilpost), the sentiment
+  classification
+  [Sentipolc-16](https://hf.co/datasets/cardiffnlp/tweet_sentiment_multilingual),
+  the common-sense reasoning dataset
+  [HellaSwag-it](https://hf.co/datasets/alexandrainst/m_hellaswag), the linguistic acceptability
+  dataset ScaLA with the [Italian Universal Dependencies
+  treebank](https://github.com/UniversalDependencies/UD_Italian-ISDT), the knowledge
+  dataset [MMLU-it](https://hf.co/datasets/alexandrainst/m_mmlu), and the named entity
+  recognition dataset [MultiNERD
+  IT](https://hf.co/datasets/Babelscape/multinerd) (and unofficially
+  [WikiNEuRal IT](https://hf.co/datasets/Babelscape/wikineural)). This was contributed by [@viggo-gascou](https://github.com/viggo-gascou) ✨
+- Added the new Norwegian knowledge dataset NRK-Quiz-QA, consisting of quizzes on the
+  Norwegian language and culture, in both Bokmål and Nynorsk. The dataset has been split
+  into 635 / 256 / 2,048 samples for train, val, and test, respectively. This replaces
+  the old MMLU-no as the official Norwegian knowledge dataset.
+- Added the new Norwegian common-sense reasoning dataset NorCommonSenseQA, which is a
+  manually translated and localised version of the English CommonsenseQA dataset, in
+  both Bokmål and Nynorsk. The dataset has been split into 128 / 128 / 787 samples for
+  train, val, and test, respectively. This replaces the old HellaSwag-no as the official
+  Norwegian common-sense reasoning dataset.
+- Added the Norwegian linguistic acceptability dataset NoCoLA, which is based on the
+  annotated language learner corpus ASK. The dataset has been split into 1,024 / 256 /
+  2,048 samples and converted into a binary correct/incorrect dataset, but
+  stratified across the error categories.
+
+### Changed
+- Updated the Danish Citizen Tests dataset to include the newer 2024 tests, Further,
+  rather than splitting the dataset randomly, we include all the citizenship tests in
+  the test split, and prioritise the newer permanent residence tests in the test and
+  validation splits.
+- Changed the IcelandicKnowledge dataset to be the new official Icelandic knowledge
+  dataset, as it is more specific to Icelandic culture and history than the previous
+  machine translated ARC-is dataset. It has also been improved, as some of the generated
+  alternative answers were formatted incorrectly.
+
+### Fixed
+- A bug caused fresh encoder models to not be benchmarkable on the speed benchmark -
+  this has been fixed now.
+- Some encoder models were not able to be evaluated on reading comprehensions, if their
+  tokenizers were not subclassing `PreTrainedTokenizer`. This has been relaxed to
+  `PreTrainedTokenizerBase` instead.
+- Newer versions of the `transformers` package changed the model output format, causing
+  errors when evaluating encoder models on some tasks. This has been fixed now.
+- Added `setuptools` to the dependencies, as it is required for the package to be
+  installed correctly.
+
+
+## [v15.2.0] - 2025-02-28
+### Changed
+- Changed the name of the benchmark to `EuroEval`, to reflect the fact that the
+  benchmark is not only for Scandinavian languages anymore. This is fully backwards
+  compatible, however: you can still install the `scandeval` package, 'scandeval.com'
+  redirects to the new 'euroeval.com' website, and the `scandeval` command line
+  interface is still available.
+- Update `litellm` to the stable version v1.16.13.
+
+### Fixed
+- If a tokenizer has not specified BOS and/or EOS token in its config, we now extract
+  this manually.
+
+### Deprecated
+- Deprecated the ability to call the `Benchmarker` objects directly. Instead, please use
+  the `benchmark` method.
+
+
+## [v15.1.0] - 2025-02-12
+### Added
+- Added new `--only-allow-safetensors` flag, which disallows evaluating models from the
+  Hugging Face Hub if they are not stored as safetensors. This ensures a high level of
+  security on the system running the evaluations, if this is necessary. This was
+  contributed by [@Mikeriess](https://github.com/Mikeriess) ✨
+
+### Fixed
+- Regex mismatch caused the wrong sequence length for GPT-4o models. This has been fixed
+  now.
+- Fixed a truncation issue when evaluating encoder models on some knowledge datasets,
+  which caused the evaluation to fail. This has been fixed now.
+- A bug occurred when locating a model's end of reasoning token (e.g., `</think>`) if
+  the model's tokenizer had no BOS token. This has been fixed now.
+- Fixed an issue with the loading of freshly initialised models, caused by attempting to
+  load the Hugging Face model configuration from the Hugging Face Hub instead of
+  manually creating it.
 
 
 ## [v15.0.0] - 2025-02-02

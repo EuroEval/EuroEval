@@ -8,7 +8,7 @@ hide:
 
 ## 📚 Overview
 
-This page covers all the evaluation tasks used in ScandEval. These tasks fall under two
+This page covers all the evaluation tasks used in EuroEval. These tasks fall under two
 categories, corresponding to whether the models should merely _understand_ the input
 documents (NLU), or rather they are also required to _generate_ new text (NLG).
 
@@ -44,5 +44,5 @@ this category are:
 
 ＊ These tasks should be considered as NLU tasks, but currently encoder models have not
 been set up to be evaluated on them. This will be added in a future version of
-ScandEval - see the progress in [this
-issue](https://github.com/ScandEval/ScandEval/issues/653).
+EuroEval - see the progress in [this
+issue](https://github.com/EuroEval/EuroEval/issues/653).

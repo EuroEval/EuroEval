@@ -7,11 +7,11 @@ from typing import Generator
 import pytest
 import torch
 
-from scandeval.data_models import BenchmarkConfig, MetricConfig, ModelConfig, Task
-from scandeval.dataset_configs import SPEED_CONFIG, get_all_dataset_configs
-from scandeval.enums import InferenceBackend, ModelType
-from scandeval.languages import DA, get_all_languages
-from scandeval.tasks import SENT, SPEED, get_all_tasks
+from euroeval.data_models import BenchmarkConfig, MetricConfig, ModelConfig, Task
+from euroeval.dataset_configs import SPEED_CONFIG, get_all_dataset_configs
+from euroeval.enums import InferenceBackend, ModelType
+from euroeval.languages import DA, get_all_languages
+from euroeval.tasks import SENT, SPEED, get_all_tasks
 
 
 def pytest_configure() -> None:
@@ -61,7 +61,9 @@ def device() -> Generator[torch.device, None, None]:
 
 
 @pytest.fixture(scope="session")
-def benchmark_config(auth, device) -> Generator[BenchmarkConfig, None, None]:
+def benchmark_config(
+    auth: str, device: torch.device
+) -> Generator[BenchmarkConfig, None, None]:
     """Yields a benchmark configuration used in tests."""
     yield BenchmarkConfig(
         model_languages=[DA],
@@ -70,7 +72,7 @@ def benchmark_config(auth, device) -> Generator[BenchmarkConfig, None, None]:
         datasets=list(get_all_dataset_configs().keys()),
         batch_size=1,
         raise_errors=False,
-        cache_dir=".scandeval_cache",
+        cache_dir=".euroeval_cache",
         api_key=auth,
         force=False,
         progress_bar=False,
@@ -87,6 +89,7 @@ def benchmark_config(auth, device) -> Generator[BenchmarkConfig, None, None]:
         api_version=None,
         debug=False,
         run_with_cli=True,
+        only_allow_safetensors=False,
     )
 
 
@@ -106,7 +109,7 @@ def metric_config() -> Generator[MetricConfig, None, None]:
     params=[task for task in get_all_tasks().values() if task != SPEED],
     ids=[name for name, task in get_all_tasks().items() if task != SPEED],
 )
-def task(request) -> Generator[Task, None, None]:
+def task(request: pytest.FixtureRequest) -> Generator[Task, None, None]:
     """Yields a dataset task used in tests."""
     yield request.param
 
@@ -116,7 +119,7 @@ def task(request) -> Generator[Task, None, None]:
     params=list(ACTIVE_LANGUAGES.values()),
     ids=list(ACTIVE_LANGUAGES.keys()),
 )
-def language(request):
+def language(request: pytest.FixtureRequest) -> Generator[str, None, None]:
     """Yields a language used in tests."""
     yield request.param
 

@@ -25,8 +25,8 @@ def main() -> None:
     dataset = dataset.map(lambda sample: {"label": label_mapping[sample["label"]]})
     dataset["val"] = dataset.pop("validation")
 
-    full_dataset_id = "ScandEval/dutch-cola-full"
-    dataset_id = "ScandEval/dutch-cola"
+    full_dataset_id = "EuroEval/dutch-cola-full"
+    dataset_id = "EuroEval/dutch-cola"
 
     # Remove the dataset from Hugging Face Hub if it already exists
     for repo_id in [dataset_id, full_dataset_id]:

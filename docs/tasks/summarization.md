@@ -32,9 +32,9 @@ BERTScore.
 
 ## 🛠️ How to run
 
-In the command line interface of the [ScandEval Python package](/python-package.md), you
+In the command line interface of the [EuroEval Python package](/python-package.md), you
 can benchmark your favorite model on the summarization task like so:
 
 ```bash
-$ scandeval --model <model-id> --task summarization
+$ euroeval --model <model-id> --task summarization
 ```

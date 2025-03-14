@@ -6,7 +6,7 @@ from huggingface_hub import HfApi
 from requests import HTTPError
 
 
-def main():
+def main() -> None:
     """Create the GermEval-mini NER dataset and uploads it to the HF Hub."""
     # Define dataset ID
     repo_id = "germeval_14"
@@ -104,7 +104,7 @@ def main():
     )
 
     # Create dataset ID
-    dataset_id = "ScandEval/germeval-mini"
+    dataset_id = "EuroEval/germeval-mini"
 
     # Remove the dataset from Hugging Face Hub if it already exists
     try:

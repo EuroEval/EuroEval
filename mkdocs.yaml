@@ -1,6 +1,6 @@
-site_name: ScandEval
-repo_url: https://github.com/ScandEval/ScandEval
-repo_name: ScandEval
+site_name: EuroEval
+repo_url: https://github.com/EuroEval/EuroEval
+repo_name: EuroEval
 theme:
   name: material
   features:
@@ -14,6 +14,7 @@ theme:
     - navigation.instant.prefetch
     - navigation.instant.progress
     - navigation.tracking
+    - navigation.sections
   palette:
     - media: "(prefers-color-scheme: light)"
       primary: blue grey
@@ -41,11 +42,14 @@ plugins:
   - mkapi
 nav:
   - About: README.md
-  - Leaderboards: leaderboards
+  - Leaderboards:
+      - leaderboards
+      - Compare Models:
+          - extras/radial_plotter.md
   - Tasks: tasks
   - Datasets: datasets
   - Methodology: methodology.md
   - FAQ: faq.md
   - Python Package: python-package.md
   - API Reference:
-    - $api:src/scandeval.***
+      - $api:src/euroeval.***

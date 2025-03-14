@@ -1,1 +1,1 @@
-"""Tests for the ScandEval package."""
+"""Tests for the EuroEval package."""

@@ -1,19 +1,25 @@
-"""Create mideind/icelandic_qa_scandeval as a knowledge task dataset and upload it to the HF Hub."""
+"""Create mideind/icelandic_qa_scandeval as a knowledge task dataset."""
 
 import json
 import os
 import random
+import re
 from logging import getLogger
 
 import pandas as pd
 from datasets import Dataset, DatasetDict, Split, load_dataset
+from dotenv import load_dotenv
 from huggingface_hub import HfApi
 from openai import OpenAI
 from openai.types.chat import ChatCompletionUserMessageParam
 from pydantic import BaseModel
 from requests import HTTPError
+from tqdm.auto import tqdm
 
 logger = getLogger(__name__)
+
+
+load_dotenv()
 
 
 class CandidateAnswers(BaseModel):
@@ -34,8 +40,9 @@ def main() -> None:
 
     # Download the dataset
     dataset = load_dataset(path=repo_id, split="train")
+    assert isinstance(dataset, Dataset)
 
-    dataset = drop_duplicate_questions(dataset)
+    dataset = drop_duplicate_questions(dataset=dataset)
     assert isinstance(dataset, Dataset)
 
     # Build the knowledge dataset using a language model
@@ -46,10 +53,10 @@ def main() -> None:
     test_size = 1024
 
     val_df = df.sample(val_size, random_state=42)
-    df = df.drop(val_df.index)
+    df = df.drop(val_df.index.tolist())
 
     test_df = df.sample(test_size, random_state=42)
-    df = df.drop(test_df.index)
+    df = df.drop(test_df.index.tolist())
 
     train_df = df
     assert len(train_df) > 800, "The training set should have at least 800 samples."
@@ -67,7 +74,7 @@ def main() -> None:
     )
 
     # Create dataset ID
-    dataset_id = "ScandEval/icelandic-knowledge"
+    dataset_id = "EuroEval/icelandic-knowledge"
 
     # Remove the dataset from Hugging Face Hub if it already exists
     try:
@@ -91,9 +98,10 @@ def drop_duplicate_questions(dataset: Dataset) -> Dataset:
         The dataset without duplicates.
     """
     df = dataset.to_pandas()
+    assert isinstance(df, pd.DataFrame)
 
     # Strip all leading and trailing whitespace
-    df = df.applymap(lambda x: x.strip() if isinstance(x, str) else x)
+    df = df.map(lambda x: x.strip() if isinstance(x, str) else x)
 
     # Remove trailing periods
     df["answer"] = df["answer"].str.rstrip(".")
@@ -129,7 +137,7 @@ def build_dataset_with_llm(dataset: Dataset) -> pd.DataFrame:
     texts: list[str] = []
     correct_labels: list[str] = []
     df_len = len(df)
-    for i, row in df.iterrows():
+    for i, row in tqdm(df.iterrows(), total=df_len, desc="Computing LLM responses"):
         id_ = str(i)
 
         if id_ not in cache:
@@ -137,7 +145,15 @@ def build_dataset_with_llm(dataset: Dataset) -> pd.DataFrame:
             messages: list[ChatCompletionUserMessageParam] = list()
             user_message = ChatCompletionUserMessageParam(
                 role="user",
-                content=f"For the question: {row.question} where the correct answer is: {row.answer}, please provide 3 plausible alternatives in Icelandic.",
+                content=(
+                    f"For the question: {row.question} where the correct answer is: "
+                    f"{row.answer}, please provide 3 plausible alternatives in "
+                    "Icelandic. You should return the alternatives in a JSON "
+                    "dictionary, with keys 'first', 'second', and 'third'. The values "
+                    "should be the alternatives only, without any numbering or "
+                    "formatting. The alternatives should be unique and not contain the "
+                    "correct answer."
+                ),
             )
             messages.append(user_message)
 
@@ -157,17 +173,40 @@ def build_dataset_with_llm(dataset: Dataset) -> pd.DataFrame:
 
         random.shuffle(LABELS)
         options = {
-            LABELS[0]: options["first"],
-            LABELS[1]: options["second"],
-            LABELS[2]: options["third"],
+            LABELS[0]: re.sub(r"^[0-9]\. *", "", options["first"]),
+            LABELS[1]: re.sub(r"^[0-9]\. *", "", options["second"]),
+            LABELS[2]: re.sub(r"^[0-9]\. *", "", options["third"]),
             LABELS[3]: row.answer,
         }
-        assert (
-            len(set(options.values())) == 4
-        ), f"Expected 4 unique options, but got {options}"
+        if len(set(options.values())) != 4:
+            logger.warning(
+                f"The options are not unique for the document {row.question}, got "
+                f"{options}. Skipping."
+            )
+            continue
         correct_label = [k for k, v in options.items() if v == row.answer][0]
 
-        text = f"{row.question}\nSvarmöguleikar:\na. {options['a']}\nb. {options['b']}\nc. {options['c']}\nd. {options['d']}"
+        text = (
+            f"{row.question}\nSvarmöguleikar:\na. {options['a']}\nb. {options['b']}\n"
+            f"c. {options['c']}\nd. {options['d']}"
+        )
+
+        # Sanity check that the texts are formatted correctly
+        sections = text.split("\n")
+        choice_idxs = [
+            idx
+            for idx, section in enumerate(sections)
+            if re.match(pattern=r"^[a-e]\. ", string=section) is not None
+        ]
+        if not all(
+            choice_idx == len(sections) - i
+            for i, choice_idx in enumerate(sorted(choice_idxs, reverse=True), start=1)
+        ):
+            logger.warning(
+                "Choices are not at the end of the document for the document "
+                f"{text}. Skipping."
+            )
+            continue
 
         texts.append(text)
         correct_labels.append(correct_label)

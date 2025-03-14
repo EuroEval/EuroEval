@@ -14,7 +14,7 @@ from requests.exceptions import HTTPError
 from tqdm.auto import tqdm
 
 
-def main():
+def main() -> None:
     """Create the NorNE-mini NER datasets and uploads them to the HF Hub."""
     # Define the base download URLs
     base_urls = dict(
@@ -128,7 +128,7 @@ def main():
             )
 
             # Create dataset ID
-            dataset_id = f"ScandEval/norne-{lang}-mini"
+            dataset_id = f"EuroEval/norne-{lang}-mini"
 
             # Remove the dataset from Hugging Face Hub if it already exists
             try:

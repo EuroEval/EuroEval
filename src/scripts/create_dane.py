@@ -13,7 +13,7 @@ from huggingface_hub.hf_api import HfApi
 from requests.exceptions import HTTPError
 
 
-def main():
+def main() -> None:
     """Create the DaNE-mini NER dataset and uploads it to the HF Hub."""
     # Define download URLs
     # TODO: This is the wrong URL; use the alexandra URL instead
@@ -94,7 +94,7 @@ def main():
     )
 
     # Create dataset ID
-    dataset_id = "ScandEval/dane-mini"
+    dataset_id = "EuroEval/dane-mini"
 
     # Remove the dataset from Hugging Face Hub if it already exists
     try:

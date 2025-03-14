@@ -8,8 +8,9 @@ from pathlib import Path
 
 import pytest
 import torch
+from requests.exceptions import RequestException
 
-from scandeval.benchmarker import (
+from euroeval.benchmarker import (
     Benchmarker,
     BenchmarkResult,
     adjust_logging_level,
@@ -17,8 +18,9 @@ from scandeval.benchmarker import (
     model_has_been_benchmarked,
     prepare_dataset_configs,
 )
-from scandeval.dataset_configs import ANGRY_TWEETS_CONFIG, DANSK_CONFIG
-from scandeval.exceptions import HuggingFaceHubDown
+from euroeval.data_models import DatasetConfig, Language, Task
+from euroeval.dataset_configs import ANGRY_TWEETS_CONFIG, DANSK_CONFIG
+from euroeval.exceptions import HuggingFaceHubDown
 
 
 @pytest.fixture(scope="module")
@@ -27,12 +29,14 @@ def benchmarker() -> Generator[Benchmarker, None, None]:
     yield Benchmarker(progress_bar=False, save_results=False, num_iterations=1)
 
 
-def test_benchmark_results_is_a_list(benchmarker) -> None:
+def test_benchmark_results_is_a_list(benchmarker: Benchmarker) -> None:
     """Test that the `benchmark_results` property is a list."""
     assert isinstance(benchmarker.benchmark_results, list)
 
 
-def test_benchmark_encoder(benchmarker, task, language, encoder_model_id):
+def test_benchmark_encoder(
+    benchmarker: Benchmarker, task: Task, language: Language, encoder_model_id: str
+) -> None:
     """Test that an encoder model can be benchmarked."""
     for _ in range(10):
         try:
@@ -40,7 +44,7 @@ def test_benchmark_encoder(benchmarker, task, language, encoder_model_id):
                 model=encoder_model_id, task=task.name, language=language.code
             )
             break
-        except HuggingFaceHubDown:
+        except (HuggingFaceHubDown, RequestException, ConnectionError):
             time.sleep(5)
     else:
         pytest.skip(reason="Hugging Face Hub is down, so we skip this test.")
@@ -51,9 +55,11 @@ def test_benchmark_encoder(benchmarker, task, language, encoder_model_id):
 @pytest.mark.skipif(
     condition=not torch.cuda.is_available(), reason="CUDA is not available."
 )
-def test_benchmark_generative(benchmarker, task, language, generative_model_id):
+def test_benchmark_generative(
+    benchmarker: Benchmarker, task: Task, language: Language, generative_model_id: str
+) -> None:
     """Test that a generative model can be benchmarked."""
-    from scandeval.benchmark_modules.vllm import clear_vllm
+    from euroeval.benchmark_modules.vllm import clear_vllm
 
     for _ in range(10):
         clear_vllm()
@@ -62,7 +68,7 @@ def test_benchmark_generative(benchmarker, task, language, generative_model_id):
                 model=generative_model_id, task=task.name, language=language.code
             )
             break
-        except HuggingFaceHubDown:
+        except (HuggingFaceHubDown, RequestException, ConnectionError):
             time.sleep(5)
     else:
         pytest.skip(reason="Hugging Face Hub is down, so we skip this test.")
@@ -74,10 +80,13 @@ def test_benchmark_generative(benchmarker, task, language, generative_model_id):
     condition=not torch.cuda.is_available(), reason="CUDA is not available."
 )
 def test_benchmark_generative_adapter(
-    benchmarker, task, language, generative_adapter_model_id
-):
+    benchmarker: Benchmarker,
+    task: Task,
+    language: Language,
+    generative_adapter_model_id: str,
+) -> None:
     """Test that a generative adapter model can be benchmarked."""
-    from scandeval.benchmark_modules.vllm import clear_vllm
+    from euroeval.benchmark_modules.vllm import clear_vllm
 
     for _ in range(10):
         clear_vllm()
@@ -88,7 +97,7 @@ def test_benchmark_generative_adapter(
                 language=language.code,
             )
             break
-        except HuggingFaceHubDown:
+        except (HuggingFaceHubDown, RequestException, ConnectionError):
             time.sleep(5)
     else:
         pytest.skip(reason="Hugging Face Hub is down, so we skip this test.")
@@ -100,7 +109,9 @@ def test_benchmark_generative_adapter(
     condition=os.getenv("OPENAI_API_KEY") is None,
     reason="OpenAI API key is not available.",
 )
-def test_benchmark_openai(benchmarker, task, language, openai_model_id):
+def test_benchmark_openai(
+    benchmarker: Benchmarker, task: Task, language: Language, openai_model_id: str
+) -> None:
     """Test that an OpenAI model can be benchmarked."""
     benchmark_result = benchmarker.benchmark(
         model=openai_model_id, task=task.name, language=language.code
@@ -113,7 +124,9 @@ def test_benchmark_openai(benchmarker, task, language, openai_model_id):
     condition=os.getenv("ANTHROPIC_API_KEY") is None,
     reason="Anthropic API key is not available.",
 )
-def test_benchmark_anthropic(benchmarker, task, language):
+def test_benchmark_anthropic(
+    benchmarker: Benchmarker, task: Task, language: Language
+) -> None:
     """Test that an Anthropic model can be benchmarked."""
     benchmark_result = benchmarker.benchmark(
         model="anthropic/anthropictext", task=task.name, language=language.code
@@ -149,6 +162,7 @@ def test_benchmark_anthropic(benchmarker, task, language):
                     num_model_parameters=100,
                     max_sequence_length=100,
                     vocabulary_size=100,
+                    merge=False,
                     dataset_languages=["da"],
                     task="task",
                     results=dict(),
@@ -172,6 +186,7 @@ def test_benchmark_anthropic(benchmarker, task, language):
                     num_model_parameters=100,
                     max_sequence_length=100,
                     vocabulary_size=100,
+                    merge=False,
                     dataset_languages=["da"],
                     task="task",
                     results=dict(),
@@ -195,6 +210,7 @@ def test_benchmark_anthropic(benchmarker, task, language):
                     num_model_parameters=100,
                     max_sequence_length=100,
                     vocabulary_size=100,
+                    merge=False,
                     dataset_languages=["da"],
                     task="task",
                     results=dict(),
@@ -218,6 +234,7 @@ def test_benchmark_anthropic(benchmarker, task, language):
                     num_model_parameters=100,
                     max_sequence_length=100,
                     vocabulary_size=100,
+                    merge=False,
                     dataset_languages=["da"],
                     task="task",
                     results=dict(),
@@ -241,6 +258,7 @@ def test_benchmark_anthropic(benchmarker, task, language):
                     num_model_parameters=100,
                     max_sequence_length=100,
                     vocabulary_size=100,
+                    merge=False,
                     dataset_languages=["da"],
                     task="task",
                     results=dict(),
@@ -264,6 +282,7 @@ def test_benchmark_anthropic(benchmarker, task, language):
                     num_model_parameters=100,
                     max_sequence_length=100,
                     vocabulary_size=100,
+                    merge=False,
                     dataset_languages=["da"],
                     task="task",
                     results=dict(),
@@ -287,6 +306,7 @@ def test_benchmark_anthropic(benchmarker, task, language):
                     num_model_parameters=100,
                     max_sequence_length=100,
                     vocabulary_size=100,
+                    merge=False,
                     dataset_languages=["da"],
                     task="task",
                     results=dict(),
@@ -310,6 +330,7 @@ def test_benchmark_anthropic(benchmarker, task, language):
                     num_model_parameters=100,
                     max_sequence_length=100,
                     vocabulary_size=100,
+                    merge=False,
                     dataset_languages=["da"],
                     task="task",
                     results=dict(),
@@ -324,6 +345,7 @@ def test_benchmark_anthropic(benchmarker, task, language):
                     num_model_parameters=100,
                     max_sequence_length=100,
                     vocabulary_size=100,
+                    merge=False,
                     dataset_languages=["da"],
                     task="task",
                     results=dict(),
@@ -367,7 +389,7 @@ def test_model_has_been_benchmarked(
     argnames=["verbose", "expected_logging_level"],
     argvalues=[(False, logging.INFO), (True, logging.DEBUG)],
 )
-def test_adjust_logging_level(verbose, expected_logging_level):
+def test_adjust_logging_level(verbose: bool, expected_logging_level: int) -> None:
     """Test that the logging level is adjusted correctly."""
     logging_level = adjust_logging_level(verbose=verbose, ignore_testing=True)
     assert logging_level == expected_logging_level
@@ -376,13 +398,13 @@ def test_adjust_logging_level(verbose, expected_logging_level):
 class TestClearCacheFn:
     """Tests related to the `clear_cache_fn` function."""
 
-    def test_clear_non_existing_cache(self):
+    def test_clear_non_existing_cache(self) -> None:
         """Test that no errors are thrown when clearing a non-existing cache."""
         clear_model_cache_fn(cache_dir="does-not-exist")
 
-    def test_clear_existing_cache(self):
+    def test_clear_existing_cache(self) -> None:
         """Test that a cache can be cleared."""
-        cache_dir = Path(".test_scandeval_cache")
+        cache_dir = Path(".test_euroeval_cache")
         model_cache_dir = cache_dir / "model_cache"
         example_model_dir = model_cache_dir / "example_model"
         dir_to_be_deleted = example_model_dir / "dir_to_be_deleted"
@@ -403,6 +425,8 @@ class TestClearCacheFn:
         (["angry-tweets", "dansk"], [ANGRY_TWEETS_CONFIG, DANSK_CONFIG]),
     ],
 )
-def test_prepare_dataset_configs(dataset_names, dataset_configs):
+def test_prepare_dataset_configs(
+    dataset_names: list[str], dataset_configs: list[DatasetConfig]
+) -> None:
     """Test that the `prepare_dataset_configs` function works as expected."""
     assert prepare_dataset_configs(dataset_names=dataset_names) == dataset_configs

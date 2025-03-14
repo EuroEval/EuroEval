@@ -5,23 +5,28 @@ from typing import Generator
 import pytest
 import torch
 
-from scandeval.benchmark_config_factory import (
+from euroeval.benchmark_config_factory import (
     get_correct_language_codes,
     prepare_device,
     prepare_languages,
     prepare_tasks_and_datasets,
 )
-from scandeval.dataset_configs import get_all_dataset_configs
-from scandeval.enums import Device
-from scandeval.exceptions import InvalidBenchmark
-from scandeval.languages import DA, EN, NB, NN, NO, get_all_languages
-from scandeval.tasks import LA, NER, SENT, get_all_tasks
+from euroeval.data_models import Language, Task
+from euroeval.dataset_configs import get_all_dataset_configs
+from euroeval.enums import Device
+from euroeval.exceptions import InvalidBenchmark
+from euroeval.languages import DA, EN, NB, NN, NO, get_all_languages
+from euroeval.tasks import LA, NER, SENT, SPEED, get_all_tasks
 
 
 @pytest.fixture(scope="module")
 def all_official_dataset_names() -> Generator[list[str], None, None]:
     """Fixture for all linguistic acceptability dataset configurations."""
-    yield [cfg.name for cfg in get_all_dataset_configs().values() if not cfg.unofficial]
+    yield [
+        cfg.name
+        for cfg in get_all_dataset_configs().values()
+        if not cfg.unofficial and cfg.task != SPEED
+    ]
 
 
 @pytest.fixture(scope="module")
@@ -53,7 +58,9 @@ def all_official_la_dataset_names() -> Generator[list[str], None, None]:
         "all -> all languages",
     ],
 )
-def test_get_correct_language_codes(input_language_codes, expected_language_codes):
+def test_get_correct_language_codes(
+    input_language_codes: str | list[str], expected_language_codes: list[str]
+) -> None:
     """Test that the correct language codes are returned."""
     languages = get_correct_language_codes(language_codes=input_language_codes)
     assert set(languages) == set(expected_language_codes)
@@ -80,7 +87,11 @@ def test_get_correct_language_codes(input_language_codes, expected_language_code
         "all -> all languages",
     ],
 )
-def test_prepare_languages(input_language_codes, input_language, expected_language):
+def test_prepare_languages(
+    input_language_codes: str | list[str],
+    input_language: list[str] | None,
+    expected_language: list[Language],
+) -> None:
     """Test the output of `prepare_languages`."""
     prepared_language_codes = get_correct_language_codes(
         language_codes=input_language_codes
@@ -106,7 +117,7 @@ def test_prepare_languages(input_language_codes, input_language, expected_langua
             None,
             None,
             list(get_all_languages().values()),
-            list(get_all_tasks().values()),
+            [t for t in get_all_tasks().values() if t != SPEED],
             "all_official_dataset_names",
         ),
         (
@@ -120,7 +131,7 @@ def test_prepare_languages(input_language_codes, input_language, expected_langua
             None,
             "scala-da",
             list(get_all_languages().values()),
-            list(get_all_tasks().values()),
+            [t for t in get_all_tasks().values() if t != SPEED],
             ["scala-da"],
         ),
         (
@@ -171,8 +182,13 @@ def test_prepare_languages(input_language_codes, input_language, expected_langua
     ],
 )
 def test_prepare_tasks_and_datasets(
-    input_task, input_dataset, input_languages, expected_task, expected_dataset, request
-):
+    input_task: str | list[str] | None,
+    input_dataset: str | list[str] | None,
+    input_languages: list[Language],
+    expected_task: list[Task],
+    expected_dataset: list[str] | str,
+    request: pytest.FixtureRequest,
+) -> None:
     """Test the output of `prepare_tasks_and_datasets`."""
     # This replaces the string with the actual fixture
     if isinstance(expected_dataset, str):
@@ -185,7 +201,7 @@ def test_prepare_tasks_and_datasets(
     assert set(prepared_datasets) == set(expected_dataset)
 
 
-def test_prepare_tasks_and_datasets_invalid_task():
+def test_prepare_tasks_and_datasets_invalid_task() -> None:
     """Test that an invalid task raises an error."""
     with pytest.raises(InvalidBenchmark):
         prepare_tasks_and_datasets(
@@ -193,7 +209,7 @@ def test_prepare_tasks_and_datasets_invalid_task():
         )
 
 
-def test_prepare_tasks_and_datasets_invalid_dataset():
+def test_prepare_tasks_and_datasets_invalid_dataset() -> None:
     """Test that an invalid dataset raises an error."""
     with pytest.raises(InvalidBenchmark):
         prepare_tasks_and_datasets(
@@ -220,7 +236,7 @@ def test_prepare_tasks_and_datasets_invalid_dataset():
     ],
     ids=["device provided", "device not provided"],
 )
-def test_prepare_device(device, expected_device):
+def test_prepare_device(device: Device, expected_device: torch.device) -> None:
     """Test the output of `prepare_device`."""
     prepared_device = prepare_device(device=device)
     assert prepared_device == expected_device

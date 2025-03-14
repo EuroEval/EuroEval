@@ -6,7 +6,7 @@ from huggingface_hub import HfApi
 from requests import HTTPError
 
 
-def main():
+def main() -> None:
     """Create the CoNLL-EN-mini NER dataset and uploads it to the HF Hub."""
     # Define dataset ID
     repo_id = "conll2003"
@@ -88,7 +88,7 @@ def main():
     )
 
     # Create dataset ID
-    dataset_id = "ScandEval/conll-en-mini"
+    dataset_id = "EuroEval/conll-en-mini"
 
     # Remove the dataset from Hugging Face Hub if it already exists
     try:

@@ -6,7 +6,7 @@ import pytest
 from click import INT, ParamType
 from click.types import BOOL, STRING, Choice
 
-from scandeval.cli import benchmark
+from euroeval.cli import benchmark
 
 
 @pytest.fixture(scope="module")
@@ -16,7 +16,7 @@ def params() -> Generator[dict[str | None, ParamType], None, None]:
     yield {p.name: p.type for p in benchmark.get_params(ctx)}
 
 
-def test_cli_param_names(params):
+def test_cli_param_names(params: dict[str, ParamType]) -> None:
     """Test that the CLI parameters have the correct names."""
     assert set(params.keys()) == {
         "model",
@@ -44,10 +44,11 @@ def test_cli_param_names(params):
         "api_version",
         "debug",
         "help",
+        "only_allow_safetensors",
     }
 
 
-def test_cli_param_types(params):
+def test_cli_param_types(params: dict[str, ParamType]) -> None:
     """Test that the CLI parameters have the correct types."""
     assert params["model"] == STRING
     assert isinstance(params["dataset"], Choice)
@@ -74,3 +75,4 @@ def test_cli_param_types(params):
     assert params["api_version"] == STRING
     assert params["debug"] == BOOL
     assert params["help"] == BOOL
+    assert params["only_allow_safetensors"] == BOOL

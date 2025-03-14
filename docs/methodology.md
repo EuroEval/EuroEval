@@ -68,7 +68,7 @@ ASSISTANT:
 
 Here we would use the model's chat template to set up the `USER` and `ASSISTANT` parts
 of the prompt. See all the specific prompts used for each dataset in the [dataset
-configs module](/src/scandeval/dataset_configs/#scandeval.dataset_configs).
+configs module](/src/euroeval/dataset_configs/#euroeval.dataset_configs).
 
 For the sentiment classification task, we simply have the models generate translations
 of the three labels (positive, negative and neutral). For the linguistic acceptability

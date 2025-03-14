@@ -27,12 +27,13 @@ help:
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' makefile | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 
 install: ## Install dependencies
-	@echo "Installing the 'ScandEval' project..."
+	@echo "Installing the 'EuroEval' project..."
 	@$(MAKE) --quiet install-rust
 	@$(MAKE) --quiet install-uv
 	@$(MAKE) --quiet install-dependencies
 	@$(MAKE) --quiet setup-environment-variables
-	@echo "Installed the 'ScandEval' project. If you want to use pre-commit hooks, run 'make install-pre-commit'."
+	@$(MAKE) --quiet install-pre-commit
+	@echo "Installed the 'EuroEval' project."
 
 install-rust:
 	@if [ "$(shell which rustup)" = "" ]; then \
@@ -55,6 +56,7 @@ install-dependencies:
 	@if [ "${NO_FLASH_ATTN}" != "1" ] && [ $$(uname) != "Darwin" ]; then \
 		uv pip install --no-build-isolation flash-attn>=2.7.0.post2; \
 	fi
+	@uv sync -U --only-dev
 
 setup-environment-variables:
 	@uv run python src/scripts/fix_dot_env_file.py
@@ -62,8 +64,9 @@ setup-environment-variables:
 setup-environment-variables-non-interactive:
 	@uv run python src/scripts/fix_dot_env_file.py --non-interactive
 
-install-pre-commit:  ## Install pre-commit hooks
+install-pre-commit:
 	@uv run pre-commit install
+	@uv run pre-commit autoupdate
 
 docs:  ## View documentation locally
 	@echo "Viewing documentation - run 'make publish-docs' to publish the documentation website."
@@ -71,7 +74,7 @@ docs:  ## View documentation locally
 
 publish-docs:  ## Publish documentation to GitHub Pages
 	@uv run mkdocs gh-deploy
-	@echo "Updated documentation website: https://scandeval.com/"
+	@echo "Updated documentation website: https://euroeval.com/"
 
 test:  ## Run tests
 	@uv run pytest && uv run readme-cov
@@ -80,7 +83,7 @@ tree:  ## Print directory tree
 	@tree -a --gitignore -I .git .
 
 lint:  ## Lint the project
-	uv run ruff check . --fix
+	uv run ruff check . --fix --unsafe-fixes
 
 format:  ## Format the project
 	uv run ruff format .
@@ -125,12 +128,34 @@ publish:
 	else \
 		echo "Publishing to PyPI..."; \
 		$(MAKE) --quiet check \
-			&& uv build \
-			&& uv publish --username "__token__" --password ${PYPI_API_TOKEN} \
+			&& $(MAKE) --quiet publish-euroeval \
+			&& $(MAKE) --quiet publish-scandeval \
 			&& $(MAKE) --quiet publish-docs \
 			&& $(MAKE) --quiet add-dev-version \
 			&& echo "Published!"; \
 	fi
+
+publish-euroeval:
+	@rm -rf build/ dist/
+	@uv build
+	@uv publish --username "__token__" --password ${EUROEVAL_PYPI_API_TOKEN}
+
+publish-scandeval:
+	@if [ $$(uname) = "Darwin" ]; then \
+		sed -i '' 's/^name = "EuroEval"/name = "ScandEval"/' pyproject.toml; \
+	else \
+		sed -i 's/^name = "EuroEval"/name = "ScandEval"/' pyproject.toml; \
+	fi
+	@mv src/euroeval src/scandeval
+	@rm -rf build/ dist/
+	@uv build
+	@uv publish --username "__token__" --password ${SCANDEVAL_PYPI_API_TOKEN}
+	@if [ $$(uname) = "Darwin" ]; then \
+		sed -i '' 's/^name = "ScandEval"/name = "EuroEval"/' pyproject.toml; \
+	else \
+		sed -i 's/^name = "ScandEval"/name = "EuroEval"/' pyproject.toml; \
+	fi
+	@mv src/scandeval src/euroeval
 
 publish-major: bump-major publish  ## Publish a major version
 

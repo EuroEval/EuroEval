@@ -16,6 +16,7 @@ from load_ud_pos import (
     load_fodt_pos,
     load_frdt_pos,
     load_isdt_pos,
+    load_itdt_pos,
     load_nldt_pos,
     load_nodt_nb_pos,
     load_nodt_nn_pos,
@@ -25,10 +26,10 @@ from pandas.errors import SettingWithCopyWarning
 from requests.exceptions import HTTPError
 from tqdm.auto import tqdm
 
-from scandeval.utils import block_terminal_output
+from euroeval.utils import block_terminal_output
 
 
-def main():
+def main() -> None:
     """Create the ScaLA datasets and upload them to the HF Hub."""
     # Block terminal output
     block_terminal_output()
@@ -45,6 +46,7 @@ def main():
         "nl": load_nldt_pos,
         "en": load_endt_pos,
         "fr": load_frdt_pos,
+        "it": load_itdt_pos,
     }
 
     # Set up the progress bar and iterate over the languages
@@ -117,7 +119,7 @@ def main():
             )
 
             # Create dataset ID
-            dataset_id = f"ScandEval/scala-{lang}"
+            dataset_id = f"EuroEval/scala-{lang}"
 
             # Remove the dataset from Hugging Face Hub if it already exists
             try:

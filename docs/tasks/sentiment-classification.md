@@ -24,9 +24,9 @@ each class equally.
 
 ## 🛠️ How to run
 
-In the command line interface of the [ScandEval Python package](/python-package.md), you
+In the command line interface of the [EuroEval Python package](/python-package.md), you
 can benchmark your favorite model on the sentiment classification task like so:
 
 ```bash
-$ scandeval --model <model-id> --task sentiment-classification
+$ euroeval --model <model-id> --task sentiment-classification
 ```

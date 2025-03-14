@@ -1,6 +1,6 @@
 # 🇫🇴 Faroese
 
-This is an overview of all the datasets used in the Faroese part of ScandEval. The
+This is an overview of all the datasets used in the Faroese part of EuroEval. The
 datasets are grouped by their task - see the [task overview](/tasks) for more
 information about what these constitute.
 
@@ -68,7 +68,7 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ scandeval --model <model-id> --dataset fosent
+$ euroeval --model <model-id> --dataset fosent
 ```
 
 
@@ -139,7 +139,7 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ scandeval --model <model-id> --dataset fone
+$ euroeval --model <model-id> --dataset fone
 ```
 
 
@@ -206,7 +206,7 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ scandeval --model <model-id> --dataset wikiann-fo
+$ euroeval --model <model-id> --dataset wikiann-fo
 ```
 
 
@@ -223,7 +223,7 @@ from a sentence, or by swapping two neighbouring words in a sentence. To ensure 
 this does indeed break the grammaticality of the sentence, a set of rules were used on
 the part-of-speech tags of the words in the sentence.
 
-The original full dataset consists of 1,024 / 256 / 1,024 samples for training,
+The original dataset consists of 1,621 samples, from which we use 1,024 / 256 / 1,024 samples for training,
 validation and testing, respectively (so 3,328 samples used in total). These splits are
 used as-is in the framework.
 
@@ -274,7 +274,7 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ scandeval --model <model-id> --dataset scala-fo
+$ euroeval --model <model-id> --dataset scala-fo
 ```
 
 
@@ -349,5 +349,5 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ scandeval --model <model-id> --dataset foqa
+$ euroeval --model <model-id> --dataset foqa
 ```

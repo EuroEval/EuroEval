@@ -7,7 +7,7 @@ from huggingface_hub import HfApi
 from requests import HTTPError
 
 
-def main():
+def main() -> None:
     """Create the CNN-DailyMail-mini summarisation dataset and upload to HF Hub."""
     dataset_id = "cnn_dailymail"
 
@@ -58,7 +58,7 @@ def main():
     )
 
     # Create dataset ID
-    mini_dataset_id = "ScandEval/cnn-dailymail-mini"
+    mini_dataset_id = "EuroEval/cnn-dailymail-mini"
 
     # Remove the dataset from Hugging Face Hub if it already exists
     try:

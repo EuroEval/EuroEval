@@ -12,7 +12,7 @@ from huggingface_hub import HfApi
 from requests import HTTPError
 
 
-def main():
+def main() -> None:
     """Create the icesum summarisation dataset and upload to HF Hub."""
     # Fetch data from their repository
     url = "https://repository.clarin.is/repository/xmlui/bitstream/handle/20.500.12537/285/icesum.zip"
@@ -63,7 +63,7 @@ def main():
     )
 
     # Create dataset ID
-    dataset_id = "ScandEval/icesum"
+    dataset_id = "EuroEval/icesum"
 
     # Remove the dataset from Hugging Face Hub if it already exists
     try:

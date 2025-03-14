@@ -1,19 +1,30 @@
-"""Create the DanishCitizenTests-mini dataset and upload it to the HF Hub."""
+"""Create the Danish Citizen Tests dataset and upload it to the HF Hub."""
+
+import os
+import warnings
 
 import pandas as pd
 from datasets import Dataset, DatasetDict, Split, load_dataset
+from dotenv import load_dotenv
 from huggingface_hub import HfApi
+from pandas.errors import SettingWithCopyWarning
 from requests import HTTPError
-from sklearn.model_selection import train_test_split
+
+load_dotenv()
+
+
+warnings.simplefilter(action="ignore", category=SettingWithCopyWarning)
 
 
 def main() -> None:
     """Create the DanishCitizenTests-mini dataset and upload it to the HF Hub."""
     # Define the base download URL
-    repo_id = "alexandrainst/danish-citizen-tests"
+    repo_id = "alexandrainst/danish-citizen-tests-updated"
 
     # Download the dataset
-    dataset = load_dataset(path=repo_id, split="train")
+    dataset = load_dataset(
+        path=repo_id, split="train", token=os.getenv("HUGGINGFACE_API_KEY")
+    )
     assert isinstance(dataset, Dataset)
 
     # Convert the dataset to a dataframe
@@ -27,43 +38,60 @@ def main() -> None:
     texts = list()
     for _, row in df.iterrows():
         text = (
-            row.instruction.replace("\n", " ").strip() + "\n"
-            "Svarmuligheder:\n"
-            "a. " + row.option_a.replace("\n", " ").strip() + "\n"
-            "b. " + row.option_b.replace("\n", " ").strip()
+            clean_text(text=row.instruction)
+            + "\nSvarmuligheder:\n"
+            + "\n".join(
+                [
+                    f"{letter}. {clean_text(text=option)}"
+                    for letter, option in zip("abcd", row.options)
+                ]
+            )
         )
-        if row.option_c is not None:
-            text += "\nc. " + row.option_c.replace("\n", " ").strip()
         texts.append(text)
     df["text"] = texts
 
     # Make the `label` column case-consistent with the `text` column
     df.label = df.label.str.lower()
 
-    df = df[["text", "label", "test_type"]]
+    df = df[["text", "label", "test_type", "year"]]
 
     # Remove duplicates
     df.drop_duplicates(inplace=True)
     df.reset_index(drop=True, inplace=True)
 
-    # Create validation split
-    val_size = 128
-    traintest_arr, val_arr = train_test_split(
-        df, test_size=val_size, random_state=4242, stratify=df.test_type
-    )
-    traintest_df = pd.DataFrame(traintest_arr, columns=df.columns)
-    val_df = pd.DataFrame(val_arr, columns=df.columns)
+    # Split data into the two tests
+    citizenship_test_df = df.query("test_type == 'indfødsretsprøven'")
+    permanent_residence_test_df = df.query("test_type == 'medborgerskabsprøven'")
 
-    # Create test split
+    # Create test split, containing all the citizenship tests and the newest permanent
+    # residence tests
     test_size = 512
-    train_arr, test_arr = train_test_split(
-        traintest_df,
-        test_size=test_size,
-        random_state=4242,
-        stratify=traintest_df.test_type,
+    test_df = citizenship_test_df
+    for year in sorted(permanent_residence_test_df.year.unique(), reverse=True):
+        year_df = permanent_residence_test_df.query("year == @year")
+        test_df = pd.concat([test_df, year_df], ignore_index=True)
+        if len(test_df) >= test_size:
+            break
+    permanent_residence_test_df.drop(
+        index=test_df.index.tolist(), inplace=True, errors="ignore"
     )
-    train_df = pd.DataFrame(train_arr, columns=df.columns)
-    test_df = pd.DataFrame(test_arr, columns=df.columns)
+
+    # Create validation split, containing the newer permanent residence tests (aside
+    # from the ones we already added to the test split)
+    val_size = 64
+    val_df = pd.DataFrame()
+    for year in sorted(permanent_residence_test_df.year.unique(), reverse=True):
+        year_df = permanent_residence_test_df.query("year == @year")
+        val_df = pd.concat([val_df, year_df], ignore_index=True)
+        if len(val_df) >= val_size:
+            break
+    permanent_residence_test_df.drop(
+        index=val_df.index.tolist(), inplace=True, errors="ignore"
+    )
+
+    # Create train split as the remaining data
+    train_df = permanent_residence_test_df
+    assert len(train_df) > 256, f"Not enough data for training: {len(train_df):,}"
 
     # Reset the index
     train_df = train_df.reset_index(drop=True)
@@ -78,7 +106,7 @@ def main() -> None:
     )
 
     # Create dataset ID
-    dataset_id = "ScandEval/danish-citizen-tests"
+    dataset_id = "EuroEval/danish-citizen-tests-updated"
 
     # Remove the dataset from Hugging Face Hub if it already exists
     try:
@@ -89,6 +117,19 @@ def main() -> None:
 
     # Push the dataset to the Hugging Face Hub
     dataset.push_to_hub(dataset_id, private=True)
+
+
+def clean_text(text: str) -> str:
+    """Clean some text.
+
+    Args:
+        text:
+            The text to clean.
+
+    Returns:
+        The cleaned text.
+    """
+    return text.replace("\n", " ").strip()
 
 
 if __name__ == "__main__":

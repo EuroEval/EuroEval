@@ -41,9 +41,9 @@ def main() -> None:
             for file_name in zip_file.namelist()
             if file_name.endswith(".csv")
         ]
-        assert (
-            len(csv_files) == 1
-        ), f"Expected one CSV file in the ZIP file, but found {len(csv_files)}."
+        assert len(csv_files) == 1, (
+            f"Expected one CSV file in the ZIP file, but found {len(csv_files)}."
+        )
         df = pd.read_csv(filepath_or_buffer=io.BytesIO(initial_bytes=csv_files[0]))
 
     # Set up the dataframe for the dataset, resulting in 'text' and 'label' columns,
@@ -79,7 +79,7 @@ def main() -> None:
         test=Dataset.from_pandas(test_df, split=Split.TEST),
     )
 
-    dataset_id = "ScandEval/hotter-and-colder-sentiment"
+    dataset_id = "EuroEval/hotter-and-colder-sentiment"
 
     # Remove the dataset from Hugging Face Hub if it already exists
     try:

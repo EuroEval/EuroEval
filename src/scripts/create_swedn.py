@@ -7,7 +7,7 @@ from huggingface_hub import HfApi
 from requests import HTTPError
 
 
-def main():
+def main() -> None:
     """Create the SweDN-mini summarisation dataset and upload to HF Hub."""
     dataset_id = "sbx/superlim-2"
 
@@ -59,7 +59,7 @@ def main():
     )
 
     # Create dataset ID
-    mini_dataset_id = "ScandEval/swedn-mini"
+    mini_dataset_id = "EuroEval/swedn-mini"
 
     # Remove the dataset from Hugging Face Hub if it already exists
     try:

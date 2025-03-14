@@ -1,4 +1,4 @@
-"""Create the old version of the Danske Talemåder dataset and upload it to the HF Hub."""
+"""Create the old version of the DanskeTalemåder dataset and upload it to the HF Hub."""
 
 from collections import Counter
 
@@ -61,6 +61,7 @@ def main() -> None:
         & ~df.option_c.apply(is_repetitive)
         & ~df.option_d.apply(is_repetitive)
     ]
+    assert isinstance(df, pd.DataFrame)
 
     # Make a `text` column with all the options in it
     df["text"] = [
@@ -114,7 +115,7 @@ def main() -> None:
     )
 
     # Create dataset ID
-    dataset_id = "ScandEval/danske-talemaader-old-mini"
+    dataset_id = "EuroEval/danske-talemaader-old-mini"
 
     # Remove the dataset from Hugging Face Hub if it already exists
     try:

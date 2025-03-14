@@ -11,7 +11,7 @@ from requests import HTTPError
 logger = getLogger(__name__)
 
 
-def main():
+def main() -> None:
     """Create the Personal Sum summarisation dataset and upload to HF Hub."""
     dataset_url = "https://raw.githubusercontent.com/SmartmediaAI/PersonalSum/refs/heads/main/dataset/PersonalSum_original.csv"
     df = pd.read_csv(dataset_url)
@@ -66,7 +66,7 @@ def main():
     )
 
     # Create dataset ID
-    dataset_id = "ScandEval/personal-sum"
+    dataset_id = "EuroEval/personal-sum"
 
     # Remove the dataset from Hugging Face Hub if it already exists
     try:

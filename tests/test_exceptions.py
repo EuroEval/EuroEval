@@ -2,10 +2,10 @@
 
 import inspect
 
-from scandeval import exceptions
+from euroeval import exceptions
 
 
-def test_all_classes_are_exceptions():
+def test_all_classes_are_exceptions() -> None:
     """Test that all classes in `exceptions` are exceptions."""
     all_classes = [
         getattr(exceptions, obj_name)

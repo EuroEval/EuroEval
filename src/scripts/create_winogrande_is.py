@@ -109,7 +109,7 @@ def main() -> None:
     )
 
     # Create dataset ID
-    dataset_id = "ScandEval/winogrande-is"
+    dataset_id = "EuroEval/winogrande-is"
 
     # Remove the dataset from Hugging Face Hub if it already exists
     try:

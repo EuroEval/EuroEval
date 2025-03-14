@@ -19,7 +19,7 @@ from requests import HTTPError
 load_dotenv()
 
 
-def main():
+def main() -> None:
     """Create the NorGLM NO-multi question answering dataset and upload to HF Hub."""
     dataset_id = "NorGLM/NO-Multi-QA-Sum"
     client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
@@ -144,7 +144,7 @@ def main():
 
     # Remove non-word start and end characters from answers
     df_no_context.loc[:, "answer"] = df_no_context["answer"].str.replace(
-        "(^\W|\W$)", "", regex=True
+        r"(^\W|\W$)", "", regex=True
     )
 
     # Only keep the rephrased answers where the answer could be found in the context
@@ -197,7 +197,7 @@ def main():
     )
 
     # Create dataset ID
-    dataset_id = "ScandEval/norglm-multi-qa"
+    dataset_id = "EuroEval/norglm-multi-qa"
 
     # Remove the dataset from Hugging Face Hub if it already exists
     try:
