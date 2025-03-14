@@ -7,13 +7,16 @@ from tqdm.auto import tqdm
 
 from scandeval.benchmark_modules.base import BenchmarkModule
 from scandeval.benchmark_modules.hf import HuggingFaceEncoderModel
+from scandeval.data_models import BenchmarkConfig
 from scandeval.dataset_configs import SPEED_CONFIG
 from scandeval.model_config import get_model_config
 from scandeval.speed_benchmark import benchmark_speed
 
 
 @pytest.fixture(scope="module")
-def model(encoder_model_id, benchmark_config) -> Generator[BenchmarkModule, None, None]:
+def model(
+    encoder_model_id: str, benchmark_config: BenchmarkConfig
+) -> Generator[BenchmarkModule, None, None]:
     """Yields a model."""
     yield HuggingFaceEncoderModel(
         model_config=get_model_config(
@@ -34,24 +37,24 @@ class TestBenchmarkSpeed:
 
     @pytest.fixture(scope="class")
     def scores(
-        self, model, benchmark_config
+        self, model: BenchmarkModule, benchmark_config: BenchmarkConfig
     ) -> Generator[list[dict[str, float]], None, None]:
         """Yields the benchmark speed scores."""
         yield benchmark_speed(model=model, benchmark_config=benchmark_config)
 
-    def test_scores_is_list(self, scores):
+    def test_scores_is_list(self, scores: list[dict[str, float]]) -> None:
         """Tests that the scores is a list."""
         assert isinstance(scores, list)
 
-    def test_scores_contain_dicts(self, scores):
+    def test_scores_contain_dicts(self, scores: list[dict[str, float]]) -> None:
         """Tests that the scores contain dicts."""
         assert all(isinstance(x, dict) for x in scores)
 
-    def test_scores_dicts_keys(self, scores):
+    def test_scores_dicts_keys(self, scores: list[dict[str, float]]) -> None:
         """Tests that the scores dicts have the correct keys."""
         assert all(set(x.keys()) == {"test_speed", "test_speed_short"} for x in scores)
 
-    def test_scores_dicts_values_dtypes(self, scores):
+    def test_scores_dicts_values_dtypes(self, scores: list[dict[str, float]]) -> None:
         """Tests that the scores dicts have the correct values dtypes."""
         assert all(
             all(isinstance(value, float) for value in x.values()) for x in scores

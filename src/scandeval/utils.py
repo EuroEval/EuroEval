@@ -12,6 +12,7 @@ import typing as t
 import warnings
 from functools import cache
 from pathlib import Path
+from types import TracebackType
 
 import litellm
 import numpy as np
@@ -23,7 +24,7 @@ from requests.exceptions import RequestException
 from transformers import PreTrainedTokenizer
 from transformers import logging as tf_logging
 
-from .exceptions import NaNValueInModelOutput
+from .exceptions import InvalidModel, NaNValueInModelOutput
 
 if importlib.util.find_spec("ray") is not None:
     import ray
@@ -53,7 +54,7 @@ def create_model_cache_dir(cache_dir: str, model_id: str) -> str:
     return str(cache_dir_path)
 
 
-def clear_memory():
+def clear_memory() -> None:
     """Clears the memory of unused items."""
     for gc_generation in range(3):
         gc.collect(generation=gc_generation)
@@ -63,7 +64,7 @@ def clear_memory():
         torch.mps.empty_cache()
 
 
-def enforce_reproducibility(seed: int = 4242):
+def enforce_reproducibility(seed: int = 4242) -> np.random.Generator:
     """Ensures reproducibility of experiments.
 
     Args:
@@ -110,7 +111,7 @@ def is_module_installed(module: str) -> bool:
     return module.lower() in installed_modules
 
 
-def block_terminal_output():
+def block_terminal_output() -> None:
     """Blocks libraries from writing output to the terminal.
 
     This filters warnings from some libraries, sets the logging level to ERROR for some
@@ -285,14 +286,19 @@ def get_special_token_metadata(tokenizer: "PreTrainedTokenizer") -> dict:
 class HiddenPrints:
     """Context manager which removes all terminal output."""
 
-    def __enter__(self):
+    def __enter__(self) -> None:
         """Enter the context manager."""
         self._original_stdout = sys.stdout
         self._original_stderr = sys.stderr
         sys.stdout = open(os.devnull, "w")
         sys.stderr = open(os.devnull, "w")
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(
+        self,
+        exc_type: t.Type[BaseException],
+        exc_val: BaseException,
+        exc_tb: TracebackType,
+    ) -> None:
         """Exit the context manager."""
         sys.stdout.close()
         sys.stderr.close()
@@ -401,6 +407,68 @@ def should_prefix_space_be_added_to_labels(
             break
 
     return add_prefix_space
+
+
+def get_bos_token(tokenizer: "PreTrainedTokenizer") -> tuple[str, int]:
+    """Get the beginning-of-sequence token from a tokenizer.
+
+    Args:
+        tokenizer:
+            The tokenizer.
+
+    Returns:
+        A pair (token, token_id) representing the beginning-of-sequence token and its
+        token ID.
+    """
+    if isinstance(tokenizer.bos_token, str) and isinstance(tokenizer.bos_token_id, int):
+        return tokenizer.bos_token, tokenizer.bos_token_id
+
+    vocab: dict[str, int] = tokenizer.get_vocab()
+
+    candidate_bos_tokens = ["<s>", "<|begin_of_text|>", "[CLS]"]
+    for candidate_bos_token in candidate_bos_tokens:
+        if candidate_bos_token in vocab:
+            bos_token = candidate_bos_token
+            bos_token_id = vocab[bos_token]
+            break
+    else:
+        raise InvalidModel(
+            "The model does not have a beginning-of-sequence token. Please ensure that "
+            "this has been set in the tokenizer's configuration."
+        )
+
+    return bos_token, bos_token_id
+
+
+def get_eos_token(tokenizer: "PreTrainedTokenizer") -> tuple[str, int]:
+    """Get the end-of-sequence token from a tokenizer.
+
+    Args:
+        tokenizer:
+            The tokenizer.
+
+    Returns:
+        A pair (token, token_id) representing the end-of-sequence token and its token
+        ID.
+    """
+    if isinstance(tokenizer.eos_token, str) and isinstance(tokenizer.eos_token_id, int):
+        return tokenizer.eos_token, tokenizer.eos_token_id
+
+    vocab: dict[str, int] = tokenizer.get_vocab()
+
+    candidate_eos_tokens = ["</s>", "<|end_of_text|>", "[SEP]"]
+    for candidate_eos_token in candidate_eos_tokens:
+        if candidate_eos_token in vocab:
+            eos_token = candidate_eos_token
+            eos_token_id = vocab[eos_token]
+            break
+    else:
+        raise InvalidModel(
+            "The model does not have an end-of-sequence token. Please ensure that this "
+            "has been set in the tokenizer's configuration."
+        )
+
+    return eos_token, eos_token_id
 
 
 def get_end_of_chat_token_ids(tokenizer: "PreTrainedTokenizer") -> list[int] | None:

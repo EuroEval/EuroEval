@@ -2,18 +2,18 @@
 
 
 # TODO
-def test_generate():
+def test_generate() -> None:
     """Test that the `generate` function works as expected."""
     pass
 
 
 # TODO
-def test_generate_single_iteration():
+def test_generate_single_iteration() -> None:
     """Test that the `generate_single_iteration` function works as expected."""
     pass
 
 
 # TODO
-def test_debug_log():
+def test_debug_log() -> None:
     """Test that the `debug_log` function works as expected."""
     pass

@@ -1,5 +1,6 @@
 """Utility functions related to the question-answering task group."""
 
+import collections.abc as c
 import logging
 import typing as t
 from collections import defaultdict
@@ -17,7 +18,18 @@ from ..utils import (
 )
 
 if t.TYPE_CHECKING:
+    import torch.nn as nn
     from datasets.arrow_dataset import Dataset
+    from transformers import (
+        BaseImageProcessor,
+        EvalPrediction,
+        FeatureExtractionMixin,
+        PreTrainedModel,
+        PreTrainedTokenizerBase,
+        ProcessorMixin,
+        TrainerCallback,
+        TrainingArguments,
+    )
     from transformers.tokenization_utils_base import BatchEncoding
 
     from ..types import Labels, Predictions
@@ -28,13 +40,34 @@ logger = logging.getLogger("scandeval")
 class QuestionAnsweringTrainer(Trainer):
     """Trainer subclass for question answering tasks."""
 
-    def __init__(self, *args, **kwargs) -> None:
+    def __init__(
+        self,
+        model: "PreTrainedModel | nn.Module",
+        processing_class: "PreTrainedTokenizerBase",
+        args: "TrainingArguments",
+        train_dataset: "Dataset",
+        eval_dataset: "Dataset",
+        compute_metrics: "c.Callable[[EvalPrediction], dict[str, float]]",
+        callbacks: "list[TrainerCallback]",
+        data_collator: "c.Callable",
+    ) -> None:
         """Initialize the trainer."""
-        super().__init__(*args, **kwargs)
+        super().__init__(
+            model=model,
+            processing_class=processing_class,
+            args=args,
+            train_dataset=train_dataset,
+            eval_dataset=eval_dataset,
+            compute_metrics=compute_metrics,
+            callbacks=callbacks,
+            data_collator=data_collator,
+        )
 
         # Get the CLS token id for the tokenizer
-        special_token_metadata = get_special_token_metadata(self.tokenizer)
-        self.cls_token_id = special_token_metadata["cls_token_id"]
+        if self.tokenizer is not None:
+            assert isinstance(self.tokenizer, PreTrainedTokenizer)
+            special_token_metadata = get_special_token_metadata(self.tokenizer)
+            self.cls_token_id = special_token_metadata["cls_token_id"]
 
         # Set the label names
         self.label_names = ["start_positions", "end_positions"]

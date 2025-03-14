@@ -23,7 +23,7 @@ NEWSROOM_TO_LANGUAGE = {
 }
 
 
-def main():
+def main() -> None:
     """Create the Schibsted summarisation dataset and upload to HF Hub."""
     dataset_id = "Schibsted/schibsted-article-summaries"
 

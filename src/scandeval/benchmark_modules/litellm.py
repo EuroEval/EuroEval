@@ -14,8 +14,11 @@ from time import sleep
 import litellm
 from datasets import DatasetDict
 from huggingface_hub import HfApi
-from huggingface_hub.hf_api import RepositoryNotFoundError, RevisionNotFoundError
-from huggingface_hub.utils import HFValidationError
+from huggingface_hub.errors import (
+    HFValidationError,
+    RepositoryNotFoundError,
+    RevisionNotFoundError,
+)
 from litellm.exceptions import (
     APIConnectionError,
     APIError,
@@ -158,9 +161,9 @@ class LiteLLMModel(BenchmarkModule):
             The generated model outputs.
         """
         assert "messages" in inputs, "The input must contain a 'messages' key."
-        assert (
-            len(inputs["messages"]) == 1
-        ), "API models only support single-sample batching."
+        assert len(inputs["messages"]) == 1, (
+            "API models only support single-sample batching."
+        )
         messages = inputs["messages"][0]
 
         generation_kwargs: dict[str, t.Any] = dict(
@@ -183,9 +186,9 @@ class LiteLLMModel(BenchmarkModule):
             generation_kwargs["top_logprobs"] = MAX_LOGPROBS
 
         if self.dataset_config.task in TASKS_USING_JSON:
-            assert (
-                "json" in messages[0]["content"].lower()
-            ), "Prompt must contain 'json' for JSON tasks."
+            assert "json" in messages[0]["content"].lower(), (
+                "Prompt must contain 'json' for JSON tasks."
+            )
             generation_kwargs["response_format"] = dict(type="json_object")
 
         # This drops generation kwargs that are not supported by the model
@@ -249,8 +252,11 @@ class LiteLLMModel(BenchmarkModule):
         model_output = GenerativeModelOutput(sequences=[generation_output])
         if hasattr(model_response_choices, "logprobs"):
             logprobs_list: list[list[tuple[str, float]]] = [
-                [(dct["token"], dct["logprob"]) for dct in content["top_logprobs"]]
-                for content in model_response_choices.logprobs["content"]
+                [
+                    (top_logprob.token, top_logprob.logprob)
+                    for top_logprob in content.top_logprobs
+                ]
+                for content in model_response_choices.logprobs.content or list()
             ]
             model_output.scores = [logprobs_list]
 
@@ -781,7 +787,7 @@ class LiteLLMModel(BenchmarkModule):
             The example with the few-shot examples applied.
         """
 
-        def create_prompt(**kwargs) -> tuple[str, str]:
+        def create_prompt(**kwargs: str) -> tuple[str, str]:
             """Create a prompt from the given keyword arguments.
 
             Args:

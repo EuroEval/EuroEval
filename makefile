@@ -32,7 +32,8 @@ install: ## Install dependencies
 	@$(MAKE) --quiet install-uv
 	@$(MAKE) --quiet install-dependencies
 	@$(MAKE) --quiet setup-environment-variables
-	@echo "Installed the 'ScandEval' project. If you want to use pre-commit hooks, run 'make install-pre-commit'."
+	@$(MAKE) --quiet install-pre-commit
+	@echo "Installed the 'ScandEval' project."
 
 install-rust:
 	@if [ "$(shell which rustup)" = "" ]; then \
@@ -55,6 +56,7 @@ install-dependencies:
 	@if [ "${NO_FLASH_ATTN}" != "1" ] && [ $$(uname) != "Darwin" ]; then \
 		uv pip install --no-build-isolation flash-attn>=2.7.0.post2; \
 	fi
+	@uv sync -U --only-dev
 
 setup-environment-variables:
 	@uv run python src/scripts/fix_dot_env_file.py
@@ -62,8 +64,9 @@ setup-environment-variables:
 setup-environment-variables-non-interactive:
 	@uv run python src/scripts/fix_dot_env_file.py --non-interactive
 
-install-pre-commit:  ## Install pre-commit hooks
+install-pre-commit:
 	@uv run pre-commit install
+	@uv run pre-commit autoupdate
 
 docs:  ## View documentation locally
 	@echo "Viewing documentation - run 'make publish-docs' to publish the documentation website."
@@ -80,7 +83,7 @@ tree:  ## Print directory tree
 	@tree -a --gitignore -I .git .
 
 lint:  ## Lint the project
-	uv run ruff check . --fix
+	uv run ruff check . --fix --unsafe-fixes
 
 format:  ## Format the project
 	uv run ruff format .

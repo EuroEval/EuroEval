@@ -198,9 +198,9 @@ from .tasks import get_all_tasks
     "--debug/--no-debug",
     default=False,
     show_default=True,
-    help="Whether to run the benchmark in debug mode. This prints out extra information "
-    "and stores all outputs to the current working directory. Only relevant if the "
-    "model is generative.",
+    help="Whether to run the benchmark in debug mode. This prints out extra "
+    "information and stores all outputs to the current working directory. Only "
+    "relevant if the model is generative.",
 )
 @click.option(
     "--only-allow-safetensors",
@@ -274,7 +274,7 @@ def benchmark(
     )
 
     # Perform the benchmark evaluation
-    benchmarker(model=models)
+    benchmarker.benchmark(model=models)
 
 
 if __name__ == "__main__":

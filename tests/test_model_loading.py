@@ -3,13 +3,16 @@
 import pytest
 import torch
 
+from scandeval.data_models import BenchmarkConfig
 from scandeval.dataset_configs import ANGRY_TWEETS_CONFIG, NORDJYLLAND_NEWS_CONFIG
 from scandeval.exceptions import InvalidBenchmark
 from scandeval.model_config import get_model_config
 from scandeval.model_loading import load_model
 
 
-def test_load_non_generative_model(encoder_model_id, benchmark_config):
+def test_load_non_generative_model(
+    encoder_model_id: str, benchmark_config: BenchmarkConfig
+) -> None:
     """Test loading a non-generative model."""
     model_config = get_model_config(
         model_id=encoder_model_id, benchmark_config=benchmark_config
@@ -25,15 +28,24 @@ def test_load_non_generative_model(encoder_model_id, benchmark_config):
 @pytest.mark.skipif(
     condition=not torch.cuda.is_available(), reason="CUDA is not available."
 )
-def test_load_generative_model(generative_model):
+def test_load_generative_model(
+    generative_model_id: str, benchmark_config: BenchmarkConfig
+) -> None:
     """Test loading a generative model."""
-    model = generative_model
+    model_config = get_model_config(
+        model_id=generative_model_id, benchmark_config=benchmark_config
+    )
+    model = load_model(
+        model_config=model_config,
+        dataset_config=ANGRY_TWEETS_CONFIG,
+        benchmark_config=benchmark_config,
+    )
     assert model is not None
 
 
 def test_load_non_generative_model_with_generative_data(
-    encoder_model_id, benchmark_config
-):
+    encoder_model_id: str, benchmark_config: BenchmarkConfig
+) -> None:
     """Test loading a non-generative model with generative data."""
     model_config = get_model_config(
         model_id=encoder_model_id, benchmark_config=benchmark_config

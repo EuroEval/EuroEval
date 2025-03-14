@@ -1,4 +1,4 @@
-"""Create a linguistic acceptability dataset from the Icelandic Linguistic Benchmarks dataset."""
+"""Create a dataset from the Icelandic Linguistic Benchmarks."""
 
 from ast import literal_eval
 
@@ -9,9 +9,12 @@ from huggingface_hub import HfApi
 from requests.exceptions import HTTPError
 
 
-def main():
-    """Create a linguistic acceptability dataset from the Icelandic Linguistic Benchmarks dataset."""
-    dataset_url = "https://raw.githubusercontent.com/stofnun-arna-magnussonar/ice_linguistic_benchmarks/refs/heads/main/ice_benchmark_set.jsonl"
+def main() -> None:
+    """Create a dataset from the Icelandic Linguistic Benchmarks."""
+    dataset_url = (
+        "https://raw.githubusercontent.com/stofnun-arna-magnussonar/"
+        "ice_linguistic_benchmarks/refs/heads/main/ice_benchmark_set.jsonl"
+    )
 
     # Download the dataset and convert it to a dataframe
     response = requests.get(dataset_url)
@@ -23,12 +26,12 @@ def main():
     # Validation split
     val_size = 32
     val_df = train_df.sample(n=val_size, random_state=4242)
-    train_df = train_df.drop(val_df.index)
+    train_df = train_df.drop(val_df.index.tolist())
 
     # Test split
     test_size = 256
     test_df = train_df.sample(n=test_size, random_state=4242)
-    train_df = train_df.drop(test_df.index)
+    train_df = train_df.drop(test_df.index.tolist())
 
     dataset = DatasetDict(
         train=Dataset.from_pandas(train_df, split=Split.TRAIN, preserve_index=False),
@@ -63,8 +66,9 @@ def prepare_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     # Reset the index of the dataframe
     df.reset_index(drop=True, inplace=True)
 
-    # Only extract rows where the task is to determine if a sentence is grammatically correct/incorrect.
-    df = df[
+    # Only extract rows where the task is to determine if a sentence is grammatically
+    # correct/incorrect.
+    df = df.loc[
         df["input"].str.contains("Is the following Icelandic sentence grammatically")
     ]
 
@@ -73,7 +77,7 @@ def prepare_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     df["text"] = df["text"].str.strip()
 
     # Remove samples with too few tokens
-    df = df[df["text"].str.split().map(len) > 5]
+    df = df.loc[df["text"].str.split().map(len) > 5]
 
     def make_label(row: pd.Series) -> str:
         # asking if the sentence is incorrect.

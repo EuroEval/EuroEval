@@ -1,4 +1,4 @@
-"""Create mideind/icelandic_qa_scandeval as a knowledge task dataset and upload it to the HF Hub."""
+"""Create mideind/icelandic_qa_scandeval as a knowledge task dataset."""
 
 import json
 import os
@@ -34,8 +34,9 @@ def main() -> None:
 
     # Download the dataset
     dataset = load_dataset(path=repo_id, split="train")
+    assert isinstance(dataset, Dataset)
 
-    dataset = drop_duplicate_questions(dataset)
+    dataset = drop_duplicate_questions(dataset=dataset)
     assert isinstance(dataset, Dataset)
 
     # Build the knowledge dataset using a language model
@@ -46,10 +47,10 @@ def main() -> None:
     test_size = 1024
 
     val_df = df.sample(val_size, random_state=42)
-    df = df.drop(val_df.index)
+    df = df.drop(val_df.index.tolist())
 
     test_df = df.sample(test_size, random_state=42)
-    df = df.drop(test_df.index)
+    df = df.drop(test_df.index.tolist())
 
     train_df = df
     assert len(train_df) > 800, "The training set should have at least 800 samples."
@@ -91,6 +92,7 @@ def drop_duplicate_questions(dataset: Dataset) -> Dataset:
         The dataset without duplicates.
     """
     df = dataset.to_pandas()
+    assert isinstance(df, pd.DataFrame)
 
     # Strip all leading and trailing whitespace
     df = df.applymap(lambda x: x.strip() if isinstance(x, str) else x)
@@ -137,7 +139,11 @@ def build_dataset_with_llm(dataset: Dataset) -> pd.DataFrame:
             messages: list[ChatCompletionUserMessageParam] = list()
             user_message = ChatCompletionUserMessageParam(
                 role="user",
-                content=f"For the question: {row.question} where the correct answer is: {row.answer}, please provide 3 plausible alternatives in Icelandic.",
+                content=(
+                    f"For the question: {row.question} where the correct answer is: "
+                    f"{row.answer}, please provide 3 plausible alternatives in "
+                    "Icelandic."
+                ),
             )
             messages.append(user_message)
 
@@ -162,12 +168,15 @@ def build_dataset_with_llm(dataset: Dataset) -> pd.DataFrame:
             LABELS[2]: options["third"],
             LABELS[3]: row.answer,
         }
-        assert (
-            len(set(options.values())) == 4
-        ), f"Expected 4 unique options, but got {options}"
+        assert len(set(options.values())) == 4, (
+            f"Expected 4 unique options, but got {options}"
+        )
         correct_label = [k for k, v in options.items() if v == row.answer][0]
 
-        text = f"{row.question}\nSvarmöguleikar:\na. {options['a']}\nb. {options['b']}\nc. {options['c']}\nd. {options['d']}"
+        text = (
+            f"{row.question}\nSvarmöguleikar:\na. {options['a']}\nb. {options['b']}\n"
+            f"c. {options['c']}\nd. {options['d']}"
+        )
 
         texts.append(text)
         correct_labels.append(correct_label)

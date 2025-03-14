@@ -157,9 +157,9 @@ def postprocess_predictions_and_labels(
 
         # Some IDs appear multiple times in the dataset, since we are bootstrapping.
         # Here we separate them into their respective groups.
-        assert (
-            len(labels) % sum(labels) == 0
-        ), "The number of labels is not divisible by the sum of the labels."
+        assert len(labels) % sum(labels) == 0, (
+            "The number of labels is not divisible by the sum of the labels."
+        )
         group_size = len(labels) // sum(labels)
         preds_groups = [
             preds[i : i + group_size] for i in range(0, len(preds), group_size)

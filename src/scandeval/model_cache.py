@@ -37,7 +37,7 @@ class ModelCache:
 
     def __init__(
         self, model_cache_dir: "Path", cache_name: str, max_generated_tokens: int
-    ):
+    ) -> None:
         """Initialize the model output cache.
 
         Args:
@@ -122,7 +122,9 @@ class ModelCache:
         hashed_key = self._hash_key(key=key)
         return self.cache[hashed_key]
 
-    def __setitem__(self, key: t.Any, value: SingleGenerativeModelOutput) -> None:
+    def __setitem__(
+        self, key: str | list[dict[str, str]], value: SingleGenerativeModelOutput
+    ) -> None:
         """Set an item in the cache.
 
         Args:

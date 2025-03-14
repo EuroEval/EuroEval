@@ -16,7 +16,7 @@ def params() -> Generator[dict[str | None, ParamType], None, None]:
     yield {p.name: p.type for p in benchmark.get_params(ctx)}
 
 
-def test_cli_param_names(params):
+def test_cli_param_names(params: dict[str, ParamType]) -> None:
     """Test that the CLI parameters have the correct names."""
     assert set(params.keys()) == {
         "model",
@@ -48,7 +48,7 @@ def test_cli_param_names(params):
     }
 
 
-def test_cli_param_types(params):
+def test_cli_param_types(params: dict[str, ParamType]) -> None:
     """Test that the CLI parameters have the correct types."""
     assert params["model"] == STRING
     assert isinstance(params["dataset"], Choice)

@@ -16,16 +16,18 @@ class TestGetAllLanguages:
         """Yields all languages."""
         yield get_all_languages()
 
-    def test_languages_is_dict(self, languages):
+    def test_languages_is_dict(self, languages: dict[str, Language]) -> None:
         """Tests that `languages` is a dictionary."""
         assert isinstance(languages, dict)
 
-    def test_languages_are_objects(self, languages):
+    def test_languages_are_objects(self, languages: dict[str, Language]) -> None:
         """Tests that the values of `languages` are `Language` objects."""
         for language in languages.values():
             assert isinstance(language, Language)
 
-    def test_languages_contain_germanic_languages(self, languages):
+    def test_languages_contain_germanic_languages(
+        self, languages: dict[str, Language]
+    ) -> None:
         """Tests that `languages` contains the Germanic languages."""
         assert "sv" in languages
         assert "da" in languages

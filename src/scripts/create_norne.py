@@ -14,7 +14,7 @@ from requests.exceptions import HTTPError
 from tqdm.auto import tqdm
 
 
-def main():
+def main() -> None:
     """Create the NorNE-mini NER datasets and uploads them to the HF Hub."""
     # Define the base download URLs
     base_urls = dict(

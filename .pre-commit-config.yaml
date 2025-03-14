@@ -10,7 +10,7 @@ repos:
       - id: trailing-whitespace
       - id: debug-statements
 -   repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.7.1
+    rev: v0.9.7
     hooks:
       - id: ruff
         args:
@@ -26,11 +26,11 @@ repos:
           - pyi
           - jupyter
 -   repo: https://github.com/kynan/nbstripout
-    rev: 0.7.1
+    rev: 0.8.1
     hooks:
     -   id: nbstripout
 -   repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.13.0
+    rev: v1.15.0
     hooks:
     -   id: mypy
         args:

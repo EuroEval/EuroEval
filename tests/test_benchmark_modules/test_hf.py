@@ -7,6 +7,7 @@ import torch
 from huggingface_hub.hf_api import HfApi
 
 from scandeval.benchmark_modules.hf import get_model_repo_info, get_torch_dtype
+from scandeval.data_models import BenchmarkConfig
 from scandeval.exceptions import InvalidModel
 
 
@@ -27,7 +28,12 @@ from scandeval.exceptions import InvalidModel
         ("cuda", False, False, torch.float16),
     ],
 )
-def test_get_torch_dtype(test_device, torch_dtype_is_set, bf16_available, expected):
+def test_get_torch_dtype(
+    test_device: str,
+    torch_dtype_is_set: bool,
+    bf16_available: bool,
+    expected: torch.dtype,
+) -> None:
     """Test that the torch dtype is set correctly."""
     assert (
         get_torch_dtype(
@@ -39,7 +45,7 @@ def test_get_torch_dtype(test_device, torch_dtype_is_set, bf16_available, expect
     )
 
 
-def test_safetensors_check(benchmark_config):
+def test_safetensors_check(benchmark_config: BenchmarkConfig) -> None:
     """Test the safetensors availability check functionality."""
     benchmark_config.only_allow_safetensors = True
 

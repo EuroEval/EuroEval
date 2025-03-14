@@ -22,13 +22,13 @@ from scandeval.utils import (
 class TestEnforceReproducibility:
     """Unit tests for the `enforce_reproducibility` function."""
 
-    def test_random_arrays_not_equal(self):
+    def test_random_arrays_not_equal(self) -> None:
         """Test that two random arrays are not equal."""
         first_random_number = random.random()
         second_random_number = random.random()
         assert first_random_number != second_random_number
 
-    def test_random_arrays_equal(self):
+    def test_random_arrays_equal(self) -> None:
         """Test that two random arrays are equal after enforcing reproducibility."""
         enforce_reproducibility()
         first_random_number = random.random()
@@ -36,13 +36,13 @@ class TestEnforceReproducibility:
         second_random_number = random.random()
         assert first_random_number == second_random_number
 
-    def test_numpy_arrays_not_equal(self):
+    def test_numpy_arrays_not_equal(self) -> None:
         """Test that two random numpy arrays are not equal."""
         first_random_numbers = np.random.rand(10)
         second_random_numbers = np.random.rand(10)
         assert not np.array_equal(first_random_numbers, second_random_numbers)
 
-    def test_numpy_arrays_equal(self):
+    def test_numpy_arrays_equal(self) -> None:
         """Test that two random arrays are equal after enforcing reproducibility."""
         enforce_reproducibility()
         first_random_numbers = np.random.rand(10)
@@ -50,13 +50,13 @@ class TestEnforceReproducibility:
         second_random_numbers = np.random.rand(10)
         assert np.array_equal(first_random_numbers, second_random_numbers)
 
-    def test_pytorch_tensors_not_equal(self):
+    def test_pytorch_tensors_not_equal(self) -> None:
         """Test that two random pytorch tensors are not equal."""
         first_random_numbers = torch.rand(10)
         second_random_numbers = torch.rand(10)
         assert not torch.equal(first_random_numbers, second_random_numbers)
 
-    def test_pytorch_tensors_equal(self):
+    def test_pytorch_tensors_equal(self) -> None:
         """Test that two random tensors are equal after enforcing reproducibility."""
         enforce_reproducibility()
         first_random_numbers = torch.rand(10)
@@ -70,7 +70,7 @@ class TestEnforceReproducibility:
     argvalues=[("torch", True), ("non_existent_module", False)],
     ids=["torch", "non_existent_module"],
 )
-def test_module_is_installed(module_name, expected):
+def test_module_is_installed(module_name: str, expected: bool) -> None:
     """Test that a module is installed."""
     assert is_module_installed(module_name) == expected
 
@@ -83,7 +83,7 @@ def test_module_is_installed(module_name, expected):
         ("google-bert/bert-base-uncased", False),
     ],
 )
-def test_should_prompts_be_stripped(model_id, expected, auth):
+def test_should_prompts_be_stripped(model_id: str, expected: bool, auth: str) -> None:
     """Test that a model ID is a generative model."""
     config = load_hf_model_config(
         model_id=model_id,
@@ -108,7 +108,9 @@ def test_should_prompts_be_stripped(model_id, expected, auth):
     argnames=["model_id", "expected"],
     argvalues=[("AI-Sweden-Models/gpt-sw3-6.7b-v2", False), ("01-ai/Yi-6B", True)],
 )
-def test_should_prefix_space_be_added_to_labels(model_id, expected, auth):
+def test_should_prefix_space_be_added_to_labels(
+    model_id: str, expected: bool, auth: str
+) -> None:
     """Test whether a prefix space should be added to labels."""
     tokenizer = AutoTokenizer.from_pretrained(model_id, token=auth)
     labels = ["positiv", "negativ"]
@@ -132,7 +134,12 @@ def test_should_prefix_space_be_added_to_labels(model_id, expected, auth):
         ("ibm-granite/granite-3b-code-instruct-2k", [478], ""),
     ],
 )
-def test_get_end_of_chat_token_ids(model_id, expected_token_ids, expected_string, auth):
+def test_get_end_of_chat_token_ids(
+    model_id: str,
+    expected_token_ids: list[int] | None,
+    expected_string: str | None,
+    auth: str,
+) -> None:
     """Test ability to get the chat token IDs of a model."""
     tokenizer = AutoTokenizer.from_pretrained(
         model_id, token=auth, trust_remote_code=True
@@ -149,7 +156,7 @@ def test_get_end_of_chat_token_ids(model_id, expected_token_ids, expected_string
     argvalues=[("abc",), ("hasd_asd2w",), ("a",), ("",)],
     ids=["short_text", "long_text", "single_char_text", "empty_text"],
 )
-def test_scrambling(text):
+def test_scrambling(text: str) -> None:
     """Test that a text can be scrambled and unscrambled."""
     scrambled = scramble(text=text)
     unscrambled = unscramble(scrambled_text=scrambled)

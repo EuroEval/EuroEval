@@ -13,6 +13,18 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   [sentiment-headlines dataset](https://huggingface.co/datasets/pysentimiento/spanish-targeted-sentiment-headlines), the linguistic acceptability dataset ScaLA with the [Spanish Universal
   Dependencies](https://github.com/UniversalDependencies/UD_Spanish-AnCora), the Spanish part of [mlsum](https://huggingface.co/datasets/reciTAL/mlsum), the knowledge dataset [MMLU-es](https://huggingface.co/datasets/ScandEval/mmlu-es-mini), the common-sense reasoning dataset [HellaSwag-es](https://huggingface.co/datasets/ScandEval/hellaswag-es-mini), and the named entity recognition dataset [XGLUE-NER-es-mini](https://huggingface.co/datasets/ScandEval/xglue-ner-es-mini).
 
+### Changed
+- Update `litellm` to the stable version v1.16.13.
+
+### Fixed
+- If a tokenizer has not specified BOS and/or EOS token in its config, we now extract
+  this manually.
+
+### Deprecated
+- Deprecated the ability to call the `Benchmarker` objects directly. Instead, please use
+  the `benchmark` method.
+
+
 ## [v15.1.0] - 2025-02-12
 
 ### Added

@@ -13,7 +13,7 @@ from huggingface_hub.hf_api import HfApi
 from requests.exceptions import HTTPError
 
 
-def main():
+def main() -> None:
     """Create the DaNE-mini NER dataset and uploads it to the HF Hub."""
     # Define download URLs
     # TODO: This is the wrong URL; use the alexandra URL instead

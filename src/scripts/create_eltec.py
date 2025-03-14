@@ -23,7 +23,7 @@ logger = logging.getLogger("create_eltec")
 nltk.download("punkt")
 
 
-def main():
+def main() -> None:
     """Create the ELTEC-mini NER dataset and upload it to the HF Hub."""
     # Download the zip file
     logger.info("Downloading the zip file...")
@@ -59,9 +59,9 @@ def main():
         }
 
     # Sanity check that we got all the texts and annotations
-    assert all(
-        id_ in texts for id_ in all_ids
-    ), f"Expected all IDs to be in the texts, but {all_ids - set(texts)} are not."
+    assert all(id_ in texts for id_ in all_ids), (
+        f"Expected all IDs to be in the texts, but {all_ids - set(texts)} are not."
+    )
     assert all(id_ in annotations for id_ in all_ids), (
         "Expected all IDs to be in the annotations, but "
         f"{all_ids - set(annotations)} are not."

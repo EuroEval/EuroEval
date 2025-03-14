@@ -15,7 +15,7 @@ from lxml import etree
 from requests.exceptions import HTTPError
 
 
-def main():
+def main() -> None:
     """Create the DaNE-mini NER dataset and uploads it to the HF Hub."""
     # Define download URLs
     url = "https://spraakbanken.gu.se/lb/resurser/meningsmangder/suc3.xml.bz2"
@@ -54,7 +54,7 @@ def main():
         # If the current element begins a name then set the `ner_tag` to the
         # corresponding `B` value
         if elt.tag == "name" and action == "start":
-            ner_tag = f'B-{conversion_dict[elt.attrib["type"]]}'
+            ner_tag = f"B-{conversion_dict[elt.attrib['type']]}"
 
         # If the current element ends a name then reset the `ner_tag` to `O`
         elif elt.tag == "name" and action == "end":

@@ -10,12 +10,21 @@ from requests import HTTPError
 logger = getLogger(__name__)
 
 
-def main():
+def main() -> None:
     """Create the Jentoft linguistic acceptability dataset and upload to HF Hub."""
     dataset_urls = {
-        "val": "https://raw.githubusercontent.com/matias-jjj/matias_master/refs/heads/main/norgec_dataset/ask_exp_dev.tsv",
-        "test": "https://raw.githubusercontent.com/matias-jjj/matias_master/refs/heads/main/norgec_dataset/ask_exp_test.tsv",
-        "train": "https://raw.githubusercontent.com/matias-jjj/matias_master/refs/heads/main/norgec_dataset/ask_exp_train.tsv",
+        "val": (
+            "https://raw.githubusercontent.com/matias-jjj/matias_master/refs/heads/"
+            "main/norgec_dataset/ask_exp_dev.tsv"
+        ),
+        "test": (
+            "https://raw.githubusercontent.com/matias-jjj/matias_master/refs/heads/"
+            "main/norgec_dataset/ask_exp_test.tsv"
+        ),
+        "train": (
+            "https://raw.githubusercontent.com/matias-jjj/matias_master/refs/heads/"
+            "main/norgec_dataset/ask_exp_train.tsv"
+        ),
     }
 
     full_val_df = prepare_dataset(dataset_url=dataset_urls["val"])
@@ -81,7 +90,7 @@ def prepare_dataset(dataset_url: str) -> pd.DataFrame:
     df = df.rename(columns={"SOURCE": "text"})
 
     # Only keep relevant columns
-    df = df[["text", "label"]]
+    df = df.loc[["text", "label"]]
 
     # Remove text duplicates
     df = df.drop_duplicates(subset=["text"])
@@ -104,9 +113,9 @@ def sample_dataset(full_df: pd.DataFrame, size: int) -> pd.DataFrame:
         The sampled dataset.
     """
     half_size = size // 2
-    assert (
-        full_df["label"] == "correct"
-    ).sum() >= half_size, "Not enough 'correct' samples"
+    assert (full_df["label"] == "correct").sum() >= half_size, (
+        "Not enough 'correct' samples"
+    )
 
     correct_df = full_df[full_df["label"] == "correct"].sample(
         n=half_size, random_state=4242
@@ -114,7 +123,9 @@ def sample_dataset(full_df: pd.DataFrame, size: int) -> pd.DataFrame:
     incorrect_df = full_df[full_df["label"] == "incorrect"].sample(
         n=half_size, random_state=4242
     )
-    return pd.concat([correct_df, incorrect_df])
+    concatenated_df = pd.concat(objs=[correct_df, incorrect_df])
+    assert isinstance(concatenated_df, pd.DataFrame)
+    return concatenated_df
 
 
 def remove_overlapping_samples(
@@ -151,10 +162,12 @@ def remove_overlapping_samples(
         f"Overlapping texts between validation and test: {len(val_test_overlap)}"
     )
 
-    # Remove overlapping texts from validation and test sets, prioritize train > validation > test
-    clean_val_df = full_val_df[~full_val_df["text"].isin(train_texts)]
-    clean_test_df = full_test_df[
-        ~full_test_df["text"].isin(train_texts) & ~full_test_df["text"].isin(val_texts)
+    # Remove overlapping texts from validation and test sets, prioritize train >
+    # validation > test
+    clean_val_df = full_val_df.loc[~full_val_df["text"].isin(list(train_texts))]
+    clean_test_df = full_test_df.loc[
+        ~full_test_df["text"].isin(list(train_texts))
+        & ~full_test_df["text"].isin(list(val_texts))
     ]
 
     # The training set remains unchanged

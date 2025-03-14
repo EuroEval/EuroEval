@@ -1,17 +1,19 @@
-"""Create the Icelandic Error Corpus dataset (a subset and the full dataset) and upload it to the HF Hub."""
+"""Create the Icelandic Error Corpus dataset  and upload it to the HF Hub."""
 
 import re
 from typing import List
 
+import pandas as pd
 from datasets import Dataset, DatasetDict, Split, load_dataset
 from huggingface_hub import HfApi
 from requests.exceptions import HTTPError
 
 
-def main():
-    """Create the Icelandic Error Corpus dataset (a subset and the full dataset) and upload it to the HF Hub."""
+def main() -> None:
+    """Create the Icelandic Error Corpus dataset  and upload it to the HF Hub."""
     repo_id = "mideind/icelandic-error-corpus-IceEC"
     dataset = load_dataset(path=repo_id, name="category")
+    assert isinstance(dataset, DatasetDict)
 
     train_df = prepare_dataframe(dataset=dataset["train"])
     test_df = prepare_dataframe(dataset=dataset["test"])
@@ -27,8 +29,8 @@ def main():
         test=Dataset.from_pandas(test_df, split=Split.TEST),
     )
 
-    # Make subset of the dataset
-    # We use `head` instead of `sample` here as the dataframes have already been shuffled.
+    # Make subset of the dataset. We use `head` instead of `sample` here as the
+    # dataframes have already been shuffled.
     dataset_subset = DatasetDict(
         train=Dataset.from_pandas(
             train_df.head(1024), split=Split.TRAIN, preserve_index=False
@@ -60,7 +62,7 @@ def main():
         dataset_.push_to_hub(dataset_id_, private=True)
 
 
-def prepare_dataframe(dataset: Dataset) -> Dataset:
+def prepare_dataframe(dataset: Dataset) -> pd.DataFrame:
     """Prepare a dataframe from a dataset.
 
     Args:
@@ -71,17 +73,19 @@ def prepare_dataframe(dataset: Dataset) -> Dataset:
         A dataframe with the prepared dataset.
     """
     df = dataset.to_pandas()
+    assert isinstance(df, pd.DataFrame)
 
     # Reset the index of the dataframe
     df.reset_index(drop=True, inplace=True)
 
     # Remove samples with five or fewer tokens
-    df = df[df.sentence.map(lambda lst: len(lst) > 5)]
+    df = df.loc[df.sentence.map(lambda lst: len(lst) > 5)]
 
     # Join the tokens into a string
     df["text"] = df["sentence"].apply(join_tokens)
 
-    # Make the `label` column` such that it is `já` if there are no errors and `nei` if there are errors
+    # Make the `label` column` such that it is `já` if there are no errors and `nei` if
+    # there are errors
     df["label"] = df.apply(
         lambda row: "correct" if not row["has_error"] else "incorrect", axis=1
     )

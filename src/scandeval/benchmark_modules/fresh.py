@@ -221,8 +221,7 @@ def load_model_and_tokenizer(
 
     match dataset_config.task.task_group:
         case (
-            TaskGroup.SEQUENCE_CLASSIFICATION
-            | TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION
+            TaskGroup.SEQUENCE_CLASSIFICATION | TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION
         ):
             model_cls_mapping = dict(
                 fresh_xlm_roberta_base=XLMRobertaForSequenceClassification,

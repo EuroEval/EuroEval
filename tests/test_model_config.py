@@ -2,7 +2,7 @@
 
 import pytest
 
-from scandeval.data_models import ModelConfig
+from scandeval.data_models import BenchmarkConfig, ModelConfig
 from scandeval.exceptions import InvalidModel
 from scandeval.model_config import get_model_config
 
@@ -24,7 +24,9 @@ from scandeval.model_config import get_model_config
         "non-existent-model",
     ],
 )
-def test_get_model_config(benchmark_config, model_id, should_raise) -> None:
+def test_get_model_config(
+    benchmark_config: BenchmarkConfig, model_id: str, should_raise: bool
+) -> None:
     """Test that the `get_model_config` function works as expected."""
     if should_raise:
         with pytest.raises(InvalidModel):

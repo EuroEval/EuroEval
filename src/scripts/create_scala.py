@@ -29,7 +29,7 @@ from tqdm.auto import tqdm
 from scandeval.utils import block_terminal_output
 
 
-def main():
+def main() -> None:
     """Create the ScaLA datasets and upload them to the HF Hub."""
     # Block terminal output
     block_terminal_output()

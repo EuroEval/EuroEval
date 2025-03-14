@@ -6,7 +6,7 @@ class InvalidBenchmark(Exception):
 
     def __init__(
         self, message: str = "This model cannot be benchmarked on the given dataset."
-    ):
+    ) -> None:
         """Initialize the exception.
 
         Args:
@@ -22,7 +22,7 @@ class InvalidModel(Exception):
 
     def __init__(
         self, message: str = "The model cannot be benchmarked on any datasets."
-    ):
+    ) -> None:
         """Initialize the exception.
 
         Args:
@@ -36,7 +36,9 @@ class InvalidModel(Exception):
 class HuggingFaceHubDown(Exception):
     """The Hugging Face Hub seems to be down."""
 
-    def __init__(self, message: str = "The Hugging Face Hub is currently down."):
+    def __init__(
+        self, message: str = "The Hugging Face Hub is currently down."
+    ) -> None:
         """Initialize the exception.
 
         Args:
@@ -50,7 +52,9 @@ class HuggingFaceHubDown(Exception):
 class NoInternetConnection(Exception):
     """There seems to be no internet connection."""
 
-    def __init__(self, message: str = "There is currently no internet connection."):
+    def __init__(
+        self, message: str = "There is currently no internet connection."
+    ) -> None:
         """Initialize the exception.
 
         Args:
@@ -64,7 +68,9 @@ class NoInternetConnection(Exception):
 class NaNValueInModelOutput(Exception):
     """There is a NaN value in the model output."""
 
-    def __init__(self, message: str = "There is a NaN value in the model output."):
+    def __init__(
+        self, message: str = "There is a NaN value in the model output."
+    ) -> None:
         """Initialize the exception.
 
         Args:
@@ -86,7 +92,7 @@ class FlashAttentionNotInstalled(Exception):
             "running `pip install -U wheel && FLASH_ATTENTION_SKIP_CUDA_BUILD=TRUE "
             "pip install flash-attn --no-build-isolation`."
         ),
-    ):
+    ) -> None:
         """Initialize the exception.
 
         Args:
@@ -100,7 +106,7 @@ class FlashAttentionNotInstalled(Exception):
 class NeedsExtraInstalled(InvalidModel):
     """The evaluation requires extra to be installed."""
 
-    def __init__(self, extra: str):
+    def __init__(self, extra: str) -> None:
         """Initialize the exception.
 
         Args:
@@ -119,7 +125,7 @@ class NeedsExtraInstalled(InvalidModel):
 class NeedsManualDependency(InvalidModel):
     """The evaluation requires a dependency to be manually installed."""
 
-    def __init__(self, package: str):
+    def __init__(self, package: str) -> None:
         """Initialize the exception.
 
         Args:
@@ -137,7 +143,9 @@ class NeedsManualDependency(InvalidModel):
 class NeedsAdditionalArgument(InvalidModel):
     """The evaluation requires additional arguments to the `scandeval` command."""
 
-    def __init__(self, cli_argument: str, script_argument: str, run_with_cli: bool):
+    def __init__(
+        self, cli_argument: str, script_argument: str, run_with_cli: bool
+    ) -> None:
         """Initialize the exception.
 
         Args:
@@ -168,7 +176,7 @@ class NeedsAdditionalArgument(InvalidModel):
 class NeedsEnvironmentVariable(InvalidModel):
     """The evaluation requires an environment variable to be set."""
 
-    def __init__(self, env_var: str):
+    def __init__(self, env_var: str) -> None:
         """Initialize the exception.
 
         Args:

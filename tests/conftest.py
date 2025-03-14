@@ -61,7 +61,9 @@ def device() -> Generator[torch.device, None, None]:
 
 
 @pytest.fixture(scope="session")
-def benchmark_config(auth, device) -> Generator[BenchmarkConfig, None, None]:
+def benchmark_config(
+    auth: str, device: torch.device
+) -> Generator[BenchmarkConfig, None, None]:
     """Yields a benchmark configuration used in tests."""
     yield BenchmarkConfig(
         model_languages=[DA],
@@ -107,7 +109,7 @@ def metric_config() -> Generator[MetricConfig, None, None]:
     params=[task for task in get_all_tasks().values() if task != SPEED],
     ids=[name for name, task in get_all_tasks().items() if task != SPEED],
 )
-def task(request) -> Generator[Task, None, None]:
+def task(request: pytest.FixtureRequest) -> Generator[Task, None, None]:
     """Yields a dataset task used in tests."""
     yield request.param
 
@@ -117,7 +119,7 @@ def task(request) -> Generator[Task, None, None]:
     params=list(ACTIVE_LANGUAGES.values()),
     ids=list(ACTIVE_LANGUAGES.keys()),
 )
-def language(request):
+def language(request: pytest.FixtureRequest) -> Generator[str, None, None]:
     """Yields a language used in tests."""
     yield request.param
 

@@ -22,7 +22,7 @@ from requests import HTTPError
     "can run this script."
 )
 @click.argument("data_dir", type=str)
-def main(data_dir: str):
+def main(data_dir: str) -> None:
     """Create the FQuAD-mini NER dataset and uploads it to the HF Hub."""
     train_path = Path(data_dir) / "train.json"
     train_df = pd.read_json(train_path)

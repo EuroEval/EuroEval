@@ -6,7 +6,7 @@ import inspect
 from scandeval import enums
 
 
-def test_all_classes_are_enums():
+def test_all_classes_are_enums() -> None:
     """Test that all classes in `enums` are Enums."""
     all_classes = [
         getattr(enums, obj_name)

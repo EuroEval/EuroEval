@@ -31,7 +31,7 @@ dependencies = [
     "sacremoses>=0.1.1",
     "more-itertools>=10.5.0",
     "tenacity>=9.0.0",
-    "litellm>=1.53.1",
+    "litellm>=1.61.13",
     "rouge-score>=0.1.2",
     "bert-score>=0.3.13",
     "levenshtein>=0.24.0",
@@ -126,9 +126,16 @@ docstring-code-format = true
 skip-magic-trailing-comma = true
 
 [tool.ruff.lint]
-extend-select = [
+select = [
+    # isort (imports)
     "I",
+    # pydocstyle (docstrings)
     "D",
+    # pycodestyle errors and warnings (PEP8)
+    "E",
+    "W",
+    # flake-annotations (type hints)
+    "ANN",
 ]
 
 [tool.ruff.lint.extend-per-file-ignores]

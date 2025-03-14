@@ -2,20 +2,22 @@
 
 import pytest
 import torch
+from tokenizers.models import Model
 from transformers import IntervalStrategy, TrainingArguments
 
+from scandeval.data_models import BenchmarkConfig, ModelConfig
 from scandeval.enums import DataType
 from scandeval.finetuning import get_training_args
 
 
 # TODO
-def test_finetune():
+def test_finetune() -> None:
     """Test that the `finetune` function works as expected."""
     pass
 
 
 # TODO
-def test_finetune_single_iteration():
+def test_finetune_single_iteration() -> None:
     """Test that the `finetune_single_iteration` function works as expected."""
     pass
 
@@ -23,7 +25,9 @@ def test_finetune_single_iteration():
 class TestGetTrainingArgs:
     """Test that the `get_training_args` function works as expected."""
 
-    def test_return_type(self, benchmark_config, model_config):
+    def test_return_type(
+        self, benchmark_config: BenchmarkConfig, model_config: ModelConfig
+    ) -> None:
         """Test that the return type is correct."""
         args = get_training_args(
             benchmark_config=benchmark_config,
@@ -35,7 +39,12 @@ class TestGetTrainingArgs:
         assert isinstance(args, TrainingArguments)
 
     @pytest.mark.parametrize(argnames=["batch_size"], argvalues=[(8,), (16,), (32,)])
-    def test_both_batch_sizes_are_set(self, benchmark_config, model_config, batch_size):
+    def test_both_batch_sizes_are_set(
+        self,
+        benchmark_config: BenchmarkConfig,
+        model_config: ModelConfig,
+        batch_size: int,
+    ) -> None:
         """Test that both training and eval batch sizes are set."""
         args = get_training_args(
             benchmark_config=benchmark_config,
@@ -53,11 +62,11 @@ class TestGetTrainingArgs:
     )
     def test_gradient_accumulation(
         self,
-        benchmark_config,
-        model_config,
-        batch_size,
-        expected_gradient_accumulation_steps,
-    ):
+        benchmark_config: BenchmarkConfig,
+        model_config: ModelConfig,
+        batch_size: int,
+        expected_gradient_accumulation_steps: int,
+    ) -> None:
         """Test that the gradient accumulation is correct."""
         args = get_training_args(
             benchmark_config=benchmark_config,
@@ -68,7 +77,9 @@ class TestGetTrainingArgs:
         )
         assert args.gradient_accumulation_steps == expected_gradient_accumulation_steps
 
-    def test_batch_size_default_value(self, benchmark_config, model_config):
+    def test_batch_size_default_value(
+        self, benchmark_config: BenchmarkConfig, model_config: ModelConfig
+    ) -> None:
         """Test that the default value for the batch size is correct."""
         args = get_training_args(
             benchmark_config=benchmark_config,
@@ -84,8 +95,12 @@ class TestGetTrainingArgs:
         argvalues=[(True, IntervalStrategy.STEPS), (False, IntervalStrategy.NO)],
     )
     def test_logging_strategy(
-        self, benchmark_config, model_config, verbose, expected_logging_strategy
-    ):
+        self,
+        benchmark_config: BenchmarkConfig,
+        model_config: ModelConfig,
+        verbose: bool,
+        expected_logging_strategy: IntervalStrategy,
+    ) -> None:
         """Test that the logging strategy is correct."""
         old_verbose = benchmark_config.verbose
         benchmark_config.verbose = verbose
@@ -104,8 +119,12 @@ class TestGetTrainingArgs:
         argvalues=[(True, False), (False, True)],
     )
     def test_disable_tqdm(
-        self, benchmark_config, model_config, progress_bar, expected_disable_tqdm
-    ):
+        self,
+        benchmark_config: BenchmarkConfig,
+        model_config: ModelConfig,
+        progress_bar: bool,
+        expected_disable_tqdm: bool,
+    ) -> None:
         """Test that the disable tqdm option is correct."""
         old_progress_bar = benchmark_config.progress_bar
         benchmark_config.progress_bar = progress_bar
@@ -128,8 +147,13 @@ class TestGetTrainingArgs:
         ],
     )
     def test_dtype(
-        self, benchmark_config, model_config, datatype, expected_fp16, expected_bf16
-    ):
+        self,
+        benchmark_config: BenchmarkConfig,
+        model_config: ModelConfig,
+        datatype: DataType,
+        expected_fp16: bool,
+        expected_bf16: bool,
+    ) -> None:
         """Test that the fp16 and bf16 arguments have been correctly set."""
         args = get_training_args(
             benchmark_config=benchmark_config,
@@ -146,8 +170,12 @@ class TestGetTrainingArgs:
         argvalues=[("cuda", False), ("mps", False), ("cpu", True)],
     )
     def test_use_cpu(
-        self, benchmark_config, model_config, device_name, expected_use_cpu
-    ):
+        self,
+        benchmark_config: BenchmarkConfig,
+        model_config: ModelConfig,
+        device_name: str,
+        expected_use_cpu: bool,
+    ) -> None:
         """Test that the use_cpu argument is correct."""
         old_device = benchmark_config.device
         benchmark_config.device = torch.device(device_name)

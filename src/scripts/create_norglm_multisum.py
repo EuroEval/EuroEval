@@ -7,7 +7,7 @@ from huggingface_hub import HfApi
 from requests import HTTPError
 
 
-def main():
+def main() -> None:
     """Create the NorGLM NO-multi summarisation dataset and upload to HF Hub."""
     dataset_id = "NorGLM/NO-Multi-QA-Sum"
 

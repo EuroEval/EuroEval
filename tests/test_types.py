@@ -15,7 +15,7 @@ from scandeval.types import is_list_of_int, is_list_of_list_of_int, is_list_of_s
         ([], True),
     ],
 )
-def test_is_list_of_int(obj, expected):
+def test_is_list_of_int(obj: list, expected: bool) -> None:
     """Test the `is_list_of_int` function."""
     assert is_list_of_int(x=obj) == expected
 
@@ -31,7 +31,7 @@ def test_is_list_of_int(obj, expected):
         ([[], []], True),
     ],
 )
-def test_is_list_of_list_of_int(obj, expected):
+def test_is_list_of_list_of_int(obj: list, expected: bool) -> None:
     """Test the `is_list_of_int` function."""
     assert is_list_of_list_of_int(x=obj) == expected
 
@@ -45,6 +45,6 @@ def test_is_list_of_list_of_int(obj, expected):
         ([], True),
     ],
 )
-def test_is_list_of_str(obj, expected):
+def test_is_list_of_str(obj: list, expected: bool) -> None:
     """Test the `is_list_of_str` function."""
     assert is_list_of_str(x=obj) == expected

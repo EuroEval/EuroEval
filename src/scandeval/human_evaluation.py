@@ -29,7 +29,7 @@ from .utils import enforce_reproducibility
 
 if importlib.util.find_spec("gradio") is not None:
     import gradio as gr
-
+    from gradio.components import HTML, Button, Dropdown, Markdown, Textbox
 
 logger = logging.getLogger("scandeval")
 
@@ -96,37 +96,35 @@ class HumanEvaluator:
             The Gradio app for human evaluation.
         """
         with gr.Blocks(title=self.title, theme=gr.themes.Monochrome()) as app:
-            gr.components.HTML(f"<center><h1>{self.title}</h1></center>")
-            gr.components.Markdown(self.description)
+            HTML(f"<center><h1>{self.title}</h1></center>")
+            Markdown(self.description)
             with gr.Row(variant="panel"):
-                language_dropdown = gr.Dropdown(
-                    label="Language", choices=self.languages
-                )
-                task_dropdown = gr.Dropdown(label="Task", choices=self.tasks)
-                dataset_dropdown = gr.Dropdown(label="Dataset", choices=[""])
+                language_dropdown = Dropdown(label="Language", choices=self.languages)
+                task_dropdown = Dropdown(label="Task", choices=self.tasks)
+                dataset_dropdown = Dropdown(label="Dataset", choices=[""])
             with gr.Row(variant="panel"):
                 with gr.Column():
-                    task_examples = gr.Markdown("Task Examples", visible=False)
+                    task_examples = Markdown("Task Examples", visible=False)
                 with gr.Column():
-                    question = gr.Markdown(label="Question", visible=False)
+                    question = Markdown(label="Question", visible=False)
                     with gr.Row():
-                        ner_tag_dropdown = gr.Dropdown(
+                        ner_tag_dropdown = Dropdown(
                             label="Entity type",
                             choices=[""],
                             interactive=True,
                             visible=False,
                             scale=0.5,  # type: ignore[arg-type]
                         )
-                        ner_tag_answer = gr.Textbox(
+                        ner_tag_answer = Textbox(
                             label="Entity", interactive=True, visible=False, scale=1
                         )
                         with gr.Column(scale=0.2):  # type: ignore[arg-type]
-                            ner_tag_add_button = gr.Button("Add entity", visible=False)
-                            ner_tag_reset_button = gr.Button(
+                            ner_tag_add_button = Button("Add entity", visible=False)
+                            ner_tag_reset_button = Button(
                                 "Reset entities", visible=False
                             )
-                    answer = gr.Textbox(label="Answer", visible=False)
-                    submit_button = gr.Button("Submit", visible=False)
+                    answer = Textbox(label="Answer", visible=False)
+                    submit_button = Button("Submit", visible=False)
 
             language_dropdown.change(
                 fn=self.update_dataset_choices,
@@ -177,7 +175,7 @@ class HumanEvaluator:
 
     def update_dataset_choices(
         self, language: str | None, task: str | None
-    ) -> "gr.Dropdown":
+    ) -> "Dropdown":
         """Update the dataset choices based on the selected language and task.
 
         Args:
@@ -190,7 +188,7 @@ class HumanEvaluator:
             A list of dataset names that match the selected language and task.
         """
         if language is None or task is None:
-            return gr.Dropdown(choices=[])
+            return Dropdown(choices=[])
 
         dataset_configs = [
             cfg
@@ -208,11 +206,13 @@ class HumanEvaluator:
             f"{choices}, with {choices[0]!r} being chosen by default."
         )
 
-        return gr.Dropdown(choices=choices, value=choices[0])
+        return Dropdown(choices=choices, value=choices[0])
 
     def update_dataset(
         self, dataset_name: str, iteration: int
-    ) -> "tuple[gr.Markdown, gr.Markdown, gr.Dropdown, gr.Textbox, gr.Button, gr.Button, gr.Textbox, gr.Button]":
+    ) -> (
+        "tuple[Markdown, Markdown, Dropdown, Textbox, Button, Button, Textbox, Button]"
+    ):
         """Update the dataset based on a selected dataset name.
 
         Args:
@@ -226,14 +226,14 @@ class HumanEvaluator:
             entity_reset_button, answer, submit_button) for the selected dataset.
         """
         blank_answer = (
-            gr.Markdown("", visible=False),
-            gr.Markdown("", visible=False),
-            gr.Dropdown(visible=False),
-            gr.Textbox(visible=False),
-            gr.Button(visible=False),
-            gr.Button(visible=False),
-            gr.Textbox("", visible=False),
-            gr.Button(visible=False),
+            Markdown("", visible=False),
+            Markdown("", visible=False),
+            Dropdown(visible=False),
+            Textbox(visible=False),
+            Button(visible=False),
+            Button(visible=False),
+            Textbox("", visible=False),
+            Button(visible=False),
         )
 
         if not dataset_name:
@@ -401,39 +401,39 @@ class HumanEvaluator:
                 if ner_tag not in ner_tags:
                     ner_tags.append(ner_tag)
             return (
-                gr.Markdown(task_examples, visible=True),
-                gr.Markdown(question, visible=True),
-                gr.Dropdown(
+                Markdown(task_examples, visible=True),
+                Markdown(question, visible=True),
+                Dropdown(
                     label="Entity type",
                     choices=ner_tags,
                     value=ner_tags[0],
                     visible=True,
                 ),
-                gr.Textbox(label="Entity", interactive=True, visible=True),
-                gr.Button("Add entity", visible=True),
-                gr.Button("Reset entities", visible=True),
-                gr.Textbox(
+                Textbox(label="Entity", interactive=True, visible=True),
+                Button("Add entity", visible=True),
+                Button("Reset entities", visible=True),
+                Textbox(
                     json.dumps({ner_tag: [] for ner_tag in ner_tags}),
                     interactive=False,
                     visible=True,
                 ),
-                gr.Button("Submit", visible=True),
+                Button("Submit", visible=True),
             )
         else:
             return (
-                gr.Markdown(task_examples, visible=True),
-                gr.Markdown(question, visible=True),
-                gr.Dropdown(label="Entity type", choices=[], visible=False),
-                gr.Textbox(label="Entity", interactive=True, visible=False),
-                gr.Button("Add entity", visible=False),
-                gr.Button("Reset entities", visible=False),
-                gr.Textbox("", interactive=True, visible=True),
-                gr.Button("Submit", visible=True),
+                Markdown(task_examples, visible=True),
+                Markdown(question, visible=True),
+                Dropdown(label="Entity type", choices=[], visible=False),
+                Textbox(label="Entity", interactive=True, visible=False),
+                Button("Add entity", visible=False),
+                Button("Reset entities", visible=False),
+                Textbox("", interactive=True, visible=True),
+                Button("Submit", visible=True),
             )
 
     def add_entity_to_answer(
         self, question: str, entity_type: str, entity: str, answer: str
-    ) -> "tuple[gr.Textbox, gr.Textbox]":
+    ) -> "tuple[Textbox, Textbox]":
         """Add an entity to the answer.
 
         Args:
@@ -450,23 +450,23 @@ class HumanEvaluator:
             A tuple (entity, answer) with a (blank) entity and answer.
         """
         if not entity_type or not entity:
-            return gr.Textbox(""), gr.Textbox("")
+            return Textbox(""), Textbox("")
 
         if entity not in question:
             gr.Warning(
                 f"The entity {entity!r} is not present in the question. Please "
                 "write it *exactly* as it appears in the question."
             )
-            return gr.Textbox(entity), gr.Textbox(answer)
+            return Textbox(entity), Textbox(answer)
 
         current_answer_obj = json.loads(answer)
         if entity not in current_answer_obj[entity_type]:
             current_answer_obj[entity_type].append(entity)
 
         answer = json.dumps(current_answer_obj)
-        return gr.Textbox(""), gr.Textbox(answer)
+        return Textbox(""), Textbox(answer)
 
-    def reset_entities(self) -> "gr.Textbox":
+    def reset_entities(self) -> "Textbox":
         """Reset the entities in the answer.
 
         Returns:
@@ -476,7 +476,7 @@ class HumanEvaluator:
         for ner_tag in self.dataset_config.prompt_label_mapping.values():
             if ner_tag not in ner_tags:
                 ner_tags.append(ner_tag)
-        return gr.Textbox(json.dumps({ner_tag: [] for ner_tag in ner_tags}))
+        return Textbox(json.dumps({ner_tag: [] for ner_tag in ner_tags}))
 
     def submit_answer(
         self, dataset_name: str, question: str, answer: str, annotator_id: int
@@ -516,7 +516,8 @@ class HumanEvaluator:
                     "Please provide a JSON object with a dictionary as an answer."
                 )
                 logger.info(
-                    "User tried to submit a JSON object without a dictionary as an answer."
+                    "User tried to submit a JSON object without a dictionary as an "
+                    "answer."
                 )
                 return question, answer
 

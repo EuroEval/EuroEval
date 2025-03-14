@@ -11,7 +11,7 @@ from scandeval import __version__, data_models, enums
 from scandeval.data_models import BenchmarkResult, MetricConfig
 
 
-def test_all_classes_are_dataclasses_or_pydantic_models():
+def test_all_classes_are_dataclasses_or_pydantic_models() -> None:
     """Test that all classes in `data_models` are dataclasses or Pydantic models."""
     all_classes = [
         getattr(data_models, obj_name)
@@ -24,26 +24,28 @@ def test_all_classes_are_dataclasses_or_pydantic_models():
     for obj in all_classes:
         obj_is_dataclass = hasattr(obj, "__dataclass_fields__")
         obj_is_pydantic_model = hasattr(obj, "model_fields")
-        assert (
-            obj_is_dataclass or obj_is_pydantic_model
-        ), f"{obj.__name__} is not a dataclass or Pydantic model. "
+        assert obj_is_dataclass or obj_is_pydantic_model, (
+            f"{obj.__name__} is not a dataclass or Pydantic model. "
+        )
 
 
 class TestMetricConfig:
     """Unit tests for the `MetricConfig` class."""
 
-    def test_metric_config_is_object(self, metric_config):
+    def test_metric_config_is_object(self, metric_config: MetricConfig) -> None:
         """Test that the metric config is a `MetricConfig` object."""
         assert isinstance(metric_config, MetricConfig)
 
-    def test_attributes_correspond_to_arguments(self, metric_config):
+    def test_attributes_correspond_to_arguments(
+        self, metric_config: MetricConfig
+    ) -> None:
         """Test that the metric config attributes correspond to the arguments."""
         assert metric_config.name == "metric_name"
         assert metric_config.pretty_name == "Metric name"
         assert metric_config.huggingface_id == "metric_id"
         assert metric_config.results_key == "metric_key"
 
-    def test_default_value_of_compute_kwargs(self, metric_config):
+    def test_default_value_of_compute_kwargs(self, metric_config: MetricConfig) -> None:
         """Test that the default value of `compute_kwargs` is an empty dictionary."""
         assert metric_config.compute_kwargs == dict()
 
@@ -59,7 +61,9 @@ class TestMetricConfig:
             (-1.0, (-100.0, "-100.00%")),
         ],
     )
-    def test_default_value_of_postprocessing_fn(self, metric_config, inputs, expected):
+    def test_default_value_of_postprocessing_fn(
+        self, metric_config: MetricConfig, inputs: float, expected: tuple[float, str]
+    ) -> None:
         """Test that the default value of `postprocessing_fn` is correct."""
         assert metric_config.postprocessing_fn(inputs) == expected
 
@@ -101,7 +105,9 @@ class TestBenchmarkResult:
         results_path.parent.mkdir(parents=True, exist_ok=True)
         yield results_path
 
-    def test_benchmark_result_parameters(self, benchmark_result):
+    def test_benchmark_result_parameters(
+        self, benchmark_result: BenchmarkResult
+    ) -> None:
         """Test that the `BenchmarkResult` parameters are correct."""
         assert benchmark_result.dataset == "dataset"
         assert benchmark_result.model == "model"
@@ -241,11 +247,13 @@ class TestBenchmarkResult:
             "few-shot and validation split model name",
         ],
     )
-    def test_from_dict(self, config, expected):
+    def test_from_dict(self, config: dict, expected: BenchmarkResult) -> None:
         """Test that `BenchmarkResult.from_dict` works as expected."""
         assert BenchmarkResult.from_dict(config) == expected
 
-    def test_append_to_results(self, benchmark_result, results_path):
+    def test_append_to_results(
+        self, benchmark_result: BenchmarkResult, results_path: Path
+    ) -> None:
         """Test that `BenchmarkResult.append_to_results` works as expected."""
         results_path.unlink(missing_ok=True)
         results_path.touch(exist_ok=True)

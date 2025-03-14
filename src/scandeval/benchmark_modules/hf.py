@@ -25,6 +25,7 @@ from torch import nn
 from transformers import (
     AutoConfig,
     AutoTokenizer,
+    BatchEncoding,
     DataCollatorForTokenClassification,
     DataCollatorWithPadding,
     PretrainedConfig,
@@ -68,7 +69,9 @@ from ..types import ExtractLabelsFunction
 from ..utils import (
     block_terminal_output,
     create_model_cache_dir,
+    get_bos_token,
     get_class_by_name,
+    get_eos_token,
     internet_connection_available,
 )
 from .base import BenchmarkModule
@@ -335,7 +338,7 @@ class HuggingFaceEncoderModel(BenchmarkModule):
             The prepared dataset.
         """
 
-        def numericalise_labels(examples: dict):
+        def numericalise_labels(examples: dict) -> dict:
             if "label" in examples:
                 try:
                     examples["label"] = [
@@ -350,7 +353,7 @@ class HuggingFaceEncoderModel(BenchmarkModule):
                     )
             return examples
 
-        def tokenise(examples: dict):
+        def tokenise(examples: dict) -> BatchEncoding:
             return self._tokenizer(text=examples["text"], truncation=True, padding=True)
 
         match task.task_group:
@@ -694,7 +697,7 @@ def load_model_and_tokenizer(
 def get_model_repo_info(
     model_id: str, revision: str, benchmark_config: BenchmarkConfig
 ) -> HFModelInfo | None:
-    """Get the information about the model from the Hugging Face Hub or a local directory.
+    """Get the information about the model from the HF Hub or a local directory.
 
     Args:
         model_id:
@@ -819,7 +822,10 @@ def get_model_repo_info(
             if benchmark_config.run_with_cli:
                 msg += "Skipping since the `--only-allow-safetensors` flag is set."
             else:
-                msg += "Skipping since the `only_allow_safetensors` argument is set to `True`."
+                msg += (
+                    "Skipping since the `only_allow_safetensors` argument is set "
+                    "to `True`."
+                )
             raise InvalidModel(msg)
 
     return HFModelInfo(
@@ -862,15 +868,28 @@ def load_tokenizer(
         if add_prefix:
             loading_kwargs["add_prefix_space"] = True
 
-    while True:
+    num_retries = 5
+    for _ in range(num_retries):
         try:
-            return AutoTokenizer.from_pretrained(model_id, **loading_kwargs)
+            tokenizer = AutoTokenizer.from_pretrained(model_id, **loading_kwargs)
+            break
         except (JSONDecodeError, OSError, TypeError):
             raise InvalidModel(f"Could not load tokenizer for model {model_id!r}.")
         except (TimeoutError, RequestError):
             logger.info(f"Couldn't load tokenizer for {model_id!r}. Retrying.")
             sleep(5)
             continue
+    else:
+        raise InvalidModel(
+            f"Could not load tokenizer for model {model_id!r} after {num_retries} "
+            "attempts."
+        )
+
+    # Ensure that BOS, EOS and PAD tokens are set
+    tokenizer.bos_token, tokenizer.bos_token_id = get_bos_token(tokenizer=tokenizer)
+    tokenizer.eos_token, tokenizer.eos_token_id = get_eos_token(tokenizer=tokenizer)
+
+    return tokenizer
 
 
 def get_torch_dtype(

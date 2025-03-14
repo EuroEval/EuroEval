@@ -6,7 +6,7 @@ from huggingface_hub import HfApi
 from requests import HTTPError
 
 
-def main():
+def main() -> None:
     """Create the FoNE-mini NER dataset and uploads it to the HF Hub."""
     # Define dataset ID
     repo_id = "vesteinn/sosialurin-faroese-ner"
@@ -55,9 +55,9 @@ def main():
 
     for token_list, ner_tag_list in zip(df["tokens"], df["labels"]):
         # Sanity check that the number of tokens and named entity tags are equal
-        assert len(token_list) == len(
-            ner_tag_list
-        ), "The number of tokens and named entity tags are not equal."
+        assert len(token_list) == len(ner_tag_list), (
+            "The number of tokens and named entity tags are not equal."
+        )
 
         # Fix invalid I-tags
         invalid_i_ner_tags = [
@@ -79,9 +79,9 @@ def main():
             ]
 
         # Sanity check that all I-tags are valid
-        assert (
-            not invalid_i_ner_tags
-        ), f"The following I- tags are invalid: {invalid_i_ner_tags}."
+        assert not invalid_i_ner_tags, (
+            f"The following I- tags are invalid: {invalid_i_ner_tags}."
+        )
 
     # Create validation split
     val_size = 256

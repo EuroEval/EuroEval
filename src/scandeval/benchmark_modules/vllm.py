@@ -62,7 +62,9 @@ from ..types import ExtractLabelsFunction
 from ..utils import (
     clear_memory,
     create_model_cache_dir,
+    get_bos_token,
     get_end_of_chat_token_ids,
+    get_eos_token,
     log_once,
     should_prompts_be_stripped,
 )
@@ -627,7 +629,7 @@ class VLLMModel(HuggingFaceEncoderModel):
             The example with the few-shot examples applied.
         """
 
-        def create_prompt(**kwargs) -> tuple[str, str]:
+        def create_prompt(**kwargs: str) -> tuple[str, str]:
             """Create a prompt from the given keyword arguments.
 
             Args:
@@ -640,9 +642,9 @@ class VLLMModel(HuggingFaceEncoderModel):
             """
             label_key = "label" if "label" in kwargs else "target_text"
             label = kwargs.pop(label_key)
-            assert (
-                label is not None
-            ), f"Found a None label for the prompt: {kwargs}. This should not happen."
+            assert label is not None, (
+                f"Found a None label for the prompt: {kwargs}. This should not happen."
+            )
             label_mapping = self.dataset_config.prompt_label_mapping
             label = label_mapping.get(label, label)
             if self.buffer["instruction_model"]:
@@ -1028,6 +1030,9 @@ def load_tokenizer(
             "attempts."
         )
 
+    # Ensure that BOS, EOS and PAD tokens are set
+    tokenizer.bos_token, tokenizer.bos_token_id = get_bos_token(tokenizer=tokenizer)
+    tokenizer.eos_token, tokenizer.eos_token_id = get_eos_token(tokenizer=tokenizer)
     if tokenizer.pad_token_id is None:
         tokenizer.pad_token = tokenizer.eos_token
 

@@ -26,7 +26,7 @@ class Token:
     end: int
 
 
-def main():
+def main() -> None:
     """Create the DANSK-mini NER dataset and uploads it to the HF Hub."""
     # Define dataset ID
     repo_id = "chcaa/DANSK"
@@ -92,18 +92,18 @@ def main():
                 in_named_entity = None
 
         # Sanity checks
-        assert len(token_list) == len(
-            ner_tag_list
-        ), "The number of tokens and named entity tags are not equal."
+        assert len(token_list) == len(ner_tag_list), (
+            "The number of tokens and named entity tags are not equal."
+        )
         invalid_i_ner_tags = [
             ner_tag
             for token_idx, ner_tag in enumerate(ner_tag_list)
             if ner_tag.startswith("I-")
             and ner_tag_list[token_idx - 1] not in {f"B-{ner_tag[2:]}", ner_tag}
         ]
-        assert (
-            not invalid_i_ner_tags
-        ), f"The following I- tags are invalid: {invalid_i_ner_tags}"
+        assert not invalid_i_ner_tags, (
+            f"The following I- tags are invalid: {invalid_i_ner_tags}"
+        )
 
         return dict(text=sample["text"], tokens=token_list, labels=ner_tag_list)
 

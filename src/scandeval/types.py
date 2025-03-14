@@ -54,7 +54,7 @@ class ExtractLabelsFunction(t.Protocol):
         ...
 
 
-def is_list_of_int(x: t.Any) -> t.TypeGuard[list[int]]:
+def is_list_of_int(x: object) -> t.TypeGuard[list[int]]:
     """Check if an object is a list of integers.
 
     Args:
@@ -67,7 +67,7 @@ def is_list_of_int(x: t.Any) -> t.TypeGuard[list[int]]:
     return isinstance(x, list) and all(isinstance(i, int) for i in x)
 
 
-def is_list_of_list_of_int(x: t.Any) -> t.TypeGuard[list[list[int]]]:
+def is_list_of_list_of_int(x: object) -> t.TypeGuard[list[list[int]]]:
     """Check if an object is a list of list of integers.
 
     Args:
@@ -84,7 +84,7 @@ def is_list_of_list_of_int(x: t.Any) -> t.TypeGuard[list[list[int]]]:
     )
 
 
-def is_list_of_str(x: t.Any) -> t.TypeGuard[list[str]]:
+def is_list_of_str(x: object) -> t.TypeGuard[list[str]]:
     """Check if an object is a list of integers.
 
     Args:
