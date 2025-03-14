@@ -69,6 +69,69 @@ $ scandeval --model <model-id> --dataset sentiment-headlines-es
 
 ## Named Entity Recognition
 
+### XGLUE-NER-es-mini
+
+This dataset was published in [this paper](https://arxiv.org/abs/2004.01401) and contains 0 / 1,923 / 1,523 samples for training, validation, and testing, respectively (there is no training split in Spanish). We use 256 / 1024 samples for validation and testing, respectively. All our splits are subsets of the original ones.
+
+Here are a few examples from the validation split:
+
+```json
+{
+  "tokens": ["Finaliza", ",", "con", "la", "presentación", "de", "las", "conclusiones", ",", "la", "reunión", "de", "las", "comisiones", "de", "comunicación", "social", "de", "las", "conferencias", "episcopales", "de", "España", "y", "Portugal", "."],
+  "labels": ["O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "B-LOC", "O", "B-LOC", "O"],
+  "text": "Finaliza, con la presentación de las conclusiones, la reunión de las comisiones de comunicación social de las conferencias episcopales de España y Portugal."
+}
+```
+```json
+{
+    "tokens": ["Roma", ",", "23", "may", "(", "EFE", ")", "."],
+    "labels": ["B-LOC", "O", "O", "O", "O", "B-ORG", "O", "O"],
+    "text": "Roma, 23 may (EFE)."
+}
+```
+```json
+{
+    "tokens": ["El", "Comité", "de", "Competición", "de", "la", "Federación", "Española", "de", "Fútbol", "(", "FEF", ")", "sancionó", "con", "un", "partido", "de", "suspensión", ",", "por", "acumulación", "de", "amonestaciones", "al", "españolista", "Toni", "Velamazán", "y", "a", "los", "barcelonistas", "Michael", "Reiziger", "y", "Phillip", "Cocu", "."],
+    "labels": ["O", "B-ORG", "I-ORG", "I-ORG", "I-ORG", "I-ORG", "I-ORG", "I-ORG", "I-ORG", "I-ORG", "O", "B-ORG", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "B-PER", "I-PER", "O", "O", "O", "O", "B-PER", "I-PER", "O", "B-PER", "I-PER", "O"],
+    "text": "El Comité de Competición de la Federación Española de Fútbol (FEF) sancionó con un partido de suspensión, por acumulación de amonestaciones al españolista Toni Velamazán y a los barcelonistas Michael Reiziger y Phillip Cocu."
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 8
+- Prefix prompt:
+  ```
+  Lo siguiente son oraciones y diccionarios JSON con las entidades nombradas que aparecen en la oración dada.
+  ```
+- Base prompt template:
+  ```
+  Oración: {text}
+  Entidades nombradas: {label}
+  ```
+- Instruction-tuned prompt template:
+  ```
+  Oración: {text}
+
+  Identifica las entidades nombradas en la oración. Debes producir esto como un diccionario JSON con las claves 'persona', 'lugar', 'organización' y 'misceláneo'. Los valores deben ser listas de las entidades nombradas de ese tipo, exactamente como aparecen en la oración.
+  ```
+- Label mapping:
+    - `B-PER` ➡️ `persona`
+    - `I-PER` ➡️ `persona`
+    - `B-LOC` ➡️ `lugar`
+    - `I-LOC` ➡️ `lugar`
+    - `B-ORG` ➡️ `organización`
+    - `I-ORG` ➡️ `organización`
+    - `B-MISC` ➡️ `misceláneo`
+    - `I-MISC` ➡️ `misceláneo`
+
+You can evaluate this dataset directly as follows:
+
+```bash
+$ scandeval --model <model-id> --dataset xglue-ner-es-mini
+```
+
 ## Linguistic Acceptability
 
 ### ScaLA-es

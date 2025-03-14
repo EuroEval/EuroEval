@@ -737,6 +737,46 @@ WIKIANN_FO_CONFIG = DatasetConfig(
 )
 
 
+XGLUE_NER_ES_CONFIG = DatasetConfig(
+    name="xglue-ner-es",
+    pretty_name="the truncated version of the Spanish named entity recognition "
+    "dataset from XGLUE",
+    huggingface_id="EuroEval/xglue-ner-es-mini",
+    task=NER,
+    languages=[ES],
+    labels=[
+        "o",
+        "b-loc",
+        "i-loc",
+        "b-org",
+        "i-org",
+        "b-per",
+        "i-per",
+        "b-misc",
+        "i-misc",
+    ],
+    prompt_prefix="Lo siguiente son oraciones y diccionarios JSON con las entidades "
+    "nombradas que aparecen en la oración dada.",
+    prompt_template="Oración: {text}\nEntidades nombradas: {label}",
+    prompt_label_mapping={
+        "b-per": "persona",
+        "i-per": "persona",
+        "b-loc": "lugar",
+        "i-loc": "lugar",
+        "b-org": "organización",
+        "i-org": "organización",
+        "b-misc": "misceláneo",
+        "i-misc": "misceláneo",
+    },
+    instruction_prompt="Oración: {text}\n\nIdentifica las entidades nombradas en la "
+    "oración. Debes producir esto como un diccionario JSON con las claves 'persona', "
+    "'lugar', 'organización' y 'misceláneo'. Los valores deben ser listas de las "
+    "entidades nombradas de ese tipo, exactamente como aparecen en la oración.",
+    num_few_shot_examples=8,
+    max_generated_tokens=128,
+    unofficial=True,
+)
+
 ### LINGUISTIC ACCEPTABILITY DATASETS ###
 
 SCALA_SV_CONFIG = DatasetConfig(
