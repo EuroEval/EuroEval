@@ -48,3 +48,25 @@ METRIC_ATTRIBUTES_TAKING_UP_MEMORY = ["cached_bertscorer"]
 
 # Hugging Face Hub tags used to classify models as merge models
 MERGE_TAGS = ["merge", "mergekit"]
+
+# Default labels and mappings for the prompt templates
+MULTIPLE_CHOICE_LABELS = ["a", "b", "c", "d"]
+MULTIPLE_CHOICE_MAPPING = dict(a="a", b="b", c="c", d="d")
+
+LA_LABELS = ["incorrect", "correct"]
+
+NER_LABELS = [
+    "o",
+    "b-loc",
+    "i-loc",
+    "b-org",
+    "i-org",
+    "b-per",
+    "i-per",
+    "b-misc",
+    "i-misc",
+]
+
+RC_LABELS = ["start_positions", "end_positions"]
+
+SENT_LABELS = ["negative", "neutral", "positive"]

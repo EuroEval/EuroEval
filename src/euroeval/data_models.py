@@ -12,6 +12,7 @@ import pydantic
 import torch
 
 from .enums import Device, InferenceBackend, ModelType, TaskGroup
+from .templates import get_task_templates
 from .types import ScoreDict
 
 
@@ -472,3 +473,53 @@ class HFModelInfo:
     pipeline_tag: str
     tags: list[str]
     adapter_base_model_id: str | None
+
+
+@dataclass
+class TaskPromptConfig:
+    """Configuration of prompts and labels for a specific task-language combination.
+
+    Attributes:
+        task:
+            The task to get the prompts for.
+        language:
+            The language to get for the task.
+        template:
+            The `PromptTemplate` dataclass for the given task and language
+    """
+
+    task: Task
+    language: Language
+
+    def __post_init__(self) -> None:  # noqa: D105
+        self.template = get_task_templates(self.task, self.language)
+
+
+@dataclass
+class PromptTemplate:
+    """Configuration for task-specific prompting and labeling across languages.
+
+    Defines the prompt templates and label configurations needed for evaluating a
+    specific task in a given language.
+
+    Attributes:
+        prompt_prefix:
+            The prefix to use in the few-shot prompt.
+        prompt_template:
+            The template for the prompt to use when benchmarking the dataset using
+            few-shot evaluation.
+        instruction_prompt:
+            The prompt to use when benchmarking the dataset using instruction-based
+            evaluation.
+        prompt_label_mapping (optional):
+            A mapping from the labels to another phrase which is used as a substitute
+            for the label in few-shot evaluation. Defaults to an empty dictionary.
+        labels (optional):
+            The labels in the dataset. Defaults to an empty list.
+    """
+
+    prompt_prefix: str
+    prompt_template: str
+    instruction_prompt: str
+    prompt_label_mapping: dict[str, str] = field(default_factory=dict)
+    labels: list[str] = field(default_factory=list)
