@@ -6,8 +6,15 @@ import pandas as pd
 from datasets import Dataset, DatasetDict, Split
 
 
-def load_xglue_data(file_path):
-    """Load data from a file and convert to the required format."""
+def load_xglue_data(file_path: str) -> pd.DataFrame:
+    """Load data from a file and convert to the required format.
+
+    Args:
+        file_path (str): The path to the file containing the data.
+
+    Returns:
+            pd.DataFrame: A pandas DataFrame containing the data.
+    """
     tokens = []
     labels = []
     current_tokens = []
@@ -36,7 +43,15 @@ def load_xglue_data(file_path):
             tokens.append(current_tokens)
             labels.append(current_labels)
 
-    def join_tokens(token_list):
+    def join_tokens(token_list: list[str]) -> str:
+        """Join tokens into a string.
+
+        Args:
+            token_list (list[str]): The list of tokens to join.
+
+        Returns:
+            str: The joined string.
+        """
         if not token_list:
             return ""
 
@@ -67,7 +82,7 @@ def load_xglue_data(file_path):
     )
 
 
-def main():
+def main() -> None:
     """Create the Spanish XGLUE NER dataset."""
     # Define base directory. Download https://microsoft.github.io/XGLUE/
     base_dir = "xglue_full_dataset/NER"
@@ -79,9 +94,9 @@ def main():
     for df in [dev_df, test_df]:
         for token_list, ner_tag_list in zip(df["tokens"], df["labels"]):
             # Sanity check that the number of tokens and named entity tags are equal
-            assert len(token_list) == len(
-                ner_tag_list
-            ), "The number of tokens and named entity tags are not equal."
+            assert len(token_list) == len(ner_tag_list), (
+                "The number of tokens and named entity tags are not equal."
+            )
 
             # Fix invalid I-tags
             invalid_i_ner_tags = [
