@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   we use the inner-most dictionary. This caused issues with Anthropic models, since they
   do not support structured generation, and their output are always {"input": actual
   dictionary}. This has been fixed now.
+- Now handles `ReadTimeout`s when loading datasets, rather than aborting evaluations.
 
 ### Changed
 - Moved the `demjson3` dependency from the `generative` extra to the main dependencies,
@@ -23,7 +24,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [v15.3.1] - 2025-03-13
 ### Fixed
-- Now handles`ConnectionError`s when loading datasets, rather than aborting evaluations.
+- Now handles `ConnectionError`s when loading datasets, rather than aborting evaluations.
 
 
 ## [v15.3.0] - 2025-03-12
