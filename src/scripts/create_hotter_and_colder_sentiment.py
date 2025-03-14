@@ -79,7 +79,7 @@ def main() -> None:
         test=Dataset.from_pandas(test_df, split=Split.TEST),
     )
 
-    dataset_id = "ScandEval/hotter-and-colder-sentiment"
+    dataset_id = "EuroEval/hotter-and-colder-sentiment"
 
     # Remove the dataset from Hugging Face Hub if it already exists
     try:

@@ -1,6 +1,6 @@
 # 🇳🇴 Norwegian
 
-This is an overview of all the datasets used in the Norwegian part of ScandEval. The
+This is an overview of all the datasets used in the Norwegian part of EuroEval. The
 datasets are grouped by their task - see the [task overview](/tasks) for more
 information about what these constitute.
 
@@ -66,7 +66,7 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ scandeval --model <model-id> --dataset norec
+$ euroeval --model <model-id> --dataset norec
 ```
 
 
@@ -149,7 +149,7 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ scandeval --model <model-id> --dataset norne-nb
+$ euroeval --model <model-id> --dataset norne-nb
 ```
 
 
@@ -230,7 +230,7 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ scandeval --model <model-id> --dataset norne-nn
+$ euroeval --model <model-id> --dataset norne-nn
 ```
 
 
@@ -298,7 +298,7 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ scandeval --model <model-id> --dataset scala-nb
+$ euroeval --model <model-id> --dataset scala-nb
 ```
 
 
@@ -364,13 +364,80 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ scandeval --model <model-id> --dataset scala-nn
+$ euroeval --model <model-id> --dataset scala-nn
 ```
 
+
+### Unofficial: NoCoLA
+
+This dataset was published in [this paper](https://aclanthology.org/2023.nodalida-1.60/)
+and is based on the annotated language learner corpus
+[ASK](https://aclanthology.org/L06-1345/). Notably, the individual types of errors are
+also annotated in this dataset. We use the error types to ensure that there is an equal
+representation of each error type, but then collapse the error types into `correct` and
+`incorrect`.
+
+The original dataset consists of 116,199 / 14,293 / 14,387 samples for training,
+validation and test, respectively. We use 1,024 / 256 / 2,048 samples for training,
+validation and test, respectively, where we sample each error type equally. All splits
+are subsets of the original splits.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Vi har hatt krig i nesten ti år. Jeg føler meg noen ganger trist fordi jeg har mistet flere venner og min far på grunn av krigen.",
+  "label": "correct"
+}```
+```json
+{
+  "text": "Hvis jeg ikke sier in n genting, kan han spille hele dagen.",
+  "label": "incorrect"
+}```
+```json
+{
+  "text": "De føler at samfunnet trenger ikke dem.",
+  "label": "incorrect"
+}```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 12
+- Prefix prompt:
+  ```
+  Følgende er setninger og hvorvidt de er grammatisk korrekte.
+  ```
+- Base prompt template:
+  ```
+  Setning: {text}
+  Grammatisk korrekt: {label}
+  ```
+- Instruction-tuned prompt template:
+  ```
+  Setning: {text}
+
+  Bestem om setningen er grammatisk korrekt eller ikke. Svar med 'ja' hvis setningen er korrekt og 'nei' hvis den ikke er.
+  ```
+- Label mapping:
+    - `correct` ➡️ `ja`
+    - `incorrect` ➡️ `nei`
+
+You can evaluate this dataset directly as follows:
+
+```bash
+$ euroeval --model <model-id> --dataset no-cola-binary
+```
+
+
 ### Unofficial: Jentoft
+
 This dataset was published in [this Master's thesis](https://www.duo.uio.no/handle/10852/103885) by Matias Jentoft.
 
-The original dataset consists of 85,771 / 10,827 / 10487 samples for training, validation and test, respectively. We use a split of 1,024 / 256 / 2,048 samples for training, validation and test, respectively. In each split, the distribution of `correct` and `incorrect` is 50/50.
+The original dataset consists of 85,771 / 10,827 / 10487 samples for training,
+validation and test, respectively. We use a split of 1,024 / 256 / 2,048 samples for
+training, validation and test, respectively. In each split, the distribution of
+`correct` and `incorrect` is 50/50.
 
 Here are a few examples from the training split:
 
@@ -419,7 +486,7 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ scandeval --model <model-id> --dataset jentoft
+$ euroeval --model <model-id> --dataset jentoft
 ```
 
 ## Reading Comprehension
@@ -494,7 +561,7 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ scandeval --model <model-id> --dataset norquad
+$ euroeval --model <model-id> --dataset norquad
 ```
 
 
@@ -505,7 +572,7 @@ features a manually annotated reading comprehension dataset based on Norwegian n
 articles. This dataset is an _abstractive_ question answering dataset, meaning that the
 answers do not always feature in the context. To fix this, they were rephrased using
 [this
-script](https://github.com/ScandEval/ScandEval/blob/main/src/scripts/create_norglm_multiqa.py),
+script](https://github.com/EuroEval/EuroEval/blob/main/src/scripts/create_norglm_multiqa.py),
 which utilised the `gpt-4o-2024-05-13` model.
 
 The original dataset contains 2,406 samples, which we split into 1,024 / 256 / 1,126
@@ -570,13 +637,79 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ scandeval --model <model-id> --dataset norglm-multi-qa
+$ euroeval --model <model-id> --dataset norglm-multi-qa
 ```
 
 
 ## Knowledge
 
-### MMLU-no
+### NRK Quiz QA
+
+This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2501.11128)
+and is a multiple-choice question answering (QA) dataset designed for evaluation of the
+Norwegian language and culture, including both Bokmål and Nynorsk. The dataset consists
+of quizzes from NRK, the national public broadcaster in Norway.
+
+The original dataset contains 4,930 samples, spread across 549 quizzes. We keep the
+top-256 quizzes, allowing us to create splits stratified across all the remaining
+quizzes. We 635 / 256 / 2048 samples for training, validation and test, respectively.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Gunnar har hatt plutselige og sterke smerteanfall siden han var liten gutt. Det var vondt å tisse og det gjorde vondt i ryggen og magen. Det hjalp litt å drikke vann. Reseptbelagte medisiner kan være nødvendig under anfall.\nSvaralternativer:\na. Nyrestein, kronisk\nb. Irritabel tarmsyndrom\nc. Angst\nd. Urinveisinfeksjon",
+  "label": "a"
+}```
+```json
+{
+  "text": "80 år gamle Harrison Ford er nok ein gong aktuell i rolla som Indiana Jones. Kva heiter filmen?\nSvaralternativer:\na. Indiana Jones and the Nasty Nazis\nb. Indiana Jones and the Dial of Destiny\nc. Indiana Jones and the Hunt for Power\nd. Indiana Jones Forever",
+  "label": "b"
+}```
+```json
+{
+  "text": "I 1980 måtte denne bassisten overnatte ni netter i fengsel i Japan fordi han prøvde å få med seg ca. 200 gram marihuana inn i landet. Hvem var det?\nSvaralternativer:\na. Sting\nb. Lemmy Kilmister\nc. Paul McCartney\nd. Bootsy Collins",
+  "label": "c"
+}```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+  ```
+  Følgende er flervalgsspørsmål (med svar).
+  ```
+- Base prompt template:
+  ```
+  Spørsmål: {text}
+  Svaralternativer:
+  a. {option_a}
+  b. {option_b}
+  c. {option_c}
+  d. {option_d}
+  Svar: {label}
+  ```
+- Instruction-tuned prompt template:
+  ```
+  Spørsmål: {text}
+  Svaralternativer:
+  a. {option_a}
+  b. {option_b}
+  c. {option_c}
+  d. {option_d}
+
+  Besvar følgende spørsmål med 'a', 'b', 'c', eller 'd', og ikke noe annet.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+$ euroeval --model <model-id> --dataset nrk-quiz-qa
+```
+
+
+### Unofficial: MMLU-no
 
 This dataset is a machine translated version of the English [MMLU
 dataset](https://openreview.net/forum?id=d7KBjmI3GmQ) and features questions within 57
@@ -638,13 +771,13 @@ When evaluating generative models, we use the following setup (see the
   c. {option_c}
   d. {option_d}
 
-  Besvar følgende spørsmål med 'a', 'b', 'c' eller 'd', og engu öðru.
+  Besvar følgende spørsmål med 'a', 'b', 'c' eller 'd', og ikke noe annet.
   ```
 
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ scandeval --model <model-id> --dataset mmlu-no
+$ euroeval --model <model-id> --dataset mmlu-no
 ```
 
 
@@ -708,19 +841,85 @@ When evaluating generative models, we use the following setup (see the
   c. {option_c}
   d. {option_d}
 
-  Besvar følgende spørsmål med 'a', 'b', 'c' eller 'd', og engu öðru.
+  Besvar følgende spørsmål med 'a', 'b', 'c' eller 'd', og ikke noe annet.
   ```
 
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ scandeval --model <model-id> --dataset arc-no
+$ euroeval --model <model-id> --dataset arc-no
 ```
 
 
 ## Common-sense Reasoning
 
-### HellaSwag-no
+### NorCommonSenseQA
+
+This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2501.11128)
+and is a manually translated and localised version of the English CommonSenseQA dataset.
+There are samples in both Bokmål and Nynorsk, but with the vast majority being Bokmål.
+
+The original dataset contains 1,093 samples. We use a 128 / 128 / 787 split for
+training, validation and testing, respectively.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Hvor er det sannsynlig at en fugl lager hjemmet sitt?\nSvaralternativer:\na. I skogen\nb. I et rede\nc. På taket\nd. På blader\ne. I himmelen",
+  "label": "a"
+}```
+```json
+{
+  "text": "Hvis et hjem har et abonnoment, hva får de sannsyneligvis hver dag i posten?\nSvaralternativer:\na. Delestykker\nb. En avis\nc. En gate\nd. En vaskemaskin\ne. Jordas overflate",
+  "label": "b"
+}```
+```json
+{
+  "text": "Når du ikke klarer å gjøre noe ferdig, hva feilet du i da?\nSvaralternativer:\na. Å vinne\nb. Å bestå\nc. Å fullfør\nd. Å gjøre det bra\ne. Å lykkes",
+  "label": "c"
+}```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+  ```
+  Følgende er flervalgsspørsmål (med svar).
+  ```
+- Base prompt template:
+  ```
+  Spørsmål: {text}
+  Svaralternativer:
+  a. {option_a}
+  b. {option_b}
+  c. {option_c}
+  d. {option_d}
+  e. {option_e}
+  Svar: {label}
+  ```
+- Instruction-tuned prompt template:
+  ```
+  Spørsmål: {text}
+  Svaralternativer:
+  a. {option_a}
+  b. {option_b}
+  c. {option_c}
+  d. {option_d}
+  e. {option_e}
+
+  Besvar følgende spørsmål med 'a', 'b', 'c', 'd' eller 'e', og ikke noe annet.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+$ euroeval --model <model-id> --dataset nor-common-sense-qa
+```
+
+
+### Unofficial: HellaSwag-no
 
 This dataset is a machine translated version of the English [HellaSwag
 dataset](https://aclanthology.org/P19-1472/). The original dataset was based on both
@@ -779,13 +978,13 @@ When evaluating generative models, we use the following setup (see the
   c. {option_c}
   d. {option_d}
 
-  Besvar følgende spørsmål med 'a', 'b', 'c' eller 'd', og engu öðru.
+  Besvar følgende spørsmål med 'a', 'b', 'c' eller 'd', og ikke noe annet.
   ```
 
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ scandeval --model <model-id> --dataset hellaswag-no
+$ euroeval --model <model-id> --dataset hellaswag-no
 ```
 
 
@@ -849,7 +1048,7 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ scandeval --model <model-id> --dataset no-sammendrag
+$ euroeval --model <model-id> --dataset no-sammendrag
 ```
 
 
@@ -905,7 +1104,7 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ scandeval --model <model-id> --dataset norglm-multi-sum
+$ euroeval --model <model-id> --dataset norglm-multi-sum
 ```
 
 
@@ -962,7 +1161,7 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ scandeval --model <model-id> --dataset schibsted-no
+$ euroeval --model <model-id> --dataset schibsted-no
 ```
 
 
@@ -1019,5 +1218,5 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ scandeval --model <model-id> --dataset personal-sum
+$ euroeval --model <model-id> --dataset personal-sum
 ```

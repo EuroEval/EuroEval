@@ -59,7 +59,7 @@ def main() -> None:
     )
 
     # Create dataset ID
-    mini_dataset_id = "ScandEval/wiki-lingua-nl-mini"
+    mini_dataset_id = "EuroEval/wiki-lingua-nl-mini"
 
     # Remove the dataset from Hugging Face Hub if it already exists
     try:

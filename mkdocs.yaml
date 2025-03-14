@@ -1,6 +1,6 @@
-site_name: ScandEval
-repo_url: https://github.com/ScandEval/ScandEval
-repo_name: ScandEval
+site_name: EuroEval
+repo_url: https://github.com/EuroEval/EuroEval
+repo_name: EuroEval
 theme:
   name: material
   features:
@@ -52,4 +52,4 @@ nav:
   - FAQ: faq.md
   - Python Package: python-package.md
   - API Reference:
-      - $api:src/scandeval.***
+      - $api:src/euroeval.***

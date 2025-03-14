@@ -2,11 +2,11 @@
 hide:
     - navigation
 ---
-# The `scandeval` Python Package
+# The `euroeval` Python Package
 
-The `scandeval` Python package is the Python package used to evaluate language models in
-ScandEval. This page will give you a brief overview of the package and how to use it.
-You can also check out the [full API reference](/api/scandeval/) for more details.
+The `euroeval` Python package is the Python package used to evaluate language models in
+EuroEval. This page will give you a brief overview of the package and how to use it.
+You can also check out the [full API reference](/api/euroeval/) for more details.
 
 
 ## Installation
@@ -14,10 +14,10 @@ You can also check out the [full API reference](/api/scandeval/) for more detail
 To install the package simply write the following command in your favorite terminal:
 
 ```bash
-$ pip install scandeval[all]
+$ pip install euroeval[all]
 ```
 
-This will install the ScandEval package with all extras. You can also install the
+This will install the EuroEval package with all extras. You can also install the
 minimal version by leaving out the `[all]`, in which case the package will let you know
 when an evaluation requires a certain extra dependency, and how you install it.
 
@@ -30,7 +30,7 @@ The easiest way to benchmark pretrained models is via the command line interface
 having installed the package, you can benchmark your favorite model like so:
 
 ```bash
-$ scandeval --model <model-id>
+$ euroeval --model <model-id>
 ```
 
 Here `model` is the HuggingFace model ID, which can be found on the [HuggingFace
@@ -39,7 +39,7 @@ the tasks available. If you want to benchmark on a particular task, then use the
 `--task` argument:
 
 ```bash
-$ scandeval --model <model-id> --task sentiment-classification
+$ euroeval --model <model-id> --task sentiment-classification
 ```
 
 We can also narrow down which languages we would like to benchmark on. This can be done
@@ -47,28 +47,28 @@ by setting the `--language` argument. Here we thus benchmark the model on the Da
 sentiment classification task:
 
 ```bash
-$ scandeval --model <model-id> --task sentiment-classification --language da
+$ euroeval --model <model-id> --task sentiment-classification --language da
 ```
 
 Multiple models, datasets and/or languages can be specified by just attaching multiple
 arguments. Here is an example with two models:
 
 ```bash
-$ scandeval --model <model-id1> --model <model-id2>
+$ euroeval --model <model-id1> --model <model-id2>
 ```
 
 The specific model version/revision to use can also be added after the suffix '@':
 
 ```bash
-$ scandeval --model <model-id>@<commit>
+$ euroeval --model <model-id>@<commit>
 ```
 
 This can be a branch name, a tag name, or a commit id. It defaults to 'main' for latest.
 
-See all the arguments and options available for the `scandeval` command by typing
+See all the arguments and options available for the `euroeval` command by typing
 
 ```bash
-$ scandeval --help
+$ euroeval --help
 ```
 
 ### Benchmarking from a Script
@@ -78,7 +78,7 @@ an object of the `Benchmarker` class, and call this benchmark object with your f
 model:
 
 ```python
->>> from scandeval import Benchmarker
+>>> from euroeval import Benchmarker
 >>> benchmark = Benchmarker()
 >>> benchmark(model="<model>")
 ```
@@ -105,7 +105,7 @@ to clone the repo and installing from source. This can be fetched programmatical
 running the following:
 
 ```bash
-$ wget https://raw.githubusercontent.com/ScandEval/ScandEval/main/Dockerfile.cuda
+$ wget https://raw.githubusercontent.com/EuroEval/EuroEval/main/Dockerfile.cuda
 ```
 
 Next, to be able to build the Docker image, first ensure that the NVIDIA Container
@@ -118,15 +118,15 @@ version installed (which you can check using `nvidia-smi`). After that, we build
 image as follows:
 
 ```bash
-$ docker build --pull -t scandeval -f Dockerfile.cuda .
+$ docker build --pull -t euroeval -f Dockerfile.cuda .
 ```
 
 With the Docker image built, we can now evaluate any model as follows:
 
 ```bash
-$ docker run -e args="<scandeval-arguments>" --gpus 1 --name scandeval --rm scandeval
+$ docker run -e args="<euroeval-arguments>" --gpus 1 --name euroeval --rm euroeval
 ```
 
-Here `<scandeval-arguments>` consists of the arguments added to the `scandeval` CLI
+Here `<euroeval-arguments>` consists of the arguments added to the `euroeval` CLI
 argument. This could for instance be `--model <model-id> --task
 sentiment-classification`.

@@ -4,8 +4,8 @@ from typing import Generator
 
 import pytest
 
-from scandeval.data_models import Task
-from scandeval.tasks import get_all_tasks
+from euroeval.data_models import Task
+from euroeval.tasks import get_all_tasks
 
 
 class TestGetAllTasks:

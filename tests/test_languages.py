@@ -4,8 +4,8 @@ from typing import Generator
 
 import pytest
 
-from scandeval.data_models import Language
-from scandeval.languages import get_all_languages
+from euroeval.data_models import Language
+from euroeval.languages import get_all_languages
 
 
 class TestGetAllLanguages:

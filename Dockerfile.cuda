@@ -5,13 +5,13 @@ RUN apt-get -y update && \
     apt-get -y upgrade && \
     DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends gcc python3.11 python3-pip python3-dev git-all && \
     python3 -m pip install --upgrade pip wheel && \
-    python3 -m pip install scandeval[all] && \
+    python3 -m pip install euroeval[all] && \
     FLASH_ATTENTION_SKIP_CUDA_BUILD=TRUE python3 -m pip install flash-attn --no-build-isolation
 
 # Move the existing evaluation results into the container, to avoid re-running the
 # evaluation
 WORKDIR /project
-COPY scandeval_benchmark_results* /project
+COPY euroeval_benchmark_results* /project
 
 # Set the environment variable with the evaluation arguments. These can be overridden
 # when running the container
@@ -21,5 +21,5 @@ ENV args=""
 CMD if [ -z "$args" ]; then \
         echo "No arguments provided. Please run the container as, e.g., \"docker run --gpus 1 -e args='-m <model-id>' <image>\""; \
     else \
-        scandeval $args; \
+        euroeval $args; \
     fi

@@ -1,6 +1,6 @@
 # 🇩🇪 German
 
-This is an overview of all the datasets used in the German part of ScandEval. The
+This is an overview of all the datasets used in the German part of EuroEval. The
 datasets are grouped by their task - see the [task overview](/tasks) for more
 information about what these constitute.
 
@@ -65,7 +65,7 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ scandeval --model <model-id> --dataset sb10k
+$ euroeval --model <model-id> --dataset sb10k
 ```
 
 
@@ -136,7 +136,7 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ scandeval --model <model-id> --dataset germeval
+$ euroeval --model <model-id> --dataset germeval
 ```
 
 
@@ -204,7 +204,7 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ scandeval --model <model-id> --dataset scala-de
+$ euroeval --model <model-id> --dataset scala-de
 ```
 
 
@@ -280,7 +280,7 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ scandeval --model <model-id> --dataset germanquad
+$ euroeval --model <model-id> --dataset germanquad
 ```
 
 
@@ -349,7 +349,7 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ scandeval --model <model-id> --dataset mmlu-de
+$ euroeval --model <model-id> --dataset mmlu-de
 ```
 
 
@@ -413,7 +413,7 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ scandeval --model <model-id> --dataset arc-de
+$ euroeval --model <model-id> --dataset arc-de
 ```
 
 
@@ -479,7 +479,7 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ scandeval --model <model-id> --dataset hellaswag-de
+$ euroeval --model <model-id> --dataset hellaswag-de
 ```
 
 
@@ -541,5 +541,5 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ scandeval --model <model-id> --dataset mlsum-de
+$ euroeval --model <model-id> --dataset mlsum-de
 ```

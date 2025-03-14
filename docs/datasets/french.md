@@ -1,6 +1,6 @@
 # 🇫🇷 French
 
-This is an overview of all the datasets used in the French part of ScandEval. The
+This is an overview of all the datasets used in the French part of EuroEval. The
 datasets are grouped by their task - see the [task overview](/tasks) for more
 information about what these constitute.
 
@@ -64,7 +64,7 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ scandeval --model <model-id> --dataset allocine
+$ euroeval --model <model-id> --dataset allocine
 ```
 
 
@@ -146,7 +146,7 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ scandeval --model <model-id> --dataset eltec
+$ euroeval --model <model-id> --dataset eltec
 ```
 
 
@@ -194,27 +194,27 @@ When evaluating generative models, we use the following setup (see the
 - Number of few-shot examples: 12
 - Prefix prompt:
   ```
-  Følgende er sætninger og om de er grammatisk korrekte.
+  Les phrases suivantes indiquent si elles sont grammaticalement correctes.
   ```
 - Base prompt template:
   ```
-  Sætning: {text}
-  Grammatisk korrekt: {label}
+  Phrase: {text}
+  Correct du point de vue grammatical: {label}
   ```
 - Instruction-tuned prompt template:
   ```
-  Sætning: {text}
+  Phrase: {text}
 
-  Bestem om sætningen er grammatisk korrekt eller ej. Svar med 'ja', hvis sætningen er korrekt, og 'nej', hvis den ikke er.
+  Déterminez si la phrase est grammaticalement correcte ou non. Répondez par 'oui' si la phrase est correcte et par 'non' si elle ne l'est pas, et rien d'autre.
   ```
 - Label mapping:
-    - `correct` ➡️ `ja`
-    - `incorrect` ➡️ `nej`
+    - `correct` ➡️ `oui`
+    - `incorrect` ➡️ `non`
 
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ scandeval --model <model-id> --dataset scala-da
+$ euroeval --model <model-id> --dataset scala-fr
 ```
 
 
@@ -292,7 +292,7 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ scandeval --model <model-id> --dataset fquad
+$ euroeval --model <model-id> --dataset fquad
 ```
 
 
@@ -366,7 +366,7 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ scandeval --model <model-id> --dataset mmlu-fr
+$ euroeval --model <model-id> --dataset mmlu-fr
 ```
 
 
@@ -437,7 +437,7 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ scandeval --model <model-id> --dataset hellaswag-fr
+$ euroeval --model <model-id> --dataset hellaswag-fr
 ```
 
 
@@ -498,5 +498,5 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ scandeval --model <model-id> --dataset orange-sum
+$ euroeval --model <model-id> --dataset orange-sum
 ```

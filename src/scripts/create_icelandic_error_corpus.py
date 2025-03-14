@@ -44,8 +44,8 @@ def main() -> None:
     )
 
     # Create dataset IDs
-    dataset_id = "ScandEval/ice-ec-full"
-    dataset_subset_id = "ScandEval/ice-ec"
+    dataset_id = "EuroEval/ice-ec-full"
+    dataset_subset_id = "EuroEval/ice-ec"
 
     for dataset_, dataset_id_ in [
         (dataset, dataset_id),

@@ -2,7 +2,7 @@
 
 import pytest
 
-from scandeval.types import is_list_of_int, is_list_of_list_of_int, is_list_of_str
+from euroeval.types import is_list_of_int, is_list_of_list_of_int, is_list_of_str
 
 
 @pytest.mark.parametrize(

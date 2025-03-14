@@ -17,6 +17,7 @@ from load_ud_pos import (
     load_fodt_pos,
     load_frdt_pos,
     load_isdt_pos,
+    load_itdt_pos,
     load_nldt_pos,
     load_nodt_nb_pos,
     load_nodt_nn_pos,
@@ -26,7 +27,7 @@ from pandas.errors import SettingWithCopyWarning
 from requests.exceptions import HTTPError
 from tqdm.auto import tqdm
 
-from scandeval.utils import block_terminal_output
+from euroeval.utils import block_terminal_output
 
 
 def main() -> None:
@@ -46,6 +47,7 @@ def main() -> None:
         "nl": load_nldt_pos,
         "en": load_endt_pos,
         "fr": load_frdt_pos,
+        "it": load_itdt_pos,
         "es": load_esdt_pos,
     }
 
@@ -119,7 +121,7 @@ def main() -> None:
             )
 
             # Create dataset ID
-            dataset_id = f"ScandEval/scala-{lang}"
+            dataset_id = f"EuroEval/scala-{lang}"
 
             # Remove the dataset from Hugging Face Hub if it already exists
             try:

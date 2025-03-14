@@ -7,11 +7,11 @@ from typing import Generator
 import pytest
 import torch
 
-from scandeval.data_models import BenchmarkConfig, MetricConfig, ModelConfig, Task
-from scandeval.dataset_configs import SPEED_CONFIG, get_all_dataset_configs
-from scandeval.enums import InferenceBackend, ModelType
-from scandeval.languages import DA, get_all_languages
-from scandeval.tasks import SENT, SPEED, get_all_tasks
+from euroeval.data_models import BenchmarkConfig, MetricConfig, ModelConfig, Task
+from euroeval.dataset_configs import SPEED_CONFIG, get_all_dataset_configs
+from euroeval.enums import InferenceBackend, ModelType
+from euroeval.languages import DA, get_all_languages
+from euroeval.tasks import SENT, SPEED, get_all_tasks
 
 
 def pytest_configure() -> None:
@@ -72,7 +72,7 @@ def benchmark_config(
         datasets=list(get_all_dataset_configs().keys()),
         batch_size=1,
         raise_errors=False,
-        cache_dir=".scandeval_cache",
+        cache_dir=".euroeval_cache",
         api_key=auth,
         force=False,
         progress_bar=False,

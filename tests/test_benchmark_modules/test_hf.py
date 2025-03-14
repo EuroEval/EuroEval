@@ -6,9 +6,9 @@ import pytest
 import torch
 from huggingface_hub.hf_api import HfApi
 
-from scandeval.benchmark_modules.hf import get_model_repo_info, get_torch_dtype
-from scandeval.data_models import BenchmarkConfig
-from scandeval.exceptions import InvalidModel
+from euroeval.benchmark_modules.hf import get_model_repo_info, get_torch_dtype
+from euroeval.data_models import BenchmarkConfig
+from euroeval.exceptions import InvalidModel
 
 
 @pytest.mark.parametrize(

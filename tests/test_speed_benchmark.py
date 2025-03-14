@@ -5,12 +5,12 @@ from typing import Generator
 import pytest
 from tqdm.auto import tqdm
 
-from scandeval.benchmark_modules.base import BenchmarkModule
-from scandeval.benchmark_modules.hf import HuggingFaceEncoderModel
-from scandeval.data_models import BenchmarkConfig
-from scandeval.dataset_configs import SPEED_CONFIG
-from scandeval.model_config import get_model_config
-from scandeval.speed_benchmark import benchmark_speed
+from euroeval.benchmark_modules.base import BenchmarkModule
+from euroeval.benchmark_modules.hf import HuggingFaceEncoderModel
+from euroeval.data_models import BenchmarkConfig
+from euroeval.dataset_configs import SPEED_CONFIG
+from euroeval.model_config import get_model_config
+from euroeval.speed_benchmark import benchmark_speed
 
 
 @pytest.fixture(scope="module")

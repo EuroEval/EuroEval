@@ -33,7 +33,7 @@ def main() -> None:
     )
 
     # Create dataset ID
-    mini_dataset_id = "ScandEval/foqa"
+    mini_dataset_id = "EuroEval/foqa"
 
     # Remove the dataset from Hugging Face Hub if it already exists
     try:

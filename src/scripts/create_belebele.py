@@ -176,9 +176,9 @@ def main() -> None:
 
         # Create dataset ID
         if language == "en":
-            dataset_id = "ScandEval/belebele-mini"
+            dataset_id = "EuroEval/belebele-mini"
         else:
-            dataset_id = f"ScandEval/belebele-{language}-mini"
+            dataset_id = f"EuroEval/belebele-{language}-mini"
 
         # Remove the dataset from Hugging Face Hub if it already exists
         try:

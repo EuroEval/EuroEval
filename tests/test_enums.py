@@ -3,7 +3,7 @@
 import enum
 import inspect
 
-from scandeval import enums
+from euroeval import enums
 
 
 def test_all_classes_are_enums() -> None:

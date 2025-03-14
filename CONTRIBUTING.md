@@ -1,4 +1,4 @@
-# Welcome to the ScandEval Contributing guide
+# Welcome to the EuroEval Contributing guide
 
 Thank you for investing your time in contributing to our project! :sparkles:.
 
@@ -29,11 +29,11 @@ resources to help you get started with open source contributions:
 If you spot a problem with the package, [search if an issue already
 exists](https://docs.github.com/en/github/searching-for-information-on-github/searching-on-github/searching-issues-and-pull-requests#search-by-the-title-body-or-comments).
 If a related issue doesn't exist, you can open a new issue using a relevant [issue
-form](https://github.com/ScandEval/ScandEval/issues).
+form](https://github.com/EuroEval/EuroEval/issues).
 
 #### Solve an issue
 
-Scan through our [existing issues](https://github.com/ScandEval/ScandEval/issues)
+Scan through our [existing issues](https://github.com/EuroEval/EuroEval/issues)
 to find one that interests you. You can narrow down the search using `labels` as
 filters. See [Labels](/contributing/how-to-use-labels.md) for more information. If you
 find an issue to work on, you are welcome to open a PR with a fix.
@@ -87,4 +87,4 @@ questions or request for additional information.
 
 ### Your PR is merged!
 
-Congratulations :tada::tada: The ScandEval team thanks you :sparkles:.
+Congratulations :tada::tada: The EuroEval team thanks you :sparkles:.

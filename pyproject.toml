@@ -1,7 +1,7 @@
 [project]
-name = "ScandEval"
-version = "15.1.0.dev"
-description = "Evaluation of pretrained language models on mono- or multilingual language tasks."
+name = "EuroEval"
+version = "15.3.1.dev"
+description = "The robust European language model benchmark."
 readme = "README.md"
 authors = [
     {name = "Dan Saattrup Nielsen", email = "dan.nielsen@alexandra.dk"},
@@ -36,11 +36,12 @@ dependencies = [
     "bert-score>=0.3.13",
     "levenshtein>=0.24.0",
     "scikit-learn<1.6.0",
+    "setuptools>=75.8.2",
+    "demjson3>=3.0.6",
 ]
 
 [project.optional-dependencies]
 generative = [
-    "demjson3>=3.0.6",
     "bitsandbytes>=0.43.1; platform_system == 'Linux'",
     "vllm>=0.6.3,<0.6.5; platform_system == 'Linux'",
     "fbgemm-gpu>=1.0.0; platform_system == 'Linux'",
@@ -49,7 +50,6 @@ human_evaluation = [
     "gradio>=4.26.0",
 ]
 all = [
-    "demjson3>=3.0.6",
     "bitsandbytes>=0.43.1; platform_system == 'Linux'",
     "vllm>=0.6.3,<0.6.5; platform_system == 'Linux'",
     "fbgemm-gpu>=1.0.0; platform_system == 'Linux'",
@@ -60,15 +60,16 @@ test = [
 ]
 
 [project.urls]
-Repository = "https://github.com/ScandEval/ScandEval"
-Issues = "https://github.com/ScandEval/ScandEval/issues"
+Repository = "https://github.com/EuroEval/EuroEval"
+Issues = "https://github.com/EuroEval/EuroEval/issues"
 
 [project.license]
 file = "LICENSE"
 
 [project.scripts]
-scandeval = "scandeval.cli:benchmark"
-human_evaluate = "scandeval.human_evaluation:main"
+euroeval = "euroeval.cli:benchmark"
+scandeval = "euroeval.cli:benchmark"
+human_evaluate = "euroeval.human_evaluation:main"
 
 [tool.uv]
 dev-dependencies = [
@@ -112,7 +113,7 @@ exclude = [
     ".mypy_cache",
     ".pytest_cache",
     ".ruff_cache",
-    ".scandeval_cache",
+    ".euroeval_cache",
     ".venv",
 ]
 extend-include = [
@@ -136,6 +137,8 @@ select = [
     "W",
     # flake-annotations (type hints)
     "ANN",
+    # Pyflakes
+    "F",
 ]
 
 [tool.ruff.lint.extend-per-file-ignores]
@@ -155,7 +158,7 @@ convention = "google"
 [tool.pytest.ini_options]
 minversion = "7.0"
 addopts = [
-    "--cov=src/scandeval",
+    "--cov=src/euroeval",
     "--color=yes",
 ]
 xfail_strict = true
@@ -171,7 +174,7 @@ filterwarnings = [
 log_cli_level = "info"
 testpaths = [
     "tests",
-    "src/scandeval",
+    "src/euroeval",
 ]
 
 [build-system]

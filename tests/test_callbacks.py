@@ -8,7 +8,7 @@ from datasets import Dataset
 from torch.utils.data import DataLoader
 from transformers import TrainerControl, TrainerState, TrainingArguments
 
-from scandeval.callbacks import NeverLeaveProgressCallback
+from euroeval.callbacks import NeverLeaveProgressCallback
 
 
 @dataclass

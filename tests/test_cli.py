@@ -6,7 +6,7 @@ import pytest
 from click import INT, ParamType
 from click.types import BOOL, STRING, Choice
 
-from scandeval.cli import benchmark
+from euroeval.cli import benchmark
 
 
 @pytest.fixture(scope="module")

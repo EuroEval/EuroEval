@@ -15,6 +15,5 @@ See the [leaderboard page](/leaderboards) for more information about all the col
 
 /// tab | NLU Leaderboard
     select: True
-<iframe title="" aria-label="Table" id="datawrapper-chart-Z51mu" src="https://datawrapper.dwcdn.net/FuCo1" scrolling="no" frameborder="0" style="width: 0; min-width: 100% !important; border: none;" height="737" data-external="1"></iframe><script type="text/javascript">!function(){"use strict";window.addEventListener("message",(function(a){if(void 0!==a.data["datawrapper-height"]){var e=document.querySelectorAll("iframe");for(var t in a.data["datawrapper-height"])for(var r=0;r<e.length;r++)if(e[r].contentWindow===a.source){var i=a.data["datawrapper-height"][t]+"px";e[r].style.height=i}}}))}();
-</script>
+<iframe title="" aria-label="Table" id="datawrapper-chart-lRosR" src="https://datawrapper.dwcdn.net/lRosR" scrolling="no" frameborder="0" style="width: 0; min-width: 100% !important; border: none;" height="849" data-external="1"></iframe><script type="text/javascript">!function(){"use strict";window.addEventListener("message",(function(a){if(void 0!==a.data["datawrapper-height"]){var e=document.querySelectorAll("iframe");for(var t in a.data["datawrapper-height"])for(var r,i=0;r=e[i];i++)if(r.contentWindow===a.source){var d=a.data["datawrapper-height"][t]+"px";r.style.height=d}}}))}();</script>
 ///

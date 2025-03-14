@@ -140,7 +140,7 @@ def main(data_dir: str) -> None:
     dataset = dataset.map(function=add_answer_start)
 
     # Create dataset ID
-    mini_dataset_id = "ScandEval/fquad-mini"
+    mini_dataset_id = "EuroEval/fquad-mini"
 
     # Remove the dataset from Hugging Face Hub if it already exists
     try:

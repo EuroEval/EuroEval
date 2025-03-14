@@ -4,8 +4,8 @@ from typing import Generator
 
 import pytest
 
-from scandeval.data_models import DatasetConfig
-from scandeval.dataset_configs import get_all_dataset_configs, get_dataset_config
+from euroeval.data_models import DatasetConfig
+from euroeval.dataset_configs import get_all_dataset_configs, get_dataset_config
 
 
 class TestGetAllDatasetConfigs:

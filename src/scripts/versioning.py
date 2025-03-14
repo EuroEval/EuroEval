@@ -65,6 +65,7 @@ def set_new_version(major: int, minor: int, patch: int) -> None:
     subprocess.run(["make", "install"])
 
     # Add to version control
+    subprocess.run(["git", "add", ".pre-commit-config.yaml"])
     subprocess.run(["git", "add", "CHANGELOG.md"])
     subprocess.run(["git", "add", "pyproject.toml"])
     subprocess.run(["git", "add", "uv.lock"])

@@ -1,6 +1,6 @@
 # 🇫🇴 Faroese
 
-This is an overview of all the datasets used in the Faroese part of ScandEval. The
+This is an overview of all the datasets used in the Faroese part of EuroEval. The
 datasets are grouped by their task - see the [task overview](/tasks) for more
 information about what these constitute.
 
@@ -68,7 +68,7 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ scandeval --model <model-id> --dataset fosent
+$ euroeval --model <model-id> --dataset fosent
 ```
 
 
@@ -139,7 +139,7 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ scandeval --model <model-id> --dataset fone
+$ euroeval --model <model-id> --dataset fone
 ```
 
 
@@ -206,7 +206,7 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ scandeval --model <model-id> --dataset wikiann-fo
+$ euroeval --model <model-id> --dataset wikiann-fo
 ```
 
 
@@ -274,7 +274,7 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ scandeval --model <model-id> --dataset scala-fo
+$ euroeval --model <model-id> --dataset scala-fo
 ```
 
 
@@ -349,5 +349,5 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ scandeval --model <model-id> --dataset foqa
+$ euroeval --model <model-id> --dataset foqa
 ```

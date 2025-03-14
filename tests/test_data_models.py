@@ -7,8 +7,8 @@ from pathlib import Path
 
 import pytest
 
-from scandeval import __version__, data_models, enums
-from scandeval.data_models import BenchmarkResult, MetricConfig
+from euroeval import __version__, data_models, enums
+from euroeval.data_models import BenchmarkResult, MetricConfig
 
 
 def test_all_classes_are_dataclasses_or_pydantic_models() -> None:
@@ -101,7 +101,7 @@ class TestBenchmarkResult:
     @pytest.fixture(scope="class")
     def results_path(self) -> Generator[Path, None, None]:
         """Fixture for a `Path` object to a results file."""
-        results_path = Path(".scandeval_cache/test_results.jsonl")
+        results_path = Path(".euroeval_cache/test_results.jsonl")
         results_path.parent.mkdir(parents=True, exist_ok=True)
         yield results_path
 
@@ -122,7 +122,7 @@ class TestBenchmarkResult:
         assert benchmark_result.dataset_languages == ["da"]
         assert benchmark_result.task == "task"
         assert benchmark_result.results == dict()
-        assert benchmark_result.scandeval_version == __version__
+        assert benchmark_result.euroeval_version == __version__
 
     @pytest.mark.parametrize(
         argnames=["config", "expected"],
@@ -274,7 +274,7 @@ class TestBenchmarkResult:
                 generative_type=benchmark_result.generative_type,
                 few_shot=benchmark_result.few_shot,
                 validation_split=benchmark_result.validation_split,
-                scandeval_version=benchmark_result.scandeval_version,
+                euroeval_version=benchmark_result.euroeval_version,
             )
         )
         assert results_path.read_text() == f"\n{json_str}"

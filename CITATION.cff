@@ -1,5 +1,5 @@
 cff-version: 1.2.0
-title: ScandEval
+title: EuroEval
 message: If you use this software, please cite it using the metadata from this file.
 type: software
 authors:
@@ -12,8 +12,8 @@ identifiers:
   - type: url
     value: 'https://aclanthology.org/2023.nodalida-1.20'
     description: Paper regarding evaluation of Scandinavian encoders.
-repository-code: 'https://github.com/ScandEval/ScandEval'
-url: 'https://scandeval.com/'
+repository-code: 'https://github.com/EuroEval/EuroEval'
+url: 'https://euroeval.com/'
 abstract: Evaluation of language models on mono- or multilingual tasks.
 keywords:
   - nlp

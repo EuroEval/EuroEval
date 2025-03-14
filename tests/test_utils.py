@@ -7,8 +7,8 @@ import pytest
 import torch
 from transformers import AutoTokenizer
 
-from scandeval.benchmark_modules.hf import load_hf_model_config
-from scandeval.utils import (
+from euroeval.benchmark_modules.hf import load_hf_model_config
+from euroeval.utils import (
     enforce_reproducibility,
     get_end_of_chat_token_ids,
     is_module_installed,

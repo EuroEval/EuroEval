@@ -79,8 +79,8 @@ def main() -> None:
     dataset_no = dataset.filter(lambda x: x["language"] == "no")
 
     # Dataset IDs.
-    dataset_id_sv = "ScandEval/schibsted-article-summaries-sv"
-    dataset_id_no = "ScandEval/schibsted-article-summaries-no"
+    dataset_id_sv = "EuroEval/schibsted-article-summaries-sv"
+    dataset_id_no = "EuroEval/schibsted-article-summaries-no"
 
     for dataset, dataset_id in [
         (dataset_sv, dataset_id_sv),

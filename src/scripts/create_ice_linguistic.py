@@ -40,7 +40,7 @@ def main() -> None:
     )
 
     # Create dataset ID
-    dataset_id = "ScandEval/ice-linguistic"
+    dataset_id = "EuroEval/ice-linguistic"
 
     # Remove the dataset from Hugging Face Hub if it already exists
     try:

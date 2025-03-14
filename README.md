@@ -1,18 +1,20 @@
 <div align='center'>
-<img src="https://raw.githubusercontent.com/ScandEval/ScandEval/main/gfx/scandeval.png" width="517" height="217">
+<img src="https://raw.githubusercontent.com/EuroEval/EuroEval/main/gfx/euroeval.png" height="500" width="372">
 </div>
 
-### Evaluation of pretrained language models on mono- or multilingual language tasks.
+### The robust European language model benchmark.
+
+_(formerly known as ScandEval)_
 
 ______________________________________________________________________
-[![Documentation](https://img.shields.io/badge/docs-passing-green)](https://scandeval.com)
-[![PyPI Status](https://badge.fury.io/py/scandeval.svg)](https://pypi.org/project/scandeval/)
+[![Documentation](https://img.shields.io/badge/docs-passing-green)](https://euroeval.com)
+[![PyPI Status](https://badge.fury.io/py/euroeval.svg)](https://pypi.org/project/euroeval/)
 [![First paper](https://img.shields.io/badge/arXiv-2304.00906-b31b1b.svg)](https://arxiv.org/abs/2304.00906)
 [![Second paper](https://img.shields.io/badge/arXiv-2406.13469-b31b1b.svg)](https://arxiv.org/abs/2406.13469)
-[![License](https://img.shields.io/github/license/ScandEval/ScandEval)](https://github.com/ScandEval/ScandEval/blob/main/LICENSE)
-[![LastCommit](https://img.shields.io/github/last-commit/ScandEval/ScandEval)](https://github.com/ScandEval/ScandEval/commits/main)
-[![Code Coverage](https://img.shields.io/badge/Coverage-65%25-yellow.svg)](https://github.com/ScandEval/ScandEval/tree/main/tests)
-[![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.0-4baaaa.svg)](https://github.com/ScandEval/ScandEval/blob/main/CODE_OF_CONDUCT.md)
+[![License](https://img.shields.io/github/license/EuroEval/EuroEval)](https://github.com/EuroEval/EuroEval/blob/main/LICENSE)
+[![LastCommit](https://img.shields.io/github/last-commit/EuroEval/EuroEval)](https://github.com/EuroEval/EuroEval/commits/main)
+[![Code Coverage](https://img.shields.io/badge/Coverage-65%25-yellow.svg)](https://github.com/EuroEval/EuroEval/tree/main/tests)
+[![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.0-4baaaa.svg)](https://github.com/EuroEval/EuroEval/blob/main/CODE_OF_CONDUCT.md)
 
 
 ## Maintainers
@@ -26,10 +28,10 @@ ______________________________________________________________________
 ## Installation
 To install the package simply write the following command in your favorite terminal:
 ```
-$ pip install scandeval[all]
+$ pip install euroeval[all]
 ```
 
-This will install the ScandEval package with all extras. You can also install the
+This will install the EuroEval package with all extras. You can also install the
 minimal version by leaving out the `[all]`, in which case the package will let you know
 when an evaluation requires a certain extra dependency, and how you install it.
 
@@ -38,7 +40,7 @@ when an evaluation requires a certain extra dependency, and how you install it.
 The easiest way to benchmark pretrained models is via the command line interface. After
 having installed the package, you can benchmark your favorite model like so:
 ```
-$ scandeval --model <model-id>
+$ euroeval --model <model-id>
 ```
 
 Here `model` is the HuggingFace model ID, which can be found on the [HuggingFace
@@ -46,32 +48,32 @@ Hub](https://huggingface.co/models). By default this will benchmark the model on
 the tasks available. If you want to benchmark on a particular task, then use the
 `--task` argument:
 ```
-$ scandeval --model <model-id> --task sentiment-classification
+$ euroeval --model <model-id> --task sentiment-classification
 ```
 
 We can also narrow down which languages we would like to benchmark on. This can be done
 by setting the `--language` argument. Here we thus benchmark the model on the Danish
 sentiment classification task:
 ```
-$ scandeval --model <model-id> --task sentiment-classification --language da
+$ euroeval --model <model-id> --task sentiment-classification --language da
 ```
 
 Multiple models, datasets and/or languages can be specified by just attaching multiple
 arguments. Here is an example with two models:
 ```
-$ scandeval --model <model-id1> --model <model-id2>
+$ euroeval --model <model-id1> --model <model-id2>
 ```
 
 The specific model version/revision to use can also be added after the suffix '@':
 ```
-$ scandeval --model <model-id>@<commit>
+$ euroeval --model <model-id>@<commit>
 ```
 
 This can be a branch name, a tag name, or a commit id. It defaults to 'main' for latest.
 
-See all the arguments and options available for the `scandeval` command by typing
+See all the arguments and options available for the `euroeval` command by typing
 ```
-$ scandeval --help
+$ euroeval --help
 ```
 
 ### Benchmarking from a Script
@@ -79,7 +81,7 @@ In a script, the syntax is similar to the command line interface. You simply ini
 an object of the `Benchmarker` class, and call this benchmark object with your favorite
 model:
 ```
->>> from scandeval import Benchmarker
+>>> from euroeval import Benchmarker
 >>> benchmark = Benchmarker()
 >>> benchmark(model="<model>")
 ```
@@ -102,7 +104,7 @@ A Dockerfile is provided in the repo, which can be downloaded and run, without n
 to clone the repo and installing from source. This can be fetched programmatically by
 running the following:
 ```
-$ wget https://raw.githubusercontent.com/ScandEval/ScandEval/main/Dockerfile.cuda
+$ wget https://raw.githubusercontent.com/EuroEval/EuroEval/main/Dockerfile.cuda
 ```
 
 Next, to be able to build the Docker image, first ensure that the NVIDIA Container
@@ -114,15 +116,15 @@ Ensure that the the CUDA version stated at the top of the Dockerfile matches the
 version installed (which you can check using `nvidia-smi`). After that, we build the
 image as follows:
 ```
-$ docker build --pull -t scandeval -f Dockerfile.cuda .
+$ docker build --pull -t euroeval -f Dockerfile.cuda .
 ```
 
 With the Docker image built, we can now evaluate any model as follows:
 ```
-$ docker run -e args="<scandeval-arguments>" --gpus 1 --name scandeval --rm scandeval
+$ docker run -e args="<euroeval-arguments>" --gpus 1 --name euroeval --rm euroeval
 ```
 
-Here `<scandeval-arguments>` consists of the arguments added to the `scandeval` CLI
+Here `<euroeval-arguments>` consists of the arguments added to the `euroeval` CLI
 argument. This could for instance be `--model <model-id> --task
 sentiment-classification`.
 
@@ -141,7 +143,7 @@ sentiment-classification`.
   evaluate GPT-4-turbo in German.
 
 
-## Citing ScandEval
+## Citing EuroEval
 If you want to cite the framework then feel free to use this:
 
 ```
@@ -160,7 +162,3 @@ If you want to cite the framework then feel free to use this:
   year = {2023}
 }
 ```
-
-## Remarks
-The image used in the logo has been created by the amazing [Scandinavia and the
-World](https://satwcomic.com/) team. Go check them out!

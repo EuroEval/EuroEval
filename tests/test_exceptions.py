@@ -2,7 +2,7 @@
 
 import inspect
 
-from scandeval import exceptions
+from euroeval import exceptions
 
 
 def test_all_classes_are_exceptions() -> None:

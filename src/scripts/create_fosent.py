@@ -151,7 +151,7 @@ def main() -> None:
         test=Dataset.from_pandas(test_df, split=Split.TEST),
     )
 
-    dataset_id = "ScandEval/fosent"
+    dataset_id = "EuroEval/fosent"
 
     # Remove the dataset from Hugging Face Hub if it already exists
     try:

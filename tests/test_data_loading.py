@@ -6,9 +6,9 @@ import pytest
 from datasets import DatasetDict
 from numpy.random import default_rng
 
-from scandeval.data_loading import load_data
-from scandeval.data_models import BenchmarkConfig
-from scandeval.dataset_configs import ANGRY_TWEETS_CONFIG
+from euroeval.data_loading import load_data
+from euroeval.data_models import BenchmarkConfig
+from euroeval.dataset_configs import ANGRY_TWEETS_CONFIG
 
 
 class TestLoadData:

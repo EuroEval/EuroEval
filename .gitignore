@@ -94,9 +94,11 @@ checkpoint-*
 
 # Cache
 .scandeval_cache/
+.euroeval_cache/
 
 # Result log
 scandeval_benchmark_results.jsonl
+euroeval_benchmark_results.jsonl
 
 # Experiments
 gai-experiments.xlsx

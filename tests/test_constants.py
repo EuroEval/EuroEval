@@ -1,7 +1,7 @@
 """Tests for the `constants` module."""
 
-from scandeval import constants
-from scandeval.data_models import Task
+from euroeval import constants
+from euroeval.data_models import Task
 
 
 def test_all_objects_in_constants_are_constants() -> None:

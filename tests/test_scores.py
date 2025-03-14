@@ -5,9 +5,9 @@ from typing import Generator
 import numpy as np
 import pytest
 
-from scandeval.data_models import MetricConfig
-from scandeval.scores import aggregate_scores, log_scores
-from scandeval.types import ScoreDict
+from euroeval.data_models import MetricConfig
+from euroeval.scores import aggregate_scores, log_scores
+from euroeval.types import ScoreDict
 
 
 @pytest.fixture(scope="module")

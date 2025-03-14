@@ -1,6 +1,6 @@
 # 🇮🇸 Icelandic
 
-This is an overview of all the datasets used in the Icelandic part of ScandEval. The
+This is an overview of all the datasets used in the Icelandic part of EuroEval. The
 datasets are grouped by their task - see the [task overview](/tasks) for more
 information about what these constitute.
 
@@ -65,7 +65,7 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ scandeval --model <model-id> --dataset hotter-and-colder-sentiment
+$ euroeval --model <model-id> --dataset hotter-and-colder-sentiment
 ```
 
 
@@ -137,7 +137,7 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ scandeval --model <model-id> --dataset mim-gold-ner
+$ euroeval --model <model-id> --dataset mim-gold-ner
 ```
 
 
@@ -205,7 +205,7 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ scandeval --model <model-id> --dataset scala-is
+$ euroeval --model <model-id> --dataset scala-is
 ```
 
 
@@ -268,7 +268,7 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ scandeval --model <model-id> --dataset ice-ec
+$ euroeval --model <model-id> --dataset ice-ec
 ```
 
 
@@ -329,7 +329,7 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ scandeval --model <model-id> --dataset ice-linguistic
+$ euroeval --model <model-id> --dataset ice-linguistic
 ```
 
 
@@ -406,7 +406,7 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ scandeval --model <model-id> --dataset nqii
+$ euroeval --model <model-id> --dataset nqii
 ```
 
 
@@ -484,13 +484,98 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ scandeval --model <model-id> --dataset icelandic-qa
+$ euroeval --model <model-id> --dataset icelandic-qa
 ```
 
 
 ## Knowledge
 
-### ARC-is
+### IcelandicKnowledge
+
+This dataset was published
+[here](https://huggingface.co/datasets/mideind/icelandic_qa_scandeval) and consists of
+an automatically created Icelandic question-answering dataset based on the Icelandic
+Wikipedia as well as Icelandic news articles from the RÚV corpus.
+
+The dataset was converted into a multiple-choice knowledge dataset by removing the
+contexts and using GPT-4o to generate 3 plausible wrong answers for each correct answer,
+using the following prompt for each `row` in the original dataset:
+
+```python
+messages = [
+    {
+        "role": "user",
+        "content": f"For the question: {row.question} where the correct answer is: {row.answer}, please provide 3 plausible alternatives in Icelandic. You should return the alternatives in a JSON dictionary, with keys 'first', 'second', and 'third'. The values should be the alternatives only, without any numbering or formatting. The alternatives should be unique and not contain the correct answer."
+    }
+]
+
+completion = client.beta.chat.completions.parse(
+    model="gpt-4o", messages=messages, response_format=CandidateAnswers
+)
+```
+
+where `CandidateAnswers` is a Pydantic model that is used to ensure [structured outputs](https://platform.openai.com/docs/guides/structured-outputs).
+
+The original dataset has 2,000 samples, but only 1,994 unique questions, and the total
+length of this dataset is therefore 1,994. The split is given by 842 / 128 / 1024 for
+train, val, and test, respectively.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Hver var talinn heilagur maður eftir dauða sinn, er tákngervingur alþýðuhreyfingar vestanlands og talinn góður til áheita?\nSvarmöguleikar:\na. Þórður Jónsson helgi\nb. Guðmundur Arason\nc. Snorri Þorgrímsson\nd. Jón Hreggviðsson",
+  "label": "a"
+}```
+```json
+{
+  "text": "Í kringum hvaða ár hófst verslun á Arngerðareyri?\nSvarmöguleikar:\na. 1895\nb. 1884\nc. 1870\nd. 1902",
+  "label": "b"
+}```
+```json
+{
+  "text": "Hvenær var ákveðið að uppstigningardagur skyldi vera kirkjudagur aldraðra á Íslandi?\nSvarmöguleikar:\na. Árið 1975\nb. Árið 1985\nc. Árið 1982\nd. Árið 1990",
+  "label": "c"
+}```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+  ```
+  Eftirfarandi eru fjölvalsspurningar (með svörum).
+  ```
+- Base prompt template:
+  ```
+  Spurningar: {text}
+  Svarmöguleikar:
+  a. {option_a}
+  b. {option_b}
+  c. {option_c}
+  d. {option_d}
+  Svara: {label}
+  ```
+- Instruction-tuned prompt template:
+  ```
+  Spurningar: {text}
+  Svarmöguleikar:
+  a. {option_a}
+  b. {option_b}
+  c. {option_c}
+  d. {option_d}
+
+  Svaraðu eftirfarandi spurningum með 'a', 'b', 'c' eða 'd', og engu öðru.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+$ euroeval --model <model-id> --dataset icelandic-knowledge
+```
+
+
+### Unofficial: ARC-is
 
 This dataset is a machine translated version of the English [ARC
 dataset](https://doi.org/10.48550/arXiv.1803.05457) and features US grade-school science
@@ -555,7 +640,7 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ scandeval --model <model-id> --dataset arc-is
+$ euroeval --model <model-id> --dataset arc-is
 ```
 
 
@@ -626,84 +711,9 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ scandeval --model <model-id> --dataset mmlu-is
+$ euroeval --model <model-id> --dataset mmlu-is
 ```
 
-### Unofficial: IcelandicKnowledge
-This dataset is based on the IcelandicQA dataset, which was published [here](https://huggingface.co/,datasets/mideind/icelandic_qa_scandeval), but is here phrased as a knowledge dataset. The candidate answers has been generated by GPT-4o, using the following prompt for each `row` in the original dataset:
-
-```python
-messages = [
-    {
-        "role": "user",
-        "content": f"For the question: {row.question} where the correct answer is: {row.answer}, please provide 3 plausible alternatives in Icelandic.",
-    }
-]
-
-completion = client.beta.chat.completions.parse(
-    model="gpt-4o", messages=messages, response_format=CandidateAnswers
-)
-```
-where `CandidateAnswers` is a Pydantic model that is used to ensure [structured outputs](https://platform.openai.com/docs/guides/structured-outputs).
-
-The original dataset has 2,000 samples, but only 1,997 unique questions, and the total length of this dataset is therefore 1,997. The split is given by 845 / 128 / 1024 for train, val, and test, respectively.
-
-Here are a few examples from the training split:
-
-```json
-{
-    "text": "Hvaða gamla verðeining var jafngildi einnar kýr að verðmæti?\nSvarmöguleikar:\na. Sauðfé\nb. Kúgildi\nc. Mjólkurtollur\nd. Hrossgildi",
-    "label": "b"
-}
-```
-```json
-{
-    "text": "Hvenær komu Íslendingar fyrst til Gimli í Manitoba?\nSvarmöguleikar:\na. 15. september 1875\nb. 25. október 1874\nc. 10. október 1876\nd. 21. október 1875",
-    "label": "d"
-}
-```
-```json
-{
-    "text": "Hvaða ár var byggingin sem gaf Barónsstíg í Reykjavík nafn reist?\nSvarmöguleikar:\na. 1901\nb. 1897\nc. 1899\nd. 1898",
-    "label": "c"
-}
-```
-
-When evaluating generative models, we use the following setup (see the
-[methodology](/methodology) for more information on how these are used):
-
-- Number of few-shot examples: 5
-- Prefix prompt:
-  ```
-  Eftirfarandi eru fjölvalsspurningar (með svörum).
-  ```
-- Base prompt template:
-  ```
-  Spurningar: {text}
-  Svarmöguleikar:
-  a. {option_a}
-  b. {option_b}
-  c. {option_c}
-  d. {option_d}
-  Svara: {label}
-  ```
-- Instruction-tuned prompt template:
-  ```
-  Spurningar: {text}
-  Svarmöguleikar:
-  a. {option_a}
-  b. {option_b}
-  c. {option_c}
-  d. {option_d}
-
-  Svaraðu eftirfarandi spurningum með 'a', 'b', 'c' eða 'd', og engu öðru.
-  ```
-
-You can evaluate this dataset directly as follows:
-
-```bash
-$ scandeval --model <model-id> --dataset icelandic-knowledge
-```
 
 ## Common-sense Reasoning
 
@@ -772,7 +782,7 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ scandeval --model <model-id> --dataset winogrande-is
+$ euroeval --model <model-id> --dataset winogrande-is
 ```
 
 
@@ -841,7 +851,7 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ scandeval --model <model-id> --dataset hellaswag-is
+$ euroeval --model <model-id> --dataset hellaswag-is
 ```
 
 
@@ -900,5 +910,5 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ scandeval --model <model-id> --dataset rrn
+$ euroeval --model <model-id> --dataset rrn
 ```

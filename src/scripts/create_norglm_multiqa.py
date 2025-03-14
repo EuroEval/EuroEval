@@ -197,7 +197,7 @@ def main() -> None:
     )
 
     # Create dataset ID
-    dataset_id = "ScandEval/norglm-multi-qa"
+    dataset_id = "EuroEval/norglm-multi-qa"
 
     # Remove the dataset from Hugging Face Hub if it already exists
     try:

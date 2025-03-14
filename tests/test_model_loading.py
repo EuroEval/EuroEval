@@ -3,11 +3,11 @@
 import pytest
 import torch
 
-from scandeval.data_models import BenchmarkConfig
-from scandeval.dataset_configs import ANGRY_TWEETS_CONFIG, NORDJYLLAND_NEWS_CONFIG
-from scandeval.exceptions import InvalidBenchmark
-from scandeval.model_config import get_model_config
-from scandeval.model_loading import load_model
+from euroeval.data_models import BenchmarkConfig
+from euroeval.dataset_configs import ANGRY_TWEETS_CONFIG, NORDJYLLAND_NEWS_CONFIG
+from euroeval.exceptions import InvalidBenchmark
+from euroeval.model_config import get_model_config
+from euroeval.model_loading import load_model
 
 
 def test_load_non_generative_model(

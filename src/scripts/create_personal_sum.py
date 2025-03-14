@@ -66,7 +66,7 @@ def main() -> None:
     )
 
     # Create dataset ID
-    dataset_id = "ScandEval/personal-sum"
+    dataset_id = "EuroEval/personal-sum"
 
     # Remove the dataset from Hugging Face Hub if it already exists
     try:

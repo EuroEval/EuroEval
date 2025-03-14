@@ -164,7 +164,7 @@ def main() -> None:
     )
 
     # Create dataset ID
-    dataset_id = "ScandEval/dansk-mini"
+    dataset_id = "EuroEval/dansk-mini"
 
     # Remove the dataset from Hugging Face Hub if it already exists
     try:

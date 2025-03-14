@@ -2,9 +2,9 @@
 
 import pytest
 
-from scandeval.data_models import BenchmarkConfig, ModelConfig
-from scandeval.exceptions import InvalidModel
-from scandeval.model_config import get_model_config
+from euroeval.data_models import BenchmarkConfig, ModelConfig
+from euroeval.exceptions import InvalidModel
+from euroeval.model_config import get_model_config
 
 
 @pytest.mark.parametrize(
