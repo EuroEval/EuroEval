@@ -1,3 +1,14 @@
+# /// script
+# requires-python = ">=3.10,<4.0"
+# dependencies = [
+#     "datasets",
+#     "huggingface-hub",
+#     "pandas",
+#     "requests",
+#     "python-dotenv",
+# ]
+# ///
+
 """Create the Danish Citizen Tests dataset and upload it to the HF Hub."""
 
 import os

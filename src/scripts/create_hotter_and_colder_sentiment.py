@@ -1,3 +1,16 @@
+# /// script
+# requires-python = ">=3.10,<4.0"
+# dependencies = [
+#     "beautifulsoup4",
+#     "datasets",
+#     "huggingface-hub",
+#     "joblib",
+#     "pandas",
+#     "requests",
+#     "tqdm",
+# ]
+# ///
+
 """Create the HotterAndColderSentiment dataset and upload it to the HF Hub."""
 
 import datetime as dt

@@ -1,3 +1,13 @@
+# /// script
+# requires-python = ">=3.10,<4.0"
+# dependencies = [
+#     "datasets",
+#     "huggingface-hub",
+#     "pandas",
+#     "requests",
+# ]
+# ///
+
 """Create the icesum summarisation dataset."""
 
 import io

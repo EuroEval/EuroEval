@@ -1,3 +1,14 @@
+# /// script
+# requires-python = ">=3.10,<4.0"
+# dependencies = [
+#     "datasets",
+#     "huggingface-hub",
+#     "pandas",
+#     "requests",
+#     "scikit-learn",
+# ]
+# ///
+
 """Create the old version of the DanskeTalemåder dataset and upload it to the HF Hub."""
 
 from collections import Counter

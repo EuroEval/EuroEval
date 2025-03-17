@@ -1,3 +1,14 @@
+# /// script
+# requires-python = ">=3.10,<4.0"
+# dependencies = [
+#     "datasets",
+#     "huggingface-hub",
+#     "pandas",
+#     "requests",
+#     "scikit-learn",
+# ]
+# ///
+
 """Create the NRK-Quiz-QA-mini dataset and upload them to the HF Hub."""
 
 import warnings

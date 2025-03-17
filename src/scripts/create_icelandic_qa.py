@@ -1,3 +1,15 @@
+# /// script
+# requires-python = ">=3.10,<4.0"
+# dependencies = [
+#     "datasets",
+#     "huggingface-hub",
+#     "openai",
+#     "pandas",
+#     "python-dotenv",
+#     "requests",
+# ]
+# ///
+
 """Create the Icelandic QA dataset and upload it to the HF Hub."""
 
 import os

@@ -1,3 +1,13 @@
+# /// script
+# requires-python = ">=3.10,<4.0"
+# dependencies = [
+#     "datasets",
+#     "huggingface-hub",
+#     "pandas",
+#     "requests",
+# ]
+# ///
+
 """Create the ilpost summarisation dataset."""
 
 import pandas as pd

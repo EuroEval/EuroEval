@@ -1,3 +1,13 @@
+# /// script
+# requires-python = ">=3.10,<4.0"
+# dependencies = [
+#     "datasets",
+#     "huggingface-hub",
+#     "pandas",
+#     "requests",
+# ]
+# ///
+
 """Create the SB10k-mini sentiment dataset and upload it to the HF Hub."""
 
 import pandas as pd

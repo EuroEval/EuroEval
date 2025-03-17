@@ -1,3 +1,14 @@
+# /// script
+# requires-python = ">=3.10,<4.0"
+# dependencies = [
+#     "datasets",
+#     "huggingface-hub",
+#     "lxml",
+#     "pandas",
+#     "requests",
+# ]
+# ///
+
 """Create the SUC3-mini NER dataset and upload it to the HF Hub."""
 
 import bz2

@@ -1,3 +1,13 @@
+# /// script
+# requires-python = ">=3.10,<4.0"
+# dependencies = [
+#     "datasets",
+#     "huggingface-hub",
+#     "pandas",
+#     "requests",
+# ]
+# ///
+
 """Create the FoSent sentiment dataset and upload it to the HF Hub."""
 
 import hashlib

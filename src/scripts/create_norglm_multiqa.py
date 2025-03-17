@@ -1,3 +1,15 @@
+# /// script
+# requires-python = ">=3.10,<4.0"
+# dependencies = [
+#     "datasets",
+#     "huggingface-hub",
+#     "openai",
+#     "pandas",
+#     "python-dotenv",
+#     "requests",
+# ]
+# ///
+
 """Create the NorGLM NO-multi question answering dataset."""
 
 import ast

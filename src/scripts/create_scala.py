@@ -1,3 +1,15 @@
+# /// script
+# requires-python = ">=3.10,<4.0"
+# dependencies = [
+#     "datasets",
+#     "euroeval",
+#     "huggingface-hub",
+#     "pandas",
+#     "requests",
+#     "tqdm",
+# ]
+# ///
+
 """Create the ScaLA datasets and upload them to the HF Hub."""
 
 import random

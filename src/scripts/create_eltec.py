@@ -1,3 +1,16 @@
+# /// script
+# requires-python = ">=3.10,<4.0"
+# dependencies = [
+#     "datasets",
+#     "huggingface-hub",
+#     "nltk",
+#     "pandas",
+#     "requests",
+#     "tqdm",
+#     "urllib3",
+# ]
+# ///
+
 """Create the ELTEC-mini NER dataset and upload it to the HF Hub."""
 
 import io
