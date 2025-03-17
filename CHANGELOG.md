@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 
 ## [Unreleased]
+### Added
+- Now extracts number of parameters and context length for Ollama models, using the
+  `ollama` Python SDK, if this is installed. Vocabulary size is currently not available
+  available in the `ollama` Python SDK, so this is not extracted for Ollama models.
+
 ### Fixed
 - When models output nested JSON dictionaries and structured generation isn't available,
   we use the inner-most dictionary. This caused issues with Anthropic models, since they

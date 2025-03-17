@@ -1,6 +1,7 @@
 """Generative models from an inference API, using the LiteLLM framework."""
 
 import collections.abc as c
+import importlib.util
 import itertools as it
 import json
 import logging
@@ -60,7 +61,7 @@ from ..task_utils import (
     token_classification,
 )
 from ..types import ExtractLabelsFunction
-from ..utils import create_model_cache_dir
+from ..utils import create_model_cache_dir, log_once
 from .base import BenchmarkModule
 from .hf import HuggingFaceEncoderModel, load_hf_model_config, load_tokenizer
 
@@ -269,10 +270,37 @@ class LiteLLMModel(BenchmarkModule):
         Returns:
             The number of parameters in the model.
         """
+        # Start by trying out the regex mapping, and use the value if it matches
         for key, value in NUM_PARAMS_MAPPING.items():
             if re.fullmatch(pattern=key, string=self.model_config.model_id) is not None:
                 return value
 
+        # If it is an Ollama model (and `ollama` is installed) then we can get the
+        # number of parameters from the Ollama Python SDK
+        if self.model_config.model_id.startswith(
+            "ollama/"
+        ) or self.model_config.model_id.startswith("ollama_chat/"):
+            if importlib.util.find_spec("ollama") is None:
+                log_once(
+                    "You are benchmarking an Ollama model, but the `ollama` package is "
+                    "not installed, so we cannot access the model's metadata. It is "
+                    "advisable to abort the current evaluation, install the `ollama` "
+                    "package and retry the evaluation.",
+                    level=logging.WARNING,
+                )
+            else:
+                import ollama
+
+                ollama_model_id = self.model_config.model_id.split("/")[-1]
+                model_info = ollama.show(ollama_model_id).modelinfo
+                if model_info is not None:
+                    num_params = model_info.get("general.parameter_count")
+                    if num_params is not None:
+                        return int(num_params)
+
+        # If it is a model accessed through the Hugging Face inference API then we can
+        # get the number of parameters from the Hugging Face model configuration from
+        # the Hugging Face Hub
         if self.model_config.model_id.startswith("huggingface/"):
             model_id = self.model_config.model_id.split(sep="/", maxsplit=1)[-1]
             if HuggingFaceEncoderModel.model_exists(
@@ -329,10 +357,14 @@ class LiteLLMModel(BenchmarkModule):
         Returns:
             The vocabulary size of the model.
         """
+        # Start by trying out the regex mapping, and use the value if it matches
         for key, value in VOCAB_SIZE_MAPPING.items():
             if re.fullmatch(pattern=key, string=self.model_config.model_id) is not None:
                 return value
 
+        # If it is a model accessed through the Hugging Face inference API then we can
+        # get the vocabulary size from the Hugging Face model configuration from the
+        # Hugging Face Hub
         if self.model_config.model_id.startswith("huggingface/"):
             model_id = self.model_config.model_id.split(sep="/", maxsplit=1)[-1]
             if HuggingFaceEncoderModel.model_exists(
@@ -379,10 +411,37 @@ class LiteLLMModel(BenchmarkModule):
         Returns:
             The maximum length of the model.
         """
+        # Start by trying out the regex mapping, and use the value if it matches
         for key, value in MODEL_MAX_LENGTH_MAPPING.items():
             if re.fullmatch(pattern=key, string=self.model_config.model_id) is not None:
                 return value
 
+        # If it is an Ollama model (and `ollama` is installed) then we can get the
+        # maximum length from the Ollama Python SDK
+        if self.model_config.model_id.startswith(
+            "ollama/"
+        ) or self.model_config.model_id.startswith("ollama_chat/"):
+            if importlib.util.find_spec("ollama") is None:
+                log_once(
+                    "You are benchmarking an Ollama model, but the `ollama` package is "
+                    "not installed, so we cannot access the model's metadata. It is "
+                    "advisable to abort the current evaluation, install the `ollama` "
+                    "package and retry the evaluation.",
+                    level=logging.WARNING,
+                )
+            else:
+                import ollama
+
+                ollama_model_id = self.model_config.model_id.split("/")[-1]
+                model_info = ollama.show(ollama_model_id).modelinfo
+                if model_info is not None:
+                    context_length = model_info.get("gemma3.context_length")
+                    if context_length is not None:
+                        return int(context_length)
+
+        # If it is a model accessed through the Hugging Face inference API then we can
+        # get the maximum length from the Hugging Face model configuration from the
+        # Hugging Face Hub
         if self.model_config.model_id.startswith("huggingface/"):
             model_id = self.model_config.model_id.split(sep="/", maxsplit=1)[-1]
             if HuggingFaceEncoderModel.model_exists(
