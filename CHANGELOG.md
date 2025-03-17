@@ -13,6 +13,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   do not support structured generation, and their output are always {"input": actual
   dictionary}. This has been fixed now.
 - Now handles `ReadTimeout`s when loading datasets, rather than aborting evaluations.
+- Benchmark configurations specified when calling `Benchmarker.benchmark` did not
+  properly override the default configurations set during initialisation when
+  benchmarking generative models. This has been fixed now.
 
 ### Changed
 - Moved the `demjson3` dependency from the `generative` extra to the main dependencies,
