@@ -851,7 +851,7 @@ MULTINERD_IT_CONFIG = DatasetConfig(
     max_generated_tokens=128,
 )
 
-XGLUE_NER_ES_CONFIG = DatasetConfig(
+CONLL_ES_CONFIG = DatasetConfig(
     name="conll-es",
     pretty_name="the Spanish part of the truncated version of the named entity "
     "recognition dataset CoNLL 2002",
