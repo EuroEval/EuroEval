@@ -1,5 +1,5 @@
 name: 🐛 Bug Report
-description: Have you experienced a bug using the `scandeval` package?
+description: Have you experienced a bug using the `euroeval` package?
 title: "[BUG] <name-of-bug>"
 labels: bug
 
@@ -7,7 +7,7 @@ body:
 - type: markdown
   attributes:
     value: >
-      #### Before submitting a bug, please make sure the issue hasn't been already addressed by searching through [the existing and past issues](https://github.com/Scandeval/ScandEval/issues?q=is%3Aissue).
+      #### Before submitting a bug, please make sure the issue hasn't been already addressed by searching through [the existing and past issues](https://github.com/EuroEval/EuroEval/issues?q=is%3Aissue).
 - type: textarea
   attributes:
     label: 🐛 Describe the bug
@@ -52,9 +52,9 @@ body:
     required: true
 - type: input
   attributes:
-    label: ScandEval version
-    description: What version of ScandEval are you using?
-    placeholder: Output of `pip list | grep ScandEval`
+    label: EuroEval version
+    description: What version of EuroEval are you using?
+    placeholder: Output of `pip list | grep EuroEval`
   validations:
     required: true
 - type: markdown
