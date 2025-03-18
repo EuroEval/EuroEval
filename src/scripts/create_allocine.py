@@ -1,5 +1,5 @@
 # /// script
-# requires-python = ">=3.10,<4.0"
+# requires-python = ">=3.10"
 # dependencies = [
 #     "datasets",
 #     "huggingface-hub",
