@@ -280,6 +280,25 @@ SENTIPOLC_CONFIG = DatasetConfig(
 )
 
 
+SENTIMENT_HEADLINES_CONFIG = DatasetConfig(
+    name="sentiment-headlines-es",
+    pretty_name="the truncated version of the Spanish sentiment headlines dataset",
+    huggingface_id="ScandEval/sentiment-headlines-es",
+    task=SENT,
+    languages=[ES],
+    labels=["negative", "neutral", "positive"],
+    prompt_prefix="Lo siguiente son reseñas y su sentimiento, que puede ser "
+    "'positivo', 'neutral' o 'negativo'.",
+    prompt_template="Texto: {text}\nSentimiento: {label}",
+    prompt_label_mapping=dict(
+        positive="positivo", neutral="neutral", negative="negativo"
+    ),
+    instruction_prompt="Texto: {text}\n\nClasifica el sentimiento de la reseña. "
+    "Responde con 'positivo', 'neutral' o 'negativo', y nada más.",
+    num_few_shot_examples=12,
+    max_generated_tokens=5,
+)
+
 ### NAMED ENTITY RECOGNITION DATASETS ###
 
 SUC3_CONFIG = DatasetConfig(
@@ -1083,6 +1102,22 @@ SCALA_IT_CONFIG = DatasetConfig(
     max_generated_tokens=5,
 )
 
+SCALA_ES_CONFIG = DatasetConfig(
+    name="scala-es",
+    pretty_name="the Spanish part of the linguistic acceptability dataset ScaLA",
+    huggingface_id="ScandEval/scala-es",
+    task=LA,
+    languages=[ES],
+    labels=["incorrect", "correct"],
+    prompt_prefix="Lo siguiente son textos y si son gramaticalmente correctos.",
+    prompt_template="Texto: {text}\nGramaticalmente correcto: {label}",
+    prompt_label_mapping=dict(correct="sí", incorrect="no"),
+    instruction_prompt="Texto: {text}\n\nDetermina si el texto es gramaticalmente "
+    "correcto o no. Responde con 'sí' si el texto es correcto, y 'no' si no lo es.",
+    num_few_shot_examples=12,
+    max_generated_tokens=5,
+)
+
 DUTCH_COLA_CONFIG = DatasetConfig(
     name="dutch-cola",
     pretty_name="the truncated version of the Dutch linguistic acceptability dataset "
@@ -1380,6 +1415,23 @@ FQUAD_CONFIG = DatasetConfig(
     max_generated_tokens=32,
 )
 
+XQUAD_ES_CONFIG = DatasetConfig(
+    name="xquad-es",
+    pretty_name="the Spanish version of the XQuAD reading comprehension dataset.",
+    huggingface_id="ScandEval/xquad-es",
+    task=RC,
+    languages=[ES],
+    labels=["start_positions", "end_positions"],
+    prompt_prefix="A continuación se presentan textos con sus preguntas y respuestas "
+    "correspondientes.",
+    prompt_template="Texto: {text}\nPregunta: {question}\nRespuesta en máximo 3 "
+    "palabras: {label}",
+    instruction_prompt="Texto: {text}\n\nResponda la siguiente pregunta sobre el "
+    "texto anterior en máximo 3 palabras.\n\nPregunta: {question}",
+    num_few_shot_examples=4,
+    max_generated_tokens=32,
+)
+
 ### SUMMARIZATION DATASETS ###
 
 NORDJYLLAND_NEWS_CONFIG = DatasetConfig(
@@ -1408,6 +1460,19 @@ MLSUM_CONFIG = DatasetConfig(
     prompt_template="Nachrichtenartikel: {text}\nZusammenfassung: {target_text}",
     instruction_prompt="Nachrichtenartikel: {text}\n\nSchreiben Sie eine "
     "Zusammenfassung des obigen Artikels.",
+    num_few_shot_examples=1,
+    max_generated_tokens=256,
+)
+
+MLSUM_ES_CONFIG = DatasetConfig(
+    name="mlsum-es",
+    pretty_name="the truncated version of the Spanish summarisation dataset MLSum",
+    huggingface_id="ScandEval/mlsum-es-mini",
+    task=SUMM,
+    languages=[ES],
+    prompt_prefix="Los siguientes son artículos de noticias con sus resúmenes.",
+    prompt_template="Artículo: {text}\nResumen: {target_text}",
+    instruction_prompt="Artículo: {text}\n\nEscribe un resumen del artículo anterior.",
     num_few_shot_examples=1,
     max_generated_tokens=256,
 )
@@ -1799,6 +1864,23 @@ MMLU_IT_CONFIG = DatasetConfig(
     max_generated_tokens=5,
 )
 
+MMLU_ES_CONFIG = DatasetConfig(
+    name="mmlu-es",
+    pretty_name="the truncated version of the Spanish knowledge dataset MMLU-es, "
+    "translated from the English MMLU dataset",
+    huggingface_id="ScandEval/mmlu-es-mini",
+    task=KNOW,
+    languages=[ES],
+    labels=["a", "b", "c", "d"],
+    prompt_prefix="Las siguientes son preguntas de opción múltiple (con respuestas).",
+    prompt_template="Pregunta: {text}\nRespuesta: {label}",
+    prompt_label_mapping=dict(a="a", b="b", c="c", d="d"),
+    instruction_prompt="Pregunta: {text}\n\nResponda la pregunta anterior usando "
+    "solo 'a', 'b', 'c' o 'd', y nada más.",
+    num_few_shot_examples=5,
+    max_generated_tokens=5,
+)
+
 ARC_DA_CONFIG = DatasetConfig(
     name="arc-da",
     pretty_name="the truncated version of the Danish knowledge dataset ARC-da, "
@@ -1922,6 +2004,23 @@ ARC_CONFIG = DatasetConfig(
     num_few_shot_examples=5,
     max_generated_tokens=5,
     unofficial=True,
+)
+
+HELLASWAG_ES_CONFIG = DatasetConfig(
+    name="hellaswag-es",
+    pretty_name="the truncated version of the Spanish common-sense reasoning dataset "
+    "HellaSwag-es, translated from the English HellaSwag dataset",
+    huggingface_id="ScandEval/hellaswag-es-mini",
+    task=COMMON_SENSE,
+    languages=[ES],
+    labels=["a", "b", "c", "d"],
+    prompt_prefix="Las siguientes son preguntas de opción múltiple (con respuestas).",
+    prompt_template="Pregunta: {text}\nRespuesta: {label}",
+    prompt_label_mapping=dict(a="a", b="b", c="c", d="d"),
+    instruction_prompt="Pregunta: {text}\n\nResponda la pregunta anterior usando solo "
+    "'a', 'b', 'c' o 'd', y nada más.",
+    num_few_shot_examples=5,
+    max_generated_tokens=5,
 )
 
 # TODO: Faroese knowledge
