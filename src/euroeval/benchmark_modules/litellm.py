@@ -1,7 +1,6 @@
 """Generative models from an inference API, using the LiteLLM framework."""
 
 import collections.abc as c
-import importlib.util
 import itertools as it
 import json
 import logging
@@ -13,6 +12,7 @@ from functools import cached_property, partial
 from time import sleep
 
 import litellm
+import ollama
 from datasets import DatasetDict
 from huggingface_hub import HfApi
 from huggingface_hub.errors import (
@@ -32,6 +32,7 @@ from litellm.exceptions import (
 )
 from litellm.types.utils import ModelResponse
 from requests.exceptions import RequestException
+from tqdm.auto import tqdm
 from transformers import Trainer
 
 from ..constants import (
@@ -40,7 +41,13 @@ from ..constants import (
     TASK_GROUPS_USING_LOGPROBS,
     TASKS_USING_JSON,
 )
-from ..data_models import BenchmarkConfig, GenerativeModelOutput, ModelConfig, Task
+from ..data_models import (
+    BenchmarkConfig,
+    DatasetConfig,
+    GenerativeModelOutput,
+    ModelConfig,
+    Task,
+)
 from ..enums import (
     BatchingPreference,
     GenerativeType,
@@ -50,6 +57,7 @@ from ..enums import (
 )
 from ..exceptions import (
     InvalidBenchmark,
+    InvalidModel,
     NeedsAdditionalArgument,
     NeedsEnvironmentVariable,
     NeedsExtraInstalled,
@@ -136,6 +144,34 @@ class LiteLLMModel(BenchmarkModule):
     fresh_model = False
     batching_preference = BatchingPreference.SINGLE_SAMPLE
     high_priority = False
+
+    def __init__(
+        self,
+        model_config: ModelConfig,
+        dataset_config: DatasetConfig,
+        benchmark_config: BenchmarkConfig,
+    ) -> None:
+        """Initialise the model.
+
+        Args:
+            model_config:
+                The model configuration.
+            dataset_config:
+                The dataset configuration.
+            benchmark_config:
+                The benchmark configuration.
+        """
+        # Detect whether the model is an Ollama model, as we need to extract metadata
+        # differently for these models
+        self.is_ollama = model_config.model_id.startswith(
+            "ollama/"
+        ) or model_config.model_id.startswith("ollama_chat/")
+
+        super().__init__(
+            model_config=model_config,
+            dataset_config=dataset_config,
+            benchmark_config=benchmark_config,
+        )
 
     @property
     def generative_type(self) -> GenerativeType | None:
@@ -275,28 +311,15 @@ class LiteLLMModel(BenchmarkModule):
             if re.fullmatch(pattern=key, string=self.model_config.model_id) is not None:
                 return value
 
-        # If it is an Ollama model (and `ollama` is installed) then we can get the
-        # number of parameters from the Ollama Python SDK
-        if self.model_config.model_id.startswith(
-            "ollama/"
-        ) or self.model_config.model_id.startswith("ollama_chat/"):
-            if importlib.util.find_spec("ollama") is None:
-                log_once(
-                    "You are benchmarking an Ollama model, but the `ollama` package is "
-                    "not installed, so we cannot access the model's metadata. It is "
-                    "advisable to abort the current evaluation, install the `ollama` "
-                    "package and retry the evaluation.",
-                    level=logging.WARNING,
-                )
-            else:
-                import ollama
-
-                ollama_model_id = self.model_config.model_id.split("/")[-1]
-                model_info = ollama.show(ollama_model_id).modelinfo
-                if model_info is not None:
-                    num_params = model_info.get("general.parameter_count")
-                    if num_params is not None:
-                        return int(num_params)
+        # If it is an Ollama model then we can get the number of parameters from the
+        # Ollama Python SDK
+        if self.is_ollama:
+            ollama_model_id = self.model_config.model_id.split("/")[-1]
+            model_info = ollama.show(ollama_model_id).modelinfo
+            if model_info is not None:
+                num_params = model_info.get("general.parameter_count")
+                if num_params is not None:
+                    return int(num_params)
 
         # If it is a model accessed through the Hugging Face inference API then we can
         # get the number of parameters from the Hugging Face model configuration from
@@ -416,28 +439,31 @@ class LiteLLMModel(BenchmarkModule):
             if re.fullmatch(pattern=key, string=self.model_config.model_id) is not None:
                 return value
 
-        # If it is an Ollama model (and `ollama` is installed) then we can get the
-        # maximum length from the Ollama Python SDK
-        if self.model_config.model_id.startswith(
-            "ollama/"
-        ) or self.model_config.model_id.startswith("ollama_chat/"):
-            if importlib.util.find_spec("ollama") is None:
-                log_once(
-                    "You are benchmarking an Ollama model, but the `ollama` package is "
-                    "not installed, so we cannot access the model's metadata. It is "
-                    "advisable to abort the current evaluation, install the `ollama` "
-                    "package and retry the evaluation.",
-                    level=logging.WARNING,
-                )
-            else:
-                import ollama
-
-                ollama_model_id = self.model_config.model_id.split("/")[-1]
-                model_info = ollama.show(ollama_model_id).modelinfo
-                if model_info is not None:
-                    context_length = model_info.get("gemma3.context_length")
+        # If it is an Ollama model then we can get the maximum length from the Ollama
+        # Python SDK
+        if self.is_ollama:
+            ollama_model_id = self.model_config.model_id.split("/")[-1]
+            model_info = ollama.show(ollama_model_id).modelinfo
+            if model_info is not None:
+                context_length_keys = [
+                    key for key in model_info.keys() if "context_length" in key.lower()
+                ]
+                if context_length_keys:
+                    context_length = model_info[context_length_keys[0]]
                     if context_length is not None:
+                        log_once(
+                            f"Detected context length key {context_length_keys[0]!r} "
+                            f"for Ollama model {ollama_model_id!r}",
+                            level=logging.DEBUG,
+                        )
                         return int(context_length)
+                else:
+                    log_once(
+                        f"Tried to get the maximum length of the Ollama model "
+                        f"{ollama_model_id!r}, but could not find a context length. "
+                        f"The model info was {model_info}. Returning -1",
+                        level=logging.DEBUG,
+                    )
 
         # If it is a model accessed through the Hugging Face inference API then we can
         # get the maximum length from the Hugging Face model configuration from the
@@ -581,6 +607,43 @@ class LiteLLMModel(BenchmarkModule):
         """
         if model_id in litellm.model_list:
             return True
+
+        # If it is an Ollama model then try to download it
+        if model_id.startswith("ollama/") or model_id.startswith("ollama_chat/"):
+            ollama_model_id = model_id.split("/")[-1]
+            downloaded_ollama_models: list[str] = [
+                model_obj.model
+                for model_obj in ollama.list().models
+                if model_obj.model is not None
+            ]
+            if ollama_model_id not in downloaded_ollama_models:
+                try:
+                    response = ollama.pull(model=ollama_model_id, stream=True)
+                    with tqdm(
+                        desc=f"Downloading {ollama_model_id}",
+                        unit_scale=True,
+                        unit="B",
+                        leave=False,
+                    ) as pbar:
+                        for status in response:
+                            if status.total is not None:
+                                pbar.total = status.total
+                            if status.completed is not None:
+                                pbar.update(status.completed - pbar.n)
+                except ollama.ResponseError as e:
+                    if "file does not exist" in str(e).lower():
+                        return False
+                    else:
+                        raise InvalidModel(
+                            f"Failed to download Ollama model {ollama_model_id}. The "
+                            f"error message was: {e}"
+                        )
+            else:
+                log_once(
+                    f"Ollama model {ollama_model_id!r} already downloaded, so skipping "
+                    "download.",
+                    level=logging.DEBUG,
+                )
 
         num_attempts = 10
         for _ in range(num_attempts):

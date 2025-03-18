@@ -155,6 +155,12 @@ def anthropic_model_id() -> Generator[str, None, None]:
 
 
 @pytest.fixture(scope="session")
+def ollama_model_id() -> Generator[str, None, None]:
+    """Yields an Ollama model ID used in tests."""
+    yield "ollama_chat/smollm2:135m"
+
+
+@pytest.fixture(scope="session")
 def model_config() -> Generator[ModelConfig, None, None]:
     """Yields a model configuration used in tests."""
     yield ModelConfig(
