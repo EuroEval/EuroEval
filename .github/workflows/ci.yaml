@@ -50,7 +50,7 @@ jobs:
         run: uv sync --no-dev --extra test
 
       - name: Start Ollama server
-        run: uv run ollama serve &
+        run: uv run ollama serve
 
       - name: Test with pytest
         run: uv run pytest
