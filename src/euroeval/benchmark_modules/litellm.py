@@ -453,8 +453,7 @@ class LiteLLMModel(BenchmarkModule):
                     if context_length is not None:
                         log_once(
                             f"Detected context length key {context_length_keys[0]!r} "
-                            f"with value {context_length} for Ollama model "
-                            f"{ollama_model_id!r}.",
+                            f"for Ollama model {ollama_model_id!r}",
                             level=logging.DEBUG,
                         )
                         return int(context_length)
@@ -462,7 +461,7 @@ class LiteLLMModel(BenchmarkModule):
                     log_once(
                         f"Tried to get the maximum length of the Ollama model "
                         f"{ollama_model_id!r}, but could not find a context length. "
-                        f"The model info was {model_info}. Returning -1.",
+                        f"The model info was {model_info}. Returning -1",
                         level=logging.DEBUG,
                     )
 
