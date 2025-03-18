@@ -69,28 +69,28 @@ $ scandeval --model <model-id> --dataset sentiment-headlines-es
 
 ## Named Entity Recognition
 
-### XGLUE-NER-es
+### CoNLL-2002-es
 
-This dataset was published in [this paper](https://arxiv.org/abs/2004.01401) and contains 0 / 1,923 / 1,523 samples for training, validation, and testing, respectively (there is no training split in Spanish). We use 256 / 1024 samples for validation and testing, respectively. All our splits are subsets of the original ones.
+This dataset was published in [this paper](https://arxiv.org/abs/2004.01401) and contains 8,324 / 1,916 / 1,518 samples for training, validation, and testing, respectively. We use 1,024 / 256 / 1,024 samples for training, validation, and testing, respectively. All the new splits are subsets of the original splits.
 
-Here are a few examples from the validation split:
+Here are a few examples from the training split:
 
 ```json
 {
-  "tokens": array(["Finaliza", ",", "con", "la", "presentación", "de", "las", "conclusiones", ",", "la", "reunión", "de", "las", "comisiones", "de", "comunicación", "social", "de", "las", "conferencias", "episcopales", "de", "España", "y", "Portugal", "."], dtype=object),
-  "labels": array(["O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "B-LOC", "O", "B-LOC", "O"], dtype=object),
+    "tokens": array(["Todo", "estará", "integrado", ",", "la", "relación", "entre", "los", "espacios", "y", "entre", "los", "músicos", "y", "la", "audiencia", "."], dtype=object),
+    "labels": array(["O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O"], dtype=object),
 }
 ```
 ```json
 {
-    "tokens": array(["Roma", ",", "23", "may", "(", "EFE", ")", "."], dtype=object),
-    "labels": array(["B-LOC", "O", "O", "O", "O", "B-ORG", "O", "O"], dtype=object),
+  "tokens": array(["(", "NA2428-NH4437", ")", "PSOE", "PIDE", "QUE", "COMISION", "CONTROL", "DE", "RTVE", "CONOZCA", "PRESUPUESTO", "ENTE", "Madrid", "(", "EFE", ")", "."], dtype=object),
+  "labels": array(["O", "O", "O", "B-ORG", "O", "O", "B-MISC", "I-MISC", "O", "B-ORG", "O", "O", "O", "B-LOC", "O", "B-ORG", "O", "O"], dtype=object),
 }
 ```
 ```json
 {
-    "tokens": array(["El", "Comité", "de", "Competición", "de", "la", "Federación", "Española", "de", "Fútbol", "(", "FEF", ")", "sancionó", "con", "un", "partido", "de", "suspensión", ",", "por", "acumulación", "de", "amonestaciones", "al", "españolista", "Toni", "Velamazán", "y", "a", "los", "barcelonistas", "Michael", "Reiziger", "y", "Phillip", "Cocu", "."], dtype=object),
-    "labels": array(["O", "B-ORG", "I-ORG", "I-ORG", "I-ORG", "I-ORG", "I-ORG", "I-ORG", "I-ORG", "I-ORG", "O", "B-ORG", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "B-PER", "I-PER", "O", "O", "O", "O", "B-PER", "I-PER", "O", "B-PER", "I-PER", "O"], dtype=object),
+  "tokens": array(["(", "NA2428-NH4437", ")", "PSOE", "PIDE", "QUE", "COMISION", "CONTROL", "DE", "RTVE", "CONOZCA", "PRESUPUESTO", "ENTE", "Madrid", "(", "EFE", ")", "."], dtype=object),
+  "labels": array(["O", "O", "O", "B-ORG", "O", "O", "B-MISC", "I-MISC", "O", "B-ORG", "O", "O", "O", "B-LOC", "O", "B-ORG", "O", "O"], dtype=object),
 }
 ```
 
@@ -126,7 +126,7 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ euroeval --model <model-id> --dataset xglue-ner-es
+$ euroeval --model <model-id> --dataset conll-2002-es
 ```
 
 ## Linguistic Acceptability
