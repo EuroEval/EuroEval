@@ -77,23 +77,20 @@ Here are a few examples from the validation split:
 
 ```json
 {
-  "tokens": ["Finaliza", ",", "con", "la", "presentación", "de", "las", "conclusiones", ",", "la", "reunión", "de", "las", "comisiones", "de", "comunicación", "social", "de", "las", "conferencias", "episcopales", "de", "España", "y", "Portugal", "."],
-  "labels": ["O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "B-LOC", "O", "B-LOC", "O"],
-  "text": "Finaliza, con la presentación de las conclusiones, la reunión de las comisiones de comunicación social de las conferencias episcopales de España y Portugal."
+  "tokens": array(["Finaliza", ",", "con", "la", "presentación", "de", "las", "conclusiones", ",", "la", "reunión", "de", "las", "comisiones", "de", "comunicación", "social", "de", "las", "conferencias", "episcopales", "de", "España", "y", "Portugal", "."], dtype=object),
+  "labels": array(["O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "B-LOC", "O", "B-LOC", "O"], dtype=object),
 }
 ```
 ```json
 {
-    "tokens": ["Roma", ",", "23", "may", "(", "EFE", ")", "."],
-    "labels": ["B-LOC", "O", "O", "O", "O", "B-ORG", "O", "O"],
-    "text": "Roma, 23 may (EFE)."
+    "tokens": array(["Roma", ",", "23", "may", "(", "EFE", ")", "."], dtype=object),
+    "labels": array(["B-LOC", "O", "O", "O", "O", "B-ORG", "O", "O"], dtype=object),
 }
 ```
 ```json
 {
-    "tokens": ["El", "Comité", "de", "Competición", "de", "la", "Federación", "Española", "de", "Fútbol", "(", "FEF", ")", "sancionó", "con", "un", "partido", "de", "suspensión", ",", "por", "acumulación", "de", "amonestaciones", "al", "españolista", "Toni", "Velamazán", "y", "a", "los", "barcelonistas", "Michael", "Reiziger", "y", "Phillip", "Cocu", "."],
-    "labels": ["O", "B-ORG", "I-ORG", "I-ORG", "I-ORG", "I-ORG", "I-ORG", "I-ORG", "I-ORG", "I-ORG", "O", "B-ORG", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "B-PER", "I-PER", "O", "O", "O", "O", "B-PER", "I-PER", "O", "B-PER", "I-PER", "O"],
-    "text": "El Comité de Competición de la Federación Española de Fútbol (FEF) sancionó con un partido de suspensión, por acumulación de amonestaciones al españolista Toni Velamazán y a los barcelonistas Michael Reiziger y Phillip Cocu."
+    "tokens": array(["El", "Comité", "de", "Competición", "de", "la", "Federación", "Española", "de", "Fútbol", "(", "FEF", ")", "sancionó", "con", "un", "partido", "de", "suspensión", ",", "por", "acumulación", "de", "amonestaciones", "al", "españolista", "Toni", "Velamazán", "y", "a", "los", "barcelonistas", "Michael", "Reiziger", "y", "Phillip", "Cocu", "."], dtype=object),
+    "labels": array(["O", "B-ORG", "I-ORG", "I-ORG", "I-ORG", "I-ORG", "I-ORG", "I-ORG", "I-ORG", "I-ORG", "O", "B-ORG", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "B-PER", "I-PER", "O", "O", "O", "O", "B-PER", "I-PER", "O", "B-PER", "I-PER", "O"], dtype=object),
 }
 ```
 
