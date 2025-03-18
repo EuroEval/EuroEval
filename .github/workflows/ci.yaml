@@ -47,10 +47,10 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: Install Dependencies
-        run: uv sync --no-dev --extra test && uv run ollama serve &
+        run: uv sync --no-dev --extra test
 
-        # - name: Start Ollama server
-        #   run: uv run ollama serve &
+      - name: Start Ollama server
+        run: uv run ollama serve &
 
       - name: Test with pytest
         run: uv run pytest
