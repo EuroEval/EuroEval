@@ -50,7 +50,7 @@ jobs:
         run: uv sync --no-dev --extra test
 
       - name: Start Ollama server
-        run: uv run ollama serve &
+        run: curl -fsSL https://ollama.com/install.sh | sh
 
       - name: Test with pytest
         run: uv run pytest
@@ -82,7 +82,7 @@ jobs:
         run: uv sync --no-dev --extra test
 
       - name: Start Ollama server
-        run: uv run ollama serve &
+        run: curl -fsSL https://ollama.com/install.sh | sh
 
       - name: Test with pytest
         run: uv run pytest
