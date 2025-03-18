@@ -709,7 +709,7 @@ class Benchmarker:
 
                 if dataset_config.task == SPEED:
                     scores = benchmark_speed(
-                        model=model, benchmark_config=self.benchmark_config
+                        model=model, benchmark_config=benchmark_config
                     )
 
                 else:
@@ -727,7 +727,7 @@ class Benchmarker:
                             datasets=prepared_datasets,
                             model_config=model_config,
                             dataset_config=dataset_config,
-                            benchmark_config=self.benchmark_config,
+                            benchmark_config=benchmark_config,
                         )
                     else:
                         scores = finetune(

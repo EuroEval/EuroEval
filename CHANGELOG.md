@@ -12,12 +12,21 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   dataset [XQuAD](https://huggingface.co/datasets/google/xquad/viewer/xquad.es),
   [sentiment-headlines dataset](https://huggingface.co/datasets/pysentimiento/spanish-targeted-sentiment-headlines), the linguistic acceptability dataset ScaLA with the [Spanish Universal
   Dependencies](https://github.com/UniversalDependencies/UD_Spanish-AnCora), the Spanish part of [mlsum](https://huggingface.co/datasets/reciTAL/mlsum), the knowledge dataset [MMLU-es](https://huggingface.co/datasets/ScandEval/mmlu-es-mini), the common-sense reasoning dataset [HellaSwag-es](https://huggingface.co/datasets/ScandEval/hellaswag-es-mini), and the named entity recognition dataset [CoNLL-ES-mini](https://huggingface.co/datasets/EuroEval/conll-es-mini).
+- Now extracts number of parameters and context length for Ollama models, using the
+  `ollama` package. Vocabulary size is currently not available available in the `ollama`
+  package, so this is not extracted for Ollama models. For this reason, the `ollama`
+  package has been added to the core dependencies, as it is very small (~10 KB)
+- Now downloads Ollama models when evaluating them.
 
 ### Fixed
 - When models output nested JSON dictionaries and structured generation isn't available,
   we use the inner-most dictionary. This caused issues with Anthropic models, since they
   do not support structured generation, and their output are always {"input": actual
   dictionary}. This has been fixed now.
+- Now handles `ReadTimeout`s when loading datasets, rather than aborting evaluations.
+- Benchmark configurations specified when calling `Benchmarker.benchmark` did not
+  properly override the default configurations set during initialisation when
+  benchmarking generative models. This has been fixed now.
 
 ### Changed
 - Moved the `demjson3` dependency from the `generative` extra to the main dependencies,
@@ -29,7 +38,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [v15.3.1] - 2025-03-13
 ### Fixed
-- Now handles`ConnectionError`s when loading datasets, rather than aborting evaluations.
+- Now handles `ConnectionError`s when loading datasets, rather than aborting evaluations.
 
 
 ## [v15.3.0] - 2025-03-12
