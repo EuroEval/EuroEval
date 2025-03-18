@@ -69,7 +69,7 @@ $ scandeval --model <model-id> --dataset sentiment-headlines-es
 
 ## Named Entity Recognition
 
-### XGLUE-NER-es-mini
+### XGLUE-NER-es
 
 This dataset was published in [this paper](https://arxiv.org/abs/2004.01401) and contains 0 / 1,923 / 1,523 samples for training, validation, and testing, respectively (there is no training split in Spanish). We use 256 / 1024 samples for validation and testing, respectively. All our splits are subsets of the original ones.
 
