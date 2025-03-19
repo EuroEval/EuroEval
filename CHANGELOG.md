@@ -8,10 +8,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 ### Added
-- Added support for Spanish! 🇪🇸This includes the Spanish part of the reading comprehension
-  dataset [XQuAD](https://huggingface.co/datasets/google/xquad/viewer/xquad.es),
-  [sentiment-headlines dataset](https://huggingface.co/datasets/pysentimiento/spanish-targeted-sentiment-headlines), the linguistic acceptability dataset ScaLA with the [Spanish Universal
-  Dependencies](https://github.com/UniversalDependencies/UD_Spanish-AnCora), the Spanish part of [mlsum](https://huggingface.co/datasets/reciTAL/mlsum), the knowledge dataset [MMLU-es](https://hf.co/datasets/alexandrainst/m_mmlu), the common-sense reasoning dataset [HellaSwag-es](https://hf.co/datasets/alexandrainst/m_hellaswag), and the named entity recognition dataset [CoNLL-es](https://aclanthology.org/W02-2024/).
+- Added support for Spanish! 🇪🇸This includes two reading comprehension datasets: [XQuAD](https://huggingface.co/datasets/google/xquad/viewer/xquad.es) and [MLQA-es](https://huggingface.co/datasets/facebook/mlqa/viewer/mlqa.es.es), the [sentiment-headlines dataset](https://huggingface.co/datasets/pysentimiento/spanish-targeted-sentiment-headlines), the linguistic acceptability dataset ScaLA with the [Spanish Universal Dependencies](https://github.com/UniversalDependencies/UD_Spanish-AnCora), the Spanish part of [mlsum](https://huggingface.co/datasets/reciTAL/mlsum), the knowledge dataset [MMLU-es](https://hf.co/datasets/alexandrainst/m_mmlu), the common-sense reasoning dataset [HellaSwag-es](https://hf.co/datasets/alexandrainst/m_hellaswag), and the named entity recognition dataset [CoNLL-es](https://aclanthology.org/W02-2024/).
 - Now extracts number of parameters and context length for Ollama models, using the
   `ollama` package. Vocabulary size is currently not available available in the `ollama`
   package, so this is not extracted for Ollama models. For this reason, the `ollama`

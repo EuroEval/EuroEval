@@ -1432,6 +1432,23 @@ XQUAD_ES_CONFIG = DatasetConfig(
     max_generated_tokens=32,
 )
 
+MLQA_ES_CONFIG = DatasetConfig(
+    name="mlqa-es",
+    pretty_name="the Spanish version of the MLQA reading comprehension dataset.",
+    huggingface_id="EuroEval/mlqa-es",
+    task=RC,
+    languages=[ES],
+    labels=["start_positions", "end_positions"],
+    prompt_prefix="A continuación se presentan textos con sus preguntas y respuestas "
+    "correspondientes.",
+    prompt_template="Texto: {text}\nPregunta: {question}\nRespuesta en máximo 3 "
+    "palabras: {label}",
+    instruction_prompt="Texto: {text}\n\nResponda la siguiente pregunta sobre el "
+    "texto anterior en máximo 3 palabras.\n\nPregunta: {question}",
+    num_few_shot_examples=4,
+    max_generated_tokens=32,
+)
+
 ### SUMMARIZATION DATASETS ###
 
 NORDJYLLAND_NEWS_CONFIG = DatasetConfig(

@@ -1,6 +1,6 @@
 # 🇪🇸 Spanish
 
-This is an overview of all the datasets used in the Spanish part of ScandEval. The
+This is an overview of all the datasets used in the Spanish part of EuroEval. The
 datasets are grouped by their task - see the [task overview](/tasks) for more
 information about what these constitute.
 
@@ -63,7 +63,7 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ scandeval --model <model-id> --dataset sentiment-headlines-es
+$ euroeval --model <model-id> --dataset sentiment-headlines-es
 ```
 
 
@@ -191,7 +191,7 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ scandeval --model <model-id> --dataset scala-es
+$ euroeval --model <model-id> --dataset scala-es
 ```
 
 ## Reading Comprehension
@@ -262,9 +262,73 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ scandeval --model <model-id> --dataset xquad-es
+$ euroeval --model <model-id> --dataset xquad-es
 ```
 
+### MLQA-es
+
+This dataset was published in [this paper](https://arxiv.org/abs/1910.07475) and contains 0 / 500 / 5,253 samples for training, validation, and testing, respectively. We have made a 1,024 / 256 / 2,048 split, where we use the 500 validation samples + 524 test samples for training. Then we split the remaining test set into validation (256 samples) and test (2048 samples).
+
+Here are a few examples from the training split:
+
+```json
+{
+    "context": "En 1978, el Banco Estatal de Vietnam introdujo los primeros billetes de 5 hao, 1, 5, 10, 20 y 50 đồng fechados en 1976. En 1980 se añadieron los billetes de 2 y 10 đồng, seguidos de los de 30 y 100 đồng en 1981.",
+    "question": "¿Cuándo añadió el Banco Estatal de Vietnam los billetes de 2 y 10 đồng?",
+    "answers": {
+      "answer_start": [120],
+      "text": ["En 1980"]
+    }
+}
+```
+```json
+{
+    "context": "Como otros terópodos de la familia Dromaeosauridae, Saurornitholestes era un dinosaurio carnívoro bípedo, equipado con una garra retráctil con forma de oz en el segundo dedo de cada pie. Saurornitholestes era más ligero y tenía las patas más largas que otros dromaeosáuridos como Velociraptor o Dromaeosaurus. Se asemeja a Velociraptor en tener dientes grandes, parecidos a colmillos, en la parte frontal de las mandíbulas.",
+    "question": "¿Dónde se encuentra la garra de Saurornitholestes?",
+    "answers": {
+        "answer_start": [161],
+        "text": ["segundo dedo de cada pie"]
+    }
+}
+```
+```json
+{
+    "context": "En cinco ediciones (en las tres primeras, 1896, 1900 y 1904, así como en las de 1988 y 1992) fueron entregadas por prueba dos medallas de bronce (una a cada uno de los perdedores de las semifinales); en el resto de ediciones se ha disputado adicionalmente un partido por el tercer lugar para definir al ganador de la medalla de bronce.",
+    "question": "¿De qué material fueron las medallas entregadas a los semifinalistas en 1896?",
+    "answers": {
+        "answer_start": [138], "text": ["bronce"]
+        }
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 4
+- Prefix prompt:
+  ```
+  A continuación se presentan textos con sus preguntas y respuestas correspondientes.
+  ```
+- Base prompt template:
+  ```
+  Texto: {text}
+  Pregunta: {question}
+  Respuesta en máximo 3 palabras: {label}
+  ```
+- Instruction-tuned prompt template:
+  ```
+  Texto: {text}
+
+  Responda la siguiente pregunta sobre el texto anterior en máximo 3 palabras.
+
+  Pregunta: {question}
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+$ euroeval --model <model-id> --dataset xquad-es
+```
 
 ## Knowledge
 
@@ -370,6 +434,7 @@ Here are a few examples from the training split:
 {
 "text": "[header] Cómo llevar tu peinado del día a la noche [title] Humedece tu cabello. [step] Crear ondas a partir de un moño es una gran opción para cabello largo. Cuando quieras usar un moño para crear ondas en tu cabello, lo mejor es comenzar con el cabello al menos parcialmente húmedo.\nOpciones:\na. Así que antes de comenzar, usa una toalla para secar en el lugar donde quieres poner el cabello. [substeps] Una buena regla es secar el cabello con una toalla antes de ponerlo en un moño.\nb. Si te lavas el cabello por la mañana, sécalo con secadora o al aire hasta la mitad antes de hacer el moño. Si no planeas lavar tu cabello, rocíalo ligeramente con una botella rociadora llena de agua.\nc. [substeps] El cabello rizado se verá sin esfuerzo y más esponjado con la cabeza húmeda porque es suave y brillante. Si tu cabello no está tan seco como quieres, no te vuelvas loca.\nd. Si quieres dejarlo suelto durante la noche, usa una secadora. [substeps] Una secadora de cabello normalmente funciona mejor.",
 "label": "b",
+}
 ```
 
 When evaluating generative models, we use the following setup (see the
@@ -405,7 +470,7 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ scandeval --model <model-id> --dataset hellaswag-es
+$ euroeval --model <model-id> --dataset hellaswag-es
 ```
 
 ## Summarization
@@ -460,5 +525,5 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ scandeval --model <model-id> --dataset mlsum-es
+$ euroeval --model <model-id> --dataset mlsum-es
 ```
