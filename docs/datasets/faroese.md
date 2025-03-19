@@ -17,8 +17,8 @@ labels were manually annotated by two native speakers.
 The original full dataset consists of 245 samples, which consisted of both a news
 article, a chosen sentence from the article, and the sentiment label. We use both the
 news article and the chosen sentence as two separate samples, to increase the size of
-the dataset (keeping them within the same dataset split). In total, we use a 74 / 35 /
-283 split for training, validation and testing, respectively.
+the dataset (keeping them within the same dataset split). In total, we use a 72 / 40 /
+279 split for training, validation and testing, respectively.
 
 Here are a few examples from the training split:
 
