@@ -15,6 +15,7 @@ repos:
       - id: ruff
         args:
           - --fix
+          - --unsafe-fixes
           - --exit-non-zero-on-fix
         types_or:
           - python
