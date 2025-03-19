@@ -7,7 +7,7 @@ from huggingface_hub import HfApi
 from requests import HTTPError
 
 
-def main():
+def main() -> None:
     """Create the Spanish MLSum-mini summarisation dataset and upload to HF Hub."""
     dataset_id = "reciTAL/mlsum"
 
