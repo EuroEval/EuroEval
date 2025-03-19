@@ -13,7 +13,13 @@ REASONING_MAX_TOKENS = 8_192
 
 
 # The Hugging Face Hub pipeline tags used to classify models as generative
-GENERATIVE_PIPELINE_TAGS = ["text-generation", "text2text-generation"]
+GENERATIVE_PIPELINE_TAGS = [
+    "text-generation",
+    "text2text-generation",
+    "image-text-to-text",
+    "audio-text-to-text",
+    "video-text-to-text",
+]
 
 
 # Used to disallow non-generative models to be evaluated on these task groups
