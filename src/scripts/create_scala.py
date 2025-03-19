@@ -1,12 +1,12 @@
 # /// script
 # requires-python = ">=3.10,<4.0"
 # dependencies = [
-#     "datasets",
+#     "datasets==2.15.0",
 #     "euroeval",
-#     "huggingface-hub",
-#     "pandas",
-#     "requests",
-#     "tqdm",
+#     "huggingface-hub==0.24.0",
+#     "pandas==2.2.0",
+#     "requests==2.32.3",
+#     "tqdm==4.67.1",
 # ]
 # ///
 

@@ -1,8 +1,8 @@
 # /// script
 # requires-python = ">=3.10,<4.0"
 # dependencies = [
-#     "pandas",
-#     "requests",
+#     "pandas==2.2.0",
+#     "requests==2.32.3",
 # ]
 # ///
 

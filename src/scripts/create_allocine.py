@@ -1,10 +1,10 @@
 # /// script
-# requires-python = ">=3.10"
+# requires-python = ">=3.10,<4.0"
 # dependencies = [
-#     "datasets",
-#     "huggingface-hub",
-#     "pandas",
-#     "requests",
+#     "datasets==2.15.0",
+#     "huggingface-hub==0.24.0",
+#     "pandas==2.2.0",
+#     "requests==2.32.3",
 # ]
 # ///
 
