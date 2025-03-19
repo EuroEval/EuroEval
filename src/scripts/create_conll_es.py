@@ -9,10 +9,10 @@ from requests import HTTPError
 def main() -> None:
     """Create the CoNLL-ES-mini NER dataset and uploads it to the HF Hub."""
     # Define dataset ID
-    repo_id = "conll2003"
+    repo_id = "eriktks/conll2002"
 
     # Download the dataset
-    dataset = load_dataset(path=repo_id, token=True)
+    dataset = load_dataset(path=repo_id, token=True, name="es")
     assert isinstance(dataset, DatasetDict)
 
     # Convert the dataset to a dataframe
@@ -68,7 +68,7 @@ def main() -> None:
     val_df = val_df.sample(n=val_size, random_state=4242)
 
     # Create test split
-    test_size = 2048
+    test_size = 1024
     test_df = test_df.sample(n=test_size, random_state=4242)
 
     # Create train split
