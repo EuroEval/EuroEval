@@ -27,8 +27,6 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   a `RuntimeError` when using newer versions of vLLM with multiple GPUs.
 - Now also detects reasoning tokens specified in the prompt rather than in the
   completion, which is for instance the case for the QwQ reasoning model.
-- Now sets the `truncate_prompt_tokens` argument for vLLM models, to ensure that prompts
-  that exceed the maximal sequence length are truncated correctly.
 
 ### Changed
 - Update `vllm` to `>=0.8.0`, `transformers` to `>=4.49.0` and `torch` to `>=2.6.0`.
