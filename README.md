@@ -139,7 +139,7 @@ $ uv run src/scripts/<name-of-script>.py
 Replace <name-of-script> with the specific script you wish to execute, e.g.,
 
 ```shell
-uv run src/scripts/create_allocine.py
+$ uv run src/scripts/create_allocine.py
 ```
 
 ## Special Thanks :pray:
