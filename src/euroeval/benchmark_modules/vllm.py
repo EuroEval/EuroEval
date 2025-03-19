@@ -881,8 +881,6 @@ def load_model_and_tokenizer(
         "max_position_embeddings",
         "max_sequence_length",
         "model_max_length",
-        "sliding_window",
-        "sliding_window_size",
         "n_positions",
     ]
     true_max_model_len_candidates: list[int] = list()
