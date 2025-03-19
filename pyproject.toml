@@ -12,10 +12,10 @@ maintainers = [
 ]
 requires-python = ">=3.10,<4.0"
 dependencies = [
-    "torch>=2.3.0",
+    "torch>=2.6.0",
     "pandas>=2.2.0",
     "numpy>=1.23.0,<2.0.0",
-    "transformers>=4.47.0",
+    "transformers>=4.49.0",
     "accelerate>=0.34.2",
     "evaluate>=0.4.1",
     "datasets>=2.15.0",
@@ -44,7 +44,7 @@ dependencies = [
 [project.optional-dependencies]
 generative = [
     "bitsandbytes>=0.43.1; platform_system == 'Linux'",
-    "vllm>=0.6.3,<0.6.5; platform_system == 'Linux'",
+    "vllm>=0.8.0; platform_system == 'Linux'",
     "fbgemm-gpu>=1.0.0; platform_system == 'Linux'",
 ]
 human_evaluation = [
@@ -52,7 +52,7 @@ human_evaluation = [
 ]
 all = [
     "bitsandbytes>=0.43.1; platform_system == 'Linux'",
-    "vllm>=0.6.3,<0.6.5; platform_system == 'Linux'",
+    "vllm>=0.8.0; platform_system == 'Linux'",
     "fbgemm-gpu>=1.0.0; platform_system == 'Linux'",
     "gradio>=4.26.0",
 ]
