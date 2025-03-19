@@ -333,6 +333,12 @@ When evaluating generative models, we use the following setup (see the
   Responda la pregunta anterior usando solo 'a', 'b', 'c' o 'd', y nada más.
   ```
 
+You can evaluate this dataset directly as follows:
+
+```bash
+$ euroeval --model <model-id> --dataset mmlu-es
+```
+
 ## Common-sense Reasoning
 
 ### HellaSwag-es
