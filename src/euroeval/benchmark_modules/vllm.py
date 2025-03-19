@@ -332,7 +332,6 @@ class VLLMModel(HuggingFaceEncoderModel):
             if self.generative_type == GenerativeType.REASONING
             else self.dataset_config.max_generated_tokens
         )
-        breakpoint()
         sampling_params = SamplingParams(
             max_tokens=max_tokens,
             logprobs=MAX_LOGPROBS if self.buffer["output_scores"] else None,
@@ -340,7 +339,7 @@ class VLLMModel(HuggingFaceEncoderModel):
             stop=[stop_token for stop_token in stop_tokens if stop_token],
             guided_decoding=guided_decoding,
             truncate_prompt_tokens=(
-                self._model.llm_engine.scheduler_config.max_model_len
+                self._model.llm_engine.vllm_config.scheduler_config.max_model_len
             ),
         )
 
