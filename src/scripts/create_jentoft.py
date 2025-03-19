@@ -114,7 +114,7 @@ def prepare_dataset(dataset_url: str) -> pd.DataFrame:
     df = df.rename(columns={"SOURCE": "text"})
 
     # Only keep relevant columns
-    df = df.loc[["text", "label"]]
+    df = df[["text", "label"]]
 
     # Remove text duplicates
     df = df.drop_duplicates(subset=["text"])

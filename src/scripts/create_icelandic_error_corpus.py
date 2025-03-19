@@ -57,13 +57,13 @@ def main() -> None:
     # dataframes have already been shuffled.
     dataset_subset = DatasetDict(
         train=Dataset.from_pandas(
-            train_df.head(1024), split=Split.TRAIN, preserve_index=False
+            new_train_df.head(1024), split=Split.TRAIN, preserve_index=False
         ),
         val=Dataset.from_pandas(
-            val_df.head(256), split=Split.VALIDATION, preserve_index=False
+            new_val_df.head(256), split=Split.VALIDATION, preserve_index=False
         ),
         test=Dataset.from_pandas(
-            test_df.head(2048), split=Split.TEST, preserve_index=False
+            new_test_df.head(2048), split=Split.TEST, preserve_index=False
         ),
     )
 
