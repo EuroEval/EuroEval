@@ -4,6 +4,7 @@ import io
 
 import pandas as pd
 import requests
+from constants import MAX_NUM_CHARS_IN_DOCUMENT, MIN_NUM_CHARS_IN_DOCUMENT  # noqa
 from datasets import Split
 from datasets.arrow_dataset import Dataset
 from datasets.dataset_dict import DatasetDict
