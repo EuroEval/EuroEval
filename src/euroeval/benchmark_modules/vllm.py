@@ -1107,6 +1107,7 @@ def get_end_of_reasoning_token_id(
             add_generation_prompt=True,
             tokenize=False,
         )
+    assert isinstance(prompt, str)
 
     # Generate a completion and remove the BOS token from it, to not confuse it with the
     # potential reasoning token
@@ -1123,9 +1124,9 @@ def get_end_of_reasoning_token_id(
         completion = completion.replace(tokenizer.bos_token, "").strip()
 
     # If it doesn't contain a reasoning token, we can't find the end of reasoning token
-    breakpoint()
-    match = re.search(pattern=r"<\w+>", string=completion)
-    if match is None:
+    prompt_match = re.search(pattern=r"<\w+>", string=prompt)
+    completion_match = re.search(pattern=r"<\w+>", string=completion)
+    if completion_match is None and prompt_match is None:
         log_once(
             message=(
                 "Could not find a reasoning token, so assuming the model is not a "
@@ -1137,7 +1138,11 @@ def get_end_of_reasoning_token_id(
 
     # Check that the found reasoning token and its associated end-of-reasoning tokens
     # are both special tokens
-    reasoning_token = match.group()
+    elif completion_match is not None:
+        reasoning_token = completion_match.group()
+    else:
+        assert prompt_match is not None
+        reasoning_token = prompt_match.group()
     end_of_reasoning_token = f"</{reasoning_token[1:-1]}>"
     special_tokens = [
         decoder_token.content
