@@ -8,6 +8,17 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 ### Added
+- Added support for Spanish! 🇪🇸This includes two reading comprehension datasets:
+  [XQuAD-es](https://huggingface.co/datasets/google/xquad/viewer/xquad.es) and
+  [MLQA-es](https://huggingface.co/datasets/facebook/mlqa/viewer/mlqa.es.es),
+  [SentimentHeadlines-es](https://huggingface.co/datasets/pysentimiento/spanish-targeted-sentiment-headlines),
+  the linguistic acceptability dataset ScaLA with the [Spanish Universal
+  Dependencies](https://github.com/UniversalDependencies/UD_Spanish-AnCora),
+  [MLSum-es](https://huggingface.co/datasets/reciTAL/mlsum), the knowledge dataset
+  [MMLU-es](https://hf.co/datasets/alexandrainst/m_mmlu), the common-sense reasoning
+  dataset [HellaSwag-es](https://hf.co/datasets/alexandrainst/m_hellaswag), and the
+  named entity recognition dataset [CoNLL-es](https://aclanthology.org/W02-2024/). This
+  was contributed by [@oliverkinch](https://github.com/oliverkinch) ✨
 - Now extracts number of parameters and context length for Ollama models, using the
   `ollama` package. Vocabulary size is currently not available available in the `ollama`
   package, so this is not extracted for Ollama models. For this reason, the `ollama`
@@ -23,13 +34,23 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Benchmark configurations specified when calling `Benchmarker.benchmark` did not
   properly override the default configurations set during initialisation when
   benchmarking generative models. This has been fixed now.
+- Now sets the `VLLM_WORKER_MULTIPROC_METHOD` environment variable to `spawn`, to avoid
+  a `RuntimeError` when using newer versions of vLLM with multiple GPUs.
+- Now also detects reasoning tokens specified in the prompt rather than in the
+  completion, which is for instance the case for the QwQ reasoning model.
+- Now recognises models with the pipeline tags `image-text-to-text`,
+  `audio-text-to-text` and `video-text-to-text` as generative models, which mistakenly
+  were detected as encoder models before.
 
 ### Changed
+- Update `vllm` to `>=0.8.0`, `transformers` to `>=4.49.0` and `torch` to `>=2.6.0`.
 - Moved the `demjson3` dependency from the `generative` extra to the main dependencies,
   to allow benchmarking API-based models without any extras.
 - Now does not include the speed benchmark by default, as it is not used in the official
   leaderboards. It can still be used by including `--task speed` when benchmarking a
   model, or by using the `task` argument if using the `Benchmarker` API.
+- Do not use sliding window sizes as candidates for maximum context length anymore, as
+  this is no longer needed.
 
 
 ## [v15.3.1] - 2025-03-13
@@ -107,11 +128,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 
 ## [v15.1.0] - 2025-02-12
+
 ### Added
 - Added new `--only-allow-safetensors` flag, which disallows evaluating models from the
   Hugging Face Hub if they are not stored as safetensors. This ensures a high level of
   security on the system running the evaluations, if this is necessary. This was
   contributed by [@Mikeriess](https://github.com/Mikeriess) ✨
+
 
 ### Fixed
 - Regex mismatch caused the wrong sequence length for GPT-4o models. This has been fixed
@@ -126,6 +149,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 
 ## [v15.0.0] - 2025-02-02
+
 ### Added
 - Added support for evaluating generative reasoning models, such as OpenAI o1 and
   Deepseek R1. This is done by upping the maximal sequence length to 8,192 tokens, and
@@ -172,6 +196,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 
 ## [v14.4.0] - 2025-01-22
+
+### Added
 - Added support for French! 🇫🇷This includes the sentiment classification dataset
   [Allocine](https://hf.co/datasets/tblard/allocine), the linguistic acceptability
   dataset ScaLA with the [French Universal

@@ -1,14 +1,4 @@
-# /// script
-# requires-python = ">=3.10,<4.0"
-# dependencies = [
-#     "datasets",
-#     "huggingface-hub",
-#     "pandas",
-#     "requests",
-# ]
-# ///
-
-"""Create the MLSum-mini summarisation dataset."""
+"""Create the Spanish MLSum-mini summarisation dataset."""
 
 import pandas as pd
 from constants import MAX_NUM_CHARS_IN_ARTICLE, MIN_NUM_CHARS_IN_ARTICLE
@@ -18,16 +8,13 @@ from requests import HTTPError
 
 
 def main() -> None:
-    """Create the MLSum-mini summarisation dataset and upload to HF Hub."""
-    dataset_id = "GEM/mlsum"
+    """Create the Spanish MLSum-mini summarisation dataset and upload to HF Hub."""
+    dataset_id = "reciTAL/mlsum"
 
-    dataset = load_dataset(dataset_id, "de", token=True)
+    dataset = load_dataset(dataset_id, "es", token=True, trust_remote_code=True)
     assert isinstance(dataset, DatasetDict)
 
-    dataset = dataset.rename_columns(column_mapping=dict(target="target_text"))
-
-    # Remove the references column since the dataset has mismatched types in this column
-    dataset = dataset.remove_columns(column_names=["references"])
+    dataset = dataset.rename_columns(column_mapping=dict(summary="target_text"))
 
     train_df = dataset["train"].to_pandas()
     val_df = dataset["validation"].to_pandas()
@@ -70,7 +57,7 @@ def main() -> None:
     )
 
     # Create dataset ID
-    mini_dataset_id = "EuroEval/mlsum-mini"
+    mini_dataset_id = "ScandEval/mlsum-es-mini"
 
     # Remove the dataset from Hugging Face Hub if it already exists
     try:

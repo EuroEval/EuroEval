@@ -224,8 +224,6 @@ class HuggingFaceEncoderModel(BenchmarkModule):
             "max_position_embeddings",
             "max_sequence_length",
             "model_max_length",
-            "sliding_window",
-            "sliding_window_size",
             "n_positions",
         ]
         for candidate_config_max_length in candidate_config_max_lengths:
