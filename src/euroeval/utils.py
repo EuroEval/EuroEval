@@ -508,6 +508,7 @@ def get_end_of_chat_token_ids(tokenizer: "PreTrainedTokenizer") -> list[int] | N
         raise ValueError("Could not locate the end-of-chat token for the model.")
 
     end_of_chat_tokens = token_ids[x_token_index + 1 :]
+    breakpoint()
     if len(end_of_chat_tokens) == 0:
         return None
     return end_of_chat_tokens

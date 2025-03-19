@@ -128,6 +128,7 @@ class VLLMModel(HuggingFaceEncoderModel):
         self.end_of_reasoning_token_id = get_end_of_reasoning_token_id(
             model=self._model, tokenizer=self._tokenizer
         )
+        breakpoint()
 
         # We specify `HuggingFaceEncoderModel` here instead of `VLLMModel`, as we want
         # to call the `__init__` method of the `BenchmarkModule` class.
