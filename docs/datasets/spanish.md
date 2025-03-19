@@ -71,7 +71,7 @@ $ scandeval --model <model-id> --dataset sentiment-headlines-es
 
 ### CoNLL-es
 
-This dataset was published in [this paper](https://arxiv.org/abs/2004.01401) and contains 8,324 / 1,916 / 1,518 samples for training, validation, and testing, respectively. We use 1,024 / 256 / 1,024 samples for training, validation, and testing, respectively. All the new splits are subsets of the original splits.
+This dataset was published in [this paper](https://aclanthology.org/W02-2024/) and contains 8,324 / 1,916 / 1,518 samples for training, validation, and testing, respectively. We use 1,024 / 256 / 1,024 samples for training, validation, and testing, respectively. All the new splits are subsets of the original splits.
 
 Here are a few examples from the training split:
 
