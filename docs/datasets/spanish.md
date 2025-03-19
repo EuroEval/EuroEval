@@ -126,7 +126,7 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ euroeval --model <model-id> --dataset conll-2002-es
+$ euroeval --model <model-id> --dataset conll-es
 ```
 
 ## Linguistic Acceptability
