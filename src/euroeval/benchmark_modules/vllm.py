@@ -338,6 +338,9 @@ class VLLMModel(HuggingFaceEncoderModel):
             temperature=0.0,
             stop=[stop_token for stop_token in stop_tokens if stop_token],
             guided_decoding=guided_decoding,
+            truncate_prompt_tokens=(
+                self._model.llm_engine.scheduler_config.max_model_len
+            ),
         )
 
         # If any of the prompts are empty then we need to replace them with a BOS token
