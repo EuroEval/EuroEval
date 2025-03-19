@@ -342,6 +342,7 @@ class VLLMModel(HuggingFaceEncoderModel):
                 self._model.llm_engine.vllm_config.scheduler_config.max_model_len
             ),
         )
+        breakpoint()
 
         # If any of the prompts are empty then we need to replace them with a BOS token
         # so that the vLLM model can generate from them
