@@ -4,6 +4,7 @@ from ast import literal_eval
 
 import pandas as pd
 import requests
+from constants import MAX_NUM_CHARS_IN_DOCUMENT, MIN_NUM_CHARS_IN_DOCUMENT  # noqa
 from datasets import Dataset, DatasetDict, Split
 from huggingface_hub import HfApi
 from requests.exceptions import HTTPError
@@ -33,10 +34,33 @@ def main() -> None:
     test_df = train_df.sample(n=test_size, random_state=4242)
     train_df = train_df.drop(test_df.index.tolist())
 
+    # Only work with samples where the document is not very large or small
+    # We do it after we have made the splits to ensure that the dataset is minimally
+    # affected.
+    new_train_df = train_df.copy()
+    new_train_df["text_len"] = new_train_df.text.str.len()
+    new_train_df = new_train_df.query("text_len >= @MIN_NUM_CHARS_IN_DOCUMENT").query(
+        "text_len <= @MAX_NUM_CHARS_IN_DOCUMENT"
+    )
+    new_val_df = val_df.copy()
+    new_val_df["text_len"] = new_val_df.text.str.len()
+    new_val_df = new_val_df.query("text_len >= @MIN_NUM_CHARS_IN_DOCUMENT").query(
+        "text_len <= @MAX_NUM_CHARS_IN_DOCUMENT"
+    )
+    new_test_df = test_df.copy()
+    new_test_df["text_len"] = new_test_df.text.str.len()
+    new_test_df = new_test_df.query("text_len >= @MIN_NUM_CHARS_IN_DOCUMENT").query(
+        "text_len <= @MAX_NUM_CHARS_IN_DOCUMENT"
+    )
+
     dataset = DatasetDict(
-        train=Dataset.from_pandas(train_df, split=Split.TRAIN, preserve_index=False),
-        val=Dataset.from_pandas(val_df, split=Split.VALIDATION, preserve_index=False),
-        test=Dataset.from_pandas(test_df, split=Split.TEST, preserve_index=False),
+        train=Dataset.from_pandas(
+            new_train_df, split=Split.TRAIN, preserve_index=False
+        ),
+        val=Dataset.from_pandas(
+            new_val_df, split=Split.VALIDATION, preserve_index=False
+        ),
+        test=Dataset.from_pandas(new_test_df, split=Split.TEST, preserve_index=False),
     )
 
     # Create dataset ID

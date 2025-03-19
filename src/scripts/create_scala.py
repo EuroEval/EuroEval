@@ -6,6 +6,7 @@ import warnings
 from typing import List, Tuple, Union
 
 import pandas as pd
+from constants import MAX_NUM_CHARS_IN_DOCUMENT, MIN_NUM_CHARS_IN_DOCUMENT  # noqa
 from datasets.arrow_dataset import Dataset
 from datasets.dataset_dict import DatasetDict
 from huggingface_hub.hf_api import HfApi
@@ -106,12 +107,36 @@ def main() -> None:
                     f"samples, but need at least 768."
                 )
 
+            # Only work with samples where the document is not very large or small We do
+            # it after we have made the splits to ensure that the dataset is minimally
+            # affected.
+            new_train_df = train_df.copy()
+            new_train_df["text_len"] = new_train_df.text.str.len()
+            new_train_df = new_train_df.query(
+                "text_len >= @MIN_NUM_CHARS_IN_DOCUMENT"
+            ).query("text_len <= @MAX_NUM_CHARS_IN_DOCUMENT")
+            new_val_df = val_df.copy()
+            new_val_df["text_len"] = new_val_df.text.str.len()
+            new_val_df = new_val_df.query(
+                "text_len >= @MIN_NUM_CHARS_IN_DOCUMENT"
+            ).query("text_len <= @MAX_NUM_CHARS_IN_DOCUMENT")
+            new_test_df = test_df.copy()
+            new_test_df["text_len"] = new_test_df.text.str.len()
+            new_test_df = new_test_df.query(
+                "text_len >= @MIN_NUM_CHARS_IN_DOCUMENT"
+            ).query("text_len <= @MAX_NUM_CHARS_IN_DOCUMENT")
+            new_full_train_df = full_train_df.copy()
+            new_full_train_df["text_len"] = new_full_train_df.text.str.len()
+            new_full_train_df = new_full_train_df.query(
+                "text_len >= @MIN_NUM_CHARS_IN_DOCUMENT"
+            ).query("text_len <= @MAX_NUM_CHARS_IN_DOCUMENT")
+
             # Add the corrupted data and turn the dataframes into Hugging Face Dataset
             # objects
-            train = prepare_df(train_df, split="train")
-            val = prepare_df(val_df, split="val")
-            test = prepare_df(test_df, split="test")
-            full_train = prepare_df(full_train_df, split="train")
+            train = prepare_df(new_train_df, split="train")
+            val = prepare_df(new_val_df, split="val")
+            test = prepare_df(new_test_df, split="test")
+            full_train = prepare_df(new_full_train_df, split="train")
 
             # Collect datasets in a dataset dictionary
             dataset = DatasetDict(

@@ -1,6 +1,7 @@
 """Create the SST5-mini sentiment dataset and upload it to the HF Hub."""
 
 import pandas as pd
+from constants import MAX_NUM_CHARS_IN_DOCUMENT, MIN_NUM_CHARS_IN_DOCUMENT  # noqa
 from datasets import Dataset, DatasetDict, Split, load_dataset
 from huggingface_hub import HfApi
 from requests import HTTPError
@@ -57,6 +58,25 @@ def main() -> None:
     train_df = train_df.reset_index(drop=True)
     val_df = val_df.reset_index(drop=True)
     test_df = test_df.reset_index(drop=True)
+
+    # Only work with samples where the document is not very large or small
+    # We do it after we have made the splits to ensure that the dataset is minimally
+    # affected.
+    new_train_df = train_df.copy()
+    new_train_df["text_len"] = new_train_df.text.str.len()
+    new_train_df = new_train_df.query("text_len >= @MIN_NUM_CHARS_IN_DOCUMENT").query(
+        "text_len <= @MAX_NUM_CHARS_IN_DOCUMENT"
+    )
+    new_val_df = val_df.copy()
+    new_val_df["text_len"] = new_val_df.text.str.len()
+    new_val_df = new_val_df.query("text_len >= @MIN_NUM_CHARS_IN_DOCUMENT").query(
+        "text_len <= @MAX_NUM_CHARS_IN_DOCUMENT"
+    )
+    new_test_df = test_df.copy()
+    new_test_df["text_len"] = new_test_df.text.str.len()
+    new_test_df = new_test_df.query("text_len >= @MIN_NUM_CHARS_IN_DOCUMENT").query(
+        "text_len <= @MAX_NUM_CHARS_IN_DOCUMENT"
+    )
 
     # Collect datasets in a dataset dictionary
     dataset = DatasetDict(
