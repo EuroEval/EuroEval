@@ -14,6 +14,7 @@ warnings.filterwarnings("ignore", category=UserWarning)
 logging.getLogger("httpx").setLevel(logging.CRITICAL)
 logging.getLogger("datasets").setLevel(logging.CRITICAL)
 logging.getLogger("vllm").setLevel(logging.CRITICAL)
+logging.getLogger("vllm.platforms").setLevel(logging.CRITICAL)
 
 # Set up logging
 fmt = colored("%(asctime)s", "light_blue") + " ⋅ " + colored("%(message)s", "green")
