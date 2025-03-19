@@ -485,7 +485,7 @@ $ euroeval --model <model-id> --dataset hellaswag-de
 
 ## Summarization
 
-### MLSum
+### MLSum-de
 
 This dataset was published in [this
 paper](https://aclanthology.org/2020.emnlp-main.647/) and features news articles and
@@ -541,5 +541,5 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ euroeval --model <model-id> --dataset mlsum
+$ euroeval --model <model-id> --dataset mlsum-de
 ```

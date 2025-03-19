@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 ### Added
+- Added support for Spanish! 🇪🇸This includes two reading comprehension datasets: [XQuAD](https://huggingface.co/datasets/google/xquad/viewer/xquad.es) and [MLQA-es](https://huggingface.co/datasets/facebook/mlqa/viewer/mlqa.es.es), the [sentiment-headlines dataset](https://huggingface.co/datasets/pysentimiento/spanish-targeted-sentiment-headlines), the linguistic acceptability dataset ScaLA with the [Spanish Universal Dependencies](https://github.com/UniversalDependencies/UD_Spanish-AnCora), the Spanish part of [mlsum](https://huggingface.co/datasets/reciTAL/mlsum), the knowledge dataset [MMLU-es](https://hf.co/datasets/alexandrainst/m_mmlu), the common-sense reasoning dataset [HellaSwag-es](https://hf.co/datasets/alexandrainst/m_hellaswag), and the named entity recognition dataset [CoNLL-es](https://aclanthology.org/W02-2024/).
 - Now extracts number of parameters and context length for Ollama models, using the
   `ollama` package. Vocabulary size is currently not available available in the `ollama`
   package, so this is not extracted for Ollama models. For this reason, the `ollama`
@@ -117,11 +118,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 
 ## [v15.1.0] - 2025-02-12
+
 ### Added
 - Added new `--only-allow-safetensors` flag, which disallows evaluating models from the
   Hugging Face Hub if they are not stored as safetensors. This ensures a high level of
   security on the system running the evaluations, if this is necessary. This was
   contributed by [@Mikeriess](https://github.com/Mikeriess) ✨
+
 
 ### Fixed
 - Regex mismatch caused the wrong sequence length for GPT-4o models. This has been fixed
@@ -136,6 +139,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 
 ## [v15.0.0] - 2025-02-02
+
 ### Added
 - Added support for evaluating generative reasoning models, such as OpenAI o1 and
   Deepseek R1. This is done by upping the maximal sequence length to 8,192 tokens, and
@@ -182,6 +186,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 
 ## [v14.4.0] - 2025-01-22
+
+### Added
 - Added support for French! 🇫🇷This includes the sentiment classification dataset
   [Allocine](https://hf.co/datasets/tblard/allocine), the linguistic acceptability
   dataset ScaLA with the [French Universal
