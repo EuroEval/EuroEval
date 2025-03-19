@@ -263,7 +263,7 @@ $ euroeval --model <model-id> --dataset xquad-es
 
 ### Unofficial: XQuAD-es
 
-This dataset was published in [this paper](https://arxiv.org/abs/1910.11856) and contains 1190 question-answer pairs from [SQuAD v1.1](https://rajpurkar.github.io/SQuAD-explorer/) translated into ten languages by professional translators.
+This dataset was published in [this paper](https://aclanthology.org/2020.acl-main.421/) and contains 1190 question-answer pairs from [SQuAD v1.1](https://rajpurkar.github.io/SQuAD-explorer/) translated into ten languages by professional translators.
 
 The dataset is split intro 550 / 128 / 512 question-answer pairs for training, validation, and testing, respectively.
 
