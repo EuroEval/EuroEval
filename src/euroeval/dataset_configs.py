@@ -1430,6 +1430,7 @@ XQUAD_ES_CONFIG = DatasetConfig(
     "texto anterior en máximo 3 palabras.\n\nPregunta: {question}",
     num_few_shot_examples=4,
     max_generated_tokens=32,
+    unofficial=True,
 )
 
 MLQA_ES_CONFIG = DatasetConfig(
