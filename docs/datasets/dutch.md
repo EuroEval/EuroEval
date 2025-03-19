@@ -75,7 +75,7 @@ and features Dutch book reviews from [Hebban.nl](https://www.hebban.nl), annotat
 sentiment labels, written by the users of the website.
 
 The original full dataset consists of 20,000 / 2,200 samples for training and testing,
-respectively. We use a 1,024 / 256 / 2,048 split for training, validation and testing,
+respectively. We use a 1,014 / 253 / 2,014 split for training, validation and testing,
 respectively (so 3,328 samples used in total). The training and testing splits are
 subsets of the original splits, and the validation split is a disjoint subset of the
 original training split.
