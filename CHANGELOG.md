@@ -25,6 +25,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   benchmarking generative models. This has been fixed now.
 - Now sets the `VLLM_WORKER_MULTIPROC_METHOD` environment variable to `spawn`, to avoid
   a `RuntimeError` when using newer versions of vLLM with multiple GPUs.
+- Now also detects reasoning tokens specified in the prompt rather than in the
+  completion, which is for instance the case for the QwQ reasoning model.
 
 ### Changed
 - Moved the `demjson3` dependency from the `generative` extra to the main dependencies,
