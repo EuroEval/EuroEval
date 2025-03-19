@@ -24,13 +24,20 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Benchmark configurations specified when calling `Benchmarker.benchmark` did not
   properly override the default configurations set during initialisation when
   benchmarking generative models. This has been fixed now.
+- Now sets the `VLLM_WORKER_MULTIPROC_METHOD` environment variable to `spawn`, to avoid
+  a `RuntimeError` when using newer versions of vLLM with multiple GPUs.
+- Now also detects reasoning tokens specified in the prompt rather than in the
+  completion, which is for instance the case for the QwQ reasoning model.
 
 ### Changed
+- Update `vllm` to `>=0.8.0`, `transformers` to `>=4.49.0` and `torch` to `>=2.6.0`.
 - Moved the `demjson3` dependency from the `generative` extra to the main dependencies,
   to allow benchmarking API-based models without any extras.
 - Now does not include the speed benchmark by default, as it is not used in the official
   leaderboards. It can still be used by including `--task speed` when benchmarking a
   model, or by using the `task` argument if using the `Benchmarker` API.
+- Do not use sliding window sizes as candidates for maximum context length anymore, as
+  this is no longer needed.
 
 
 ## [v15.3.1] - 2025-03-13

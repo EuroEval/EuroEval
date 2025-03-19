@@ -66,6 +66,11 @@ os.environ["OMP_NUM_THREADS"] = "1"
 os.environ["RAY_DISABLE_DOCKER_CPU_WARNING"] = "1"
 
 
+# Avoid the "Cannot re-initialize CUDA in forked subprocess" error - see
+# https://github.com/vllm-project/vllm/issues/6152 for more
+os.environ["VLLM_WORKER_MULTIPROC_METHOD"] = "spawn"
+
+
 # Set the HF_TOKEN env var to copy the HUGGINGFACE_API_KEY env var, as vLLM uses the
 # former and LiteLLM uses the latter
 if os.getenv("HUGGINGFACE_API_KEY"):
