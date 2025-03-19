@@ -332,6 +332,7 @@ class VLLMModel(HuggingFaceEncoderModel):
             if self.generative_type == GenerativeType.REASONING
             else self.dataset_config.max_generated_tokens
         )
+        breakpoint()
         sampling_params = SamplingParams(
             max_tokens=max_tokens,
             logprobs=MAX_LOGPROBS if self.buffer["output_scores"] else None,
