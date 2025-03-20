@@ -1,3 +1,8 @@
+# /// script
+# requires-python = ">=3.10,<4.0"
+# dependencies = []
+# ///
+
 """Scripts related to updating of version."""
 
 import datetime as dt

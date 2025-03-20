@@ -1,3 +1,16 @@
+# /// script
+# requires-python = ">=3.10,<4.0"
+# dependencies = [
+#     "datasets==2.15.0",
+#     "huggingface-hub==0.24.0",
+#     "nltk==3.9.1",
+#     "pandas==2.2.0",
+#     "requests==2.32.3",
+#     "tqdm==4.67.1",
+#     "urllib3==2.3.0",
+# ]
+# ///
+
 """Create the ELTEC-mini NER dataset and upload it to the HF Hub."""
 
 import io
@@ -20,7 +33,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("create_eltec")
 
 
-nltk.download("punkt")
+nltk.download("punkt_tab")
 
 
 def main() -> None:

@@ -1,3 +1,11 @@
+# /// script
+# requires-python = ">=3.10,<4.0"
+# dependencies = [
+#     "pandas==2.2.0",
+#     "requests==2.32.3",
+# ]
+# ///
+
 """Load the part-of-speech part of a Universal Dependencies treebank."""
 
 import re
