@@ -326,7 +326,8 @@ class VLLMModel(HuggingFaceEncoderModel):
                 whitespace_pattern=r" ?",
             )
             log_once(
-                f"Using structured generation with the schema {pydantic_class}.",
+                "Using structured generation with the schema "
+                f"{pydantic_class.model_json_schema()}",
                 level=logging.DEBUG,
             )
         else:
@@ -370,7 +371,6 @@ class VLLMModel(HuggingFaceEncoderModel):
 
         # Generate sequences using vLLM
         input_is_a_test = len(prompts) == 1 and len(set(prompts[0])) == 1
-        breakpoint()
         raw_outputs = self._model.generate(
             prompts=prompts,
             sampling_params=sampling_params,
