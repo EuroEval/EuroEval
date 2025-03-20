@@ -12,6 +12,7 @@ import pydantic
 import torch
 
 from .enums import Device, InferenceBackend, ModelType, TaskGroup
+from .templates import get_prompt_config
 from .types import ScoreDict
 
 
@@ -54,28 +55,6 @@ class MetricConfig:
 
 
 @dataclass
-class Task:
-    """A dataset task.
-
-    Attributes:
-        name:
-            The name of the task.
-        task_group:
-            The task group of the task.
-        metrics:
-            The metrics used to evaluate the task.
-    """
-
-    name: str
-    task_group: TaskGroup
-    metrics: list[MetricConfig]
-
-    def __hash__(self) -> int:
-        """Return a hash of the task."""
-        return hash(self.name)
-
-
-@dataclass
 class Language:
     """A benchmarkable language.
 
@@ -92,6 +71,89 @@ class Language:
     def __hash__(self) -> int:
         """Return a hash of the language."""
         return hash(self.code)
+
+
+@dataclass
+class PromptConfig:
+    """Configuration for task-specific prompting and labeling across languages.
+
+    Defines the prompt templates and label configurations needed for evaluating a
+    specific task in a given language.
+
+    Attributes:
+        prompt_prefix:
+            The prefix to use in the few-shot prompt.
+        prompt_template:
+            The template for the prompt to use when benchmarking the dataset using
+            few-shot evaluation.
+        instruction_prompt:
+            The prompt to use when benchmarking the dataset using instruction-based
+            evaluation.
+    """
+
+    prompt_prefix: str
+    prompt_template: str
+    instruction_prompt: str
+
+    def get_labels_str(self, labels: list[str]) -> str:
+        """Gets the labels from `PromptConfig` formatted as a string in `Language`.
+
+        Returns:
+            str: The natural string representation of labels from `PromptConfig`.
+        """
+        LANG_TO_AND = {
+            "da": "og",
+            "de": "und",
+            "en": "and",
+            "fo": "og",
+            "fr": "et",
+            "is": "og",
+            "it": "e",
+            "nb": "og",
+            "nl": "en",
+            "nn": "og",
+            "no": "og",
+            "sv": "och",
+        }
+        try:
+            and_word = LANG_TO_AND[Language.code]
+        except KeyError:
+            raise
+        if not labels:
+            return ""
+        elif len(labels) == 1:
+            return labels[0]
+        elif len(labels) == 2:
+            return f"{labels[0]} {and_word} {labels[1]}"
+        else:
+            return f"{', '.join(labels[:-1])}, {and_word} {labels[-1]}"
+
+
+@dataclass
+class Task:
+    """A dataset task.
+
+    Attributes:
+        name:
+            The name of the task.
+        task_group:
+            The task group of the task.
+        metrics:
+            The metrics used to evaluate the task.
+    """
+
+    name: str
+    task_group: TaskGroup
+    metrics: list[MetricConfig]
+    template: PromptConfig = field(init=False)
+
+    def __hash__(self) -> int:
+        """Return a hash of the task."""
+        return hash(self.name)
+
+    def set_template(self, languages: list[Language]) -> None:
+        """Set the template for this task in the given languages."""
+        self.template = get_prompt_config(self, languages[0])
 
 
 @dataclass
