@@ -376,7 +376,6 @@ class VLLMModel(HuggingFaceEncoderModel):
             use_tqdm=(not input_is_a_test),
             lora_request=self.buffer.get("lora_request"),
         )
-        breakpoint()
         completion_ids: list[list[int]] = [
             output.outputs[0].token_ids for output in raw_outputs
         ]
