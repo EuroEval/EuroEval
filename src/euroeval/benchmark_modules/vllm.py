@@ -18,7 +18,6 @@ from types import MethodType
 import torch
 from datasets import DatasetDict
 from huggingface_hub import snapshot_download
-from outlines_core.fsm.json_schema import build_regex_from_schema
 from pydantic import conlist, create_model
 from tqdm.auto import tqdm
 from transformers import AutoConfig, AutoTokenizer, PreTrainedTokenizer, Trainer
@@ -321,9 +320,9 @@ class VLLMModel(HuggingFaceEncoderModel):
             }
             pydantic_class = create_model("AnswerFormat", **keys_and_their_types)
             schema = pydantic_class.model_json_schema()
-            schema_str = json.dumps(schema)
-            regex = build_regex_from_schema(json=schema_str, whitespace_pattern=r" ?")
-            guided_decoding = GuidedDecodingParams(regex=regex)
+            # schema_str = json.dumps(schema)
+            # regex = build_regex_from_schema(json=schema_str, whitespace_pattern=r" ?")
+            guided_decoding = GuidedDecodingParams(json=schema)
             # json=schema  # , backend="xgrammar", whitespace_pattern=r" ?"
             log_once(
                 f"Using the JSON schema {schema!r} for guided decoding.",
@@ -370,6 +369,7 @@ class VLLMModel(HuggingFaceEncoderModel):
 
         # Generate sequences using vLLM
         input_is_a_test = len(prompts) == 1 and len(set(prompts[0])) == 1
+        breakpoint()
         raw_outputs = self._model.generate(
             prompts=prompts,
             sampling_params=sampling_params,
@@ -393,7 +393,6 @@ class VLLMModel(HuggingFaceEncoderModel):
             skip_special_tokens=True,
         )
         completions = [completion.strip() for completion in completions]
-        breakpoint()
 
         # Add logprobs scores to the output
         if self.buffer["output_scores"]:
