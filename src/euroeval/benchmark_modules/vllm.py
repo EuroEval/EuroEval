@@ -313,7 +313,6 @@ class VLLMModel(HuggingFaceEncoderModel):
             if end_of_chat_token:
                 stop_tokens.append(end_of_chat_token)
 
-        breakpoint()
         if self.dataset_config.task in TASKS_USING_JSON:
             ner_tag_names = list(self.dataset_config.prompt_label_mapping.values())
             keys_and_their_types: dict[str, t.Any] = {
@@ -371,6 +370,7 @@ class VLLMModel(HuggingFaceEncoderModel):
 
         # Generate sequences using vLLM
         input_is_a_test = len(prompts) == 1 and len(set(prompts[0])) == 1
+        breakpoint()
         raw_outputs = self._model.generate(
             prompts=prompts[0],  # TEMP: Only one prompt for now
             sampling_params=sampling_params,
@@ -394,7 +394,6 @@ class VLLMModel(HuggingFaceEncoderModel):
             skip_special_tokens=True,
         )
         completions = [completion.strip() for completion in completions]
-        breakpoint()
 
         # Add logprobs scores to the output
         if self.buffer["output_scores"]:
