@@ -370,13 +370,13 @@ class VLLMModel(HuggingFaceEncoderModel):
 
         # Generate sequences using vLLM
         input_is_a_test = len(prompts) == 1 and len(set(prompts[0])) == 1
-        breakpoint()
         raw_outputs = self._model.generate(
-            prompts=prompts[0],  # TEMP: Only one prompt for now
+            prompts=[prompts[0]],  # TEMP: Only one prompt for now
             sampling_params=sampling_params,
             use_tqdm=(not input_is_a_test),
             lora_request=self.buffer.get("lora_request"),
         )
+        breakpoint()
         completion_ids: list[list[int]] = [
             output.outputs[0].token_ids for output in raw_outputs
         ]
