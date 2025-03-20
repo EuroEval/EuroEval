@@ -33,7 +33,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("create_eltec")
 
 
-nltk.download("punkt")
+nltk.download("punkt_tab")
 
 
 def main() -> None:
