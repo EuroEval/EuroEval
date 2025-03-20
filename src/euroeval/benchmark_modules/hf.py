@@ -802,7 +802,7 @@ def get_model_repo_info(
         generative_class_names = [
             class_name
             for tag in GENERATIVE_PIPELINE_TAGS
-            for class_name in TASK_MAPPING[tag].values()
+            for class_name in TASK_MAPPING.get(tag, dict()).values()
         ]
         if class_names is not None and any(
             class_name in generative_class_names for class_name in class_names

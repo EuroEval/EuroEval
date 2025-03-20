@@ -1085,7 +1085,8 @@ def get_end_of_reasoning_token_id(
     """Get the end of reasoning token ID for a generative model.
 
     This assumes that the reasoning token is of the form <X> and that the end of
-    reasoning token is </X> (for X being any string without spaces).
+    reasoning token is </X> (for X being any string without spaces). We disallow the
+    reasoning token to be the same as the beginning-of-sentence token.
 
     Args:
         model:
@@ -1118,7 +1119,13 @@ def get_end_of_reasoning_token_id(
         .text
     )
     if tokenizer.bos_token is not None:
-        completion = completion.replace(tokenizer.bos_token, "").strip()
+        if isinstance(tokenizer.bos_token, str):
+            prompt = prompt.replace(tokenizer.bos_token, "").strip()
+            completion = completion.replace(tokenizer.bos_token, "").strip()
+        elif isinstance(tokenizer.bos_token, list):
+            for bos_token in tokenizer.bos_token:
+                prompt = prompt.replace(bos_token, "").strip()
+                completion = completion.replace(bos_token, "").strip()
 
     # If it doesn't contain a reasoning token, we can't find the end of reasoning token
     prompt_match = re.search(pattern=r"<\w+>", string=prompt)
