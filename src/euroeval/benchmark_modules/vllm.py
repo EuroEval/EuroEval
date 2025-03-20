@@ -372,7 +372,7 @@ class VLLMModel(HuggingFaceEncoderModel):
         # Generate sequences using vLLM
         input_is_a_test = len(prompts) == 1 and len(set(prompts[0])) == 1
         raw_outputs = self._model.generate(
-            prompts=prompts,
+            prompts=prompts[0],  # TEMP: Only one prompt for now
             sampling_params=sampling_params,
             use_tqdm=(not input_is_a_test),
             lora_request=self.buffer.get("lora_request"),
@@ -394,6 +394,7 @@ class VLLMModel(HuggingFaceEncoderModel):
             skip_special_tokens=True,
         )
         completions = [completion.strip() for completion in completions]
+        breakpoint()
 
         # Add logprobs scores to the output
         if self.buffer["output_scores"]:
