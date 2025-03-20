@@ -329,6 +329,7 @@ class VLLMModel(HuggingFaceEncoderModel):
                 f"Using the JSON schema {schema!r} for guided decoding.",
                 level=logging.DEBUG,
             )
+            breakpoint()
         else:
             guided_decoding = None
 
