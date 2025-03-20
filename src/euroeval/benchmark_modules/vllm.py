@@ -1175,5 +1175,6 @@ def get_end_of_reasoning_token_id(
     end_of_reasoning_token_id = tokenizer.encode(
         text=end_of_reasoning_token, add_special_tokens=False
     )[0]
+    breakpoint()
 
     return end_of_reasoning_token_id
