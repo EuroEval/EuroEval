@@ -18,8 +18,6 @@ from types import MethodType
 import torch
 from datasets import DatasetDict
 from huggingface_hub import snapshot_download
-from outlines.models.vllm import adapt_tokenizer
-from outlines.processors import JSONLogitsProcessor
 from pydantic import conlist, create_model
 from tqdm.auto import tqdm
 from transformers import AutoConfig, AutoTokenizer, PreTrainedTokenizer, Trainer
@@ -82,6 +80,10 @@ if t.TYPE_CHECKING or importlib.util.find_spec("vllm") is not None:
         )
     except ImportError:
         from vllm.distributed.parallel_state import destroy_model_parallel
+
+if t.TYPE_CHECKING or importlib.util.find_spec("outlines") is not None:
+    from outlines.models.vllm import adapt_tokenizer
+    from outlines.processors import JSONLogitsProcessor
 
 if t.TYPE_CHECKING or importlib.util.find_spec("ray") is not None:
     import ray
