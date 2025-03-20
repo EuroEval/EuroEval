@@ -313,6 +313,7 @@ class VLLMModel(HuggingFaceEncoderModel):
             if end_of_chat_token:
                 stop_tokens.append(end_of_chat_token)
 
+        breakpoint()
         if self.dataset_config.task in TASKS_USING_JSON:
             ner_tag_names = list(self.dataset_config.prompt_label_mapping.values())
             keys_and_their_types: dict[str, t.Any] = {
@@ -329,7 +330,6 @@ class VLLMModel(HuggingFaceEncoderModel):
                 f"Using the JSON schema {schema!r} for guided decoding.",
                 level=logging.DEBUG,
             )
-            breakpoint()
         else:
             guided_decoding = None
 
