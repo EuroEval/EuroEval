@@ -18,6 +18,8 @@ from types import MethodType
 import torch
 from datasets import DatasetDict
 from huggingface_hub import snapshot_download
+from outlines.models.vllm import adapt_tokenizer
+from outlines.processors import JSONLogitsProcessor
 from pydantic import create_model
 from tqdm.auto import tqdm
 from transformers import AutoConfig, AutoTokenizer, PreTrainedTokenizer, Trainer
@@ -73,7 +75,6 @@ from .hf import HuggingFaceEncoderModel, get_model_repo_info, load_hf_model_conf
 if t.TYPE_CHECKING or importlib.util.find_spec("vllm") is not None:
     from vllm import LLM, RequestOutput, SamplingParams
     from vllm.lora.request import LoRARequest
-    from vllm.sampling_params import GuidedDecodingParams
 
     try:
         from vllm.model_executor.parallel_utils.parallel_state import (
@@ -320,17 +321,23 @@ class VLLMModel(HuggingFaceEncoderModel):
                 for tag_name in ner_tag_names
             }
             pydantic_class = create_model("AnswerFormat", **keys_and_their_types)
-            schema = pydantic_class.model_json_schema()
+            logits_processor = JSONLogitsProcessor(
+                schema=pydantic_class,
+                tokenizer=adapt_tokenizer(tokenizer=self._tokenizer),
+                whitespace_pattern=r" ?",
+            )
+            # schema = pydantic_class.model_json_schema()
             # schema_str = json.dumps(schema)
             # regex = build_regex_from_schema(json=schema_str, whitespace_pattern=r" ?")
-            guided_decoding = GuidedDecodingParams(json=schema)
+            # guided_decoding = GuidedDecodingParams(json=schema)
             # json=schema  # , backend="xgrammar", whitespace_pattern=r" ?"
-            log_once(
-                f"Using the JSON schema {schema!r} for guided decoding.",
-                level=logging.DEBUG,
-            )
+            # log_once(
+            #     f"Using the JSON schema {schema!r} for guided decoding.",
+            #     level=logging.DEBUG,
+            # )
         else:
-            guided_decoding = None
+            logits_processor = None
+            # guided_decoding = None
 
         # Define the parameters used for vLLM generation
         max_tokens: int = (
@@ -343,7 +350,8 @@ class VLLMModel(HuggingFaceEncoderModel):
             logprobs=MAX_LOGPROBS if self.buffer["output_scores"] else None,
             temperature=0.0,
             stop=[stop_token for stop_token in stop_tokens if stop_token],
-            guided_decoding=guided_decoding,
+            # guided_decoding=guided_decoding,
+            logits_processors=[logits_processor] if logits_processor else None,
         )
 
         # If any of the prompts are empty then we need to replace them with a BOS token
