@@ -1,3 +1,17 @@
+# /// script
+# requires-python = ">=3.10,<4.0"
+# dependencies = [
+#     "datasets==2.15.0",
+#     "huggingface-hub==0.24.0",
+#     "openai==1.66.5",
+#     "pandas==2.2.0",
+#     "pydantic==2.6.0",
+#     "python-dotenv==1.0.1",
+#     "requests==2.32.3",
+#     "tqdm==4.67.1",
+# ]
+# ///
+
 """Create mideind/icelandic_qa_scandeval as a knowledge task dataset."""
 
 import json

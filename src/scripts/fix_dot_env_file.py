@@ -1,3 +1,8 @@
+# /// script
+# requires-python = ">=3.10,<4.0"
+# dependencies = []
+# ///
+
 """Checks related to the .env file in the repository."""
 
 from pathlib import Path

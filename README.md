@@ -129,6 +129,19 @@ argument. This could for instance be `--model <model-id> --task
 sentiment-classification`.
 
 
+### Reproducing the datasets
+All datasets used in this project are generated using the scripts located in the [src/scripts](src/scripts) folder. To reproduce a dataset, run the corresponding script with the following command
+
+```shell
+$ uv run src/scripts/<name-of-script>.py
+```
+
+Replace <name-of-script> with the specific script you wish to execute, e.g.,
+
+```shell
+$ uv run src/scripts/create_allocine.py
+```
+
 ## Special Thanks :pray:
 - Thanks [@Mikeriess](https://github.com/Mikeriess) for evaluating many of the larger
   models on the leaderboards.

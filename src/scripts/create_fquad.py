@@ -1,3 +1,14 @@
+# /// script
+# requires-python = ">=3.10,<4.0"
+# dependencies = [
+#     "click==8.1.3",
+#     "datasets==2.15.0",
+#     "huggingface-hub==0.24.0",
+#     "pandas==2.2.0",
+#     "requests==2.32.3",
+# ]
+# ///
+
 """Create the FQuAD-mini NER dataset and upload it to the HF Hub."""
 
 from collections import defaultdict
