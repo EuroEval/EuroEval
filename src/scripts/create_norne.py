@@ -1,3 +1,14 @@
+# /// script
+# requires-python = ">=3.10,<4.0"
+# dependencies = [
+#     "datasets==2.15.0",
+#     "huggingface-hub==0.24.0",
+#     "pandas==2.2.0",
+#     "requests==2.32.3",
+#     "tqdm==4.67.1",
+# ]
+# ///
+
 """Create the NorNE-mini NER datasets and upload them to the HF Hub."""
 
 import re
