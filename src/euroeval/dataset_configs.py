@@ -1417,7 +1417,7 @@ FQUAD_CONFIG = DatasetConfig(
 
 XQUAD_ES_CONFIG = DatasetConfig(
     name="xquad-es",
-    pretty_name="the Spanish version of the XQuAD reading comprehension dataset.",
+    pretty_name="the Spanish version of the XQuAD reading comprehension dataset",
     huggingface_id="EuroEval/xquad-es",
     task=RC,
     languages=[ES],
@@ -1435,7 +1435,7 @@ XQUAD_ES_CONFIG = DatasetConfig(
 
 MLQA_ES_CONFIG = DatasetConfig(
     name="mlqa-es",
-    pretty_name="the Spanish version of the MLQA reading comprehension dataset.",
+    pretty_name="the Spanish version of the MLQA reading comprehension dataset",
     huggingface_id="EuroEval/mlqa-es",
     task=RC,
     languages=[ES],
