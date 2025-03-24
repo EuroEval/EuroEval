@@ -16,7 +16,7 @@
       
       
       <link rel="icon" href="../../../gfx/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.8">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.9">
     
     
       
@@ -24,7 +24,7 @@
       
     
     
-      <link rel="stylesheet" href="../../../assets/stylesheets/main.8608ea7d.min.css">
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.4af4bdda.min.css">
       
         
         <link rel="stylesheet" href="../../../assets/stylesheets/palette.06af60db.min.css">
@@ -578,6 +578,8 @@
       
         
           
+        
+      
         
       
         
@@ -1691,28 +1693,28 @@ Get the training arguments for the current iteration.</p>
 <ul class="mkapi-item-list">
 <li>
 <p><span class="mkapi-item-name">model</span> : 
-<span class="mkapi-item-type"><a href="../benchmark_modules/base/#euroeval.benchmark_modules.base.BenchmarkModule" title="euroeval.benchmark_modules.base.BenchmarkModule">BenchmarkModule</a></span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The model to evaluate.</p>
+<span class="mkapi-item-type"><a href="../benchmark_modules/base/#euroeval.benchmark_modules.base.BenchmarkModule" title="euroeval.benchmark_modules.base.BenchmarkModule">BenchmarkModule</a></span> <span class="mkapi-dash">&mdash;</span>
+The model to evaluate.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">datasets</span> : 
-<span class="mkapi-item-type">list[<span class="mkapi-tooltip" title="datasets.dataset_dict.DatasetDict">DatasetDict</span>]</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The datasets to use for training and evaluation.</p>
+<span class="mkapi-item-type">list[<span class="mkapi-tooltip" title="datasets.dataset_dict.DatasetDict">DatasetDict</span>]</span> <span class="mkapi-dash">&mdash;</span>
+The datasets to use for training and evaluation.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">model_config</span> : 
-<span class="mkapi-item-type"><a href="../data_models/#euroeval.data_models.ModelConfig" title="euroeval.data_models.ModelConfig">ModelConfig</a></span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The configuration of the model.</p>
+<span class="mkapi-item-type"><a href="../data_models/#euroeval.data_models.ModelConfig" title="euroeval.data_models.ModelConfig">ModelConfig</a></span> <span class="mkapi-dash">&mdash;</span>
+The configuration of the model.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">dataset_config</span> : 
-<span class="mkapi-item-type"><a href="../data_models/#euroeval.data_models.DatasetConfig" title="euroeval.data_models.DatasetConfig">DatasetConfig</a></span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The dataset configuration.</p>
+<span class="mkapi-item-type"><a href="../data_models/#euroeval.data_models.DatasetConfig" title="euroeval.data_models.DatasetConfig">DatasetConfig</a></span> <span class="mkapi-dash">&mdash;</span>
+The dataset configuration.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">benchmark_config</span> : 
-<span class="mkapi-item-type"><a href="../data_models/#euroeval.data_models.BenchmarkConfig" title="euroeval.data_models.BenchmarkConfig">BenchmarkConfig</a></span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The benchmark configuration.</p>
+<span class="mkapi-item-type"><a href="../data_models/#euroeval.data_models.BenchmarkConfig" title="euroeval.data_models.BenchmarkConfig">BenchmarkConfig</a></span> <span class="mkapi-dash">&mdash;</span>
+The benchmark configuration.</p>
 </li>
 </ul>
 </div>
@@ -1773,38 +1775,38 @@ A list of dicts containing the scores for each metric for each iteration.</p>
 <ul class="mkapi-item-list">
 <li>
 <p><span class="mkapi-item-name">model</span> : 
-<span class="mkapi-item-type"><a href="../benchmark_modules/base/#euroeval.benchmark_modules.base.BenchmarkModule" title="euroeval.benchmark_modules.base.BenchmarkModule">BenchmarkModule</a> | None</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The model to use in the benchmark. If None then a new model will be loaded.</p>
+<span class="mkapi-item-type"><a href="../benchmark_modules/base/#euroeval.benchmark_modules.base.BenchmarkModule" title="euroeval.benchmark_modules.base.BenchmarkModule">BenchmarkModule</a> | None</span> <span class="mkapi-dash">&mdash;</span>
+The model to use in the benchmark. If None then a new model will be loaded.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">dataset</span> : 
-<span class="mkapi-item-type"><span class="mkapi-tooltip" title="datasets.dataset_dict.DatasetDict">DatasetDict</span></span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The dataset to use for training and evaluation.</p>
+<span class="mkapi-item-type"><span class="mkapi-tooltip" title="datasets.dataset_dict.DatasetDict">DatasetDict</span></span> <span class="mkapi-dash">&mdash;</span>
+The dataset to use for training and evaluation.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">iteration_idx</span> : 
-<span class="mkapi-item-type">int</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The index of the iteration.</p>
+<span class="mkapi-item-type">int</span> <span class="mkapi-dash">&mdash;</span>
+The index of the iteration.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">training_args</span> : 
-<span class="mkapi-item-type"><span class="mkapi-tooltip" title="transformers.training_args.TrainingArguments">TrainingArguments</span></span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The training arguments.</p>
+<span class="mkapi-item-type"><span class="mkapi-tooltip" title="transformers.training_args.TrainingArguments">TrainingArguments</span></span> <span class="mkapi-dash">&mdash;</span>
+The training arguments.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">model_config</span> : 
-<span class="mkapi-item-type"><a href="../data_models/#euroeval.data_models.ModelConfig" title="euroeval.data_models.ModelConfig">ModelConfig</a></span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The model configuration.</p>
+<span class="mkapi-item-type"><a href="../data_models/#euroeval.data_models.ModelConfig" title="euroeval.data_models.ModelConfig">ModelConfig</a></span> <span class="mkapi-dash">&mdash;</span>
+The model configuration.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">dataset_config</span> : 
-<span class="mkapi-item-type"><a href="../data_models/#euroeval.data_models.DatasetConfig" title="euroeval.data_models.DatasetConfig">DatasetConfig</a></span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The dataset configuration.</p>
+<span class="mkapi-item-type"><a href="../data_models/#euroeval.data_models.DatasetConfig" title="euroeval.data_models.DatasetConfig">DatasetConfig</a></span> <span class="mkapi-dash">&mdash;</span>
+The dataset configuration.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">benchmark_config</span> : 
-<span class="mkapi-item-type"><a href="../data_models/#euroeval.data_models.BenchmarkConfig" title="euroeval.data_models.BenchmarkConfig">BenchmarkConfig</a></span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The benchmark configuration.</p>
+<span class="mkapi-item-type"><a href="../data_models/#euroeval.data_models.BenchmarkConfig" title="euroeval.data_models.BenchmarkConfig">BenchmarkConfig</a></span> <span class="mkapi-dash">&mdash;</span>
+The benchmark configuration.</p>
 </li>
 </ul>
 </div>
@@ -1868,29 +1870,29 @@ The scores for the test dataset.</p>
 <ul class="mkapi-item-list">
 <li>
 <p><span class="mkapi-item-name">benchmark_config</span> : 
-<span class="mkapi-item-type"><a href="../data_models/#euroeval.data_models.BenchmarkConfig" title="euroeval.data_models.BenchmarkConfig">BenchmarkConfig</a></span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The benchmark configuration.</p>
+<span class="mkapi-item-type"><a href="../data_models/#euroeval.data_models.BenchmarkConfig" title="euroeval.data_models.BenchmarkConfig">BenchmarkConfig</a></span> <span class="mkapi-dash">&mdash;</span>
+The benchmark configuration.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">model_config</span> : 
-<span class="mkapi-item-type"><a href="../data_models/#euroeval.data_models.ModelConfig" title="euroeval.data_models.ModelConfig">ModelConfig</a></span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The model configuration.</p>
+<span class="mkapi-item-type"><a href="../data_models/#euroeval.data_models.ModelConfig" title="euroeval.data_models.ModelConfig">ModelConfig</a></span> <span class="mkapi-dash">&mdash;</span>
+The model configuration.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">iteration_idx</span> : 
-<span class="mkapi-item-type">int</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The index of the current iteration. This is only used to generate a
+<span class="mkapi-item-type">int</span> <span class="mkapi-dash">&mdash;</span>
+The index of the current iteration. This is only used to generate a
 unique random seed for the current iteration.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">dtype</span> : 
-<span class="mkapi-item-type"><a href="../enums/#euroeval.enums.DataType" title="euroeval.enums.DataType">DataType</a></span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The data type to use for the model weights.</p>
+<span class="mkapi-item-type"><a href="../enums/#euroeval.enums.DataType" title="euroeval.enums.DataType">DataType</a></span> <span class="mkapi-dash">&mdash;</span>
+The data type to use for the model weights.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">batch_size</span> : 
-<span class="mkapi-item-type">int | None</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The batch size to use for the current iteration, or None if the batch size
+<span class="mkapi-item-type">int | None</span> <span class="mkapi-dash">&mdash;</span>
+The batch size to use for the current iteration, or None if the batch size
 in the benchmark config should be used.</p>
 </li>
 </ul>

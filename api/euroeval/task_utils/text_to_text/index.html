@@ -16,7 +16,7 @@
       
       
       <link rel="icon" href="../../../../gfx/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.8">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.9">
     
     
       
@@ -24,7 +24,7 @@
       
     
     
-      <link rel="stylesheet" href="../../../../assets/stylesheets/main.8608ea7d.min.css">
+      <link rel="stylesheet" href="../../../../assets/stylesheets/main.4af4bdda.min.css">
       
         
         <link rel="stylesheet" href="../../../../assets/stylesheets/palette.06af60db.min.css">
@@ -578,6 +578,8 @@
       
         
           
+        
+      
         
       
         
@@ -1795,19 +1797,19 @@ Extract the predicted labels from the generated output.</p>
 <ul class="mkapi-item-list">
 <li>
 <p><span class="mkapi-item-name">model_outputs_and_labels</span> : 
-<span class="mkapi-item-type">tuple[<span class="mkapi-tooltip" title="euroeval.types.Predictions">Predictions</span>, <span class="mkapi-tooltip" title="euroeval.types.Labels">Labels</span>] | <span class="mkapi-tooltip" title="transformers.trainer_utils.EvalPrediction">EvalPrediction</span></span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The first sequence contains the model outputs and the second sequence
+<span class="mkapi-item-type">tuple[<span class="mkapi-tooltip" title="euroeval.types.Predictions">Predictions</span>, <span class="mkapi-tooltip" title="euroeval.types.Labels">Labels</span>] | <span class="mkapi-tooltip" title="transformers.trainer_utils.EvalPrediction">EvalPrediction</span></span> <span class="mkapi-dash">&mdash;</span>
+The first sequence contains the model outputs and the second sequence
 contains the true labels.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">dataset_config</span> : 
-<span class="mkapi-item-type"><a href="../../data_models/#euroeval.data_models.DatasetConfig" title="euroeval.data_models.DatasetConfig">DatasetConfig</a></span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The configuration of the dataset.</p>
+<span class="mkapi-item-type"><a href="../../data_models/#euroeval.data_models.DatasetConfig" title="euroeval.data_models.DatasetConfig">DatasetConfig</a></span> <span class="mkapi-dash">&mdash;</span>
+The configuration of the dataset.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">benchmark_config</span> : 
-<span class="mkapi-item-type"><a href="../../data_models/#euroeval.data_models.BenchmarkConfig" title="euroeval.data_models.BenchmarkConfig">BenchmarkConfig</a></span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The configuration of the benchmark.</p>
+<span class="mkapi-item-type"><a href="../../data_models/#euroeval.data_models.BenchmarkConfig" title="euroeval.data_models.BenchmarkConfig">BenchmarkConfig</a></span> <span class="mkapi-dash">&mdash;</span>
+The configuration of the benchmark.</p>
 </li>
 </ul>
 </div>
@@ -1869,14 +1871,14 @@ values.</p>
 <ul class="mkapi-item-list">
 <li>
 <p><span class="mkapi-item-name">input_batch</span> : 
-<span class="mkapi-item-type">dict[str, list]</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The input batch, where the keys are the feature names and the values
+<span class="mkapi-item-type">dict[str, list]</span> <span class="mkapi-dash">&mdash;</span>
+The input batch, where the keys are the feature names and the values
 are lists with the feature values.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">model_output</span> : 
-<span class="mkapi-item-type"><a href="../../data_models/#euroeval.data_models.GenerativeModelOutput" title="euroeval.data_models.GenerativeModelOutput">GenerativeModelOutput</a></span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The raw generated output of the model.</p>
+<span class="mkapi-item-type"><a href="../../data_models/#euroeval.data_models.GenerativeModelOutput" title="euroeval.data_models.GenerativeModelOutput">GenerativeModelOutput</a></span> <span class="mkapi-dash">&mdash;</span>
+The raw generated output of the model.</p>
 </li>
 </ul>
 </div>

@@ -16,7 +16,7 @@
       
       
       <link rel="icon" href="../../../../gfx/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.8">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.9">
     
     
       
@@ -24,7 +24,7 @@
       
     
     
-      <link rel="stylesheet" href="../../../../assets/stylesheets/main.8608ea7d.min.css">
+      <link rel="stylesheet" href="../../../../assets/stylesheets/main.4af4bdda.min.css">
       
         
         <link rel="stylesheet" href="../../../../assets/stylesheets/palette.06af60db.min.css">
@@ -578,6 +578,8 @@
       
         
           
+        
+      
         
       
         
@@ -1841,24 +1843,24 @@ Replace unknown tokens in the tokens with the corresponding word.</p>
 <ul class="mkapi-item-list">
 <li>
 <p><span class="mkapi-item-name">model_outputs_and_labels</span> : 
-<span class="mkapi-item-type">tuple[<span class="mkapi-tooltip" title="euroeval.types.Predictions">Predictions</span>, <span class="mkapi-tooltip" title="euroeval.types.Labels">Labels</span>] | <span class="mkapi-tooltip" title="transformers.trainer_utils.EvalPrediction">EvalPrediction</span></span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The first array contains the probability predictions and the second
+<span class="mkapi-item-type">tuple[<span class="mkapi-tooltip" title="euroeval.types.Predictions">Predictions</span>, <span class="mkapi-tooltip" title="euroeval.types.Labels">Labels</span>] | <span class="mkapi-tooltip" title="transformers.trainer_utils.EvalPrediction">EvalPrediction</span></span> <span class="mkapi-dash">&mdash;</span>
+The first array contains the probability predictions and the second
 array contains the true labels.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">has_misc_tags</span> : 
-<span class="mkapi-item-type">bool</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>Whether the dataset has MISC tags.</p>
+<span class="mkapi-item-type">bool</span> <span class="mkapi-dash">&mdash;</span>
+Whether the dataset has MISC tags.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">dataset_config</span> : 
-<span class="mkapi-item-type"><a href="../../data_models/#euroeval.data_models.DatasetConfig" title="euroeval.data_models.DatasetConfig">DatasetConfig</a></span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The configuration of the dataset.</p>
+<span class="mkapi-item-type"><a href="../../data_models/#euroeval.data_models.DatasetConfig" title="euroeval.data_models.DatasetConfig">DatasetConfig</a></span> <span class="mkapi-dash">&mdash;</span>
+The configuration of the dataset.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">benchmark_config</span> : 
-<span class="mkapi-item-type"><a href="../../data_models/#euroeval.data_models.BenchmarkConfig" title="euroeval.data_models.BenchmarkConfig">BenchmarkConfig</a></span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The configuration of the benchmark.</p>
+<span class="mkapi-item-type"><a href="../../data_models/#euroeval.data_models.BenchmarkConfig" title="euroeval.data_models.BenchmarkConfig">BenchmarkConfig</a></span> <span class="mkapi-dash">&mdash;</span>
+The configuration of the benchmark.</p>
 </li>
 </ul>
 </div>
@@ -1920,19 +1922,19 @@ values.</p>
 <ul class="mkapi-item-list">
 <li>
 <p><span class="mkapi-item-name">input_batch</span> : 
-<span class="mkapi-item-type">dict[str, list]</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The input batch, where the keys are the feature names and the values
+<span class="mkapi-item-type">dict[str, list]</span> <span class="mkapi-dash">&mdash;</span>
+The input batch, where the keys are the feature names and the values
 are lists with the feature values.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">model_output</span> : 
-<span class="mkapi-item-type"><a href="../../data_models/#euroeval.data_models.GenerativeModelOutput" title="euroeval.data_models.GenerativeModelOutput">GenerativeModelOutput</a></span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The raw generated output of the model.</p>
+<span class="mkapi-item-type"><a href="../../data_models/#euroeval.data_models.GenerativeModelOutput" title="euroeval.data_models.GenerativeModelOutput">GenerativeModelOutput</a></span> <span class="mkapi-dash">&mdash;</span>
+The raw generated output of the model.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">dataset_config</span> : 
-<span class="mkapi-item-type"><a href="../../data_models/#euroeval.data_models.DatasetConfig" title="euroeval.data_models.DatasetConfig">DatasetConfig</a></span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The configuration of the dataset.</p>
+<span class="mkapi-item-type"><a href="../../data_models/#euroeval.data_models.DatasetConfig" title="euroeval.data_models.DatasetConfig">DatasetConfig</a></span> <span class="mkapi-dash">&mdash;</span>
+The configuration of the dataset.</p>
 </li>
 </ul>
 </div>
@@ -1949,21 +1951,6 @@ are lists with the feature values.</p>
 <li>
 <p><span class="mkapi-item-type">list[<span class="mkapi-tooltip" title="typing">t</span>.<span class="mkapi-tooltip" title="typing.Any">Any</span>]</span> <span class="mkapi-dash">&mdash;</span>
 The predicted labels.</p>
-</li>
-</ul>
-</div>
-<p class="mkapi-section">
-<span class="mkapi-object-link">
-<span class="mkapi-section-toggle" title="Toggle raises">
-<i class="fa-regular fa-square-minus"></i>
-</span>
-</span>
-<span class="mkapi-section-name">Raises</span>
-</p>
-<div class="mkapi-section-content">
-<ul class="mkapi-item-list">
-<li>
-<p><span class="mkapi-item-type"><a href="../../exceptions/#euroeval.exceptions.NeedsExtraInstalled" title="euroeval.exceptions.NeedsExtraInstalled">NeedsExtraInstalled</a></span></p>
 </li>
 </ul>
 </div>
@@ -1993,18 +1980,18 @@ The predicted labels.</p>
 <ul class="mkapi-item-list">
 <li>
 <p><span class="mkapi-item-name">examples</span> : 
-<span class="mkapi-item-type">dict</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The examples to be tokenised.</p>
+<span class="mkapi-item-type">dict</span> <span class="mkapi-dash">&mdash;</span>
+The examples to be tokenised.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">tokenizer</span> : 
-<span class="mkapi-item-type"><span class="mkapi-tooltip" title="transformers.tokenization_utils.PreTrainedTokenizer">PreTrainedTokenizer</span></span> <span class="mkapi-dash">&mdash;</span></p>
-<p>A pretrained tokenizer.</p>
+<span class="mkapi-item-type"><span class="mkapi-tooltip" title="transformers.tokenization_utils.PreTrainedTokenizer">PreTrainedTokenizer</span></span> <span class="mkapi-dash">&mdash;</span>
+A pretrained tokenizer.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">label2id</span> : 
-<span class="mkapi-item-type">dict[str, int]</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>A dictionary that converts NER tags to IDs.</p>
+<span class="mkapi-item-type">dict[str, int]</span> <span class="mkapi-dash">&mdash;</span>
+A dictionary that converts NER tags to IDs.</p>
 </li>
 </ul>
 </div>
@@ -2065,18 +2052,18 @@ A dictionary containing the tokenized data as well as labels.</p>
 <ul class="mkapi-item-list">
 <li>
 <p><span class="mkapi-item-name">tokenizer</span> : 
-<span class="mkapi-item-type"><span class="mkapi-tooltip" title="transformers.tokenization_utils.PreTrainedTokenizer">PreTrainedTokenizer</span></span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The tokenizer used to tokenize the words.</p>
+<span class="mkapi-item-type"><span class="mkapi-tooltip" title="transformers.tokenization_utils.PreTrainedTokenizer">PreTrainedTokenizer</span></span> <span class="mkapi-dash">&mdash;</span>
+The tokenizer used to tokenize the words.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">tokens</span> : 
-<span class="mkapi-item-type">list[str]</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The list of tokens.</p>
+<span class="mkapi-item-type">list[str]</span> <span class="mkapi-dash">&mdash;</span>
+The list of tokens.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">words</span> : 
-<span class="mkapi-item-type">list[str]</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The list of words.</p>
+<span class="mkapi-item-type">list[str]</span> <span class="mkapi-dash">&mdash;</span>
+The list of words.</p>
 </li>
 </ul>
 </div>

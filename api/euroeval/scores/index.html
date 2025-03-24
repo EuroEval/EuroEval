@@ -16,7 +16,7 @@
       
       
       <link rel="icon" href="../../../gfx/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.8">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.9">
     
     
       
@@ -24,7 +24,7 @@
       
     
     
-      <link rel="stylesheet" href="../../../assets/stylesheets/main.8608ea7d.min.css">
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.4af4bdda.min.css">
       
         
         <link rel="stylesheet" href="../../../assets/stylesheets/palette.06af60db.min.css">
@@ -578,6 +578,8 @@
       
         
           
+        
+      
         
       
         
@@ -1668,24 +1670,24 @@ Helper function to compute the mean with confidence intervals.</p>
 <ul class="mkapi-item-list">
 <li>
 <p><span class="mkapi-item-name">dataset_name</span> : 
-<span class="mkapi-item-type">str</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>Name of the dataset.</p>
+<span class="mkapi-item-type">str</span> <span class="mkapi-dash">&mdash;</span>
+Name of the dataset.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">metric_configs</span> : 
-<span class="mkapi-item-type">list[<a href="../data_models/#euroeval.data_models.MetricConfig" title="euroeval.data_models.MetricConfig">MetricConfig</a>]</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>List of metrics to log.</p>
+<span class="mkapi-item-type">list[<a href="../data_models/#euroeval.data_models.MetricConfig" title="euroeval.data_models.MetricConfig">MetricConfig</a>]</span> <span class="mkapi-dash">&mdash;</span>
+List of metrics to log.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">scores</span> : 
-<span class="mkapi-item-type">list[dict[str, float]]</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The scores that are to be logged. This is a list of dictionaries full of
+<span class="mkapi-item-type">list[dict[str, float]]</span> <span class="mkapi-dash">&mdash;</span>
+The scores that are to be logged. This is a list of dictionaries full of
 scores.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">model_id</span> : 
-<span class="mkapi-item-type">str</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The full Hugging Face Hub path to the pretrained transformer model.</p>
+<span class="mkapi-item-type">str</span> <span class="mkapi-dash">&mdash;</span>
+The full Hugging Face Hub path to the pretrained transformer model.</p>
 </li>
 </ul>
 </div>
@@ -1733,14 +1735,14 @@ identical to <code>scores</code> and 'total' being a dictionary with the aggrega
 <ul class="mkapi-item-list">
 <li>
 <p><span class="mkapi-item-name">scores</span> : 
-<span class="mkapi-item-type">list[dict[str, float]]</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>Dictionary with the names of the metrics as keys, of the form
+<span class="mkapi-item-type">list[dict[str, float]]</span> <span class="mkapi-dash">&mdash;</span>
+Dictionary with the names of the metrics as keys, of the form
 "<split>_<metric_name>", such as "val_f1", and values the metric values.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">metric_config</span> : 
-<span class="mkapi-item-type"><a href="../data_models/#euroeval.data_models.MetricConfig" title="euroeval.data_models.MetricConfig">MetricConfig</a></span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The configuration of the metric, which is used to collect the correct
+<span class="mkapi-item-type"><a href="../data_models/#euroeval.data_models.MetricConfig" title="euroeval.data_models.MetricConfig">MetricConfig</a></span> <span class="mkapi-dash">&mdash;</span>
+The configuration of the metric, which is used to collect the correct
 metric from <code>scores</code>.</p>
 </li>
 </ul>

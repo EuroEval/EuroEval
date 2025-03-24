@@ -16,7 +16,7 @@
       
       
       <link rel="icon" href="../../../gfx/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.8">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.9">
     
     
       
@@ -24,7 +24,7 @@
       
     
     
-      <link rel="stylesheet" href="../../../assets/stylesheets/main.8608ea7d.min.css">
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.4af4bdda.min.css">
       
         
         <link rel="stylesheet" href="../../../assets/stylesheets/palette.06af60db.min.css">
@@ -578,6 +578,8 @@
       
         
           
+        
+      
         
       
         
@@ -1737,144 +1739,144 @@ Prepare device for benchmarking.</p>
 <ul class="mkapi-item-list">
 <li>
 <p><span class="mkapi-item-name">progress_bar</span> : 
-<span class="mkapi-item-type">bool</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>Whether to show a progress bar when running the benchmark.</p>
+<span class="mkapi-item-type">bool</span> <span class="mkapi-dash">&mdash;</span>
+Whether to show a progress bar when running the benchmark.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">save_results</span> : 
-<span class="mkapi-item-type">bool</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>Whether to save the benchmark results to a file.</p>
+<span class="mkapi-item-type">bool</span> <span class="mkapi-dash">&mdash;</span>
+Whether to save the benchmark results to a file.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">task</span> : 
-<span class="mkapi-item-type">str | list[str] | None</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The tasks to include for dataset. If None then datasets will not be
+<span class="mkapi-item-type">str | list[str] | None</span> <span class="mkapi-dash">&mdash;</span>
+The tasks to include for dataset. If None then datasets will not be
 filtered based on their task.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">dataset</span> : 
-<span class="mkapi-item-type">str | list[str] | None</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The datasets to include for task. If None then all datasets will be
+<span class="mkapi-item-type">str | list[str] | None</span> <span class="mkapi-dash">&mdash;</span>
+The datasets to include for task. If None then all datasets will be
 included, limited by the <code>task</code> parameter.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">language</span> : 
-<span class="mkapi-item-type">str | list[str]</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The language codes of the languages to include, both for models and
+<span class="mkapi-item-type">str | list[str]</span> <span class="mkapi-dash">&mdash;</span>
+The language codes of the languages to include, both for models and
 datasets. Here 'no' means both Bokmål (nb) and Nynorsk (nn). Set this
 to 'all' if all languages should be considered.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">model_language</span> : 
-<span class="mkapi-item-type">str | list[str] | None</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The language codes of the languages to include for models. If None then
+<span class="mkapi-item-type">str | list[str] | None</span> <span class="mkapi-dash">&mdash;</span>
+The language codes of the languages to include for models. If None then
 the <code>language</code> parameter will be used.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">dataset_language</span> : 
-<span class="mkapi-item-type">str | list[str] | None</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The language codes of the languages to include for datasets. If None then
+<span class="mkapi-item-type">str | list[str] | None</span> <span class="mkapi-dash">&mdash;</span>
+The language codes of the languages to include for datasets. If None then
 the <code>language</code> parameter will be used.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">device</span> : 
-<span class="mkapi-item-type"><a href="../enums/#euroeval.enums.Device" title="euroeval.enums.Device">Device</a> | None</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The device to use for running the models. If None then the device will be
+<span class="mkapi-item-type"><a href="../enums/#euroeval.enums.Device" title="euroeval.enums.Device">Device</a> | None</span> <span class="mkapi-dash">&mdash;</span>
+The device to use for running the models. If None then the device will be
 set automatically.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">batch_size</span> : 
-<span class="mkapi-item-type">int</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The batch size to use for running the models.</p>
+<span class="mkapi-item-type">int</span> <span class="mkapi-dash">&mdash;</span>
+The batch size to use for running the models.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">raise_errors</span> : 
-<span class="mkapi-item-type">bool</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>Whether to raise errors when running the benchmark.</p>
+<span class="mkapi-item-type">bool</span> <span class="mkapi-dash">&mdash;</span>
+Whether to raise errors when running the benchmark.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">cache_dir</span> : 
-<span class="mkapi-item-type">str</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The directory to use for caching the models.</p>
+<span class="mkapi-item-type">str</span> <span class="mkapi-dash">&mdash;</span>
+The directory to use for caching the models.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">api_key</span> : 
-<span class="mkapi-item-type">str | None</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The API key to use for a given inference server.</p>
+<span class="mkapi-item-type">str | None</span> <span class="mkapi-dash">&mdash;</span>
+The API key to use for a given inference server.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">force</span> : 
-<span class="mkapi-item-type">bool</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>Whether to force the benchmark to run even if the results are already
+<span class="mkapi-item-type">bool</span> <span class="mkapi-dash">&mdash;</span>
+Whether to force the benchmark to run even if the results are already
 cached.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">verbose</span> : 
-<span class="mkapi-item-type">bool</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>Whether to print verbose output when running the benchmark. This is
+<span class="mkapi-item-type">bool</span> <span class="mkapi-dash">&mdash;</span>
+Whether to print verbose output when running the benchmark. This is
 automatically set if <code>debug</code> is True.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">trust_remote_code</span> : 
-<span class="mkapi-item-type">bool</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>Whether to trust remote code when running the benchmark.</p>
+<span class="mkapi-item-type">bool</span> <span class="mkapi-dash">&mdash;</span>
+Whether to trust remote code when running the benchmark.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">use_flash_attention</span> : 
-<span class="mkapi-item-type">bool | None</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>Whether to use Flash Attention for the models. If None then it will be used
+<span class="mkapi-item-type">bool | None</span> <span class="mkapi-dash">&mdash;</span>
+Whether to use Flash Attention for the models. If None then it will be used
 if it is available.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">clear_model_cache</span> : 
-<span class="mkapi-item-type">bool</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>Whether to clear the model cache before running the benchmark.</p>
+<span class="mkapi-item-type">bool</span> <span class="mkapi-dash">&mdash;</span>
+Whether to clear the model cache before running the benchmark.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">evaluate_test_split</span> : 
-<span class="mkapi-item-type">bool</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>Whether to use the test split for the datasets.</p>
+<span class="mkapi-item-type">bool</span> <span class="mkapi-dash">&mdash;</span>
+Whether to use the test split for the datasets.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">few_shot</span> : 
-<span class="mkapi-item-type">bool</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>Whether to use few-shot learning for the models.</p>
+<span class="mkapi-item-type">bool</span> <span class="mkapi-dash">&mdash;</span>
+Whether to use few-shot learning for the models.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">num_iterations</span> : 
-<span class="mkapi-item-type">int</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The number of iterations each model should be evaluated for.</p>
+<span class="mkapi-item-type">int</span> <span class="mkapi-dash">&mdash;</span>
+The number of iterations each model should be evaluated for.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">api_base</span> : 
-<span class="mkapi-item-type">str | None</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The base URL for a given inference API. Only relevant if <code>model</code> refers to a
+<span class="mkapi-item-type">str | None</span> <span class="mkapi-dash">&mdash;</span>
+The base URL for a given inference API. Only relevant if <code>model</code> refers to a
 model on an inference API.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">api_version</span> : 
-<span class="mkapi-item-type">str | None</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The version of the API to use for a given inference API.</p>
+<span class="mkapi-item-type">str | None</span> <span class="mkapi-dash">&mdash;</span>
+The version of the API to use for a given inference API.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">debug</span> : 
-<span class="mkapi-item-type">bool</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>Whether to run the benchmark in debug mode.</p>
+<span class="mkapi-item-type">bool</span> <span class="mkapi-dash">&mdash;</span>
+Whether to run the benchmark in debug mode.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">run_with_cli</span> : 
-<span class="mkapi-item-type">bool</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>Whether the benchmark is being run with the CLI.</p>
+<span class="mkapi-item-type">bool</span> <span class="mkapi-dash">&mdash;</span>
+Whether the benchmark is being run with the CLI.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">only_allow_safetensors</span> : 
-<span class="mkapi-item-type">bool</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>Whether to only allow evaluations of models stored as safetensors.</p>
+<span class="mkapi-item-type">bool</span> <span class="mkapi-dash">&mdash;</span>
+Whether to only allow evaluations of models stored as safetensors.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">first_time</span> : 
-<span class="mkapi-item-type">bool</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>Whether this is the first time the benchmark configuration is being created.
+<span class="mkapi-item-type">bool</span> <span class="mkapi-dash">&mdash;</span>
+Whether this is the first time the benchmark configuration is being created.
 Defaults to False.</p>
 </li>
 </ul>
@@ -1921,8 +1923,8 @@ The benchmark configuration.</p>
 <ul class="mkapi-item-list">
 <li>
 <p><span class="mkapi-item-name">language_codes</span> : 
-<span class="mkapi-item-type">str | list[str]</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The language codes of the languages to include, both for models and
+<span class="mkapi-item-type">str | list[str]</span> <span class="mkapi-dash">&mdash;</span>
+The language codes of the languages to include, both for models and
 datasets. Here 'no' means both Bokmål (nb) and Nynorsk (nn). Set this
 to 'all' if all languages should be considered.</p>
 </li>
@@ -1970,15 +1972,15 @@ The correct language codes.</p>
 <ul class="mkapi-item-list">
 <li>
 <p><span class="mkapi-item-name">language_codes</span> : 
-<span class="mkapi-item-type">str | list[str] | None</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The language codes of the languages to include for models or datasets.
+<span class="mkapi-item-type">str | list[str] | None</span> <span class="mkapi-dash">&mdash;</span>
+The language codes of the languages to include for models or datasets.
 If specified then this overrides the <code>language</code> parameter for model or
 dataset languages.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">default_language_codes</span> : 
-<span class="mkapi-item-type">list[str]</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The default language codes of the languages to include.</p>
+<span class="mkapi-item-type">list[str]</span> <span class="mkapi-dash">&mdash;</span>
+The default language codes of the languages to include.</p>
 </li>
 </ul>
 </div>
@@ -2024,19 +2026,19 @@ The prepared model or dataset languages.</p>
 <ul class="mkapi-item-list">
 <li>
 <p><span class="mkapi-item-name">task</span> : 
-<span class="mkapi-item-type">str | list[str] | None</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The tasks to include for dataset. If None then datasets will not be
+<span class="mkapi-item-type">str | list[str] | None</span> <span class="mkapi-dash">&mdash;</span>
+The tasks to include for dataset. If None then datasets will not be
 filtered based on their task.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">dataset_languages</span> : 
-<span class="mkapi-item-type">list[<a href="../data_models/#euroeval.data_models.Language" title="euroeval.data_models.Language">Language</a>]</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The languages of the datasets in the benchmark.</p>
+<span class="mkapi-item-type">list[<a href="../data_models/#euroeval.data_models.Language" title="euroeval.data_models.Language">Language</a>]</span> <span class="mkapi-dash">&mdash;</span>
+The languages of the datasets in the benchmark.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">dataset</span> : 
-<span class="mkapi-item-type">str | list[str] | None</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The datasets to include for task. If None then all datasets will be
+<span class="mkapi-item-type">str | list[str] | None</span> <span class="mkapi-dash">&mdash;</span>
+The datasets to include for task. If None then all datasets will be
 included, limited by the <code>task</code> and <code>dataset_languages</code> parameters.</p>
 </li>
 </ul>
@@ -2069,8 +2071,8 @@ The prepared tasks and datasets.</p>
 <ul class="mkapi-item-list">
 <li>
 <p><span class="mkapi-item-name">InvalidBenchmark</span>
- <span class="mkapi-dash">&mdash;</span></p>
-<p>If the task or dataset is not found in the benchmark tasks or datasets.</p>
+ <span class="mkapi-dash">&mdash;</span>
+If the task or dataset is not found in the benchmark tasks or datasets.</p>
 </li>
 </ul>
 </div>
@@ -2100,8 +2102,8 @@ The prepared tasks and datasets.</p>
 <ul class="mkapi-item-list">
 <li>
 <p><span class="mkapi-item-name">device</span> : 
-<span class="mkapi-item-type"><a href="../enums/#euroeval.enums.Device" title="euroeval.enums.Device">Device</a> | None</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The device to use for running the models. If None then the device will be
+<span class="mkapi-item-type"><a href="../enums/#euroeval.enums.Device" title="euroeval.enums.Device">Device</a> | None</span> <span class="mkapi-dash">&mdash;</span>
+The device to use for running the models. If None then the device will be
 set automatically.</p>
 </li>
 </ul>

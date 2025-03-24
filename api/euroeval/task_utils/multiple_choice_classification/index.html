@@ -16,7 +16,7 @@
       
       
       <link rel="icon" href="../../../../gfx/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.8">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.9">
     
     
       
@@ -24,7 +24,7 @@
       
     
     
-      <link rel="stylesheet" href="../../../../assets/stylesheets/main.8608ea7d.min.css">
+      <link rel="stylesheet" href="../../../../assets/stylesheets/main.4af4bdda.min.css">
       
         
         <link rel="stylesheet" href="../../../../assets/stylesheets/palette.06af60db.min.css">
@@ -578,6 +578,8 @@
       
         
           
+        
+      
         
       
         
@@ -1896,19 +1898,19 @@ Evaluate the model on the given dataset.</p>
 <ul class="mkapi-item-list">
 <li>
 <p><span class="mkapi-item-name">eval_dataset</span> : 
-<span class="mkapi-item-type"><span class="mkapi-tooltip" title="datasets.Dataset">Dataset</span> | None</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The dataset to evaluate on. If None, then use the stored evaluation
+<span class="mkapi-item-type"><span class="mkapi-tooltip" title="datasets.Dataset">Dataset</span> | None</span> <span class="mkapi-dash">&mdash;</span>
+The dataset to evaluate on. If None, then use the stored evaluation
 dataset.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">ignore_keys</span> : 
-<span class="mkapi-item-type">list[str] | None</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The keys to ignore when computing the metrics.</p>
+<span class="mkapi-item-type">list[str] | None</span> <span class="mkapi-dash">&mdash;</span>
+The keys to ignore when computing the metrics.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">metric_key_prefix</span> : 
-<span class="mkapi-item-type">str</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The prefix to use for the metric keys.</p>
+<span class="mkapi-item-type">str</span> <span class="mkapi-dash">&mdash;</span>
+The prefix to use for the metric keys.</p>
 </li>
 </ul>
 </div>
@@ -1954,13 +1956,13 @@ The metrics computed on the evaluation dataset.</p>
 <ul class="mkapi-item-list">
 <li>
 <p><span class="mkapi-item-name">examples</span> : 
-<span class="mkapi-item-type"><span class="mkapi-tooltip" title="transformers.tokenization_utils_base.BatchEncoding">BatchEncoding</span></span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The examples to prepare.</p>
+<span class="mkapi-item-type"><span class="mkapi-tooltip" title="transformers.tokenization_utils_base.BatchEncoding">BatchEncoding</span></span> <span class="mkapi-dash">&mdash;</span>
+The examples to prepare.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">tokenizer</span> : 
-<span class="mkapi-item-type"><span class="mkapi-tooltip" title="transformers.tokenization_utils.PreTrainedTokenizer">PreTrainedTokenizer</span></span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The tokenizer to use to prepare the examples.</p>
+<span class="mkapi-item-type"><span class="mkapi-tooltip" title="transformers.tokenization_utils.PreTrainedTokenizer">PreTrainedTokenizer</span></span> <span class="mkapi-dash">&mdash;</span>
+The tokenizer to use to prepare the examples.</p>
 </li>
 </ul>
 </div>
@@ -2006,13 +2008,13 @@ The prepared examples.</p>
 <ul class="mkapi-item-list">
 <li>
 <p><span class="mkapi-item-name">predictions</span> : 
-<span class="mkapi-item-type"><span class="mkapi-tooltip" title="numpy">np</span>.<span class="mkapi-tooltip" title="numpy.core.multiarray.ndarray">ndarray</span></span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The model predictions, of shape (num_examples, 2).</p>
+<span class="mkapi-item-type"><span class="mkapi-tooltip" title="numpy">np</span>.<span class="mkapi-tooltip" title="numpy.core.multiarray.ndarray">ndarray</span></span> <span class="mkapi-dash">&mdash;</span>
+The model predictions, of shape (num_examples, 2).</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">dataset</span> : 
-<span class="mkapi-item-type"><span class="mkapi-tooltip" title="datasets.Dataset">Dataset</span></span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The dataset containing the examples.</p>
+<span class="mkapi-item-type"><span class="mkapi-tooltip" title="datasets.Dataset">Dataset</span></span> <span class="mkapi-dash">&mdash;</span>
+The dataset containing the examples.</p>
 </li>
 </ul>
 </div>

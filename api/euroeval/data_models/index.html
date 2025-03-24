@@ -16,7 +16,7 @@
       
       
       <link rel="icon" href="../../../gfx/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.8">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.9">
     
     
       
@@ -24,7 +24,7 @@
       
     
     
-      <link rel="stylesheet" href="../../../assets/stylesheets/main.8608ea7d.min.css">
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.4af4bdda.min.css">
       
         
         <link rel="stylesheet" href="../../../assets/stylesheets/palette.06af60db.min.css">
@@ -578,6 +578,8 @@
       
         
           
+        
+      
         
       
         
@@ -2012,36 +2014,36 @@ Information about a Hugging Face model.</p>
 <ul class="mkapi-item-list">
 <li>
 <p><span class="mkapi-item-name">name</span> : 
-<span class="mkapi-item-type">str</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The name of the metric.</p>
+<span class="mkapi-item-type">str</span> <span class="mkapi-dash">&mdash;</span>
+The name of the metric.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">pretty_name</span> : 
-<span class="mkapi-item-type">str</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>A longer prettier name for the metric, which allows cases and spaces. Used
+<span class="mkapi-item-type">str</span> <span class="mkapi-dash">&mdash;</span>
+A longer prettier name for the metric, which allows cases and spaces. Used
 for logging.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">huggingface_id</span> : 
-<span class="mkapi-item-type">str</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The Hugging Face ID of the metric.</p>
+<span class="mkapi-item-type">str</span> <span class="mkapi-dash">&mdash;</span>
+The Hugging Face ID of the metric.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">results_key</span> : 
-<span class="mkapi-item-type">str</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The name of the key used to extract the metric scores from the results
+<span class="mkapi-item-type">str</span> <span class="mkapi-dash">&mdash;</span>
+The name of the key used to extract the metric scores from the results
 dictionary.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">compute_kwargs</span> : 
-<span class="mkapi-item-type">dict[str, <span class="mkapi-tooltip" title="typing">t</span>.<span class="mkapi-tooltip" title="typing.Any">Any</span>]</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>Keyword arguments to pass to the metric's compute function. Defaults to
+<span class="mkapi-item-type">dict[str, <span class="mkapi-tooltip" title="typing">t</span>.<span class="mkapi-tooltip" title="typing.Any">Any</span>]</span> <span class="mkapi-dash">&mdash;</span>
+Keyword arguments to pass to the metric's compute function. Defaults to
 an empty dictionary.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">postprocessing_fn</span> : 
-<span class="mkapi-item-type"><span class="mkapi-tooltip" title="collections.abc">c</span>.<span class="mkapi-tooltip" title="collections.abc.Callable">Callable</span>[[float], tuple[float, str]]</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>A function to apply to the metric scores after they are computed, taking
+<span class="mkapi-item-type"><span class="mkapi-tooltip" title="collections.abc">c</span>.<span class="mkapi-tooltip" title="collections.abc.Callable">Callable</span>[[float], tuple[float, str]]</span> <span class="mkapi-dash">&mdash;</span>
+A function to apply to the metric scores after they are computed, taking
 the score to the postprocessed score along with its string representation.
 Defaults to x -&gt; (100 * x, f"{x:.2%}").</p>
 </li>
@@ -2073,18 +2075,18 @@ Defaults to x -&gt; (100 * x, f"{x:.2%}").</p>
 <ul class="mkapi-item-list">
 <li>
 <p><span class="mkapi-item-name">name</span> : 
-<span class="mkapi-item-type">str</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The name of the task.</p>
+<span class="mkapi-item-type">str</span> <span class="mkapi-dash">&mdash;</span>
+The name of the task.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">task_group</span> : 
-<span class="mkapi-item-type"><a href="../enums/#euroeval.enums.TaskGroup" title="euroeval.enums.TaskGroup">TaskGroup</a></span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The task group of the task.</p>
+<span class="mkapi-item-type"><a href="../enums/#euroeval.enums.TaskGroup" title="euroeval.enums.TaskGroup">TaskGroup</a></span> <span class="mkapi-dash">&mdash;</span>
+The task group of the task.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">metrics</span> : 
-<span class="mkapi-item-type">list[<a href="./#euroeval.data_models.MetricConfig" title="euroeval.data_models.MetricConfig">MetricConfig</a>]</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The metrics used to evaluate the task.</p>
+<span class="mkapi-item-type">list[<a href="./#euroeval.data_models.MetricConfig" title="euroeval.data_models.MetricConfig">MetricConfig</a>]</span> <span class="mkapi-dash">&mdash;</span>
+The metrics used to evaluate the task.</p>
 </li>
 </ul>
 </div>
@@ -2114,13 +2116,13 @@ Defaults to x -&gt; (100 * x, f"{x:.2%}").</p>
 <ul class="mkapi-item-list">
 <li>
 <p><span class="mkapi-item-name">code</span> : 
-<span class="mkapi-item-type">str</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The ISO 639-1 language code of the language.</p>
+<span class="mkapi-item-type">str</span> <span class="mkapi-dash">&mdash;</span>
+The ISO 639-1 language code of the language.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">name</span> : 
-<span class="mkapi-item-type">str</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The name of the language.</p>
+<span class="mkapi-item-type">str</span> <span class="mkapi-dash">&mdash;</span>
+The name of the language.</p>
 </li>
 </ul>
 </div>
@@ -2150,128 +2152,128 @@ Defaults to x -&gt; (100 * x, f"{x:.2%}").</p>
 <ul class="mkapi-item-list">
 <li>
 <p><span class="mkapi-item-name">model_languages</span> : 
-<span class="mkapi-item-type">list[<a href="./#euroeval.data_models.Language" title="euroeval.data_models.Language">Language</a>]</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The languages of the models to benchmark.</p>
+<span class="mkapi-item-type">list[<a href="./#euroeval.data_models.Language" title="euroeval.data_models.Language">Language</a>]</span> <span class="mkapi-dash">&mdash;</span>
+The languages of the models to benchmark.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">dataset_languages</span> : 
-<span class="mkapi-item-type">list[<a href="./#euroeval.data_models.Language" title="euroeval.data_models.Language">Language</a>]</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The languages of the datasets in the benchmark.</p>
+<span class="mkapi-item-type">list[<a href="./#euroeval.data_models.Language" title="euroeval.data_models.Language">Language</a>]</span> <span class="mkapi-dash">&mdash;</span>
+The languages of the datasets in the benchmark.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">tasks</span> : 
-<span class="mkapi-item-type">list[<a href="./#euroeval.data_models.Task" title="euroeval.data_models.Task">Task</a>]</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The tasks benchmark the model(s) on.</p>
+<span class="mkapi-item-type">list[<a href="./#euroeval.data_models.Task" title="euroeval.data_models.Task">Task</a>]</span> <span class="mkapi-dash">&mdash;</span>
+The tasks benchmark the model(s) on.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">datasets</span> : 
-<span class="mkapi-item-type">list[str]</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The datasets to benchmark on.</p>
+<span class="mkapi-item-type">list[str]</span> <span class="mkapi-dash">&mdash;</span>
+The datasets to benchmark on.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">batch_size</span> : 
-<span class="mkapi-item-type">int</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The batch size to use.</p>
+<span class="mkapi-item-type">int</span> <span class="mkapi-dash">&mdash;</span>
+The batch size to use.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">raise_errors</span> : 
-<span class="mkapi-item-type">bool</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>Whether to raise errors instead of skipping them.</p>
+<span class="mkapi-item-type">bool</span> <span class="mkapi-dash">&mdash;</span>
+Whether to raise errors instead of skipping them.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">cache_dir</span> : 
-<span class="mkapi-item-type">str</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>Directory to store cached models and datasets.</p>
+<span class="mkapi-item-type">str</span> <span class="mkapi-dash">&mdash;</span>
+Directory to store cached models and datasets.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">api_key</span> : 
-<span class="mkapi-item-type">str | None</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The API key to use for a given inference API.</p>
+<span class="mkapi-item-type">str | None</span> <span class="mkapi-dash">&mdash;</span>
+The API key to use for a given inference API.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">force</span> : 
-<span class="mkapi-item-type">bool</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>Whether to force the benchmark to run even if the results are already
+<span class="mkapi-item-type">bool</span> <span class="mkapi-dash">&mdash;</span>
+Whether to force the benchmark to run even if the results are already
 cached.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">progress_bar</span> : 
-<span class="mkapi-item-type">bool</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>Whether to show a progress bar.</p>
+<span class="mkapi-item-type">bool</span> <span class="mkapi-dash">&mdash;</span>
+Whether to show a progress bar.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">save_results</span> : 
-<span class="mkapi-item-type">bool</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>Whether to save the benchmark results to 'euroeval_benchmark_results.json'.</p>
+<span class="mkapi-item-type">bool</span> <span class="mkapi-dash">&mdash;</span>
+Whether to save the benchmark results to 'euroeval_benchmark_results.json'.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">device</span> : 
-<span class="mkapi-item-type"><span class="mkapi-tooltip" title="torch">torch</span>.<span class="mkapi-tooltip" title="torch.device">device</span></span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The device to use for benchmarking.</p>
+<span class="mkapi-item-type"><span class="mkapi-tooltip" title="torch">torch</span>.<span class="mkapi-tooltip" title="torch.device">device</span></span> <span class="mkapi-dash">&mdash;</span>
+The device to use for benchmarking.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">verbose</span> : 
-<span class="mkapi-item-type">bool</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>Whether to print verbose output.</p>
+<span class="mkapi-item-type">bool</span> <span class="mkapi-dash">&mdash;</span>
+Whether to print verbose output.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">trust_remote_code</span> : 
-<span class="mkapi-item-type">bool</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>Whether to trust remote code when loading models from the Hugging Face Hub.</p>
+<span class="mkapi-item-type">bool</span> <span class="mkapi-dash">&mdash;</span>
+Whether to trust remote code when loading models from the Hugging Face Hub.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">use_flash_attention</span> : 
-<span class="mkapi-item-type">bool | None</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>Whether to use Flash Attention. If None then this will be used for
+<span class="mkapi-item-type">bool | None</span> <span class="mkapi-dash">&mdash;</span>
+Whether to use Flash Attention. If None then this will be used for
 generative models.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">clear_model_cache</span> : 
-<span class="mkapi-item-type">bool</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>Whether to clear the model cache after benchmarking each model.</p>
+<span class="mkapi-item-type">bool</span> <span class="mkapi-dash">&mdash;</span>
+Whether to clear the model cache after benchmarking each model.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">evaluate_test_split</span> : 
-<span class="mkapi-item-type">bool</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>Whether to evaluate on the test split.</p>
+<span class="mkapi-item-type">bool</span> <span class="mkapi-dash">&mdash;</span>
+Whether to evaluate on the test split.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">few_shot</span> : 
-<span class="mkapi-item-type">bool</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>Whether to only evaluate the model using few-shot evaluation. Only relevant
+<span class="mkapi-item-type">bool</span> <span class="mkapi-dash">&mdash;</span>
+Whether to only evaluate the model using few-shot evaluation. Only relevant
 if the model is generative.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">num_iterations</span> : 
-<span class="mkapi-item-type">int</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The number of iterations each model should be evaluated for.</p>
+<span class="mkapi-item-type">int</span> <span class="mkapi-dash">&mdash;</span>
+The number of iterations each model should be evaluated for.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">api_base</span> : 
-<span class="mkapi-item-type">str | None</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The base URL for a given inference API. Only relevant if <code>model</code> refers to a
+<span class="mkapi-item-type">str | None</span> <span class="mkapi-dash">&mdash;</span>
+The base URL for a given inference API. Only relevant if <code>model</code> refers to a
 model on an inference API.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">api_version</span> : 
-<span class="mkapi-item-type">str | None</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The version of the API to use. Only relevant if <code>model</code> refers to a model on
+<span class="mkapi-item-type">str | None</span> <span class="mkapi-dash">&mdash;</span>
+The version of the API to use. Only relevant if <code>model</code> refers to a model on
 an inference API.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">debug</span> : 
-<span class="mkapi-item-type">bool</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>Whether to run the benchmark in debug mode.</p>
+<span class="mkapi-item-type">bool</span> <span class="mkapi-dash">&mdash;</span>
+Whether to run the benchmark in debug mode.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">run_with_cli</span> : 
-<span class="mkapi-item-type">bool</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>Whether the benchmark is being run with the CLI.</p>
+<span class="mkapi-item-type">bool</span> <span class="mkapi-dash">&mdash;</span>
+Whether the benchmark is being run with the CLI.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">only_allow_safetensors</span> : 
-<span class="mkapi-item-type">bool</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>Whether to only allow models that use the safetensors format.</p>
+<span class="mkapi-item-type">bool</span> <span class="mkapi-dash">&mdash;</span>
+Whether to only allow models that use the safetensors format.</p>
 </li>
 </ul>
 </div>
@@ -2407,8 +2409,8 @@ Append the benchmark result to the results file.</p>
 <ul class="mkapi-item-list">
 <li>
 <p><span class="mkapi-item-name">config</span> : 
-<span class="mkapi-item-type"><span class="mkapi-tooltip" title="pydantic.main.BaseModel.dict">dict</span></span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The configuration dictionary.</p>
+<span class="mkapi-item-type"><span class="mkapi-tooltip" title="pydantic.main.BaseModel.dict">dict</span></span> <span class="mkapi-dash">&mdash;</span>
+The configuration dictionary.</p>
 </li>
 </ul>
 </div>
@@ -2457,8 +2459,8 @@ The benchmark result.</p>
 <ul class="mkapi-item-list">
 <li>
 <p><span class="mkapi-item-name">results_path</span> : 
-<span class="mkapi-item-type"><span class="mkapi-tooltip" title="pathlib">pathlib</span>.<span class="mkapi-tooltip" title="pathlib.Path">Path</span></span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The path to the results file.</p>
+<span class="mkapi-item-type"><span class="mkapi-tooltip" title="pathlib">pathlib</span>.<span class="mkapi-tooltip" title="pathlib.Path">Path</span></span> <span class="mkapi-dash">&mdash;</span>
+The path to the results file.</p>
 </li>
 </ul>
 </div>
@@ -2488,90 +2490,90 @@ The benchmark result.</p>
 <ul class="mkapi-item-list">
 <li>
 <p><span class="mkapi-item-name">name</span> : 
-<span class="mkapi-item-type">str</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The name of the dataset. Must be lower case with no spaces.</p>
+<span class="mkapi-item-type">str</span> <span class="mkapi-dash">&mdash;</span>
+The name of the dataset. Must be lower case with no spaces.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">pretty_name</span> : 
-<span class="mkapi-item-type">str</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>A longer prettier name for the dataset, which allows cases and spaces. Used
+<span class="mkapi-item-type">str</span> <span class="mkapi-dash">&mdash;</span>
+A longer prettier name for the dataset, which allows cases and spaces. Used
 for logging.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">huggingface_id</span> : 
-<span class="mkapi-item-type">str</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The Hugging Face ID of the dataset.</p>
+<span class="mkapi-item-type">str</span> <span class="mkapi-dash">&mdash;</span>
+The Hugging Face ID of the dataset.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">task</span> : 
-<span class="mkapi-item-type"><a href="./#euroeval.data_models.Task" title="euroeval.data_models.Task">Task</a></span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The task of the dataset.</p>
+<span class="mkapi-item-type"><a href="./#euroeval.data_models.Task" title="euroeval.data_models.Task">Task</a></span> <span class="mkapi-dash">&mdash;</span>
+The task of the dataset.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">languages</span> : 
-<span class="mkapi-item-type">list[<a href="./#euroeval.data_models.Language" title="euroeval.data_models.Language">Language</a>]</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The ISO 639-1 language codes of the entries in the dataset.</p>
+<span class="mkapi-item-type">list[<a href="./#euroeval.data_models.Language" title="euroeval.data_models.Language">Language</a>]</span> <span class="mkapi-dash">&mdash;</span>
+The ISO 639-1 language codes of the entries in the dataset.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">id2label</span> : 
-<span class="mkapi-item-type">dict[int, str]</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The mapping from ID to label.</p>
+<span class="mkapi-item-type">dict[int, str]</span> <span class="mkapi-dash">&mdash;</span>
+The mapping from ID to label.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">label2id</span> : 
-<span class="mkapi-item-type">dict[str, int]</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The mapping from label to ID.</p>
+<span class="mkapi-item-type">dict[str, int]</span> <span class="mkapi-dash">&mdash;</span>
+The mapping from label to ID.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">num_labels</span> : 
-<span class="mkapi-item-type">int</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The number of labels in the dataset.</p>
+<span class="mkapi-item-type">int</span> <span class="mkapi-dash">&mdash;</span>
+The number of labels in the dataset.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">prompt_template</span> : 
-<span class="mkapi-item-type">str</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The template for the prompt to use when benchmarking the dataset using
+<span class="mkapi-item-type">str</span> <span class="mkapi-dash">&mdash;</span>
+The template for the prompt to use when benchmarking the dataset using
 few-shot evaluation.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">max_generated_tokens</span> : 
-<span class="mkapi-item-type">int</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The maximum number of tokens to generate when benchmarking the dataset
+<span class="mkapi-item-type">int</span> <span class="mkapi-dash">&mdash;</span>
+The maximum number of tokens to generate when benchmarking the dataset
 using few-shot evaluation.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">prompt_prefix</span> : 
-<span class="mkapi-item-type">str</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The prefix to use in the few-shot prompt.</p>
+<span class="mkapi-item-type">str</span> <span class="mkapi-dash">&mdash;</span>
+The prefix to use in the few-shot prompt.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">num_few_shot_examples</span> : 
-<span class="mkapi-item-type">int</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The number of examples to use when benchmarking the dataset using few-shot
+<span class="mkapi-item-type">int</span> <span class="mkapi-dash">&mdash;</span>
+The number of examples to use when benchmarking the dataset using few-shot
 evaluation. For a classification task, these will be drawn evenly from
 each label.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">instruction_prompt</span> : 
-<span class="mkapi-item-type">str</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The prompt to use when benchmarking the dataset using instruction-based
+<span class="mkapi-item-type">str</span> <span class="mkapi-dash">&mdash;</span>
+The prompt to use when benchmarking the dataset using instruction-based
 evaluation.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">labels</span> : 
-<span class="mkapi-item-type">optional</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The labels in the dataset. Defaults to an empty list.</p>
+<span class="mkapi-item-type">optional</span> <span class="mkapi-dash">&mdash;</span>
+The labels in the dataset. Defaults to an empty list.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">prompt_label_mapping</span> : 
-<span class="mkapi-item-type">optional</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>A mapping from the labels to another phrase which is used as a substitute
+<span class="mkapi-item-type">optional</span> <span class="mkapi-dash">&mdash;</span>
+A mapping from the labels to another phrase which is used as a substitute
 for the label in few-shot evaluation. Defaults to an empty dictionary.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">unofficial</span> : 
-<span class="mkapi-item-type">optional</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>Whether the dataset is unofficial. Defaults to False.</p>
+<span class="mkapi-item-type">optional</span> <span class="mkapi-dash">&mdash;</span>
+Whether the dataset is unofficial. Defaults to False.</p>
 </li>
 </ul>
 </div>
@@ -2652,53 +2654,53 @@ for the label in few-shot evaluation. Defaults to an empty dictionary.</p>
 <ul class="mkapi-item-list">
 <li>
 <p><span class="mkapi-item-name">model_id</span> : 
-<span class="mkapi-item-type">str</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The ID of the model.</p>
+<span class="mkapi-item-type">str</span> <span class="mkapi-dash">&mdash;</span>
+The ID of the model.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">revision</span> : 
-<span class="mkapi-item-type">str</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The revision of the model.</p>
+<span class="mkapi-item-type">str</span> <span class="mkapi-dash">&mdash;</span>
+The revision of the model.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">task</span> : 
-<span class="mkapi-item-type">str</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The task that the model was trained on.</p>
+<span class="mkapi-item-type">str</span> <span class="mkapi-dash">&mdash;</span>
+The task that the model was trained on.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">languages</span> : 
-<span class="mkapi-item-type">list[<a href="./#euroeval.data_models.Language" title="euroeval.data_models.Language">Language</a>]</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The languages of the model.</p>
+<span class="mkapi-item-type">list[<a href="./#euroeval.data_models.Language" title="euroeval.data_models.Language">Language</a>]</span> <span class="mkapi-dash">&mdash;</span>
+The languages of the model.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">inference_backend</span> : 
-<span class="mkapi-item-type"><a href="../enums/#euroeval.enums.InferenceBackend" title="euroeval.enums.InferenceBackend">InferenceBackend</a></span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The backend used to perform inference with the model.</p>
+<span class="mkapi-item-type"><a href="../enums/#euroeval.enums.InferenceBackend" title="euroeval.enums.InferenceBackend">InferenceBackend</a></span> <span class="mkapi-dash">&mdash;</span>
+The backend used to perform inference with the model.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">merge</span> : 
-<span class="mkapi-item-type">bool</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>Whether the model is a merged model.</p>
+<span class="mkapi-item-type">bool</span> <span class="mkapi-dash">&mdash;</span>
+Whether the model is a merged model.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">model_type</span> : 
-<span class="mkapi-item-type"><a href="../enums/#euroeval.enums.ModelType" title="euroeval.enums.ModelType">ModelType</a></span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The type of the model (e.g., encoder, base decoder, instruction tuned).</p>
+<span class="mkapi-item-type"><a href="../enums/#euroeval.enums.ModelType" title="euroeval.enums.ModelType">ModelType</a></span> <span class="mkapi-dash">&mdash;</span>
+The type of the model (e.g., encoder, base decoder, instruction tuned).</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">fresh</span> : 
-<span class="mkapi-item-type">bool</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>Whether the model is freshly initialised.</p>
+<span class="mkapi-item-type">bool</span> <span class="mkapi-dash">&mdash;</span>
+Whether the model is freshly initialised.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">model_cache_dir</span> : 
-<span class="mkapi-item-type">str</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The directory to cache the model in.</p>
+<span class="mkapi-item-type">str</span> <span class="mkapi-dash">&mdash;</span>
+The directory to cache the model in.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">adapter_base_model_id</span> : 
-<span class="mkapi-item-type">str | None</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The model ID of the base model if the model is an adapter model. Can be None
+<span class="mkapi-item-type">str | None</span> <span class="mkapi-dash">&mdash;</span>
+The model ID of the base model if the model is an adapter model. Can be None
 if the model is not an adapter model.</p>
 </li>
 </ul>
@@ -2729,19 +2731,19 @@ if the model is not an adapter model.</p>
 <ul class="mkapi-item-list">
 <li>
 <p><span class="mkapi-item-name">texts</span> : 
-<span class="mkapi-item-type">list[str] | None</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The texts to input to the model. Can be None if the input IDs and attention
+<span class="mkapi-item-type">list[str] | None</span> <span class="mkapi-dash">&mdash;</span>
+The texts to input to the model. Can be None if the input IDs and attention
 mask are provided instead.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">input_ids</span> : 
-<span class="mkapi-item-type"><span class="mkapi-tooltip" title="torch">torch</span>.<span class="mkapi-tooltip" title="torch._tensor.Tensor">Tensor</span> | None</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The input IDs of the texts. Can be None if the texts are provided instead.</p>
+<span class="mkapi-item-type"><span class="mkapi-tooltip" title="torch">torch</span>.<span class="mkapi-tooltip" title="torch._tensor.Tensor">Tensor</span> | None</span> <span class="mkapi-dash">&mdash;</span>
+The input IDs of the texts. Can be None if the texts are provided instead.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">attention_mask</span> : 
-<span class="mkapi-item-type"><span class="mkapi-tooltip" title="torch">torch</span>.<span class="mkapi-tooltip" title="torch._tensor.Tensor">Tensor</span> | None</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The attention mask of the texts. Can be None if the texts are provided
+<span class="mkapi-item-type"><span class="mkapi-tooltip" title="torch">torch</span>.<span class="mkapi-tooltip" title="torch._tensor.Tensor">Tensor</span> | None</span> <span class="mkapi-dash">&mdash;</span>
+The attention mask of the texts. Can be None if the texts are provided
 instead.</p>
 </li>
 </ul>
@@ -2772,13 +2774,13 @@ instead.</p>
 <ul class="mkapi-item-list">
 <li>
 <p><span class="mkapi-item-name">sequences</span> : 
-<span class="mkapi-item-type">list[str]</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The generated sequences.</p>
+<span class="mkapi-item-type">list[str]</span> <span class="mkapi-dash">&mdash;</span>
+The generated sequences.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">scores</span> : 
-<span class="mkapi-item-type">list[list[list[tuple[str, float]]]] | None</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The scores of the sequences. This is an array of shape (batch_size,
+<span class="mkapi-item-type">list[list[list[tuple[str, float]]]] | None</span> <span class="mkapi-dash">&mdash;</span>
+The scores of the sequences. This is an array of shape (batch_size,
 num_tokens, num_logprobs, 2), where the last dimension contains the
 token and its logprob. Can be None if the scores are not available.</p>
 </li>
@@ -2810,13 +2812,13 @@ token and its logprob. Can be None if the scores are not available.</p>
 <ul class="mkapi-item-list">
 <li>
 <p><span class="mkapi-item-name">sequence</span> : 
-<span class="mkapi-item-type">str</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The generated sequence.</p>
+<span class="mkapi-item-type">str</span> <span class="mkapi-dash">&mdash;</span>
+The generated sequence.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">scores</span> : 
-<span class="mkapi-item-type">list[list[tuple[str, float]]] | None</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The scores of the sequence. This is an array of shape (num_tokens,
+<span class="mkapi-item-type">list[list[tuple[str, float]]] | None</span> <span class="mkapi-dash">&mdash;</span>
+The scores of the sequence. This is an array of shape (num_tokens,
 num_logprobs, 2), where the last dimension contains the token and its
 logprob. Can be None if the scores are not available.</p>
 </li>
@@ -2848,18 +2850,18 @@ logprob. Can be None if the scores are not available.</p>
 <ul class="mkapi-item-list">
 <li>
 <p><span class="mkapi-item-name">pipeline_tag</span> : 
-<span class="mkapi-item-type">str</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The pipeline tag of the model.</p>
+<span class="mkapi-item-type">str</span> <span class="mkapi-dash">&mdash;</span>
+The pipeline tag of the model.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">tags</span> : 
-<span class="mkapi-item-type">list[str]</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The other tags of the model.</p>
+<span class="mkapi-item-type">list[str]</span> <span class="mkapi-dash">&mdash;</span>
+The other tags of the model.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">adapter_base_model_id</span> : 
-<span class="mkapi-item-type">str | None</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The model ID of the base model if the model is an adapter model. Can be None
+<span class="mkapi-item-type">str | None</span> <span class="mkapi-dash">&mdash;</span>
+The model ID of the base model if the model is an adapter model. Can be None
 if the model is not an adapter model.</p>
 </li>
 </ul>

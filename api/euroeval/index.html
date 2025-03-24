@@ -16,7 +16,7 @@
       
       
       <link rel="icon" href="../../gfx/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.8">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.9">
     
     
       
@@ -24,7 +24,7 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.8608ea7d.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.4af4bdda.min.css">
       
         
         <link rel="stylesheet" href="../../assets/stylesheets/palette.06af60db.min.css">
@@ -578,6 +578,8 @@
       
         
           
+        
+      
         
       
         
@@ -1646,29 +1648,29 @@ Blocks libraries from writing output to the terminal.</p>
 <ul class="mkapi-item-list">
 <li>
 <p><span class="mkapi-item-name">benchmark_config_default_params</span>
- <span class="mkapi-dash">&mdash;</span></p>
-<p>The default parameters for the benchmark configuration.</p>
+ <span class="mkapi-dash">&mdash;</span>
+The default parameters for the benchmark configuration.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">benchmark_config</span>
- <span class="mkapi-dash">&mdash;</span></p>
-<p>The benchmark configuration.</p>
+ <span class="mkapi-dash">&mdash;</span>
+The benchmark configuration.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">force</span>
- <span class="mkapi-dash">&mdash;</span></p>
-<p>Whether to force evaluations of models, even if they have been benchmarked
+ <span class="mkapi-dash">&mdash;</span>
+Whether to force evaluations of models, even if they have been benchmarked
 already.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">results_path</span>
- <span class="mkapi-dash">&mdash;</span></p>
-<p>The path to the results file.</p>
+ <span class="mkapi-dash">&mdash;</span>
+The path to the results file.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">benchmark_results</span> : 
-<span class="mkapi-item-type">list[<a href="data_models/#euroeval.data_models.BenchmarkResult" title="euroeval.data_models.BenchmarkResult">BenchmarkResult</a>]</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The benchmark results.</p>
+<span class="mkapi-item-type">list[<a href="data_models/#euroeval.data_models.BenchmarkResult" title="euroeval.data_models.BenchmarkResult">BenchmarkResult</a>]</span> <span class="mkapi-dash">&mdash;</span>
+The benchmark results.</p>
 </li>
 </ul>
 </div>
@@ -1684,148 +1686,148 @@ already.</p>
 <ul class="mkapi-item-list">
 <li>
 <p><span class="mkapi-item-name">progress_bar</span> : 
-<span class="mkapi-item-type">bool</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>Whether progress bars should be shown. Defaults to True.</p>
+<span class="mkapi-item-type">bool</span> <span class="mkapi-dash">&mdash;</span>
+Whether progress bars should be shown. Defaults to True.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">save_results</span> : 
-<span class="mkapi-item-type">bool</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>Whether to save the benchmark results to
+<span class="mkapi-item-type">bool</span> <span class="mkapi-dash">&mdash;</span>
+Whether to save the benchmark results to
 'euroeval_benchmark_results.jsonl'. Defaults to True.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">task</span> : 
-<span class="mkapi-item-type">str | list[str] | None</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The tasks benchmark the model(s) on. Mutually exclusive with <code>dataset</code>.
+<span class="mkapi-item-type">str | list[str] | None</span> <span class="mkapi-dash">&mdash;</span>
+The tasks benchmark the model(s) on. Mutually exclusive with <code>dataset</code>.
 If both <code>task</code> and <code>dataset</code> are None then all datasets will be
 benchmarked.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">dataset</span> : 
-<span class="mkapi-item-type">list[str] | str | None</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The datasets to benchmark on. Mutually exclusive with <code>task</code>. If both
+<span class="mkapi-item-type">list[str] | str | None</span> <span class="mkapi-dash">&mdash;</span>
+The datasets to benchmark on. Mutually exclusive with <code>task</code>. If both
 <code>task</code> and <code>dataset</code> are None then all datasets will be benchmarked.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">language</span> : 
-<span class="mkapi-item-type">str | list[str]</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The language codes of the languages to include, both for models and
+<span class="mkapi-item-type">str | list[str]</span> <span class="mkapi-dash">&mdash;</span>
+The language codes of the languages to include, both for models and
 datasets. Set this to 'all' if all languages should be considered.
 Defaults to "all".</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">model_language</span> : 
-<span class="mkapi-item-type">str | list[str] | None</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The language codes of the languages to include for models. If specified
+<span class="mkapi-item-type">str | list[str] | None</span> <span class="mkapi-dash">&mdash;</span>
+The language codes of the languages to include for models. If specified
 then this overrides the <code>language</code> parameter for model languages.
 Defaults to None.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">dataset_language</span> : 
-<span class="mkapi-item-type">str | list[str] | None</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The language codes of the languages to include for datasets. If
+<span class="mkapi-item-type">str | list[str] | None</span> <span class="mkapi-dash">&mdash;</span>
+The language codes of the languages to include for datasets. If
 specified then this overrides the <code>language</code> parameter for dataset
 languages. Defaults to None.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">device</span> : 
-<span class="mkapi-item-type"><a href="enums/#euroeval.enums.Device" title="euroeval.enums.Device">Device</a> | None</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The device to use for benchmarking. Defaults to None.</p>
+<span class="mkapi-item-type"><a href="enums/#euroeval.enums.Device" title="euroeval.enums.Device">Device</a> | None</span> <span class="mkapi-dash">&mdash;</span>
+The device to use for benchmarking. Defaults to None.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">batch_size</span> : 
-<span class="mkapi-item-type">int</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The batch size to use. Defaults to 32.</p>
+<span class="mkapi-item-type">int</span> <span class="mkapi-dash">&mdash;</span>
+The batch size to use. Defaults to 32.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">raise_errors</span> : 
-<span class="mkapi-item-type">bool</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>Whether to raise errors instead of skipping the model evaluation.
+<span class="mkapi-item-type">bool</span> <span class="mkapi-dash">&mdash;</span>
+Whether to raise errors instead of skipping the model evaluation.
 Defaults to False.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">cache_dir</span> : 
-<span class="mkapi-item-type">str</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>Directory to store cached models. Defaults to '.euroeval_cache'.</p>
+<span class="mkapi-item-type">str</span> <span class="mkapi-dash">&mdash;</span>
+Directory to store cached models. Defaults to '.euroeval_cache'.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">api_key</span> : 
-<span class="mkapi-item-type">str | None</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The API key to use for a given inference API.</p>
+<span class="mkapi-item-type">str | None</span> <span class="mkapi-dash">&mdash;</span>
+The API key to use for a given inference API.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">force</span> : 
-<span class="mkapi-item-type">bool</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>Whether to force evaluations of models, even if they have been
+<span class="mkapi-item-type">bool</span> <span class="mkapi-dash">&mdash;</span>
+Whether to force evaluations of models, even if they have been
 benchmarked already. Defaults to False.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">verbose</span> : 
-<span class="mkapi-item-type">bool</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>Whether to output additional output. This is automatically set if
+<span class="mkapi-item-type">bool</span> <span class="mkapi-dash">&mdash;</span>
+Whether to output additional output. This is automatically set if
 <code>debug</code> is True. Defaults to False.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">trust_remote_code</span> : 
-<span class="mkapi-item-type">bool</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>Whether to trust remote code when loading models. Defaults to False.</p>
+<span class="mkapi-item-type">bool</span> <span class="mkapi-dash">&mdash;</span>
+Whether to trust remote code when loading models. Defaults to False.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">use_flash_attention</span> : 
-<span class="mkapi-item-type">bool | None</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>Whether to use Flash Attention. If None then it will be used if it is
+<span class="mkapi-item-type">bool | None</span> <span class="mkapi-dash">&mdash;</span>
+Whether to use Flash Attention. If None then it will be used if it is
 installed and the model is a decoder model. Defaults to None.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">clear_model_cache</span> : 
-<span class="mkapi-item-type">bool</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>Whether to clear the model cache after benchmarking each model.
+<span class="mkapi-item-type">bool</span> <span class="mkapi-dash">&mdash;</span>
+Whether to clear the model cache after benchmarking each model.
 Defaults to False.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">evaluate_test_split</span> : 
-<span class="mkapi-item-type">bool</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>Whether to evaluate the test split of the datasets. Defaults to False.</p>
+<span class="mkapi-item-type">bool</span> <span class="mkapi-dash">&mdash;</span>
+Whether to evaluate the test split of the datasets. Defaults to False.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">few_shot</span> : 
-<span class="mkapi-item-type">bool</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>Whether to only evaluate the model using few-shot evaluation. Only
+<span class="mkapi-item-type">bool</span> <span class="mkapi-dash">&mdash;</span>
+Whether to only evaluate the model using few-shot evaluation. Only
 relevant if the model is generative. Defaults to True.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">num_iterations</span> : 
-<span class="mkapi-item-type">int</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The number of times each model should be evaluated. This is only meant
+<span class="mkapi-item-type">int</span> <span class="mkapi-dash">&mdash;</span>
+The number of times each model should be evaluated. This is only meant
 to be used for power users, and scores will not be allowed on the
 leaderboards if this is changed. Defaults to 10.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">api_base</span> : 
-<span class="mkapi-item-type">str | None</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The base URL for a given inference API. Only relevant if <code>model</code> refers
+<span class="mkapi-item-type">str | None</span> <span class="mkapi-dash">&mdash;</span>
+The base URL for a given inference API. Only relevant if <code>model</code> refers
 to a model on an inference API. Defaults to None.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">api_version</span> : 
-<span class="mkapi-item-type">str | None</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The version of the API to use. Defaults to None.</p>
+<span class="mkapi-item-type">str | None</span> <span class="mkapi-dash">&mdash;</span>
+The version of the API to use. Defaults to None.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">debug</span> : 
-<span class="mkapi-item-type">bool</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>Whether to output debug information. Defaults to False.</p>
+<span class="mkapi-item-type">bool</span> <span class="mkapi-dash">&mdash;</span>
+Whether to output debug information. Defaults to False.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">run_with_cli</span> : 
-<span class="mkapi-item-type">bool</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>Whether the benchmarker is being run from the command-line interface.
+<span class="mkapi-item-type">bool</span> <span class="mkapi-dash">&mdash;</span>
+Whether the benchmarker is being run from the command-line interface.
 Defaults to False.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">only_allow_safetensors</span> : 
-<span class="mkapi-item-type">bool</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>Whether to only allow models that use the safetensors format. Defaults
+<span class="mkapi-item-type">bool</span> <span class="mkapi-dash">&mdash;</span>
+Whether to only allow models that use the safetensors format. Defaults
 to False.</p>
 </li>
 </ul>
@@ -1842,8 +1844,8 @@ to False.</p>
 <ul class="mkapi-item-list">
 <li>
 <p><span class="mkapi-item-name">ValueError</span>
- <span class="mkapi-dash">&mdash;</span></p>
-<p>If both <code>task</code> and <code>dataset</code> are specified.</p>
+ <span class="mkapi-dash">&mdash;</span>
+If both <code>task</code> and <code>dataset</code> are specified.</p>
 </li>
 </ul>
 </div>
@@ -1910,147 +1912,147 @@ Benchmarks models on datasets.</p>
 <ul class="mkapi-item-list">
 <li>
 <p><span class="mkapi-item-name">model</span> : 
-<span class="mkapi-item-type">list[str] | str</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The full Hugging Face Hub path(s) to the pretrained transformer model.
+<span class="mkapi-item-type">list[str] | str</span> <span class="mkapi-dash">&mdash;</span>
+The full Hugging Face Hub path(s) to the pretrained transformer model.
 The specific model version to use can be added after the suffix '@':
 "model@v1.0.0". It can be a branch name, a tag name, or a commit id,
 and defaults to the latest version if not specified.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">task</span> : 
-<span class="mkapi-item-type">str | list[str] | None</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The tasks benchmark the model(s) on. Mutually exclusive with <code>dataset</code>.
+<span class="mkapi-item-type">str | list[str] | None</span> <span class="mkapi-dash">&mdash;</span>
+The tasks benchmark the model(s) on. Mutually exclusive with <code>dataset</code>.
 If both <code>task</code> and <code>dataset</code> are None then all datasets will be
 benchmarked. Defaults to None.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">dataset</span> : 
-<span class="mkapi-item-type">list[str] | str | None</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The datasets to benchmark on. Mutually exclusive with <code>task</code>. If both
+<span class="mkapi-item-type">list[str] | str | None</span> <span class="mkapi-dash">&mdash;</span>
+The datasets to benchmark on. Mutually exclusive with <code>task</code>. If both
 <code>task</code> and <code>dataset</code> are None then all datasets will be benchmarked.
 Defaults to None.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">progress_bar</span> : 
-<span class="mkapi-item-type">bool | None</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>Whether progress bars should be shown. Defaults to the value specified
+<span class="mkapi-item-type">bool | None</span> <span class="mkapi-dash">&mdash;</span>
+Whether progress bars should be shown. Defaults to the value specified
 when initialising the benchmarker.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">save_results</span> : 
-<span class="mkapi-item-type">bool | None</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>Whether to save the benchmark results to
+<span class="mkapi-item-type">bool | None</span> <span class="mkapi-dash">&mdash;</span>
+Whether to save the benchmark results to
 'euroeval_benchmark_results.jsonl'. Defaults to the value specified
 when initialising the benchmarker.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">language</span> : 
-<span class="mkapi-item-type">str | list[str] | None</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The language codes of the languages to include, both for models and
+<span class="mkapi-item-type">str | list[str] | None</span> <span class="mkapi-dash">&mdash;</span>
+The language codes of the languages to include, both for models and
 datasets. Here 'no' means both Bokmål (nb) and Nynorsk (nn). Set this to
 'all' if all languages should be considered. Defaults to the value
 specified when initialising the benchmarker.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">model_language</span> : 
-<span class="mkapi-item-type">str | list[str] | None</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The language codes of the languages to include for models. If specified
+<span class="mkapi-item-type">str | list[str] | None</span> <span class="mkapi-dash">&mdash;</span>
+The language codes of the languages to include for models. If specified
 then this overrides the <code>language</code> parameter for model languages.
 Defaults to the value specified when initialising the benchmarker.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">dataset_language</span> : 
-<span class="mkapi-item-type">str | list[str] | None</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The language codes of the languages to include for datasets. If
+<span class="mkapi-item-type">str | list[str] | None</span> <span class="mkapi-dash">&mdash;</span>
+The language codes of the languages to include for datasets. If
 specified then this overrides the <code>language</code> parameter for dataset
 languages. Defaults to the value specified when initialising the
 benchmarker.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">device</span> : 
-<span class="mkapi-item-type"><a href="enums/#euroeval.enums.Device" title="euroeval.enums.Device">Device</a> | None</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The device to use for benchmarking. Defaults to the value specified when
+<span class="mkapi-item-type"><a href="enums/#euroeval.enums.Device" title="euroeval.enums.Device">Device</a> | None</span> <span class="mkapi-dash">&mdash;</span>
+The device to use for benchmarking. Defaults to the value specified when
 initialising the benchmarker.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">batch_size</span> : 
-<span class="mkapi-item-type">int | None</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The batch size to use. Defaults to the value specified when initialising
+<span class="mkapi-item-type">int | None</span> <span class="mkapi-dash">&mdash;</span>
+The batch size to use. Defaults to the value specified when initialising
 the benchmarker.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">raise_errors</span> : 
-<span class="mkapi-item-type">bool | None</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>Whether to raise errors instead of skipping the model evaluation.</p>
+<span class="mkapi-item-type">bool | None</span> <span class="mkapi-dash">&mdash;</span>
+Whether to raise errors instead of skipping the model evaluation.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">cache_dir</span> : 
-<span class="mkapi-item-type">str | None</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>Directory to store cached models. Defaults to the value specified when
+<span class="mkapi-item-type">str | None</span> <span class="mkapi-dash">&mdash;</span>
+Directory to store cached models. Defaults to the value specified when
 initialising the benchmarker.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">api_key</span> : 
-<span class="mkapi-item-type">str | None</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The API key to use for a given inference server. Defaults to the value
+<span class="mkapi-item-type">str | None</span> <span class="mkapi-dash">&mdash;</span>
+The API key to use for a given inference server. Defaults to the value
 specified when initialising the benchmarker.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">force</span> : 
-<span class="mkapi-item-type">bool | None</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>Whether to force evaluations of models, even if they have been
+<span class="mkapi-item-type">bool | None</span> <span class="mkapi-dash">&mdash;</span>
+Whether to force evaluations of models, even if they have been
 benchmarked already. Defaults to the value specified when initialising
 the benchmarker.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">verbose</span> : 
-<span class="mkapi-item-type">bool | None</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>Whether to output additional output. Defaults to the value specified
+<span class="mkapi-item-type">bool | None</span> <span class="mkapi-dash">&mdash;</span>
+Whether to output additional output. Defaults to the value specified
 when initialising the benchmarker.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">trust_remote_code</span> : 
-<span class="mkapi-item-type">bool | None</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>Whether to trust remote code when loading models. Defaults to the value
+<span class="mkapi-item-type">bool | None</span> <span class="mkapi-dash">&mdash;</span>
+Whether to trust remote code when loading models. Defaults to the value
 specified when initialising the benchmarker.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">use_flash_attention</span> : 
-<span class="mkapi-item-type">bool | None</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>Whether to use Flash Attention. Defaults to the value specified when
+<span class="mkapi-item-type">bool | None</span> <span class="mkapi-dash">&mdash;</span>
+Whether to use Flash Attention. Defaults to the value specified when
 initialising the benchmarker.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">clear_model_cache</span> : 
-<span class="mkapi-item-type">bool | None</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>Whether to clear the model cache after benchmarking each model. Defaults
+<span class="mkapi-item-type">bool | None</span> <span class="mkapi-dash">&mdash;</span>
+Whether to clear the model cache after benchmarking each model. Defaults
 to the value specified when initialising the benchmarker.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">evaluate_test_split</span> : 
-<span class="mkapi-item-type">bool | None</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>Whether to evaluate the test split of the datasets. Defaults to the
+<span class="mkapi-item-type">bool | None</span> <span class="mkapi-dash">&mdash;</span>
+Whether to evaluate the test split of the datasets. Defaults to the
 value specified when initialising the benchmarker.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">few_shot</span> : 
-<span class="mkapi-item-type">bool | None</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>Whether to only evaluate the model using few-shot evaluation. Only
+<span class="mkapi-item-type">bool | None</span> <span class="mkapi-dash">&mdash;</span>
+Whether to only evaluate the model using few-shot evaluation. Only
 relevant if the model is generative. Defaults to the value specified
 when initialising the benchmarker.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">num_iterations</span> : 
-<span class="mkapi-item-type">int | None</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The number of times each model should be evaluated. This is only meant
+<span class="mkapi-item-type">int | None</span> <span class="mkapi-dash">&mdash;</span>
+The number of times each model should be evaluated. This is only meant
 to be used for power users, and scores will not be allowed on the
 leaderboards if this is changed. Defaults to the value specified when
 initialising the benchmarker.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">only_allow_safetensors</span> : 
-<span class="mkapi-item-type">bool | None</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>Whether to only allow models that use the safetensors format. Defaults
+<span class="mkapi-item-type">bool | None</span> <span class="mkapi-dash">&mdash;</span>
+Whether to only allow models that use the safetensors format. Defaults
 to the value specified when initialising the benchmarker.</p>
 </li>
 </ul>
@@ -2083,8 +2085,8 @@ A list of benchmark results.</p>
 <ul class="mkapi-item-list">
 <li>
 <p><span class="mkapi-item-name">ValueError</span>
- <span class="mkapi-dash">&mdash;</span></p>
-<p>If both <code>task</code> and <code>dataset</code> are specified.</p>
+ <span class="mkapi-dash">&mdash;</span>
+If both <code>task</code> and <code>dataset</code> are specified.</p>
 </li>
 <li>
 <p><span class="mkapi-item-type">benchmark_output_or_err</span></p>

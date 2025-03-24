@@ -16,7 +16,7 @@
       
       
       <link rel="icon" href="../../../../gfx/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.8">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.9">
     
     
       
@@ -24,7 +24,7 @@
       
     
     
-      <link rel="stylesheet" href="../../../../assets/stylesheets/main.8608ea7d.min.css">
+      <link rel="stylesheet" href="../../../../assets/stylesheets/main.4af4bdda.min.css">
       
         
         <link rel="stylesheet" href="../../../../assets/stylesheets/palette.06af60db.min.css">
@@ -578,6 +578,8 @@
       
         
           
+        
+      
         
       
         
@@ -2012,25 +2014,25 @@ Evaluate the model on the given dataset.</p>
 <ul class="mkapi-item-list">
 <li>
 <p><span class="mkapi-item-name">eval_dataset</span> : 
-<span class="mkapi-item-type"><span class="mkapi-tooltip" title="datasets.arrow_dataset.Dataset">Dataset</span> | None</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The dataset to evaluate on. If None, then use the stored evaluation
+<span class="mkapi-item-type"><span class="mkapi-tooltip" title="datasets.arrow_dataset.Dataset">Dataset</span> | None</span> <span class="mkapi-dash">&mdash;</span>
+The dataset to evaluate on. If None, then use the stored evaluation
 dataset.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">orig_eval_dataset</span> : 
-<span class="mkapi-item-type"><span class="mkapi-tooltip" title="datasets.arrow_dataset.Dataset">Dataset</span> | None</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The original evaluation dataset, before any postprocessing. If None,
+<span class="mkapi-item-type"><span class="mkapi-tooltip" title="datasets.arrow_dataset.Dataset">Dataset</span> | None</span> <span class="mkapi-dash">&mdash;</span>
+The original evaluation dataset, before any postprocessing. If None,
 then use the stored original evaluation dataset.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">ignore_keys</span> : 
-<span class="mkapi-item-type">list[str] | None</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The keys to ignore when computing the metrics.</p>
+<span class="mkapi-item-type">list[str] | None</span> <span class="mkapi-dash">&mdash;</span>
+The keys to ignore when computing the metrics.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">metric_key_prefix</span> : 
-<span class="mkapi-item-type">str</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The prefix to use for the metric keys.</p>
+<span class="mkapi-item-type">str</span> <span class="mkapi-dash">&mdash;</span>
+The prefix to use for the metric keys.</p>
 </li>
 </ul>
 </div>
@@ -2076,19 +2078,19 @@ The metrics computed on the evaluation dataset.</p>
 <ul class="mkapi-item-list">
 <li>
 <p><span class="mkapi-item-name">model_outputs_and_labels</span> : 
-<span class="mkapi-item-type">tuple[<span class="mkapi-tooltip" title="euroeval.types.Predictions">Predictions</span>, <span class="mkapi-tooltip" title="euroeval.types.Labels">Labels</span>] | <span class="mkapi-tooltip" title="transformers.trainer_utils.EvalPrediction">EvalPrediction</span></span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The first sequence contains the model outputs and the second sequence
+<span class="mkapi-item-type">tuple[<span class="mkapi-tooltip" title="euroeval.types.Predictions">Predictions</span>, <span class="mkapi-tooltip" title="euroeval.types.Labels">Labels</span>] | <span class="mkapi-tooltip" title="transformers.trainer_utils.EvalPrediction">EvalPrediction</span></span> <span class="mkapi-dash">&mdash;</span>
+The first sequence contains the model outputs and the second sequence
 contains the true labels.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">dataset_config</span> : 
-<span class="mkapi-item-type"><a href="../../data_models/#euroeval.data_models.DatasetConfig" title="euroeval.data_models.DatasetConfig">DatasetConfig</a></span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The configuration of the dataset.</p>
+<span class="mkapi-item-type"><a href="../../data_models/#euroeval.data_models.DatasetConfig" title="euroeval.data_models.DatasetConfig">DatasetConfig</a></span> <span class="mkapi-dash">&mdash;</span>
+The configuration of the dataset.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">benchmark_config</span> : 
-<span class="mkapi-item-type"><a href="../../data_models/#euroeval.data_models.BenchmarkConfig" title="euroeval.data_models.BenchmarkConfig">BenchmarkConfig</a></span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The configuration of the benchmark.</p>
+<span class="mkapi-item-type"><a href="../../data_models/#euroeval.data_models.BenchmarkConfig" title="euroeval.data_models.BenchmarkConfig">BenchmarkConfig</a></span> <span class="mkapi-dash">&mdash;</span>
+The configuration of the benchmark.</p>
 </li>
 </ul>
 </div>
@@ -2135,14 +2137,14 @@ values.</p>
 <ul class="mkapi-item-list">
 <li>
 <p><span class="mkapi-item-name">input_batch</span> : 
-<span class="mkapi-item-type">dict[str, list]</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The input batch, where the keys are the feature names and the values
+<span class="mkapi-item-type">dict[str, list]</span> <span class="mkapi-dash">&mdash;</span>
+The input batch, where the keys are the feature names and the values
 are lists with the feature values.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">model_output</span> : 
-<span class="mkapi-item-type"><a href="../../data_models/#euroeval.data_models.GenerativeModelOutput" title="euroeval.data_models.GenerativeModelOutput">GenerativeModelOutput</a></span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The raw generated output of the model.</p>
+<span class="mkapi-item-type"><a href="../../data_models/#euroeval.data_models.GenerativeModelOutput" title="euroeval.data_models.GenerativeModelOutput">GenerativeModelOutput</a></span> <span class="mkapi-dash">&mdash;</span>
+The raw generated output of the model.</p>
 </li>
 </ul>
 </div>
@@ -2188,13 +2190,13 @@ The predicted labels.</p>
 <ul class="mkapi-item-list">
 <li>
 <p><span class="mkapi-item-name">examples</span> : 
-<span class="mkapi-item-type"><span class="mkapi-tooltip" title="transformers.tokenization_utils_base.BatchEncoding">BatchEncoding</span></span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The examples to prepare.</p>
+<span class="mkapi-item-type"><span class="mkapi-tooltip" title="transformers.tokenization_utils_base.BatchEncoding">BatchEncoding</span></span> <span class="mkapi-dash">&mdash;</span>
+The examples to prepare.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">tokenizer</span> : 
-<span class="mkapi-item-type"><span class="mkapi-tooltip" title="transformers.tokenization_utils.PreTrainedTokenizer">PreTrainedTokenizer</span></span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The tokenizer to use to prepare the examples.</p>
+<span class="mkapi-item-type"><span class="mkapi-tooltip" title="transformers.tokenization_utils.PreTrainedTokenizer">PreTrainedTokenizer</span></span> <span class="mkapi-dash">&mdash;</span>
+The tokenizer to use to prepare the examples.</p>
 </li>
 </ul>
 </div>
@@ -2240,13 +2242,13 @@ The prepared examples.</p>
 <ul class="mkapi-item-list">
 <li>
 <p><span class="mkapi-item-name">examples</span> : 
-<span class="mkapi-item-type"><span class="mkapi-tooltip" title="transformers.tokenization_utils_base.BatchEncoding">BatchEncoding</span></span> <span class="mkapi-dash">&mdash;</span></p>
-<p>Dictionary of test examples.</p>
+<span class="mkapi-item-type"><span class="mkapi-tooltip" title="transformers.tokenization_utils_base.BatchEncoding">BatchEncoding</span></span> <span class="mkapi-dash">&mdash;</span>
+Dictionary of test examples.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">tokenizer</span> : 
-<span class="mkapi-item-type"><span class="mkapi-tooltip" title="transformers.tokenization_utils.PreTrainedTokenizer">PreTrainedTokenizer</span></span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The tokenizer used to preprocess the examples.</p>
+<span class="mkapi-item-type"><span class="mkapi-tooltip" title="transformers.tokenization_utils.PreTrainedTokenizer">PreTrainedTokenizer</span></span> <span class="mkapi-dash">&mdash;</span>
+The tokenizer used to preprocess the examples.</p>
 </li>
 </ul>
 </div>
@@ -2292,23 +2294,23 @@ The prepared test examples.</p>
 <ul class="mkapi-item-list">
 <li>
 <p><span class="mkapi-item-name">predictions</span> : 
-<span class="mkapi-item-type">list</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>A pair of (start_logits, end_logits) predictions.</p>
+<span class="mkapi-item-type">list</span> <span class="mkapi-dash">&mdash;</span>
+A pair of (start_logits, end_logits) predictions.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">dataset</span> : 
-<span class="mkapi-item-type"><span class="mkapi-tooltip" title="datasets.arrow_dataset.Dataset">Dataset</span></span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The dataset containing the examples.</p>
+<span class="mkapi-item-type"><span class="mkapi-tooltip" title="datasets.arrow_dataset.Dataset">Dataset</span></span> <span class="mkapi-dash">&mdash;</span>
+The dataset containing the examples.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">prepared_dataset</span> : 
-<span class="mkapi-item-type"><span class="mkapi-tooltip" title="datasets.arrow_dataset.Dataset">Dataset</span></span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The dataset containing the prepared examples.</p>
+<span class="mkapi-item-type"><span class="mkapi-tooltip" title="datasets.arrow_dataset.Dataset">Dataset</span></span> <span class="mkapi-dash">&mdash;</span>
+The dataset containing the prepared examples.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">cls_token_index</span> : 
-<span class="mkapi-item-type">int</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The index of the CLS token.</p>
+<span class="mkapi-item-type">int</span> <span class="mkapi-dash">&mdash;</span>
+The index of the CLS token.</p>
 </li>
 </ul>
 </div>
@@ -2354,48 +2356,48 @@ The postprocessed predictions and labels.</p>
 <ul class="mkapi-item-list">
 <li>
 <p><span class="mkapi-item-name">all_start_logits</span> : 
-<span class="mkapi-item-type"><span class="mkapi-tooltip" title="numpy">np</span>.<span class="mkapi-tooltip" title="numpy.core.multiarray.ndarray">ndarray</span></span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The start logits for all the features.</p>
+<span class="mkapi-item-type"><span class="mkapi-tooltip" title="numpy">np</span>.<span class="mkapi-tooltip" title="numpy.core.multiarray.ndarray">ndarray</span></span> <span class="mkapi-dash">&mdash;</span>
+The start logits for all the features.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">all_end_logits</span> : 
-<span class="mkapi-item-type"><span class="mkapi-tooltip" title="numpy">np</span>.<span class="mkapi-tooltip" title="numpy.core.multiarray.ndarray">ndarray</span></span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The end logits for all the features.</p>
+<span class="mkapi-item-type"><span class="mkapi-tooltip" title="numpy">np</span>.<span class="mkapi-tooltip" title="numpy.core.multiarray.ndarray">ndarray</span></span> <span class="mkapi-dash">&mdash;</span>
+The end logits for all the features.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">prepared_dataset</span> : 
-<span class="mkapi-item-type"><span class="mkapi-tooltip" title="datasets.arrow_dataset.Dataset">Dataset</span></span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The dataset containing the prepared examples.</p>
+<span class="mkapi-item-type"><span class="mkapi-tooltip" title="datasets.arrow_dataset.Dataset">Dataset</span></span> <span class="mkapi-dash">&mdash;</span>
+The dataset containing the prepared examples.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">feature_indices</span> : 
-<span class="mkapi-item-type">list[int]</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The indices of the features associated with the current example.</p>
+<span class="mkapi-item-type">list[int]</span> <span class="mkapi-dash">&mdash;</span>
+The indices of the features associated with the current example.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">context</span> : 
-<span class="mkapi-item-type">str</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The context of the example.</p>
+<span class="mkapi-item-type">str</span> <span class="mkapi-dash">&mdash;</span>
+The context of the example.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">max_answer_length</span> : 
-<span class="mkapi-item-type">int</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The maximum length of the answer.</p>
+<span class="mkapi-item-type">int</span> <span class="mkapi-dash">&mdash;</span>
+The maximum length of the answer.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">num_best_logits</span> : 
-<span class="mkapi-item-type">int</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The number of best logits to consider.</p>
+<span class="mkapi-item-type">int</span> <span class="mkapi-dash">&mdash;</span>
+The number of best logits to consider.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">min_null_score</span> : 
-<span class="mkapi-item-type">float</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The minimum score an answer can have.</p>
+<span class="mkapi-item-type">float</span> <span class="mkapi-dash">&mdash;</span>
+The minimum score an answer can have.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">cls_token_index</span> : 
-<span class="mkapi-item-type">int</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The index of the CLS token.</p>
+<span class="mkapi-item-type">int</span> <span class="mkapi-dash">&mdash;</span>
+The index of the CLS token.</p>
 </li>
 </ul>
 </div>
@@ -2441,40 +2443,40 @@ The best answer for the example.</p>
 <ul class="mkapi-item-list">
 <li>
 <p><span class="mkapi-item-name">start_logits</span> : 
-<span class="mkapi-item-type"><span class="mkapi-tooltip" title="numpy">np</span>.<span class="mkapi-tooltip" title="numpy.core.multiarray.ndarray">ndarray</span></span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The logits for the start of the answer.</p>
+<span class="mkapi-item-type"><span class="mkapi-tooltip" title="numpy">np</span>.<span class="mkapi-tooltip" title="numpy.core.multiarray.ndarray">ndarray</span></span> <span class="mkapi-dash">&mdash;</span>
+The logits for the start of the answer.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">end_logits</span> : 
-<span class="mkapi-item-type"><span class="mkapi-tooltip" title="numpy">np</span>.<span class="mkapi-tooltip" title="numpy.core.multiarray.ndarray">ndarray</span></span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The logits for the end of the answer.</p>
+<span class="mkapi-item-type"><span class="mkapi-tooltip" title="numpy">np</span>.<span class="mkapi-tooltip" title="numpy.core.multiarray.ndarray">ndarray</span></span> <span class="mkapi-dash">&mdash;</span>
+The logits for the end of the answer.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">offset_mapping</span> : 
-<span class="mkapi-item-type">list[tuple[int, int]]</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The offset mapping, being a list of pairs of integers for each token index,
+<span class="mkapi-item-type">list[tuple[int, int]]</span> <span class="mkapi-dash">&mdash;</span>
+The offset mapping, being a list of pairs of integers for each token index,
 containing the start and end character index in the original context.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">context</span> : 
-<span class="mkapi-item-type">str</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The context of the example.</p>
+<span class="mkapi-item-type">str</span> <span class="mkapi-dash">&mdash;</span>
+The context of the example.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">max_answer_length</span> : 
-<span class="mkapi-item-type">int</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The maximum length of the answer.</p>
+<span class="mkapi-item-type">int</span> <span class="mkapi-dash">&mdash;</span>
+The maximum length of the answer.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">num_best_logits</span> : 
-<span class="mkapi-item-type">int</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The number of best logits to consider. Note that this function will run in
+<span class="mkapi-item-type">int</span> <span class="mkapi-dash">&mdash;</span>
+The number of best logits to consider. Note that this function will run in
 O(<code>num_best_logits</code> ^ 2) time.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">min_null_score</span> : 
-<span class="mkapi-item-type">float</span> <span class="mkapi-dash">&mdash;</span></p>
-<p>The minimum score an answer can have.</p>
+<span class="mkapi-item-type">float</span> <span class="mkapi-dash">&mdash;</span>
+The minimum score an answer can have.</p>
 </li>
 </ul>
 </div>
