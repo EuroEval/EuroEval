@@ -39,6 +39,7 @@ dependencies = [
     "setuptools>=75.8.2",
     "demjson3>=3.0.6",
     "ollama>=0.4.7",
+    "peft>=0.15.0",
 ]
 
 [project.optional-dependencies]
@@ -86,7 +87,6 @@ dev-dependencies = [
     "nbstripout>=0.7.1",
     "coverage>=5.5",
     "lxml>=5.1.0",
-    "peft>=0.13.2",
     "mkdocs-material>=9.5.45",
     "mkdocs-include-markdown-plugin>=7.0.1",
     "mkdocs-include-dir-to-nav>=1.2.0",

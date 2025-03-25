@@ -20,6 +20,7 @@ from huggingface_hub.utils import (
     HFValidationError,
     LocalTokenNotFoundError,
 )
+from peft import PeftConfig
 from requests.exceptions import RequestException
 from torch import nn
 from transformers import (
@@ -760,20 +761,19 @@ def get_model_repo_info(
     has_adapter_config = model_info.siblings is not None and any(
         sibling.rfilename == "adapter_config.json" for sibling in model_info.siblings
     )
-    breakpoint()
     if has_adapter_config:
-        base_model_id = [
-            tag.split(":")[1]
-            for tag in tags
-            if tag.startswith("base_model:") and tag.count(":") == 1
-        ][0]
-        base_model_info = hf_api.model_info(
-            repo_id=base_model_id,
-            revision=revision,
-            token=benchmark_config.api_key or os.getenv("HUGGINGFACE_API_KEY") or True,
-        )
-        tags += base_model_info.tags or list()
-        tags = list(set(tags))
+        adapter_config = PeftConfig.from_pretrained(model_id, revision=revision)
+        base_model_id = adapter_config.base_model_name_or_path
+        if base_model_id is not None:
+            base_model_info = hf_api.model_info(
+                repo_id=base_model_id,
+                revision=revision,
+                token=benchmark_config.api_key
+                or os.getenv("HUGGINGFACE_API_KEY")
+                or True,
+            )
+            tags += base_model_info.tags or list()
+            tags = list(set(tags))
 
     # Get the pipeline tag for the model. If it is not specified, then we determine it
     # by checking the model's architecture as written in the model's Hugging Face config
