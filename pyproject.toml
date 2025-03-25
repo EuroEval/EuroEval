@@ -45,7 +45,7 @@ dependencies = [
 generative = [
     "outlines>=0.1.11",
     "bitsandbytes>=0.43.1; platform_system == 'Linux'",
-    "vllm>=0.8.0; platform_system == 'Linux'",
+    "vllm>=0.8.0,!=0.8.1; platform_system == 'Linux'",
     "fbgemm-gpu>=1.0.0; platform_system == 'Linux'",
 ]
 human_evaluation = [
@@ -54,7 +54,7 @@ human_evaluation = [
 all = [
     "outlines>=0.1.11",
     "bitsandbytes>=0.43.1; platform_system == 'Linux'",
-    "vllm>=0.8.0; platform_system == 'Linux'",
+    "vllm>=0.8.0,!=0.8.1; platform_system == 'Linux'",
     "fbgemm-gpu>=1.0.0; platform_system == 'Linux'",
     "gradio>=4.26.0",
 ]
