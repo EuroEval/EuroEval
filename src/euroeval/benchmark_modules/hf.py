@@ -756,30 +756,24 @@ def get_model_repo_info(
     # Get all the Hugging Face repository tags for the model. If the model is an adapter
     # model, then we also get the tags for the base model
     tags = model_info.tags or list()
-    has_base_model_tag = any(
-        tag.startswith("base_model:") and tag.count(":") == 1 for tag in tags
-    )
     base_model_id: str | None = None
-    if has_base_model_tag:
-        has_adapter_config = model_info.siblings is not None and any(
-            sibling.rfilename == "adapter_config.json"
-            for sibling in model_info.siblings
+    has_adapter_config = model_info.siblings is not None and any(
+        sibling.rfilename == "adapter_config.json" for sibling in model_info.siblings
+    )
+    breakpoint()
+    if has_adapter_config:
+        base_model_id = [
+            tag.split(":")[1]
+            for tag in tags
+            if tag.startswith("base_model:") and tag.count(":") == 1
+        ][0]
+        base_model_info = hf_api.model_info(
+            repo_id=base_model_id,
+            revision=revision,
+            token=benchmark_config.api_key or os.getenv("HUGGINGFACE_API_KEY") or True,
         )
-        if has_adapter_config:
-            base_model_id = [
-                tag.split(":")[1]
-                for tag in tags
-                if tag.startswith("base_model:") and tag.count(":") == 1
-            ][0]
-            base_model_info = hf_api.model_info(
-                repo_id=base_model_id,
-                revision=revision,
-                token=benchmark_config.api_key
-                or os.getenv("HUGGINGFACE_API_KEY")
-                or True,
-            )
-            tags += base_model_info.tags or list()
-            tags = list(set(tags))
+        tags += base_model_info.tags or list()
+        tags = list(set(tags))
 
     # Get the pipeline tag for the model. If it is not specified, then we determine it
     # by checking the model's architecture as written in the model's Hugging Face config
