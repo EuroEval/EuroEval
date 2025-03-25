@@ -20,7 +20,12 @@ from .model_cache import (
 from .utils import clear_memory
 
 if t.TYPE_CHECKING:
-    from .data_models import BenchmarkConfig, DatasetConfig, ModelConfig
+    from .data_models import (
+        BenchmarkConfig,
+        DatasetConfig,
+        GenerativeModelOutput,
+        ModelConfig,
+    )
 
 logger = logging.getLogger("euroeval")
 
@@ -163,6 +168,7 @@ def generate_single_iteration(
             if benchmark_config.debug:
                 debug_log(
                     batch=batch,
+                    model_output=model_output,
                     extracted_labels=extracted_labels,  # type: ignore[arg-type]
                     dataset_config=dataset_config,
                 )
@@ -217,6 +223,7 @@ def generate_single_iteration(
 
 def debug_log(
     batch: dict[str, t.Any],
+    model_output: "GenerativeModelOutput",
     extracted_labels: list[dict | str | list[str]],
     dataset_config: "DatasetConfig",
 ) -> None:
@@ -225,6 +232,8 @@ def debug_log(
     Args:
         batch:
             The batch of examples to evaluate on.
+        model_output:
+            The output of the model.
         extracted_labels:
             The extracted labels from the model output.
         dataset_config:
@@ -290,7 +299,12 @@ def debug_log(
     else:
         input_texts = batch["text"]
 
-    for input_text, prediction, label in zip(input_texts, extracted_labels, labels):
+    for input_text, raw_output, prediction, label in zip(
+        input_texts, model_output.sequences, extracted_labels, labels
+    ):
         logger.info(
-            f"Input: '{input_text}'\nPrediction: '{prediction}'\nLabel: '{label}'"
+            f"Input: '{input_text}'\n"
+            f"Raw outout: '{raw_output}'\n"
+            f"Prediction: '{prediction}'\n"
+            f"Label: '{label}'"
         )

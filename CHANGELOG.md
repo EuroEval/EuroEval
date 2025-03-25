@@ -10,6 +10,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Fixed
 - Disallow `vllm` v0.8.1, as it causes severe degradation in generation output of
   some models, resulting in artificially low scores.
+- Fixed an issue with text classification tasks if the first token of multiple labels
+  are identical, when tokenising with the model's tokeniser.
 
 
 ## [v15.4.0] - 2025-03-24

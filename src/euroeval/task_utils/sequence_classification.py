@@ -162,9 +162,8 @@ def get_closest_logprobs_labels(
     """
     english_labels = list(dataset_config.id2label.values())
     english2local = dataset_config.prompt_label_mapping
-    candidate_labels = [
-        english2local[lbl].lower() for lbl in english_labels
-    ] + english_labels
+    local_labels = [english2local[lbl].lower() for lbl in english_labels]
+    candidate_labels = local_labels + english_labels
 
     output_labels: list[str] = list()
     for sample in generation_logprobs:
@@ -179,18 +178,39 @@ def get_closest_logprobs_labels(
             ]
             generated_labels = [label for label in generated_labels if label != ""]
 
-            # We want to use the first generated label which starts with a candidate
+            # We want to use the first generated label which contains a unique candidate
             # label, as the output label
             output_label: str | None = None
+            previously_generated_labels: list[str] = list()
             for generated_label in generated_labels:
+                generated_label = "".join(previously_generated_labels) + generated_label
+
+                # Get the candidate labels that contain the generated label
                 candidate_output_labels = [
                     candidate_label
                     for candidate_label in candidate_labels
-                    if candidate_label.startswith(generated_label)
+                    if generated_label in candidate_label
                 ]
+
+                # If we can uniquely determine the output label, we break the loop.
+                # Since we have both the original local labels as well as the English
+                # versions, we want to have 0 or 1 candidate labels from each set. This
+                # means that ["positive", "positiv"] is fine as they're both referencing
+                # the same label, but ["negativ", "neutral"] is not. In the bad case we
+                # cannot use the scores and we fall back to using the
+                # candidate label with the highest edit distance.
+                at_most_one_english_label = (
+                    len(set(candidate_output_labels).intersection(english_labels)) <= 1
+                )
+                at_most_one_local_label = (
+                    len(set(candidate_output_labels).intersection(local_labels)) <= 1
+                )
                 if candidate_output_labels:
-                    output_label = candidate_output_labels[0]
-                    break
+                    if at_most_one_english_label and at_most_one_local_label:
+                        output_label = candidate_output_labels[0]
+                        break
+                    else:
+                        previously_generated_labels.append(generated_label)
 
             if output_label is not None:
                 output_label = english2local.get(output_label, output_label)
