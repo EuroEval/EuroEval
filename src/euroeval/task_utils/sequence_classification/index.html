@@ -1083,7 +1083,27 @@
 <span class="normal">243</span>
 <span class="normal">244</span>
 <span class="normal">245</span>
-<span class="normal">246</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Utility functions related to the sequence-classification task group.&quot;&quot;&quot;</span>
+<span class="normal">246</span>
+<span class="normal">247</span>
+<span class="normal">248</span>
+<span class="normal">249</span>
+<span class="normal">250</span>
+<span class="normal">251</span>
+<span class="normal">252</span>
+<span class="normal">253</span>
+<span class="normal">254</span>
+<span class="normal">255</span>
+<span class="normal">256</span>
+<span class="normal">257</span>
+<span class="normal">258</span>
+<span class="normal">259</span>
+<span class="normal">260</span>
+<span class="normal">261</span>
+<span class="normal">262</span>
+<span class="normal">263</span>
+<span class="normal">264</span>
+<span class="normal">265</span>
+<span class="normal">266</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Utility functions related to the sequence-classification task group.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
@@ -1247,9 +1267,8 @@
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">english_labels</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">dataset_config</span><span class="o">.</span><span class="n">id2label</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
     <span class="n">english2local</span> <span class="o">=</span> <span class="n">dataset_config</span><span class="o">.</span><span class="n">prompt_label_mapping</span>
-    <span class="n">candidate_labels</span> <span class="o">=</span> <span class="p">[</span>
-        <span class="n">english2local</span><span class="p">[</span><span class="n">lbl</span><span class="p">]</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="k">for</span> <span class="n">lbl</span> <span class="ow">in</span> <span class="n">english_labels</span>
-    <span class="p">]</span> <span class="o">+</span> <span class="n">english_labels</span>
+    <span class="n">local_labels</span> <span class="o">=</span> <span class="p">[</span><span class="n">english2local</span><span class="p">[</span><span class="n">lbl</span><span class="p">]</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="k">for</span> <span class="n">lbl</span> <span class="ow">in</span> <span class="n">english_labels</span><span class="p">]</span>
+    <span class="n">candidate_labels</span> <span class="o">=</span> <span class="n">local_labels</span> <span class="o">+</span> <span class="n">english_labels</span>
 
     <span class="n">output_labels</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
     <span class="k">for</span> <span class="n">sample</span> <span class="ow">in</span> <span class="n">generation_logprobs</span><span class="p">:</span>
@@ -1264,18 +1283,39 @@
             <span class="p">]</span>
             <span class="n">generated_labels</span> <span class="o">=</span> <span class="p">[</span><span class="n">label</span> <span class="k">for</span> <span class="n">label</span> <span class="ow">in</span> <span class="n">generated_labels</span> <span class="k">if</span> <span class="n">label</span> <span class="o">!=</span> <span class="s2">&quot;&quot;</span><span class="p">]</span>
 
-            <span class="c1"># We want to use the first generated label which starts with a candidate</span>
+            <span class="c1"># We want to use the first generated label which contains a unique candidate</span>
             <span class="c1"># label, as the output label</span>
             <span class="n">output_label</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="n">previously_generated_labels</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
             <span class="k">for</span> <span class="n">generated_label</span> <span class="ow">in</span> <span class="n">generated_labels</span><span class="p">:</span>
+                <span class="n">generated_label</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">previously_generated_labels</span><span class="p">)</span> <span class="o">+</span> <span class="n">generated_label</span>
+
+                <span class="c1"># Get the candidate labels that contain the generated label</span>
                 <span class="n">candidate_output_labels</span> <span class="o">=</span> <span class="p">[</span>
                     <span class="n">candidate_label</span>
                     <span class="k">for</span> <span class="n">candidate_label</span> <span class="ow">in</span> <span class="n">candidate_labels</span>
-                    <span class="k">if</span> <span class="n">candidate_label</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">generated_label</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">generated_label</span> <span class="ow">in</span> <span class="n">candidate_label</span>
                 <span class="p">]</span>
+
+                <span class="c1"># If we can uniquely determine the output label, we break the loop.</span>
+                <span class="c1"># Since we have both the original local labels as well as the English</span>
+                <span class="c1"># versions, we want to have 0 or 1 candidate labels from each set. This</span>
+                <span class="c1"># means that [&quot;positive&quot;, &quot;positiv&quot;] is fine as they&#39;re both referencing</span>
+                <span class="c1"># the same label, but [&quot;negativ&quot;, &quot;neutral&quot;] is not. In the bad case we</span>
+                <span class="c1"># cannot use the scores and we fall back to using the</span>
+                <span class="c1"># candidate label with the highest edit distance.</span>
+                <span class="n">at_most_one_english_label</span> <span class="o">=</span> <span class="p">(</span>
+                    <span class="nb">len</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">candidate_output_labels</span><span class="p">)</span><span class="o">.</span><span class="n">intersection</span><span class="p">(</span><span class="n">english_labels</span><span class="p">))</span> <span class="o">&lt;=</span> <span class="mi">1</span>
+                <span class="p">)</span>
+                <span class="n">at_most_one_local_label</span> <span class="o">=</span> <span class="p">(</span>
+                    <span class="nb">len</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">candidate_output_labels</span><span class="p">)</span><span class="o">.</span><span class="n">intersection</span><span class="p">(</span><span class="n">local_labels</span><span class="p">))</span> <span class="o">&lt;=</span> <span class="mi">1</span>
+                <span class="p">)</span>
                 <span class="k">if</span> <span class="n">candidate_output_labels</span><span class="p">:</span>
-                    <span class="n">output_label</span> <span class="o">=</span> <span class="n">candidate_output_labels</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-                    <span class="k">break</span>
+                    <span class="k">if</span> <span class="n">at_most_one_english_label</span> <span class="ow">and</span> <span class="n">at_most_one_local_label</span><span class="p">:</span>
+                        <span class="n">output_label</span> <span class="o">=</span> <span class="n">candidate_output_labels</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+                        <span class="k">break</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">previously_generated_labels</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">generated_label</span><span class="p">)</span>
 
             <span class="k">if</span> <span class="n">output_label</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="n">output_label</span> <span class="o">=</span> <span class="n">english2local</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">output_label</span><span class="p">,</span> <span class="n">output_label</span><span class="p">)</span>

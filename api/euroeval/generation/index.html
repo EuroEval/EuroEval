@@ -1826,7 +1826,7 @@ A list of dictionaries containing the scores for each metric.</p>
 <i class="fa-regular fa-square-minus"></i>
 </span>
 </span>
-<span class="mkapi-object-name"><a href="./#euroeval.generation.debug_log" title="euroeval.generation.debug_log">debug_log</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">batch</span><span class="mkapi-colon">: </span><span class="mkapi-ann">dict[str, <span class="mkapi-tooltip" title="typing">t</span>.<span class="mkapi-tooltip" title="typing.Any">Any</span>]</span><span class="mkapi-comma">, </span><span class="mkapi-arg">extracted_labels</span><span class="mkapi-colon">: </span><span class="mkapi-ann">list[dict | str | list[str]]</span><span class="mkapi-comma">, </span><span class="mkapi-arg">dataset_config</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><a href="../data_models/#euroeval.data_models.DatasetConfig" title="euroeval.data_models.DatasetConfig">DatasetConfig</a></span><span class="mkapi-paren">)</span><span class="mkapi-arrow"> → </span><span class="mkapi-return">None</span></span>
+<span class="mkapi-object-name"><a href="./#euroeval.generation.debug_log" title="euroeval.generation.debug_log">debug_log</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">batch</span><span class="mkapi-colon">: </span><span class="mkapi-ann">dict[str, <span class="mkapi-tooltip" title="typing">t</span>.<span class="mkapi-tooltip" title="typing.Any">Any</span>]</span><span class="mkapi-comma">, </span><span class="mkapi-arg">model_output</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><a href="../data_models/#euroeval.data_models.GenerativeModelOutput" title="euroeval.data_models.GenerativeModelOutput">GenerativeModelOutput</a></span><span class="mkapi-comma">, </span><span class="mkapi-arg">extracted_labels</span><span class="mkapi-colon">: </span><span class="mkapi-ann">list[dict | str | list[str]]</span><span class="mkapi-comma">, </span><span class="mkapi-arg">dataset_config</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><a href="../data_models/#euroeval.data_models.DatasetConfig" title="euroeval.data_models.DatasetConfig">DatasetConfig</a></span><span class="mkapi-paren">)</span><span class="mkapi-arrow"> → </span><span class="mkapi-return">None</span></span>
 </p>
 <div class="mkapi-document">
 <p>Log inputs and outputs for debugging purposes.</p>
@@ -1844,6 +1844,11 @@ A list of dictionaries containing the scores for each metric.</p>
 <p><span class="mkapi-item-name">batch</span> : 
 <span class="mkapi-item-type">dict[str, <span class="mkapi-tooltip" title="typing">t</span>.<span class="mkapi-tooltip" title="typing.Any">Any</span>]</span> <span class="mkapi-dash">&mdash;</span>
 The batch of examples to evaluate on.</p>
+</li>
+<li>
+<p><span class="mkapi-item-name">model_output</span> : 
+<span class="mkapi-item-type"><a href="../data_models/#euroeval.data_models.GenerativeModelOutput" title="euroeval.data_models.GenerativeModelOutput">GenerativeModelOutput</a></span> <span class="mkapi-dash">&mdash;</span>
+The output of the model.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">extracted_labels</span> : 
