@@ -396,6 +396,7 @@ class VLLMModel(HuggingFaceEncoderModel):
             skip_special_tokens=True,
         )
         completions = [completion.strip() for completion in completions]
+        breakpoint()
 
         # Add logprobs scores to the output
         if self.buffer["output_scores"]:
