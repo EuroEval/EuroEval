@@ -15,6 +15,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   for two different labels in a text classification task, we now also use the second
   token to ensure that we determine the correct label. If this is not possible, then we
   warn the user.
+- Now catches `TypeError` when trying to generate with vLLM, and retries 3 times before
+  giving up on evaluating the dataset.
 
 
 ## [v15.4.1] - 2025-03-25
