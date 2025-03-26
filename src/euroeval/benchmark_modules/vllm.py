@@ -998,6 +998,7 @@ def load_tokenizer(
     Returns:
         The loaded tokenizer.
     """
+    revision = revision if adapter_base_model_id is None else "main"
     config = AutoConfig.from_pretrained(
         adapter_base_model_id or model_id,
         revision=revision,
