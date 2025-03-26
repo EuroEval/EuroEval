@@ -182,35 +182,40 @@ def get_closest_logprobs_labels(
             # label, as the output label
             output_label: str | None = None
             previously_generated_labels: list[str] = list()
-            for generated_label in generated_labels:
+            for label_idx, generated_label in enumerate(generated_labels):
                 generated_label = "".join(previously_generated_labels) + generated_label
 
-                # Get the candidate labels that contain the generated label
-                candidate_output_labels = [
-                    candidate_label
+                # Get the candidate labels that starts with the generated label
+                candidate_output_labels = {
+                    english2local.get(candidate_label, candidate_label)
                     for candidate_label in candidate_labels
-                    if generated_label in candidate_label
-                ]
+                    if candidate_label.startswith(generated_label)
+                }
 
-                # If we can uniquely determine the output label, we break the loop.
-                # Since we have both the original local labels as well as the English
-                # versions, we want to have 0 or 1 candidate labels from each set. This
-                # means that ["positive", "positiv"] is fine as they're both referencing
-                # the same label, but ["negativ", "neutral"] is not. In the bad case we
-                # cannot use the scores and we fall back to using the
-                # candidate label with the highest edit distance.
-                at_most_one_english_label = (
-                    len(set(candidate_output_labels).intersection(english_labels)) <= 1
-                )
-                at_most_one_local_label = (
-                    len(set(candidate_output_labels).intersection(local_labels)) <= 1
-                )
-                if candidate_output_labels:
-                    if at_most_one_english_label and at_most_one_local_label:
-                        output_label = candidate_output_labels[0]
-                        break
-                    else:
+                # If we can uniquely determine the output label, we break the loop. If
+                # there are multiple possible labels then we store the current one, and
+                # concatenate it with the next generated label. We can only do this if
+                # the current one is the first one, however, since we're using greedy
+                # sampling. In case this happens for a label that is not the first one,
+                # we warn the user.
+                if len(candidate_output_labels) == 1:
+                    output_label = candidate_output_labels.pop()
+                    break
+                elif len(candidate_output_labels) > 1:
+                    if label_idx == 0:
                         previously_generated_labels.append(generated_label)
+                    else:
+                        output_label = candidate_output_labels.pop()
+                        logger.warning(
+                            "Multiple candidate labels found for the generated label "
+                            f"{generated_label!r}: {candidate_output_labels}. Since "
+                            "this is not the first generated label, we cannot "
+                            "concatenate it with the next generated label. We are thus "
+                            "forced to use the arbitrary {output_label!r} as the "
+                            "output label, potentially resulting in worse performance. "
+                            "Please report this issue to the EuroEval team at "
+                            "github.com/EuroEval/EuroEval/issues."
+                        )
 
             if output_label is not None:
                 output_label = english2local.get(output_label, output_label)

@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Evaluating a specific model revision did not work for adapter models, as there was a
   confusion between the revision of the adapter and the revision of the base model. We
   now use the revision for the adapter and use the latest revision for the base model.
+- In the (very unlikely) scenario that the model's tokeniser has the same first token
+  for two different labels in a text classification task, we now also use the second
+  token to ensure that we determine the correct label. If this is not possible, then we
+  warn the user.
 
 
 ## [v15.4.1] - 2025-03-25
