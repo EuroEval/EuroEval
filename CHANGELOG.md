@@ -7,7 +7,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 
 ## [Unreleased]
-
+### Fixed
+- Evaluating a specific model revision did not work for adapter models, as there was a
+  confusion between the revision of the adapter and the revision of the base model. We
+  now use the revision for the adapter and use the latest revision for the base model.
 
 
 ## [v15.4.1] - 2025-03-25
