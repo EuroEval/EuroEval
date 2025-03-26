@@ -766,8 +766,8 @@ def get_model_repo_info(
         adapter_config = PeftConfig.from_pretrained(model_id, revision=revision)
         base_model_id = adapter_config.base_model_name_or_path
         log_once(
-            f"Model {model_id} identified as an adapter model, with base model "
-            f"{base_model_id}.",
+            f"Model {model_id!r} identified as an adapter model, with base model "
+            f"{base_model_id!r}.",
             level=logging.DEBUG,
         )
         if base_model_id is not None:
