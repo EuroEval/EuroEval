@@ -145,6 +145,7 @@ class VLLMModel(HuggingFaceEncoderModel):
         if self.model_config.adapter_base_model_id is not None:
             adapter_path = snapshot_download(
                 repo_id=self.model_config.model_id,
+                revision=self.model_config.revision,
                 cache_dir=Path(self.model_config.model_cache_dir),
             )
             self.buffer["lora_request"] = LoRARequest(
@@ -846,13 +847,16 @@ def load_model_and_tokenizer(
     # Prefer base model ID if the model is an adapter - the adapter will be added on
     # during inference in this case
     model_id = model_config.adapter_base_model_id or model_config.model_id
+    revision = (
+        model_config.revision if model_config.adapter_base_model_id is None else "main"
+    )
 
     hf_model_config = load_hf_model_config(
         model_id=model_id,
         num_labels=0,
         id2label=dict(),
         label2id=dict(),
-        revision=model_config.revision,
+        revision=revision,
         model_cache_dir=model_config.model_cache_dir,
         api_key=benchmark_config.api_key,
         trust_remote_code=benchmark_config.trust_remote_code,
@@ -916,7 +920,7 @@ def load_model_and_tokenizer(
             max_model_len=min(true_max_model_len, 5_000),
             download_dir=download_dir,
             trust_remote_code=benchmark_config.trust_remote_code,
-            revision=model_config.revision,
+            revision=revision,
             seed=4242,
             distributed_executor_backend=executor_backend,
             tensor_parallel_size=torch.cuda.device_count(),
