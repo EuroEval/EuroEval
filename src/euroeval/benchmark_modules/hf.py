@@ -74,6 +74,7 @@ from ..utils import (
     get_class_by_name,
     get_eos_token,
     internet_connection_available,
+    log_once,
 )
 from .base import BenchmarkModule
 
@@ -764,9 +765,10 @@ def get_model_repo_info(
     if has_adapter_config:
         adapter_config = PeftConfig.from_pretrained(model_id, revision=revision)
         base_model_id = adapter_config.base_model_name_or_path
-        logger.info(
+        log_once(
             f"Model {model_id} identified as an adapter model, with base model "
-            f"{base_model_id}."
+            f"{base_model_id}.",
+            level=logging.DEBUG,
         )
         if base_model_id is not None:
             base_model_info = hf_api.model_info(
