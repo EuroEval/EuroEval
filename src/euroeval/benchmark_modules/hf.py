@@ -970,7 +970,6 @@ def load_hf_model_config(
     Returns:
         The Hugging Face model configuration.
     """
-    breakpoint()
     while True:
         try:
             config = AutoConfig.from_pretrained(
