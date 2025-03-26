@@ -767,7 +767,6 @@ def get_model_repo_info(
         if base_model_id is not None:
             base_model_info = hf_api.model_info(
                 repo_id=base_model_id,
-                revision=revision,
                 token=benchmark_config.api_key
                 or os.getenv("HUGGINGFACE_API_KEY")
                 or True,
@@ -780,7 +779,7 @@ def get_model_repo_info(
     pipeline_tag = model_info.pipeline_tag
     if pipeline_tag is None:
         hf_config = load_hf_model_config(
-            model_id=model_id,
+            model_id=base_model_id or model_id,
             num_labels=0,
             id2label=dict(),
             label2id=dict(),
@@ -806,7 +805,6 @@ def get_model_repo_info(
             pipeline_tag = "fill-mask"
 
     if benchmark_config.only_allow_safetensors:
-        # Check if any file ends with .safetensors
         repo_files = hf_api.list_repo_files(repo_id=model_id, revision=revision)
         has_safetensors = any(f.endswith(".safetensors") for f in repo_files)
         if not has_safetensors:
@@ -819,6 +817,26 @@ def get_model_repo_info(
                     "to `True`."
                 )
             raise InvalidModel(msg)
+
+        # Also check base model if we are evaluating an adapter
+        if base_model_id is not None:
+            base_repo_files = hf_api.list_repo_files(repo_id=base_model_id)
+            base_has_safetensors = any(
+                f.endswith(".safetensors") for f in base_repo_files
+            )
+            if not base_has_safetensors:
+                msg = (
+                    f"Base model {base_model_id} does not have safetensors weights "
+                    "available."
+                )
+                if benchmark_config.run_with_cli:
+                    msg += " Skipping since the `--only-allow-safetensors` flag is set."
+                else:
+                    msg += (
+                        " Skipping since the `only_allow_safetensors` argument is set "
+                        "to `True`."
+                    )
+                raise InvalidModel(msg)
 
     return HFModelInfo(
         pipeline_tag=pipeline_tag, tags=tags, adapter_base_model_id=base_model_id
