@@ -764,6 +764,10 @@ def get_model_repo_info(
     if has_adapter_config:
         adapter_config = PeftConfig.from_pretrained(model_id, revision=revision)
         base_model_id = adapter_config.base_model_name_or_path
+        logger.info(
+            f"Model {model_id} identified as an adapter model, with base model "
+            f"{base_model_id}."
+        )
         if base_model_id is not None:
             base_model_info = hf_api.model_info(
                 repo_id=base_model_id,
