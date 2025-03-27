@@ -6,11 +6,14 @@ from numpy.typing import NDArray
 
 if t.TYPE_CHECKING:
     from .data_models import GenerativeModelOutput
+    from .templates import PromptConfig
 
 
 ScoreDict = dict[str, dict[str, float] | list[dict[str, float]]]
 Predictions = NDArray | list[str] | list[list[str]]
 Labels = NDArray | list[str] | list[list[str]]
+
+TemplateDict = dict[str, "PromptConfig"]
 
 
 class ComputeMetricsFunction(t.Protocol):

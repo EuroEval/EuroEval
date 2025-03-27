@@ -573,3 +573,49 @@ def log_once(message: str, level: int = logging.INFO) -> None:
             logger.critical(message)
         case _:
             raise ValueError(f"Invalid logging level: {level}")
+
+
+def get_labels_str(labels: list[str], language: str) -> str:
+    """Converts a list of labels to a natural string, in the specified language.
+
+    Args:
+        labels: The list of labels.
+        language: The language to be used when converting the labels.
+
+    Returns:
+        str: The natural string representation of the labels in specified language. If
+        the language is not found, it defaults to English.
+
+    Example:
+        >>> print(get_labels_str(["a", "b", "c"]), "da")
+        "'a', 'b', 'c' eller 'd'"
+    """
+    LANG_TO_OR = {
+        "da": "eller",
+        "de": "oder",
+        "en": "or",
+        "es": "o",
+        "fo": "ella",
+        "fr": "ou",
+        "is": "eða",
+        "it": "o",
+        "nb": "eller",
+        "nl": "of",
+        "nn": "eller",
+        "no": "eller",
+        "sv": "eller",
+    }
+
+    or_word = LANG_TO_OR.get(language, "or")
+
+    # Convert labels to single-quoted labels.
+    quoted_labels = [f"'{label}'" for label in labels]
+
+    if not quoted_labels:
+        return ""
+    elif len(quoted_labels) == 1:
+        return quoted_labels[0]
+    elif len(quoted_labels) == 2:
+        return f"{quoted_labels[0]} {or_word} {quoted_labels[1]}"
+    else:
+        return f"{', '.join(quoted_labels[:-1])} {or_word} {quoted_labels[-1]}"
