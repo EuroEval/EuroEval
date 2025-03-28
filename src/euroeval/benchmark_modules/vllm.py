@@ -30,6 +30,7 @@ from ..constants import (
     REASONING_MAX_TOKENS,
     TASK_GROUPS_USING_LOGPROBS,
     TASKS_USING_JSON,
+    VLLM_BF16_MIN_CUDA_COMPUTE_CAPABILITY,
 )
 from ..data_models import (
     BenchmarkConfig,
@@ -65,6 +66,7 @@ from ..utils import (
     get_bos_token,
     get_end_of_chat_token_ids,
     get_eos_token,
+    get_min_cuda_compute_capability,
     log_once,
     should_prompts_be_stripped,
 )
@@ -899,6 +901,23 @@ def load_model_and_tokenizer(
             "dtype to float16 instead."
         )
         dtype = torch.float16
+
+    if hf_model_config.torch_dtype == torch.bfloat16:
+        min_cuda_compute_capability = get_min_cuda_compute_capability()
+        required_capability = VLLM_BF16_MIN_CUDA_COMPUTE_CAPABILITY
+
+        if min_cuda_compute_capability is not None:
+            if min_cuda_compute_capability < required_capability:
+                logger.info(
+                    "You are loading a model with "
+                    f"dtype {hf_model_config.torch_dtype}, "
+                    "which vLLM only supports for CUDA devices with"
+                    f"CUDA compute capability >={required_capability}. "
+                    "You are using one or more devices with "
+                    f"compute capability {min_cuda_compute_capability}. "
+                    "Setting dtype to float16 instead."
+                )
+                dtype = torch.float16
 
     if model_config.adapter_base_model_id is not None:
         download_dir = str(Path(model_config.model_cache_dir) / "base_model")
