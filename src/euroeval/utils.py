@@ -217,8 +217,8 @@ def get_min_cuda_compute_capability() -> float | None:
 
     device_range = range(torch.cuda.device_count())
     capabilities = map(torch.cuda.get_device_capability, device_range)
-    min_compute_capability = min(capabilities)
-    return float(".".join(min_compute_capability))
+    major, minor = min(capabilities)
+    return float(f"{major}.{minor}")
 
 
 def kebab_to_pascal(kebab_string: str) -> str:
