@@ -1467,9 +1467,9 @@ NORDJYLLAND_NEWS_CONFIG = DatasetConfig(
     max_generated_tokens=256,
 )
 
-MLSUM_CONFIG = DatasetConfig(
-    name="mlsum",
-    pretty_name="the truncated version of the German summarisation dataset MLSum",
+MLSUM_DE_CONFIG = DatasetConfig(
+    name="mlsum-de",
+    pretty_name="the truncated version of the German summarisation dataset MLSum-de",
     huggingface_id="EuroEval/mlsum-mini",
     task=SUMM,
     languages=[DE],
@@ -1484,7 +1484,7 @@ MLSUM_CONFIG = DatasetConfig(
 
 MLSUM_ES_CONFIG = DatasetConfig(
     name="mlsum-es",
-    pretty_name="the truncated version of the Spanish summarisation dataset MLSum",
+    pretty_name="the truncated version of the Spanish summarisation dataset MLSum-es",
     huggingface_id="EuroEval/mlsum-es-mini",
     task=SUMM,
     languages=[ES],

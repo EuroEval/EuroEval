@@ -475,7 +475,7 @@ $ euroeval --model <model-id> --dataset hellaswag-es
 
 ## Summarization
 
-### MLSum-es-mini
+### MLSum-es
 
 The dataset was published in [this paper](https://aclanthology.org/2020.emnlp-main.647/) and is obtained from online newspapers.
 
