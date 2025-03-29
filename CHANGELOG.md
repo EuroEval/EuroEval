@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 
 ## [Unreleased]
+### Changed
+- Changed the name of the German 'mlsum' summarisation dataset to 'mlsum-de', to reflect
+  that it is the German version of the dataset, and to avoid confusion with the Spanish
+  'mlsum-es' dataset.
+
 ### Fixed
 - Evaluating a specific model revision did not work for adapter models, as there was a
   confusion between the revision of the adapter and the revision of the base model. We
