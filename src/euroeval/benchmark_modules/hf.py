@@ -809,6 +809,7 @@ def get_model_repo_info(
             pipeline_tag = "text-generation"
         else:
             pipeline_tag = "fill-mask"
+    breakpoint()
 
     if benchmark_config.only_allow_safetensors:
         repo_files = hf_api.list_repo_files(repo_id=model_id, revision=revision)
