@@ -8,7 +8,7 @@
 # ]
 # ///
 
-"""Create the Spanish MLSum-mini summarisation dataset."""
+"""Create the Spanish MLSum-es-mini summarisation dataset."""
 
 import pandas as pd
 from constants import MAX_NUM_CHARS_IN_ARTICLE, MIN_NUM_CHARS_IN_ARTICLE

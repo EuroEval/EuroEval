@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 
 ## [Unreleased]
+### Changed
+- Changed the name of the German 'mlsum' summarisation dataset to 'mlsum-de', to reflect
+  that it is the German version of the dataset, and to avoid confusion with the Spanish
+  'mlsum-es' dataset.
+
 ### Fixed
 - Evaluating a specific model revision did not work for adapter models, as there was a
   confusion between the revision of the adapter and the revision of the base model. We
@@ -17,6 +22,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   warn the user.
 - Now catches `TypeError` when trying to generate with vLLM, and retries 3 times before
   giving up on evaluating the dataset.
+- A bug in `transformers` caused models with the `image-text-to-text` pipeline tag to
+  not be detected as generative models. This has been patched now, and will be fixed
+  properly when [this transformers
+  PR](https://github.com/huggingface/transformers/pull/37107) has been merged.
+- Now uses `fp16` instead of `bf16` when evaluating decoder models on GPUs with CUDA
+  compatibility < 8.0. This was contributed by [@marksverdhei](https://github.com/marksverdhei) ✨
 
 
 ## [v15.4.1] - 2025-03-25
