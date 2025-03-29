@@ -17,6 +17,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   warn the user.
 - Now catches `TypeError` when trying to generate with vLLM, and retries 3 times before
   giving up on evaluating the dataset.
+- A bug in `transformers` caused models with the `image-text-to-text` pipeline tag to
+  not be detected as generative models. This has been fixed now.
 
 
 ## [v15.4.1] - 2025-03-25
