@@ -47,7 +47,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: Install Dependencies
-        run: uv sync --no-dev --extra test
+        run: uv sync --no-dev --extra test --reinstall-package euroeval
 
       - name: Start Ollama server
         run: curl -fsSL https://ollama.com/install.sh | sh
