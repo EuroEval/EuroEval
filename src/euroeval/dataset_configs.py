@@ -244,7 +244,7 @@ FOSENT_CONFIG = DatasetConfig(
 ALLOCINE_CONFIG = DatasetConfig(
     name="allocine",
     pretty_name="the truncated version of the French sentiment classification "
-    "dataset Allocine",
+    "dataset AlloCiné",
     huggingface_id="EuroEval/allocine-mini",
     task=SENT,
     languages=[FR],

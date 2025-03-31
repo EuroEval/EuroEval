@@ -252,7 +252,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 - Added support for French! 🇫🇷This includes the sentiment classification dataset
-  [Allocine](https://hf.co/datasets/tblard/allocine), the linguistic acceptability
+  [AlloCiné](https://hf.co/datasets/tblard/allocine), the linguistic acceptability
   dataset ScaLA with the [French Universal
   Dependencies](https://github.com/UniversalDependencies/UD_French-GSD), the reading
   comprehension dataset [FQuAD](https://hf.co/datasets/illuin/fquad) (and unofficially
