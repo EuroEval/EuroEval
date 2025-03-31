@@ -28,6 +28,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   PR](https://github.com/huggingface/transformers/pull/37107) has been merged.
 - Now uses `fp16` instead of `bf16` when evaluating decoder models on GPUs with CUDA
   compatibility < 8.0. This was contributed by [@marksverdhei](https://github.com/marksverdhei) ✨
+- Fixed docs for ScandiQA-da and ScandiQA-sv, where it was incorrectly stated that
+  the splits were made by considering the original train/validation/test splits.
 
 
 ## [v15.4.1] - 2025-03-25
