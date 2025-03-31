@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 
 ## [Unreleased]
+### Added
+- Now added version metadata to results, to easier track which versions of the various
+  dependencies were used when evaluating a model. This currently includes
+  `transformers`, `torch`, `vllm` and `outlines`.
+
 ### Changed
 - Changed the name of the German 'mlsum' summarisation dataset to 'mlsum-de', to reflect
   that it is the German version of the dataset, and to avoid confusion with the Spanish

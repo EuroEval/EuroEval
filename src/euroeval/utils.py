@@ -2,11 +2,11 @@
 
 import gc
 import importlib
+import importlib.metadata
 import importlib.util
 import logging
 import os
 import random
-import re
 import sys
 import typing as t
 import warnings
@@ -16,7 +16,6 @@ from types import TracebackType
 
 import litellm
 import numpy as np
-import pkg_resources
 import requests
 import torch
 from datasets.utils import disable_progress_bar
@@ -82,33 +81,6 @@ def enforce_reproducibility(seed: int = 4242) -> np.random.Generator:
     torch.backends.cudnn.deterministic = True
     torch.use_deterministic_algorithms(True, warn_only=True)
     return rng
-
-
-def is_module_installed(module: str) -> bool:
-    """Check if a module is installed.
-
-    This is used when dealing with spaCy models, as these are installed as separate
-    Python packages.
-
-    Args:
-        module:
-            The name of the module.
-
-    Returns:
-        Whether the module is installed or not.
-    """
-    # Get list of all modules, including their versions
-    installed_modules_with_versions = list(pkg_resources.working_set)
-
-    # Strip the module versions from the list of modules. Also make the modules lower
-    # case and replace dashes with underscores
-    installed_modules = [
-        re.sub("[0-9. ]", "", str(module)).lower().replace("-", "_")
-        for module in installed_modules_with_versions
-    ]
-
-    # Check if the module is installed by checking if the module name is in the list
-    return module.lower() in installed_modules
 
 
 def block_terminal_output() -> None:
@@ -588,3 +560,19 @@ def log_once(message: str, level: int = logging.INFO) -> None:
             logger.critical(message)
         case _:
             raise ValueError(f"Invalid logging level: {level}")
+
+
+def get_package_version(package_name: str) -> str | None:
+    """Get the version of a package.
+
+    Args:
+        package_name:
+            The name of the package.
+
+    Returns:
+        The version of the package, or None if the package is not installed.
+    """
+    try:
+        return importlib.metadata.version(package_name)
+    except importlib.metadata.PackageNotFoundError:
+        return None

@@ -8,9 +8,9 @@ if t.TYPE_CHECKING:
     from .data_models import GenerativeModelOutput
 
 
-ScoreDict = dict[str, dict[str, float] | list[dict[str, float]]]
-Predictions = NDArray | list[str] | list[list[str]]
-Labels = NDArray | list[str] | list[list[str]]
+ScoreDict: t.TypeAlias = dict[str, dict[str, float] | list[dict[str, float]]]
+Predictions: t.TypeAlias = NDArray | list[str] | list[list[str]]
+Labels: t.TypeAlias = NDArray | list[str] | list[list[str]]
 
 
 class ComputeMetricsFunction(t.Protocol):

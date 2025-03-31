@@ -11,7 +11,6 @@ from euroeval.benchmark_modules.hf import load_hf_model_config
 from euroeval.utils import (
     enforce_reproducibility,
     get_end_of_chat_token_ids,
-    is_module_installed,
     scramble,
     should_prefix_space_be_added_to_labels,
     should_prompts_be_stripped,
@@ -63,16 +62,6 @@ class TestEnforceReproducibility:
         enforce_reproducibility()
         second_random_numbers = torch.rand(10)
         assert torch.equal(first_random_numbers, second_random_numbers)
-
-
-@pytest.mark.parametrize(
-    argnames=["module_name", "expected"],
-    argvalues=[("torch", True), ("non_existent_module", False)],
-    ids=["torch", "non_existent_module"],
-)
-def test_module_is_installed(module_name: str, expected: bool) -> None:
-    """Test that a module is installed."""
-    assert is_module_installed(module_name) == expected
 
 
 @pytest.mark.parametrize(
