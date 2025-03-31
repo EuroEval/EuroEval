@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 
 ## [Unreleased]
+
+### Added
+- Added support for Finnish 🇫🇮! This includes the binary sentiment classification dataset [ScandiSent](https://github.com/timpal0l/ScandiSent)
+
 ### Fixed
 - Evaluating a specific model revision did not work for adapter models, as there was a
   confusion between the revision of the adapter and the revision of the base model. We

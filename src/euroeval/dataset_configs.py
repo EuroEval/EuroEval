@@ -6,6 +6,7 @@ from .languages import (
     DE,
     EN,
     ES,
+    FI,
     FO,
     FR,
     IS,
@@ -295,6 +296,24 @@ SENTIMENT_HEADLINES_CONFIG = DatasetConfig(
     ),
     instruction_prompt="Texto: {text}\n\nClasifica el sentimiento de la reseña. "
     "Responde con 'positivo', 'neutral' o 'negativo', y nada más.",
+    num_few_shot_examples=12,
+    max_generated_tokens=5,
+)
+
+SCANDISENT_FI_CONFIG = DatasetConfig(
+    name="scandisent-fi",
+    pretty_name="the truncated version of the Finnish part of the binary sentiment "
+    "classification dataset ScandiSent",
+    huggingface_id="EuroEval/scandisent-fi-mini",
+    task=SENT,
+    languages=[FI],
+    labels=["negative", "positive"],
+    prompt_prefix="Seuraavassa on arvosteluja ja niiden tunnesävy, joka voi olla "
+    "'positiivinen' tai 'negatiivinen'.",
+    prompt_template="Teksti: {text}\nTunnesävy: {label}",
+    prompt_label_mapping=dict(positive="positiivinen", negative="negatiivinen"),
+    instruction_prompt="Teksti: {text}\n\nLuokittele arvostelun tunnesävy. "
+    "Vastaa vain 'positiivinen' tai 'negatiivinen', ei muuta.",
     num_few_shot_examples=12,
     max_generated_tokens=5,
 )
