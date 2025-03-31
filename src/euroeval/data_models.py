@@ -1,7 +1,6 @@
 """Data models used in EuroEval."""
 
 import collections.abc as c
-import importlib.metadata
 import json
 import pathlib
 import re
@@ -231,10 +230,10 @@ class BenchmarkResult(pydantic.BaseModel):
     few_shot: bool
     validation_split: bool
     euroeval_version: str | None = get_package_version("euroeval")
-    transformers_version: str | None = importlib.metadata.version("transformers")
-    torch_version: str | None = importlib.metadata.version("torch")
-    vllm_version: str | None = importlib.metadata.version("vllm")
-    outlines_version: str | None = importlib.metadata.version("outlines")
+    transformers_version: str | None = get_package_version("transformers")
+    torch_version: str | None = get_package_version("torch")
+    vllm_version: str | None = get_package_version("vllm")
+    outlines_version: str | None = get_package_version("outlines")
 
     @classmethod
     def from_dict(cls, config: dict) -> "BenchmarkResult":
