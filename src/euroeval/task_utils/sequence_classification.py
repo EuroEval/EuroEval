@@ -162,8 +162,7 @@ def get_closest_logprobs_labels(
     """
     english_labels = list(dataset_config.id2label.values())
     english2local = dataset_config.prompt_label_mapping
-    local_labels = [english2local[lbl].lower() for lbl in english_labels]
-    candidate_labels = local_labels + english_labels
+    candidate_labels = [english2local[lbl].lower() for lbl in english_labels]
 
     output_labels: list[str] = list()
     for sample in generation_logprobs:
@@ -187,7 +186,7 @@ def get_closest_logprobs_labels(
 
                 # Get the candidate labels that starts with the generated label
                 candidate_output_labels = {
-                    english2local.get(candidate_label, candidate_label)
+                    candidate_label
                     for candidate_label in candidate_labels
                     if candidate_label.startswith(generated_label)
                 }
@@ -220,7 +219,6 @@ def get_closest_logprobs_labels(
                         )
 
             if output_label is not None:
-                output_label = english2local.get(output_label, output_label)
                 output_labels.append(output_label)
                 break
         else:
