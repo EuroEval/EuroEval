@@ -732,31 +732,35 @@ def get_model_repo_info(
     # If the model does not exist locally, then we get the model info from the Hugging
     # Face Hub
     if model_info is None:
-        try:
-            model_info = hf_api.model_info(
-                repo_id=model_id, revision=revision, token=token
-            )
-        except (GatedRepoError, LocalTokenNotFoundError) as e:
+        num_attempts = 3
+        for _ in range(num_attempts):
             try:
-                hf_whoami(token=token)
-                logger.warning(
-                    f"Could not access the model {model_id} with the revision "
-                    f"{revision}. The error was {str(e)!r}."
+                model_info = hf_api.model_info(
+                    repo_id=model_id, revision=revision, token=token
                 )
+                break
+            except (GatedRepoError, LocalTokenNotFoundError) as e:
+                try:
+                    hf_whoami(token=token)
+                    logger.warning(
+                        f"Could not access the model {model_id} with the revision "
+                        f"{revision}. The error was {str(e)!r}."
+                    )
+                    return None
+                except LocalTokenNotFoundError:
+                    raise NeedsAdditionalArgument(
+                        cli_argument="--api-key",
+                        script_argument="api_key=<your-api-key>",
+                        run_with_cli=benchmark_config.run_with_cli,
+                    )
+            except (RepositoryNotFoundError, HFValidationError):
                 return None
-            except LocalTokenNotFoundError:
-                raise NeedsAdditionalArgument(
-                    cli_argument="--api-key",
-                    script_argument="api_key=<your-api-key>",
-                    run_with_cli=benchmark_config.run_with_cli,
-                )
-        except (RepositoryNotFoundError, HFValidationError):
-            return None
-        except (OSError, RequestException):
-            if internet_connection_available():
-                raise HuggingFaceHubDown()
-            else:
+            except (OSError, RequestException):
+                if internet_connection_available():
+                    continue
                 raise NoInternetConnection()
+        else:
+            raise HuggingFaceHubDown()
 
     # Get all the Hugging Face repository tags for the model. If the model is an adapter
     # model, then we also get the tags for the base model
