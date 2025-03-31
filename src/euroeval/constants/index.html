@@ -12,7 +12,7 @@
       
       
       <link rel="icon" href="../../../gfx/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.9">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.10">
     
     
       
@@ -210,9 +210,11 @@
   
   
   
+  
     <li class="md-tabs__item">
       <a href="../../.." class="md-tabs__link">
         
+  
   
     
   
@@ -227,11 +229,13 @@
   
   
   
+  
     
     
       <li class="md-tabs__item">
         <a href="../../../leaderboards/" class="md-tabs__link">
           
+  
   
     
   
@@ -247,11 +251,13 @@
   
   
   
+  
     
     
       <li class="md-tabs__item">
         <a href="../../../tasks/" class="md-tabs__link">
           
+  
   
     
   
@@ -267,11 +273,13 @@
   
   
   
+  
     
     
       <li class="md-tabs__item">
         <a href="../../../datasets/" class="md-tabs__link">
           
+  
   
     
   
@@ -287,9 +295,11 @@
   
   
   
+  
     <li class="md-tabs__item">
       <a href="../../../methodology/" class="md-tabs__link">
         
+  
   
     
   
@@ -304,9 +314,11 @@
   
   
   
+  
     <li class="md-tabs__item">
       <a href="../../../faq/" class="md-tabs__link">
         
+  
   
     
   
@@ -321,9 +333,11 @@
   
   
   
+  
     <li class="md-tabs__item">
       <a href="../../../python-package/" class="md-tabs__link">
         
+  
   
     
   
@@ -338,9 +352,11 @@
   
   
   
+  
     
     
       
+  
   
   
   
@@ -349,6 +365,7 @@
       <li class="md-tabs__item">
         <a href="../../../api/euroeval/" class="md-tabs__link">
           
+  
   
     
   
@@ -424,6 +441,7 @@
       <a href="../../.." class="md-nav__link">
         
   
+  
   <span class="md-ellipsis">
     About
     
@@ -456,6 +474,7 @@
       
     
     
+    
       
       
         
@@ -472,8 +491,10 @@
         
   
   
+  
     <a href="../../../leaderboards/" class="md-nav__link">
       
+  
   
   <span class="md-ellipsis">
     Leaderboards
@@ -523,6 +544,7 @@
       
     
     
+    
       
       
         
@@ -539,8 +561,10 @@
         
   
   
+  
     <a href="../../../tasks/" class="md-nav__link">
       
+  
   
   <span class="md-ellipsis">
     Tasks
@@ -596,6 +620,7 @@
       
     
     
+    
       
       
         
@@ -612,8 +637,10 @@
         
   
   
+  
     <a href="../../../datasets/" class="md-nav__link">
       
+  
   
   <span class="md-ellipsis">
     Datasets
@@ -642,6 +669,7 @@
       <a href="../../../methodology/" class="md-nav__link">
         
   
+  
   <span class="md-ellipsis">
     Methodology
     
@@ -663,6 +691,7 @@
       <a href="../../../faq/" class="md-nav__link">
         
   
+  
   <span class="md-ellipsis">
     FAQ
     
@@ -683,6 +712,7 @@
     <li class="md-nav__item">
       <a href="../../../python-package/" class="md-nav__link">
         
+  
   
   <span class="md-ellipsis">
     Python Package
@@ -708,6 +738,7 @@
       
     
     
+    
       
       
         
@@ -724,11 +755,14 @@
         
   
   
+  
     
+  
   
   
     <a href="../../../api/euroeval/" class="md-nav__link">
       
+  
   
   <span class="md-ellipsis">
     API Reference
@@ -849,7 +883,10 @@
 <span class="normal">53</span>
 <span class="normal">54</span>
 <span class="normal">55</span>
-<span class="normal">56</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Constants used throughout the project.&quot;&quot;&quot;</span>
+<span class="normal">56</span>
+<span class="normal">57</span>
+<span class="normal">58</span>
+<span class="normal">59</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Constants used throughout the project.&quot;&quot;&quot;</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">.enums</span><span class="w"> </span><span class="kn">import</span> <span class="n">TaskGroup</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.tasks</span><span class="w"> </span><span class="kn">import</span> <span class="n">NER</span>
@@ -905,6 +942,9 @@
 
 <span class="c1"># Hugging Face Hub tags used to classify models as merge models</span>
 <span class="n">MERGE_TAGS</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;merge&quot;</span><span class="p">,</span> <span class="s2">&quot;mergekit&quot;</span><span class="p">]</span>
+
+<span class="c1"># The minimum required CUDA compute capability for using bfloat16 in vLLM</span>
+<span class="n">VLLM_BF16_MIN_CUDA_COMPUTE_CAPABILITY</span> <span class="o">=</span> <span class="mf">8.0</span>
 </code></pre></div></td></tr></table></div>
 
 
@@ -960,7 +1000,9 @@
       <div class="md-progress" data-md-component="progress" role="progressbar"></div>
     
     
-    <script id="__config" type="application/json">{"base": "../../..", "features": ["navigation.top", "navigation.path", "navigation.prune", "navigation.indexes", "navigation.tabs", "navigation.tabs.sticky", "navigation.instant", "navigation.instant.prefetch", "navigation.instant.progress", "navigation.tracking", "navigation.sections"], "search": "../../../assets/javascripts/workers/search.f8cc74c7.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    
+      
+      <script id="__config" type="application/json">{"base": "../../..", "features": ["navigation.top", "navigation.path", "navigation.prune", "navigation.indexes", "navigation.tabs", "navigation.tabs.sticky", "navigation.instant", "navigation.instant.prefetch", "navigation.instant.progress", "navigation.tracking", "navigation.sections"], "search": "../../../assets/javascripts/workers/search.f8cc74c7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
       <script src="../../../assets/javascripts/bundle.c8b220af.min.js"></script>

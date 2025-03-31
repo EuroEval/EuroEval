@@ -12,7 +12,7 @@
       
       
       <link rel="icon" href="../../../gfx/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.9">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.10">
     
     
       
@@ -210,9 +210,11 @@
   
   
   
+  
     <li class="md-tabs__item">
       <a href="../../.." class="md-tabs__link">
         
+  
   
     
   
@@ -227,11 +229,13 @@
   
   
   
+  
     
     
       <li class="md-tabs__item">
         <a href="../../../leaderboards/" class="md-tabs__link">
           
+  
   
     
   
@@ -247,11 +251,13 @@
   
   
   
+  
     
     
       <li class="md-tabs__item">
         <a href="../../../tasks/" class="md-tabs__link">
           
+  
   
     
   
@@ -267,11 +273,13 @@
   
   
   
+  
     
     
       <li class="md-tabs__item">
         <a href="../../../datasets/" class="md-tabs__link">
           
+  
   
     
   
@@ -287,9 +295,11 @@
   
   
   
+  
     <li class="md-tabs__item">
       <a href="../../../methodology/" class="md-tabs__link">
         
+  
   
     
   
@@ -304,9 +314,11 @@
   
   
   
+  
     <li class="md-tabs__item">
       <a href="../../../faq/" class="md-tabs__link">
         
+  
   
     
   
@@ -321,9 +333,11 @@
   
   
   
+  
     <li class="md-tabs__item">
       <a href="../../../python-package/" class="md-tabs__link">
         
+  
   
     
   
@@ -338,9 +352,11 @@
   
   
   
+  
     
     
       
+  
   
   
   
@@ -349,6 +365,7 @@
       <li class="md-tabs__item">
         <a href="../../../api/euroeval/" class="md-tabs__link">
           
+  
   
     
   
@@ -424,6 +441,7 @@
       <a href="../../.." class="md-nav__link">
         
   
+  
   <span class="md-ellipsis">
     About
     
@@ -456,6 +474,7 @@
       
     
     
+    
       
       
         
@@ -472,8 +491,10 @@
         
   
   
+  
     <a href="../../../leaderboards/" class="md-nav__link">
       
+  
   
   <span class="md-ellipsis">
     Leaderboards
@@ -523,6 +544,7 @@
       
     
     
+    
       
       
         
@@ -539,8 +561,10 @@
         
   
   
+  
     <a href="../../../tasks/" class="md-nav__link">
       
+  
   
   <span class="md-ellipsis">
     Tasks
@@ -596,6 +620,7 @@
       
     
     
+    
       
       
         
@@ -612,8 +637,10 @@
         
   
   
+  
     <a href="../../../datasets/" class="md-nav__link">
       
+  
   
   <span class="md-ellipsis">
     Datasets
@@ -642,6 +669,7 @@
       <a href="../../../methodology/" class="md-nav__link">
         
   
+  
   <span class="md-ellipsis">
     Methodology
     
@@ -663,6 +691,7 @@
       <a href="../../../faq/" class="md-nav__link">
         
   
+  
   <span class="md-ellipsis">
     FAQ
     
@@ -683,6 +712,7 @@
     <li class="md-nav__item">
       <a href="../../../python-package/" class="md-nav__link">
         
+  
   
   <span class="md-ellipsis">
     Python Package
@@ -708,6 +738,7 @@
       
     
     
+    
       
       
         
@@ -724,11 +755,14 @@
         
   
   
+  
     
+  
   
   
     <a href="../../../api/euroeval/" class="md-nav__link">
       
+  
   
   <span class="md-ellipsis">
     API Reference
@@ -803,15 +837,6 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#euroeval.utils.is_module_installed" class="md-nav__link">
-    <span class="md-ellipsis">
-      is_module_installed
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
   <a href="#euroeval.utils.block_terminal_output" class="md-nav__link">
     <span class="md-ellipsis">
       block_terminal_output
@@ -824,6 +849,15 @@
   <a href="#euroeval.utils.get_class_by_name" class="md-nav__link">
     <span class="md-ellipsis">
       get_class_by_name
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#euroeval.utils.get_min_cuda_compute_capability" class="md-nav__link">
+    <span class="md-ellipsis">
+      get_min_cuda_compute_capability
     </span>
   </a>
   
@@ -941,6 +975,15 @@
   <a href="#euroeval.utils.log_once" class="md-nav__link">
     <span class="md-ellipsis">
       log_once
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#euroeval.utils.get_package_version" class="md-nav__link">
+    <span class="md-ellipsis">
+      get_package_version
     </span>
   </a>
   
@@ -1547,15 +1590,18 @@
 <span class="normal">572</span>
 <span class="normal">573</span>
 <span class="normal">574</span>
-<span class="normal">575</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Utility functions to be used in other scripts.&quot;&quot;&quot;</span>
+<span class="normal">575</span>
+<span class="normal">576</span>
+<span class="normal">577</span>
+<span class="normal">578</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Utility functions to be used in other scripts.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">gc</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">importlib</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">importlib.metadata</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">importlib.util</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">random</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">t</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
@@ -1565,7 +1611,6 @@
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">litellm</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">pkg_resources</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">requests</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">datasets.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">disable_progress_bar</span>
@@ -1631,33 +1676,6 @@
     <span class="n">torch</span><span class="o">.</span><span class="n">backends</span><span class="o">.</span><span class="n">cudnn</span><span class="o">.</span><span class="n">deterministic</span> <span class="o">=</span> <span class="kc">True</span>
     <span class="n">torch</span><span class="o">.</span><span class="n">use_deterministic_algorithms</span><span class="p">(</span><span class="kc">True</span><span class="p">,</span> <span class="n">warn_only</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">rng</span>
-
-
-<span class="k">def</span><span class="w"> </span><span class="nf">is_module_installed</span><span class="p">(</span><span class="n">module</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span><div class="mkapi-source-link" id="euroeval.utils.is_module_installed"><a href="../../../api/euroeval/utils/#euroeval.utils.is_module_installed" title="Go to docs">docs</a></div>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Check if a module is installed.</span>
-
-<span class="sd">    This is used when dealing with spaCy models, as these are installed as separate</span>
-<span class="sd">    Python packages.</span>
-
-<span class="sd">    Args:</span>
-<span class="sd">        module:</span>
-<span class="sd">            The name of the module.</span>
-
-<span class="sd">    Returns:</span>
-<span class="sd">        Whether the module is installed or not.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="c1"># Get list of all modules, including their versions</span>
-    <span class="n">installed_modules_with_versions</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">pkg_resources</span><span class="o">.</span><span class="n">working_set</span><span class="p">)</span>
-
-    <span class="c1"># Strip the module versions from the list of modules. Also make the modules lower</span>
-    <span class="c1"># case and replace dashes with underscores</span>
-    <span class="n">installed_modules</span> <span class="o">=</span> <span class="p">[</span>
-        <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="s2">&quot;[0-9. ]&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">module</span><span class="p">))</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;-&quot;</span><span class="p">,</span> <span class="s2">&quot;_&quot;</span><span class="p">)</span>
-        <span class="k">for</span> <span class="n">module</span> <span class="ow">in</span> <span class="n">installed_modules_with_versions</span>
-    <span class="p">]</span>
-
-    <span class="c1"># Check if the module is installed by checking if the module name is in the list</span>
-    <span class="k">return</span> <span class="n">module</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="ow">in</span> <span class="n">installed_modules</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">block_terminal_output</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span><div class="mkapi-source-link" id="euroeval.utils.block_terminal_output"><a href="../../../api/euroeval/utils/#euroeval.utils.block_terminal_output" title="Go to docs">docs</a></div>
@@ -1753,6 +1771,21 @@
 
     <span class="c1"># If the class could not be found, return None</span>
     <span class="k">return</span> <span class="kc">None</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">get_min_cuda_compute_capability</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span><div class="mkapi-source-link" id="euroeval.utils.get_min_cuda_compute_capability"><a href="../../../api/euroeval/utils/#euroeval.utils.get_min_cuda_compute_capability" title="Go to docs">docs</a></div>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Gets the lowest cuda capability.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Device capability as float, or None if CUDA is not available.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">is_available</span><span class="p">():</span>
+        <span class="k">return</span> <span class="kc">None</span>
+
+    <span class="n">device_range</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">device_count</span><span class="p">())</span>
+    <span class="n">capabilities</span> <span class="o">=</span> <span class="nb">map</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">get_device_capability</span><span class="p">,</span> <span class="n">device_range</span><span class="p">)</span>
+    <span class="n">major</span><span class="p">,</span> <span class="n">minor</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">capabilities</span><span class="p">)</span>
+    <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">major</span><span class="si">}</span><span class="s2">.</span><span class="si">{</span><span class="n">minor</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">kebab_to_pascal</span><span class="p">(</span><span class="n">kebab_string</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span><div class="mkapi-source-link" id="euroeval.utils.kebab_to_pascal"><a href="../../../api/euroeval/utils/#euroeval.utils.kebab_to_pascal" title="Go to docs">docs</a></div>
@@ -2122,6 +2155,22 @@
             <span class="n">logger</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="n">message</span><span class="p">)</span>
         <span class="k">case</span><span class="w"> </span><span class="k">_</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Invalid logging level: </span><span class="si">{</span><span class="n">level</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">get_package_version</span><span class="p">(</span><span class="n">package_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span><div class="mkapi-source-link" id="euroeval.utils.get_package_version"><a href="../../../api/euroeval/utils/#euroeval.utils.get_package_version" title="Go to docs">docs</a></div>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the version of a package.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        package_name:</span>
+<span class="sd">            The name of the package.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        The version of the package, or None if the package is not installed.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">importlib</span><span class="o">.</span><span class="n">metadata</span><span class="o">.</span><span class="n">version</span><span class="p">(</span><span class="n">package_name</span><span class="p">)</span>
+    <span class="k">except</span> <span class="n">importlib</span><span class="o">.</span><span class="n">metadata</span><span class="o">.</span><span class="n">PackageNotFoundError</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span>
 </code></pre></div></td></tr></table></div>
 
 
@@ -2178,7 +2227,9 @@
       <div class="md-progress" data-md-component="progress" role="progressbar"></div>
     
     
-    <script id="__config" type="application/json">{"base": "../../..", "features": ["navigation.top", "navigation.path", "navigation.prune", "navigation.indexes", "navigation.tabs", "navigation.tabs.sticky", "navigation.instant", "navigation.instant.prefetch", "navigation.instant.progress", "navigation.tracking", "navigation.sections"], "search": "../../../assets/javascripts/workers/search.f8cc74c7.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    
+      
+      <script id="__config" type="application/json">{"base": "../../..", "features": ["navigation.top", "navigation.path", "navigation.prune", "navigation.indexes", "navigation.tabs", "navigation.tabs.sticky", "navigation.instant", "navigation.instant.prefetch", "navigation.instant.progress", "navigation.tracking", "navigation.sections"], "search": "../../../assets/javascripts/workers/search.f8cc74c7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
       <script src="../../../assets/javascripts/bundle.c8b220af.min.js"></script>
