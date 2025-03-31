@@ -231,11 +231,10 @@ the translated contexts still contained the answer to the question, potentially 
 changing the answers slightly.
 
 The original full dataset consists of 6,810 / 500 / 500 samples for training,
-validation and testing, respectively. We use a 1,024 / 256 / 2,048 split for training,
-validation and testing, respectively (so 3,328 samples used in total). All validation
-samples in our version also belong to the original validation set, and all original test
-samples are included in our test set. The remaining 1,548 test samples in our version
-was sampled from the original training set.
+validation and testing, respectively (so 3,328 samples used in total).
+We use a 1,024 / 256 / 2,048 split for training, validation and testing, respectively,
+where the splits are made by randomly sampling from the full dataset without considering
+the original train/validation/test splits.
 
 Here are a few examples from the training split:
 
