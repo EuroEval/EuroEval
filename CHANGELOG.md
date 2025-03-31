@@ -28,6 +28,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   PR](https://github.com/huggingface/transformers/pull/37107) has been merged.
 - Now uses `fp16` instead of `bf16` when evaluating decoder models on GPUs with CUDA
   compatibility < 8.0. This was contributed by [@marksverdhei](https://github.com/marksverdhei) ✨
+- Force `vllm` v0.8.0 for now, as the severe degradation in generation output of some
+  models has not been resolved in versions v0.8.2 and v0.8.3.
 
 
 ## [v15.4.1] - 2025-03-25
