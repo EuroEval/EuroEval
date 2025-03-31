@@ -206,6 +206,21 @@ def get_class_by_name(class_name: str | list[str], module_name: str) -> t.Type |
     return None
 
 
+def get_min_cuda_compute_capability() -> float | None:
+    """Gets the lowest cuda capability.
+
+    Returns:
+        Device capability as float, or None if CUDA is not available.
+    """
+    if not torch.cuda.is_available():
+        return None
+
+    device_range = range(torch.cuda.device_count())
+    capabilities = map(torch.cuda.get_device_capability, device_range)
+    major, minor = min(capabilities)
+    return float(f"{major}.{minor}")
+
+
 def kebab_to_pascal(kebab_string: str) -> str:
     """Converts a kebab-case string to PascalCase.
 

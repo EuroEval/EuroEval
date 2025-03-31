@@ -54,3 +54,6 @@ METRIC_ATTRIBUTES_TAKING_UP_MEMORY = ["cached_bertscorer"]
 
 # Hugging Face Hub tags used to classify models as merge models
 MERGE_TAGS = ["merge", "mergekit"]
+
+# The minimum required CUDA compute capability for using bfloat16 in vLLM
+VLLM_BF16_MIN_CUDA_COMPUTE_CAPABILITY = 8.0
