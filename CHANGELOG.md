@@ -42,6 +42,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   that this caused a confusion mat times when there was a unique local label starting
   with a particular letter, but a different English label starting with the same letter,
   causing some models to be evaluated on the wrong label.
+- When fetching the model information from the Hugging Face API we now attempt 3 times,
+  as the API sometimes fails. If it still fails after 3 attempts, we raise the
+  `HuggingFaceHubDown` exception.
 
 
 ## [v15.4.1] - 2025-03-25
