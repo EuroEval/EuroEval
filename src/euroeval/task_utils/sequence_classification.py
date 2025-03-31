@@ -206,15 +206,17 @@ def get_closest_logprobs_labels(
                         previously_generated_labels.append(generated_label)
                     else:
                         output_label = candidate_output_labels.pop()
-                        logger.warning(
+                        candidate_output_labels.add(output_label)
+                        log_once(
                             "Multiple candidate labels found for the generated label "
                             f"{generated_label!r}: {candidate_output_labels}. Since "
                             "this is not the first generated label, we cannot "
                             "concatenate it with the next generated label. We are thus "
-                            "forced to use the arbitrary {output_label!r} as the "
+                            f"forced to use the arbitrary {output_label!r} as the "
                             "output label, potentially resulting in worse performance. "
                             "Please report this issue to the EuroEval team at "
-                            "github.com/EuroEval/EuroEval/issues."
+                            "github.com/EuroEval/EuroEval/issues.",
+                            level=logging.WARNING,
                         )
 
             if output_label is not None:
