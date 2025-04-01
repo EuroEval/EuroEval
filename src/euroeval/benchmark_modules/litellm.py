@@ -131,7 +131,7 @@ NUM_PARAMS_MAPPING = {
 ALLOWED_PARAMS = {
     # OpenAI models
     r"gpt-4.*": [],
-    r"o[1-9](-mini|-preview)?(-[0-9]{4}-[0-9]{2}-[0-9]{2})?": ["low", "medium", "high"],
+    r"o[1-9](-mini|-preview)?(-[0-9]{4}-[0-9]{2}-[0-9]{2})?": ["low", "high"],
     # Anthropic models
     r"(anthropic/)?claude-3-.*": [],
     r"(anthropic/)?claude-3.5-.*": [],
@@ -254,7 +254,7 @@ class LiteLLMModel(BenchmarkModule):
                 f"Enabling thinking mode for model {self.model_config.model_id!r}",
                 level=logging.DEBUG,
             )
-        elif self.model_config.revision in {"low", "medium", "high"}:
+        elif self.model_config.revision in {"low", "high"}:
             generation_kwargs["reasoning_effort"] = self.model_config.revision
             log_once(
                 f"Enabling reasoning effort {self.model_config.revision!r} for model "
