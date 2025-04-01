@@ -27,9 +27,11 @@ from litellm.exceptions import (
     BadRequestError,
     InternalServerError,
     NotFoundError,
+    RateLimitError,
     ServiceUnavailableError,
     Timeout,
 )
+from litellm.llms.vertex_ai.common_utils import VertexAIError
 from litellm.types.utils import ModelResponse
 from requests.exceptions import RequestException
 from tqdm.auto import tqdm
@@ -235,39 +237,47 @@ class LiteLLMModel(BenchmarkModule):
         # handle using newlines as stop sequences, so we try both.
         num_attempts = 10
         for _ in range(num_attempts):
+            stop_messages = ["stop_sequences"]
+            logprobs_messages = [
+                "you are not allowed to request logprobs",
+                "you've reached the maximum number of requests with logprobs",
+            ]
+            temperature_messages = [
+                "'temperature' is not supported with this model.",
+                "temperature is not supported with this model",
+            ]
             try:
                 model_response = litellm.completion(
                     messages=messages, max_retries=3, **generation_kwargs
                 )
                 break
-            except BadRequestError as e:
-                if "stop_sequences" in str(e).lower():
+            except (BadRequestError, RateLimitError) as e:
+                if any(msg in str(e).lower() for msg in stop_messages):
                     generation_kwargs["stop"] = None
-                elif "you are not allowed to request logprobs" in str(e).lower():
+                elif (
+                    any(msg in str(e).lower() for msg in logprobs_messages)
+                    # Special case for Vertex AI models, since they have strict rate
+                    # limits on using logprobs. They also have a cap of 5 logprobs, but
+                    # we ignore this since the rate limiting makes it unusable anyway.
+                    or (isinstance(e, VertexAIError) and "logprobs" in str(e).lower())
+                ):
                     generation_kwargs.pop("logprobs")
                     generation_kwargs.pop("top_logprobs")
-                elif (
-                    "'temperature' is not supported with this model." in str(e).lower()
-                ):
+                elif any(msg in str(e).lower() for msg in temperature_messages):
                     generation_kwargs.pop("temperature")
                 else:
                     raise InvalidBenchmark(
                         f"Failed to generate text. The error message was: {e}"
                     )
-            except (
-                Timeout,
-                ServiceUnavailableError,
-                APIConnectionError,
-                InternalServerError,
-            ):
+            except (APIConnectionError, APIError) as e:
+                raise InvalidBenchmark(
+                    f"Failed to generate text. The error message was: {e}"
+                )
+            except (Timeout, ServiceUnavailableError, InternalServerError):
                 logger.debug(
                     "Service temporarily unavailable. Retrying in 5 seconds..."
                 )
                 sleep(5)
-            except APIError as e:
-                raise InvalidBenchmark(
-                    f"Failed to generate text. The error message was: {e}"
-                )
             except AuthenticationError:
                 raise NeedsAdditionalArgument(
                     cli_argument="--api-key",
