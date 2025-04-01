@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Now does not use logprobs in text classification tasks with Google Gemini models, as
   they heavily rate limit logprobs usage. This shouldn't affect the scores significantly
   in any case, as the models are very confident in their predictions.
+- Updated `litellm` to `>=1.63.0`, allowing better support for reasoning models.
 
 
 ## [v15.4.2] - 2025-03-31
