@@ -128,7 +128,23 @@ NUM_PARAMS_MAPPING = {
 }
 
 
-REASONING_MODELS = ["o[1-9](-mini|-preview)?(-[0-9]{4}-[0-9]{2}-[0-9]{2})?"]
+ALLOWED_PARAMS = {
+    # OpenAI models
+    r"gpt-4.*": [],
+    r"o[1-9](-mini|-preview)?(-[0-9]{4}-[0-9]{2}-[0-9]{2})?": ["low", "medium", "high"],
+    # Anthropic models
+    r"(anthropic/)?claude-3-.*": [],
+    r"(anthropic/)?claude-3.5-.*": [],
+    r"(anthropic/)?claude-3.7-sonnet.*": ["thinking"],
+    # Gemini models
+    r"(gemini/)?gemini-.*": [],
+}
+
+
+REASONING_MODELS = [
+    r"o[1-9](-mini|-preview)?(-[0-9]{4}-[0-9]{2}-[0-9]{2})?",
+    r"(gemini/)?gemini.*thinking.*",
+]
 
 
 class LiteLLMModel(BenchmarkModule):
@@ -160,6 +176,8 @@ class LiteLLMModel(BenchmarkModule):
             "ollama/"
         ) or model_config.model_id.startswith("ollama_chat/")
 
+        raise_if_wrong_params(model_config=model_config, allowed_params=ALLOWED_PARAMS)
+
         super().__init__(
             model_config=model_config,
             dataset_config=dataset_config,
@@ -173,7 +191,9 @@ class LiteLLMModel(BenchmarkModule):
         Returns:
             The generative type of the model, or None if it has not been set yet.
         """
-        if re.fullmatch(
+        if self.model_config.revision == "thinking":
+            return GenerativeType.REASONING
+        elif re.fullmatch(
             pattern="|".join(REASONING_MODELS), string=self.model_config.model_id
         ):
             return GenerativeType.REASONING
@@ -220,6 +240,27 @@ class LiteLLMModel(BenchmarkModule):
                 "Prompt must contain 'json' for JSON tasks."
             )
             generation_kwargs["response_format"] = dict(type="json_object")
+            log_once(
+                "Enabling JSON response format for model "
+                f"{self.model_config.model_id!r}",
+                level=logging.DEBUG,
+            )
+
+        if self.model_config.revision == "thinking":
+            generation_kwargs["thinking"] = dict(
+                type="enabled", budget_tokens=REASONING_MAX_TOKENS
+            )
+            log_once(
+                f"Enabling thinking mode for model {self.model_config.model_id!r}",
+                level=logging.DEBUG,
+            )
+        elif self.model_config.revision in {"low", "medium", "high"}:
+            generation_kwargs["reasoning_effort"] = self.model_config.revision
+            log_once(
+                f"Enabling reasoning effort {self.model_config.revision!r} for model "
+                f"{self.model_config.model_id!r}",
+                level=logging.DEBUG,
+            )
 
         # This drops generation kwargs that are not supported by the model
         litellm.drop_params = True
@@ -232,6 +273,7 @@ class LiteLLMModel(BenchmarkModule):
             logprobs_messages = [
                 "you are not allowed to request logprobs",
                 "you've reached the maximum number of requests with logprobs",
+                "Logprobs is not supported",
             ]
             temperature_messages = [
                 "'temperature' is not supported with this model.",
@@ -243,10 +285,10 @@ class LiteLLMModel(BenchmarkModule):
                 )
                 break
             except (BadRequestError, RateLimitError) as e:
-                if any(msg in str(e).lower() for msg in stop_messages):
+                if any(msg.lower() in str(e).lower() for msg in stop_messages):
                     generation_kwargs["stop"] = None
                 elif (
-                    any(msg in str(e).lower() for msg in logprobs_messages)
+                    any(msg.lower() in str(e).lower() for msg in logprobs_messages)
                     # Special case for Vertex AI models, since they have strict rate
                     # limits on using logprobs. They also have a cap of 5 logprobs, but
                     # we ignore this since the rate limiting makes it unusable anyway.
@@ -254,7 +296,7 @@ class LiteLLMModel(BenchmarkModule):
                 ):
                     generation_kwargs.pop("logprobs")
                     generation_kwargs.pop("top_logprobs")
-                elif any(msg in str(e).lower() for msg in temperature_messages):
+                elif any(msg.lower() in str(e).lower() for msg in temperature_messages):
                     generation_kwargs.pop("temperature")
                 else:
                     raise InvalidBenchmark(
@@ -335,7 +377,7 @@ class LiteLLMModel(BenchmarkModule):
                     num_labels=self.dataset_config.num_labels,
                     id2label=self.dataset_config.id2label,
                     label2id=self.dataset_config.label2id,
-                    revision=self.model_config.revision,
+                    revision="main",
                     model_cache_dir=self.model_config.model_cache_dir,
                     api_key=self.benchmark_config.api_key,
                     trust_remote_code=self.benchmark_config.trust_remote_code,
@@ -346,7 +388,7 @@ class LiteLLMModel(BenchmarkModule):
                 try:
                     repo_info = hf_api.model_info(
                         repo_id=model_id,
-                        revision=self.model_config.revision,
+                        revision="main",
                         token=os.getenv("HUGGINGFACE_API_KEY")
                         or self.benchmark_config.api_key
                         or True,
@@ -399,7 +441,7 @@ class LiteLLMModel(BenchmarkModule):
                     num_labels=self.dataset_config.num_labels,
                     id2label=self.dataset_config.id2label,
                     label2id=self.dataset_config.label2id,
-                    revision=self.model_config.revision,
+                    revision="main",
                     model_cache_dir=self.model_config.model_cache_dir,
                     api_key=self.benchmark_config.api_key,
                     trust_remote_code=self.benchmark_config.trust_remote_code,
@@ -479,7 +521,7 @@ class LiteLLMModel(BenchmarkModule):
                     num_labels=self.dataset_config.num_labels,
                     id2label=self.dataset_config.id2label,
                     label2id=self.dataset_config.label2id,
-                    revision=self.model_config.revision,
+                    revision="main",
                     model_cache_dir=self.model_config.model_cache_dir,
                     api_key=self.benchmark_config.api_key,
                     trust_remote_code=self.benchmark_config.trust_remote_code,
@@ -606,6 +648,9 @@ class LiteLLMModel(BenchmarkModule):
             Whether the model exists, or an error describing why we cannot check
             whether the model exists.
         """
+        model_id, revision = (
+            model_id.split("@") if "@" in model_id else (model_id, "main")
+        )
         if model_id in litellm.model_list:
             return True
 
@@ -709,9 +754,10 @@ class LiteLLMModel(BenchmarkModule):
         Returns:
             The model configuration.
         """
+        model_id, revision = model_id.split("@") if "@" in model_id else (model_id, "")
         return ModelConfig(
             model_id=model_id,
-            revision="main",
+            revision=revision,
             task="text-generation",
             languages=list(),
             merge=False,
@@ -1026,3 +1072,35 @@ class LiteLLMModel(BenchmarkModule):
 
         examples["messages"] = messages_list
         return examples
+
+
+def raise_if_wrong_params(
+    model_config: ModelConfig, allowed_params: dict[str, list[str]]
+) -> None:
+    """Raise an error if the model configuration has invalid parameters.
+
+    Args:
+        model_config:
+            The model configuration.
+        allowed_params:
+            The allowed parameters for the model.
+
+    Raises:
+        InvalidModel:
+            If the model configuration has invalid parameters.
+    """
+    param = model_config.revision
+    if param == "":
+        return
+    for model_regex, allowed_params_list in allowed_params.items():
+        if re.fullmatch(pattern=model_regex, string=model_config.model_id):
+            if param not in allowed_params_list:
+                msg = (
+                    f"Invalid parameter {param!r} for model {model_config.model_id!r}."
+                )
+                if allowed_params_list:
+                    msg += f" Allowed parameters are: {', '.join(allowed_params_list)}."
+                else:
+                    msg += " No parameters are allowed."
+                raise InvalidModel(msg)
+            return
