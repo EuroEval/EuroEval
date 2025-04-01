@@ -47,7 +47,7 @@ TASK_GROUPS_USING_LOGPROBS = [
 MAX_LOGPROBS = 10
 
 
-# We make sure to remove these metric attributed after each iteration, to avoid memory
+# We make sure to remove these metric attributes after each iteration, to avoid memory
 # leaks
 METRIC_ATTRIBUTES_TAKING_UP_MEMORY = ["cached_bertscorer"]
 
