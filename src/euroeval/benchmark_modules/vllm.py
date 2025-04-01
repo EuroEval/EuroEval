@@ -379,8 +379,8 @@ class VLLMModel(HuggingFaceEncoderModel):
         num_attempts = 3
         for _ in range(num_attempts):
             try:
-                raw_outputs = self._model.generate(
-                    prompts=prompts,
+                raw_outputs = self._model.chat(
+                    messages=[dict(role="user", content=prompt) for prompt in prompts],
                     sampling_params=sampling_params,
                     use_tqdm=(not input_is_a_test),
                     lora_request=self.buffer.get("lora_request"),
@@ -1158,8 +1158,8 @@ def get_end_of_reasoning_token_id(
     # Generate a completion and remove the BOS token from it, to not confuse it with the
     # potential reasoning token
     completion = (
-        model.generate(
-            prompts=[prompt],
+        model.chat(
+            prompts=[dict(role="user", content=prompt)],
             sampling_params=SamplingParams(max_tokens=3, temperature=0.0),
             use_tqdm=False,
         )[0]
