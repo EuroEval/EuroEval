@@ -7,7 +7,21 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 
 ## [Unreleased]
+### Added
+- Now allows supplying a parameter to API models, which is done by using
+  `<model-id>@<parameter>` as the model ID (only a single parameter is supported). The
+  parameters allowed are "low" and "high" for OpenAI models (which is the reasoning
+  effort of the model, supported by the o1- and o3-series, default is "medium"), and
+  "thinking" for Anthropic models, to enable thinking mode (supported for
+  Claude-Sonnet-3.7+). These will appear in the leaderboards as
+  `<model-id>@<parameter>`.
+- Added metadata for Google Gemini models.
 
+### Changed
+- Now does not use logprobs in text classification tasks with Google VertexAI models, as
+  they heavily rate limit logprobs usage. This shouldn't affect the scores significantly
+  in any case, as the models are very confident in their predictions.
+- Updated `litellm` to `>=1.63.0`, allowing better support for reasoning models.
 
 
 ## [v15.4.2] - 2025-03-31
