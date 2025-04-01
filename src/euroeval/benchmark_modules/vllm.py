@@ -1159,7 +1159,7 @@ def get_end_of_reasoning_token_id(
     # potential reasoning token
     completion = (
         model.chat(
-            prompts=[dict(role="user", content=prompt)],
+            messages=[dict(role="user", content=prompt)],
             sampling_params=SamplingParams(max_tokens=3, temperature=0.0),
             use_tqdm=False,
         )[0]
