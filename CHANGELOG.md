@@ -16,6 +16,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   Claude-Sonnet-3.7+). These will appear in the leaderboards as
   `<model-id>@<parameter>`.
 - Added metadata for Google Gemini models.
+- Allows all vLLM versions from v0.8.0 again, as the issue with the generation output
+  has been resolved. This was due to `LLM.generate` not working properly anymore -
+  instead, we now use `LLM.chat` for vLLM models.
 
 ### Changed
 - Now does not use logprobs in text classification tasks with Google VertexAI models, as
