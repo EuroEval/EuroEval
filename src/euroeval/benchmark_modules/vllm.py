@@ -381,7 +381,9 @@ class VLLMModel(HuggingFaceEncoderModel):
         for _ in range(num_attempts):
             try:
                 raw_outputs = self._model.chat(
-                    messages=[dict(role="user", content=prompt) for prompt in prompts],
+                    messages=[
+                        [dict(role="user", content=prompt)] for prompt in prompts
+                    ],
                     sampling_params=sampling_params,
                     use_tqdm=(not input_is_a_test),
                     lora_request=self.buffer.get("lora_request"),
