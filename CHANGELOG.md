@@ -7,7 +7,14 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 
 ## [Unreleased]
+### Added
+- Added `google-auth` to deps to support benchmarking Gemini models easier. It is a very
+  small package (~270 KB), so it should not affect the installation size significantly.
 
+### Changed
+- Now does not use logprobs in text classification tasks with Google Gemini models, as
+  they heavily rate limit logprobs usage. This shouldn't affect the scores significantly
+  in any case, as the models are very confident in their predictions.
 
 
 ## [v15.4.2] - 2025-03-31
