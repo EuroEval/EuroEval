@@ -40,7 +40,6 @@ dependencies = [
     "demjson3>=3.0.6",
     "ollama>=0.4.7",
     "peft>=0.15.0",
-    "google-auth>=2.38.0",
 ]
 
 [project.optional-dependencies]
