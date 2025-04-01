@@ -1469,6 +1469,23 @@ MLQA_ES_CONFIG = DatasetConfig(
     max_generated_tokens=32,
 )
 
+TYDIQA_FI_CONFIG = DatasetConfig(
+    name="tydiqa-fi",
+    pretty_name="the Finnish part of the TydiQA reading comprehension dataset",
+    huggingface_id="EuroEval/tydiqa-fi-mini",
+    task=RC,
+    languages=[FI],
+    labels=["start_positions", "end_positions"],
+    prompt_prefix="Seuraavassa on tekstejä ja niihin liittyviä kysymyksiä ja "
+    "vastauksia.",
+    prompt_template="Teksti: {text}\nKysymys: {question}\nVastaa enintään 3 "
+    "sanalla: {label}",
+    instruction_prompt="Teksti: {text}\n\nVastaa seuraavaan kysymykseen yllä "
+    "olevasta tekstistä enintään 3 sanalla.\n\nKysymys: {question}",
+    num_few_shot_examples=4,
+    max_generated_tokens=32,
+)
+
 ### SUMMARIZATION DATASETS ###
 
 NORDJYLLAND_NEWS_CONFIG = DatasetConfig(

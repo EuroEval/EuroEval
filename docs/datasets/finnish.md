@@ -68,6 +68,73 @@ $ euroeval --model <model-id> --dataset scandisent-fi
 
 ## Reading Comprehension
 
+### TydiQA-fi
+
+This question-answering dataset was published in [this paper](https://arxiv.org/abs/2003.05002).
+
+The original Finnish TydiQA dataset contains 6,855 training and 782 validation samples (we use the [secondary task subset](https://huggingface.co/datasets/google-research-datasets/tydiqa/viewer/secondary_task?views%5B%5D=secondary_task_train)).  We created a 1,024 / 256 / 2,024 split, where the samples from the train and validation split are sampled from the original train and validation splits, respectively. The test set consists of the remaining samples from the original validation split + additional samples from the original train split.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "question": "Kuka näytteli Dumbledorea Harry Potter elokuvissa?",
+  "context": "Dumbledorea esittää kirjasarjasta tehdyssä elokuvasarjassa Richard Harris kahdessa ensimmäisessä elokuvassa. Harrisin kuoltua Michael Gambon esitti hahmoa sarjan lopuissa elokuvissa.",
+  "answers": {
+    "text": ["Richard Harris kahdessa ensimmäisessä elokuvassa. Harrisin kuoltua Michael Gambon"],
+    "answer_start": [59]
+  }
+}
+
+```json
+{
+  "question": "Milloin Cristiano Ronaldo liittyi Juventukseen?",
+  "context": "Ronaldo siirtyi heinäkuussa 2018 Juventukseen 105 miljoonalla eurolla. Sopimus on nelivuotinen, ja sen aikana hän tienaa verojen jälkeen noin 120 miljoonaa euroa.[133]",
+  "answers": {
+    "text": ["heinäkuussa 2018"],
+    "answer_start": [16]
+  }
+}
+```json
+{
+  "question": "Kuka hallitsi Mithridates VI jälkeen?",
+  "context": "Mithridates laajensi valtakuntaansa ympäri Mustanmeren rantoja, ja hän ajautui kolmesti sotaan Rooman valtakuntaa vastaan. Ensimmäisessä sodassa (89 eaa.–85 eaa.) hän valtasi suuren osan Vähää-Aasiaa ja Rooman valtakunnalle kuuluneet osat, jolloin hänen sanotaan teloittaneen 80000 roomalaista. Mithridates valtasi myös Kreikan, mutta konsuli Sulla kukisti hänen joukkonsa vuonna 85 eaa., ja Mithridateen oli luovuttava valloituksistaan. Toinen sota (83 eaa.–81 eaa.) oli suppeampi laajuudeltaan. Kolmannessa sodassa (73 eaa.–63 eaa.) roomalaiset sotapäälliköt Lucullus ja Pompeius kukistivat Mithridateen perusteellisesti. Mithridates surmasi tai surmautti itsensä jouduttuaan poikansa Farnakes II:n syrjäyttämäksi.",
+  "answers": {
+    "text": ["Farnakes II"],
+    "answer_start": [687]
+  }
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 4
+- Prefix prompt:
+  ```
+  Seuraavassa on tekstejä ja niihin liittyviä kysymyksiä ja vastauksia.
+  ```
+- Base prompt template:
+  ```
+  Teksti: {text}
+  Kysymys: {question}
+  Vastaa enintään 3 sanalla: {label}
+  ```
+- Instruction-tuned prompt template:
+  ```
+  Teksti: {text}
+
+  Vastaa seuraavaan kysymykseen yllä olevasta tekstistä enintään 3 sanalla.
+
+  Kysymys: {question}
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+$ euroeval --model <model-id> --dataset tydiqa-fi
+```
+
 ## Knowledge
 
 ## Common-sense Reasoning
