@@ -136,6 +136,21 @@ def test_benchmark_anthropic(
 
 
 @pytest.mark.skipif(
+    condition=os.getenv("GEMINI_API_KEY") is None,
+    reason="Gemini API key is not available.",
+)
+def test_benchmark_gemini(
+    benchmarker: Benchmarker, task: Task, language: Language, gemini_model_id: str
+) -> None:
+    """Test that a Gemini model can be benchmarked."""
+    benchmark_result = benchmarker.benchmark(
+        model=gemini_model_id, task=task.name, language=language.code
+    )
+    assert isinstance(benchmark_result, list)
+    assert all(isinstance(result, BenchmarkResult) for result in benchmark_result)
+
+
+@pytest.mark.skipif(
     condition=os.system("uv run ollama -v") != 0, reason="Ollama is not available."
 )
 def test_benchmark_ollama(
