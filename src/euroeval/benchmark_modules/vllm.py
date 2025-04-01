@@ -25,6 +25,7 @@ from urllib3.exceptions import RequestError
 
 from ..constants import (
     GENERATIVE_PIPELINE_TAGS,
+    MAX_CONTEXT_LENGTH,
     MAX_LOGPROBS,
     MERGE_TAGS,
     REASONING_MAX_TOKENS,
@@ -940,7 +941,7 @@ def load_model_and_tokenizer(
     if len(true_max_model_len_candidates) > 0:
         true_max_model_len = min(true_max_model_len_candidates)
     else:
-        true_max_model_len = 5_000
+        true_max_model_len = MAX_CONTEXT_LENGTH
 
     clear_vllm()
 
@@ -951,7 +952,7 @@ def load_model_and_tokenizer(
             model=model_id,
             tokenizer=model_id,
             gpu_memory_utilization=0.95,
-            max_model_len=min(true_max_model_len, 5_000),
+            max_model_len=min(true_max_model_len, MAX_CONTEXT_LENGTH),
             download_dir=download_dir,
             trust_remote_code=benchmark_config.trust_remote_code,
             revision=revision,

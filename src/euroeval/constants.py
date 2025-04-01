@@ -7,6 +7,13 @@ from .tasks import NER
 DUMMY_FILL_VALUE = 100
 
 
+# This is the maximum allowed context length for models for the purpose of this
+# benchmark. We will still report the models' true maximum context length in the
+# metadata, but we won't use it for evaluation, as vLLM needs to allocate memory for
+# all tokens in the context.
+MAX_CONTEXT_LENGTH = 5_000
+
+
 # We need to raise the amount of tokens generated for reasoning models, to give them
 # time to think
 REASONING_MAX_TOKENS = 8_192
