@@ -80,9 +80,6 @@ logger = logging.getLogger("euroeval")
 
 VOCAB_SIZE_MAPPING = {
     # OpenAI models
-    r"(text-)?(ada|babbage|curie|davinci)(-001)?": 50_257,
-    r"(code|text)-davinci-00[2-9]": 50_281,
-    r"gpt-3.5-turbo(-16k)?(-[0-9]{4})?": 100_256,
     r"gpt-4-(32k)?(-[0-9]{4})?": 100_256,
     r"gpt-4-[0-9]{4}-preview": 100_256,
     r"gpt-4-turbo(-[0-9]{4}-[0-9]{2}-[0-9]{2})?": 100_256,
@@ -91,20 +88,14 @@ VOCAB_SIZE_MAPPING = {
     r"gpt-4o(-mini)?(-[0-9]{4}-[0-9]{2}-[0-9]{2})?": 200_019,
     r"o[1-9](-mini|-preview)?(-[0-9]{4}-[0-9]{2}-[0-9]{2})?": -1,
     # Anthropic models
-    r"claude-[1-9](-[1-9])?-(opus|sonnet|haiku)-[0-9]{8}": -1,
+    r"(anthropic/)?claude-[1-9](-[1-9])?-(opus|sonnet|haiku)-[0-9]{8}": -1,
     # Gemini models
-    r"gemini-[1-9]\.[0-9]-(flash|pro).*": -1,
+    r"(gemini/)?gemini-[1-9]\.[0-9]-(flash|pro).*": 256_128,
 }
 
 
 MODEL_MAX_LENGTH_MAPPING = {
     # OpenAI models
-    r"(text-)?(ada|babbage|curie|davinci)(-001)?": 2_050,
-    r"text-davinci-00[2-9]": 4_098,
-    r"code-davinci-00[1-9]": 8_002,
-    r"gpt-3.5-turbo-0613": 4_096,
-    r"gpt-3.5-turbo(-[0-9]{4})?": 16_385,
-    r"gpt-3.5-turbo-16k(-[0-9]{4})?": 16_384,
     r"gpt-4(-[0-9]{4})?": 8_191,
     r"gpt-4-32k(-[0-9]{4})?": 32_767,
     r"gpt-4-[0-9]{4}-preview": 128_000,
@@ -116,34 +107,24 @@ MODEL_MAX_LENGTH_MAPPING = {
     r"o1(-[0-9]{4}-[0-9]{2}-[0-9]{2})?": 200_000,
     r"o[2-9](-mini|-preview)?(-[0-9]{4}-[0-9]{2}-[0-9]{2})?": 200_000,
     # Anthropic models
-    r"claude-[1-9](-[1-9])?-(opus|sonnet|haiku)-[0-9]{8}": 200_000,
+    r"(anthropic/)?claude-[1-9](-[1-9])?-(opus|sonnet|haiku)-[0-9]{8}": 200_000,
     # Gemini models
-    r"gemini-1\.5-flash.*": 1_048_576,
-    r"gemini-1\.5-pro.*": 2_097_152,
-    r"gemini-2\.(0|5).*": 1_048_576,
+    r"(gemini/)?gemini-1\.5-flash.*": 1_048_576,
+    r"(gemini/)?gemini-1\.5-pro.*": 2_097_152,
+    r"(gemini/)?gemini-2\.(0|5).*": 1_048_576,
 }
 
 
 NUM_PARAMS_MAPPING = {
     # OpenAI models
-    r"(text-)?ada(-001)?": 350_000_000,
-    r"(text-)?babbage(-001)?": 3_000_000_000,
-    r"(text-)?curie(-001)?": 13_000_000_000,
-    r"((text|code)-)?davinci(-00[1-9])?": 175_000_000_000,
-    r"gpt-(3.5|4)-turbo-((16|32)k)?(-[0-9]{4})?": -1,
-    r"gpt-4-[0-9]{4}-preview": -1,
-    r"gpt-4-turbo(-[0-9]{4}-[0-9]{2}-[0-9]{2})?": -1,
-    r"gpt-4-(vision|turbo)(-preview)?": -1,
-    r"gpt-3.5-turbo-instruct(-[0-9]{4})?": -1,
-    r"gpt-4o(-[0-9]{4}-[0-9]{2}-[0-9]{2})?": -1,
-    r"gpt-4o-mini(-[0-9]{4}-[0-9]{2}-[0-9]{2})?": -1,
+    r"gpt-4.*": -1,
     r"o[1-9](-mini|-preview)?(-[0-9]{4}-[0-9]{2}-[0-9]{2})?": -1,
     # Anthropic models
-    r"claude-[1-9](-[1-9])?-(opus|sonnet|haiku)-[0-9]{8}": -1,
+    r"(anthropic/)?claude-*": -1,
     # Gemini models
-    r"gemini-1.5-flash-8b": 8_000_000_000,
-    r"gemini-1.5-flash-[0-9]+": -1,
-    r"gemini-2.(0|5).*": -1,
+    r"(gemini/)?gemini-1.5-flash-8b": 8_000_000_000,
+    r"(gemini/)?gemini-1.5-flash-[0-9]+": -1,
+    r"(gemini/)?gemini-2.(0|5).*": -1,
 }
 
 
