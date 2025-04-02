@@ -300,6 +300,11 @@ class LiteLLMModel(BenchmarkModule):
                     generation_kwargs.pop("top_logprobs")
                 elif any(msg.lower() in str(e).lower() for msg in temperature_messages):
                     generation_kwargs.pop("temperature")
+                elif isinstance(e, RateLimitError):
+                    raise InvalidModel(
+                        "You have encountered your rate limit for model "
+                        f"{self.model_config.model_id!r}. The error message was: {e}"
+                    )
                 else:
                     raise InvalidBenchmark(
                         f"Failed to generate text. The error message was: {e}"
