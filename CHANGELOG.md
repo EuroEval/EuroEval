@@ -29,6 +29,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Fixed
 - The Gemini-2.5-pro model uses different error messages than the other Gemini models,
   which caused an error when evaluating it. This has been fixed now.
+- Now registers the Gemini-2.5-pro model series as reasoning models, as otherwise they
+  did not generate any text as they were just generating reasoning tokens.
 
 
 ## [v15.4.2] - 2025-03-31
