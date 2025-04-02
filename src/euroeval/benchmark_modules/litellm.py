@@ -144,6 +144,7 @@ ALLOWED_PARAMS = {
 REASONING_MODELS = [
     r"o[1-9](-mini|-preview)?(-[0-9]{4}-[0-9]{2}-[0-9]{2})?",
     r"(gemini/)?gemini.*thinking.*",
+    r"(gemini/)?gemini-2.5-pro.*",
 ]
 
 
