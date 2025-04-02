@@ -14,8 +14,6 @@ from termcolor import colored
 warnings.filterwarnings("ignore", category=UserWarning)
 logging.getLogger("httpx").setLevel(logging.CRITICAL)
 logging.getLogger("datasets").setLevel(logging.CRITICAL)
-logging.getLogger("vllm").setLevel(logging.CRITICAL)
-os.environ["LOG_LEVEL"] = "CRITICAL"
 os.environ["VLLM_CONFIGURE_LOGGING"] = "0"
 
 # Set up logging
