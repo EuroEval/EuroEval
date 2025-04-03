@@ -123,10 +123,8 @@ class VLLMModel(HuggingFaceEncoderModel):
         ):
             raise NeedsExtraInstalled(extra="generative")
 
-        model, tokenizer, first_label_token_mapping = load_model_and_tokenizer(
-            dataset_config=dataset_config,
-            model_config=model_config,
-            benchmark_config=benchmark_config,
+        model, tokenizer = load_model_and_tokenizer(
+            model_config=model_config, benchmark_config=benchmark_config
         )
         self._model: LLM = model
         self._tokenizer: PreTrainedTokenizer = tokenizer
@@ -142,7 +140,6 @@ class VLLMModel(HuggingFaceEncoderModel):
             benchmark_config=benchmark_config,
         )
 
-        self.buffer["first_label_token_mapping"] = first_label_token_mapping
         self.buffer["instruction_model"] = self._tokenizer.chat_template is not None
         if self.model_config.adapter_base_model_id is not None:
             adapter_path = snapshot_download(
@@ -338,6 +335,12 @@ class VLLMModel(HuggingFaceEncoderModel):
             )
         else:
             logits_processor = None
+
+        # Get the mapping from labels to the first token in the label. We call this each
+        # time we generate a new dataset since the dataset config can change
+        self.buffer["first_label_token_mapping"] = get_first_label_token_mapping(
+            dataset_config=self.dataset_config, tokenizer=self._tokenizer
+        )
 
         # Define the parameters used for vLLM generation
         max_tokens: int = (
@@ -849,25 +852,18 @@ class VLLMModel(HuggingFaceEncoderModel):
 
 
 def load_model_and_tokenizer(
-    dataset_config: DatasetConfig,
-    model_config: ModelConfig,
-    benchmark_config: BenchmarkConfig,
-) -> "tuple[LLM, PreTrainedTokenizer, dict[str, str] | bool]":
+    model_config: ModelConfig, benchmark_config: BenchmarkConfig
+) -> "tuple[LLM, PreTrainedTokenizer]":
     """Load the model and tokenizer.
 
     Args:
-        dataset_config:
-            The dataset configuration.
         model_config:
             The model configuration.
         benchmark_config:
             The benchmark configuration.
 
     Returns:
-        A triple (model, tokenizer, first_label_token_mapping), with the loaded model,
-        tokenizer, and a mapping from the labels to the first token in each label, or
-        alternatively a Boolean value of whether the model should output scores or not
-        (if the mapping is returned then the model will always output scores).
+        A pair (model, tokenizer), with the loaded model and tokenizer
     """
     # Prefer base model ID if the model is an adapter - the adapter will be added on
     # during inference in this case
@@ -960,10 +956,6 @@ def load_model_and_tokenizer(
         token=benchmark_config.api_key or os.getenv("HUGGINGFACE_API_KEY") or True,
     )
 
-    first_label_token_mapping = get_first_label_token_mapping(
-        dataset_config=dataset_config, tokenizer=tokenizer
-    )
-
     clear_vllm()
 
     executor_backend = "ray" if torch.cuda.device_count() > 1 else "mp"
@@ -984,7 +976,6 @@ def load_model_and_tokenizer(
             quantization=quantization,
             dtype=dtype,
             enforce_eager=True,
-            max_logprobs=MAX_LOGPROBS if bool(first_label_token_mapping) else None,
             # TEMP: Prefix caching isn't supported with sliding window in vLLM yet,
             # so we disable it for now
             enable_prefix_caching=False,
@@ -1010,7 +1001,7 @@ def load_model_and_tokenizer(
     model._run_engine = MethodType(_run_engine_with_fixed_progress_bars, model)
     model.config = hf_model_config
 
-    return model, tokenizer, first_label_token_mapping
+    return model, tokenizer
 
 
 def load_tokenizer(
