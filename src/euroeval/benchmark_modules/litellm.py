@@ -180,10 +180,6 @@ class LiteLLMModel(BenchmarkModule):
             benchmark_config=benchmark_config,
         )
 
-        self.buffer["first_label_token_mapping"] = get_first_label_token_mapping(
-            dataset_config=self.dataset_config, tokenizer=None
-        )
-
     @property
     def generative_type(self) -> GenerativeType | None:
         """Get the generative type of the model.
@@ -229,6 +225,12 @@ class LiteLLMModel(BenchmarkModule):
             api_key=self.benchmark_config.api_key,
             api_base=self.benchmark_config.api_base,
             api_version=self.benchmark_config.api_version,
+        )
+
+        # Get the mapping from labels to the first token in the label. We call this each
+        # time we generate a new dataset since the dataset config can change
+        self.buffer["first_label_token_mapping"] = get_first_label_token_mapping(
+            dataset_config=self.dataset_config, tokenizer=None
         )
 
         if self.buffer["first_label_token_mapping"]:
