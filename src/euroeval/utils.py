@@ -23,7 +23,6 @@ from requests.exceptions import RequestException
 from transformers import PreTrainedTokenizer, PreTrainedTokenizerBase
 from transformers import logging as tf_logging
 
-from .constants import TASK_GROUPS_USING_LOGPROBS
 from .data_models import DatasetConfig
 from .exceptions import InvalidModel, NaNValueInModelOutput
 
@@ -594,6 +593,9 @@ def check_if_model_should_output_scores(
     Returns:
         Whether the model should output scores.
     """
+    # Importing here to avoid circular imports
+    from .constants import TASK_GROUPS_USING_LOGPROBS
+
     # If we do not have any tokenizer, then we cannot check if the model should output
     # scores and we just assume it should if the dataset supports it
     if tokenizer is None:
