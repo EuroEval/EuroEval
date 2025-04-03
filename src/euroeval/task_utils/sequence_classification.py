@@ -203,7 +203,12 @@ def get_closest_logprobs_labels(
                         candidate_label not in first_label_token_mapping
                         for candidate_label in candidate_labels
                     ):
-                        breakpoint()
+                        raise InvalidBenchmark(
+                            "There is a label not present in the first label token "
+                            "mapping - this should never happen! Please report this "
+                            "issue to the EuroEval team at "
+                            "github.com/EuroEval/EuroEval/issues."
+                        )
 
                     candidate_output_labels = {
                         candidate_label
