@@ -597,7 +597,20 @@ def check_if_model_should_output_scores(
     # If we do not have any tokenizer, then we cannot check if the model should output
     # scores and we just assume it should if the dataset supports it
     if tokenizer is None:
-        return dataset_config.task.task_group not in TASK_GROUPS_USING_LOGPROBS
+        output_scores = dataset_config.task.task_group not in TASK_GROUPS_USING_LOGPROBS
+        if output_scores:
+            log_once(
+                "The model will output scores, since the dataset supports it and no "
+                "tokenizer is available.",
+                level=logging.DEBUG,
+            )
+        else:
+            log_once(
+                "The model will not output scores, since the dataset does not support "
+                "it and no tokenizer is available.",
+                level=logging.DEBUG,
+            )
+        return output_scores
 
     # If there are labels associated with the dataset, and that the first token of each
     # label is distinct, then we can safely use the logprobs
@@ -606,9 +619,24 @@ def check_if_model_should_output_scores(
             tokenizer.tokenize(text=label)[0] for label in dataset_config.labels
         ]
         if len(first_tokens) == len(set(first_tokens)):
+            log_once(
+                "The model will output scores, since the labels are distinct.",
+                level=logging.DEBUG,
+            )
             return True
+        else:
+            log_once(
+                f"The model will not output scores, since the labels are not distinct. "
+                f"The first tokens for the labels {dataset_config.labels} are "
+                f"{first_tokens}"
+            )
+            return False
 
     # Otherwise, we assume that the model should not output scores, to avoid potential
     # evaluation errors. This will force the label extraction to rely on word edit
     # distance instead of logprobs.
+    log_once(
+        "The model will not output scores, since the dataset does not have labels.",
+        level=logging.DEBUG,
+    )
     return False
