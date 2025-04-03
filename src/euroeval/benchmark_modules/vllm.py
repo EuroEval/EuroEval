@@ -123,7 +123,7 @@ class VLLMModel(HuggingFaceEncoderModel):
         ):
             raise NeedsExtraInstalled(extra="generative")
 
-        model, tokenizer, self.first_label_token_mapping = load_model_and_tokenizer(
+        model, tokenizer, first_label_token_mapping = load_model_and_tokenizer(
             dataset_config=dataset_config,
             model_config=model_config,
             benchmark_config=benchmark_config,
@@ -142,7 +142,7 @@ class VLLMModel(HuggingFaceEncoderModel):
             benchmark_config=benchmark_config,
         )
 
-        self.buffer["output_scores"] = bool(self.first_label_token_mapping)
+        self.buffer["first_label_token_mapping"] = first_label_token_mapping
         self.buffer["instruction_model"] = self._tokenizer.chat_template is not None
         if self.model_config.adapter_base_model_id is not None:
             adapter_path = snapshot_download(
@@ -185,7 +185,7 @@ class VLLMModel(HuggingFaceEncoderModel):
                 return partial(
                     sequence_classification.extract_labels_from_generation,
                     dataset_config=self.dataset_config,
-                    first_label_token_mapping=self.first_label_token_mapping,
+                    first_label_token_mapping=self.buffer["first_label_token_mapping"],
                 )
             case TaskGroup.TEXT_TO_TEXT:
                 return text_to_text.extract_labels_from_generation
@@ -864,7 +864,7 @@ def load_model_and_tokenizer(
             The benchmark configuration.
 
     Returns:
-        A triple (model, tokenizer, label_first_mapping), with the loaded model,
+        A triple (model, tokenizer, first_label_token_mapping), with the loaded model,
         tokenizer, and a mapping from the labels to the first token in each label, or
         alternatively a Boolean value of whether the model should output scores or not
         (if the mapping is returned then the model will always output scores).
