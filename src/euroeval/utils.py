@@ -12,7 +12,6 @@ import typing as t
 import warnings
 from functools import cache
 from pathlib import Path
-from types import TracebackType
 
 import litellm
 import numpy as np
@@ -20,16 +19,19 @@ import requests
 import torch
 from datasets.utils import disable_progress_bar
 from requests.exceptions import RequestException
-from transformers import PreTrainedTokenizer, PreTrainedTokenizerBase
 from transformers import logging as tf_logging
 
-from .data_models import DatasetConfig
 from .exceptions import InvalidModel, NaNValueInModelOutput
 
 if importlib.util.find_spec("ray") is not None:
     import ray
 
 if t.TYPE_CHECKING:
+    from types import TracebackType
+
+    from transformers import PreTrainedTokenizer, PreTrainedTokenizerBase
+
+    from .data_models import DatasetConfig
     from .types import Predictions
 
 
@@ -286,7 +288,7 @@ class HiddenPrints:
         self,
         exc_type: t.Type[BaseException],
         exc_val: BaseException,
-        exc_tb: TracebackType,
+        exc_tb: "TracebackType",
     ) -> None:
         """Exit the context manager."""
         sys.stdout.close()
@@ -580,7 +582,7 @@ def get_package_version(package_name: str) -> str | None:
 
 
 def check_if_model_should_output_scores(
-    dataset_config: DatasetConfig, tokenizer: PreTrainedTokenizer | None
+    dataset_config: "DatasetConfig", tokenizer: "PreTrainedTokenizer | None"
 ) -> bool:
     """Check if the model should output scores.
 
