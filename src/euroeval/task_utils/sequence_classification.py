@@ -198,11 +198,10 @@ def get_closest_logprobs_labels(
 
                 # Get the candidate labels that starts with the generated label
                 if isinstance(first_label_token_mapping, dict):
-                    breakpoint()
                     candidate_output_labels = {
                         candidate_label
                         for candidate_label in candidate_labels
-                        if first_label_token_mapping[generated_label] == candidate_label
+                        if generated_label == first_label_token_mapping[candidate_label]
                     }
                 else:
                     candidate_output_labels = {
