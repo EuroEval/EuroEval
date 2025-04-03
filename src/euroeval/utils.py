@@ -621,10 +621,11 @@ def get_first_label_token_mapping(
     # If there are labels associated with the dataset, and that the first token of each
     # label is distinct, then we can safely use the logprobs
     if dataset_config.labels:
-        first_tokens = [
-            tokenizer.tokenize(text=dataset_config.prompt_label_mapping[label])[0]
+        local_labels = [
+            dataset_config.prompt_label_mapping[label]
             for label in dataset_config.labels
         ]
+        first_tokens = [tokenizer.tokenize(text=label)[0] for label in local_labels]
         if len(first_tokens) == len(set(first_tokens)):
             log_once(
                 "The model will output scores, since the labels are distinct.",
@@ -632,13 +633,12 @@ def get_first_label_token_mapping(
             )
             return {
                 label: first_token
-                for label, first_token in zip(dataset_config.labels, first_tokens)
+                for label, first_token in zip(local_labels, first_tokens)
             }
         else:
             log_once(
                 f"The model will not output scores, since the labels are not distinct. "
-                f"The first tokens for the labels {dataset_config.labels} are "
-                f"{first_tokens}"
+                f"The first tokens for the labels {local_labels} are {first_tokens}"
             )
             return False
 
