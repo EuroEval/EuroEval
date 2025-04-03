@@ -66,11 +66,7 @@ from ..task_utils import (
     token_classification,
 )
 from ..types import ExtractLabelsFunction
-from ..utils import (
-    check_if_model_should_output_scores,
-    create_model_cache_dir,
-    log_once,
-)
+from ..utils import create_model_cache_dir, get_first_label_token_mapping, log_once
 from .base import BenchmarkModule
 from .hf import HuggingFaceEncoderModel, load_hf_model_config, load_tokenizer
 
@@ -231,9 +227,12 @@ class LiteLLMModel(BenchmarkModule):
             api_version=self.benchmark_config.api_version,
         )
 
-        if check_if_model_should_output_scores(
-            dataset_config=self.dataset_config, tokenizer=None
-        ):
+        output_scores = bool(
+            get_first_label_token_mapping(
+                dataset_config=self.dataset_config, tokenizer=None
+            )
+        )
+        if output_scores:
             generation_kwargs["logprobs"] = True
             generation_kwargs["top_logprobs"] = MAX_LOGPROBS
 

@@ -61,12 +61,12 @@ from ..task_utils import (
 )
 from ..types import ExtractLabelsFunction
 from ..utils import (
-    check_if_model_should_output_scores,
     clear_memory,
     create_model_cache_dir,
     get_bos_token,
     get_end_of_chat_token_ids,
     get_eos_token,
+    get_first_label_token_mapping,
     get_min_cuda_compute_capability,
     log_once,
     should_prompts_be_stripped,
@@ -123,7 +123,7 @@ class VLLMModel(HuggingFaceEncoderModel):
         ):
             raise NeedsExtraInstalled(extra="generative")
 
-        model, tokenizer, output_scores = load_model_and_tokenizer(
+        model, tokenizer, self.first_label_token_mapping = load_model_and_tokenizer(
             dataset_config=dataset_config,
             model_config=model_config,
             benchmark_config=benchmark_config,
@@ -142,7 +142,7 @@ class VLLMModel(HuggingFaceEncoderModel):
             benchmark_config=benchmark_config,
         )
 
-        self.buffer["output_scores"] = output_scores
+        self.buffer["output_scores"] = bool(self.first_label_token_mapping)
         self.buffer["instruction_model"] = self._tokenizer.chat_template is not None
         if self.model_config.adapter_base_model_id is not None:
             adapter_path = snapshot_download(
@@ -185,6 +185,7 @@ class VLLMModel(HuggingFaceEncoderModel):
                 return partial(
                     sequence_classification.extract_labels_from_generation,
                     dataset_config=self.dataset_config,
+                    first_label_token_mapping=self.first_label_token_mapping,
                 )
             case TaskGroup.TEXT_TO_TEXT:
                 return text_to_text.extract_labels_from_generation
@@ -851,7 +852,7 @@ def load_model_and_tokenizer(
     dataset_config: DatasetConfig,
     model_config: ModelConfig,
     benchmark_config: BenchmarkConfig,
-) -> "tuple[LLM, PreTrainedTokenizer, bool]":
+) -> "tuple[LLM, PreTrainedTokenizer, dict[str, str] | bool]":
     """Load the model and tokenizer.
 
     Args:
@@ -863,8 +864,10 @@ def load_model_and_tokenizer(
             The benchmark configuration.
 
     Returns:
-        A triple (model, tokenizer, output_scores), with the loaded model, tokenizer,
-        and whether the model should output scores.
+        A triple (model, tokenizer, label_first_mapping), with the loaded model,
+        tokenizer, and a mapping from the labels to the first token in each label, or
+        alternatively a Boolean value of whether the model should output scores or not
+        (if the mapping is returned then the model will always output scores).
     """
     # Prefer base model ID if the model is an adapter - the adapter will be added on
     # during inference in this case
@@ -957,7 +960,7 @@ def load_model_and_tokenizer(
         token=benchmark_config.api_key or os.getenv("HUGGINGFACE_API_KEY") or True,
     )
 
-    output_scores = check_if_model_should_output_scores(
+    first_label_token_mapping = get_first_label_token_mapping(
         dataset_config=dataset_config, tokenizer=tokenizer
     )
 
@@ -981,7 +984,7 @@ def load_model_and_tokenizer(
             quantization=quantization,
             dtype=dtype,
             enforce_eager=True,
-            max_logprobs=MAX_LOGPROBS if output_scores else None,
+            max_logprobs=MAX_LOGPROBS if bool(first_label_token_mapping) else None,
             # TEMP: Prefix caching isn't supported with sliding window in vLLM yet,
             # so we disable it for now
             enable_prefix_caching=False,
@@ -1007,7 +1010,7 @@ def load_model_and_tokenizer(
     model._run_engine = MethodType(_run_engine_with_fixed_progress_bars, model)
     model.config = hf_model_config
 
-    return model, tokenizer, output_scores
+    return model, tokenizer, first_label_token_mapping
 
 
 def load_tokenizer(

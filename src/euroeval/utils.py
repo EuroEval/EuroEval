@@ -581,9 +581,9 @@ def get_package_version(package_name: str) -> str | None:
         return None
 
 
-def check_if_model_should_output_scores(
+def get_first_label_token_mapping(
     dataset_config: "DatasetConfig", tokenizer: "PreTrainedTokenizer | None"
-) -> bool:
+) -> dict[str, str] | bool:
     """Check if the model should output scores.
 
     Args:
@@ -593,7 +593,9 @@ def check_if_model_should_output_scores(
             The tokenizer, or None if not available.
 
     Returns:
-        Whether the model should output scores.
+        A mapping from labels to the first token in each label, or alternatively a
+        Boolean value indicating whether the model should output scores (if the mapping
+        is outputted then the model will always output scores).
     """
     # Importing here to avoid circular imports
     from .constants import TASK_GROUPS_USING_LOGPROBS
@@ -623,13 +625,15 @@ def check_if_model_should_output_scores(
             tokenizer.tokenize(text=dataset_config.prompt_label_mapping[label])[0]
             for label in dataset_config.labels
         ]
-        breakpoint()
         if len(first_tokens) == len(set(first_tokens)):
             log_once(
                 "The model will output scores, since the labels are distinct.",
                 level=logging.DEBUG,
             )
-            return True
+            return {
+                label: first_token
+                for label, first_token in zip(dataset_config.labels, first_tokens)
+            }
         else:
             log_once(
                 f"The model will not output scores, since the labels are not distinct. "
