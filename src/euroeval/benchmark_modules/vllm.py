@@ -347,7 +347,7 @@ class VLLMModel(HuggingFaceEncoderModel):
         )
         sampling_params = SamplingParams(
             max_tokens=max_tokens,
-            logprobs=MAX_LOGPROBS if self.buffer["output_scores"] else None,
+            logprobs=MAX_LOGPROBS if self.buffer["first_label_token_mapping"] else None,
             temperature=0.0,
             stop=[stop_token for stop_token in stop_tokens if stop_token],
             logits_processors=[logits_processor] if logits_processor else None,
@@ -419,7 +419,7 @@ class VLLMModel(HuggingFaceEncoderModel):
         completions = [completion.strip() for completion in completions]
 
         # Add logprobs scores to the output
-        if self.buffer["output_scores"]:
+        if self.buffer["first_label_token_mapping"]:
             scores: list[list[list[tuple[str, float]]]] = [
                 [
                     [
