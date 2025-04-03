@@ -10,10 +10,9 @@ from dataclasses import dataclass, field
 import pydantic
 import torch
 
-from euroeval.utils import get_package_version
-
 from .enums import Device, InferenceBackend, ModelType, TaskGroup
 from .types import ScoreDict
+from .utils import get_package_version
 
 
 @dataclass

@@ -37,12 +37,7 @@ from requests.exceptions import RequestException
 from tqdm.auto import tqdm
 from transformers import Trainer
 
-from ..constants import (
-    MAX_LOGPROBS,
-    REASONING_MAX_TOKENS,
-    TASK_GROUPS_USING_LOGPROBS,
-    TASKS_USING_JSON,
-)
+from ..constants import MAX_LOGPROBS, REASONING_MAX_TOKENS, TASKS_USING_JSON
 from ..data_models import (
     BenchmarkConfig,
     DatasetConfig,
@@ -71,7 +66,11 @@ from ..task_utils import (
     token_classification,
 )
 from ..types import ExtractLabelsFunction
-from ..utils import create_model_cache_dir, log_once
+from ..utils import (
+    check_if_model_should_output_scores,
+    create_model_cache_dir,
+    log_once,
+)
 from .base import BenchmarkModule
 from .hf import HuggingFaceEncoderModel, load_hf_model_config, load_tokenizer
 
@@ -232,11 +231,9 @@ class LiteLLMModel(BenchmarkModule):
             api_version=self.benchmark_config.api_version,
         )
 
-        if self.dataset_config.task.task_group in TASK_GROUPS_USING_LOGPROBS:
-            # If this is a text classification task then we need to ensure that we can
-            # distinguish between the labels when we only have access to the first
-            # token
-            breakpoint()
+        if check_if_model_should_output_scores(
+            dataset_config=self.dataset_config, tokenizer=None
+        ):
             generation_kwargs["logprobs"] = True
             generation_kwargs["top_logprobs"] = MAX_LOGPROBS
 

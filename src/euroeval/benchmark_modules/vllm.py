@@ -29,7 +29,6 @@ from ..constants import (
     MAX_LOGPROBS,
     MERGE_TAGS,
     REASONING_MAX_TOKENS,
-    TASK_GROUPS_USING_LOGPROBS,
     TASKS_USING_JSON,
     VLLM_BF16_MIN_CUDA_COMPUTE_CAPABILITY,
 )
@@ -62,6 +61,7 @@ from ..task_utils import (
 )
 from ..types import ExtractLabelsFunction
 from ..utils import (
+    check_if_model_should_output_scores,
     clear_memory,
     create_model_cache_dir,
     get_bos_token,
@@ -123,11 +123,10 @@ class VLLMModel(HuggingFaceEncoderModel):
         ):
             raise NeedsExtraInstalled(extra="generative")
 
-        output_scores = dataset_config.task.task_group in TASK_GROUPS_USING_LOGPROBS
-        model, tokenizer = load_model_and_tokenizer(
+        model, tokenizer, output_scores = load_model_and_tokenizer(
+            dataset_config=dataset_config,
             model_config=model_config,
             benchmark_config=benchmark_config,
-            output_scores=output_scores,
         )
         self._model: LLM = model
         self._tokenizer: PreTrainedTokenizer = tokenizer
@@ -849,20 +848,23 @@ class VLLMModel(HuggingFaceEncoderModel):
 
 
 def load_model_and_tokenizer(
-    model_config: ModelConfig, benchmark_config: BenchmarkConfig, output_scores: bool
-) -> "tuple[LLM, PreTrainedTokenizer]":
+    dataset_config: DatasetConfig,
+    model_config: ModelConfig,
+    benchmark_config: BenchmarkConfig,
+) -> "tuple[LLM, PreTrainedTokenizer, bool]":
     """Load the model and tokenizer.
 
     Args:
+        dataset_config:
+            The dataset configuration.
         model_config:
             The model configuration.
         benchmark_config:
             The benchmark configuration.
-        output_scores:
-            Whether to output scores.
 
     Returns:
-        The loaded model and tokenizer.
+        A triple (model, tokenizer, output_scores), with the loaded model, tokenizer,
+        and whether the model should output scores.
     """
     # Prefer base model ID if the model is an adapter - the adapter will be added on
     # during inference in this case
@@ -945,6 +947,20 @@ def load_model_and_tokenizer(
     else:
         true_max_model_len = MAX_CONTEXT_LENGTH
 
+    tokenizer = load_tokenizer(
+        model_id=model_config.model_id,
+        revision=model_config.revision,
+        adapter_base_model_id=model_config.adapter_base_model_id,
+        trust_remote_code=benchmark_config.trust_remote_code,
+        model_max_length=true_max_model_len,
+        model_cache_dir=model_config.model_cache_dir,
+        token=benchmark_config.api_key or os.getenv("HUGGINGFACE_API_KEY") or True,
+    )
+
+    output_scores = check_if_model_should_output_scores(
+        dataset_config=dataset_config, tokenizer=tokenizer
+    )
+
     clear_vllm()
 
     executor_backend = "ray" if torch.cuda.device_count() > 1 else "mp"
@@ -991,17 +1007,7 @@ def load_model_and_tokenizer(
     model._run_engine = MethodType(_run_engine_with_fixed_progress_bars, model)
     model.config = hf_model_config
 
-    tokenizer = load_tokenizer(
-        model_id=model_config.model_id,
-        revision=model_config.revision,
-        adapter_base_model_id=model_config.adapter_base_model_id,
-        trust_remote_code=benchmark_config.trust_remote_code,
-        model_max_length=true_max_model_len,
-        model_cache_dir=model_config.model_cache_dir,
-        token=benchmark_config.api_key or os.getenv("HUGGINGFACE_API_KEY") or True,
-    )
-
-    return model, tokenizer
+    return model, tokenizer, output_scores
 
 
 def load_tokenizer(

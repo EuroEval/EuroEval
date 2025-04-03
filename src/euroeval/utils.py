@@ -23,6 +23,8 @@ from requests.exceptions import RequestException
 from transformers import PreTrainedTokenizer, PreTrainedTokenizerBase
 from transformers import logging as tf_logging
 
+from .constants import TASK_GROUPS_USING_LOGPROBS
+from .data_models import DatasetConfig
 from .exceptions import InvalidModel, NaNValueInModelOutput
 
 if importlib.util.find_spec("ray") is not None:
@@ -576,3 +578,37 @@ def get_package_version(package_name: str) -> str | None:
         return importlib.metadata.version(package_name)
     except importlib.metadata.PackageNotFoundError:
         return None
+
+
+def check_if_model_should_output_scores(
+    dataset_config: DatasetConfig, tokenizer: PreTrainedTokenizer | None
+) -> bool:
+    """Check if the model should output scores.
+
+    Args:
+        dataset_config:
+            The dataset configuration.
+        tokenizer:
+            The tokenizer, or None if not available.
+
+    Returns:
+        Whether the model should output scores.
+    """
+    # If we do not have any tokenizer, then we cannot check if the model should output
+    # scores and we just assume it should if the dataset supports it
+    if tokenizer is None:
+        return dataset_config.task.task_group not in TASK_GROUPS_USING_LOGPROBS
+
+    # If there are labels associated with the dataset, and that the first token of each
+    # label is distinct, then we can safely use the logprobs
+    if dataset_config.labels:
+        first_tokens = [
+            tokenizer.tokenize(text=label)[0] for label in dataset_config.labels
+        ]
+        if len(first_tokens) == len(set(first_tokens)):
+            return True
+
+    # Otherwise, we assume that the model should not output scores, to avoid potential
+    # evaluation errors. This will force the label extraction to rely on word edit
+    # distance instead of logprobs.
+    return False
