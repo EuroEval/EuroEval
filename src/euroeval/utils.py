@@ -628,7 +628,8 @@ def get_first_label_token_mapping(
         first_tokens = [tokenizer.tokenize(text=label)[0] for label in local_labels]
         if len(first_tokens) == len(set(first_tokens)):
             log_once(
-                "The model will output scores, since the labels are distinct.",
+                "The model will output scores, since the first tokens of the labels "
+                "are distinct.",
                 level=logging.DEBUG,
             )
             return {
@@ -637,8 +638,9 @@ def get_first_label_token_mapping(
             }
         else:
             log_once(
-                f"The model will not output scores, since the labels are not distinct. "
-                f"The first tokens for the labels {local_labels} are {first_tokens}"
+                "The model will not output scores, since the first tokens of the "
+                "labels are not distinct. The first tokens for the labels "
+                f"{local_labels} are {first_tokens}"
             )
             return False
 
