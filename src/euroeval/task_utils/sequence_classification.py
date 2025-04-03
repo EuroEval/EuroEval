@@ -198,6 +198,7 @@ def get_closest_logprobs_labels(
 
                 # Get the candidate labels that starts with the generated label
                 if isinstance(first_label_token_mapping, dict):
+                    breakpoint()
                     candidate_output_labels = {
                         candidate_label
                         for candidate_label in candidate_labels
