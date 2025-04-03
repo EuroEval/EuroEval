@@ -174,14 +174,14 @@ class LiteLLMModel(BenchmarkModule):
 
         raise_if_wrong_params(model_config=model_config, allowed_params=ALLOWED_PARAMS)
 
-        self.first_label_token_mapping = get_first_label_token_mapping(
-            dataset_config=self.dataset_config, tokenizer=None
-        )
-
         super().__init__(
             model_config=model_config,
             dataset_config=dataset_config,
             benchmark_config=benchmark_config,
+        )
+
+        self.buffer["first_label_token_mapping"] = get_first_label_token_mapping(
+            dataset_config=self.dataset_config, tokenizer=None
         )
 
     @property
@@ -231,7 +231,7 @@ class LiteLLMModel(BenchmarkModule):
             api_version=self.benchmark_config.api_version,
         )
 
-        if self.first_label_token_mapping:
+        if self.buffer["first_label_token_mapping"]:
             generation_kwargs["logprobs"] = True
             generation_kwargs["top_logprobs"] = MAX_LOGPROBS
 
@@ -618,7 +618,7 @@ class LiteLLMModel(BenchmarkModule):
                 return partial(
                     sequence_classification.extract_labels_from_generation,
                     dataset_config=self.dataset_config,
-                    first_label_token_mapping=self.first_label_token_mapping,
+                    first_label_token_mapping=self.buffer["first_label_token_mapping"],
                 )
             case TaskGroup.TEXT_TO_TEXT:
                 return text_to_text.extract_labels_from_generation
