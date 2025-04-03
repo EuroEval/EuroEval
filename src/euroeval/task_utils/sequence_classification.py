@@ -10,6 +10,7 @@ import numpy as np
 from evaluate import EvaluationModule
 
 from ..data_models import BenchmarkConfig, GenerativeModelOutput
+from ..exceptions import InvalidBenchmark
 from ..utils import log_once, raise_if_model_output_contains_nan_values
 
 if t.TYPE_CHECKING:
@@ -225,7 +226,7 @@ def get_closest_logprobs_labels(
                     else:
                         output_label = candidate_output_labels.pop()
                         candidate_output_labels.add(output_label)
-                        log_once(
+                        raise InvalidBenchmark(
                             "Multiple candidate labels found for the generated label "
                             f"{generated_label!r}: {candidate_output_labels}. Since "
                             "this is not the first generated label, we cannot "
@@ -233,8 +234,7 @@ def get_closest_logprobs_labels(
                             f"forced to use the arbitrary {output_label!r} as the "
                             "output label, potentially resulting in worse performance. "
                             "Please report this issue to the EuroEval team at "
-                            "github.com/EuroEval/EuroEval/issues.",
-                            level=logging.WARNING,
+                            "github.com/EuroEval/EuroEval/issues."
                         )
 
             if output_label is not None:
