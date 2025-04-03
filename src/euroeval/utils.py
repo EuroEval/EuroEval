@@ -622,6 +622,7 @@ def check_if_model_should_output_scores(
         first_tokens = [
             tokenizer.tokenize(text=label)[0] for label in dataset_config.labels
         ]
+        breakpoint()
         if len(first_tokens) == len(set(first_tokens)):
             log_once(
                 "The model will output scores, since the labels are distinct.",
