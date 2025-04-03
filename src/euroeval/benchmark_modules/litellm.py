@@ -233,6 +233,10 @@ class LiteLLMModel(BenchmarkModule):
         )
 
         if self.dataset_config.task.task_group in TASK_GROUPS_USING_LOGPROBS:
+            # If this is a text classification task then we need to ensure that we can
+            # distinguish between the labels when we only have access to the first
+            # token
+            breakpoint()
             generation_kwargs["logprobs"] = True
             generation_kwargs["top_logprobs"] = MAX_LOGPROBS
 
