@@ -620,7 +620,8 @@ def check_if_model_should_output_scores(
     # label is distinct, then we can safely use the logprobs
     if dataset_config.labels:
         first_tokens = [
-            tokenizer.tokenize(text=label)[0] for label in dataset_config.labels
+            tokenizer.tokenize(text=dataset_config.prompt_label_mapping[label])[0]
+            for label in dataset_config.labels
         ]
         breakpoint()
         if len(first_tokens) == len(set(first_tokens)):
