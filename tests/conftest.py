@@ -161,6 +161,12 @@ def gemini_model_id() -> Generator[str, None, None]:
 
 
 @pytest.fixture(scope="session")
+def grok_model_id() -> Generator[str, None, None]:
+    """Yields a Grok model ID used in tests."""
+    yield "grok-2-1212"
+
+
+@pytest.fixture(scope="session")
 def ollama_model_id() -> Generator[str, None, None]:
     """Yields an Ollama model ID used in tests."""
     yield "ollama_chat/smollm2:135m"

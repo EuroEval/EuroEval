@@ -151,6 +151,20 @@ def test_benchmark_gemini(
 
 
 @pytest.mark.skipif(
+    condition=os.getenv("XAI_API_KEY") is None, reason="xAI API key is not available."
+)
+def test_benchmark_xai(
+    benchmarker: Benchmarker, task: Task, language: Language, grok_model_id: str
+) -> None:
+    """Test that a Grok model can be benchmarked."""
+    benchmark_result = benchmarker.benchmark(
+        model=grok_model_id, task=task.name, language=language.code
+    )
+    assert isinstance(benchmark_result, list)
+    assert all(isinstance(result, BenchmarkResult) for result in benchmark_result)
+
+
+@pytest.mark.skipif(
     condition=os.system("uv run ollama -v") != 0, reason="Ollama is not available."
 )
 def test_benchmark_ollama(
