@@ -421,7 +421,8 @@ class Benchmarker:
                             if benchmark_config.raise_errors:
                                 raise e
                             logger.info(e.message)
-                            overall_progress.update(1)
+                            remaining_tasks = len(dataset_configs) - dataset_configs.index(dataset_config) - 1
+                            overall_progress.update(remaining_tasks + 1)
                             break
                     else:
                         loaded_model.dataset_config = dataset_config
@@ -455,7 +456,8 @@ class Benchmarker:
                     if benchmark_config.raise_errors:
                         raise benchmark_output_or_err
                     logger.info(benchmark_output_or_err.message)
-                    overall_progress.update(1)
+                    remaining_configs = len(dataset_configs) - dataset_configs.index(dataset_config) - 1
+                    overall_progress.update(remaining_configs)
                     break
 
                 else:
