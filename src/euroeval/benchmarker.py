@@ -373,10 +373,10 @@ class Benchmarker:
         )
 
         current_benchmark_results: list[BenchmarkResult] = list()
-        for m_id in model_ids:
+        for model_id in model_ids:
             try:
                 model_config = get_model_config(
-                    model_id=m_id, benchmark_config=benchmark_config
+                    model_id=model_id, benchmark_config=benchmark_config
                 )
             except InvalidModel as e:
                 logger.info(e.message)
@@ -388,15 +388,16 @@ class Benchmarker:
                 # Skip if we have already benchmarked this model on this dataset and
                 # we are not forcing the benchmark
                 if not benchmark_config.force and model_has_been_benchmarked(
-                    model_id=m_id,
+                    model_id=model_id,
                     dataset=dataset_config.name,
                     few_shot=benchmark_config.few_shot,
                     validation_split=not benchmark_config.evaluate_test_split,
                     benchmark_results=self.benchmark_results,
                 ):
                     logger.debug(
-                        f"Skipping benchmarking {m_id} on {dataset_config.pretty_name},"
-                        " as it has already been benchmarked."
+                        f"Skipping benchmarking {model_id} on "
+                        f"{dataset_config.pretty_name}, as it "
+                        "has already been benchmarked."
                     )
                     overall_progress.update(1)
                     continue
@@ -421,7 +422,11 @@ class Benchmarker:
                             if benchmark_config.raise_errors:
                                 raise e
                             logger.info(e.message)
-                            remaining_tasks = len(dataset_configs) - dataset_configs.index(dataset_config) - 1
+                            remaining_tasks = (
+                                len(dataset_configs)
+                                - dataset_configs.index(dataset_config)
+                                - 1
+                            )
                             overall_progress.update(remaining_tasks + 1)
                             break
                     else:
@@ -445,7 +450,7 @@ class Benchmarker:
                     if benchmark_config.raise_errors:
                         raise benchmark_output_or_err
                     logger.info(
-                        f"{m_id} could not be benchmarked on "
+                        f"{model_id} could not be benchmarked on "
                         f"{dataset_config.pretty_name}. Skipping. The error message "
                         f"raised was {benchmark_output_or_err.message!r}."
                     )
@@ -456,7 +461,9 @@ class Benchmarker:
                     if benchmark_config.raise_errors:
                         raise benchmark_output_or_err
                     logger.info(benchmark_output_or_err.message)
-                    remaining_configs = len(dataset_configs) - dataset_configs.index(dataset_config) - 1
+                    remaining_configs = (
+                        len(dataset_configs) - dataset_configs.index(dataset_config) - 1
+                    )
                     overall_progress.update(remaining_configs)
                     break
 
