@@ -602,8 +602,8 @@ def get_first_label_token_mapping(
 
     # If we do not have any tokenizer, then we cannot check if the model should output
     # scores and we just assume it should if the dataset supports it
+    output_scores = dataset_config.task.task_group not in TASK_GROUPS_USING_LOGPROBS
     if tokenizer is None:
-        output_scores = dataset_config.task.task_group not in TASK_GROUPS_USING_LOGPROBS
         if output_scores:
             log_once(
                 "The model will output scores, since the dataset supports it and no "
@@ -620,10 +620,11 @@ def get_first_label_token_mapping(
 
     # If there are labels associated with the dataset, and that the first token of each
     # label is distinct, then we can safely use the logprobs
-    if dataset_config.labels:
+    if output_scores and dataset_config.labels:
         local_labels = [
             dataset_config.prompt_label_mapping[label]
             for label in dataset_config.labels
+            if label in dataset_config.prompt_label_mapping
         ]
         first_tokens = [tokenizer.tokenize(text=label)[0] for label in local_labels]
         if len(first_tokens) == len(set(first_tokens)):
