@@ -1,6 +1,6 @@
 [project]
 name = "EuroEval"
-version = "15.4.1.dev"
+version = "15.4.2.dev"
 description = "The robust European language model benchmark."
 readme = "README.md"
 authors = [
@@ -31,7 +31,7 @@ dependencies = [
     "sacremoses>=0.1.1",
     "more-itertools>=10.5.0",
     "tenacity>=9.0.0",
-    "litellm>=1.61.13",
+    "litellm>=1.63.0",
     "rouge-score>=0.1.2",
     "bert-score>=0.3.13",
     "levenshtein>=0.24.0",
@@ -46,7 +46,7 @@ dependencies = [
 generative = [
     "outlines>=0.1.11",
     "bitsandbytes>=0.43.1; platform_system == 'Linux'",
-    "vllm>=0.8.0,!=0.8.1; platform_system == 'Linux'",
+    "vllm>=0.8.0; platform_system == 'Linux'",
     "fbgemm-gpu>=1.0.0; platform_system == 'Linux'",
 ]
 human_evaluation = [
@@ -55,7 +55,7 @@ human_evaluation = [
 all = [
     "outlines>=0.1.11",
     "bitsandbytes>=0.43.1; platform_system == 'Linux'",
-    "vllm>=0.8.0,!=0.8.1; platform_system == 'Linux'",
+    "vllm>=0.8.0; platform_system == 'Linux'",
     "fbgemm-gpu>=1.0.0; platform_system == 'Linux'",
     "gradio>=4.26.0",
 ]

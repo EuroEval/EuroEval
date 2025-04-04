@@ -4,6 +4,7 @@
 ### Block unwanted terminal output that happens on importing external modules ###
 
 import logging
+import os
 import sys
 import warnings
 
@@ -14,7 +15,7 @@ warnings.filterwarnings("ignore", category=UserWarning)
 logging.getLogger("httpx").setLevel(logging.CRITICAL)
 logging.getLogger("datasets").setLevel(logging.CRITICAL)
 logging.getLogger("vllm").setLevel(logging.CRITICAL)
-logging.getLogger("vllm.platforms").setLevel(logging.CRITICAL)
+os.environ["VLLM_CONFIGURE_LOGGING"] = "0"
 
 # Set up logging
 fmt = colored("%(asctime)s", "light_blue") + " ⋅ " + colored("%(message)s", "green")
@@ -29,7 +30,6 @@ logging.basicConfig(
 ### Set the rest up ###
 
 import importlib.metadata  # noqa: E402
-import os  # noqa: E402
 
 from dotenv import load_dotenv  # noqa: E402
 

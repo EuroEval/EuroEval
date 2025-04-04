@@ -71,11 +71,10 @@ $ euroeval --model <model-id> --dataset sentipolc16
 ### MultiNERD IT
 
 This dataset was published in [this
-paper](https://aclanthology.org/2022.findings-naacl.60/) and
-consists of sentences from Wikipedia and Wikinews in 10 different languages. It is an
-extension of the combination of
-(WikiNEuRal)[https://www.github.com/Babelscape/wikineural] and
-(NER4EL)[https://www.github.com/Babelscape/ner4el]. The original test set was created
+paper](https://aclanthology.org/2022.findings-naacl.60/) and consists of sentences from
+Wikipedia and Wikinews in 10 different languages. It is an extension of the combination
+of [WikiNEuRal](https://www.github.com/Babelscape/wikineural) and
+[NER4EL](https://www.github.com/Babelscape/ner4el). The original test set was created
 from manual annotations, while the training set is based on an automatic annotation
 pipeline.
 
@@ -519,7 +518,7 @@ $ euroeval --model <model-id> --dataset hellaswag-it
 
 ## Summarization
 
-### IlPost-sum
+### IlPost-Sum
 
 This dataset was published in [this paper](https://www.mdpi.com/2078-2489/13/5/228) and
 consists of news articles from [Il Post](https://www.ilpost.it/). The summaries were

@@ -44,6 +44,7 @@ from ..constants import (
     DUMMY_FILL_VALUE,
     GENERATIVE_PIPELINE_TAGS,
     LOCAL_MODELS_REQUIRED_FILES,
+    MAX_CONTEXT_LENGTH,
     MERGE_TAGS,
 )
 from ..data_models import BenchmarkConfig, DatasetConfig, HFModelInfo, ModelConfig, Task
@@ -243,6 +244,15 @@ class HuggingFaceEncoderModel(BenchmarkModule):
         # that are less than 128
         all_max_lengths = [
             max_length for max_length in all_max_lengths if max_length >= 128
+        ]
+
+        # We remove the upper cap of maximum context length for the model, as it is
+        # highly unlikely that this is the model's actual maximum context length - we
+        # would rather not report a value than report an incorrect one.
+        all_max_lengths = [
+            max_length
+            for max_length in all_max_lengths
+            if max_length != MAX_CONTEXT_LENGTH
         ]
 
         if len(list(all_max_lengths)) > 0:
@@ -732,31 +742,35 @@ def get_model_repo_info(
     # If the model does not exist locally, then we get the model info from the Hugging
     # Face Hub
     if model_info is None:
-        try:
-            model_info = hf_api.model_info(
-                repo_id=model_id, revision=revision, token=token
-            )
-        except (GatedRepoError, LocalTokenNotFoundError) as e:
+        num_attempts = 3
+        for _ in range(num_attempts):
             try:
-                hf_whoami(token=token)
-                logger.warning(
-                    f"Could not access the model {model_id} with the revision "
-                    f"{revision}. The error was {str(e)!r}."
+                model_info = hf_api.model_info(
+                    repo_id=model_id, revision=revision, token=token
                 )
+                break
+            except (GatedRepoError, LocalTokenNotFoundError) as e:
+                try:
+                    hf_whoami(token=token)
+                    logger.warning(
+                        f"Could not access the model {model_id} with the revision "
+                        f"{revision}. The error was {str(e)!r}."
+                    )
+                    return None
+                except LocalTokenNotFoundError:
+                    raise NeedsAdditionalArgument(
+                        cli_argument="--api-key",
+                        script_argument="api_key=<your-api-key>",
+                        run_with_cli=benchmark_config.run_with_cli,
+                    )
+            except (RepositoryNotFoundError, HFValidationError):
                 return None
-            except LocalTokenNotFoundError:
-                raise NeedsAdditionalArgument(
-                    cli_argument="--api-key",
-                    script_argument="api_key=<your-api-key>",
-                    run_with_cli=benchmark_config.run_with_cli,
-                )
-        except (RepositoryNotFoundError, HFValidationError):
-            return None
-        except (OSError, RequestException):
-            if internet_connection_available():
-                raise HuggingFaceHubDown()
-            else:
+            except (OSError, RequestException):
+                if internet_connection_available():
+                    continue
                 raise NoInternetConnection()
+        else:
+            raise HuggingFaceHubDown()
 
     # Get all the Hugging Face repository tags for the model. If the model is an adapter
     # model, then we also get the tags for the base model
@@ -1136,8 +1150,7 @@ def align_model_and_tokenizer(
     Returns:
         The fixed model and tokenizer.
     """
-    # Ensure that the model max length is at most 5,000, to avoid OOM errors
-    model_max_length = min(model_max_length, 5_000)
+    model_max_length = min(model_max_length, MAX_CONTEXT_LENGTH)
 
     if model_max_length > 0:
         tokenizer.model_max_length = model_max_length

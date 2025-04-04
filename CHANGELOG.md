@@ -7,6 +7,44 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 
 ## [Unreleased]
+### Added
+- Now allows supplying a parameter to API models, which is done by using
+  `<model-id>@<parameter>` as the model ID (only a single parameter is supported). The
+  parameters allowed are "low" and "high" for OpenAI models (which is the reasoning
+  effort of the model, supported by the o1- and o3-series, default is "medium"), and
+  "thinking" for Anthropic models, to enable thinking mode (supported for
+  Claude-Sonnet-3.7+). These will appear in the leaderboards as
+  `<model-id>@<parameter>`.
+- Added metadata for Google Gemini and xAI Grok models.
+- Allows all vLLM versions from v0.8.0 again, as the issue with the generation output
+  has been resolved. This was due to `LLM.generate` not working properly anymore -
+  instead, we now use `LLM.chat` for vLLM models.
+
+### Changed
+- Now does not use logprobs in text classification tasks with Google VertexAI models, as
+  they heavily rate limit logprobs usage. This shouldn't affect the scores significantly
+  in any case, as the models are very confident in their predictions.
+- Updated `litellm` to `>=1.63.0`, allowing better support for reasoning models.
+
+### Fixed
+- The Gemini-2.5-pro model uses different error messages than the other Gemini models,
+  which caused an error when evaluating it. This has been fixed now.
+- Now registers the Gemini-2.5-pro model series as reasoning models, as otherwise they
+  did not generate any text as they were just generating reasoning tokens.
+- Previously, if there were multiple labels whose first tokens were identical and that
+  the (generative) model did not output the label as the first output token, we would
+  randomly choose one of the labels, resulting in an evaluation error. This is very
+  rare, but *does* happen for very particular (model, dataset) pairs. If we are in this
+  case, we now resort to choosing the label with closest word edit distance instead of
+  relying on logprobs of the first token.
+
+
+## [v15.4.2] - 2025-03-31
+### Added
+- Now added version metadata to results, to easier track which versions of the various
+  dependencies were used when evaluating a model. This currently includes
+  `transformers`, `torch`, `vllm` and `outlines`.
+
 ### Changed
 - Changed the name of the German 'mlsum' summarisation dataset to 'mlsum-de', to reflect
   that it is the German version of the dataset, and to avoid confusion with the Spanish
@@ -19,6 +57,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   NER dataset [Turku NER](https://aclanthology.org/2020.lrec-1.567/), the summarisation dataset [XL-Sum-fi](https://huggingface.co/datasets/TurkuNLP/xlsum-fi).
 
 ### Fixed
+- Now uses `fp16` instead of `bf16` when evaluating decoder models on GPUs with CUDA
+  compatibility < 8.0. This was contributed by [@marksverdhei](https://github.com/marksverdhei) ✨
+- Corrected the name of the French sentiment dataset AlloCiné. This was contributed by
+  [@Alkarex](https://github.com/Alkarex) ✨
 - Evaluating a specific model revision did not work for adapter models, as there was a
   confusion between the revision of the adapter and the revision of the base model. We
   now use the revision for the adapter and use the latest revision for the base model.
@@ -32,8 +74,20 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   not be detected as generative models. This has been patched now, and will be fixed
   properly when [this transformers
   PR](https://github.com/huggingface/transformers/pull/37107) has been merged.
+- Force `vllm` v0.8.0 for now, as the severe degradation in generation output of some
+  models has not been resolved in versions v0.8.2 and v0.8.3.
+- Only accepts the local labels for text classification tasks when evaluating decoder
+  models now, where we before accepted both the local and English labels. The reason is
+  that this caused a confusion mat times when there was a unique local label starting
+  with a particular letter, but a different English label starting with the same letter,
+  causing some models to be evaluated on the wrong label.
+- When fetching the model information from the Hugging Face API we now attempt 3 times,
+  as the API sometimes fails. If it still fails after 3 attempts, we raise the
+  `HuggingFaceHubDown` exception.
 - Now uses `fp16` instead of `bf16` when evaluating decoder models on GPUs with CUDA
   compatibility < 8.0. This was contributed by [@marksverdhei](https://github.com/marksverdhei) ✨
+- Fixed docs for ScandiQA-da and ScandiQA-sv, where it was incorrectly stated that
+  the splits were made by considering the original train/validation/test splits.
 
 
 ## [v15.4.1] - 2025-03-25
@@ -237,7 +291,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 - Added support for French! 🇫🇷This includes the sentiment classification dataset
-  [Allocine](https://hf.co/datasets/tblard/allocine), the linguistic acceptability
+  [AlloCiné](https://hf.co/datasets/tblard/allocine), the linguistic acceptability
   dataset ScaLA with the [French Universal
   Dependencies](https://github.com/UniversalDependencies/UD_French-GSD), the reading
   comprehension dataset [FQuAD](https://hf.co/datasets/illuin/fquad) (and unofficially

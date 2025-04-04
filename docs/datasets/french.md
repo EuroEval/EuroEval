@@ -7,11 +7,11 @@ information about what these constitute.
 
 ## Sentiment Classification
 
-### Allocine
+### AlloCiné
 
 This dataset was published in [this Github
 repository](https://github.com/TheophileBlard/french-sentiment-analysis-with-bert) and
-features reviews from the French movie review website Allocine. The reviews range from
+features reviews from the French movie review website [AlloCiné](https://www.allocine.fr/). The reviews range from
 0.5 to 5 (inclusive), with steps of 0.5. The negative samples are reviews with a rating
 of at most 2, and the positive ones are reviews with a rating of at least 4. The reviews
 in between were discarded.

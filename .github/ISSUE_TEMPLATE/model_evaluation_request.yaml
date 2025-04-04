@@ -8,7 +8,7 @@ body:
 - type: input
   attributes:
     label: Model ID
-    description: What is the Hugging Face model ID?
+    description: What is the model ID, either on the Hugging Face Hub or on LiteLLM?
   validations:
     required: true
 - type: checkboxes
@@ -18,17 +18,9 @@ body:
       What languages should this model be evaluated on? Tick all that apply. If the
       model is multilingual (e.g., Mistral, Llama), then tick all the languages.
     options:
-      - label: Danish
-      - label: Dutch
-      - label: English
-      - label: Faroese
-      - label: French
-      - label: German
-      - label: Icelandic
-      - label: Italian
-      - label: Norwegian (Bokmål or Nynorsk)
-      - label: Spanish
-      - label: Swedish
+      - label: Romance languages (French, Italian, Spanish)
+      - label: Scandinavian languages (Danish, Faroese, Icelandic, Norwegian, Swedish)
+      - label: West Germanic languages (Dutch, English, German)
   validations:
     required: true
 - type: dropdown
@@ -48,6 +40,7 @@ body:
     options:
       - Small (<=8B parameters)
       - Large (>8B parameters)
+      - N/A
   validations:
     required: true
 - type: dropdown
@@ -57,6 +50,7 @@ body:
     options:
       - Not a merged model
       - Merged model
+      - N/A
   validations:
     required: true
 - type: markdown

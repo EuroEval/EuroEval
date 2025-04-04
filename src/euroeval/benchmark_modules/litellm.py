@@ -27,20 +27,17 @@ from litellm.exceptions import (
     BadRequestError,
     InternalServerError,
     NotFoundError,
+    RateLimitError,
     ServiceUnavailableError,
     Timeout,
 )
+from litellm.llms.vertex_ai.common_utils import VertexAIError
 from litellm.types.utils import ModelResponse
 from requests.exceptions import RequestException
 from tqdm.auto import tqdm
 from transformers import Trainer
 
-from ..constants import (
-    MAX_LOGPROBS,
-    REASONING_MAX_TOKENS,
-    TASK_GROUPS_USING_LOGPROBS,
-    TASKS_USING_JSON,
-)
+from ..constants import MAX_LOGPROBS, REASONING_MAX_TOKENS, TASKS_USING_JSON
 from ..data_models import (
     BenchmarkConfig,
     DatasetConfig,
@@ -69,7 +66,7 @@ from ..task_utils import (
     token_classification,
 )
 from ..types import ExtractLabelsFunction
-from ..utils import create_model_cache_dir, log_once
+from ..utils import create_model_cache_dir, get_first_label_token_mapping, log_once
 from .base import BenchmarkModule
 from .hf import HuggingFaceEncoderModel, load_hf_model_config, load_tokenizer
 
@@ -78,64 +75,80 @@ logger = logging.getLogger("euroeval")
 
 VOCAB_SIZE_MAPPING = {
     # OpenAI models
-    "(text-)?(ada|babbage|curie|davinci)(-001)?": 50_257,
-    "(code|text)-davinci-00[2-9]": 50_281,
-    "gpt-3.5-turbo(-16k)?(-[0-9]{4})?": 100_256,
-    "gpt-4-(32k)?(-[0-9]{4})?": 100_256,
-    "gpt-4-[0-9]{4}-preview": 100_256,
-    "gpt-4-turbo(-[0-9]{4}-[0-9]{2}-[0-9]{2})?": 100_256,
-    "gpt-4-(vision|turbo)(-preview)?": 100_256,
-    "gpt-3.5-turbo-instruct(-[0-9]{4})?": 100_256,
-    "gpt-4o(-mini)?(-[0-9]{4}-[0-9]{2}-[0-9]{2})?": 200_019,
-    "o[1-9](-mini|-preview)?(-[0-9]{4}-[0-9]{2}-[0-9]{2})?": -1,
+    r"gpt-4-(32k)?(-[0-9]{4})?": 100_256,
+    r"gpt-4-[0-9]{4}-preview": 100_256,
+    r"gpt-4-turbo(-[0-9]{4}-[0-9]{2}-[0-9]{2})?": 100_256,
+    r"gpt-4-(vision|turbo)(-preview)?": 100_256,
+    r"gpt-3.5-turbo-instruct(-[0-9]{4})?": 100_256,
+    r"gpt-4o(-mini)?(-[0-9]{4}-[0-9]{2}-[0-9]{2})?": 200_019,
+    r"o[1-9](-mini|-preview)?(-[0-9]{4}-[0-9]{2}-[0-9]{2})?": -1,
     # Anthropic models
-    "claude-[1-9](-[1-9])?-(opus|sonnet|haiku)-[0-9]{8}": -1,
+    r"(anthropic/)?claude-[1-9](-[1-9])?-(opus|sonnet|haiku)-[0-9]{8}": -1,
+    # Gemini models
+    r"(gemini/)?gemini-[1-9]\.[0-9]-(flash|pro).*": 256_128,
+    # xAI models
+    r"(xai/)?grok.*": -1,
 }
 
 
 MODEL_MAX_LENGTH_MAPPING = {
     # OpenAI models
-    "(text-)?(ada|babbage|curie|davinci)(-001)?": 2_050,
-    "text-davinci-00[2-9]": 4_098,
-    "code-davinci-00[1-9]": 8_002,
-    "gpt-3.5-turbo-0613": 4_096,
-    "gpt-3.5-turbo(-[0-9]{4})?": 16_385,
-    "gpt-3.5-turbo-16k(-[0-9]{4})?": 16_384,
-    "gpt-4(-[0-9]{4})?": 8_191,
-    "gpt-4-32k(-[0-9]{4})?": 32_767,
-    "gpt-4-[0-9]{4}-preview": 128_000,
-    "gpt-4-turbo(-[0-9]{4}-[0-9]{2}-[0-9]{2})?": 128_000,
-    "gpt-4-(vision|turbo)(-preview)?": 128_000,
-    "gpt-3.5-turbo-instruct(-[0-9]{4})?": 4_095,
-    "gpt-4o(-mini)?(-[0-9]{4}-[0-9]{2}-[0-9]{2})?": 128_000,
-    "o1-(mini|preview)(-[0-9]{4}-[0-9]{2}-[0-9]{2})?": 128_000,
-    "o1(-[0-9]{4}-[0-9]{2}-[0-9]{2})?": 200_000,
-    "o[2-9](-mini|-preview)?(-[0-9]{4}-[0-9]{2}-[0-9]{2})?": 200_000,
+    r"gpt-4(-[0-9]{4})?": 8_191,
+    r"gpt-4-32k(-[0-9]{4})?": 32_767,
+    r"gpt-4-[0-9]{4}-preview": 128_000,
+    r"gpt-4-turbo(-[0-9]{4}-[0-9]{2}-[0-9]{2})?": 128_000,
+    r"gpt-4-(vision|turbo)(-preview)?": 128_000,
+    r"gpt-3.5-turbo-instruct(-[0-9]{4})?": 4_095,
+    r"gpt-4o(-mini)?(-[0-9]{4}-[0-9]{2}-[0-9]{2})?": 128_000,
+    r"o1-(mini|preview)(-[0-9]{4}-[0-9]{2}-[0-9]{2})?": 128_000,
+    r"o1(-[0-9]{4}-[0-9]{2}-[0-9]{2})?": 200_000,
+    r"o[2-9](-mini|-preview)?(-[0-9]{4}-[0-9]{2}-[0-9]{2})?": 200_000,
     # Anthropic models
-    "claude-[1-9](-[1-9])?-(opus|sonnet|haiku)-[0-9]{8}": 200_000,
+    r"(anthropic/)?claude-[1-9](-[1-9])?-(opus|sonnet|haiku)-[0-9]{8}": 200_000,
+    # Gemini models
+    r"(gemini/)?gemini-1\.5-flash.*": 1_048_576,
+    r"(gemini/)?gemini-1\.5-pro.*": 2_097_152,
+    r"(gemini/)?gemini-2\.(0|5).*": 1_048_576,
+    # xAI models
+    r"(xai/)?grok.*": 131_072,
 }
 
 
 NUM_PARAMS_MAPPING = {
     # OpenAI models
-    "(text-)?ada(-001)?": 350_000_000,
-    "(text-)?babbage(-001)?": 3_000_000_000,
-    "(text-)?curie(-001)?": 13_000_000_000,
-    "((text|code)-)?davinci(-00[1-9])?": 175_000_000_000,
-    "gpt-(3.5|4)-turbo-((16|32)k)?(-[0-9]{4})?": -1,
-    "gpt-4-[0-9]{4}-preview": -1,
-    "gpt-4-turbo(-[0-9]{4}-[0-9]{2}-[0-9]{2})?": -1,
-    "gpt-4-(vision|turbo)(-preview)?": -1,
-    "gpt-3.5-turbo-instruct(-[0-9]{4})?": -1,
-    "gpt-4o(-[0-9]{4}-[0-9]{2}-[0-9]{2})?": -1,
-    "gpt-4o-mini(-[0-9]{4}-[0-9]{2}-[0-9]{2})?": -1,
-    "o[1-9](-mini|-preview)?(-[0-9]{4}-[0-9]{2}-[0-9]{2})?": -1,
+    r"gpt-4.*": -1,
+    r"o[1-9](-mini|-preview)?(-[0-9]{4}-[0-9]{2}-[0-9]{2})?": -1,
     # Anthropic models
-    "claude-[1-9](-[1-9])?-(opus|sonnet|haiku)-[0-9]{8}": -1,
+    r"(anthropic/)?claude-*": -1,
+    # Gemini models
+    r"(gemini/)?gemini-1.5-flash-8b": 8_000_000_000,
+    r"(gemini/)?gemini-1.5-flash-[0-9]+": -1,
+    r"(gemini/)?gemini-2.(0|5).*": -1,
+    # xAI models
+    r"(xai/)?grok.*": -1,
 }
 
 
-REASONING_MODELS = ["o[1-9](-mini|-preview)?(-[0-9]{4}-[0-9]{2}-[0-9]{2})?"]
+ALLOWED_PARAMS = {
+    # OpenAI models
+    r"gpt-4.*": [],
+    r"o[1-9](-mini|-preview)?(-[0-9]{4}-[0-9]{2}-[0-9]{2})?": ["low", "high"],
+    # Anthropic models
+    r"(anthropic/)?claude-3-.*": [],
+    r"(anthropic/)?claude-3.5-.*": [],
+    r"(anthropic/)?claude-3.7-sonnet.*": ["thinking"],
+    # Gemini models
+    r"(gemini/)?gemini-.*": [],
+    # xAI models
+    r"(xai/)?grok.*": [],
+}
+
+
+REASONING_MODELS = [
+    r"o[1-9](-mini|-preview)?(-[0-9]{4}-[0-9]{2}-[0-9]{2})?",
+    r"(gemini/)?gemini.*thinking.*",
+    r"(gemini/)?gemini-2.5-pro.*",
+]
 
 
 class LiteLLMModel(BenchmarkModule):
@@ -167,6 +180,8 @@ class LiteLLMModel(BenchmarkModule):
             "ollama/"
         ) or model_config.model_id.startswith("ollama_chat/")
 
+        raise_if_wrong_params(model_config=model_config, allowed_params=ALLOWED_PARAMS)
+
         super().__init__(
             model_config=model_config,
             dataset_config=dataset_config,
@@ -180,7 +195,9 @@ class LiteLLMModel(BenchmarkModule):
         Returns:
             The generative type of the model, or None if it has not been set yet.
         """
-        if re.fullmatch(
+        if self.model_config.revision == "thinking":
+            return GenerativeType.REASONING
+        elif re.fullmatch(
             pattern="|".join(REASONING_MODELS), string=self.model_config.model_id
         ):
             return GenerativeType.REASONING
@@ -218,7 +235,13 @@ class LiteLLMModel(BenchmarkModule):
             api_version=self.benchmark_config.api_version,
         )
 
-        if self.dataset_config.task.task_group in TASK_GROUPS_USING_LOGPROBS:
+        # Get the mapping from labels to the first token in the label. We call this each
+        # time we generate a new dataset since the dataset config can change
+        self.buffer["first_label_token_mapping"] = get_first_label_token_mapping(
+            dataset_config=self.dataset_config, tokenizer=None
+        )
+
+        if self.buffer["first_label_token_mapping"]:
             generation_kwargs["logprobs"] = True
             generation_kwargs["top_logprobs"] = MAX_LOGPROBS
 
@@ -227,6 +250,27 @@ class LiteLLMModel(BenchmarkModule):
                 "Prompt must contain 'json' for JSON tasks."
             )
             generation_kwargs["response_format"] = dict(type="json_object")
+            log_once(
+                "Enabling JSON response format for model "
+                f"{self.model_config.model_id!r}",
+                level=logging.DEBUG,
+            )
+
+        if self.model_config.revision == "thinking":
+            generation_kwargs["thinking"] = dict(
+                type="enabled", budget_tokens=REASONING_MAX_TOKENS
+            )
+            log_once(
+                f"Enabling thinking mode for model {self.model_config.model_id!r}",
+                level=logging.DEBUG,
+            )
+        elif self.model_config.revision in {"low", "high"}:
+            generation_kwargs["reasoning_effort"] = self.model_config.revision
+            log_once(
+                f"Enabling reasoning effort {self.model_config.revision!r} for model "
+                f"{self.model_config.model_id!r}",
+                level=logging.DEBUG,
+            )
 
         # This drops generation kwargs that are not supported by the model
         litellm.drop_params = True
@@ -235,39 +279,60 @@ class LiteLLMModel(BenchmarkModule):
         # handle using newlines as stop sequences, so we try both.
         num_attempts = 10
         for _ in range(num_attempts):
+            stop_messages = ["stop_sequences"]
+            logprobs_messages = [
+                "you are not allowed to request logprobs",
+                "you've reached the maximum number of requests with logprobs",
+                "logprobs is not supported",
+                "logprobs is not enabled",
+            ]
+            temperature_messages = [
+                "'temperature' is not supported with this model.",
+                "temperature is not supported with this model",
+            ]
             try:
                 model_response = litellm.completion(
                     messages=messages, max_retries=3, **generation_kwargs
                 )
                 break
-            except BadRequestError as e:
-                if "stop_sequences" in str(e).lower():
+            except (BadRequestError, RateLimitError) as e:
+                if any(msg.lower() in str(e).lower() for msg in stop_messages):
                     generation_kwargs["stop"] = None
-                elif "you are not allowed to request logprobs" in str(e).lower():
+                elif (
+                    any(msg.lower() in str(e).lower() for msg in logprobs_messages)
+                    # Special case for Vertex AI models, since they have strict rate
+                    # limits on using logprobs. They also have a cap of 5 logprobs, but
+                    # we ignore this since the rate limiting makes it unusable anyway.
+                    or (isinstance(e, VertexAIError) and "logprobs" in str(e).lower())
+                ):
                     generation_kwargs.pop("logprobs")
                     generation_kwargs.pop("top_logprobs")
-                elif (
-                    "'temperature' is not supported with this model." in str(e).lower()
-                ):
+                elif any(msg.lower() in str(e).lower() for msg in temperature_messages):
                     generation_kwargs.pop("temperature")
+                elif isinstance(e, RateLimitError):
+                    raise InvalidModel(
+                        "You have encountered your rate limit for model "
+                        f"{self.model_config.model_id!r}. The error message was: {e}"
+                    )
                 else:
                     raise InvalidBenchmark(
                         f"Failed to generate text. The error message was: {e}"
                     )
-            except (
-                Timeout,
-                ServiceUnavailableError,
-                APIConnectionError,
-                InternalServerError,
-            ):
-                logger.debug(
-                    "Service temporarily unavailable. Retrying in 5 seconds..."
-                )
-                sleep(5)
             except APIError as e:
                 raise InvalidBenchmark(
                     f"Failed to generate text. The error message was: {e}"
                 )
+            except (
+                APIConnectionError,
+                Timeout,
+                ServiceUnavailableError,
+                InternalServerError,
+            ) as e:
+                logger.debug(
+                    f"Service temporarily unavailable. The error message was: {e}. "
+                    f"Retrying in 5 seconds..."
+                )
+                sleep(5)
             except AuthenticationError:
                 raise NeedsAdditionalArgument(
                     cli_argument="--api-key",
@@ -334,7 +399,7 @@ class LiteLLMModel(BenchmarkModule):
                     num_labels=self.dataset_config.num_labels,
                     id2label=self.dataset_config.id2label,
                     label2id=self.dataset_config.label2id,
-                    revision=self.model_config.revision,
+                    revision="main",
                     model_cache_dir=self.model_config.model_cache_dir,
                     api_key=self.benchmark_config.api_key,
                     trust_remote_code=self.benchmark_config.trust_remote_code,
@@ -345,7 +410,7 @@ class LiteLLMModel(BenchmarkModule):
                 try:
                     repo_info = hf_api.model_info(
                         repo_id=model_id,
-                        revision=self.model_config.revision,
+                        revision="main",
                         token=os.getenv("HUGGINGFACE_API_KEY")
                         or self.benchmark_config.api_key
                         or True,
@@ -398,7 +463,7 @@ class LiteLLMModel(BenchmarkModule):
                     num_labels=self.dataset_config.num_labels,
                     id2label=self.dataset_config.id2label,
                     label2id=self.dataset_config.label2id,
-                    revision=self.model_config.revision,
+                    revision="main",
                     model_cache_dir=self.model_config.model_cache_dir,
                     api_key=self.benchmark_config.api_key,
                     trust_remote_code=self.benchmark_config.trust_remote_code,
@@ -478,7 +543,7 @@ class LiteLLMModel(BenchmarkModule):
                     num_labels=self.dataset_config.num_labels,
                     id2label=self.dataset_config.id2label,
                     label2id=self.dataset_config.label2id,
-                    revision=self.model_config.revision,
+                    revision="main",
                     model_cache_dir=self.model_config.model_cache_dir,
                     api_key=self.benchmark_config.api_key,
                     trust_remote_code=self.benchmark_config.trust_remote_code,
@@ -563,6 +628,7 @@ class LiteLLMModel(BenchmarkModule):
                 return partial(
                     sequence_classification.extract_labels_from_generation,
                     dataset_config=self.dataset_config,
+                    first_label_token_mapping=self.buffer["first_label_token_mapping"],
                 )
             case TaskGroup.TEXT_TO_TEXT:
                 return text_to_text.extract_labels_from_generation
@@ -605,6 +671,9 @@ class LiteLLMModel(BenchmarkModule):
             Whether the model exists, or an error describing why we cannot check
             whether the model exists.
         """
+        model_id, revision = (
+            model_id.split("@") if "@" in model_id else (model_id, "main")
+        )
         if model_id in litellm.model_list:
             return True
 
@@ -708,9 +777,10 @@ class LiteLLMModel(BenchmarkModule):
         Returns:
             The model configuration.
         """
+        model_id, revision = model_id.split("@") if "@" in model_id else (model_id, "")
         return ModelConfig(
             model_id=model_id,
-            revision="main",
+            revision=revision,
             task="text-generation",
             languages=list(),
             merge=False,
@@ -1025,3 +1095,35 @@ class LiteLLMModel(BenchmarkModule):
 
         examples["messages"] = messages_list
         return examples
+
+
+def raise_if_wrong_params(
+    model_config: ModelConfig, allowed_params: dict[str, list[str]]
+) -> None:
+    """Raise an error if the model configuration has invalid parameters.
+
+    Args:
+        model_config:
+            The model configuration.
+        allowed_params:
+            The allowed parameters for the model.
+
+    Raises:
+        InvalidModel:
+            If the model configuration has invalid parameters.
+    """
+    param = model_config.revision
+    if param == "":
+        return
+    for model_regex, allowed_params_list in allowed_params.items():
+        if re.fullmatch(pattern=model_regex, string=model_config.model_id):
+            if param not in allowed_params_list:
+                msg = (
+                    f"Invalid parameter {param!r} for model {model_config.model_id!r}."
+                )
+                if allowed_params_list:
+                    msg += f" Allowed parameters are: {', '.join(allowed_params_list)}."
+                else:
+                    msg += " No parameters are allowed."
+                raise InvalidModel(msg)
+            return
