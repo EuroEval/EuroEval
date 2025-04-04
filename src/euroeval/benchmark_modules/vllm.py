@@ -1176,7 +1176,7 @@ def get_end_of_reasoning_token_id(
         )
     else:
         model_output = model.generate(
-            messages=[prompt],
+            prompts=[prompt],
             sampling_params=SamplingParams(max_tokens=3, temperature=0.0),
             use_tqdm=False,
         )
