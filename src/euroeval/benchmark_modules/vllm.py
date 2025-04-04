@@ -383,6 +383,7 @@ class VLLMModel(HuggingFaceEncoderModel):
         num_attempts = 3
         for _ in range(num_attempts):
             try:
+                breakpoint()
                 if self.buffer.get("instruction_model", False):
                     raw_outputs = self._model.chat(
                         messages=[
@@ -399,7 +400,6 @@ class VLLMModel(HuggingFaceEncoderModel):
                         use_tqdm=(not input_is_a_test),
                         lora_request=self.buffer.get("lora_request"),
                     )
-                breakpoint()
                 break
             except TypeError as e:
                 logger.debug(
