@@ -383,7 +383,6 @@ class VLLMModel(HuggingFaceEncoderModel):
         num_attempts = 3
         for _ in range(num_attempts):
             try:
-                breakpoint()
                 if self.buffer.get("instruction_model", False):
                     raw_outputs = self._model.chat(
                         messages=[
@@ -1169,15 +1168,20 @@ def get_end_of_reasoning_token_id(
 
     # Generate a completion and remove the BOS token from it, to not confuse it with the
     # potential reasoning token
-    completion = (
-        model.chat(
+    if tokenizer.chat_template is not None:
+        model_output = model.chat(
             messages=[dict(role="user", content=prompt)],
             sampling_params=SamplingParams(max_tokens=3, temperature=0.0),
             use_tqdm=False,
-        )[0]
-        .outputs[0]
-        .text
-    )
+        )
+    else:
+        model_output = model.generate(
+            messages=[prompt],
+            sampling_params=SamplingParams(max_tokens=3, temperature=0.0),
+            use_tqdm=False,
+        )
+    completion = model_output[0].outputs[0].text
+
     if tokenizer.bos_token is not None:
         if isinstance(tokenizer.bos_token, str):
             prompt = prompt.replace(tokenizer.bos_token, "").strip()
