@@ -37,6 +37,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   rare, but *does* happen for very particular (model, dataset) pairs. If we are in this
   case, we now resort to choosing the label with closest word edit distance instead of
   relying on logprobs of the first token.
+- Now defaults to BF16 if the model is registered as using FP32, assuming that BF16 is
+  supported by the GPU.
 
 
 ## [v15.4.2] - 2025-03-31

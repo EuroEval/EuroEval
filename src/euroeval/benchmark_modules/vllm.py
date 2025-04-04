@@ -399,7 +399,6 @@ class VLLMModel(HuggingFaceEncoderModel):
                         use_tqdm=(not input_is_a_test),
                         lora_request=self.buffer.get("lora_request"),
                     )
-                    breakpoint()
                 break
             except TypeError as e:
                 logger.debug(
@@ -906,7 +905,18 @@ def load_model_and_tokenizer(
     if quantization == "awq" and importlib.util.find_spec("awq") is None:
         raise NeedsExtraInstalled(extra="quantization")
 
+    # Start with dtype being the "auto" vLLM dtype
     dtype: str | torch.dtype = "auto"
+
+    # Choose bf16 over fp16 if the model is a fp32 model and the GPU supports it
+    if hf_model_config.torch_dtype == torch.float32 and torch.cuda.is_bf16_supported():
+        logger.info(
+            "You are loading a model with dtype FP32, which we will convert to "
+            "BF16 as FP32 is not supported by vLLM and BF16 is supported by your GPU."
+        )
+        dtype = torch.bfloat16
+
+    # If the model is a quantized model, we need to set the dtype to float16
     if quantization is not None and hf_model_config.torch_dtype != torch.float16:
         logger.info(
             "You are loading a quantized model with dtype "
@@ -915,6 +925,7 @@ def load_model_and_tokenizer(
         )
         dtype = torch.float16
 
+    # If the model is a bf16 model, we need to check the CUDA compute capability
     if hf_model_config.torch_dtype == torch.bfloat16:
         min_cuda_compute_capability = get_min_cuda_compute_capability()
         required_capability = VLLM_BF16_MIN_CUDA_COMPUTE_CAPABILITY
@@ -991,7 +1002,6 @@ def load_model_and_tokenizer(
             enable_lora=model_config.adapter_base_model_id is not None,
             max_lora_rank=256,
         )
-        breakpoint()
     except (ValueError, OSError) as e:
         if "awaiting a review from the repo authors" in str(e):
             raise InvalidModel(
