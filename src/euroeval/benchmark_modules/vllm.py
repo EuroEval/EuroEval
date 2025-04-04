@@ -394,11 +394,12 @@ class VLLMModel(HuggingFaceEncoderModel):
                     )
                 else:
                     raw_outputs = self._model.generate(
-                        prompts=prompts,
+                        prompts,
                         sampling_params=sampling_params,
                         use_tqdm=(not input_is_a_test),
                         lora_request=self.buffer.get("lora_request"),
                     )
+                    breakpoint()
                 break
             except TypeError as e:
                 logger.debug(
