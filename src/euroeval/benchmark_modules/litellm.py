@@ -86,6 +86,8 @@ VOCAB_SIZE_MAPPING = {
     r"(anthropic/)?claude-[1-9](-[1-9])?-(opus|sonnet|haiku)-[0-9]{8}": -1,
     # Gemini models
     r"(gemini/)?gemini-[1-9]\.[0-9]-(flash|pro).*": 256_128,
+    # xAI models
+    r"(xai/)?grok.*": -1,
 }
 
 
@@ -107,6 +109,8 @@ MODEL_MAX_LENGTH_MAPPING = {
     r"(gemini/)?gemini-1\.5-flash.*": 1_048_576,
     r"(gemini/)?gemini-1\.5-pro.*": 2_097_152,
     r"(gemini/)?gemini-2\.(0|5).*": 1_048_576,
+    # xAI models
+    r"(xai/)?grok.*": 131_072,
 }
 
 
@@ -120,6 +124,8 @@ NUM_PARAMS_MAPPING = {
     r"(gemini/)?gemini-1.5-flash-8b": 8_000_000_000,
     r"(gemini/)?gemini-1.5-flash-[0-9]+": -1,
     r"(gemini/)?gemini-2.(0|5).*": -1,
+    # xAI models
+    r"(xai/)?grok.*": -1,
 }
 
 
@@ -133,6 +139,8 @@ ALLOWED_PARAMS = {
     r"(anthropic/)?claude-3.7-sonnet.*": ["thinking"],
     # Gemini models
     r"(gemini/)?gemini-.*": [],
+    # xAI models
+    r"(xai/)?grok.*": [],
 }
 
 
