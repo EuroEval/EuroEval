@@ -11,7 +11,6 @@ from shutil import rmtree
 from time import sleep
 
 from torch.distributed import destroy_process_group
-from tqdm.auto import tqdm
 
 from .benchmark_config_factory import build_benchmark_config
 from .constants import GENERATIVE_PIPELINE_TAGS
@@ -367,14 +366,8 @@ class Benchmarker:
             dataset_names=benchmark_config.datasets
         )
 
-        overall_progress = (
-            tqdm(
-                total=len(model_ids) * len(dataset_configs),
-                desc="Overall Benchmarking Progress",
-            )
-            if benchmark_config.progress_bar
-            else None
-        )
+        total_benchmarks = len(model_ids) * len(dataset_configs)
+        current_benchmarks = 0
 
         current_benchmark_results: list[BenchmarkResult] = list()
         for model_id in model_ids:
@@ -384,8 +377,7 @@ class Benchmarker:
                 )
             except InvalidModel as e:
                 logger.info(e.message)
-                if overall_progress:
-                    overall_progress.update(len(dataset_configs))
+                current_benchmarks += len(dataset_configs)
                 continue
 
             loaded_model: BenchmarkModule | None = None
@@ -404,8 +396,7 @@ class Benchmarker:
                         f"{dataset_config.pretty_name}, as it "
                         "has already been benchmarked."
                     )
-                    if overall_progress:
-                        overall_progress.update(1)
+                    current_benchmarks += 1
                     continue
 
                 # We do not re-initialise generative models as their architecture is not
@@ -433,8 +424,7 @@ class Benchmarker:
                                 - dataset_configs.index(dataset_config)
                                 - 1
                             )
-                            if overall_progress:
-                                overall_progress.update(remaining_tasks + 1)
+                            current_benchmarks += remaining_tasks
                             break
                     else:
                         loaded_model.dataset_config = dataset_config
@@ -461,8 +451,7 @@ class Benchmarker:
                         f"{dataset_config.pretty_name}. Skipping. The error message "
                         f"raised was {benchmark_output_or_err.message!r}."
                     )
-                    if overall_progress:
-                        overall_progress.update(1)
+                    current_benchmarks += 1
                     continue
 
                 elif isinstance(benchmark_output_or_err, InvalidModel):
@@ -472,8 +461,7 @@ class Benchmarker:
                     remaining_configs = (
                         len(dataset_configs) - dataset_configs.index(dataset_config) - 1
                     )
-                    if overall_progress:
-                        overall_progress.update(remaining_configs)
+                    current_benchmarks += remaining_configs
                     break
 
                 else:
@@ -481,6 +469,11 @@ class Benchmarker:
                     current_benchmark_results.append(record)
                     if benchmark_config.save_results:
                         record.append_to_results(results_path=self.results_path)
+
+                current_benchmarks += 1
+                logger.info(
+                    f"Finished {current_benchmarks} out of {total_benchmarks} benchmarks."
+                )
 
             if benchmark_config.clear_model_cache:
                 clear_model_cache_fn(cache_dir=benchmark_config.cache_dir)
@@ -497,9 +490,6 @@ class Benchmarker:
             destroy_process_group()
         except AssertionError:
             pass
-
-        if overall_progress:
-            overall_progress.close()
 
         return current_benchmark_results
 
