@@ -15,7 +15,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Added
 - Added support for Finnish 🇫🇮! This includes the Finnish part of the reading comprehension dataset
   [TydiQA-fi](https://huggingface.co/datasets/google-research-datasets/tydiqa/viewer/secondary_task?views%5B%5D=secondary_task_train),
-  the Finnish part of the binary sentiment classification dataset [ScandiSent](https://github.com/timpal0l/ScandiSent)
+  the Finnish part of the binary sentiment classification dataset [ScandiSent](https://github.com/timpal0l/ScandiSent), the
+  NER dataset [Turku NER](https://aclanthology.org/2020.lrec-1.567/).
 
 ### Fixed
 - Evaluating a specific model revision did not work for adapter models, as there was a

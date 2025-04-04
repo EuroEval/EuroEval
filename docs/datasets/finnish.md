@@ -64,6 +64,70 @@ $ euroeval --model <model-id> --dataset scandisent-fi
 
 ## Named Entity Recognition
 
+### Turku-NER-fi
+
+This dataset was published in [this paper](https://aclanthology.org/2020.lrec-1.567/).
+
+The original dataset contains 12,217 / 1,364 / 1,555 samples for the training, validation and test splits, respectively. We use 1,024 / 256 / 2,048 samples for our training, validation and test splits, respectively. All the new splits are subsets of the original splits.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "tokens": ["Suomalaiset", "vaihtoivat", "Tukholman", "Tallinnaan"],
+  "labels": ["O", "O", "B-LOC", "B-LOC"]
+}
+```
+```json
+{
+  "tokens": ["Liuhto", "nosti", "Kreikan", "tapauksen", "yhteydessä", "esille", "kysymyksen", "siitä", ",", "miten", "Euroopan", "unionissa", "yleisesti", "sanktioidaan", "pelisääntöjen", "rikkomisesta", "."],
+  "labels": ["B-PER", "O", "B-LOC", "O", "O", "O", "O", "O", "O", "O", "B-ORG", "I-ORG", "O", "O", "O", "O", "O"],
+}
+```
+```json
+{
+  "tokens": ["Mithridates", "oli", "Pontoksen", "merkittävin", "kuningas", "ja", "Rooman", "valtakunnan", "vaarallisin", "vihollinen", "ensimmäisellä", "vuosisadalla", "eaa.", "."],
+  "labels": ["B-PER", "O", "B-LOC", "O", "O", "O", "B-LOC", "I-LOC", "O", "O", "O", "O", "O", "O"],
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 8
+- Prefix prompt:
+  ```
+  Seuraavassa on lauseita ja JSON-sanakirjoja, jotka sisältävät annetussa lauseessa esiintyvät nimetyt entiteetit.
+  ```
+- Base prompt template:
+  ```
+  Lause: {text}
+  Nimetyt entiteetit: {label}
+  ```
+- Instruction-tuned prompt template:
+  ```
+  Lause: {text}
+
+  Tunnista lauseessa esiintyvät nimetyt entiteetit. Tulosta ne JSON-sanakirjana, jonka avaimet ovat 'henkilö', 'paikka', 'organisaatio' ja 'muut'. Arvojen tulee olla listoja kyseisen tyypin nimetyistä entiteeteistä täsmälleen siinä muodossa kuin ne esiintyvät lauseessa.
+  ```
+- Label mapping:
+    - `B-PER` ➡️ `person`
+    - `I-PER` ➡️ `person`
+    - `B-LOC` ➡️ `sted`
+    - `I-LOC` ➡️ `sted`
+    - `B-ORG` ➡️ `organisation`
+    - `I-ORG` ➡️ `organisation`
+    - `B-MISC` ➡️ `diverse`
+    - `I-MISC` ➡️ `diverse`
+
+You can evaluate this dataset directly as follows:
+
+```bash
+$ euroeval --model <model-id> --dataset turku-ner-fi
+```
+
+
+
 ## Linguistic Acceptability
 
 ## Reading Comprehension

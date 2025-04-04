@@ -910,6 +910,45 @@ CONLL_ES_CONFIG = DatasetConfig(
     unofficial=True,
 )
 
+TURKU_NER_FI_CONFIG = DatasetConfig(
+    name="turku-ner-fi",
+    pretty_name="the Finnish part of the named entity recognition dataset Turku NER",
+    huggingface_id="EuroEval/turku-ner-fi-mini",
+    task=NER,
+    languages=[FI],
+    labels=[
+        "o",
+        "b-loc",
+        "i-loc",
+        "b-org",
+        "i-org",
+        "b-per",
+        "i-per",
+        "b-misc",
+        "i-misc",
+    ],
+    prompt_prefix="Seuraavassa on lauseita ja JSON-sanakirjoja, jotka sisältävät "
+    "annetussa lauseessa esiintyvät nimetyt entiteetit.",
+    prompt_template="Lause: {text}\nNimetyt entiteetit: {label}",
+    prompt_label_mapping={
+        "b-per": "henkilö",
+        "i-per": "henkilö",
+        "b-loc": "paikka",
+        "i-loc": "paikka",
+        "b-org": "organisaatio",
+        "i-org": "organisaatio",
+        "b-misc": "muut",
+        "i-misc": "muut",
+    },
+    instruction_prompt="Lause: {text}\n\nTunnista lauseessa esiintyvät nimetyt "
+    "entiteetit. Tulosta ne JSON-sanakirjana, jonka avaimet ovat 'henkilö', "
+    "'paikka', 'organisaatio' ja 'muut'. Arvojen tulee olla listoja kyseisen "
+    "tyypin nimetyistä entiteeteistä täsmälleen siinä muodossa kuin ne esiintyvät "
+    "lauseessa.",
+    num_few_shot_examples=8,
+    max_generated_tokens=128,
+)
+
 ### LINGUISTIC ACCEPTABILITY DATASETS ###
 
 SCALA_SV_CONFIG = DatasetConfig(
