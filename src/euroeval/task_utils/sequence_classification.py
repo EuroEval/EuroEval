@@ -228,9 +228,9 @@ def get_closest_logprobs_labels(
                 # the current one is the first one, however, since we're using greedy
                 # sampling. In case this happens for a label that is not the first one,
                 # we warn the user.
+                breakpoint()
                 if len(candidate_output_labels) == 1:
                     output_label = candidate_output_labels.pop()
-                    breakpoint()
                     break
                 elif len(candidate_output_labels) > 1:
                     if label_idx == 0:
