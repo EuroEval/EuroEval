@@ -1730,6 +1730,20 @@ ILPOST_SUM_CONFIG = DatasetConfig(
     max_generated_tokens=256,
 )
 
+XLSUM_FI_CONFIG = DatasetConfig(
+    name="xlsum-fi",
+    pretty_name="the Finnish summarisation dataset XL-Sum",
+    huggingface_id="EuroEval/xlsum-fi-mini",
+    task=SUMM,
+    languages=[FI],
+    prompt_prefix="Seuraavassa on artikkeleita ja niihin liittyviä tiivistelmiä.",
+    prompt_template="Uutisartikkeli: {text}\nTiivistelmä: {target_text}",
+    instruction_prompt="Uutisartikkeli: {text}\n\nKirjoita tiivistelmä yllä "
+    "olevasta artikkelista.",
+    num_few_shot_examples=1,
+    max_generated_tokens=256,
+)
+
 # TODO: Faroese summarization
 
 

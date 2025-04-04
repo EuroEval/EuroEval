@@ -204,3 +204,56 @@ $ euroeval --model <model-id> --dataset tydiqa-fi
 ## Common-sense Reasoning
 
 ## Summarization
+
+### XLSum-fi
+
+This dataset is a machine translation of the XL-Sum dataset, which was published in [this paper](https://aclanthology.org/2021.findings-acl.413/). [TurkuNLP](https://huggingface.co/datasets/TurkuNLP) has translated the dataset to Finnish using DeepL.
+
+The original Finnish XL-Sum dataset contains 54,966 / 1,803 / 1,791 training, validation and test samples, respectively. We use 1,024 / 256 / 2,048 samples for our training, validation and test splits, respectively. The new training and validation splits are subsets of the original splits. The test split is the same as the original test split + additional samples from the original validation split.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Poliisi kutsuttiin Century Wharfiin keskiviikkona noin kello 14:15 GMT. 66-vuotias mies on pidätetty murhasta epäiltynä, ja häntä pidetään vangittuna. Etelä-Walesin poliisi ilmoitti, että se siirtää asian vapaaehtoisesti riippumattoman poliisin valituslautakunnan käsiteltäväksi.",
+  "target_text": "Murhatutkinta on aloitettu sen jälkeen, kun 65-vuotiaan naisen ruumis löytyi Cardiff Bayn asunnosta."
+}
+```
+```json
+{
+  "text": "Yritys on nimittänyt KPMG:n tarkastelemaan uudelleenjärjestelyvaihtoehtoja sen jälkeen, kun paikallisviranomaisten menojen leikkaukset heikensivät sen liiketoimintanäkymiä. Southern tarjoaa hoitoa yli 31 000 ihmiselle, ja suurin osa rahoituksesta tulee NHS:ltä ja kunnilta. Yrityksen mukaan budjettileikkaukset merkitsivät sitä, että sen vuokrataakka oli 'kestämätön'. Southern kertoi keskustelevansa vuokranantajien kanssa uudelleenjärjestelystä ja varoitti myös, että se oli vaarassa jättää velkansa maksamatta. 'Yhtiön lainanantajat ovat tietoisia uhkaavasta pankkikovenanttirikkomuksesta, mutta ne tukevat edelleen täysin toimia, joihin yhtiö ryhtyy ongelmiensa ratkaisemiseksi', Southern sanoi lausunnossaan. Yhtiö vahvisti myös, ettei se enää keskustele mahdollisten ostajien kanssa. 'Hallitus katsoo, että yksikään näistä ehdotuksista ei todennäköisesti johda siihen, että lähitulevaisuudessa tehtäisiin mielekäs tarjous, ja se on päättänyt olla jatkamatta niiden käsittelyä', Southern totesi. Southernin osakkeet, joiden arvo oli 606 penceä vuonna 2007, olivat keskipäivällä 6,3 penniä.",
+  "target_text": "Yhdistyneen kuningaskunnan suurimman hoivakotien ylläpitäjän Southern Cross Healthcaren osakkeet ovat romahtaneet 60 prosenttia, kun on uutisoitu, että taloudelliset ongelmat ovat lisääntymässä."
+}
+```
+```json
+{
+  "text": "Pohjois-Walesin palo- ja pelastusviranomainen vahvisti maanantaina talousarvionsa vuosiksi 2015-16. Viranomainen on suostunut leikkaamaan neljä johtotehtävää, leikkaamaan joitakin palveluja ja käyttämään vararahastoa, jotta se voi hyväksyä 32,1 miljoonan punnan talousarvionsa. On pelätty, että sadat palomiehet voivat lähteä seuraavien viiden vuoden aikana tehtävien budjettileikkausten seurauksena.",
+  "target_text": "Pohjois-Walesin palomiehet lopettavat suurten eläinten pelastamisen ja vähentävät väärien hälytysten määrää, jotta talous saataisiin tasapainoon."
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 1
+- Prefix prompt:
+  ```
+  Seuraavassa on artikkeleita ja niihin liittyviä tiivistelmiä.
+  ```
+- Base prompt template:
+  ```
+  Uutisartikkeli: {text}
+  Tiivistelmä: {target_text}
+  ```
+- Instruction-tuned prompt template:
+  ```
+  Uutisartikkeli: {text}
+
+  Kirjoita tiivistelmä yllä olevasta artikkelista.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+$ euroeval --model <model-id> --dataset xlsum-fi
+```
