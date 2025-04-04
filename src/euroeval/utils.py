@@ -12,7 +12,6 @@ import typing as t
 import warnings
 from functools import cache
 from pathlib import Path
-from types import TracebackType
 
 import litellm
 import numpy as np
@@ -20,7 +19,6 @@ import requests
 import torch
 from datasets.utils import disable_progress_bar
 from requests.exceptions import RequestException
-from transformers import PreTrainedTokenizer, PreTrainedTokenizerBase
 from transformers import logging as tf_logging
 
 from .exceptions import InvalidModel, NaNValueInModelOutput
@@ -29,6 +27,11 @@ if importlib.util.find_spec("ray") is not None:
     import ray
 
 if t.TYPE_CHECKING:
+    from types import TracebackType
+
+    from transformers import PreTrainedTokenizer, PreTrainedTokenizerBase
+
+    from .data_models import DatasetConfig
     from .types import Predictions
 
 
@@ -285,7 +288,7 @@ class HiddenPrints:
         self,
         exc_type: t.Type[BaseException],
         exc_val: BaseException,
-        exc_tb: TracebackType,
+        exc_tb: "TracebackType",
     ) -> None:
         """Exit the context manager."""
         sys.stdout.close()
@@ -576,3 +579,76 @@ def get_package_version(package_name: str) -> str | None:
         return importlib.metadata.version(package_name)
     except importlib.metadata.PackageNotFoundError:
         return None
+
+
+def get_first_label_token_mapping(
+    dataset_config: "DatasetConfig", tokenizer: "PreTrainedTokenizer | None"
+) -> dict[str, str] | bool:
+    """Check if the model should output scores.
+
+    Args:
+        dataset_config:
+            The dataset configuration.
+        tokenizer:
+            The tokenizer, or None if not available.
+
+    Returns:
+        A mapping from labels to the first token in each label, or alternatively a
+        Boolean value indicating whether the model should output scores (if the mapping
+        is outputted then the model will always output scores).
+    """
+    # Importing here to avoid circular imports
+    from .constants import TASK_GROUPS_USING_LOGPROBS
+
+    # If we do not have any tokenizer, then we cannot check if the model should output
+    # scores and we just assume it should if the dataset supports it
+    if tokenizer is None:
+        output_scores = dataset_config.task.task_group not in TASK_GROUPS_USING_LOGPROBS
+        if output_scores:
+            log_once(
+                "The model will output scores, since the dataset supports it and no "
+                "tokenizer is available.",
+                level=logging.DEBUG,
+            )
+        else:
+            log_once(
+                "The model will not output scores, since the dataset does not support "
+                "it and no tokenizer is available.",
+                level=logging.DEBUG,
+            )
+        return output_scores
+
+    # If there are labels associated with the dataset, and that the first token of each
+    # label is distinct, then we can safely use the logprobs
+    if dataset_config.labels:
+        local_labels = [
+            dataset_config.prompt_label_mapping[label]
+            for label in dataset_config.labels
+        ]
+        first_tokens = [tokenizer.tokenize(text=label)[0] for label in local_labels]
+        if len(first_tokens) == len(set(first_tokens)):
+            log_once(
+                "The model will output scores, since the first tokens of the labels "
+                "are distinct.",
+                level=logging.DEBUG,
+            )
+            return {
+                label: first_token
+                for label, first_token in zip(local_labels, first_tokens)
+            }
+        else:
+            log_once(
+                "The model will not output scores, since the first tokens of the "
+                "labels are not distinct. The first tokens for the labels "
+                f"{local_labels} are {first_tokens}"
+            )
+            return False
+
+    # Otherwise, we assume that the model should not output scores, to avoid potential
+    # evaluation errors. This will force the label extraction to rely on word edit
+    # distance instead of logprobs.
+    log_once(
+        "The model will not output scores, since the dataset does not have labels.",
+        level=logging.DEBUG,
+    )
+    return False

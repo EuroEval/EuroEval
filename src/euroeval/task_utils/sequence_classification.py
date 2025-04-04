@@ -10,6 +10,7 @@ import numpy as np
 from evaluate import EvaluationModule
 
 from ..data_models import BenchmarkConfig, GenerativeModelOutput
+from ..exceptions import InvalidBenchmark
 from ..utils import log_once, raise_if_model_output_contains_nan_values
 
 if t.TYPE_CHECKING:
@@ -110,6 +111,7 @@ def extract_labels_from_generation(
     input_batch: dict[str, list],
     model_output: GenerativeModelOutput,
     dataset_config: "DatasetConfig",
+    first_label_token_mapping: dict[str, str] | bool,
 ) -> list[str]:
     """Extract the predicted labels from the generated output.
 
@@ -121,13 +123,19 @@ def extract_labels_from_generation(
             The raw generated output of the model.
         dataset_config:
             The configuration of the dataset.
+        first_label_token_mapping:
+            A mapping from labels to the first token in each label, or alternatively a
+            Boolean value indicating whether the model should output scores (if the
+            mapping is outputted then the model will always output scores).
 
     Returns:
         The predicted labels.
     """
     if model_output.scores is not None:
         return get_closest_logprobs_labels(
-            generation_logprobs=model_output.scores, dataset_config=dataset_config
+            generation_logprobs=model_output.scores,
+            dataset_config=dataset_config,
+            first_label_token_mapping=first_label_token_mapping,
         )
     else:
         return get_closest_word_edit_labels(
@@ -138,6 +146,7 @@ def extract_labels_from_generation(
 def get_closest_logprobs_labels(
     generation_logprobs: list[list[list[tuple[str, float]]]],
     dataset_config: "DatasetConfig",
+    first_label_token_mapping: dict[str, str] | bool,
 ) -> list[str]:
     """Get the labels with the highest predicted logprob value.
 
@@ -152,6 +161,10 @@ def get_closest_logprobs_labels(
             (batch_size, num_tokens, num_logprobs).
         dataset_config:
             The configuration of the dataset.
+        first_label_token_mapping:
+            A mapping from labels to the first token in each label, or alternatively a
+            Boolean value indicating whether the model should output scores (if the
+            mapping is outputted then the model will always output scores).
 
     Returns:
         The predicted labels.
@@ -185,11 +198,29 @@ def get_closest_logprobs_labels(
                 generated_label = "".join(previously_generated_labels) + generated_label
 
                 # Get the candidate labels that starts with the generated label
-                candidate_output_labels = {
-                    candidate_label
-                    for candidate_label in candidate_labels
-                    if candidate_label.startswith(generated_label)
-                }
+                if isinstance(first_label_token_mapping, dict):
+                    if any(
+                        candidate_label not in first_label_token_mapping
+                        for candidate_label in candidate_labels
+                    ):
+                        raise InvalidBenchmark(
+                            "There is a label not present in the first label token "
+                            "mapping - this should never happen! Please report this "
+                            "issue to the EuroEval team at "
+                            "github.com/EuroEval/EuroEval/issues."
+                        )
+
+                    candidate_output_labels = {
+                        candidate_label
+                        for candidate_label in candidate_labels
+                        if generated_label == first_label_token_mapping[candidate_label]
+                    }
+                else:
+                    candidate_output_labels = {
+                        candidate_label
+                        for candidate_label in candidate_labels
+                        if candidate_label.startswith(generated_label)
+                    }
 
                 # If we can uniquely determine the output label, we break the loop. If
                 # there are multiple possible labels then we store the current one, and
@@ -206,7 +237,7 @@ def get_closest_logprobs_labels(
                     else:
                         output_label = candidate_output_labels.pop()
                         candidate_output_labels.add(output_label)
-                        log_once(
+                        raise InvalidBenchmark(
                             "Multiple candidate labels found for the generated label "
                             f"{generated_label!r}: {candidate_output_labels}. Since "
                             "this is not the first generated label, we cannot "
@@ -214,8 +245,7 @@ def get_closest_logprobs_labels(
                             f"forced to use the arbitrary {output_label!r} as the "
                             "output label, potentially resulting in worse performance. "
                             "Please report this issue to the EuroEval team at "
-                            "github.com/EuroEval/EuroEval/issues.",
-                            level=logging.WARNING,
+                            "github.com/EuroEval/EuroEval/issues."
                         )
 
             if output_label is not None:

@@ -29,7 +29,6 @@ from ..constants import (
     MAX_LOGPROBS,
     MERGE_TAGS,
     REASONING_MAX_TOKENS,
-    TASK_GROUPS_USING_LOGPROBS,
     TASKS_USING_JSON,
     VLLM_BF16_MIN_CUDA_COMPUTE_CAPABILITY,
 )
@@ -67,6 +66,7 @@ from ..utils import (
     get_bos_token,
     get_end_of_chat_token_ids,
     get_eos_token,
+    get_first_label_token_mapping,
     get_min_cuda_compute_capability,
     log_once,
     should_prompts_be_stripped,
@@ -123,11 +123,8 @@ class VLLMModel(HuggingFaceEncoderModel):
         ):
             raise NeedsExtraInstalled(extra="generative")
 
-        output_scores = dataset_config.task.task_group in TASK_GROUPS_USING_LOGPROBS
         model, tokenizer = load_model_and_tokenizer(
-            model_config=model_config,
-            benchmark_config=benchmark_config,
-            output_scores=output_scores,
+            model_config=model_config, benchmark_config=benchmark_config
         )
         self._model: LLM = model
         self._tokenizer: PreTrainedTokenizer = tokenizer
@@ -143,7 +140,6 @@ class VLLMModel(HuggingFaceEncoderModel):
             benchmark_config=benchmark_config,
         )
 
-        self.buffer["output_scores"] = output_scores
         self.buffer["instruction_model"] = self._tokenizer.chat_template is not None
         if self.model_config.adapter_base_model_id is not None:
             adapter_path = snapshot_download(
@@ -186,6 +182,7 @@ class VLLMModel(HuggingFaceEncoderModel):
                 return partial(
                     sequence_classification.extract_labels_from_generation,
                     dataset_config=self.dataset_config,
+                    first_label_token_mapping=self.buffer["first_label_token_mapping"],
                 )
             case TaskGroup.TEXT_TO_TEXT:
                 return text_to_text.extract_labels_from_generation
@@ -339,6 +336,12 @@ class VLLMModel(HuggingFaceEncoderModel):
         else:
             logits_processor = None
 
+        # Get the mapping from labels to the first token in the label. We call this each
+        # time we generate a new dataset since the dataset config can change
+        self.buffer["first_label_token_mapping"] = get_first_label_token_mapping(
+            dataset_config=self.dataset_config, tokenizer=self._tokenizer
+        )
+
         # Define the parameters used for vLLM generation
         max_tokens: int = (
             REASONING_MAX_TOKENS
@@ -347,7 +350,7 @@ class VLLMModel(HuggingFaceEncoderModel):
         )
         sampling_params = SamplingParams(
             max_tokens=max_tokens,
-            logprobs=MAX_LOGPROBS if self.buffer["output_scores"] else None,
+            logprobs=MAX_LOGPROBS if self.buffer["first_label_token_mapping"] else None,
             temperature=0.0,
             stop=[stop_token for stop_token in stop_tokens if stop_token],
             logits_processors=[logits_processor] if logits_processor else None,
@@ -419,7 +422,7 @@ class VLLMModel(HuggingFaceEncoderModel):
         completions = [completion.strip() for completion in completions]
 
         # Add logprobs scores to the output
-        if self.buffer["output_scores"]:
+        if self.buffer["first_label_token_mapping"]:
             scores: list[list[list[tuple[str, float]]]] = [
                 [
                     [
@@ -849,7 +852,7 @@ class VLLMModel(HuggingFaceEncoderModel):
 
 
 def load_model_and_tokenizer(
-    model_config: ModelConfig, benchmark_config: BenchmarkConfig, output_scores: bool
+    model_config: ModelConfig, benchmark_config: BenchmarkConfig
 ) -> "tuple[LLM, PreTrainedTokenizer]":
     """Load the model and tokenizer.
 
@@ -858,11 +861,9 @@ def load_model_and_tokenizer(
             The model configuration.
         benchmark_config:
             The benchmark configuration.
-        output_scores:
-            Whether to output scores.
 
     Returns:
-        The loaded model and tokenizer.
+        A pair (model, tokenizer), with the loaded model and tokenizer
     """
     # Prefer base model ID if the model is an adapter - the adapter will be added on
     # during inference in this case
@@ -945,6 +946,16 @@ def load_model_and_tokenizer(
     else:
         true_max_model_len = MAX_CONTEXT_LENGTH
 
+    tokenizer = load_tokenizer(
+        model_id=model_config.model_id,
+        revision=model_config.revision,
+        adapter_base_model_id=model_config.adapter_base_model_id,
+        trust_remote_code=benchmark_config.trust_remote_code,
+        model_max_length=true_max_model_len,
+        model_cache_dir=model_config.model_cache_dir,
+        token=benchmark_config.api_key or os.getenv("HUGGINGFACE_API_KEY") or True,
+    )
+
     clear_vllm()
 
     executor_backend = "ray" if torch.cuda.device_count() > 1 else "mp"
@@ -965,7 +976,6 @@ def load_model_and_tokenizer(
             quantization=quantization,
             dtype=dtype,
             enforce_eager=True,
-            max_logprobs=MAX_LOGPROBS if output_scores else None,
             # TEMP: Prefix caching isn't supported with sliding window in vLLM yet,
             # so we disable it for now
             enable_prefix_caching=False,
@@ -990,16 +1000,6 @@ def load_model_and_tokenizer(
 
     model._run_engine = MethodType(_run_engine_with_fixed_progress_bars, model)
     model.config = hf_model_config
-
-    tokenizer = load_tokenizer(
-        model_id=model_config.model_id,
-        revision=model_config.revision,
-        adapter_base_model_id=model_config.adapter_base_model_id,
-        trust_remote_code=benchmark_config.trust_remote_code,
-        model_max_length=true_max_model_len,
-        model_cache_dir=model_config.model_cache_dir,
-        token=benchmark_config.api_key or os.getenv("HUGGINGFACE_API_KEY") or True,
-    )
 
     return model, tokenizer
 

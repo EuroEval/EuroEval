@@ -37,12 +37,7 @@ from requests.exceptions import RequestException
 from tqdm.auto import tqdm
 from transformers import Trainer
 
-from ..constants import (
-    MAX_LOGPROBS,
-    REASONING_MAX_TOKENS,
-    TASK_GROUPS_USING_LOGPROBS,
-    TASKS_USING_JSON,
-)
+from ..constants import MAX_LOGPROBS, REASONING_MAX_TOKENS, TASKS_USING_JSON
 from ..data_models import (
     BenchmarkConfig,
     DatasetConfig,
@@ -71,7 +66,7 @@ from ..task_utils import (
     token_classification,
 )
 from ..types import ExtractLabelsFunction
-from ..utils import create_model_cache_dir, log_once
+from ..utils import create_model_cache_dir, get_first_label_token_mapping, log_once
 from .base import BenchmarkModule
 from .hf import HuggingFaceEncoderModel, load_hf_model_config, load_tokenizer
 
@@ -240,7 +235,13 @@ class LiteLLMModel(BenchmarkModule):
             api_version=self.benchmark_config.api_version,
         )
 
-        if self.dataset_config.task.task_group in TASK_GROUPS_USING_LOGPROBS:
+        # Get the mapping from labels to the first token in the label. We call this each
+        # time we generate a new dataset since the dataset config can change
+        self.buffer["first_label_token_mapping"] = get_first_label_token_mapping(
+            dataset_config=self.dataset_config, tokenizer=None
+        )
+
+        if self.buffer["first_label_token_mapping"]:
             generation_kwargs["logprobs"] = True
             generation_kwargs["top_logprobs"] = MAX_LOGPROBS
 
@@ -627,6 +628,7 @@ class LiteLLMModel(BenchmarkModule):
                 return partial(
                     sequence_classification.extract_labels_from_generation,
                     dataset_config=self.dataset_config,
+                    first_label_token_mapping=self.buffer["first_label_token_mapping"],
                 )
             case TaskGroup.TEXT_TO_TEXT:
                 return text_to_text.extract_labels_from_generation
