@@ -624,7 +624,6 @@ def get_first_label_token_mapping(
         local_labels = [
             dataset_config.prompt_label_mapping[label]
             for label in dataset_config.labels
-            if label in dataset_config.prompt_label_mapping
         ]
         first_tokens = [tokenizer.tokenize(text=label)[0] for label in local_labels]
         if len(first_tokens) == len(set(first_tokens)):
