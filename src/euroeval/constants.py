@@ -43,7 +43,10 @@ TASKS_USING_JSON = [NER]
 
 # Tasks where we use log probabilities for generative models, rather than the raw
 # completion
-TASK_GROUPS_USING_LOGPROBS = [TaskGroup.SEQUENCE_CLASSIFICATION]
+TASK_GROUPS_USING_LOGPROBS = [
+    TaskGroup.SEQUENCE_CLASSIFICATION,
+    TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION,
+]
 
 
 # The number of top log probabilities to return for generative models. For several APIs
