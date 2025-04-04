@@ -991,6 +991,7 @@ def load_model_and_tokenizer(
             enable_lora=model_config.adapter_base_model_id is not None,
             max_lora_rank=256,
         )
+        breakpoint()
     except (ValueError, OSError) as e:
         if "awaiting a review from the repo authors" in str(e):
             raise InvalidModel(
