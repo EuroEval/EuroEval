@@ -367,9 +367,13 @@ class Benchmarker:
             dataset_names=benchmark_config.datasets
         )
 
-        overall_progress = tqdm(
-            total=len(model_ids) * len(dataset_configs),
-            desc="Overall Benchmarking Progress",
+        overall_progress = (
+            tqdm(
+                total=len(model_ids) * len(dataset_configs),
+                desc="Overall Benchmarking Progress",
+            )
+            if benchmark_config.progress_bar
+            else None
         )
 
         current_benchmark_results: list[BenchmarkResult] = list()
@@ -380,7 +384,8 @@ class Benchmarker:
                 )
             except InvalidModel as e:
                 logger.info(e.message)
-                overall_progress.update(len(dataset_configs))
+                if overall_progress:
+                    overall_progress.update(len(dataset_configs))
                 continue
 
             loaded_model: BenchmarkModule | None = None
@@ -399,7 +404,8 @@ class Benchmarker:
                         f"{dataset_config.pretty_name}, as it "
                         "has already been benchmarked."
                     )
-                    overall_progress.update(1)
+                    if overall_progress:
+                        overall_progress.update(1)
                     continue
 
                 # We do not re-initialise generative models as their architecture is not
@@ -427,7 +433,8 @@ class Benchmarker:
                                 - dataset_configs.index(dataset_config)
                                 - 1
                             )
-                            overall_progress.update(remaining_tasks + 1)
+                            if overall_progress:
+                                overall_progress.update(remaining_tasks + 1)
                             break
                     else:
                         loaded_model.dataset_config = dataset_config
@@ -454,7 +461,8 @@ class Benchmarker:
                         f"{dataset_config.pretty_name}. Skipping. The error message "
                         f"raised was {benchmark_output_or_err.message!r}."
                     )
-                    overall_progress.update(1)
+                    if overall_progress:
+                        overall_progress.update(1)
                     continue
 
                 elif isinstance(benchmark_output_or_err, InvalidModel):
@@ -464,7 +472,8 @@ class Benchmarker:
                     remaining_configs = (
                         len(dataset_configs) - dataset_configs.index(dataset_config) - 1
                     )
-                    overall_progress.update(remaining_configs)
+                    if overall_progress:
+                        overall_progress.update(remaining_configs)
                     break
 
                 else:
@@ -489,7 +498,8 @@ class Benchmarker:
         except AssertionError:
             pass
 
-        overall_progress.close()
+        if overall_progress:
+            overall_progress.close()
 
         return current_benchmark_results
 
