@@ -621,6 +621,7 @@ def get_first_label_token_mapping(
     # If there are labels associated with the dataset, and that the first token of each
     # label is distinct, then we can safely use the logprobs
     if output_scores and dataset_config.labels:
+        breakpoint()
         local_labels = [
             dataset_config.prompt_label_mapping[label]
             for label in dataset_config.labels
