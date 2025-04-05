@@ -621,18 +621,19 @@ def get_first_label_token_mapping(
     # If there are labels associated with the dataset, and that the first token of each
     # label is distinct, then we can safely use the logprobs
     if output_scores and dataset_config.labels:
-        # Get the local labels
         local_labels = [
             dataset_config.prompt_label_mapping[label].strip()
             for label in dataset_config.labels
         ]
-        if should_prefix_space_be_added_to_labels(
-            labels_to_be_generated=local_labels, tokenizer=tokenizer
-        ):
-            local_labels = [f" {label}" for label in local_labels]
 
-        # Get the first token of each label
-        first_tokens = [tokenizer.tokenize(text=label)[0] for label in local_labels]
+        # Get the first token of each label, where we add a prefix space if needed
+        add_prefix_space = should_prefix_space_be_added_to_labels(
+            labels_to_be_generated=local_labels, tokenizer=tokenizer
+        )
+        first_tokens = [
+            tokenizer.tokenize(text=f" {label}" if add_prefix_space else label)[0]
+            for label in local_labels
+        ]
         first_tokens = [
             re.sub(
                 pattern=r"^[^a-zæøåüöä]+|[^a-zæøåüöä]+$", repl="", string=token.lower()
