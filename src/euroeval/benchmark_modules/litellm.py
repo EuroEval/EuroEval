@@ -379,7 +379,7 @@ class LiteLLMModel(BenchmarkModule):
         # If it is an Ollama model then we can get the number of parameters from the
         # Ollama Python SDK
         if self.is_ollama:
-            ollama_model_id = self.model_config.model_id.split("/")[-1]
+            ollama_model_id = "/".join(self.model_config.model_id.split("/")[1:])
             model_info = ollama.show(ollama_model_id).modelinfo
             if model_info is not None:
                 num_params = model_info.get("general.parameter_count")
@@ -507,7 +507,7 @@ class LiteLLMModel(BenchmarkModule):
         # If it is an Ollama model then we can get the maximum length from the Ollama
         # Python SDK
         if self.is_ollama:
-            ollama_model_id = self.model_config.model_id.split("/")[-1]
+            ollama_model_id = "/".join(self.model_config.model_id.split("/")[1:])
             model_info = ollama.show(ollama_model_id).modelinfo
             if model_info is not None:
                 context_length_keys = [
@@ -671,15 +671,13 @@ class LiteLLMModel(BenchmarkModule):
             Whether the model exists, or an error describing why we cannot check
             whether the model exists.
         """
-        model_id, revision = (
-            model_id.split("@") if "@" in model_id else (model_id, "main")
-        )
+        model_id, _ = model_id.split("@") if "@" in model_id else (model_id, "main")
         if model_id in litellm.model_list:
             return True
 
         # If it is an Ollama model then try to download it
         if model_id.startswith("ollama/") or model_id.startswith("ollama_chat/"):
-            ollama_model_id = model_id.split("/")[-1]
+            ollama_model_id = "/".join(model_id.split("/")[1:])
             downloaded_ollama_models: list[str] = [
                 model_obj.model
                 for model_obj in ollama.list().models

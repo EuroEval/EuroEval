@@ -9,9 +9,9 @@ information about what these constitute.
 
 ### Hotter and Colder Sentiment
 
-This dataset is being published in an upcoming paper, and consists of texts from
-Icelandic blog post, annotated with sentiment labels (and many others) via a
-crowdsourcing platform.
+This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2502.16987),
+and consists of texts from Icelandic blog post, annotated with sentiment labels (and
+many others) via a crowdsourcing platform.
 
 The original full dataset consists of 2,901 samples, and we use a 1,021 / 255 / 1,607
 split for training, validation and testing, respectively (so all samples are used in
@@ -73,13 +73,14 @@ $ euroeval --model <model-id> --dataset hotter-and-colder-sentiment
 
 ### MIM-GOLD-NER
 
-This dataset was published in [this paper]() and is based on the [Tagged Icelandic
-Corpus (MIM)](https://clarin.is/en/resources/mim/), which consists of Icelandic books,
-news articles, periodicals, parliament speeches, legal texts, adjudications and
-government websites. It has been annotated with named entities in a semi-automated
-fashion, where each labels has been manually verified. The entity types in the dataset
-is a superset of the CoNLL-2003 tags, with the following additional labels: `DATE`,
-`TIME`, `MONEY`, `PERCENT`. These labels have been removed.
+This dataset was published in [this
+paper](https://repository.clarin.is/repository/xmlui/handle/20.500.12537/230) and is
+based on the [Tagged Icelandic Corpus (MIM)](https://clarin.is/en/resources/mim/), which
+consists of Icelandic books, news articles, periodicals, parliament speeches, legal
+texts, adjudications and government websites. It has been annotated with named entities
+in a semi-automated fashion, where each labels has been manually verified. The entity
+types in the dataset is a superset of the CoNLL-2003 tags, with the following additional
+labels: `DATE`, `TIME`, `MONEY`, `PERCENT`. These labels have been removed.
 
 The original full dataset consists of 1,000,000 tokens. We use a 1,024 / 256 / 2,048
 split for training, validation and testing, respectively.
@@ -526,17 +527,20 @@ Here are a few examples from the training split:
 {
   "text": "Hver var talinn heilagur maður eftir dauða sinn, er tákngervingur alþýðuhreyfingar vestanlands og talinn góður til áheita?\nSvarmöguleikar:\na. Þórður Jónsson helgi\nb. Guðmundur Arason\nc. Snorri Þorgrímsson\nd. Jón Hreggviðsson",
   "label": "a"
-}```
+}
+```
 ```json
 {
   "text": "Í kringum hvaða ár hófst verslun á Arngerðareyri?\nSvarmöguleikar:\na. 1895\nb. 1884\nc. 1870\nd. 1902",
   "label": "b"
-}```
+}
+```
 ```json
 {
   "text": "Hvenær var ákveðið að uppstigningardagur skyldi vera kirkjudagur aldraðra á Íslandi?\nSvarmöguleikar:\na. Árið 1975\nb. Árið 1985\nc. Árið 1982\nd. Árið 1990",
   "label": "c"
-}```
+}
+```
 
 When evaluating generative models, we use the following setup (see the
 [methodology](/methodology) for more information on how these are used):

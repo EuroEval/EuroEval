@@ -450,12 +450,14 @@ Here are a few examples from the training split:
 {
   "text": "Hvilket af følgende områder har kommunerne ansvaret for driften af?\nSvarmuligheder:\na. Domstole\nb. Vuggestuer\nc. Sygehuse",
   "label": "b"
-}```
+}
+```
 ```json
 {
   "text": "Hvilken organisation blev Danmark medlem af i 1945?\nSvarmuligheder:\na. Verdenshandelsorganisationen (WTO)\nb. Den Europæiske Union (EU)\nc. De Forenede Nationer (FN)",
   "label": "c"
-}```
+}
+```
 
 When evaluating generative models, we use the following setup (see the
 [methodology](/methodology) for more information on how these are used):

@@ -388,17 +388,20 @@ Here are a few examples from the training split:
 {
   "text": "Vi har hatt krig i nesten ti år. Jeg føler meg noen ganger trist fordi jeg har mistet flere venner og min far på grunn av krigen.",
   "label": "correct"
-}```
+}
+```
 ```json
 {
   "text": "Hvis jeg ikke sier in n genting, kan han spille hele dagen.",
   "label": "incorrect"
-}```
+}
+```
 ```json
 {
   "text": "De føler at samfunnet trenger ikke dem.",
   "label": "incorrect"
-}```
+}
+```
 
 When evaluating generative models, we use the following setup (see the
 [methodology](/methodology) for more information on how these are used):
@@ -660,17 +663,20 @@ Here are a few examples from the training split:
 {
   "text": "Gunnar har hatt plutselige og sterke smerteanfall siden han var liten gutt. Det var vondt å tisse og det gjorde vondt i ryggen og magen. Det hjalp litt å drikke vann. Reseptbelagte medisiner kan være nødvendig under anfall.\nSvaralternativer:\na. Nyrestein, kronisk\nb. Irritabel tarmsyndrom\nc. Angst\nd. Urinveisinfeksjon",
   "label": "a"
-}```
+}
+```
 ```json
 {
   "text": "80 år gamle Harrison Ford er nok ein gong aktuell i rolla som Indiana Jones. Kva heiter filmen?\nSvaralternativer:\na. Indiana Jones and the Nasty Nazis\nb. Indiana Jones and the Dial of Destiny\nc. Indiana Jones and the Hunt for Power\nd. Indiana Jones Forever",
   "label": "b"
-}```
+}
+```
 ```json
 {
   "text": "I 1980 måtte denne bassisten overnatte ni netter i fengsel i Japan fordi han prøvde å få med seg ca. 200 gram marihuana inn i landet. Hvem var det?\nSvaralternativer:\na. Sting\nb. Lemmy Kilmister\nc. Paul McCartney\nd. Bootsy Collins",
   "label": "c"
-}```
+}
+```
 
 When evaluating generative models, we use the following setup (see the
 [methodology](/methodology) for more information on how these are used):
@@ -868,17 +874,20 @@ Here are a few examples from the training split:
 {
   "text": "Hvor er det sannsynlig at en fugl lager hjemmet sitt?\nSvaralternativer:\na. I skogen\nb. I et rede\nc. På taket\nd. På blader\ne. I himmelen",
   "label": "a"
-}```
+}
+```
 ```json
 {
   "text": "Hvis et hjem har et abonnoment, hva får de sannsyneligvis hver dag i posten?\nSvaralternativer:\na. Delestykker\nb. En avis\nc. En gate\nd. En vaskemaskin\ne. Jordas overflate",
   "label": "b"
-}```
+}
+```
 ```json
 {
   "text": "Når du ikke klarer å gjøre noe ferdig, hva feilet du i da?\nSvaralternativer:\na. Å vinne\nb. Å bestå\nc. Å fullfør\nd. Å gjøre det bra\ne. Å lykkes",
   "label": "c"
-}```
+}
+```
 
 When evaluating generative models, we use the following setup (see the
 [methodology](/methodology) for more information on how these are used):

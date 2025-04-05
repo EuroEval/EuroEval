@@ -213,7 +213,8 @@ def get_closest_logprobs_labels(
                     candidate_output_labels = {
                         candidate_label
                         for candidate_label in candidate_labels
-                        if generated_label == first_label_token_mapping[candidate_label]
+                        if generated_label
+                        in {candidate_label, first_label_token_mapping[candidate_label]}
                     }
                 else:
                     candidate_output_labels = {
@@ -247,6 +248,11 @@ def get_closest_logprobs_labels(
                             "Please report this issue to the EuroEval team at "
                             "github.com/EuroEval/EuroEval/issues."
                         )
+                elif len(candidate_output_labels) == 0:
+                    logger.debug(
+                        f"No candidate label found for the generated label "
+                        f"{generated_label!r}. The generated label is thus ignored."
+                    )
 
             if output_label is not None:
                 output_labels.append(output_label)

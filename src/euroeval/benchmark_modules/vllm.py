@@ -383,14 +383,22 @@ class VLLMModel(HuggingFaceEncoderModel):
         num_attempts = 3
         for _ in range(num_attempts):
             try:
-                raw_outputs = self._model.chat(
-                    messages=[
-                        [dict(role="user", content=prompt)] for prompt in prompts
-                    ],
-                    sampling_params=sampling_params,
-                    use_tqdm=(not input_is_a_test),
-                    lora_request=self.buffer.get("lora_request"),
-                )
+                if self.buffer.get("instruction_model", False):
+                    raw_outputs = self._model.chat(
+                        messages=[
+                            [dict(role="user", content=prompt)] for prompt in prompts
+                        ],
+                        sampling_params=sampling_params,
+                        use_tqdm=(not input_is_a_test),
+                        lora_request=self.buffer.get("lora_request"),
+                    )
+                else:
+                    raw_outputs = self._model.generate(
+                        prompts=prompts,
+                        sampling_params=sampling_params,
+                        use_tqdm=(not input_is_a_test),
+                        lora_request=self.buffer.get("lora_request"),
+                    )
                 break
             except TypeError as e:
                 logger.debug(
@@ -897,7 +905,27 @@ def load_model_and_tokenizer(
     if quantization == "awq" and importlib.util.find_spec("awq") is None:
         raise NeedsExtraInstalled(extra="quantization")
 
+    # Start with dtype being the "auto" vLLM dtype
     dtype: str | torch.dtype = "auto"
+
+    # Choose bf16 over fp16 if the model is a fp32 model and the GPU supports it
+    if hf_model_config.torch_dtype == torch.float32:
+        if torch.cuda.is_bf16_supported():
+            logger.info(
+                "You are loading a model with dtype FP32, which we will convert to "
+                "BF16 as FP32 is not supported by vLLM and BF16 is supported by your "
+                "GPU."
+            )
+            dtype = torch.bfloat16
+        else:
+            logger.info(
+                "You are loading a model with dtype FP32, which we will convert to "
+                "FP16 as FP32 is not supported by vLLM and BF16 is not supported by "
+                "your GPU."
+            )
+            dtype = torch.float16
+
+    # If the model is a quantized model, we need to set the dtype to float16
     if quantization is not None and hf_model_config.torch_dtype != torch.float16:
         logger.info(
             "You are loading a quantized model with dtype "
@@ -906,6 +934,7 @@ def load_model_and_tokenizer(
         )
         dtype = torch.float16
 
+    # If the model is a bf16 model, we need to check the CUDA compute capability
     if hf_model_config.torch_dtype == torch.bfloat16:
         min_cuda_compute_capability = get_min_cuda_compute_capability()
         required_capability = VLLM_BF16_MIN_CUDA_COMPUTE_CAPABILITY
@@ -1160,15 +1189,20 @@ def get_end_of_reasoning_token_id(
 
     # Generate a completion and remove the BOS token from it, to not confuse it with the
     # potential reasoning token
-    completion = (
-        model.chat(
+    if tokenizer.chat_template is not None:
+        model_output = model.chat(
             messages=[dict(role="user", content=prompt)],
             sampling_params=SamplingParams(max_tokens=3, temperature=0.0),
             use_tqdm=False,
-        )[0]
-        .outputs[0]
-        .text
-    )
+        )
+    else:
+        model_output = model.generate(
+            prompts=[prompt],
+            sampling_params=SamplingParams(max_tokens=3, temperature=0.0),
+            use_tqdm=False,
+        )
+    completion = model_output[0].outputs[0].text
+
     if tokenizer.bos_token is not None:
         if isinstance(tokenizer.bos_token, str):
             prompt = prompt.replace(tokenizer.bos_token, "").strip()

@@ -282,10 +282,10 @@ $ euroeval --model <model-id> --dataset scala-fo
 
 ### FoQA
 
-This dataset will be published in an upcoming paper and is based on the Faroese
-Wikipedia. The questions and answers were automatically generated using GPT-4-turbo,
-which were verified by a native speaker, and some of them were also corrected by the
-same native speaker.
+This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2502.07642)
+and is based on the Faroese Wikipedia. The questions and answers were automatically
+generated using GPT-4-turbo, which were verified by a native speaker, and some of them
+were also corrected by the same native speaker.
 
 The original full dataset consists of 2,000 samples, and we split these into 848 / 128 /
 1,024 samples for training, validation and testing, respectively.
