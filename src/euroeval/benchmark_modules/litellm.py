@@ -345,6 +345,8 @@ class LiteLLMModel(BenchmarkModule):
             )
 
         assert isinstance(model_response, ModelResponse)
+        if not model_response.choices:
+            breakpoint()
         model_response_choices = model_response.choices[0]
         assert isinstance(model_response_choices, litellm.Choices)
         generation_output = model_response_choices.message["content"] or ""
