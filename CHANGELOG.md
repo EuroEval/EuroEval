@@ -17,8 +17,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   `<model-id>@<parameter>`.
 - Added metadata for Google Gemini and xAI Grok models.
 - Allows all vLLM versions from v0.8.0 again, as the issue with the generation output
-  has been resolved. This was due to `LLM.generate` not working properly anymore -
-  instead, we now use `LLM.chat` for vLLM models.
+  has been resolved.
 
 ### Changed
 - Now does not use logprobs in text classification tasks with Google VertexAI models, as
