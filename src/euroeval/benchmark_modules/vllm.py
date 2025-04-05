@@ -383,6 +383,7 @@ class VLLMModel(HuggingFaceEncoderModel):
         num_attempts = 3
         for _ in range(num_attempts):
             try:
+                breakpoint()
                 if self.buffer.get("instruction_model", False):
                     raw_outputs = self._model.chat(
                         messages=[
