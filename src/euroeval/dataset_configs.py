@@ -6,6 +6,7 @@ from .languages import (
     DE,
     EN,
     ES,
+    FI,
     FO,
     FR,
     IS,
@@ -295,6 +296,24 @@ SENTIMENT_HEADLINES_CONFIG = DatasetConfig(
     ),
     instruction_prompt="Texto: {text}\n\nClasifica el sentimiento de la reseña. "
     "Responde con 'positivo', 'neutral' o 'negativo', y nada más.",
+    num_few_shot_examples=12,
+    max_generated_tokens=5,
+)
+
+SCANDISENT_FI_CONFIG = DatasetConfig(
+    name="scandisent-fi",
+    pretty_name="the truncated version of the Finnish part of the binary sentiment "
+    "classification dataset ScandiSent",
+    huggingface_id="EuroEval/scandisent-fi-mini",
+    task=SENT,
+    languages=[FI],
+    labels=["negative", "positive"],
+    prompt_prefix="Seuraavassa on arvosteluja ja niiden tunnesävy, joka voi olla "
+    "'positiivinen' tai 'negatiivinen'.",
+    prompt_template="Teksti: {text}\nTunnesävy: {label}",
+    prompt_label_mapping=dict(positive="positiivinen", negative="negatiivinen"),
+    instruction_prompt="Teksti: {text}\n\nLuokittele arvostelun tunnesävy. "
+    "Vastaa vain 'positiivinen' tai 'negatiivinen', ei muuta.",
     num_few_shot_examples=12,
     max_generated_tokens=5,
 )
@@ -891,6 +910,45 @@ CONLL_ES_CONFIG = DatasetConfig(
     unofficial=True,
 )
 
+TURKU_NER_FI_CONFIG = DatasetConfig(
+    name="turku-ner-fi",
+    pretty_name="the Finnish part of the named entity recognition dataset Turku NER",
+    huggingface_id="EuroEval/turku-ner-fi-mini",
+    task=NER,
+    languages=[FI],
+    labels=[
+        "o",
+        "b-loc",
+        "i-loc",
+        "b-org",
+        "i-org",
+        "b-per",
+        "i-per",
+        "b-misc",
+        "i-misc",
+    ],
+    prompt_prefix="Seuraavassa on lauseita ja JSON-sanakirjoja, jotka sisältävät "
+    "annetussa lauseessa esiintyvät nimetyt entiteetit.",
+    prompt_template="Lause: {text}\nNimetyt entiteetit: {label}",
+    prompt_label_mapping={
+        "b-per": "henkilö",
+        "i-per": "henkilö",
+        "b-loc": "paikka",
+        "i-loc": "paikka",
+        "b-org": "organisaatio",
+        "i-org": "organisaatio",
+        "b-misc": "muut",
+        "i-misc": "muut",
+    },
+    instruction_prompt="Lause: {text}\n\nTunnista lauseessa esiintyvät nimetyt "
+    "entiteetit. Tulosta ne JSON-sanakirjana, jonka avaimet ovat 'henkilö', "
+    "'paikka', 'organisaatio' ja 'muut'. Arvojen tulee olla listoja kyseisen "
+    "tyypin nimetyistä entiteeteistä täsmälleen siinä muodossa kuin ne esiintyvät "
+    "lauseessa.",
+    num_few_shot_examples=8,
+    max_generated_tokens=128,
+)
+
 ### LINGUISTIC ACCEPTABILITY DATASETS ###
 
 SCALA_SV_CONFIG = DatasetConfig(
@@ -1450,6 +1508,23 @@ MLQA_ES_CONFIG = DatasetConfig(
     max_generated_tokens=32,
 )
 
+TYDIQA_FI_CONFIG = DatasetConfig(
+    name="tydiqa-fi",
+    pretty_name="the Finnish part of the TydiQA reading comprehension dataset",
+    huggingface_id="EuroEval/tydiqa-fi-mini",
+    task=RC,
+    languages=[FI],
+    labels=["start_positions", "end_positions"],
+    prompt_prefix="Seuraavassa on tekstejä ja niihin liittyviä kysymyksiä ja "
+    "vastauksia.",
+    prompt_template="Teksti: {text}\nKysymys: {question}\nVastaa enintään 3 "
+    "sanalla: {label}",
+    instruction_prompt="Teksti: {text}\n\nVastaa seuraavaan kysymykseen yllä "
+    "olevasta tekstistä enintään 3 sanalla.\n\nKysymys: {question}",
+    num_few_shot_examples=4,
+    max_generated_tokens=32,
+)
+
 ### SUMMARIZATION DATASETS ###
 
 NORDJYLLAND_NEWS_CONFIG = DatasetConfig(
@@ -1651,6 +1726,20 @@ ILPOST_SUM_CONFIG = DatasetConfig(
     prompt_template="Articolo di cronaca: {text}\nSintesi: {target_text}",
     instruction_prompt="Articolo di cronaca: {text}\n\nScrivete un riassunto "
     "dell'articolo sopra citato.",
+    num_few_shot_examples=1,
+    max_generated_tokens=256,
+)
+
+XLSUM_FI_CONFIG = DatasetConfig(
+    name="xlsum-fi",
+    pretty_name="the Finnish summarisation dataset XL-Sum",
+    huggingface_id="EuroEval/xlsum-fi-mini",
+    task=SUMM,
+    languages=[FI],
+    prompt_prefix="Seuraavassa on artikkeleita ja niihin liittyviä tiivistelmiä.",
+    prompt_template="Uutisartikkeli: {text}\nTiivistelmä: {target_text}",
+    instruction_prompt="Uutisartikkeli: {text}\n\nKirjoita tiivistelmä yllä "
+    "olevasta artikkelista.",
     num_few_shot_examples=1,
     max_generated_tokens=256,
 )
