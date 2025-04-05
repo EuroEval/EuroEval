@@ -2007,55 +2007,50 @@ using the following prompt for each <code>row</code> in the original dataset:</p
 length of this dataset is therefore 1,994. The split is given by 842 / 128 / 1024 for
 train, val, and test, respectively.</p>
 <p>Here are a few examples from the training split:</p>
-<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<p><div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Hver var talinn heilagur maður eftir dauða sinn, er tákngervingur alþýðuhreyfingar vestanlands og talinn góður til áheita?\nSvarmöguleikar:\na. Þórður Jónsson helgi\nb. Guðmundur Arason\nc. Snorri Þorgrímsson\nd. Jón Hreggviðsson&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;a&quot;</span>
-<span class="p">}</span><span class="err">```</span>
-<span class="err">```jso</span><span class="kc">n</span>
-<span class="p">{</span>
+<span class="p">}</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Í kringum hvaða ár hófst verslun á Arngerðareyri?\nSvarmöguleikar:\na. 1895\nb. 1884\nc. 1870\nd. 1902&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;b&quot;</span>
-<span class="p">}</span><span class="err">```</span>
-<span class="err">```jso</span><span class="kc">n</span>
-<span class="p">{</span>
+<span class="p">}</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Hvenær var ákveðið að uppstigningardagur skyldi vera kirkjudagur aldraðra á Íslandi?\nSvarmöguleikar:\na. Árið 1975\nb. Árið 1985\nc. Árið 1982\nd. Árið 1990&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;c&quot;</span>
-<span class="p">}</span><span class="err">```</span>
+<span class="p">}</span>
+</code></pre></div></p>
+<p>When evaluating generative models, we use the following setup (see the
+<a href="/methodology">methodology</a> for more information on how these are used):</p>
+<ul>
+<li>Number of few-shot examples: 5</li>
+<li>Prefix prompt:
+  <div class="highlight"><pre><span></span><code>Eftirfarandi eru fjölvalsspurningar (með svörum).
+</code></pre></div></li>
+<li>Base prompt template:
+  <div class="highlight"><pre><span></span><code>Spurningar: {text}
+Svarmöguleikar:
+a. {option_a}
+b. {option_b}
+c. {option_c}
+d. {option_d}
+Svara: {label}
+</code></pre></div></li>
+<li>Instruction-tuned prompt template:
+  <div class="highlight"><pre><span></span><code>Spurningar: {text}
+Svarmöguleikar:
+a. {option_a}
+b. {option_b}
+c. {option_c}
+d. {option_d}
 
-<span class="err">Whe</span><span class="kc">n</span><span class="w"> </span><span class="err">evalua</span><span class="kc">t</span><span class="err">i</span><span class="kc">n</span><span class="err">g</span><span class="w"> </span><span class="err">ge</span><span class="kc">nerat</span><span class="err">ive</span><span class="w"> </span><span class="err">models</span><span class="p">,</span><span class="w"> </span><span class="err">we</span><span class="w"> </span><span class="err">use</span><span class="w"> </span><span class="kc">t</span><span class="err">he</span><span class="w"> </span><span class="kc">f</span><span class="err">ollowi</span><span class="kc">n</span><span class="err">g</span><span class="w"> </span><span class="err">se</span><span class="kc">tu</span><span class="err">p</span><span class="w"> </span><span class="err">(see</span><span class="w"> </span><span class="kc">t</span><span class="err">he</span>
-<span class="p">[</span><span class="err">me</span><span class="kc">t</span><span class="err">hodology</span><span class="p">]</span><span class="err">(/me</span><span class="kc">t</span><span class="err">hodology)</span><span class="w"> </span><span class="kc">f</span><span class="err">or</span><span class="w"> </span><span class="err">more</span><span class="w"> </span><span class="err">i</span><span class="kc">nf</span><span class="err">orma</span><span class="kc">t</span><span class="err">io</span><span class="kc">n</span><span class="w"> </span><span class="err">o</span><span class="kc">n</span><span class="w"> </span><span class="err">how</span><span class="w"> </span><span class="kc">t</span><span class="err">hese</span><span class="w"> </span><span class="err">are</span><span class="w"> </span><span class="err">used)</span><span class="p">:</span>
-
-<span class="mi">-</span><span class="w"> </span><span class="err">Number</span><span class="w"> </span><span class="err">o</span><span class="kc">f</span><span class="w"> </span><span class="kc">fe</span><span class="err">w</span><span class="mi">-</span><span class="err">sho</span><span class="kc">t</span><span class="w"> </span><span class="err">examples</span><span class="p">:</span><span class="w"> </span><span class="mi">5</span>
-<span class="mi">-</span><span class="w"> </span><span class="err">Pre</span><span class="kc">f</span><span class="err">ix</span><span class="w"> </span><span class="err">promp</span><span class="kc">t</span><span class="p">:</span>
-<span class="w">  </span><span class="err">```</span>
-<span class="w">  </span><span class="err">E</span><span class="kc">ft</span><span class="err">ir</span><span class="kc">faran</span><span class="err">di</span><span class="w"> </span><span class="err">eru</span><span class="w"> </span><span class="kc">f</span><span class="err">jölvalsspur</span><span class="kc">n</span><span class="err">i</span><span class="kc">n</span><span class="err">gar</span><span class="w"> </span><span class="err">(með</span><span class="w"> </span><span class="err">svörum).</span>
-<span class="w">  </span><span class="err">```</span>
-<span class="mi">-</span><span class="w"> </span><span class="err">Base</span><span class="w"> </span><span class="err">promp</span><span class="kc">t</span><span class="w"> </span><span class="kc">te</span><span class="err">mpla</span><span class="kc">te</span><span class="p">:</span>
-<span class="w">  </span><span class="err">```</span>
-<span class="w">  </span><span class="err">Spur</span><span class="kc">n</span><span class="err">i</span><span class="kc">n</span><span class="err">gar</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="kc">te</span><span class="err">x</span><span class="kc">t</span><span class="p">}</span>
-<span class="w">  </span><span class="err">Svarmöguleikar</span><span class="p">:</span>
-<span class="w">  </span><span class="err">a.</span><span class="w"> </span><span class="p">{</span><span class="err">op</span><span class="kc">t</span><span class="err">io</span><span class="kc">n</span><span class="err">_a</span><span class="p">}</span>
-<span class="w">  </span><span class="err">b.</span><span class="w"> </span><span class="p">{</span><span class="err">op</span><span class="kc">t</span><span class="err">io</span><span class="kc">n</span><span class="err">_b</span><span class="p">}</span>
-<span class="w">  </span><span class="err">c.</span><span class="w"> </span><span class="p">{</span><span class="err">op</span><span class="kc">t</span><span class="err">io</span><span class="kc">n</span><span class="err">_c</span><span class="p">}</span>
-<span class="w">  </span><span class="err">d.</span><span class="w"> </span><span class="p">{</span><span class="err">op</span><span class="kc">t</span><span class="err">io</span><span class="kc">n</span><span class="err">_d</span><span class="p">}</span>
-<span class="w">  </span><span class="err">Svara</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="err">label</span><span class="p">}</span>
-<span class="w">  </span><span class="err">```</span>
-<span class="mi">-</span><span class="w"> </span><span class="err">I</span><span class="kc">nstru</span><span class="err">c</span><span class="kc">t</span><span class="err">io</span><span class="kc">n</span><span class="mi">-</span><span class="kc">tune</span><span class="err">d</span><span class="w"> </span><span class="err">promp</span><span class="kc">t</span><span class="w"> </span><span class="kc">te</span><span class="err">mpla</span><span class="kc">te</span><span class="p">:</span>
-<span class="w">  </span><span class="err">```</span>
-<span class="w">  </span><span class="err">Spur</span><span class="kc">n</span><span class="err">i</span><span class="kc">n</span><span class="err">gar</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="kc">te</span><span class="err">x</span><span class="kc">t</span><span class="p">}</span>
-<span class="w">  </span><span class="err">Svarmöguleikar</span><span class="p">:</span>
-<span class="w">  </span><span class="err">a.</span><span class="w"> </span><span class="p">{</span><span class="err">op</span><span class="kc">t</span><span class="err">io</span><span class="kc">n</span><span class="err">_a</span><span class="p">}</span>
-<span class="w">  </span><span class="err">b.</span><span class="w"> </span><span class="p">{</span><span class="err">op</span><span class="kc">t</span><span class="err">io</span><span class="kc">n</span><span class="err">_b</span><span class="p">}</span>
-<span class="w">  </span><span class="err">c.</span><span class="w"> </span><span class="p">{</span><span class="err">op</span><span class="kc">t</span><span class="err">io</span><span class="kc">n</span><span class="err">_c</span><span class="p">}</span>
-<span class="w">  </span><span class="err">d.</span><span class="w"> </span><span class="p">{</span><span class="err">op</span><span class="kc">t</span><span class="err">io</span><span class="kc">n</span><span class="err">_d</span><span class="p">}</span>
-
-<span class="w">  </span><span class="err">Svaraðu</span><span class="w"> </span><span class="err">e</span><span class="kc">ft</span><span class="err">ir</span><span class="kc">faran</span><span class="err">di</span><span class="w"> </span><span class="err">spur</span><span class="kc">n</span><span class="err">i</span><span class="kc">n</span><span class="err">gum</span><span class="w"> </span><span class="err">með</span><span class="w"> </span><span class="err">&#39;a&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;b&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;c&#39;</span><span class="w"> </span><span class="err">eða</span><span class="w"> </span><span class="err">&#39;d&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">og</span><span class="w"> </span><span class="err">e</span><span class="kc">n</span><span class="err">gu</span><span class="w"> </span><span class="err">öðru.</span>
-<span class="w">  </span><span class="err">```</span>
-
-<span class="err">You</span><span class="w"> </span><span class="err">ca</span><span class="kc">n</span><span class="w"> </span><span class="err">evalua</span><span class="kc">te</span><span class="w"> </span><span class="kc">t</span><span class="err">his</span><span class="w"> </span><span class="err">da</span><span class="kc">taset</span><span class="w"> </span><span class="err">direc</span><span class="kc">tl</span><span class="err">y</span><span class="w"> </span><span class="err">as</span><span class="w"> </span><span class="kc">f</span><span class="err">ollows</span><span class="p">:</span>
-
-<span class="err">```bash</span>
-<span class="err">$</span><span class="w"> </span><span class="err">euroeval</span><span class="w"> </span><span class="mi">--</span><span class="err">model</span><span class="w"> </span><span class="err">&lt;model</span><span class="mi">-</span><span class="err">id&gt;</span><span class="w"> </span><span class="mi">--</span><span class="err">da</span><span class="kc">taset</span><span class="w"> </span><span class="err">icela</span><span class="kc">n</span><span class="err">dic</span><span class="mi">-</span><span class="err">k</span><span class="kc">n</span><span class="err">owledge</span>
+Svaraðu eftirfarandi spurningum með &#39;a&#39;, &#39;b&#39;, &#39;c&#39; eða &#39;d&#39;, og engu öðru.
+</code></pre></div></li>
+</ul>
+<p>You can evaluate this dataset directly as follows:</p>
+<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>icelandic-knowledge
 </code></pre></div>
 <h3 id="unofficial-arc-is">Unofficial: ARC-is</h3>
 <p>This dataset is a machine translated version of the English <a href="https://doi.org/10.48550/arXiv.1803.05457">ARC
