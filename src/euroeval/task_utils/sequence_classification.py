@@ -222,6 +222,7 @@ def get_closest_logprobs_labels(
                         for candidate_label in candidate_labels
                         if candidate_label.startswith(generated_label)
                     }
+                breakpoint()
 
                 # If we can uniquely determine the output label, we break the loop. If
                 # there are multiple possible labels then we store the current one, and
