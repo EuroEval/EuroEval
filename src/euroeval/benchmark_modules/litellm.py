@@ -724,12 +724,29 @@ class LiteLLMModel(BenchmarkModule):
                     api_version=benchmark_config.api_version,
                 )
                 return True
+            except (
+                APIConnectionError,
+                Timeout,
+                ServiceUnavailableError,
+                InternalServerError,
+            ) as e:
+                logger.debug(
+                    f"Service temporarily unavailable. The error message was: {e}. "
+                    "Retrying in 10 seconds..."
+                )
+                sleep(5)
+            except RateLimitError:
+                logger.warning(
+                    f"Rate limit exceeded for model {model_id!r}. Retrying in 10 "
+                    "seconds..."
+                )
+                sleep(10)
             except APIError as e:
                 if "'503 Service Unavailable" not in str(e):
                     raise e
                 logger.warning(
-                    f"Failed to check if model {model_id!r} exists. Retrying in "
-                    f"{num_attempts} seconds..."
+                    f"Failed to check if model {model_id!r} exists. Retrying in 10 "
+                    "seconds..."
                 )
                 sleep(10)
             except (BadRequestError, NotFoundError):
