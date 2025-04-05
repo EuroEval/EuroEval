@@ -81,7 +81,7 @@ $ euroeval --model <model-id> --dataset sst5
 
 ## Named Entity Recognition
 
-### CoNLL-2003-En
+### CoNLL-en
 
 This dataset was published in [this paper](https://aclanthology.org/W03-0419/) and was
 part of the CoNNL-2003 shared task. The data comes from the [Reuters

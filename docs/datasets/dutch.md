@@ -133,7 +133,7 @@ $ euroeval --model <model-id> --dataset dbrd
 
 ## Named Entity Recognition
 
-### CoNLL-2002-nl
+### CoNLL-nl
 
 This dataset was published in [this paper](https://aclanthology.org/W02-2024/) and
 consists of named entity recognition annotations of the Belgian newspaper "De Morgen" of
