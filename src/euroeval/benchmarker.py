@@ -367,7 +367,7 @@ class Benchmarker:
         )
 
         total_benchmarks = len(model_ids) * len(dataset_configs)
-        current_benchmarks = 0
+        num_finished_benchmarks = 0
 
         current_benchmark_results: list[BenchmarkResult] = list()
         for model_id in model_ids:
@@ -377,7 +377,7 @@ class Benchmarker:
                 )
             except InvalidModel as e:
                 logger.info(e.message)
-                current_benchmarks += len(dataset_configs)
+                num_finished_benchmarks += len(dataset_configs)
                 continue
 
             loaded_model: BenchmarkModule | None = None
@@ -396,7 +396,7 @@ class Benchmarker:
                         f"{dataset_config.pretty_name}, as it "
                         "has already been benchmarked."
                     )
-                    current_benchmarks += 1
+                    num_finished_benchmarks += 1
                     continue
 
                 # We do not re-initialise generative models as their architecture is not
@@ -419,12 +419,15 @@ class Benchmarker:
                             if benchmark_config.raise_errors:
                                 raise e
                             logger.info(e.message)
-                            remaining_tasks = (
+
+                            # Add the remaining number of benchmarks for the model to
+                            # our benchmark counter, since we're skipping the
+                            # rest of them
+                            num_finished_benchmarks += (
                                 len(dataset_configs)
                                 - dataset_configs.index(dataset_config)
                                 - 1
                             )
-                            current_benchmarks += remaining_tasks
                             break
                     else:
                         loaded_model.dataset_config = dataset_config
@@ -451,17 +454,20 @@ class Benchmarker:
                         f"{dataset_config.pretty_name}. Skipping. The error message "
                         f"raised was {benchmark_output_or_err.message!r}."
                     )
-                    current_benchmarks += 1
+                    num_finished_benchmarks += 1
                     continue
 
                 elif isinstance(benchmark_output_or_err, InvalidModel):
                     if benchmark_config.raise_errors:
                         raise benchmark_output_or_err
                     logger.info(benchmark_output_or_err.message)
-                    remaining_configs = (
+
+                    # Add the remaining number of benchmarks for the model to
+                    # our benchmark counter, since we're skipping the
+                    # rest of them
+                    num_finished_benchmarks += (
                         len(dataset_configs) - dataset_configs.index(dataset_config) - 1
                     )
-                    current_benchmarks += remaining_configs
                     break
 
                 else:
@@ -470,9 +476,10 @@ class Benchmarker:
                     if benchmark_config.save_results:
                         record.append_to_results(results_path=self.results_path)
 
-                current_benchmarks += 1
+                num_finished_benchmarks += 1
                 logger.info(
-                    f"Finished {current_benchmarks} out of {total_benchmarks} benchmarks."
+                    f"Finished {num_finished_benchmarks} out of "
+                    f"{total_benchmarks} benchmarks."
                 )
 
             if benchmark_config.clear_model_cache:
