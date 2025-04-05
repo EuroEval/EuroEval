@@ -18,6 +18,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Added metadata for Google Gemini and xAI Grok models.
 - Allows all vLLM versions from v0.8.0 again, as the issue with the generation output
   has been resolved.
+- Added overall progress indicator during evaluation. This was contributed by
+  [@mathiasesn](https://github.com/mathiasesn) ✨
 
 ### Changed
 - Now does not use logprobs in text classification tasks with Google VertexAI models, as
@@ -55,7 +57,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Fixed
 - Now uses `fp16` instead of `bf16` when evaluating decoder models on GPUs with CUDA
-  compatibility < 8.0. This was contributed by [@marksverdhei](https://github.com/marksverdhei) ✨
+  compatibility < 8.0. This was contributed by
+  [@marksverdhei](https://github.com/marksverdhei) ✨
 - Corrected the name of the French sentiment dataset AlloCiné. This was contributed by
   [@Alkarex](https://github.com/Alkarex) ✨
 - Evaluating a specific model revision did not work for adapter models, as there was a
@@ -82,7 +85,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   as the API sometimes fails. If it still fails after 3 attempts, we raise the
   `HuggingFaceHubDown` exception.
 - Now uses `fp16` instead of `bf16` when evaluating decoder models on GPUs with CUDA
-  compatibility < 8.0. This was contributed by [@marksverdhei](https://github.com/marksverdhei) ✨
+  compatibility < 8.0. This was contributed by
+  [@marksverdhei](https://github.com/marksverdhei) ✨
 - Fixed docs for ScandiQA-da and ScandiQA-sv, where it was incorrectly stated that
   the splits were made by considering the original train/validation/test splits.
 
@@ -150,18 +154,17 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## [v15.3.0] - 2025-03-12
 ### Added
 - Added support for evaluating Italian 🇮🇹! This includes the reading comprehension
-  dataset [SQuAD-it](https://hf.co/datasets/crux82/squad_it), the summarization
-  dataset [IlPost](https://hf.co/datasets/ARTeLab/ilpost), the sentiment
-  classification
-  [Sentipolc-16](https://hf.co/datasets/cardiffnlp/tweet_sentiment_multilingual),
-  the common-sense reasoning dataset
-  [HellaSwag-it](https://hf.co/datasets/alexandrainst/m_hellaswag), the linguistic acceptability
-  dataset ScaLA with the [Italian Universal Dependencies
+  dataset [SQuAD-it](https://hf.co/datasets/crux82/squad_it), the summarization dataset
+  [IlPost](https://hf.co/datasets/ARTeLab/ilpost), the sentiment classification
+  [Sentipolc-16](https://hf.co/datasets/cardiffnlp/tweet_sentiment_multilingual), the
+  common-sense reasoning dataset
+  [HellaSwag-it](https://hf.co/datasets/alexandrainst/m_hellaswag), the linguistic
+  acceptability dataset ScaLA with the [Italian Universal Dependencies
   treebank](https://github.com/UniversalDependencies/UD_Italian-ISDT), the knowledge
   dataset [MMLU-it](https://hf.co/datasets/alexandrainst/m_mmlu), and the named entity
-  recognition dataset [MultiNERD
-  IT](https://hf.co/datasets/Babelscape/multinerd) (and unofficially
-  [WikiNEuRal IT](https://hf.co/datasets/Babelscape/wikineural)). This was contributed by [@viggo-gascou](https://github.com/viggo-gascou) ✨
+  recognition dataset [MultiNERD IT](https://hf.co/datasets/Babelscape/multinerd) (and
+  unofficially [WikiNEuRal IT](https://hf.co/datasets/Babelscape/wikineural)). This was
+  contributed by [@viggo-gascou](https://github.com/viggo-gascou) ✨
 - Added the new Norwegian knowledge dataset NRK-Quiz-QA, consisting of quizzes on the
   Norwegian language and culture, in both Bokmål and Nynorsk. The dataset has been split
   into 635 / 256 / 2,048 samples for train, val, and test, respectively. This replaces
