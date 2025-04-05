@@ -12,7 +12,7 @@
       
       
       <link rel="icon" href="../../../gfx/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.10">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.11">
     
     
       
@@ -148,11 +148,13 @@
     
     
     
-      <label class="md-header__button md-icon" for="__search">
-        
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
-      </label>
-      <div class="md-search" data-md-component="search" role="dialog">
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
   <label class="md-search__overlay" for="__search"></label>
   <div class="md-search__inner" role="search">
     <form class="md-search__form" name="search">
@@ -184,6 +186,7 @@
     </div>
   </div>
 </div>
+      
     
     
       <div class="md-header__source">
@@ -989,6 +992,15 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#euroeval.utils.get_first_label_token_mapping" class="md-nav__link">
+    <span class="md-ellipsis">
+      get_first_label_token_mapping
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1593,7 +1605,100 @@
 <span class="normal">575</span>
 <span class="normal">576</span>
 <span class="normal">577</span>
-<span class="normal">578</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Utility functions to be used in other scripts.&quot;&quot;&quot;</span>
+<span class="normal">578</span>
+<span class="normal">579</span>
+<span class="normal">580</span>
+<span class="normal">581</span>
+<span class="normal">582</span>
+<span class="normal">583</span>
+<span class="normal">584</span>
+<span class="normal">585</span>
+<span class="normal">586</span>
+<span class="normal">587</span>
+<span class="normal">588</span>
+<span class="normal">589</span>
+<span class="normal">590</span>
+<span class="normal">591</span>
+<span class="normal">592</span>
+<span class="normal">593</span>
+<span class="normal">594</span>
+<span class="normal">595</span>
+<span class="normal">596</span>
+<span class="normal">597</span>
+<span class="normal">598</span>
+<span class="normal">599</span>
+<span class="normal">600</span>
+<span class="normal">601</span>
+<span class="normal">602</span>
+<span class="normal">603</span>
+<span class="normal">604</span>
+<span class="normal">605</span>
+<span class="normal">606</span>
+<span class="normal">607</span>
+<span class="normal">608</span>
+<span class="normal">609</span>
+<span class="normal">610</span>
+<span class="normal">611</span>
+<span class="normal">612</span>
+<span class="normal">613</span>
+<span class="normal">614</span>
+<span class="normal">615</span>
+<span class="normal">616</span>
+<span class="normal">617</span>
+<span class="normal">618</span>
+<span class="normal">619</span>
+<span class="normal">620</span>
+<span class="normal">621</span>
+<span class="normal">622</span>
+<span class="normal">623</span>
+<span class="normal">624</span>
+<span class="normal">625</span>
+<span class="normal">626</span>
+<span class="normal">627</span>
+<span class="normal">628</span>
+<span class="normal">629</span>
+<span class="normal">630</span>
+<span class="normal">631</span>
+<span class="normal">632</span>
+<span class="normal">633</span>
+<span class="normal">634</span>
+<span class="normal">635</span>
+<span class="normal">636</span>
+<span class="normal">637</span>
+<span class="normal">638</span>
+<span class="normal">639</span>
+<span class="normal">640</span>
+<span class="normal">641</span>
+<span class="normal">642</span>
+<span class="normal">643</span>
+<span class="normal">644</span>
+<span class="normal">645</span>
+<span class="normal">646</span>
+<span class="normal">647</span>
+<span class="normal">648</span>
+<span class="normal">649</span>
+<span class="normal">650</span>
+<span class="normal">651</span>
+<span class="normal">652</span>
+<span class="normal">653</span>
+<span class="normal">654</span>
+<span class="normal">655</span>
+<span class="normal">656</span>
+<span class="normal">657</span>
+<span class="normal">658</span>
+<span class="normal">659</span>
+<span class="normal">660</span>
+<span class="normal">661</span>
+<span class="normal">662</span>
+<span class="normal">663</span>
+<span class="normal">664</span>
+<span class="normal">665</span>
+<span class="normal">666</span>
+<span class="normal">667</span>
+<span class="normal">668</span>
+<span class="normal">669</span>
+<span class="normal">670</span>
+<span class="normal">671</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Utility functions to be used in other scripts.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">gc</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">importlib</span>
@@ -1602,12 +1707,12 @@
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">random</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">t</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">functools</span><span class="w"> </span><span class="kn">import</span> <span class="n">cache</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">types</span><span class="w"> </span><span class="kn">import</span> <span class="n">TracebackType</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">litellm</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
@@ -1615,7 +1720,6 @@
 <span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">datasets.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">disable_progress_bar</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">requests.exceptions</span><span class="w"> </span><span class="kn">import</span> <span class="n">RequestException</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">PreTrainedTokenizer</span><span class="p">,</span> <span class="n">PreTrainedTokenizerBase</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">logging</span> <span class="k">as</span> <span class="n">tf_logging</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">.exceptions</span><span class="w"> </span><span class="kn">import</span> <span class="n">InvalidModel</span><span class="p">,</span> <span class="n">NaNValueInModelOutput</span>
@@ -1624,6 +1728,11 @@
     <span class="kn">import</span><span class="w"> </span><span class="nn">ray</span>
 
 <span class="k">if</span> <span class="n">t</span><span class="o">.</span><span class="n">TYPE_CHECKING</span><span class="p">:</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">types</span><span class="w"> </span><span class="kn">import</span> <span class="n">TracebackType</span>
+
+    <span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">PreTrainedTokenizer</span><span class="p">,</span> <span class="n">PreTrainedTokenizerBase</span>
+
+    <span class="kn">from</span><span class="w"> </span><span class="nn">.data_models</span><span class="w"> </span><span class="kn">import</span> <span class="n">DatasetConfig</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">Predictions</span>
 
 
@@ -1880,7 +1989,7 @@
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">exc_type</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Type</span><span class="p">[</span><span class="ne">BaseException</span><span class="p">],</span>
         <span class="n">exc_val</span><span class="p">:</span> <span class="ne">BaseException</span><span class="p">,</span>
-        <span class="n">exc_tb</span><span class="p">:</span> <span class="n">TracebackType</span><span class="p">,</span>
+        <span class="n">exc_tb</span><span class="p">:</span> <span class="s2">&quot;TracebackType&quot;</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Exit the context manager.&quot;&quot;&quot;</span>
         <span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
@@ -1950,7 +2059,6 @@
     <span class="k">return</span> <span class="n">strip_prompts</span>
 
 
-<span class="c1"># TODO: This is currently not used - maybe remove.</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">should_prefix_space_be_added_to_labels</span><span class="p">(</span><div class="mkapi-source-link" id="euroeval.utils.should_prefix_space_be_added_to_labels"><a href="../../../api/euroeval/utils/#euroeval.utils.should_prefix_space_be_added_to_labels" title="Go to docs">docs</a></div>
     <span class="n">labels_to_be_generated</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">tokenizer</span><span class="p">:</span> <span class="s2">&quot;PreTrainedTokenizer&quot;</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
@@ -2171,6 +2279,96 @@
         <span class="k">return</span> <span class="n">importlib</span><span class="o">.</span><span class="n">metadata</span><span class="o">.</span><span class="n">version</span><span class="p">(</span><span class="n">package_name</span><span class="p">)</span>
     <span class="k">except</span> <span class="n">importlib</span><span class="o">.</span><span class="n">metadata</span><span class="o">.</span><span class="n">PackageNotFoundError</span><span class="p">:</span>
         <span class="k">return</span> <span class="kc">None</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">get_first_label_token_mapping</span><span class="p">(</span><div class="mkapi-source-link" id="euroeval.utils.get_first_label_token_mapping"><a href="../../../api/euroeval/utils/#euroeval.utils.get_first_label_token_mapping" title="Go to docs">docs</a></div>
+    <span class="n">dataset_config</span><span class="p">:</span> <span class="s2">&quot;DatasetConfig&quot;</span><span class="p">,</span> <span class="n">tokenizer</span><span class="p">:</span> <span class="s2">&quot;PreTrainedTokenizer | None&quot;</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Check if the model should output scores.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        dataset_config:</span>
+<span class="sd">            The dataset configuration.</span>
+<span class="sd">        tokenizer:</span>
+<span class="sd">            The tokenizer, or None if not available.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        A mapping from labels to the first token in each label, or alternatively a</span>
+<span class="sd">        Boolean value indicating whether the model should output scores (if the mapping</span>
+<span class="sd">        is outputted then the model will always output scores).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Importing here to avoid circular imports</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">.constants</span><span class="w"> </span><span class="kn">import</span> <span class="n">TASK_GROUPS_USING_LOGPROBS</span>
+
+    <span class="c1"># If we do not have any tokenizer, then we cannot check if the model should output</span>
+    <span class="c1"># scores and we just assume it should if the dataset supports it</span>
+    <span class="n">output_scores</span> <span class="o">=</span> <span class="n">dataset_config</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">task_group</span> <span class="ow">in</span> <span class="n">TASK_GROUPS_USING_LOGPROBS</span>
+    <span class="k">if</span> <span class="n">tokenizer</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">output_scores</span><span class="p">:</span>
+            <span class="n">log_once</span><span class="p">(</span>
+                <span class="s2">&quot;The model will output scores, since the dataset supports it and no &quot;</span>
+                <span class="s2">&quot;tokenizer is available.&quot;</span><span class="p">,</span>
+                <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">log_once</span><span class="p">(</span>
+                <span class="s2">&quot;The model will not output scores, since the dataset does not support &quot;</span>
+                <span class="s2">&quot;it and no tokenizer is available.&quot;</span><span class="p">,</span>
+                <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="n">output_scores</span>
+
+    <span class="c1"># If there are labels associated with the dataset, and that the first token of each</span>
+    <span class="c1"># label is distinct, then we can safely use the logprobs</span>
+    <span class="k">if</span> <span class="n">output_scores</span> <span class="ow">and</span> <span class="n">dataset_config</span><span class="o">.</span><span class="n">labels</span><span class="p">:</span>
+        <span class="n">local_labels</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">dataset_config</span><span class="o">.</span><span class="n">prompt_label_mapping</span><span class="p">[</span><span class="n">label</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+            <span class="k">for</span> <span class="n">label</span> <span class="ow">in</span> <span class="n">dataset_config</span><span class="o">.</span><span class="n">labels</span>
+        <span class="p">]</span>
+
+        <span class="c1"># Get the first token of each label, where we add a prefix space if needed</span>
+        <span class="n">add_prefix_space</span> <span class="o">=</span> <span class="n">should_prefix_space_be_added_to_labels</span><span class="p">(</span>
+            <span class="n">labels_to_be_generated</span><span class="o">=</span><span class="n">local_labels</span><span class="p">,</span> <span class="n">tokenizer</span><span class="o">=</span><span class="n">tokenizer</span>
+        <span class="p">)</span>
+        <span class="n">first_tokens</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">tokenizer</span><span class="o">.</span><span class="n">tokenize</span><span class="p">(</span><span class="n">text</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot; </span><span class="si">{</span><span class="n">label</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">if</span> <span class="n">add_prefix_space</span> <span class="k">else</span> <span class="n">label</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="k">for</span> <span class="n">label</span> <span class="ow">in</span> <span class="n">local_labels</span>
+        <span class="p">]</span>
+        <span class="n">first_tokens</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span>
+                <span class="n">pattern</span><span class="o">=</span><span class="sa">r</span><span class="s2">&quot;^[^a-zæøåüöä]+|[^a-zæøåüöä]+$&quot;</span><span class="p">,</span> <span class="n">repl</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">string</span><span class="o">=</span><span class="n">token</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+            <span class="p">)</span>
+            <span class="k">for</span> <span class="n">token</span> <span class="ow">in</span> <span class="n">first_tokens</span>
+        <span class="p">]</span>
+
+        <span class="c1"># Build a mapping from labels to the first token in each label if the first</span>
+        <span class="c1"># tokens are distinct</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">first_tokens</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">first_tokens</span><span class="p">)):</span>
+            <span class="n">log_once</span><span class="p">(</span>
+                <span class="s2">&quot;The model will output scores, since the first tokens of the labels &quot;</span>
+                <span class="s2">&quot;are distinct.&quot;</span><span class="p">,</span>
+                <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="k">return</span> <span class="p">{</span>
+                <span class="n">label</span><span class="p">:</span> <span class="n">first_token</span>
+                <span class="k">for</span> <span class="n">label</span><span class="p">,</span> <span class="n">first_token</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">local_labels</span><span class="p">,</span> <span class="n">first_tokens</span><span class="p">)</span>
+            <span class="p">}</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">log_once</span><span class="p">(</span>
+                <span class="s2">&quot;The model will not output scores, since the first tokens of the &quot;</span>
+                <span class="s2">&quot;labels are not distinct. The first tokens for the labels &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">local_labels</span><span class="si">}</span><span class="s2"> are </span><span class="si">{</span><span class="n">first_tokens</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span>
+            <span class="k">return</span> <span class="kc">False</span>
+
+    <span class="c1"># Otherwise, we assume that the model should not output scores, to avoid potential</span>
+    <span class="c1"># evaluation errors. This will force the label extraction to rely on word edit</span>
+    <span class="c1"># distance instead of logprobs.</span>
+    <span class="n">log_once</span><span class="p">(</span>
+        <span class="s2">&quot;The model will not output scores, since the dataset does not have labels.&quot;</span><span class="p">,</span>
+        <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="kc">False</span>
 </code></pre></div></td></tr></table></div>
 
 

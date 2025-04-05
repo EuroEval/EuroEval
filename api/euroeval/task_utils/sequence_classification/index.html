@@ -16,7 +16,7 @@
       
       
       <link rel="icon" href="../../../../gfx/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.10">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.11">
     
     
       
@@ -152,11 +152,13 @@
     
     
     
-      <label class="md-header__button md-icon" for="__search">
-        
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
-      </label>
-      <div class="md-search" data-md-component="search" role="dialog">
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
   <label class="md-search__overlay" for="__search"></label>
   <div class="md-search__inner" role="search">
     <form class="md-search__form" name="search">
@@ -188,6 +190,7 @@
     </div>
   </div>
 </div>
+      
     
     
       <div class="md-header__source">
@@ -1951,7 +1954,7 @@ values.</p>
 <i class="fa-regular fa-square-minus"></i>
 </span>
 </span>
-<span class="mkapi-object-name"><a href="./#euroeval.task_utils.sequence_classification.extract_labels_from_generation" title="euroeval.task_utils.sequence_classification.extract_labels_from_generation">extract_labels_from_generation</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">input_batch</span><span class="mkapi-colon">: </span><span class="mkapi-ann">dict[str, list]</span><span class="mkapi-comma">, </span><span class="mkapi-arg">model_output</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><a href="../../data_models/#euroeval.data_models.GenerativeModelOutput" title="euroeval.data_models.GenerativeModelOutput">GenerativeModelOutput</a></span><span class="mkapi-comma">, </span><span class="mkapi-arg">dataset_config</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><a href="../../data_models/#euroeval.data_models.DatasetConfig" title="euroeval.data_models.DatasetConfig">DatasetConfig</a></span><span class="mkapi-paren">)</span><span class="mkapi-arrow"> → </span><span class="mkapi-return">list[str]</span></span>
+<span class="mkapi-object-name"><a href="./#euroeval.task_utils.sequence_classification.extract_labels_from_generation" title="euroeval.task_utils.sequence_classification.extract_labels_from_generation">extract_labels_from_generation</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">input_batch</span><span class="mkapi-colon">: </span><span class="mkapi-ann">dict[str, list]</span><span class="mkapi-comma">, </span><span class="mkapi-arg">model_output</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><a href="../../data_models/#euroeval.data_models.GenerativeModelOutput" title="euroeval.data_models.GenerativeModelOutput">GenerativeModelOutput</a></span><span class="mkapi-comma">, </span><span class="mkapi-arg">dataset_config</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><a href="../../data_models/#euroeval.data_models.DatasetConfig" title="euroeval.data_models.DatasetConfig">DatasetConfig</a></span><span class="mkapi-comma">, </span><span class="mkapi-arg">first_label_token_mapping</span><span class="mkapi-colon">: </span><span class="mkapi-ann">dict[str, str] | bool</span><span class="mkapi-paren">)</span><span class="mkapi-arrow"> → </span><span class="mkapi-return">list[str]</span></span>
 </p>
 <div class="mkapi-document">
 <p>Extract the predicted labels from the generated output.</p>
@@ -1981,6 +1984,13 @@ The raw generated output of the model.</p>
 <span class="mkapi-item-type"><a href="../../data_models/#euroeval.data_models.DatasetConfig" title="euroeval.data_models.DatasetConfig">DatasetConfig</a></span> <span class="mkapi-dash">&mdash;</span>
 The configuration of the dataset.</p>
 </li>
+<li>
+<p><span class="mkapi-item-name">first_label_token_mapping</span> : 
+<span class="mkapi-item-type">dict[str, str] | bool</span> <span class="mkapi-dash">&mdash;</span>
+A mapping from labels to the first token in each label, or alternatively a
+Boolean value indicating whether the model should output scores (if the
+mapping is outputted then the model will always output scores).</p>
+</li>
 </ul>
 </div>
 <p class="mkapi-section">
@@ -2009,7 +2019,7 @@ The predicted labels.</p>
 <i class="fa-regular fa-square-minus"></i>
 </span>
 </span>
-<span class="mkapi-object-name"><a href="./#euroeval.task_utils.sequence_classification.get_closest_logprobs_labels" title="euroeval.task_utils.sequence_classification.get_closest_logprobs_labels">get_closest_logprobs_labels</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">generation_logprobs</span><span class="mkapi-colon">: </span><span class="mkapi-ann">list[list[list[tuple[str, float]]]]</span><span class="mkapi-comma">, </span><span class="mkapi-arg">dataset_config</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><a href="../../data_models/#euroeval.data_models.DatasetConfig" title="euroeval.data_models.DatasetConfig">DatasetConfig</a></span><span class="mkapi-paren">)</span><span class="mkapi-arrow"> → </span><span class="mkapi-return">list[str]</span></span>
+<span class="mkapi-object-name"><a href="./#euroeval.task_utils.sequence_classification.get_closest_logprobs_labels" title="euroeval.task_utils.sequence_classification.get_closest_logprobs_labels">get_closest_logprobs_labels</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">generation_logprobs</span><span class="mkapi-colon">: </span><span class="mkapi-ann">list[list[list[tuple[str, float]]]]</span><span class="mkapi-comma">, </span><span class="mkapi-arg">dataset_config</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><a href="../../data_models/#euroeval.data_models.DatasetConfig" title="euroeval.data_models.DatasetConfig">DatasetConfig</a></span><span class="mkapi-comma">, </span><span class="mkapi-arg">first_label_token_mapping</span><span class="mkapi-colon">: </span><span class="mkapi-ann">dict[str, str] | bool</span><span class="mkapi-paren">)</span><span class="mkapi-arrow"> → </span><span class="mkapi-return">list[str]</span></span>
 </p>
 <div class="mkapi-document">
 <p>Get the labels with the highest predicted logprob value.</p>
@@ -2037,6 +2047,13 @@ The logprobs of the generated tokens, for all samples in the batch. Of shape
 <p><span class="mkapi-item-name">dataset_config</span> : 
 <span class="mkapi-item-type"><a href="../../data_models/#euroeval.data_models.DatasetConfig" title="euroeval.data_models.DatasetConfig">DatasetConfig</a></span> <span class="mkapi-dash">&mdash;</span>
 The configuration of the dataset.</p>
+</li>
+<li>
+<p><span class="mkapi-item-name">first_label_token_mapping</span> : 
+<span class="mkapi-item-type">dict[str, str] | bool</span> <span class="mkapi-dash">&mdash;</span>
+A mapping from labels to the first token in each label, or alternatively a
+Boolean value indicating whether the model should output scores (if the
+mapping is outputted then the model will always output scores).</p>
 </li>
 </ul>
 </div>

@@ -12,7 +12,7 @@
       
       
       <link rel="icon" href="../../../gfx/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.10">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.11">
     
     
       
@@ -148,11 +148,13 @@
     
     
     
-      <label class="md-header__button md-icon" for="__search">
-        
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
-      </label>
-      <div class="md-search" data-md-component="search" role="dialog">
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
   <label class="md-search__overlay" for="__search"></label>
   <div class="md-search__inner" role="search">
     <form class="md-search__form" name="search">
@@ -184,6 +186,7 @@
     </div>
   </div>
 </div>
+      
     
     
       <div class="md-header__source">
@@ -886,13 +889,27 @@
 <span class="normal">56</span>
 <span class="normal">57</span>
 <span class="normal">58</span>
-<span class="normal">59</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Constants used throughout the project.&quot;&quot;&quot;</span>
+<span class="normal">59</span>
+<span class="normal">60</span>
+<span class="normal">61</span>
+<span class="normal">62</span>
+<span class="normal">63</span>
+<span class="normal">64</span>
+<span class="normal">65</span>
+<span class="normal">66</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Constants used throughout the project.&quot;&quot;&quot;</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">.enums</span><span class="w"> </span><span class="kn">import</span> <span class="n">TaskGroup</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.tasks</span><span class="w"> </span><span class="kn">import</span> <span class="n">NER</span>
 
 <span class="c1"># This is used as input to generative models; it cannot be a special token</span>
 <span class="n">DUMMY_FILL_VALUE</span> <span class="o">=</span> <span class="mi">100</span>
+
+
+<span class="c1"># This is the maximum allowed context length for models for the purpose of this</span>
+<span class="c1"># benchmark. We will still report the models&#39; true maximum context length in the</span>
+<span class="c1"># metadata, but we won&#39;t use it for evaluation, as vLLM needs to allocate memory for</span>
+<span class="c1"># all tokens in the context.</span>
+<span class="n">MAX_CONTEXT_LENGTH</span> <span class="o">=</span> <span class="mi">5_000</span>
 
 
 <span class="c1"># We need to raise the amount of tokens generated for reasoning models, to give them</span>
@@ -935,7 +952,7 @@
 <span class="n">MAX_LOGPROBS</span> <span class="o">=</span> <span class="mi">10</span>
 
 
-<span class="c1"># We make sure to remove these metric attributed after each iteration, to avoid memory</span>
+<span class="c1"># We make sure to remove these metric attributes after each iteration, to avoid memory</span>
 <span class="c1"># leaks</span>
 <span class="n">METRIC_ATTRIBUTES_TAKING_UP_MEMORY</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;cached_bertscorer&quot;</span><span class="p">]</span>
 

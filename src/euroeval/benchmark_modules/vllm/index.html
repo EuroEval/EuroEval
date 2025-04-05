@@ -12,7 +12,7 @@
       
       
       <link rel="icon" href="../../../../gfx/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.10">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.11">
     
     
       
@@ -148,11 +148,13 @@
     
     
     
-      <label class="md-header__button md-icon" for="__search">
-        
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
-      </label>
-      <div class="md-search" data-md-component="search" role="dialog">
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
   <label class="md-search__overlay" for="__search"></label>
   <div class="md-search__inner" role="search">
     <form class="md-search__form" name="search">
@@ -184,6 +186,7 @@
     </div>
   </div>
 </div>
+      
     
     
       <div class="md-header__source">
@@ -2192,7 +2195,44 @@
 <span class="normal">1231</span>
 <span class="normal">1232</span>
 <span class="normal">1233</span>
-<span class="normal">1234</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Generative models using the vLLM inference framework.&quot;&quot;&quot;</span>
+<span class="normal">1234</span>
+<span class="normal">1235</span>
+<span class="normal">1236</span>
+<span class="normal">1237</span>
+<span class="normal">1238</span>
+<span class="normal">1239</span>
+<span class="normal">1240</span>
+<span class="normal">1241</span>
+<span class="normal">1242</span>
+<span class="normal">1243</span>
+<span class="normal">1244</span>
+<span class="normal">1245</span>
+<span class="normal">1246</span>
+<span class="normal">1247</span>
+<span class="normal">1248</span>
+<span class="normal">1249</span>
+<span class="normal">1250</span>
+<span class="normal">1251</span>
+<span class="normal">1252</span>
+<span class="normal">1253</span>
+<span class="normal">1254</span>
+<span class="normal">1255</span>
+<span class="normal">1256</span>
+<span class="normal">1257</span>
+<span class="normal">1258</span>
+<span class="normal">1259</span>
+<span class="normal">1260</span>
+<span class="normal">1261</span>
+<span class="normal">1262</span>
+<span class="normal">1263</span>
+<span class="normal">1264</span>
+<span class="normal">1265</span>
+<span class="normal">1266</span>
+<span class="normal">1267</span>
+<span class="normal">1268</span>
+<span class="normal">1269</span>
+<span class="normal">1270</span>
+<span class="normal">1271</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Generative models using the vLLM inference framework.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">c</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">importlib.util</span>
@@ -2219,10 +2259,10 @@
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">..constants</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">GENERATIVE_PIPELINE_TAGS</span><span class="p">,</span>
+    <span class="n">MAX_CONTEXT_LENGTH</span><span class="p">,</span>
     <span class="n">MAX_LOGPROBS</span><span class="p">,</span>
     <span class="n">MERGE_TAGS</span><span class="p">,</span>
     <span class="n">REASONING_MAX_TOKENS</span><span class="p">,</span>
-    <span class="n">TASK_GROUPS_USING_LOGPROBS</span><span class="p">,</span>
     <span class="n">TASKS_USING_JSON</span><span class="p">,</span>
     <span class="n">VLLM_BF16_MIN_CUDA_COMPUTE_CAPABILITY</span><span class="p">,</span>
 <span class="p">)</span>
@@ -2260,6 +2300,7 @@
     <span class="n">get_bos_token</span><span class="p">,</span>
     <span class="n">get_end_of_chat_token_ids</span><span class="p">,</span>
     <span class="n">get_eos_token</span><span class="p">,</span>
+    <span class="n">get_first_label_token_mapping</span><span class="p">,</span>
     <span class="n">get_min_cuda_compute_capability</span><span class="p">,</span>
     <span class="n">log_once</span><span class="p">,</span>
     <span class="n">should_prompts_be_stripped</span><span class="p">,</span>
@@ -2316,11 +2357,8 @@
         <span class="p">):</span>
             <span class="k">raise</span> <span class="n">NeedsExtraInstalled</span><span class="p">(</span><span class="n">extra</span><span class="o">=</span><span class="s2">&quot;generative&quot;</span><span class="p">)</span>
 
-        <span class="n">output_scores</span> <span class="o">=</span> <span class="n">dataset_config</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">task_group</span> <span class="ow">in</span> <span class="n">TASK_GROUPS_USING_LOGPROBS</span>
         <span class="n">model</span><span class="p">,</span> <span class="n">tokenizer</span> <span class="o">=</span> <span class="n">load_model_and_tokenizer</span><span class="p">(</span>
-            <span class="n">model_config</span><span class="o">=</span><span class="n">model_config</span><span class="p">,</span>
-            <span class="n">benchmark_config</span><span class="o">=</span><span class="n">benchmark_config</span><span class="p">,</span>
-            <span class="n">output_scores</span><span class="o">=</span><span class="n">output_scores</span><span class="p">,</span>
+            <span class="n">model_config</span><span class="o">=</span><span class="n">model_config</span><span class="p">,</span> <span class="n">benchmark_config</span><span class="o">=</span><span class="n">benchmark_config</span>
         <span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_model</span><span class="p">:</span> <span class="n">LLM</span> <span class="o">=</span> <span class="n">model</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_tokenizer</span><span class="p">:</span> <span class="n">PreTrainedTokenizer</span> <span class="o">=</span> <span class="n">tokenizer</span>
@@ -2336,7 +2374,6 @@
             <span class="n">benchmark_config</span><span class="o">=</span><span class="n">benchmark_config</span><span class="p">,</span>
         <span class="p">)</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">buffer</span><span class="p">[</span><span class="s2">&quot;output_scores&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">output_scores</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">buffer</span><span class="p">[</span><span class="s2">&quot;instruction_model&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tokenizer</span><span class="o">.</span><span class="n">chat_template</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">adapter_base_model_id</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">adapter_path</span> <span class="o">=</span> <span class="n">snapshot_download</span><span class="p">(</span>
@@ -2379,6 +2416,7 @@
                 <span class="k">return</span> <span class="n">partial</span><span class="p">(</span>
                     <span class="n">sequence_classification</span><span class="o">.</span><span class="n">extract_labels_from_generation</span><span class="p">,</span>
                     <span class="n">dataset_config</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dataset_config</span><span class="p">,</span>
+                    <span class="n">first_label_token_mapping</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">buffer</span><span class="p">[</span><span class="s2">&quot;first_label_token_mapping&quot;</span><span class="p">],</span>
                 <span class="p">)</span>
             <span class="k">case</span> <span class="n">TaskGroup</span><span class="o">.</span><span class="n">TEXT_TO_TEXT</span><span class="p">:</span>
                 <span class="k">return</span> <span class="n">text_to_text</span><span class="o">.</span><span class="n">extract_labels_from_generation</span>
@@ -2532,6 +2570,12 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="n">logits_processor</span> <span class="o">=</span> <span class="kc">None</span>
 
+        <span class="c1"># Get the mapping from labels to the first token in the label. We call this each</span>
+        <span class="c1"># time we generate a new dataset since the dataset config can change</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">buffer</span><span class="p">[</span><span class="s2">&quot;first_label_token_mapping&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">get_first_label_token_mapping</span><span class="p">(</span>
+            <span class="n">dataset_config</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dataset_config</span><span class="p">,</span> <span class="n">tokenizer</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_tokenizer</span>
+        <span class="p">)</span>
+
         <span class="c1"># Define the parameters used for vLLM generation</span>
         <span class="n">max_tokens</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="p">(</span>
             <span class="n">REASONING_MAX_TOKENS</span>
@@ -2540,7 +2584,7 @@
         <span class="p">)</span>
         <span class="n">sampling_params</span> <span class="o">=</span> <span class="n">SamplingParams</span><span class="p">(</span>
             <span class="n">max_tokens</span><span class="o">=</span><span class="n">max_tokens</span><span class="p">,</span>
-            <span class="n">logprobs</span><span class="o">=</span><span class="n">MAX_LOGPROBS</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">buffer</span><span class="p">[</span><span class="s2">&quot;output_scores&quot;</span><span class="p">]</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">logprobs</span><span class="o">=</span><span class="n">MAX_LOGPROBS</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">buffer</span><span class="p">[</span><span class="s2">&quot;first_label_token_mapping&quot;</span><span class="p">]</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
             <span class="n">temperature</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>
             <span class="n">stop</span><span class="o">=</span><span class="p">[</span><span class="n">stop_token</span> <span class="k">for</span> <span class="n">stop_token</span> <span class="ow">in</span> <span class="n">stop_tokens</span> <span class="k">if</span> <span class="n">stop_token</span><span class="p">],</span>
             <span class="n">logits_processors</span><span class="o">=</span><span class="p">[</span><span class="n">logits_processor</span><span class="p">]</span> <span class="k">if</span> <span class="n">logits_processor</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
@@ -2573,12 +2617,22 @@
         <span class="n">num_attempts</span> <span class="o">=</span> <span class="mi">3</span>
         <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_attempts</span><span class="p">):</span>
             <span class="k">try</span><span class="p">:</span>
-                <span class="n">raw_outputs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_model</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span>
-                    <span class="n">prompts</span><span class="o">=</span><span class="n">prompts</span><span class="p">,</span>
-                    <span class="n">sampling_params</span><span class="o">=</span><span class="n">sampling_params</span><span class="p">,</span>
-                    <span class="n">use_tqdm</span><span class="o">=</span><span class="p">(</span><span class="ow">not</span> <span class="n">input_is_a_test</span><span class="p">),</span>
-                    <span class="n">lora_request</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">buffer</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;lora_request&quot;</span><span class="p">),</span>
-                <span class="p">)</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">buffer</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;instruction_model&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">):</span>
+                    <span class="n">raw_outputs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_model</span><span class="o">.</span><span class="n">chat</span><span class="p">(</span>
+                        <span class="n">messages</span><span class="o">=</span><span class="p">[</span>
+                            <span class="p">[</span><span class="nb">dict</span><span class="p">(</span><span class="n">role</span><span class="o">=</span><span class="s2">&quot;user&quot;</span><span class="p">,</span> <span class="n">content</span><span class="o">=</span><span class="n">prompt</span><span class="p">)]</span> <span class="k">for</span> <span class="n">prompt</span> <span class="ow">in</span> <span class="n">prompts</span>
+                        <span class="p">],</span>
+                        <span class="n">sampling_params</span><span class="o">=</span><span class="n">sampling_params</span><span class="p">,</span>
+                        <span class="n">use_tqdm</span><span class="o">=</span><span class="p">(</span><span class="ow">not</span> <span class="n">input_is_a_test</span><span class="p">),</span>
+                        <span class="n">lora_request</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">buffer</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;lora_request&quot;</span><span class="p">),</span>
+                    <span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">raw_outputs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_model</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span>
+                        <span class="n">prompts</span><span class="o">=</span><span class="n">prompts</span><span class="p">,</span>
+                        <span class="n">sampling_params</span><span class="o">=</span><span class="n">sampling_params</span><span class="p">,</span>
+                        <span class="n">use_tqdm</span><span class="o">=</span><span class="p">(</span><span class="ow">not</span> <span class="n">input_is_a_test</span><span class="p">),</span>
+                        <span class="n">lora_request</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">buffer</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;lora_request&quot;</span><span class="p">),</span>
+                    <span class="p">)</span>
                 <span class="k">break</span>
             <span class="k">except</span> <span class="ne">TypeError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
                 <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
@@ -2610,7 +2664,7 @@
         <span class="n">completions</span> <span class="o">=</span> <span class="p">[</span><span class="n">completion</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">for</span> <span class="n">completion</span> <span class="ow">in</span> <span class="n">completions</span><span class="p">]</span>
 
         <span class="c1"># Add logprobs scores to the output</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">buffer</span><span class="p">[</span><span class="s2">&quot;output_scores&quot;</span><span class="p">]:</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">buffer</span><span class="p">[</span><span class="s2">&quot;first_label_token_mapping&quot;</span><span class="p">]:</span>
             <span class="n">scores</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]]]]</span> <span class="o">=</span> <span class="p">[</span>
                 <span class="p">[</span>
                     <span class="p">[</span>
@@ -3040,7 +3094,7 @@
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">load_model_and_tokenizer</span><span class="p">(</span><div class="mkapi-source-link" id="euroeval.benchmark_modules.vllm.load_model_and_tokenizer"><a href="../../../../api/euroeval/benchmark_modules/vllm/#euroeval.benchmark_modules.vllm.load_model_and_tokenizer" title="Go to docs">docs</a></div>
-    <span class="n">model_config</span><span class="p">:</span> <span class="n">ModelConfig</span><span class="p">,</span> <span class="n">benchmark_config</span><span class="p">:</span> <span class="n">BenchmarkConfig</span><span class="p">,</span> <span class="n">output_scores</span><span class="p">:</span> <span class="nb">bool</span>
+    <span class="n">model_config</span><span class="p">:</span> <span class="n">ModelConfig</span><span class="p">,</span> <span class="n">benchmark_config</span><span class="p">:</span> <span class="n">BenchmarkConfig</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;tuple[LLM, PreTrainedTokenizer]&quot;</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Load the model and tokenizer.</span>
 
@@ -3049,11 +3103,9 @@
 <span class="sd">            The model configuration.</span>
 <span class="sd">        benchmark_config:</span>
 <span class="sd">            The benchmark configuration.</span>
-<span class="sd">        output_scores:</span>
-<span class="sd">            Whether to output scores.</span>
 
 <span class="sd">    Returns:</span>
-<span class="sd">        The loaded model and tokenizer.</span>
+<span class="sd">        A pair (model, tokenizer), with the loaded model and tokenizer</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="c1"># Prefer base model ID if the model is an adapter - the adapter will be added on</span>
     <span class="c1"># during inference in this case</span>
@@ -3087,7 +3139,27 @@
     <span class="k">if</span> <span class="n">quantization</span> <span class="o">==</span> <span class="s2">&quot;awq&quot;</span> <span class="ow">and</span> <span class="n">importlib</span><span class="o">.</span><span class="n">util</span><span class="o">.</span><span class="n">find_spec</span><span class="p">(</span><span class="s2">&quot;awq&quot;</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="k">raise</span> <span class="n">NeedsExtraInstalled</span><span class="p">(</span><span class="n">extra</span><span class="o">=</span><span class="s2">&quot;quantization&quot;</span><span class="p">)</span>
 
+    <span class="c1"># Start with dtype being the &quot;auto&quot; vLLM dtype</span>
     <span class="n">dtype</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">torch</span><span class="o">.</span><span class="n">dtype</span> <span class="o">=</span> <span class="s2">&quot;auto&quot;</span>
+
+    <span class="c1"># Choose bf16 over fp16 if the model is a fp32 model and the GPU supports it</span>
+    <span class="k">if</span> <span class="n">hf_model_config</span><span class="o">.</span><span class="n">torch_dtype</span> <span class="o">==</span> <span class="n">torch</span><span class="o">.</span><span class="n">float32</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">is_bf16_supported</span><span class="p">():</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+                <span class="s2">&quot;You are loading a model with dtype FP32, which we will convert to &quot;</span>
+                <span class="s2">&quot;BF16 as FP32 is not supported by vLLM and BF16 is supported by your &quot;</span>
+                <span class="s2">&quot;GPU.&quot;</span>
+            <span class="p">)</span>
+            <span class="n">dtype</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">bfloat16</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+                <span class="s2">&quot;You are loading a model with dtype FP32, which we will convert to &quot;</span>
+                <span class="s2">&quot;FP16 as FP32 is not supported by vLLM and BF16 is not supported by &quot;</span>
+                <span class="s2">&quot;your GPU.&quot;</span>
+            <span class="p">)</span>
+            <span class="n">dtype</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">float16</span>
+
+    <span class="c1"># If the model is a quantized model, we need to set the dtype to float16</span>
     <span class="k">if</span> <span class="n">quantization</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">hf_model_config</span><span class="o">.</span><span class="n">torch_dtype</span> <span class="o">!=</span> <span class="n">torch</span><span class="o">.</span><span class="n">float16</span><span class="p">:</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
             <span class="s2">&quot;You are loading a quantized model with dtype &quot;</span>
@@ -3096,6 +3168,7 @@
         <span class="p">)</span>
         <span class="n">dtype</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">float16</span>
 
+    <span class="c1"># If the model is a bf16 model, we need to check the CUDA compute capability</span>
     <span class="k">if</span> <span class="n">hf_model_config</span><span class="o">.</span><span class="n">torch_dtype</span> <span class="o">==</span> <span class="n">torch</span><span class="o">.</span><span class="n">bfloat16</span><span class="p">:</span>
         <span class="n">min_cuda_compute_capability</span> <span class="o">=</span> <span class="n">get_min_cuda_compute_capability</span><span class="p">()</span>
         <span class="n">required_capability</span> <span class="o">=</span> <span class="n">VLLM_BF16_MIN_CUDA_COMPUTE_CAPABILITY</span>
@@ -3134,7 +3207,17 @@
     <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">true_max_model_len_candidates</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
         <span class="n">true_max_model_len</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">true_max_model_len_candidates</span><span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="n">true_max_model_len</span> <span class="o">=</span> <span class="mi">5_000</span>
+        <span class="n">true_max_model_len</span> <span class="o">=</span> <span class="n">MAX_CONTEXT_LENGTH</span>
+
+    <span class="n">tokenizer</span> <span class="o">=</span> <span class="n">load_tokenizer</span><span class="p">(</span>
+        <span class="n">model_id</span><span class="o">=</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span><span class="p">,</span>
+        <span class="n">revision</span><span class="o">=</span><span class="n">model_config</span><span class="o">.</span><span class="n">revision</span><span class="p">,</span>
+        <span class="n">adapter_base_model_id</span><span class="o">=</span><span class="n">model_config</span><span class="o">.</span><span class="n">adapter_base_model_id</span><span class="p">,</span>
+        <span class="n">trust_remote_code</span><span class="o">=</span><span class="n">benchmark_config</span><span class="o">.</span><span class="n">trust_remote_code</span><span class="p">,</span>
+        <span class="n">model_max_length</span><span class="o">=</span><span class="n">true_max_model_len</span><span class="p">,</span>
+        <span class="n">model_cache_dir</span><span class="o">=</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_cache_dir</span><span class="p">,</span>
+        <span class="n">token</span><span class="o">=</span><span class="n">benchmark_config</span><span class="o">.</span><span class="n">api_key</span> <span class="ow">or</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;HUGGINGFACE_API_KEY&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="p">)</span>
 
     <span class="n">clear_vllm</span><span class="p">()</span>
 
@@ -3145,7 +3228,7 @@
             <span class="n">model</span><span class="o">=</span><span class="n">model_id</span><span class="p">,</span>
             <span class="n">tokenizer</span><span class="o">=</span><span class="n">model_id</span><span class="p">,</span>
             <span class="n">gpu_memory_utilization</span><span class="o">=</span><span class="mf">0.95</span><span class="p">,</span>
-            <span class="n">max_model_len</span><span class="o">=</span><span class="nb">min</span><span class="p">(</span><span class="n">true_max_model_len</span><span class="p">,</span> <span class="mi">5_000</span><span class="p">),</span>
+            <span class="n">max_model_len</span><span class="o">=</span><span class="nb">min</span><span class="p">(</span><span class="n">true_max_model_len</span><span class="p">,</span> <span class="n">MAX_CONTEXT_LENGTH</span><span class="p">),</span>
             <span class="n">download_dir</span><span class="o">=</span><span class="n">download_dir</span><span class="p">,</span>
             <span class="n">trust_remote_code</span><span class="o">=</span><span class="n">benchmark_config</span><span class="o">.</span><span class="n">trust_remote_code</span><span class="p">,</span>
             <span class="n">revision</span><span class="o">=</span><span class="n">revision</span><span class="p">,</span>
@@ -3156,7 +3239,6 @@
             <span class="n">quantization</span><span class="o">=</span><span class="n">quantization</span><span class="p">,</span>
             <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span>
             <span class="n">enforce_eager</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-            <span class="n">max_logprobs</span><span class="o">=</span><span class="n">MAX_LOGPROBS</span> <span class="k">if</span> <span class="n">output_scores</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
             <span class="c1"># TEMP: Prefix caching isn&#39;t supported with sliding window in vLLM yet,</span>
             <span class="c1"># so we disable it for now</span>
             <span class="n">enable_prefix_caching</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
@@ -3181,16 +3263,6 @@
 
     <span class="n">model</span><span class="o">.</span><span class="n">_run_engine</span> <span class="o">=</span> <span class="n">MethodType</span><span class="p">(</span><span class="n">_run_engine_with_fixed_progress_bars</span><span class="p">,</span> <span class="n">model</span><span class="p">)</span>
     <span class="n">model</span><span class="o">.</span><span class="n">config</span> <span class="o">=</span> <span class="n">hf_model_config</span>
-
-    <span class="n">tokenizer</span> <span class="o">=</span> <span class="n">load_tokenizer</span><span class="p">(</span>
-        <span class="n">model_id</span><span class="o">=</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span><span class="p">,</span>
-        <span class="n">revision</span><span class="o">=</span><span class="n">model_config</span><span class="o">.</span><span class="n">revision</span><span class="p">,</span>
-        <span class="n">adapter_base_model_id</span><span class="o">=</span><span class="n">model_config</span><span class="o">.</span><span class="n">adapter_base_model_id</span><span class="p">,</span>
-        <span class="n">trust_remote_code</span><span class="o">=</span><span class="n">benchmark_config</span><span class="o">.</span><span class="n">trust_remote_code</span><span class="p">,</span>
-        <span class="n">model_max_length</span><span class="o">=</span><span class="n">true_max_model_len</span><span class="p">,</span>
-        <span class="n">model_cache_dir</span><span class="o">=</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_cache_dir</span><span class="p">,</span>
-        <span class="n">token</span><span class="o">=</span><span class="n">benchmark_config</span><span class="o">.</span><span class="n">api_key</span> <span class="ow">or</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;HUGGINGFACE_API_KEY&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="kc">True</span><span class="p">,</span>
-    <span class="p">)</span>
 
     <span class="k">return</span> <span class="n">model</span><span class="p">,</span> <span class="n">tokenizer</span>
 
@@ -3351,15 +3423,20 @@
 
     <span class="c1"># Generate a completion and remove the BOS token from it, to not confuse it with the</span>
     <span class="c1"># potential reasoning token</span>
-    <span class="n">completion</span> <span class="o">=</span> <span class="p">(</span>
-        <span class="n">model</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span>
+    <span class="k">if</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">chat_template</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">model_output</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">chat</span><span class="p">(</span>
+            <span class="n">messages</span><span class="o">=</span><span class="p">[</span><span class="nb">dict</span><span class="p">(</span><span class="n">role</span><span class="o">=</span><span class="s2">&quot;user&quot;</span><span class="p">,</span> <span class="n">content</span><span class="o">=</span><span class="n">prompt</span><span class="p">)],</span>
+            <span class="n">sampling_params</span><span class="o">=</span><span class="n">SamplingParams</span><span class="p">(</span><span class="n">max_tokens</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">temperature</span><span class="o">=</span><span class="mf">0.0</span><span class="p">),</span>
+            <span class="n">use_tqdm</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">model_output</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span>
             <span class="n">prompts</span><span class="o">=</span><span class="p">[</span><span class="n">prompt</span><span class="p">],</span>
             <span class="n">sampling_params</span><span class="o">=</span><span class="n">SamplingParams</span><span class="p">(</span><span class="n">max_tokens</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">temperature</span><span class="o">=</span><span class="mf">0.0</span><span class="p">),</span>
             <span class="n">use_tqdm</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-        <span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
-        <span class="o">.</span><span class="n">outputs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-        <span class="o">.</span><span class="n">text</span>
-    <span class="p">)</span>
+        <span class="p">)</span>
+    <span class="n">completion</span> <span class="o">=</span> <span class="n">model_output</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">outputs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">text</span>
+
     <span class="k">if</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">bos_token</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">tokenizer</span><span class="o">.</span><span class="n">bos_token</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
             <span class="n">prompt</span> <span class="o">=</span> <span class="n">prompt</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">tokenizer</span><span class="o">.</span><span class="n">bos_token</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>

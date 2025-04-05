@@ -12,7 +12,7 @@
       
       
       <link rel="icon" href="../../../../gfx/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.10">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.11">
     
     
       
@@ -148,11 +148,13 @@
     
     
     
-      <label class="md-header__button md-icon" for="__search">
-        
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
-      </label>
-      <div class="md-search" data-md-component="search" role="dialog">
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
   <label class="md-search__overlay" for="__search"></label>
   <div class="md-search__inner" role="search">
     <form class="md-search__form" name="search">
@@ -184,6 +186,7 @@
     </div>
   </div>
 </div>
+      
     
     
       <div class="md-header__source">
@@ -920,6 +923,15 @@
         
       </ul>
     </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#euroeval.benchmark_modules.litellm.raise_if_wrong_params" class="md-nav__link">
+    <span class="md-ellipsis">
+      raise_if_wrong_params
+    </span>
+  </a>
   
 </li>
       
@@ -1976,7 +1988,109 @@
 <span class="normal">1024</span>
 <span class="normal">1025</span>
 <span class="normal">1026</span>
-<span class="normal">1027</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Generative models from an inference API, using the LiteLLM framework.&quot;&quot;&quot;</span>
+<span class="normal">1027</span>
+<span class="normal">1028</span>
+<span class="normal">1029</span>
+<span class="normal">1030</span>
+<span class="normal">1031</span>
+<span class="normal">1032</span>
+<span class="normal">1033</span>
+<span class="normal">1034</span>
+<span class="normal">1035</span>
+<span class="normal">1036</span>
+<span class="normal">1037</span>
+<span class="normal">1038</span>
+<span class="normal">1039</span>
+<span class="normal">1040</span>
+<span class="normal">1041</span>
+<span class="normal">1042</span>
+<span class="normal">1043</span>
+<span class="normal">1044</span>
+<span class="normal">1045</span>
+<span class="normal">1046</span>
+<span class="normal">1047</span>
+<span class="normal">1048</span>
+<span class="normal">1049</span>
+<span class="normal">1050</span>
+<span class="normal">1051</span>
+<span class="normal">1052</span>
+<span class="normal">1053</span>
+<span class="normal">1054</span>
+<span class="normal">1055</span>
+<span class="normal">1056</span>
+<span class="normal">1057</span>
+<span class="normal">1058</span>
+<span class="normal">1059</span>
+<span class="normal">1060</span>
+<span class="normal">1061</span>
+<span class="normal">1062</span>
+<span class="normal">1063</span>
+<span class="normal">1064</span>
+<span class="normal">1065</span>
+<span class="normal">1066</span>
+<span class="normal">1067</span>
+<span class="normal">1068</span>
+<span class="normal">1069</span>
+<span class="normal">1070</span>
+<span class="normal">1071</span>
+<span class="normal">1072</span>
+<span class="normal">1073</span>
+<span class="normal">1074</span>
+<span class="normal">1075</span>
+<span class="normal">1076</span>
+<span class="normal">1077</span>
+<span class="normal">1078</span>
+<span class="normal">1079</span>
+<span class="normal">1080</span>
+<span class="normal">1081</span>
+<span class="normal">1082</span>
+<span class="normal">1083</span>
+<span class="normal">1084</span>
+<span class="normal">1085</span>
+<span class="normal">1086</span>
+<span class="normal">1087</span>
+<span class="normal">1088</span>
+<span class="normal">1089</span>
+<span class="normal">1090</span>
+<span class="normal">1091</span>
+<span class="normal">1092</span>
+<span class="normal">1093</span>
+<span class="normal">1094</span>
+<span class="normal">1095</span>
+<span class="normal">1096</span>
+<span class="normal">1097</span>
+<span class="normal">1098</span>
+<span class="normal">1099</span>
+<span class="normal">1100</span>
+<span class="normal">1101</span>
+<span class="normal">1102</span>
+<span class="normal">1103</span>
+<span class="normal">1104</span>
+<span class="normal">1105</span>
+<span class="normal">1106</span>
+<span class="normal">1107</span>
+<span class="normal">1108</span>
+<span class="normal">1109</span>
+<span class="normal">1110</span>
+<span class="normal">1111</span>
+<span class="normal">1112</span>
+<span class="normal">1113</span>
+<span class="normal">1114</span>
+<span class="normal">1115</span>
+<span class="normal">1116</span>
+<span class="normal">1117</span>
+<span class="normal">1118</span>
+<span class="normal">1119</span>
+<span class="normal">1120</span>
+<span class="normal">1121</span>
+<span class="normal">1122</span>
+<span class="normal">1123</span>
+<span class="normal">1124</span>
+<span class="normal">1125</span>
+<span class="normal">1126</span>
+<span class="normal">1127</span>
+<span class="normal">1128</span>
+<span class="normal">1129</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Generative models from an inference API, using the LiteLLM framework.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">c</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">itertools</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">it</span>
@@ -2005,20 +2119,17 @@
     <span class="n">BadRequestError</span><span class="p">,</span>
     <span class="n">InternalServerError</span><span class="p">,</span>
     <span class="n">NotFoundError</span><span class="p">,</span>
+    <span class="n">RateLimitError</span><span class="p">,</span>
     <span class="n">ServiceUnavailableError</span><span class="p">,</span>
     <span class="n">Timeout</span><span class="p">,</span>
 <span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">litellm.llms.vertex_ai.common_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">VertexAIError</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">litellm.types.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">ModelResponse</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">requests.exceptions</span><span class="w"> </span><span class="kn">import</span> <span class="n">RequestException</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">tqdm.auto</span><span class="w"> </span><span class="kn">import</span> <span class="n">tqdm</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">Trainer</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">..constants</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-    <span class="n">MAX_LOGPROBS</span><span class="p">,</span>
-    <span class="n">REASONING_MAX_TOKENS</span><span class="p">,</span>
-    <span class="n">TASK_GROUPS_USING_LOGPROBS</span><span class="p">,</span>
-    <span class="n">TASKS_USING_JSON</span><span class="p">,</span>
-<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..constants</span><span class="w"> </span><span class="kn">import</span> <span class="n">MAX_LOGPROBS</span><span class="p">,</span> <span class="n">REASONING_MAX_TOKENS</span><span class="p">,</span> <span class="n">TASKS_USING_JSON</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..data_models</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">BenchmarkConfig</span><span class="p">,</span>
     <span class="n">DatasetConfig</span><span class="p">,</span>
@@ -2047,7 +2158,7 @@
     <span class="n">token_classification</span><span class="p">,</span>
 <span class="p">)</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..types</span><span class="w"> </span><span class="kn">import</span> <span class="n">ExtractLabelsFunction</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">..utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_model_cache_dir</span><span class="p">,</span> <span class="n">log_once</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_model_cache_dir</span><span class="p">,</span> <span class="n">get_first_label_token_mapping</span><span class="p">,</span> <span class="n">log_once</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">BenchmarkModule</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.hf</span><span class="w"> </span><span class="kn">import</span> <span class="n">HuggingFaceEncoderModel</span><span class="p">,</span> <span class="n">load_hf_model_config</span><span class="p">,</span> <span class="n">load_tokenizer</span>
 
@@ -2056,64 +2167,80 @@
 
 <span class="n">VOCAB_SIZE_MAPPING</span> <span class="o">=</span> <span class="p">{</span>
     <span class="c1"># OpenAI models</span>
-    <span class="s2">&quot;(text-)?(ada|babbage|curie|davinci)(-001)?&quot;</span><span class="p">:</span> <span class="mi">50_257</span><span class="p">,</span>
-    <span class="s2">&quot;(code|text)-davinci-00[2-9]&quot;</span><span class="p">:</span> <span class="mi">50_281</span><span class="p">,</span>
-    <span class="s2">&quot;gpt-3.5-turbo(-16k)?(-[0-9]</span><span class="si">{4}</span><span class="s2">)?&quot;</span><span class="p">:</span> <span class="mi">100_256</span><span class="p">,</span>
-    <span class="s2">&quot;gpt-4-(32k)?(-[0-9]</span><span class="si">{4}</span><span class="s2">)?&quot;</span><span class="p">:</span> <span class="mi">100_256</span><span class="p">,</span>
-    <span class="s2">&quot;gpt-4-[0-9]</span><span class="si">{4}</span><span class="s2">-preview&quot;</span><span class="p">:</span> <span class="mi">100_256</span><span class="p">,</span>
-    <span class="s2">&quot;gpt-4-turbo(-[0-9]</span><span class="si">{4}</span><span class="s2">-[0-9]</span><span class="si">{2}</span><span class="s2">-[0-9]</span><span class="si">{2}</span><span class="s2">)?&quot;</span><span class="p">:</span> <span class="mi">100_256</span><span class="p">,</span>
-    <span class="s2">&quot;gpt-4-(vision|turbo)(-preview)?&quot;</span><span class="p">:</span> <span class="mi">100_256</span><span class="p">,</span>
-    <span class="s2">&quot;gpt-3.5-turbo-instruct(-[0-9]</span><span class="si">{4}</span><span class="s2">)?&quot;</span><span class="p">:</span> <span class="mi">100_256</span><span class="p">,</span>
-    <span class="s2">&quot;gpt-4o(-mini)?(-[0-9]</span><span class="si">{4}</span><span class="s2">-[0-9]</span><span class="si">{2}</span><span class="s2">-[0-9]</span><span class="si">{2}</span><span class="s2">)?&quot;</span><span class="p">:</span> <span class="mi">200_019</span><span class="p">,</span>
-    <span class="s2">&quot;o[1-9](-mini|-preview)?(-[0-9]</span><span class="si">{4}</span><span class="s2">-[0-9]</span><span class="si">{2}</span><span class="s2">-[0-9]</span><span class="si">{2}</span><span class="s2">)?&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span>
+    <span class="sa">r</span><span class="s2">&quot;gpt-4-(32k)?(-[0-9]</span><span class="si">{4}</span><span class="s2">)?&quot;</span><span class="p">:</span> <span class="mi">100_256</span><span class="p">,</span>
+    <span class="sa">r</span><span class="s2">&quot;gpt-4-[0-9]</span><span class="si">{4}</span><span class="s2">-preview&quot;</span><span class="p">:</span> <span class="mi">100_256</span><span class="p">,</span>
+    <span class="sa">r</span><span class="s2">&quot;gpt-4-turbo(-[0-9]</span><span class="si">{4}</span><span class="s2">-[0-9]</span><span class="si">{2}</span><span class="s2">-[0-9]</span><span class="si">{2}</span><span class="s2">)?&quot;</span><span class="p">:</span> <span class="mi">100_256</span><span class="p">,</span>
+    <span class="sa">r</span><span class="s2">&quot;gpt-4-(vision|turbo)(-preview)?&quot;</span><span class="p">:</span> <span class="mi">100_256</span><span class="p">,</span>
+    <span class="sa">r</span><span class="s2">&quot;gpt-3.5-turbo-instruct(-[0-9]</span><span class="si">{4}</span><span class="s2">)?&quot;</span><span class="p">:</span> <span class="mi">100_256</span><span class="p">,</span>
+    <span class="sa">r</span><span class="s2">&quot;gpt-4o(-mini)?(-[0-9]</span><span class="si">{4}</span><span class="s2">-[0-9]</span><span class="si">{2}</span><span class="s2">-[0-9]</span><span class="si">{2}</span><span class="s2">)?&quot;</span><span class="p">:</span> <span class="mi">200_019</span><span class="p">,</span>
+    <span class="sa">r</span><span class="s2">&quot;o[1-9](-mini|-preview)?(-[0-9]</span><span class="si">{4}</span><span class="s2">-[0-9]</span><span class="si">{2}</span><span class="s2">-[0-9]</span><span class="si">{2}</span><span class="s2">)?&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span>
     <span class="c1"># Anthropic models</span>
-    <span class="s2">&quot;claude-[1-9](-[1-9])?-(opus|sonnet|haiku)-[0-9]</span><span class="si">{8}</span><span class="s2">&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span>
+    <span class="sa">r</span><span class="s2">&quot;(anthropic/)?claude-[1-9](-[1-9])?-(opus|sonnet|haiku)-[0-9]</span><span class="si">{8}</span><span class="s2">&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span>
+    <span class="c1"># Gemini models</span>
+    <span class="sa">r</span><span class="s2">&quot;(gemini/)?gemini-[1-9]\.[0-9]-(flash|pro).*&quot;</span><span class="p">:</span> <span class="mi">256_128</span><span class="p">,</span>
+    <span class="c1"># xAI models</span>
+    <span class="sa">r</span><span class="s2">&quot;(xai/)?grok.*&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span>
 <span class="p">}</span>
 
 
 <span class="n">MODEL_MAX_LENGTH_MAPPING</span> <span class="o">=</span> <span class="p">{</span>
     <span class="c1"># OpenAI models</span>
-    <span class="s2">&quot;(text-)?(ada|babbage|curie|davinci)(-001)?&quot;</span><span class="p">:</span> <span class="mi">2_050</span><span class="p">,</span>
-    <span class="s2">&quot;text-davinci-00[2-9]&quot;</span><span class="p">:</span> <span class="mi">4_098</span><span class="p">,</span>
-    <span class="s2">&quot;code-davinci-00[1-9]&quot;</span><span class="p">:</span> <span class="mi">8_002</span><span class="p">,</span>
-    <span class="s2">&quot;gpt-3.5-turbo-0613&quot;</span><span class="p">:</span> <span class="mi">4_096</span><span class="p">,</span>
-    <span class="s2">&quot;gpt-3.5-turbo(-[0-9]</span><span class="si">{4}</span><span class="s2">)?&quot;</span><span class="p">:</span> <span class="mi">16_385</span><span class="p">,</span>
-    <span class="s2">&quot;gpt-3.5-turbo-16k(-[0-9]</span><span class="si">{4}</span><span class="s2">)?&quot;</span><span class="p">:</span> <span class="mi">16_384</span><span class="p">,</span>
-    <span class="s2">&quot;gpt-4(-[0-9]</span><span class="si">{4}</span><span class="s2">)?&quot;</span><span class="p">:</span> <span class="mi">8_191</span><span class="p">,</span>
-    <span class="s2">&quot;gpt-4-32k(-[0-9]</span><span class="si">{4}</span><span class="s2">)?&quot;</span><span class="p">:</span> <span class="mi">32_767</span><span class="p">,</span>
-    <span class="s2">&quot;gpt-4-[0-9]</span><span class="si">{4}</span><span class="s2">-preview&quot;</span><span class="p">:</span> <span class="mi">128_000</span><span class="p">,</span>
-    <span class="s2">&quot;gpt-4-turbo(-[0-9]</span><span class="si">{4}</span><span class="s2">-[0-9]</span><span class="si">{2}</span><span class="s2">-[0-9]</span><span class="si">{2}</span><span class="s2">)?&quot;</span><span class="p">:</span> <span class="mi">128_000</span><span class="p">,</span>
-    <span class="s2">&quot;gpt-4-(vision|turbo)(-preview)?&quot;</span><span class="p">:</span> <span class="mi">128_000</span><span class="p">,</span>
-    <span class="s2">&quot;gpt-3.5-turbo-instruct(-[0-9]</span><span class="si">{4}</span><span class="s2">)?&quot;</span><span class="p">:</span> <span class="mi">4_095</span><span class="p">,</span>
-    <span class="s2">&quot;gpt-4o(-mini)?(-[0-9]</span><span class="si">{4}</span><span class="s2">-[0-9]</span><span class="si">{2}</span><span class="s2">-[0-9]</span><span class="si">{2}</span><span class="s2">)?&quot;</span><span class="p">:</span> <span class="mi">128_000</span><span class="p">,</span>
-    <span class="s2">&quot;o1-(mini|preview)(-[0-9]</span><span class="si">{4}</span><span class="s2">-[0-9]</span><span class="si">{2}</span><span class="s2">-[0-9]</span><span class="si">{2}</span><span class="s2">)?&quot;</span><span class="p">:</span> <span class="mi">128_000</span><span class="p">,</span>
-    <span class="s2">&quot;o1(-[0-9]</span><span class="si">{4}</span><span class="s2">-[0-9]</span><span class="si">{2}</span><span class="s2">-[0-9]</span><span class="si">{2}</span><span class="s2">)?&quot;</span><span class="p">:</span> <span class="mi">200_000</span><span class="p">,</span>
-    <span class="s2">&quot;o[2-9](-mini|-preview)?(-[0-9]</span><span class="si">{4}</span><span class="s2">-[0-9]</span><span class="si">{2}</span><span class="s2">-[0-9]</span><span class="si">{2}</span><span class="s2">)?&quot;</span><span class="p">:</span> <span class="mi">200_000</span><span class="p">,</span>
+    <span class="sa">r</span><span class="s2">&quot;gpt-4(-[0-9]</span><span class="si">{4}</span><span class="s2">)?&quot;</span><span class="p">:</span> <span class="mi">8_191</span><span class="p">,</span>
+    <span class="sa">r</span><span class="s2">&quot;gpt-4-32k(-[0-9]</span><span class="si">{4}</span><span class="s2">)?&quot;</span><span class="p">:</span> <span class="mi">32_767</span><span class="p">,</span>
+    <span class="sa">r</span><span class="s2">&quot;gpt-4-[0-9]</span><span class="si">{4}</span><span class="s2">-preview&quot;</span><span class="p">:</span> <span class="mi">128_000</span><span class="p">,</span>
+    <span class="sa">r</span><span class="s2">&quot;gpt-4-turbo(-[0-9]</span><span class="si">{4}</span><span class="s2">-[0-9]</span><span class="si">{2}</span><span class="s2">-[0-9]</span><span class="si">{2}</span><span class="s2">)?&quot;</span><span class="p">:</span> <span class="mi">128_000</span><span class="p">,</span>
+    <span class="sa">r</span><span class="s2">&quot;gpt-4-(vision|turbo)(-preview)?&quot;</span><span class="p">:</span> <span class="mi">128_000</span><span class="p">,</span>
+    <span class="sa">r</span><span class="s2">&quot;gpt-3.5-turbo-instruct(-[0-9]</span><span class="si">{4}</span><span class="s2">)?&quot;</span><span class="p">:</span> <span class="mi">4_095</span><span class="p">,</span>
+    <span class="sa">r</span><span class="s2">&quot;gpt-4o(-mini)?(-[0-9]</span><span class="si">{4}</span><span class="s2">-[0-9]</span><span class="si">{2}</span><span class="s2">-[0-9]</span><span class="si">{2}</span><span class="s2">)?&quot;</span><span class="p">:</span> <span class="mi">128_000</span><span class="p">,</span>
+    <span class="sa">r</span><span class="s2">&quot;o1-(mini|preview)(-[0-9]</span><span class="si">{4}</span><span class="s2">-[0-9]</span><span class="si">{2}</span><span class="s2">-[0-9]</span><span class="si">{2}</span><span class="s2">)?&quot;</span><span class="p">:</span> <span class="mi">128_000</span><span class="p">,</span>
+    <span class="sa">r</span><span class="s2">&quot;o1(-[0-9]</span><span class="si">{4}</span><span class="s2">-[0-9]</span><span class="si">{2}</span><span class="s2">-[0-9]</span><span class="si">{2}</span><span class="s2">)?&quot;</span><span class="p">:</span> <span class="mi">200_000</span><span class="p">,</span>
+    <span class="sa">r</span><span class="s2">&quot;o[2-9](-mini|-preview)?(-[0-9]</span><span class="si">{4}</span><span class="s2">-[0-9]</span><span class="si">{2}</span><span class="s2">-[0-9]</span><span class="si">{2}</span><span class="s2">)?&quot;</span><span class="p">:</span> <span class="mi">200_000</span><span class="p">,</span>
     <span class="c1"># Anthropic models</span>
-    <span class="s2">&quot;claude-[1-9](-[1-9])?-(opus|sonnet|haiku)-[0-9]</span><span class="si">{8}</span><span class="s2">&quot;</span><span class="p">:</span> <span class="mi">200_000</span><span class="p">,</span>
+    <span class="sa">r</span><span class="s2">&quot;(anthropic/)?claude-[1-9](-[1-9])?-(opus|sonnet|haiku)-[0-9]</span><span class="si">{8}</span><span class="s2">&quot;</span><span class="p">:</span> <span class="mi">200_000</span><span class="p">,</span>
+    <span class="c1"># Gemini models</span>
+    <span class="sa">r</span><span class="s2">&quot;(gemini/)?gemini-1\.5-flash.*&quot;</span><span class="p">:</span> <span class="mi">1_048_576</span><span class="p">,</span>
+    <span class="sa">r</span><span class="s2">&quot;(gemini/)?gemini-1\.5-pro.*&quot;</span><span class="p">:</span> <span class="mi">2_097_152</span><span class="p">,</span>
+    <span class="sa">r</span><span class="s2">&quot;(gemini/)?gemini-2\.(0|5).*&quot;</span><span class="p">:</span> <span class="mi">1_048_576</span><span class="p">,</span>
+    <span class="c1"># xAI models</span>
+    <span class="sa">r</span><span class="s2">&quot;(xai/)?grok.*&quot;</span><span class="p">:</span> <span class="mi">131_072</span><span class="p">,</span>
 <span class="p">}</span>
 
 
 <span class="n">NUM_PARAMS_MAPPING</span> <span class="o">=</span> <span class="p">{</span>
     <span class="c1"># OpenAI models</span>
-    <span class="s2">&quot;(text-)?ada(-001)?&quot;</span><span class="p">:</span> <span class="mi">350_000_000</span><span class="p">,</span>
-    <span class="s2">&quot;(text-)?babbage(-001)?&quot;</span><span class="p">:</span> <span class="mi">3_000_000_000</span><span class="p">,</span>
-    <span class="s2">&quot;(text-)?curie(-001)?&quot;</span><span class="p">:</span> <span class="mi">13_000_000_000</span><span class="p">,</span>
-    <span class="s2">&quot;((text|code)-)?davinci(-00[1-9])?&quot;</span><span class="p">:</span> <span class="mi">175_000_000_000</span><span class="p">,</span>
-    <span class="s2">&quot;gpt-(3.5|4)-turbo-((16|32)k)?(-[0-9]</span><span class="si">{4}</span><span class="s2">)?&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span>
-    <span class="s2">&quot;gpt-4-[0-9]</span><span class="si">{4}</span><span class="s2">-preview&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span>
-    <span class="s2">&quot;gpt-4-turbo(-[0-9]</span><span class="si">{4}</span><span class="s2">-[0-9]</span><span class="si">{2}</span><span class="s2">-[0-9]</span><span class="si">{2}</span><span class="s2">)?&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span>
-    <span class="s2">&quot;gpt-4-(vision|turbo)(-preview)?&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span>
-    <span class="s2">&quot;gpt-3.5-turbo-instruct(-[0-9]</span><span class="si">{4}</span><span class="s2">)?&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span>
-    <span class="s2">&quot;gpt-4o(-[0-9]</span><span class="si">{4}</span><span class="s2">-[0-9]</span><span class="si">{2}</span><span class="s2">-[0-9]</span><span class="si">{2}</span><span class="s2">)?&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span>
-    <span class="s2">&quot;gpt-4o-mini(-[0-9]</span><span class="si">{4}</span><span class="s2">-[0-9]</span><span class="si">{2}</span><span class="s2">-[0-9]</span><span class="si">{2}</span><span class="s2">)?&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span>
-    <span class="s2">&quot;o[1-9](-mini|-preview)?(-[0-9]</span><span class="si">{4}</span><span class="s2">-[0-9]</span><span class="si">{2}</span><span class="s2">-[0-9]</span><span class="si">{2}</span><span class="s2">)?&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span>
+    <span class="sa">r</span><span class="s2">&quot;gpt-4.*&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span>
+    <span class="sa">r</span><span class="s2">&quot;o[1-9](-mini|-preview)?(-[0-9]</span><span class="si">{4}</span><span class="s2">-[0-9]</span><span class="si">{2}</span><span class="s2">-[0-9]</span><span class="si">{2}</span><span class="s2">)?&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span>
     <span class="c1"># Anthropic models</span>
-    <span class="s2">&quot;claude-[1-9](-[1-9])?-(opus|sonnet|haiku)-[0-9]</span><span class="si">{8}</span><span class="s2">&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span>
+    <span class="sa">r</span><span class="s2">&quot;(anthropic/)?claude-*&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span>
+    <span class="c1"># Gemini models</span>
+    <span class="sa">r</span><span class="s2">&quot;(gemini/)?gemini-1.5-flash-8b&quot;</span><span class="p">:</span> <span class="mi">8_000_000_000</span><span class="p">,</span>
+    <span class="sa">r</span><span class="s2">&quot;(gemini/)?gemini-1.5-flash-[0-9]+&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span>
+    <span class="sa">r</span><span class="s2">&quot;(gemini/)?gemini-2.(0|5).*&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span>
+    <span class="c1"># xAI models</span>
+    <span class="sa">r</span><span class="s2">&quot;(xai/)?grok.*&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span>
 <span class="p">}</span>
 
 
-<span class="n">REASONING_MODELS</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;o[1-9](-mini|-preview)?(-[0-9]</span><span class="si">{4}</span><span class="s2">-[0-9]</span><span class="si">{2}</span><span class="s2">-[0-9]</span><span class="si">{2}</span><span class="s2">)?&quot;</span><span class="p">]</span>
+<span class="n">ALLOWED_PARAMS</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="c1"># OpenAI models</span>
+    <span class="sa">r</span><span class="s2">&quot;gpt-4.*&quot;</span><span class="p">:</span> <span class="p">[],</span>
+    <span class="sa">r</span><span class="s2">&quot;o[1-9](-mini|-preview)?(-[0-9]</span><span class="si">{4}</span><span class="s2">-[0-9]</span><span class="si">{2}</span><span class="s2">-[0-9]</span><span class="si">{2}</span><span class="s2">)?&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;low&quot;</span><span class="p">,</span> <span class="s2">&quot;high&quot;</span><span class="p">],</span>
+    <span class="c1"># Anthropic models</span>
+    <span class="sa">r</span><span class="s2">&quot;(anthropic/)?claude-3-.*&quot;</span><span class="p">:</span> <span class="p">[],</span>
+    <span class="sa">r</span><span class="s2">&quot;(anthropic/)?claude-3.5-.*&quot;</span><span class="p">:</span> <span class="p">[],</span>
+    <span class="sa">r</span><span class="s2">&quot;(anthropic/)?claude-3.7-sonnet.*&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;thinking&quot;</span><span class="p">],</span>
+    <span class="c1"># Gemini models</span>
+    <span class="sa">r</span><span class="s2">&quot;(gemini/)?gemini-.*&quot;</span><span class="p">:</span> <span class="p">[],</span>
+    <span class="c1"># xAI models</span>
+    <span class="sa">r</span><span class="s2">&quot;(xai/)?grok.*&quot;</span><span class="p">:</span> <span class="p">[],</span>
+<span class="p">}</span>
+
+
+<span class="n">REASONING_MODELS</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="sa">r</span><span class="s2">&quot;o[1-9](-mini|-preview)?(-[0-9]</span><span class="si">{4}</span><span class="s2">-[0-9]</span><span class="si">{2}</span><span class="s2">-[0-9]</span><span class="si">{2}</span><span class="s2">)?&quot;</span><span class="p">,</span>
+    <span class="sa">r</span><span class="s2">&quot;(gemini/)?gemini.*thinking.*&quot;</span><span class="p">,</span>
+    <span class="sa">r</span><span class="s2">&quot;(gemini/)?gemini-2.5-pro.*&quot;</span><span class="p">,</span>
+<span class="p">]</span>
 
 
 <span class="k">class</span><span class="w"> </span><span class="nc">LiteLLMModel</span><span class="p">(</span><span class="n">BenchmarkModule</span><span class="p">):</span><div class="mkapi-source-link" id="euroeval.benchmark_modules.litellm.LiteLLMModel"><a href="../../../../api/euroeval/benchmark_modules/litellm/#euroeval.benchmark_modules.litellm.LiteLLMModel" title="Go to docs">docs</a></div>
@@ -2145,6 +2272,8 @@
             <span class="s2">&quot;ollama/&quot;</span>
         <span class="p">)</span> <span class="ow">or</span> <span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;ollama_chat/&quot;</span><span class="p">)</span>
 
+        <span class="n">raise_if_wrong_params</span><span class="p">(</span><span class="n">model_config</span><span class="o">=</span><span class="n">model_config</span><span class="p">,</span> <span class="n">allowed_params</span><span class="o">=</span><span class="n">ALLOWED_PARAMS</span><span class="p">)</span>
+
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
             <span class="n">model_config</span><span class="o">=</span><span class="n">model_config</span><span class="p">,</span>
             <span class="n">dataset_config</span><span class="o">=</span><span class="n">dataset_config</span><span class="p">,</span>
@@ -2158,7 +2287,9 @@
 <span class="sd">        Returns:</span>
 <span class="sd">            The generative type of the model, or None if it has not been set yet.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="n">re</span><span class="o">.</span><span class="n">fullmatch</span><span class="p">(</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">revision</span> <span class="o">==</span> <span class="s2">&quot;thinking&quot;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">GenerativeType</span><span class="o">.</span><span class="n">REASONING</span>
+        <span class="k">elif</span> <span class="n">re</span><span class="o">.</span><span class="n">fullmatch</span><span class="p">(</span>
             <span class="n">pattern</span><span class="o">=</span><span class="s2">&quot;|&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">REASONING_MODELS</span><span class="p">),</span> <span class="n">string</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span>
         <span class="p">):</span>
             <span class="k">return</span> <span class="n">GenerativeType</span><span class="o">.</span><span class="n">REASONING</span>
@@ -2196,7 +2327,13 @@
             <span class="n">api_version</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">benchmark_config</span><span class="o">.</span><span class="n">api_version</span><span class="p">,</span>
         <span class="p">)</span>
 
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">dataset_config</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">task_group</span> <span class="ow">in</span> <span class="n">TASK_GROUPS_USING_LOGPROBS</span><span class="p">:</span>
+        <span class="c1"># Get the mapping from labels to the first token in the label. We call this each</span>
+        <span class="c1"># time we generate a new dataset since the dataset config can change</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">buffer</span><span class="p">[</span><span class="s2">&quot;first_label_token_mapping&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">get_first_label_token_mapping</span><span class="p">(</span>
+            <span class="n">dataset_config</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dataset_config</span><span class="p">,</span> <span class="n">tokenizer</span><span class="o">=</span><span class="kc">None</span>
+        <span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">buffer</span><span class="p">[</span><span class="s2">&quot;first_label_token_mapping&quot;</span><span class="p">]:</span>
             <span class="n">generation_kwargs</span><span class="p">[</span><span class="s2">&quot;logprobs&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
             <span class="n">generation_kwargs</span><span class="p">[</span><span class="s2">&quot;top_logprobs&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">MAX_LOGPROBS</span>
 
@@ -2205,6 +2342,27 @@
                 <span class="s2">&quot;Prompt must contain &#39;json&#39; for JSON tasks.&quot;</span>
             <span class="p">)</span>
             <span class="n">generation_kwargs</span><span class="p">[</span><span class="s2">&quot;response_format&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="nb">type</span><span class="o">=</span><span class="s2">&quot;json_object&quot;</span><span class="p">)</span>
+            <span class="n">log_once</span><span class="p">(</span>
+                <span class="s2">&quot;Enabling JSON response format for model &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span><span class="si">!r}</span><span class="s2">&quot;</span><span class="p">,</span>
+                <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
+            <span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">revision</span> <span class="o">==</span> <span class="s2">&quot;thinking&quot;</span><span class="p">:</span>
+            <span class="n">generation_kwargs</span><span class="p">[</span><span class="s2">&quot;thinking&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
+                <span class="nb">type</span><span class="o">=</span><span class="s2">&quot;enabled&quot;</span><span class="p">,</span> <span class="n">budget_tokens</span><span class="o">=</span><span class="n">REASONING_MAX_TOKENS</span>
+            <span class="p">)</span>
+            <span class="n">log_once</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Enabling thinking mode for model </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span><span class="si">!r}</span><span class="s2">&quot;</span><span class="p">,</span>
+                <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">revision</span> <span class="ow">in</span> <span class="p">{</span><span class="s2">&quot;low&quot;</span><span class="p">,</span> <span class="s2">&quot;high&quot;</span><span class="p">}:</span>
+            <span class="n">generation_kwargs</span><span class="p">[</span><span class="s2">&quot;reasoning_effort&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">revision</span>
+            <span class="n">log_once</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Enabling reasoning effort </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">revision</span><span class="si">!r}</span><span class="s2"> for model &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span><span class="si">!r}</span><span class="s2">&quot;</span><span class="p">,</span>
+                <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
+            <span class="p">)</span>
 
         <span class="c1"># This drops generation kwargs that are not supported by the model</span>
         <span class="n">litellm</span><span class="o">.</span><span class="n">drop_params</span> <span class="o">=</span> <span class="kc">True</span>
@@ -2213,39 +2371,60 @@
         <span class="c1"># handle using newlines as stop sequences, so we try both.</span>
         <span class="n">num_attempts</span> <span class="o">=</span> <span class="mi">10</span>
         <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_attempts</span><span class="p">):</span>
+            <span class="n">stop_messages</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;stop_sequences&quot;</span><span class="p">]</span>
+            <span class="n">logprobs_messages</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="s2">&quot;you are not allowed to request logprobs&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;you&#39;ve reached the maximum number of requests with logprobs&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;logprobs is not supported&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;logprobs is not enabled&quot;</span><span class="p">,</span>
+            <span class="p">]</span>
+            <span class="n">temperature_messages</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="s2">&quot;&#39;temperature&#39; is not supported with this model.&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;temperature is not supported with this model&quot;</span><span class="p">,</span>
+            <span class="p">]</span>
             <span class="k">try</span><span class="p">:</span>
                 <span class="n">model_response</span> <span class="o">=</span> <span class="n">litellm</span><span class="o">.</span><span class="n">completion</span><span class="p">(</span>
                     <span class="n">messages</span><span class="o">=</span><span class="n">messages</span><span class="p">,</span> <span class="n">max_retries</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="o">**</span><span class="n">generation_kwargs</span>
                 <span class="p">)</span>
                 <span class="k">break</span>
-            <span class="k">except</span> <span class="n">BadRequestError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-                <span class="k">if</span> <span class="s2">&quot;stop_sequences&quot;</span> <span class="ow">in</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">():</span>
+            <span class="k">except</span> <span class="p">(</span><span class="n">BadRequestError</span><span class="p">,</span> <span class="n">RateLimitError</span><span class="p">)</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="k">if</span> <span class="nb">any</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="ow">in</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="k">for</span> <span class="n">msg</span> <span class="ow">in</span> <span class="n">stop_messages</span><span class="p">):</span>
                     <span class="n">generation_kwargs</span><span class="p">[</span><span class="s2">&quot;stop&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
-                <span class="k">elif</span> <span class="s2">&quot;you are not allowed to request logprobs&quot;</span> <span class="ow">in</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">():</span>
+                <span class="k">elif</span> <span class="p">(</span>
+                    <span class="nb">any</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="ow">in</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="k">for</span> <span class="n">msg</span> <span class="ow">in</span> <span class="n">logprobs_messages</span><span class="p">)</span>
+                    <span class="c1"># Special case for Vertex AI models, since they have strict rate</span>
+                    <span class="c1"># limits on using logprobs. They also have a cap of 5 logprobs, but</span>
+                    <span class="c1"># we ignore this since the rate limiting makes it unusable anyway.</span>
+                    <span class="ow">or</span> <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">e</span><span class="p">,</span> <span class="n">VertexAIError</span><span class="p">)</span> <span class="ow">and</span> <span class="s2">&quot;logprobs&quot;</span> <span class="ow">in</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">())</span>
+                <span class="p">):</span>
                     <span class="n">generation_kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;logprobs&quot;</span><span class="p">)</span>
                     <span class="n">generation_kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;top_logprobs&quot;</span><span class="p">)</span>
-                <span class="k">elif</span> <span class="p">(</span>
-                    <span class="s2">&quot;&#39;temperature&#39; is not supported with this model.&quot;</span> <span class="ow">in</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
-                <span class="p">):</span>
+                <span class="k">elif</span> <span class="nb">any</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="ow">in</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="k">for</span> <span class="n">msg</span> <span class="ow">in</span> <span class="n">temperature_messages</span><span class="p">):</span>
                     <span class="n">generation_kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;temperature&quot;</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">e</span><span class="p">,</span> <span class="n">RateLimitError</span><span class="p">):</span>
+                    <span class="k">raise</span> <span class="n">InvalidModel</span><span class="p">(</span>
+                        <span class="s2">&quot;You have encountered your rate limit for model &quot;</span>
+                        <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span><span class="si">!r}</span><span class="s2">. The error message was: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span>
+                    <span class="p">)</span>
                 <span class="k">else</span><span class="p">:</span>
                     <span class="k">raise</span> <span class="n">InvalidBenchmark</span><span class="p">(</span>
                         <span class="sa">f</span><span class="s2">&quot;Failed to generate text. The error message was: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span>
                     <span class="p">)</span>
-            <span class="k">except</span> <span class="p">(</span>
-                <span class="n">Timeout</span><span class="p">,</span>
-                <span class="n">ServiceUnavailableError</span><span class="p">,</span>
-                <span class="n">APIConnectionError</span><span class="p">,</span>
-                <span class="n">InternalServerError</span><span class="p">,</span>
-            <span class="p">):</span>
-                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
-                    <span class="s2">&quot;Service temporarily unavailable. Retrying in 5 seconds...&quot;</span>
-                <span class="p">)</span>
-                <span class="n">sleep</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span>
             <span class="k">except</span> <span class="n">APIError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="n">InvalidBenchmark</span><span class="p">(</span>
                     <span class="sa">f</span><span class="s2">&quot;Failed to generate text. The error message was: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span>
                 <span class="p">)</span>
+            <span class="k">except</span> <span class="p">(</span>
+                <span class="n">APIConnectionError</span><span class="p">,</span>
+                <span class="n">Timeout</span><span class="p">,</span>
+                <span class="n">ServiceUnavailableError</span><span class="p">,</span>
+                <span class="n">InternalServerError</span><span class="p">,</span>
+            <span class="p">)</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;Service temporarily unavailable. The error message was: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">. &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;Retrying in 5 seconds...&quot;</span>
+                <span class="p">)</span>
+                <span class="n">sleep</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span>
             <span class="k">except</span> <span class="n">AuthenticationError</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="n">NeedsAdditionalArgument</span><span class="p">(</span>
                     <span class="n">cli_argument</span><span class="o">=</span><span class="s2">&quot;--api-key&quot;</span><span class="p">,</span>
@@ -2312,7 +2491,7 @@
                     <span class="n">num_labels</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dataset_config</span><span class="o">.</span><span class="n">num_labels</span><span class="p">,</span>
                     <span class="n">id2label</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dataset_config</span><span class="o">.</span><span class="n">id2label</span><span class="p">,</span>
                     <span class="n">label2id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dataset_config</span><span class="o">.</span><span class="n">label2id</span><span class="p">,</span>
-                    <span class="n">revision</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">revision</span><span class="p">,</span>
+                    <span class="n">revision</span><span class="o">=</span><span class="s2">&quot;main&quot;</span><span class="p">,</span>
                     <span class="n">model_cache_dir</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_cache_dir</span><span class="p">,</span>
                     <span class="n">api_key</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">benchmark_config</span><span class="o">.</span><span class="n">api_key</span><span class="p">,</span>
                     <span class="n">trust_remote_code</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">benchmark_config</span><span class="o">.</span><span class="n">trust_remote_code</span><span class="p">,</span>
@@ -2323,7 +2502,7 @@
                 <span class="k">try</span><span class="p">:</span>
                     <span class="n">repo_info</span> <span class="o">=</span> <span class="n">hf_api</span><span class="o">.</span><span class="n">model_info</span><span class="p">(</span>
                         <span class="n">repo_id</span><span class="o">=</span><span class="n">model_id</span><span class="p">,</span>
-                        <span class="n">revision</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">revision</span><span class="p">,</span>
+                        <span class="n">revision</span><span class="o">=</span><span class="s2">&quot;main&quot;</span><span class="p">,</span>
                         <span class="n">token</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;HUGGINGFACE_API_KEY&quot;</span><span class="p">)</span>
                         <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">benchmark_config</span><span class="o">.</span><span class="n">api_key</span>
                         <span class="ow">or</span> <span class="kc">True</span><span class="p">,</span>
@@ -2376,7 +2555,7 @@
                     <span class="n">num_labels</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dataset_config</span><span class="o">.</span><span class="n">num_labels</span><span class="p">,</span>
                     <span class="n">id2label</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dataset_config</span><span class="o">.</span><span class="n">id2label</span><span class="p">,</span>
                     <span class="n">label2id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dataset_config</span><span class="o">.</span><span class="n">label2id</span><span class="p">,</span>
-                    <span class="n">revision</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">revision</span><span class="p">,</span>
+                    <span class="n">revision</span><span class="o">=</span><span class="s2">&quot;main&quot;</span><span class="p">,</span>
                     <span class="n">model_cache_dir</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_cache_dir</span><span class="p">,</span>
                     <span class="n">api_key</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">benchmark_config</span><span class="o">.</span><span class="n">api_key</span><span class="p">,</span>
                     <span class="n">trust_remote_code</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">benchmark_config</span><span class="o">.</span><span class="n">trust_remote_code</span><span class="p">,</span>
@@ -2456,7 +2635,7 @@
                     <span class="n">num_labels</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dataset_config</span><span class="o">.</span><span class="n">num_labels</span><span class="p">,</span>
                     <span class="n">id2label</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dataset_config</span><span class="o">.</span><span class="n">id2label</span><span class="p">,</span>
                     <span class="n">label2id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dataset_config</span><span class="o">.</span><span class="n">label2id</span><span class="p">,</span>
-                    <span class="n">revision</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">revision</span><span class="p">,</span>
+                    <span class="n">revision</span><span class="o">=</span><span class="s2">&quot;main&quot;</span><span class="p">,</span>
                     <span class="n">model_cache_dir</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_cache_dir</span><span class="p">,</span>
                     <span class="n">api_key</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">benchmark_config</span><span class="o">.</span><span class="n">api_key</span><span class="p">,</span>
                     <span class="n">trust_remote_code</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">benchmark_config</span><span class="o">.</span><span class="n">trust_remote_code</span><span class="p">,</span>
@@ -2541,6 +2720,7 @@
                 <span class="k">return</span> <span class="n">partial</span><span class="p">(</span>
                     <span class="n">sequence_classification</span><span class="o">.</span><span class="n">extract_labels_from_generation</span><span class="p">,</span>
                     <span class="n">dataset_config</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dataset_config</span><span class="p">,</span>
+                    <span class="n">first_label_token_mapping</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">buffer</span><span class="p">[</span><span class="s2">&quot;first_label_token_mapping&quot;</span><span class="p">],</span>
                 <span class="p">)</span>
             <span class="k">case</span> <span class="n">TaskGroup</span><span class="o">.</span><span class="n">TEXT_TO_TEXT</span><span class="p">:</span>
                 <span class="k">return</span> <span class="n">text_to_text</span><span class="o">.</span><span class="n">extract_labels_from_generation</span>
@@ -2583,6 +2763,9 @@
 <span class="sd">            Whether the model exists, or an error describing why we cannot check</span>
 <span class="sd">            whether the model exists.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">model_id</span><span class="p">,</span> <span class="n">revision</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">model_id</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;@&quot;</span><span class="p">)</span> <span class="k">if</span> <span class="s2">&quot;@&quot;</span> <span class="ow">in</span> <span class="n">model_id</span> <span class="k">else</span> <span class="p">(</span><span class="n">model_id</span><span class="p">,</span> <span class="s2">&quot;main&quot;</span><span class="p">)</span>
+        <span class="p">)</span>
         <span class="k">if</span> <span class="n">model_id</span> <span class="ow">in</span> <span class="n">litellm</span><span class="o">.</span><span class="n">model_list</span><span class="p">:</span>
             <span class="k">return</span> <span class="kc">True</span>
 
@@ -2686,9 +2869,10 @@
 <span class="sd">        Returns:</span>
 <span class="sd">            The model configuration.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">model_id</span><span class="p">,</span> <span class="n">revision</span> <span class="o">=</span> <span class="n">model_id</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;@&quot;</span><span class="p">)</span> <span class="k">if</span> <span class="s2">&quot;@&quot;</span> <span class="ow">in</span> <span class="n">model_id</span> <span class="k">else</span> <span class="p">(</span><span class="n">model_id</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">ModelConfig</span><span class="p">(</span>
             <span class="n">model_id</span><span class="o">=</span><span class="n">model_id</span><span class="p">,</span>
-            <span class="n">revision</span><span class="o">=</span><span class="s2">&quot;main&quot;</span><span class="p">,</span>
+            <span class="n">revision</span><span class="o">=</span><span class="n">revision</span><span class="p">,</span>
             <span class="n">task</span><span class="o">=</span><span class="s2">&quot;text-generation&quot;</span><span class="p">,</span>
             <span class="n">languages</span><span class="o">=</span><span class="nb">list</span><span class="p">(),</span>
             <span class="n">merge</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
@@ -3003,6 +3187,38 @@
 
         <span class="n">examples</span><span class="p">[</span><span class="s2">&quot;messages&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">messages_list</span>
         <span class="k">return</span> <span class="n">examples</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">raise_if_wrong_params</span><span class="p">(</span><div class="mkapi-source-link" id="euroeval.benchmark_modules.litellm.raise_if_wrong_params"><a href="../../../../api/euroeval/benchmark_modules/litellm/#euroeval.benchmark_modules.litellm.raise_if_wrong_params" title="Go to docs">docs</a></div>
+    <span class="n">model_config</span><span class="p">:</span> <span class="n">ModelConfig</span><span class="p">,</span> <span class="n">allowed_params</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Raise an error if the model configuration has invalid parameters.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        model_config:</span>
+<span class="sd">            The model configuration.</span>
+<span class="sd">        allowed_params:</span>
+<span class="sd">            The allowed parameters for the model.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        InvalidModel:</span>
+<span class="sd">            If the model configuration has invalid parameters.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">param</span> <span class="o">=</span> <span class="n">model_config</span><span class="o">.</span><span class="n">revision</span>
+    <span class="k">if</span> <span class="n">param</span> <span class="o">==</span> <span class="s2">&quot;&quot;</span><span class="p">:</span>
+        <span class="k">return</span>
+    <span class="k">for</span> <span class="n">model_regex</span><span class="p">,</span> <span class="n">allowed_params_list</span> <span class="ow">in</span> <span class="n">allowed_params</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="k">if</span> <span class="n">re</span><span class="o">.</span><span class="n">fullmatch</span><span class="p">(</span><span class="n">pattern</span><span class="o">=</span><span class="n">model_regex</span><span class="p">,</span> <span class="n">string</span><span class="o">=</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">param</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">allowed_params_list</span><span class="p">:</span>
+                <span class="n">msg</span> <span class="o">=</span> <span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;Invalid parameter </span><span class="si">{</span><span class="n">param</span><span class="si">!r}</span><span class="s2"> for model </span><span class="si">{</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span><span class="si">!r}</span><span class="s2">.&quot;</span>
+                <span class="p">)</span>
+                <span class="k">if</span> <span class="n">allowed_params_list</span><span class="p">:</span>
+                    <span class="n">msg</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot; Allowed parameters are: </span><span class="si">{</span><span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">allowed_params_list</span><span class="p">)</span><span class="si">}</span><span class="s2">.&quot;</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">msg</span> <span class="o">+=</span> <span class="s2">&quot; No parameters are allowed.&quot;</span>
+                <span class="k">raise</span> <span class="n">InvalidModel</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+            <span class="k">return</span>
 </code></pre></div></td></tr></table></div>
 
 
