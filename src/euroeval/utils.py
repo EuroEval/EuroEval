@@ -627,8 +627,11 @@ def get_first_label_token_mapping(
         ]
 
         # Get the first token of each label, where we add a prefix space if needed
-        add_prefix_space = should_prefix_space_be_added_to_labels(
-            labels_to_be_generated=local_labels, tokenizer=tokenizer
+        add_prefix_space = (
+            should_prefix_space_be_added_to_labels(
+                labels_to_be_generated=local_labels, tokenizer=tokenizer
+            )
+            and tokenizer.chat_template is None
         )
         first_tokens = [
             tokenizer.tokenize(text=f" {label}" if add_prefix_space else label)[0]
