@@ -909,12 +909,21 @@ def load_model_and_tokenizer(
     dtype: str | torch.dtype = "auto"
 
     # Choose bf16 over fp16 if the model is a fp32 model and the GPU supports it
-    if hf_model_config.torch_dtype == torch.float32 and torch.cuda.is_bf16_supported():
-        logger.info(
-            "You are loading a model with dtype FP32, which we will convert to "
-            "BF16 as FP32 is not supported by vLLM and BF16 is supported by your GPU."
-        )
-        dtype = torch.bfloat16
+    if hf_model_config.torch_dtype == torch.float32:
+        if torch.cuda.is_bf16_supported():
+            logger.info(
+                "You are loading a model with dtype FP32, which we will convert to "
+                "BF16 as FP32 is not supported by vLLM and BF16 is supported by your "
+                "GPU."
+            )
+            dtype = torch.bfloat16
+        else:
+            logger.info(
+                "You are loading a model with dtype FP32, which we will convert to "
+                "FP16 as FP32 is not supported by vLLM and BF16 is not supported by "
+                "your GPU."
+            )
+            dtype = torch.float16
 
     # If the model is a quantized model, we need to set the dtype to float16
     if quantization is not None and hf_model_config.torch_dtype != torch.float16:
