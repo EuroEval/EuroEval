@@ -358,7 +358,6 @@ def should_prompts_be_stripped(
     return strip_prompts
 
 
-# TODO: This is currently not used - maybe remove.
 def should_prefix_space_be_added_to_labels(
     labels_to_be_generated: list[str], tokenizer: "PreTrainedTokenizer"
 ) -> bool:
@@ -622,11 +621,14 @@ def get_first_label_token_mapping(
     # label is distinct, then we can safely use the logprobs
     if output_scores and dataset_config.labels:
         local_labels = [
-            dataset_config.prompt_label_mapping[label]
+            dataset_config.prompt_label_mapping[label].strip()
             for label in dataset_config.labels
         ]
+        if should_prefix_space_be_added_to_labels(
+            labels_to_be_generated=local_labels, tokenizer=tokenizer
+        ):
+            local_labels = [f" {label}" for label in local_labels]
         first_tokens = [tokenizer.tokenize(text=label)[0] for label in local_labels]
-        breakpoint()
         if len(first_tokens) == len(set(first_tokens)):
             log_once(
                 "The model will output scores, since the first tokens of the labels "

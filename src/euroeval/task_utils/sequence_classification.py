@@ -209,6 +209,7 @@ def get_closest_logprobs_labels(
                             "issue to the EuroEval team at "
                             "github.com/EuroEval/EuroEval/issues."
                         )
+                    breakpoint()
 
                     candidate_output_labels = {
                         candidate_label
