@@ -188,6 +188,10 @@ class LiteLLMModel(BenchmarkModule):
             benchmark_config=benchmark_config,
         )
 
+        self.buffer["first_label_token_mapping"] = get_first_label_token_mapping(
+            dataset_config=self.dataset_config, tokenizer=None
+        )
+
     @property
     def generative_type(self) -> GenerativeType | None:
         """Get the generative type of the model.
