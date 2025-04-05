@@ -213,8 +213,7 @@ def get_closest_logprobs_labels(
                     candidate_output_labels = {
                         candidate_label
                         for candidate_label in candidate_labels
-                        if generated_label
-                        in {candidate_label, first_label_token_mapping[candidate_label]}
+                        if generated_label == first_label_token_mapping[candidate_label]
                     }
                 else:
                     candidate_output_labels = {
@@ -222,7 +221,6 @@ def get_closest_logprobs_labels(
                         for candidate_label in candidate_labels
                         if candidate_label.startswith(generated_label)
                     }
-                breakpoint()
 
                 # If we can uniquely determine the output label, we break the loop. If
                 # there are multiple possible labels then we store the current one, and
