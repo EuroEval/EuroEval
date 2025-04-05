@@ -350,6 +350,13 @@ class LiteLLMModel(BenchmarkModule):
 
         assert isinstance(model_response, ModelResponse)
         if not model_response.choices:
+            # This happens for reasoning models, when they don't finish thinking and run
+            # out of tokens. Happens quite rarely, but we need to handle it.
+            logger.warning(
+                f"The model {self.model_config.model_id!r} did not end up generating "
+                "any text. This is likely because the model ran out of tokens while "
+                "reasoning. Returning an empty string."
+            )
             return GenerativeModelOutput(sequences=[""])
         model_response_choices = model_response.choices[0]
         assert isinstance(model_response_choices, litellm.Choices)
