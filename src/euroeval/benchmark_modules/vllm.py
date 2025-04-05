@@ -383,7 +383,7 @@ class VLLMModel(HuggingFaceEncoderModel):
         num_attempts = 3
         for _ in range(num_attempts):
             try:
-                if self.buffer.get("instruction_model", False):
+                if self.buffer.get("instruction_model", False) and False:  # TEMP
                     raw_outputs = self._model.chat(
                         messages=[
                             [dict(role="user", content=prompt)] for prompt in prompts
