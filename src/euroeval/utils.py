@@ -626,6 +626,7 @@ def get_first_label_token_mapping(
             for label in dataset_config.labels
         ]
         first_tokens = [tokenizer.tokenize(text=label)[0] for label in local_labels]
+        breakpoint()
         if len(first_tokens) == len(set(first_tokens)):
             log_once(
                 "The model will output scores, since the first tokens of the labels "
