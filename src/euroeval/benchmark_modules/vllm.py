@@ -992,7 +992,7 @@ def load_model_and_tokenizer(
     try:
         model = LLM(
             model=model_id,
-            tokenizer=model_id,
+            tokenizer=tokenizer,
             gpu_memory_utilization=0.95,
             max_model_len=min(true_max_model_len, MAX_CONTEXT_LENGTH),
             download_dir=download_dir,
