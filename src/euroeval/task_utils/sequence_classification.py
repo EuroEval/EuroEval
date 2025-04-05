@@ -199,6 +199,7 @@ def get_closest_logprobs_labels(
 
                 # Get the candidate labels that starts with the generated label
                 if isinstance(first_label_token_mapping, dict):
+                    breakpoint()
                     if any(
                         candidate_label not in first_label_token_mapping
                         for candidate_label in candidate_labels
@@ -209,7 +210,6 @@ def get_closest_logprobs_labels(
                             "issue to the EuroEval team at "
                             "github.com/EuroEval/EuroEval/issues."
                         )
-                    breakpoint()
 
                     candidate_output_labels = {
                         candidate_label
