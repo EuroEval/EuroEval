@@ -1150,7 +1150,7 @@ def clear_vllm() -> None:
     """Clear the GPU memory used by the vLLM model, enabling re-initialisation."""
     try:
         destroy_model_parallel()
-    except ImportError:
+    except (ImportError, ValueError):
         pass
     clear_memory()
     if ray.is_initialized():
