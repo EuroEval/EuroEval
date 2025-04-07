@@ -13,31 +13,32 @@ import torch
 from datasets import DatasetDict
 from huggingface_hub import HfApi
 from huggingface_hub import whoami as hf_whoami
-from huggingface_hub.hf_api import ModelInfo as HfApiModelInfo
-from huggingface_hub.hf_api import RepositoryNotFoundError, RevisionNotFoundError
-from huggingface_hub.utils import (
+from huggingface_hub.errors import (
     GatedRepoError,
     HFValidationError,
     LocalTokenNotFoundError,
+    RepositoryNotFoundError,
+    RevisionNotFoundError,
 )
+from huggingface_hub.hf_api import ModelInfo as HfApiModelInfo
 from peft import PeftConfig
 from requests.exceptions import RequestException
 from torch import nn
-from transformers import (
-    AutoConfig,
-    AutoTokenizer,
-    BatchEncoding,
+from transformers.configuration_utils import PretrainedConfig
+from transformers.data.data_collator import (
     DataCollatorForTokenClassification,
     DataCollatorWithPadding,
-    PretrainedConfig,
-    PreTrainedModel,
-    PreTrainedTokenizer,
-    Trainer,
 )
 from transformers.modelcard import TASK_MAPPING
+from transformers.modeling_utils import PreTrainedModel
+from transformers.models.auto.configuration_auto import AutoConfig
 from transformers.models.auto.modeling_auto import (
     MODEL_FOR_IMAGE_TEXT_TO_TEXT_MAPPING_NAMES,
 )
+from transformers.models.auto.tokenization_auto import AutoTokenizer
+from transformers.tokenization_utils import PreTrainedTokenizer
+from transformers.tokenization_utils_base import BatchEncoding
+from transformers.trainer import Trainer
 from urllib3.exceptions import RequestError
 
 from ..constants import (

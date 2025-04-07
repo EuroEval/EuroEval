@@ -17,7 +17,7 @@ from ..utils import (
 )
 
 if t.TYPE_CHECKING:
-    from transformers import EvalPrediction
+    from transformers.trainer_utils import EvalPrediction
 
     from ..types import Labels, Predictions
 

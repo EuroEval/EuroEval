@@ -8,7 +8,8 @@ from collections import defaultdict
 import evaluate
 import numpy as np
 from evaluate import EvaluationModule
-from transformers import PreTrainedTokenizer, PreTrainedTokenizerBase
+from transformers.tokenization_utils import PreTrainedTokenizer
+from transformers.tokenization_utils_base import PreTrainedTokenizerBase
 from transformers.trainer import Trainer
 
 from ..data_models import BenchmarkConfig, DatasetConfig, GenerativeModelOutput
@@ -20,13 +21,11 @@ from ..utils import (
 if t.TYPE_CHECKING:
     import torch.nn as nn
     from datasets.arrow_dataset import Dataset
-    from transformers import (
-        EvalPrediction,
-        PreTrainedModel,
-        TrainerCallback,
-        TrainingArguments,
-    )
+    from transformers.modeling_utils import PreTrainedModel
     from transformers.tokenization_utils_base import BatchEncoding
+    from transformers.trainer_callback import TrainerCallback
+    from transformers.trainer_utils import EvalPrediction
+    from transformers.training_args import TrainingArguments
 
     from ..types import Labels, Predictions
 

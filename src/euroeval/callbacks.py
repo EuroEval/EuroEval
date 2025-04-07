@@ -5,8 +5,8 @@ from collections.abc import Sized
 
 from torch.utils.data import DataLoader
 from tqdm.auto import tqdm
-from transformers import TrainerControl, TrainerState, TrainingArguments
-from transformers.trainer_callback import ProgressCallback
+from transformers.trainer_callback import ProgressCallback, TrainerControl, TrainerState
+from transformers.training_args import TrainingArguments
 
 
 class NeverLeaveProgressCallback(ProgressCallback):

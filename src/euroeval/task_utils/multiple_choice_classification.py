@@ -8,7 +8,9 @@ from collections import defaultdict
 
 import numpy as np
 from datasets import Dataset
-from transformers import BatchEncoding, PreTrainedTokenizer, Trainer
+from transformers.tokenization_utils import PreTrainedTokenizer
+from transformers.tokenization_utils_base import BatchEncoding
+from transformers.trainer import Trainer
 
 if t.TYPE_CHECKING:
     from ..types import Labels, Predictions

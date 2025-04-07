@@ -4,19 +4,21 @@ import os
 from functools import cached_property
 from json import JSONDecodeError
 
-from transformers import (
-    AutoConfig,
-    AutoTokenizer,
+from transformers.configuration_utils import PretrainedConfig
+from transformers.modeling_utils import PreTrainedModel
+from transformers.models.auto.configuration_auto import AutoConfig
+from transformers.models.auto.tokenization_auto import AutoTokenizer
+from transformers.models.electra import (
     ElectraForQuestionAnswering,
     ElectraForSequenceClassification,
     ElectraForTokenClassification,
-    PretrainedConfig,
-    PreTrainedModel,
-    PreTrainedTokenizer,
+)
+from transformers.models.xlm_roberta import (
     XLMRobertaForQuestionAnswering,
     XLMRobertaForSequenceClassification,
     XLMRobertaForTokenClassification,
 )
+from transformers.tokenization_utils import PreTrainedTokenizer
 
 from ..data_models import BenchmarkConfig, DatasetConfig, ModelConfig
 from ..enums import InferenceBackend, ModelType, TaskGroup

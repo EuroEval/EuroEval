@@ -30,7 +30,8 @@ if importlib.util.find_spec("ray") is not None:
 if t.TYPE_CHECKING:
     from types import TracebackType
 
-    from transformers import PreTrainedTokenizer, PreTrainedTokenizerBase
+    from transformers.tokenization_utils import PreTrainedTokenizer
+    from transformers.tokenization_utils_base import PreTrainedTokenizerBase
 
     from .data_models import DatasetConfig
     from .types import Predictions

@@ -7,14 +7,13 @@ import typing as t
 import torch
 from datasets import DatasetDict
 from tqdm.auto import tqdm
-from transformers import (
+from transformers.trainer_callback import (
     EarlyStoppingCallback,
-    IntervalStrategy,
     PrinterCallback,
     ProgressCallback,
-    TrainingArguments,
 )
-from transformers.trainer import OptimizerNames
+from transformers.trainer_utils import IntervalStrategy
+from transformers.training_args import OptimizerNames, TrainingArguments
 
 from .benchmark_modules import BenchmarkModule
 from .callbacks import NeverLeaveProgressCallback
