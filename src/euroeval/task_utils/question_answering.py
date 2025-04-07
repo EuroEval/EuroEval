@@ -91,6 +91,8 @@ class QuestionAnsweringTrainer(Trainer):
         Returns:
             The metrics computed on the evaluation dataset.
         """
+        assert isinstance(eval_dataset, Dataset)
+
         eval_dataloader = self.get_eval_dataloader(eval_dataset)
 
         # Temporarily disable metric computation, we will do it in the loop here.
