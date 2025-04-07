@@ -2335,7 +2335,7 @@
 <span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">&quot;euroeval&quot;</span><span class="p">)</span>
 
 
-<span class="k">class</span><span class="w"> </span><span class="nc">HuggingFaceEncoderModel</span><span class="p">(</span><span class="n">BenchmarkModule</span><span class="p">):</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">HuggingFaceEncoderModel</span><span class="p">(</span><span class="n">BenchmarkModule</span><span class="p">):</span><div class="mkapi-source-link" id="euroeval.benchmark_modules.hf.HuggingFaceEncoderModel"><a href="../../../../api/euroeval/benchmark_modules/hf/#euroeval.benchmark_modules.hf.HuggingFaceEncoderModel" title="Go to docs">docs</a></div>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;An encoder model from the Hugging Face Hub.&quot;&quot;&quot;</span>
 
     <span class="n">fresh_model</span> <span class="o">=</span> <span class="kc">False</span>
@@ -2380,7 +2380,7 @@
         <span class="p">)</span>
 
     <span class="nd">@cached_property</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">num_params</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">num_params</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span><div class="mkapi-source-link" id="euroeval.benchmark_modules.hf.HuggingFaceEncoderModel.num_params"><a href="../../../../api/euroeval/benchmark_modules/hf/#euroeval.benchmark_modules.hf.HuggingFaceEncoderModel.num_params" title="Go to docs">docs</a></div>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;The number of parameters in the model.</span>
 
 <span class="sd">        Returns:</span>
@@ -2430,7 +2430,7 @@
         <span class="k">return</span> <span class="n">num_params</span>
 
     <span class="nd">@cached_property</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">vocab_size</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">vocab_size</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span><div class="mkapi-source-link" id="euroeval.benchmark_modules.hf.HuggingFaceEncoderModel.vocab_size"><a href="../../../../api/euroeval/benchmark_modules/hf/#euroeval.benchmark_modules.hf.HuggingFaceEncoderModel.vocab_size" title="Go to docs">docs</a></div>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;The vocabulary size of the model.</span>
 
 <span class="sd">        Returns:</span>
@@ -2451,7 +2451,7 @@
         <span class="k">return</span> <span class="n">vocab_size</span>
 
     <span class="nd">@cached_property</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">model_max_length</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">model_max_length</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span><div class="mkapi-source-link" id="euroeval.benchmark_modules.hf.HuggingFaceEncoderModel.model_max_length"><a href="../../../../api/euroeval/benchmark_modules/hf/#euroeval.benchmark_modules.hf.HuggingFaceEncoderModel.model_max_length" title="Go to docs">docs</a></div>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;The maximum context length of the model.</span>
 
 <span class="sd">        Returns:</span>
@@ -2512,7 +2512,7 @@
 
         <span class="k">return</span> <span class="n">model_max_length</span>
 
-    <span class="nd">@property</span>
+    <span class="nd">@property</span><div class="mkapi-source-link" id="euroeval.benchmark_modules.hf.HuggingFaceEncoderModel.data_collator"><a href="../../../../api/euroeval/benchmark_modules/hf/#euroeval.benchmark_modules.hf.HuggingFaceEncoderModel.data_collator" title="Go to docs">docs</a></div>
     <span class="k">def</span><span class="w"> </span><span class="nf">data_collator</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">c</span><span class="o">.</span><span class="n">Callable</span><span class="p">[[</span><span class="nb">list</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">Any</span><span class="p">]],</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">t</span><span class="o">.</span><span class="n">Any</span><span class="p">]]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;The data collator used to prepare samples during finetuning.</span>
 
@@ -2537,7 +2537,7 @@
                 <span class="p">)</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">generative_type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">GenerativeType</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">generative_type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">GenerativeType</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span><div class="mkapi-source-link" id="euroeval.benchmark_modules.hf.HuggingFaceEncoderModel.generative_type"><a href="../../../../api/euroeval/benchmark_modules/hf/#euroeval.benchmark_modules.hf.HuggingFaceEncoderModel.generative_type" title="Go to docs">docs</a></div>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the generative type of the model.</span>
 
 <span class="sd">        Returns:</span>
@@ -2546,7 +2546,7 @@
         <span class="k">return</span> <span class="kc">None</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">extract_labels_from_generation</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ExtractLabelsFunction</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">extract_labels_from_generation</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ExtractLabelsFunction</span><span class="p">:</span><div class="mkapi-source-link" id="euroeval.benchmark_modules.hf.HuggingFaceEncoderModel.extract_labels_from_generation"><a href="../../../../api/euroeval/benchmark_modules/hf/#euroeval.benchmark_modules.hf.HuggingFaceEncoderModel.extract_labels_from_generation" title="Go to docs">docs</a></div>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;The function used to extract the labels from the generated output.</span>
 
 <span class="sd">        Returns:</span>
@@ -2558,7 +2558,7 @@
         <span class="p">)</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">trainer_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Type</span><span class="p">[</span><span class="s2">&quot;Trainer&quot;</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">trainer_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Type</span><span class="p">[</span><span class="s2">&quot;Trainer&quot;</span><span class="p">]:</span><div class="mkapi-source-link" id="euroeval.benchmark_modules.hf.HuggingFaceEncoderModel.trainer_class"><a href="../../../../api/euroeval/benchmark_modules/hf/#euroeval.benchmark_modules.hf.HuggingFaceEncoderModel.trainer_class" title="Go to docs">docs</a></div>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;The Trainer class to use for finetuning.</span>
 
 <span class="sd">        Returns:</span>
@@ -2582,7 +2582,7 @@
                     <span class="sa">f</span><span class="s2">&quot;Unsupported task group: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">dataset_config</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">task_group</span><span class="si">}</span><span class="s2">.&quot;</span>
                 <span class="p">)</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="nf">prepare_dataset</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">prepare_dataset</span><span class="p">(</span><div class="mkapi-source-link" id="euroeval.benchmark_modules.hf.HuggingFaceEncoderModel.prepare_dataset"><a href="../../../../api/euroeval/benchmark_modules/hf/#euroeval.benchmark_modules.hf.HuggingFaceEncoderModel.prepare_dataset" title="Go to docs">docs</a></div>
         <span class="bp">self</span><span class="p">,</span> <span class="n">dataset</span><span class="p">:</span> <span class="n">DatasetDict</span><span class="p">,</span> <span class="n">task</span><span class="p">:</span> <span class="n">Task</span><span class="p">,</span> <span class="n">itr_idx</span><span class="p">:</span> <span class="nb">int</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DatasetDict</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Prepare the dataset for the model.</span>
@@ -2735,7 +2735,7 @@
         <span class="k">return</span> <span class="n">dataset</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">model_exists</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">model_exists</span><span class="p">(</span><div class="mkapi-source-link" id="euroeval.benchmark_modules.hf.HuggingFaceEncoderModel.model_exists"><a href="../../../../api/euroeval/benchmark_modules/hf/#euroeval.benchmark_modules.hf.HuggingFaceEncoderModel.model_exists" title="Go to docs">docs</a></div>
         <span class="bp">cls</span><span class="p">,</span> <span class="n">model_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">benchmark_config</span><span class="p">:</span> <span class="n">BenchmarkConfig</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span> <span class="o">|</span> <span class="n">NeedsExtraInstalled</span> <span class="o">|</span> <span class="n">NeedsEnvironmentVariable</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Check if a model exists.</span>
@@ -2762,7 +2762,7 @@
         <span class="p">)</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">get_model_config</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_model_config</span><span class="p">(</span><div class="mkapi-source-link" id="euroeval.benchmark_modules.hf.HuggingFaceEncoderModel.get_model_config"><a href="../../../../api/euroeval/benchmark_modules/hf/#euroeval.benchmark_modules.hf.HuggingFaceEncoderModel.get_model_config" title="Go to docs">docs</a></div>
         <span class="bp">cls</span><span class="p">,</span> <span class="n">model_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">benchmark_config</span><span class="p">:</span> <span class="n">BenchmarkConfig</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ModelConfig</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Fetch the model configuration.</span>

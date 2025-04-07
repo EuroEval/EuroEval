@@ -2063,7 +2063,7 @@ Information about a Hugging Face model.</p>
 <i class="fa-regular fa-square-minus"></i>
 </span>
 </span><span class="mkapi-object-kind">dataclass</span>
-<span class="mkapi-object-name"><a href="./#euroeval.data_models.MetricConfig" title="euroeval.data_models.MetricConfig">MetricConfig</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">name</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str</span><span class="mkapi-comma">, </span><span class="mkapi-arg">pretty_name</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str</span><span class="mkapi-comma">, </span><span class="mkapi-arg">huggingface_id</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str</span><span class="mkapi-comma">, </span><span class="mkapi-arg">results_key</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str</span><span class="mkapi-comma">, </span><span class="mkapi-arg">compute_kwargs</span><span class="mkapi-colon">: </span><span class="mkapi-ann">dict[str, <span class="mkapi-tooltip" title="typing">t</span>.<span class="mkapi-tooltip" title="typing.Any">Any</span>]</span><span class="mkapi-equal"> = </span><span class="mkapi-default"><span class="mkapi-tooltip" title="dataclasses.field">field</span>(default_factory=dict)</span><span class="mkapi-comma">, </span><span class="mkapi-arg">postprocessing_fn</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="collections.abc">c</span>.<span class="mkapi-tooltip" title="collections.abc.Callable">Callable</span>[[float], tuple[float, str]]</span><span class="mkapi-equal"> = </span><span class="mkapi-default">field(default_factory=lambda: lambda raw_score: (100 * raw_score, f'{raw_score:.2%}'))</span><span class="mkapi-paren">)</span></span>
+<span class="mkapi-object-name"><a href="./#euroeval.data_models.MetricConfig" title="euroeval.data_models.MetricConfig">MetricConfig</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">name</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str</span><span class="mkapi-comma">, </span><span class="mkapi-arg">pretty_name</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str</span><span class="mkapi-comma">, </span><span class="mkapi-arg">huggingface_id</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str</span><span class="mkapi-comma">, </span><span class="mkapi-arg">results_key</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str</span><span class="mkapi-comma">, </span><span class="mkapi-arg">compute_kwargs</span><span class="mkapi-colon">: </span><span class="mkapi-ann">dict[str, <span class="mkapi-tooltip" title="typing">t</span>.<span class="mkapi-tooltip" title="typing.Any">Any</span>]</span><span class="mkapi-equal"> = </span><span class="mkapi-default"><span class="mkapi-tooltip" title="dataclasses.field">field</span>(default_factory=dict)</span><span class="mkapi-comma">, </span><span class="mkapi-arg">postprocessing_fn</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="collections.abc">c</span>.<span class="mkapi-tooltip" title="collections.abc.Callable">Callable</span>[[float], tuple[float, str]]</span><span class="mkapi-equal"> = </span><span class="mkapi-default"><span class="mkapi-tooltip" title="dataclasses.field">field</span>(default_factory=lambda: lambda raw_score: (100 * raw_score, f'{raw_score:.2%}'))</span><span class="mkapi-paren">)</span></span>
 </p>
 <div class="mkapi-document">
 <p>Configuration for a metric.</p>
@@ -2352,12 +2352,16 @@ Whether to only allow models that use the safetensors format.</p>
 <i class="fa-regular fa-square-minus"></i>
 </span>
 </span><span class="mkapi-object-kind">class</span>
-<span class="mkapi-object-name"><a href="./#euroeval.data_models.BenchmarkConfigParams" title="euroeval.data_models.BenchmarkConfigParams">BenchmarkConfigParams</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-paren">)</span></span>
+<span class="mkapi-object-name"><a href="./#euroeval.data_models.BenchmarkConfigParams" title="euroeval.data_models.BenchmarkConfigParams">BenchmarkConfigParams</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-star">**</span><span class="mkapi-arg">data</span><span class="mkapi-colon">: </span><span class="mkapi-ann">Any</span><span class="mkapi-paren">)</span></span>
 </p>
 <div class="mkapi-document">
 <p><p class="mkapi-bases" markdown="1">Bases :
 <span class="mkapi-base"><span class="mkapi-tooltip" title="pydantic">pydantic</span>.<span class="mkapi-tooltip" title="pydantic.main.BaseModel">BaseModel</span></span></p></p>
 <p>The parameters for the benchmark configuration.</p>
+<p>Create a new model by parsing and validating input data from keyword arguments.</p>
+<p>Raises [<code>ValidationError</code>][pydantic_core.ValidationError] if the input data cannot be
+validated to form a valid model.</p>
+<p><code>self</code> is explicitly positional-only to allow <code>self</code> as a field name.</p>
 <p class="mkapi-section">
 <span class="mkapi-object-link">
 <span class="mkapi-section-toggle" title="Toggle attributes">
@@ -2390,12 +2394,16 @@ Returns the set of fields that have been explicitly set on this model instance.<
 <i class="fa-regular fa-square-minus"></i>
 </span>
 </span><span class="mkapi-object-kind">class</span>
-<span class="mkapi-object-name"><a href="./#euroeval.data_models.BenchmarkResult" title="euroeval.data_models.BenchmarkResult">BenchmarkResult</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-paren">)</span></span>
+<span class="mkapi-object-name"><a href="./#euroeval.data_models.BenchmarkResult" title="euroeval.data_models.BenchmarkResult">BenchmarkResult</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-star">**</span><span class="mkapi-arg">data</span><span class="mkapi-colon">: </span><span class="mkapi-ann">Any</span><span class="mkapi-paren">)</span></span>
 </p>
 <div class="mkapi-document">
 <p><p class="mkapi-bases" markdown="1">Bases :
 <span class="mkapi-base"><span class="mkapi-tooltip" title="pydantic">pydantic</span>.<span class="mkapi-tooltip" title="pydantic.main.BaseModel">BaseModel</span></span></p></p>
 <p>A benchmark result.</p>
+<p>Create a new model by parsing and validating input data from keyword arguments.</p>
+<p>Raises [<code>ValidationError</code>][pydantic_core.ValidationError] if the input data cannot be
+validated to form a valid model.</p>
+<p><code>self</code> is explicitly positional-only to allow <code>self</code> as a field name.</p>
 <p class="mkapi-section">
 <span class="mkapi-object-link">
 <span class="mkapi-section-toggle" title="Toggle attributes">

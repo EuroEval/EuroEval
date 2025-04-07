@@ -1988,7 +1988,36 @@
 <span class="normal">1069</span>
 <span class="normal">1070</span>
 <span class="normal">1071</span>
-<span class="normal">1072</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Class that benchmarks language models.&quot;&quot;&quot;</span>
+<span class="normal">1072</span>
+<span class="normal">1073</span>
+<span class="normal">1074</span>
+<span class="normal">1075</span>
+<span class="normal">1076</span>
+<span class="normal">1077</span>
+<span class="normal">1078</span>
+<span class="normal">1079</span>
+<span class="normal">1080</span>
+<span class="normal">1081</span>
+<span class="normal">1082</span>
+<span class="normal">1083</span>
+<span class="normal">1084</span>
+<span class="normal">1085</span>
+<span class="normal">1086</span>
+<span class="normal">1087</span>
+<span class="normal">1088</span>
+<span class="normal">1089</span>
+<span class="normal">1090</span>
+<span class="normal">1091</span>
+<span class="normal">1092</span>
+<span class="normal">1093</span>
+<span class="normal">1094</span>
+<span class="normal">1095</span>
+<span class="normal">1096</span>
+<span class="normal">1097</span>
+<span class="normal">1098</span>
+<span class="normal">1099</span>
+<span class="normal">1100</span>
+<span class="normal">1101</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Class that benchmarks language models.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
@@ -2356,14 +2385,18 @@
             <span class="n">dataset_names</span><span class="o">=</span><span class="n">benchmark_config</span><span class="o">.</span><span class="n">datasets</span>
         <span class="p">)</span>
 
+        <span class="n">total_benchmarks</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">model_ids</span><span class="p">)</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">dataset_configs</span><span class="p">)</span>
+        <span class="n">num_finished_benchmarks</span> <span class="o">=</span> <span class="mi">0</span>
+
         <span class="n">current_benchmark_results</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">BenchmarkResult</span><span class="p">]</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
-        <span class="k">for</span> <span class="n">m_id</span> <span class="ow">in</span> <span class="n">model_ids</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">model_id</span> <span class="ow">in</span> <span class="n">model_ids</span><span class="p">:</span>
             <span class="k">try</span><span class="p">:</span>
                 <span class="n">model_config</span> <span class="o">=</span> <span class="n">get_model_config</span><span class="p">(</span>
-                    <span class="n">model_id</span><span class="o">=</span><span class="n">m_id</span><span class="p">,</span> <span class="n">benchmark_config</span><span class="o">=</span><span class="n">benchmark_config</span>
+                    <span class="n">model_id</span><span class="o">=</span><span class="n">model_id</span><span class="p">,</span> <span class="n">benchmark_config</span><span class="o">=</span><span class="n">benchmark_config</span>
                 <span class="p">)</span>
             <span class="k">except</span> <span class="n">InvalidModel</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
                 <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">message</span><span class="p">)</span>
+                <span class="n">num_finished_benchmarks</span> <span class="o">+=</span> <span class="nb">len</span><span class="p">(</span><span class="n">dataset_configs</span><span class="p">)</span>
                 <span class="k">continue</span>
 
             <span class="n">loaded_model</span><span class="p">:</span> <span class="n">BenchmarkModule</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
@@ -2371,16 +2404,18 @@
                 <span class="c1"># Skip if we have already benchmarked this model on this dataset and</span>
                 <span class="c1"># we are not forcing the benchmark</span>
                 <span class="k">if</span> <span class="ow">not</span> <span class="n">benchmark_config</span><span class="o">.</span><span class="n">force</span> <span class="ow">and</span> <span class="n">model_has_been_benchmarked</span><span class="p">(</span>
-                    <span class="n">model_id</span><span class="o">=</span><span class="n">m_id</span><span class="p">,</span>
+                    <span class="n">model_id</span><span class="o">=</span><span class="n">model_id</span><span class="p">,</span>
                     <span class="n">dataset</span><span class="o">=</span><span class="n">dataset_config</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
                     <span class="n">few_shot</span><span class="o">=</span><span class="n">benchmark_config</span><span class="o">.</span><span class="n">few_shot</span><span class="p">,</span>
                     <span class="n">validation_split</span><span class="o">=</span><span class="ow">not</span> <span class="n">benchmark_config</span><span class="o">.</span><span class="n">evaluate_test_split</span><span class="p">,</span>
                     <span class="n">benchmark_results</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">benchmark_results</span><span class="p">,</span>
                 <span class="p">):</span>
                     <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
-                        <span class="sa">f</span><span class="s2">&quot;Skipping benchmarking </span><span class="si">{</span><span class="n">m_id</span><span class="si">}</span><span class="s2"> on </span><span class="si">{</span><span class="n">dataset_config</span><span class="o">.</span><span class="n">pretty_name</span><span class="si">}</span><span class="s2">,&quot;</span>
-                        <span class="s2">&quot; as it has already been benchmarked.&quot;</span>
+                        <span class="sa">f</span><span class="s2">&quot;Skipping benchmarking </span><span class="si">{</span><span class="n">model_id</span><span class="si">}</span><span class="s2"> on &quot;</span>
+                        <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">dataset_config</span><span class="o">.</span><span class="n">pretty_name</span><span class="si">}</span><span class="s2">, as it &quot;</span>
+                        <span class="s2">&quot;has already been benchmarked.&quot;</span>
                     <span class="p">)</span>
+                    <span class="n">num_finished_benchmarks</span> <span class="o">+=</span> <span class="mi">1</span>
                     <span class="k">continue</span>
 
                 <span class="c1"># We do not re-initialise generative models as their architecture is not</span>
@@ -2403,6 +2438,15 @@
                             <span class="k">if</span> <span class="n">benchmark_config</span><span class="o">.</span><span class="n">raise_errors</span><span class="p">:</span>
                                 <span class="k">raise</span> <span class="n">e</span>
                             <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">message</span><span class="p">)</span>
+
+                            <span class="c1"># Add the remaining number of benchmarks for the model to</span>
+                            <span class="c1"># our benchmark counter, since we&#39;re skipping the</span>
+                            <span class="c1"># rest of them</span>
+                            <span class="n">num_finished_benchmarks</span> <span class="o">+=</span> <span class="p">(</span>
+                                <span class="nb">len</span><span class="p">(</span><span class="n">dataset_configs</span><span class="p">)</span>
+                                <span class="o">-</span> <span class="n">dataset_configs</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">dataset_config</span><span class="p">)</span>
+                                <span class="o">-</span> <span class="mi">1</span>
+                            <span class="p">)</span>
                             <span class="k">break</span>
                     <span class="k">else</span><span class="p">:</span>
                         <span class="n">loaded_model</span><span class="o">.</span><span class="n">dataset_config</span> <span class="o">=</span> <span class="n">dataset_config</span>
@@ -2425,16 +2469,24 @@
                     <span class="k">if</span> <span class="n">benchmark_config</span><span class="o">.</span><span class="n">raise_errors</span><span class="p">:</span>
                         <span class="k">raise</span> <span class="n">benchmark_output_or_err</span>
                     <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
-                        <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">m_id</span><span class="si">}</span><span class="s2"> could not be benchmarked on &quot;</span>
+                        <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">model_id</span><span class="si">}</span><span class="s2"> could not be benchmarked on &quot;</span>
                         <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">dataset_config</span><span class="o">.</span><span class="n">pretty_name</span><span class="si">}</span><span class="s2">. Skipping. The error message &quot;</span>
                         <span class="sa">f</span><span class="s2">&quot;raised was </span><span class="si">{</span><span class="n">benchmark_output_or_err</span><span class="o">.</span><span class="n">message</span><span class="si">!r}</span><span class="s2">.&quot;</span>
                     <span class="p">)</span>
+                    <span class="n">num_finished_benchmarks</span> <span class="o">+=</span> <span class="mi">1</span>
                     <span class="k">continue</span>
 
                 <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">benchmark_output_or_err</span><span class="p">,</span> <span class="n">InvalidModel</span><span class="p">):</span>
                     <span class="k">if</span> <span class="n">benchmark_config</span><span class="o">.</span><span class="n">raise_errors</span><span class="p">:</span>
                         <span class="k">raise</span> <span class="n">benchmark_output_or_err</span>
                     <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">benchmark_output_or_err</span><span class="o">.</span><span class="n">message</span><span class="p">)</span>
+
+                    <span class="c1"># Add the remaining number of benchmarks for the model to</span>
+                    <span class="c1"># our benchmark counter, since we&#39;re skipping the</span>
+                    <span class="c1"># rest of them</span>
+                    <span class="n">num_finished_benchmarks</span> <span class="o">+=</span> <span class="p">(</span>
+                        <span class="nb">len</span><span class="p">(</span><span class="n">dataset_configs</span><span class="p">)</span> <span class="o">-</span> <span class="n">dataset_configs</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">dataset_config</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span>
+                    <span class="p">)</span>
                     <span class="k">break</span>
 
                 <span class="k">else</span><span class="p">:</span>
@@ -2442,6 +2494,12 @@
                     <span class="n">current_benchmark_results</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">record</span><span class="p">)</span>
                     <span class="k">if</span> <span class="n">benchmark_config</span><span class="o">.</span><span class="n">save_results</span><span class="p">:</span>
                         <span class="n">record</span><span class="o">.</span><span class="n">append_to_results</span><span class="p">(</span><span class="n">results_path</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">results_path</span><span class="p">)</span>
+
+                <span class="n">num_finished_benchmarks</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;Finished </span><span class="si">{</span><span class="n">num_finished_benchmarks</span><span class="si">}</span><span class="s2"> out of &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">total_benchmarks</span><span class="si">}</span><span class="s2"> benchmarks.&quot;</span>
+                <span class="p">)</span>
 
             <span class="k">if</span> <span class="n">benchmark_config</span><span class="o">.</span><span class="n">clear_model_cache</span><span class="p">:</span>
                 <span class="n">clear_model_cache_fn</span><span class="p">(</span><span class="n">cache_dir</span><span class="o">=</span><span class="n">benchmark_config</span><span class="o">.</span><span class="n">cache_dir</span><span class="p">)</span>

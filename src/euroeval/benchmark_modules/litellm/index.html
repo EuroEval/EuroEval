@@ -2088,7 +2088,37 @@
 <span class="normal">1124</span>
 <span class="normal">1125</span>
 <span class="normal">1126</span>
-<span class="normal">1127</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Generative models from an inference API, using the LiteLLM framework.&quot;&quot;&quot;</span>
+<span class="normal">1127</span>
+<span class="normal">1128</span>
+<span class="normal">1129</span>
+<span class="normal">1130</span>
+<span class="normal">1131</span>
+<span class="normal">1132</span>
+<span class="normal">1133</span>
+<span class="normal">1134</span>
+<span class="normal">1135</span>
+<span class="normal">1136</span>
+<span class="normal">1137</span>
+<span class="normal">1138</span>
+<span class="normal">1139</span>
+<span class="normal">1140</span>
+<span class="normal">1141</span>
+<span class="normal">1142</span>
+<span class="normal">1143</span>
+<span class="normal">1144</span>
+<span class="normal">1145</span>
+<span class="normal">1146</span>
+<span class="normal">1147</span>
+<span class="normal">1148</span>
+<span class="normal">1149</span>
+<span class="normal">1150</span>
+<span class="normal">1151</span>
+<span class="normal">1152</span>
+<span class="normal">1153</span>
+<span class="normal">1154</span>
+<span class="normal">1155</span>
+<span class="normal">1156</span>
+<span class="normal">1157</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Generative models from an inference API, using the LiteLLM framework.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">c</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">itertools</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">it</span>
@@ -2278,6 +2308,10 @@
             <span class="n">benchmark_config</span><span class="o">=</span><span class="n">benchmark_config</span><span class="p">,</span>
         <span class="p">)</span>
 
+        <span class="bp">self</span><span class="o">.</span><span class="n">buffer</span><span class="p">[</span><span class="s2">&quot;first_label_token_mapping&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">get_first_label_token_mapping</span><span class="p">(</span>
+            <span class="n">dataset_config</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dataset_config</span><span class="p">,</span> <span class="n">tokenizer</span><span class="o">=</span><span class="kc">None</span>
+        <span class="p">)</span>
+
     <span class="nd">@property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">generative_type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">GenerativeType</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span><div class="mkapi-source-link" id="euroeval.benchmark_modules.litellm.LiteLLMModel.generative_type"><a href="../../../../api/euroeval/benchmark_modules/litellm/#euroeval.benchmark_modules.litellm.LiteLLMModel.generative_type" title="Go to docs">docs</a></div>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the generative type of the model.</span>
@@ -2435,6 +2469,15 @@
             <span class="p">)</span>
 
         <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">model_response</span><span class="p">,</span> <span class="n">ModelResponse</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">model_response</span><span class="o">.</span><span class="n">choices</span><span class="p">:</span>
+            <span class="c1"># This happens for reasoning models, when they don&#39;t finish thinking and run</span>
+            <span class="c1"># out of tokens. Happens quite rarely, but we need to handle it.</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;The model </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span><span class="si">!r}</span><span class="s2"> did not end up generating &quot;</span>
+                <span class="s2">&quot;any text. This is likely because the model ran out of tokens while &quot;</span>
+                <span class="s2">&quot;reasoning. Returning an empty string.&quot;</span>
+            <span class="p">)</span>
+            <span class="k">return</span> <span class="n">GenerativeModelOutput</span><span class="p">(</span><span class="n">sequences</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;&quot;</span><span class="p">])</span>
         <span class="n">model_response_choices</span> <span class="o">=</span> <span class="n">model_response</span><span class="o">.</span><span class="n">choices</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
         <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">model_response_choices</span><span class="p">,</span> <span class="n">litellm</span><span class="o">.</span><span class="n">Choices</span><span class="p">)</span>
         <span class="n">generation_output</span> <span class="o">=</span> <span class="n">model_response_choices</span><span class="o">.</span><span class="n">message</span><span class="p">[</span><span class="s2">&quot;content&quot;</span><span class="p">]</span> <span class="ow">or</span> <span class="s2">&quot;&quot;</span>
@@ -2814,12 +2857,29 @@
                     <span class="n">api_version</span><span class="o">=</span><span class="n">benchmark_config</span><span class="o">.</span><span class="n">api_version</span><span class="p">,</span>
                 <span class="p">)</span>
                 <span class="k">return</span> <span class="kc">True</span>
+            <span class="k">except</span> <span class="p">(</span>
+                <span class="n">APIConnectionError</span><span class="p">,</span>
+                <span class="n">Timeout</span><span class="p">,</span>
+                <span class="n">ServiceUnavailableError</span><span class="p">,</span>
+                <span class="n">InternalServerError</span><span class="p">,</span>
+            <span class="p">)</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;Service temporarily unavailable. The error message was: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">. &quot;</span>
+                    <span class="s2">&quot;Retrying in 10 seconds...&quot;</span>
+                <span class="p">)</span>
+                <span class="n">sleep</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span>
+            <span class="k">except</span> <span class="n">RateLimitError</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;Rate limit exceeded for model </span><span class="si">{</span><span class="n">model_id</span><span class="si">!r}</span><span class="s2">. Retrying in 10 &quot;</span>
+                    <span class="s2">&quot;seconds...&quot;</span>
+                <span class="p">)</span>
+                <span class="n">sleep</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
             <span class="k">except</span> <span class="n">APIError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
                 <span class="k">if</span> <span class="s2">&quot;&#39;503 Service Unavailable&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">):</span>
                     <span class="k">raise</span> <span class="n">e</span>
                 <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
-                    <span class="sa">f</span><span class="s2">&quot;Failed to check if model </span><span class="si">{</span><span class="n">model_id</span><span class="si">!r}</span><span class="s2"> exists. Retrying in &quot;</span>
-                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">num_attempts</span><span class="si">}</span><span class="s2"> seconds...&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;Failed to check if model </span><span class="si">{</span><span class="n">model_id</span><span class="si">!r}</span><span class="s2"> exists. Retrying in 10 &quot;</span>
+                    <span class="s2">&quot;seconds...&quot;</span>
                 <span class="p">)</span>
                 <span class="n">sleep</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
             <span class="k">except</span> <span class="p">(</span><span class="n">BadRequestError</span><span class="p">,</span> <span class="n">NotFoundError</span><span class="p">):</span>

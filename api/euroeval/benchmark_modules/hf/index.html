@@ -2303,7 +2303,7 @@ The function used to extract the labels from the generated output.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">trainer_class</span> : 
-<span class="mkapi-item-type"><span class="mkapi-tooltip" title="typing">t</span>.<span class="mkapi-tooltip" title="typing.Type">Type</span>[<span class="mkapi-tooltip" title="transformers.trainer.Trainer">Trainer</span>]</span> <span class="mkapi-dash">&mdash;</span>
+<span class="mkapi-item-type"><span class="mkapi-tooltip" title="typing">t</span>.<span class="mkapi-tooltip" title="typing.Type">Type</span>['Trainer']</span> <span class="mkapi-dash">&mdash;</span>
 The Trainer class to use for finetuning.</p>
 </li>
 </ul>
@@ -2561,7 +2561,7 @@ The function used to extract the labels from the generated output.</p>
 </span>
 </span><span class="mkapi-object-kind">property</span>
 <span class="mkapi-object-parent">
-<a href="./#euroeval.benchmark_modules.hf.HuggingFaceEncoderModel" title="euroeval.benchmark_modules.hf.HuggingFaceEncoderModel">HuggingFaceEncoderModel</a><span class="mkapi-dot">.</span></span><span class="mkapi-object-name"><a href="./#euroeval.benchmark_modules.hf.HuggingFaceEncoderModel.trainer_class" title="euroeval.benchmark_modules.hf.HuggingFaceEncoderModel.trainer_class">trainer_class</a></span><span class="mkapi-signature"><span class="mkapi-colon">: </span><span class="mkapi-return"><span class="mkapi-tooltip" title="typing">t</span>.<span class="mkapi-tooltip" title="typing.Type">Type</span>[<span class="mkapi-tooltip" title="transformers.trainer.Trainer">Trainer</span>]</span></span>
+<a href="./#euroeval.benchmark_modules.hf.HuggingFaceEncoderModel" title="euroeval.benchmark_modules.hf.HuggingFaceEncoderModel">HuggingFaceEncoderModel</a><span class="mkapi-dot">.</span></span><span class="mkapi-object-name"><a href="./#euroeval.benchmark_modules.hf.HuggingFaceEncoderModel.trainer_class" title="euroeval.benchmark_modules.hf.HuggingFaceEncoderModel.trainer_class">trainer_class</a></span><span class="mkapi-signature"><span class="mkapi-colon">: </span><span class="mkapi-return"><span class="mkapi-tooltip" title="typing">t</span>.<span class="mkapi-tooltip" title="typing.Type">Type</span>['Trainer']</span></span>
 </p>
 <div class="mkapi-document">
 <p>The Trainer class to use for finetuning.</p>
@@ -2576,7 +2576,7 @@ The function used to extract the labels from the generated output.</p>
 <div class="mkapi-section-content">
 <ul class="mkapi-item-list">
 <li>
-<p><span class="mkapi-item-type"><span class="mkapi-tooltip" title="typing">t</span>.<span class="mkapi-tooltip" title="typing.Type">Type</span>[<span class="mkapi-tooltip" title="transformers.trainer.Trainer">Trainer</span>]</span> <span class="mkapi-dash">&mdash;</span>
+<p><span class="mkapi-item-type"><span class="mkapi-tooltip" title="typing">t</span>.<span class="mkapi-tooltip" title="typing.Type">Type</span>['Trainer']</span> <span class="mkapi-dash">&mdash;</span>
 The Trainer class.</p>
 </li>
 </ul>
@@ -3286,7 +3286,7 @@ The children of the module, or None if the module has no children.</p>
 <i class="fa-regular fa-square-minus"></i>
 </span>
 </span>
-<span class="mkapi-object-name"><a href="./#euroeval.benchmark_modules.hf.align_model_and_tokenizer" title="euroeval.benchmark_modules.hf.align_model_and_tokenizer">align_model_and_tokenizer</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">model</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="transformers.modeling_utils.PreTrainedModel">PreTrainedModel</span></span><span class="mkapi-comma">, </span><span class="mkapi-arg">tokenizer</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="transformers.tokenization_utils.PreTrainedTokenizer">PreTrainedTokenizer</span></span><span class="mkapi-comma">, </span><span class="mkapi-arg">model_max_length</span><span class="mkapi-colon">: </span><span class="mkapi-ann">int</span><span class="mkapi-comma">, </span><span class="mkapi-arg">raise_errors</span><span class="mkapi-colon">: </span><span class="mkapi-ann">bool</span><span class="mkapi-equal"> = </span><span class="mkapi-default">False</span><span class="mkapi-paren">)</span><span class="mkapi-arrow"> → </span><span class="mkapi-return">tuple[<span class="mkapi-tooltip" title="transformers.modeling_utils.PreTrainedModel">PreTrainedModel</span>, <span class="mkapi-tooltip" title="transformers.tokenization_utils.PreTrainedTokenizer">PreTrainedTokenizer</span>]</span></span>
+<span class="mkapi-object-name"><a href="./#euroeval.benchmark_modules.hf.align_model_and_tokenizer" title="euroeval.benchmark_modules.hf.align_model_and_tokenizer">align_model_and_tokenizer</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">model</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="transformers.modeling_utils.PreTrainedModel">PreTrainedModel</span></span><span class="mkapi-comma">, </span><span class="mkapi-arg">tokenizer</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="transformers.tokenization_utils.PreTrainedTokenizer">PreTrainedTokenizer</span></span><span class="mkapi-comma">, </span><span class="mkapi-arg">model_max_length</span><span class="mkapi-colon">: </span><span class="mkapi-ann">int</span><span class="mkapi-comma">, </span><span class="mkapi-arg">raise_errors</span><span class="mkapi-colon">: </span><span class="mkapi-ann">bool</span><span class="mkapi-equal"> = </span><span class="mkapi-default">False</span><span class="mkapi-paren">)</span><span class="mkapi-arrow"> → </span><span class="mkapi-return">tuple['PreTrainedModel', 'PreTrainedTokenizer']</span></span>
 </p>
 <div class="mkapi-document">
 <p>Aligns the model and the tokenizer.</p>
@@ -3333,7 +3333,7 @@ Whether to raise errors instead of trying to fix them silently.</p>
 <div class="mkapi-section-content">
 <ul class="mkapi-item-list">
 <li>
-<p><span class="mkapi-item-type">tuple[<span class="mkapi-tooltip" title="transformers.modeling_utils.PreTrainedModel">PreTrainedModel</span>, <span class="mkapi-tooltip" title="transformers.tokenization_utils.PreTrainedTokenizer">PreTrainedTokenizer</span>]</span> <span class="mkapi-dash">&mdash;</span>
+<p><span class="mkapi-item-type">tuple['PreTrainedModel', 'PreTrainedTokenizer']</span> <span class="mkapi-dash">&mdash;</span>
 The fixed model and tokenizer.</p>
 </li>
 </ul>

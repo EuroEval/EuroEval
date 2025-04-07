@@ -1719,7 +1719,7 @@ Helper function to compute the mean with confidence intervals.</p>
 <i class="fa-regular fa-square-minus"></i>
 </span>
 </span>
-<span class="mkapi-object-name"><a href="./#euroeval.scores.log_scores" title="euroeval.scores.log_scores">log_scores</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">dataset_name</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str</span><span class="mkapi-comma">, </span><span class="mkapi-arg">metric_configs</span><span class="mkapi-colon">: </span><span class="mkapi-ann">list[<a href="../data_models/#euroeval.data_models.MetricConfig" title="euroeval.data_models.MetricConfig">MetricConfig</a>]</span><span class="mkapi-comma">, </span><span class="mkapi-arg">scores</span><span class="mkapi-colon">: </span><span class="mkapi-ann">list[dict[str, float]]</span><span class="mkapi-comma">, </span><span class="mkapi-arg">model_id</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str</span><span class="mkapi-paren">)</span><span class="mkapi-arrow"> → </span><span class="mkapi-return"><span class="mkapi-tooltip" title="euroeval.types.ScoreDict">ScoreDict</span></span></span>
+<span class="mkapi-object-name"><a href="./#euroeval.scores.log_scores" title="euroeval.scores.log_scores">log_scores</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">dataset_name</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str</span><span class="mkapi-comma">, </span><span class="mkapi-arg">metric_configs</span><span class="mkapi-colon">: </span><span class="mkapi-ann">list['MetricConfig']</span><span class="mkapi-comma">, </span><span class="mkapi-arg">scores</span><span class="mkapi-colon">: </span><span class="mkapi-ann">list[dict[str, float]]</span><span class="mkapi-comma">, </span><span class="mkapi-arg">model_id</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str</span><span class="mkapi-paren">)</span><span class="mkapi-arrow"> → </span><span class="mkapi-return"><span class="mkapi-tooltip" title="euroeval.types.ScoreDict">ScoreDict</span></span></span>
 </p>
 <div class="mkapi-document">
 <p>Log the scores.</p>
@@ -1740,7 +1740,7 @@ Name of the dataset.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">metric_configs</span> : 
-<span class="mkapi-item-type">list[<a href="../data_models/#euroeval.data_models.MetricConfig" title="euroeval.data_models.MetricConfig">MetricConfig</a>]</span> <span class="mkapi-dash">&mdash;</span>
+<span class="mkapi-item-type">list['MetricConfig']</span> <span class="mkapi-dash">&mdash;</span>
 List of metrics to log.</p>
 </li>
 <li>
