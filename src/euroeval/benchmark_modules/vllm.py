@@ -80,12 +80,12 @@ if t.TYPE_CHECKING or importlib.util.find_spec("vllm") is not None:
     from vllm import LLM, RequestOutput, SamplingParams
     from vllm.lora.request import LoRARequest
 
-    try:
-        from vllm.model_executor.parallel_utils.parallel_state import (
-            destroy_model_parallel,
-        )
-    except ImportError:
-        from vllm.distributed.parallel_state import destroy_model_parallel
+    # try:
+    #     from vllm.model_executor.parallel_utils.parallel_state import (
+    #         destroy_model_parallel,
+    #     )
+    # except ImportError:
+    #     pass
 
 if t.TYPE_CHECKING or importlib.util.find_spec("outlines") is not None:
     from outlines.models.vllm import adapt_tokenizer
@@ -1148,10 +1148,10 @@ def _run_engine_with_fixed_progress_bars(
 
 def clear_vllm() -> None:
     """Clear the GPU memory used by the vLLM model, enabling re-initialisation."""
-    try:
-        destroy_model_parallel()
-    except (ImportError, ValueError):
-        pass
+    # try:
+    #     destroy_model_parallel()
+    # except (ImportError, ValueError):
+    #     pass
     clear_memory()
     if ray.is_initialized():
         ray.shutdown()
