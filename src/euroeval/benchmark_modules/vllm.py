@@ -78,12 +78,11 @@ from .hf import HuggingFaceEncoderModel, get_model_repo_info, load_hf_model_conf
 
 if t.TYPE_CHECKING or importlib.util.find_spec("vllm") is not None:
     from vllm import LLM, RequestOutput, SamplingParams
-    from vllm.distributed.parallel_state import destroy_model_parallel
     from vllm.lora.request import LoRARequest
 
 if t.TYPE_CHECKING or importlib.util.find_spec("outlines") is not None:
     from outlines.models.vllm import adapt_tokenizer
-    from outlines.processors import JSONLogitsProcessor
+    from outlines.processors.structured import JSONLogitsProcessor
 
 if t.TYPE_CHECKING or importlib.util.find_spec("ray") is not None:
     import ray
@@ -984,24 +983,19 @@ def load_model_and_tokenizer(
         token=benchmark_config.api_key or os.getenv("HUGGINGFACE_API_KEY") or True,
     )
 
-    # TODO: Check if this is still needed
-    # clear_vllm()
-
-    # TODO: Check if "mp" is still required in some cases
-    # executor_backend = "ray" if torch.cuda.device_count() > 1 else "mp"
-    executor_backend = "ray"
+    clear_vllm()
 
     try:
         model = LLM(
             model=model_id,
             tokenizer=model_id,
-            gpu_memory_utilization=0.95,
+            gpu_memory_utilization=0.9,
             max_model_len=min(true_max_model_len, MAX_CONTEXT_LENGTH),
             download_dir=download_dir,
             trust_remote_code=benchmark_config.trust_remote_code,
             revision=revision,
             seed=4242,
-            distributed_executor_backend=executor_backend,
+            distributed_executor_backend="ray",
             tensor_parallel_size=torch.cuda.device_count(),
             disable_custom_all_reduce=True,
             quantization=quantization,
@@ -1152,10 +1146,6 @@ def _run_engine_with_fixed_progress_bars(
 
 def clear_vllm() -> None:
     """Clear the GPU memory used by the vLLM model, enabling re-initialisation."""
-    try:
-        destroy_model_parallel()
-    except (ImportError, ValueError):
-        pass
     clear_memory()
     if ray.is_initialized():
         ray.shutdown()
