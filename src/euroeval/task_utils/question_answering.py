@@ -7,7 +7,6 @@ from collections import defaultdict
 
 import evaluate
 import numpy as np
-from datasets.arrow_dataset import Dataset
 from evaluate import EvaluationModule
 from transformers.tokenization_utils import PreTrainedTokenizer
 from transformers.tokenization_utils_base import PreTrainedTokenizerBase
@@ -21,6 +20,7 @@ from ..utils import (
 
 if t.TYPE_CHECKING:
     import torch.nn as nn
+    from datasets.arrow_dataset import Dataset
     from transformers.modeling_utils import PreTrainedModel
     from transformers.tokenization_utils_base import BatchEncoding
     from transformers.trainer_callback import TrainerCallback
@@ -91,8 +91,6 @@ class QuestionAnsweringTrainer(Trainer):
         Returns:
             The metrics computed on the evaluation dataset.
         """
-        assert isinstance(eval_dataset, Dataset)
-
         eval_dataloader = self.get_eval_dataloader(eval_dataset)
 
         # Temporarily disable metric computation, we will do it in the loop here.
