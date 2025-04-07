@@ -56,7 +56,6 @@ install-dependencies:
 	@if [ "${NO_FLASH_ATTN}" != "1" ] && [ $$(uname) != "Darwin" ]; then \
 		uv pip install --no-build-isolation flash-attn>=2.7.0.post2; \
 	fi
-	@uv sync -U --only-dev
 
 setup-environment-variables:
 	@uv run python src/scripts/fix_dot_env_file.py
