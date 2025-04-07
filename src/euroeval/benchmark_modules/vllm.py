@@ -78,6 +78,10 @@ from .hf import HuggingFaceEncoderModel, get_model_repo_info, load_hf_model_conf
 
 if t.TYPE_CHECKING or importlib.util.find_spec("vllm") is not None:
     from vllm import LLM, RequestOutput, SamplingParams
+    from vllm.distributed.parallel_state import (
+        destroy_distributed_environment,
+        destroy_model_parallel,
+    )
     from vllm.lora.request import LoRARequest
 
 if t.TYPE_CHECKING or importlib.util.find_spec("outlines") is not None:
@@ -995,7 +999,9 @@ def load_model_and_tokenizer(
             trust_remote_code=benchmark_config.trust_remote_code,
             revision=revision,
             seed=4242,
-            distributed_executor_backend="ray",
+            distributed_executor_backend=(
+                "ray" if torch.cuda.device_count() > 1 else "mp"
+            ),
             tensor_parallel_size=torch.cuda.device_count(),
             disable_custom_all_reduce=True,
             quantization=quantization,
@@ -1146,6 +1152,8 @@ def _run_engine_with_fixed_progress_bars(
 
 def clear_vllm() -> None:
     """Clear the GPU memory used by the vLLM model, enabling re-initialisation."""
+    destroy_model_parallel()
+    destroy_distributed_environment()
     clear_memory()
     if ray.is_initialized():
         ray.shutdown()
