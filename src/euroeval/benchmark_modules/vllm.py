@@ -986,6 +986,7 @@ def load_model_and_tokenizer(
     # clear_vllm()
 
     executor_backend = "ray" if torch.cuda.device_count() > 1 else "mp"
+    executor_backend = "ray"
 
     try:
         model = LLM(
