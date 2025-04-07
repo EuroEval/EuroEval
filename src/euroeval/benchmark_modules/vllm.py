@@ -1152,8 +1152,12 @@ def _run_engine_with_fixed_progress_bars(
 
 def clear_vllm() -> None:
     """Clear the GPU memory used by the vLLM model, enabling re-initialisation."""
-    destroy_model_parallel()
-    destroy_distributed_environment()
+    try:
+        destroy_model_parallel()
+        destroy_distributed_environment()
+    # Catch the error "ValueError: Invalid process group specified"
+    except ValueError:
+        pass
     clear_memory()
     if ray.is_initialized():
         ray.shutdown()
