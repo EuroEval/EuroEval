@@ -66,9 +66,6 @@ def finetune(
     else:
         dtype = DataType.FP32
 
-    # TEMP
-    dtype = DataType.FP32
-
     bs: int = benchmark_config.batch_size
     scores: list[dict[str, float]] = list()
     for idx in tqdm(
