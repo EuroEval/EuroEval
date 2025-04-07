@@ -32,9 +32,6 @@ from transformers.data.data_collator import (
 from transformers.modelcard import TASK_MAPPING
 from transformers.modeling_utils import PreTrainedModel
 from transformers.models.auto.configuration_auto import AutoConfig
-from transformers.models.auto.modeling_auto import (
-    MODEL_FOR_IMAGE_TEXT_TO_TEXT_MAPPING_NAMES,
-)
 from transformers.models.auto.tokenization_auto import AutoTokenizer
 from transformers.tokenization_utils import PreTrainedTokenizer
 from transformers.tokenization_utils_base import BatchEncoding
@@ -797,12 +794,6 @@ def get_model_repo_info(
             )
             tags += base_model_info.tags or list()
             tags = list(set(tags))
-
-    # TEMP: This extends the `TASK_MAPPING` dictionary to include the missing
-    # 'image-text-to-text' pipeline tag. This will be added as part of `TASK_MAPPING`
-    # when this PR has been merged in and published:
-    # https://github.com/huggingface/transformers/pull/37107
-    TASK_MAPPING["image-text-to-text"] = MODEL_FOR_IMAGE_TEXT_TO_TEXT_MAPPING_NAMES
 
     # Get the pipeline tag for the model. If it is not specified, then we determine it
     # by checking the model's architecture as written in the model's Hugging Face config
