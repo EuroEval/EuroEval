@@ -984,7 +984,7 @@ def load_model_and_tokenizer(
     )
 
     # TODO: Check if this is still needed
-    # clear_vllm()
+    clear_vllm()
 
     # TODO: Check if "mp" is still required in some cases
     # executor_backend = "ray" if torch.cuda.device_count() > 1 else "mp"
