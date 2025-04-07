@@ -153,6 +153,13 @@ class VLLMModel(HuggingFaceEncoderModel):
                 lora_name="adapter", lora_int_id=1, lora_path=adapter_path
             )
 
+    def __del__(self) -> None:
+        """Clean up the model and tokenizer."""
+        if hasattr(self, "_model"):
+            del self._model
+        if hasattr(self, "_tokenizer"):
+            del self._tokenizer
+
     @property
     def generative_type(self) -> GenerativeType | None:
         """Get the generative type of the model.
@@ -978,7 +985,7 @@ def load_model_and_tokenizer(
     )
 
     # TODO: Check if this is still needed
-    clear_vllm()
+    # clear_vllm()
 
     # TODO: Check if "mp" is still required in some cases
     # executor_backend = "ray" if torch.cuda.device_count() > 1 else "mp"
