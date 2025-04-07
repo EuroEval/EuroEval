@@ -121,6 +121,7 @@ def block_terminal_output() -> None:
     logging.getLogger("vllm.platforms").setLevel(logging.CRITICAL)
     logging.getLogger("httpx").setLevel(logging.CRITICAL)
     logging.getLogger("ray._private.worker").setLevel(logging.CRITICAL)
+    logging.getLogger("ray._private.services").setLevel(logging.CRITICAL)
     logging.getLogger("matplotlib.font_manager").setLevel(logging.CRITICAL)
     logging.getLogger("accelerate").setLevel(logging.CRITICAL)
     logging.getLogger("LiteLLM").setLevel(logging.CRITICAL)
