@@ -59,19 +59,9 @@ def test_benchmark_generative(
     benchmarker: Benchmarker, task: Task, language: Language, generative_model_id: str
 ) -> None:
     """Test that a generative model can be benchmarked."""
-    from euroeval.benchmark_modules.vllm import clear_vllm
-
-    for _ in range(10):
-        clear_vllm()
-        try:
-            benchmark_result = benchmarker.benchmark(
-                model=generative_model_id, task=task.name, language=language.code
-            )
-            break
-        except (HuggingFaceHubDown, RequestException, ConnectionError):
-            time.sleep(5)
-    else:
-        pytest.skip(reason="Hugging Face Hub is down, so we skip this test.")
+    benchmark_result = benchmarker.benchmark(
+        model=generative_model_id, task=task.name, language=language.code
+    )
     assert isinstance(benchmark_result, list)
     assert all(isinstance(result, BenchmarkResult) for result in benchmark_result)
 
@@ -86,21 +76,9 @@ def test_benchmark_generative_adapter(
     generative_adapter_model_id: str,
 ) -> None:
     """Test that a generative adapter model can be benchmarked."""
-    from euroeval.benchmark_modules.vllm import clear_vllm
-
-    for _ in range(10):
-        clear_vllm()
-        try:
-            benchmark_result = benchmarker.benchmark(
-                model=generative_adapter_model_id,
-                task=task.name,
-                language=language.code,
-            )
-            break
-        except (HuggingFaceHubDown, RequestException, ConnectionError):
-            time.sleep(5)
-    else:
-        pytest.skip(reason="Hugging Face Hub is down, so we skip this test.")
+    benchmark_result = benchmarker.benchmark(
+        model=generative_adapter_model_id, task=task.name, language=language.code
+    )
     assert isinstance(benchmark_result, list)
     assert all(isinstance(result, BenchmarkResult) for result in benchmark_result)
 
