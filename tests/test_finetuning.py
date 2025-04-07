@@ -2,7 +2,8 @@
 
 import pytest
 import torch
-from transformers import IntervalStrategy, TrainingArguments
+from transformers.trainer_utils import IntervalStrategy
+from transformers.training_args import TrainingArguments
 
 from euroeval.data_models import BenchmarkConfig, ModelConfig
 from euroeval.enums import DataType
