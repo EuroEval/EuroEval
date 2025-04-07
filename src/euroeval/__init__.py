@@ -72,9 +72,10 @@ os.environ["RAY_DISABLE_DOCKER_CPU_WARNING"] = "1"
 os.environ["VLLM_WORKER_MULTIPROC_METHOD"] = "spawn"
 
 
+# TEMP
 # Use older version v0 of vLLM, as the newer one requires XGrammar as decoding backend,
 # but XGrammar does not support having a maximal amount of elements in lists
-os.environ["VLLM_USE_V1"] = "0"
+# os.environ["VLLM_USE_V1"] = "0"
 
 
 # Set the HF_TOKEN env var to copy the HUGGINGFACE_API_KEY env var, as vLLM uses the

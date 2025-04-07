@@ -77,7 +77,7 @@ from ..utils import (
 from .hf import HuggingFaceEncoderModel, get_model_repo_info, load_hf_model_config
 
 if t.TYPE_CHECKING or importlib.util.find_spec("vllm") is not None:
-    from vllm import LLM, RequestOutput, SamplingParams
+    from vllm import LLM, GuidedDecodingParams, RequestOutput, SamplingParams
     from vllm.lora.request import LoRARequest
 
     try:
@@ -86,10 +86,6 @@ if t.TYPE_CHECKING or importlib.util.find_spec("vllm") is not None:
         )
     except ImportError:
         from vllm.distributed.parallel_state import destroy_model_parallel
-
-if t.TYPE_CHECKING or importlib.util.find_spec("outlines") is not None:
-    from outlines.models.vllm import adapt_tokenizer
-    from outlines.processors import JSONLogitsProcessor
 
 if t.TYPE_CHECKING or importlib.util.find_spec("ray") is not None:
     import ray
@@ -331,18 +327,21 @@ class VLLMModel(HuggingFaceEncoderModel):
                 for tag_name in ner_tag_names
             }
             pydantic_class = create_model("AnswerFormat", **keys_and_their_types)
-            logits_processor = JSONLogitsProcessor(
-                schema=pydantic_class,
-                tokenizer=adapt_tokenizer(tokenizer=self._tokenizer),  # type: ignore
-                whitespace_pattern=r" ?",
-            )
+            schema = pydantic_class.model_json_schema()
+            guided_decoding = GuidedDecodingParams(json=schema)
+            # logits_processor = JSONLogitsProcessor(
+            #     schema=pydantic_class,
+            #     tokenizer=adapt_tokenizer(tokenizer=self._tokenizer),  # type: ignore
+            #     whitespace_pattern=r" ?",
+            # )
             log_once(
                 "Using structured generation with the schema "
                 f"{pydantic_class.model_json_schema()}",
                 level=logging.DEBUG,
             )
         else:
-            logits_processor = None
+            guided_decoding = None
+            # logits_processor = None
 
         # Get the mapping from labels to the first token in the label. We call this each
         # time we generate a new dataset since the dataset config can change
@@ -361,7 +360,9 @@ class VLLMModel(HuggingFaceEncoderModel):
             logprobs=MAX_LOGPROBS if self.buffer["first_label_token_mapping"] else None,
             temperature=0.0,
             stop=[stop_token for stop_token in stop_tokens if stop_token],
-            logits_processors=[logits_processor] if logits_processor else None,
+            guided_decoding=guided_decoding,
+            # TEMP
+            # logits_processors=[logits_processor] if logits_processor else None,
         )
 
         # If any of the prompts are empty then we need to replace them with a BOS token
