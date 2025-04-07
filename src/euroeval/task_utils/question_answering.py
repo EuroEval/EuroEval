@@ -113,6 +113,7 @@ class QuestionAnsweringTrainer(Trainer):
             self.compute_metrics = compute_metrics
 
         predictions = output.predictions
+        breakpoint()
         assert isinstance(predictions, np.ndarray)
 
         metrics = output.metrics
