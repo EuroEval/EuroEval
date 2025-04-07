@@ -1156,6 +1156,7 @@ def align_model_and_tokenizer(
     # finding the maximum sequence length of the model
     model_device = model.device
     model.to(torch.device("cpu"))  # type: ignore[arg-type]
+    os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 
     # Manually check that this model max length is valid for the model, and adjust
     # otherwise
