@@ -51,7 +51,7 @@ TASK_GROUPS_USING_LOGPROBS = [
 
 # The number of top log probabilities to return for generative models. For several APIs
 # this is the maximum number of log probabilities that can be returned
-MAX_LOGPROBS = 10
+MAX_LOGPROBS = 8
 
 
 # We make sure to remove these metric attributes after each iteration, to avoid memory
