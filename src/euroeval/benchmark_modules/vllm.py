@@ -18,7 +18,7 @@ from types import MethodType
 import torch
 from datasets import DatasetDict
 from huggingface_hub import snapshot_download
-from pydantic import conlist, create_model
+from pydantic import create_model
 from tqdm.auto import tqdm
 from transformers.models.auto.configuration_auto import AutoConfig
 from transformers.models.auto.tokenization_auto import AutoTokenizer
@@ -324,7 +324,8 @@ class VLLMModel(HuggingFaceEncoderModel):
         if self.dataset_config.task in TASKS_USING_JSON:
             ner_tag_names = list(self.dataset_config.prompt_label_mapping.values())
             keys_and_their_types: dict[str, t.Any] = {
-                tag_name: (conlist(str, max_length=5), ...)
+                # tag_name: (conlist(str, max_length=5), ...)
+                tag_name: (list[str], ...)
                 for tag_name in ner_tag_names
             }
             pydantic_class = create_model("AnswerFormat", **keys_and_their_types)
