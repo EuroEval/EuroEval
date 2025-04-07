@@ -1169,7 +1169,7 @@ def try_download_ollama_model(model_id: str) -> bool:
             response = ollama.pull(model=ollama_model_id, stream=True)
         except ollama.ResponseError as e:
             if "file does not exist" in str(e).lower():
-                # Check if the model exists if we preprend "hf.co/"
+                # Check if the model exists if we prepend "hf.co/"
                 try:
                     ollama_model_id_with_prefix = f"hf.co/{ollama_model_id}"
                     model_id_with_prefix = (
