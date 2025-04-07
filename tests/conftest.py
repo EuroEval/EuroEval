@@ -133,13 +133,13 @@ def encoder_model_id() -> Generator[str, None, None]:
 @pytest.fixture(scope="session")
 def generative_model_id() -> Generator[str, None, None]:
     """Yields a generative model ID used in tests."""
-    yield "mhenrichsen/danskgpt-tiny"
+    yield "HuggingFaceTB/SmolLM2-135M"
 
 
 @pytest.fixture(scope="session")
 def generative_adapter_model_id() -> Generator[str, None, None]:
     """Yields a generative adapter model ID used in tests."""
-    yield "grimjim/Llama-3-Instruct-abliteration-LoRA-8B"
+    yield "jekunz/smollm-135m-lora-fineweb-swedish"
 
 
 @pytest.fixture(scope="session")
