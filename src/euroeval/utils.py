@@ -483,11 +483,8 @@ def get_end_of_chat_token_ids(tokenizer: "PreTrainedTokenizer") -> list[int] | N
     if tokenizer.chat_template is None:
         return None
 
-    user_message: dict[t.Literal["role", "content"], str] = dict()
-    user_message["role"] = "user"
-    user_message["content"] = "X"
-    token_ids = tokenizer.apply_chat_template(conversation=[user_message])
-    assert isinstance(token_ids, list)
+    user_message: dict[str, str] = dict(role="user", content="X")
+    token_ids: list[int] = tokenizer.apply_chat_template(conversation=[user_message])  # type: ignore[assignment]
 
     for idx, token in enumerate(tokenizer.convert_ids_to_tokens(token_ids)):
         token_id = tokenizer.convert_tokens_to_ids(token)

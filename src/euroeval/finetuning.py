@@ -211,7 +211,7 @@ def finetune_single_iteration(
 
     if not benchmark_config.verbose:
 
-        def no_logging(logs: dict[str, float]) -> None:
+        def no_logging(logs: dict[str, float], start_time: float | None = None) -> None:
             return
 
         trainer.log = no_logging
@@ -291,7 +291,7 @@ def get_training_args(
 
     training_args = TrainingArguments(
         output_dir=model_config.model_cache_dir,
-        evaluation_strategy=IntervalStrategy.STEPS,
+        eval_strategy=IntervalStrategy.STEPS,
         logging_strategy=logging_strategy,
         save_strategy=IntervalStrategy.STEPS,
         eval_steps=30,

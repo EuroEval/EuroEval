@@ -35,7 +35,7 @@ from litellm.llms.vertex_ai.common_utils import VertexAIError
 from litellm.types.utils import ModelResponse
 from requests.exceptions import RequestException
 from tqdm.auto import tqdm
-from transformers import Trainer
+from transformers.trainer import Trainer
 
 from ..constants import MAX_LOGPROBS, REASONING_MAX_TOKENS, TASKS_USING_JSON
 from ..data_models import (

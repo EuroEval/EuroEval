@@ -67,13 +67,13 @@ class QuestionAnsweringTrainer(Trainer):
         # Set the label names
         self.label_names = ["start_positions", "end_positions"]
 
-    def evaluate(
+    def evaluate(  # type: ignore[override]
         self,
         eval_dataset: "Dataset | None" = None,
         orig_eval_dataset: "Dataset | None" = None,
         ignore_keys: list[str] | None = None,
         metric_key_prefix: str = "eval",
-    ) -> dict[str, float] | None:
+    ) -> dict[str, float]:
         """Evaluate the model on the given dataset.
 
         Args:
@@ -91,6 +91,8 @@ class QuestionAnsweringTrainer(Trainer):
         Returns:
             The metrics computed on the evaluation dataset.
         """
+        assert isinstance(eval_dataset, Dataset)
+
         eval_dataloader = self.get_eval_dataloader(eval_dataset)
 
         # Temporarily disable metric computation, we will do it in the loop here.
@@ -112,33 +114,39 @@ class QuestionAnsweringTrainer(Trainer):
         finally:
             self.compute_metrics = compute_metrics
 
+        predictions = output.predictions
+        assert isinstance(predictions, np.ndarray)
+
+        metrics = output.metrics
+        assert metrics is not None
+
         if orig_eval_dataset is not None:
             preds_and_labels = postprocess_predictions_and_labels(
-                predictions=output.predictions,
+                predictions=predictions.tolist(),
                 dataset=orig_eval_dataset,
                 prepared_dataset=eval_dataset,
                 cls_token_index=self.cls_token_id,
             )
-            output.metrics.update(self.compute_metrics(preds_and_labels))
+            assert self.compute_metrics is not None
+            new_metrics = self.compute_metrics(preds_and_labels)  # type: ignore[arg-type]
+            metrics.update(new_metrics)
 
             # Prefix all keys with metric_key_prefix + '_'
-            for key in list(output.metrics.keys()):
+            for key in list(metrics.keys()):
                 if not key.startswith(f"{metric_key_prefix}_"):
-                    output.metrics[f"{metric_key_prefix}_{key}"] = output.metrics.pop(
-                        key
-                    )
+                    metrics[f"{metric_key_prefix}_{key}"] = metrics.pop(key)
 
         # Only the main node log the results by default
         if self.args.should_log:
-            self.log(output.metrics)
+            self.log(metrics)
 
         self.control = self.callback_handler.on_evaluate(
             self.args,
             self.state,
             self.control,  # type: ignore[has-type]
-            output.metrics,
+            metrics,
         )
-        return output.metrics
+        return metrics
 
 
 def compute_metrics(

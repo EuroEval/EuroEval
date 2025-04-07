@@ -333,7 +333,7 @@ class VLLMModel(HuggingFaceEncoderModel):
             pydantic_class = create_model("AnswerFormat", **keys_and_their_types)
             logits_processor = JSONLogitsProcessor(
                 schema=pydantic_class,
-                tokenizer=adapt_tokenizer(tokenizer=self._tokenizer),  #  type: ignore
+                tokenizer=adapt_tokenizer(tokenizer=self._tokenizer),  # type: ignore
                 whitespace_pattern=r" ?",
             )
             log_once(
@@ -1178,12 +1178,13 @@ def get_end_of_reasoning_token_id(
     if tokenizer.chat_template is None:
         prompt = "What is your name?"
     else:
-        prompt = tokenizer.apply_chat_template(
+        templated_prompt = tokenizer.apply_chat_template(
             conversation=[dict(role="user", content="What is your name?")],
             add_generation_prompt=True,
             tokenize=False,
         )
-    assert isinstance(prompt, str)
+        assert isinstance(templated_prompt, str)
+        prompt = templated_prompt
 
     # Generate a completion and remove the BOS token from it, to not confuse it with the
     # potential reasoning token
