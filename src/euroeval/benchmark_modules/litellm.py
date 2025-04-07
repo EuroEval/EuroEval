@@ -688,42 +688,11 @@ class LiteLLMModel(BenchmarkModule):
         if model_id in litellm.model_list:
             return True
 
-        # If it is an Ollama model then try to download it
+        # Separate check for Ollama models
         if model_id.startswith("ollama/") or model_id.startswith("ollama_chat/"):
-            ollama_model_id = "/".join(model_id.split("/")[1:])
-            downloaded_ollama_models: list[str] = [
-                model_obj.model
-                for model_obj in ollama.list().models
-                if model_obj.model is not None
-            ]
-            if ollama_model_id not in downloaded_ollama_models:
-                try:
-                    response = ollama.pull(model=ollama_model_id, stream=True)
-                    with tqdm(
-                        desc=f"Downloading {ollama_model_id}",
-                        unit_scale=True,
-                        unit="B",
-                        leave=False,
-                    ) as pbar:
-                        for status in response:
-                            if status.total is not None:
-                                pbar.total = status.total
-                            if status.completed is not None:
-                                pbar.update(status.completed - pbar.n)
-                except ollama.ResponseError as e:
-                    if "file does not exist" in str(e).lower():
-                        return False
-                    else:
-                        raise InvalidModel(
-                            f"Failed to download Ollama model {ollama_model_id}. The "
-                            f"error message was: {e}"
-                        )
-            else:
-                log_once(
-                    f"Ollama model {ollama_model_id!r} already downloaded, so skipping "
-                    "download.",
-                    level=logging.DEBUG,
-                )
+            ollama_model_exists = try_download_ollama_model(model_id=model_id)
+            if ollama_model_exists:
+                return ollama_model_exists
 
         num_attempts = 10
         for _ in range(num_attempts):
@@ -1153,3 +1122,91 @@ def raise_if_wrong_params(
                     msg += " No parameters are allowed."
                 raise InvalidModel(msg)
             return
+
+
+def try_download_ollama_model(model_id: str) -> bool:
+    """Try to download an Ollama model.
+
+    Args:
+        model_id:
+            The model ID. If the model does not start with "ollama/" or "ollama_chat/"
+            then this function will return False.
+
+    Returns:
+        Whether the model was downloaded successfully.
+    """
+    if not (model_id.startswith("ollama/") or model_id.startswith("ollama_chat/")):
+        return False
+
+    if model_id.startswith("ollama/"):
+        log_once(
+            "You're trying to benchmark a model with the old 'ollama/' prefix, which "
+            "probably results in bad performance, as it doesn't use the model's chat "
+            "template. If the model is not a chat model then just disregard this "
+            "warning, but if it is a chat model then please cancel this run and "
+            "use the 'ollama_chat/' prefix instead.",
+            level=logging.WARNING,
+        )
+
+    downloaded_ollama_models: list[str] = [
+        model_obj.model
+        for model_obj in ollama.list().models
+        if model_obj.model is not None
+    ]
+
+    ollama_model_id = "/".join(model_id.split("/")[1:])
+    if ollama_model_id not in downloaded_ollama_models:
+        # Try fetching the model info
+        try:
+            response = ollama.pull(model=ollama_model_id, stream=True)
+        except ollama.ResponseError as e:
+            if "file does not exist" in str(e).lower():
+                # Check if the model exists if we preprend "hf.co/"
+                try:
+                    ollama_model_id_with_prefix = f"hf.co/{ollama_model_id}"
+                    model_id_with_prefix = (
+                        f"{model_id.split('/')[0]}/{ollama_model_id_with_prefix}"
+                    )
+                    ollama.pull(model=ollama_model_id_with_prefix, stream=True)
+                    log_once(
+                        f"The model {model_id!r} cannot be found on Ollama, but the "
+                        f"model {model_id_with_prefix} *was* found, so we would "
+                        "recommend you cancelling this run and trying the evaluation "
+                        "with that model ID instead."
+                    )
+                    return False
+                except ollama.ResponseError as inner_e:
+                    if "file does not exist" in str(inner_e).lower():
+                        return False
+                    else:
+                        raise InvalidModel(
+                            f"Failed to download Ollama model {ollama_model_id}. "
+                            f"The error message was: {inner_e}"
+                        )
+            else:
+                raise InvalidModel(
+                    f"Failed to download Ollama model {ollama_model_id}. "
+                    f"The error message was: {e}"
+                )
+
+        # Download the model
+        with tqdm(
+            desc=f"Downloading {ollama_model_id}",
+            unit_scale=True,
+            unit="B",
+            leave=False,
+        ) as pbar:
+            for status in response:
+                if status.total is not None:
+                    pbar.total = status.total
+                if status.completed is not None:
+                    pbar.update(status.completed - pbar.n)
+        return True
+
+    else:
+        log_once(
+            f"Ollama model {ollama_model_id!r} already downloaded, so skipping "
+            "download.",
+            level=logging.DEBUG,
+        )
+        return True
