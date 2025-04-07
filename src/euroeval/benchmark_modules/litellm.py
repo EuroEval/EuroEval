@@ -366,6 +366,7 @@ class LiteLLMModel(BenchmarkModule):
         # Structure the model output as a GenerativeModelOutput object
         model_output = GenerativeModelOutput(sequences=[generation_output])
         if hasattr(model_response_choices, "logprobs"):
+            breakpoint()
             logprobs_list: list[list[tuple[str, float]]] = [
                 [
                     (top_logprob.token, top_logprob.logprob)
