@@ -14,6 +14,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Updated `vllm` to `>=0.8.3`, which includes support for Llama-4.
 - Set the maximum amount of logprobs for generative models to 8, as that is the upper
   bound for xAI models.
+- When benchmarking Ollama models, if the model is not found, we now also check if the
+  model exists if prefixed with 'hf.co/'.
 
 ### Fixed
 - Avoid duplicate error messages when a rate limit occurs.
