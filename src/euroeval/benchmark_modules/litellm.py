@@ -32,7 +32,7 @@ from litellm.exceptions import (
     Timeout,
 )
 from litellm.llms.vertex_ai.common_utils import VertexAIError
-from litellm.types.utils import ModelResponse
+from litellm.types.utils import ChoiceLogprobs, ModelResponse
 from requests.exceptions import RequestException
 from tqdm.auto import tqdm
 from transformers.trainer import Trainer
@@ -366,14 +366,22 @@ class LiteLLMModel(BenchmarkModule):
         # Structure the model output as a GenerativeModelOutput object
         model_output = GenerativeModelOutput(sequences=[generation_output])
         if hasattr(model_response_choices, "logprobs"):
-            logprobs_list: list[list[tuple[str, float]]] = [
-                [
-                    (top_logprob.token, top_logprob.logprob)
-                    for top_logprob in content.top_logprobs
+            logprobs_obj = model_response_choices.logprobs
+            if isinstance(logprobs_obj, ChoiceLogprobs):
+                logprobs_list: list[list[tuple[str, float]]] = [
+                    [
+                        (top_logprob.token, top_logprob.logprob)
+                        for top_logprob in content.top_logprobs
+                    ]
+                    for content in model_response_choices.logprobs.content or list()
                 ]
-                for content in model_response_choices.logprobs.content or list()
-            ]
-            model_output.scores = [logprobs_list]
+                model_output.scores = [logprobs_list]
+            else:
+                log_once(
+                    "The logprobs object is malformed, so we won't use logprobs to "
+                    "determine the labels.",
+                    level=logging.WARNING,
+                )
 
         return model_output
 

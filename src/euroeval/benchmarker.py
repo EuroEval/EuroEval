@@ -1,5 +1,6 @@
 """Class that benchmarks language models."""
 
+import contextlib
 import json
 import logging
 import re
@@ -482,6 +483,7 @@ class Benchmarker:
                     f"{total_benchmarks} benchmarks."
                 )
 
+            del loaded_model
             if benchmark_config.clear_model_cache:
                 clear_model_cache_fn(cache_dir=benchmark_config.cache_dir)
 
@@ -493,11 +495,8 @@ class Benchmarker:
         #   point and block the progress of another member of the process group. This
         #   constraint has always been present,  but this warning has only been added
         #   since PyTorch 2.4 (function operator())
-        try:
+        with contextlib.suppress(AssertionError):
             destroy_process_group()
-        except AssertionError:
-            pass
-
         return current_benchmark_results
 
     def _get_updated_benchmark_config(

@@ -1,6 +1,7 @@
 """Generative models using the vLLM inference framework."""
 
 import collections.abc as c
+import contextlib
 import importlib.util
 import itertools as it
 import json
@@ -78,18 +79,15 @@ from .hf import HuggingFaceEncoderModel, get_model_repo_info, load_hf_model_conf
 
 if t.TYPE_CHECKING or importlib.util.find_spec("vllm") is not None:
     from vllm import LLM, RequestOutput, SamplingParams
+    from vllm.distributed.parallel_state import (
+        destroy_distributed_environment,
+        destroy_model_parallel,
+    )
     from vllm.lora.request import LoRARequest
-
-    try:
-        from vllm.model_executor.parallel_utils.parallel_state import (
-            destroy_model_parallel,
-        )
-    except ImportError:
-        from vllm.distributed.parallel_state import destroy_model_parallel
 
 if t.TYPE_CHECKING or importlib.util.find_spec("outlines") is not None:
     from outlines.models.vllm import adapt_tokenizer
-    from outlines.processors import JSONLogitsProcessor
+    from outlines.processors.structured import JSONLogitsProcessor
 
 if t.TYPE_CHECKING or importlib.util.find_spec("ray") is not None:
     import ray
@@ -158,6 +156,14 @@ class VLLMModel(HuggingFaceEncoderModel):
             self.buffer["lora_request"] = LoRARequest(
                 lora_name="adapter", lora_int_id=1, lora_path=adapter_path
             )
+
+    def __del__(self) -> None:
+        """Clean up the model and tokenizer."""
+        clear_vllm()
+        if hasattr(self, "_model"):
+            del self._model
+        if hasattr(self, "_tokenizer"):
+            del self._tokenizer
 
     @property
     def generative_type(self) -> GenerativeType | None:
@@ -985,19 +991,19 @@ def load_model_and_tokenizer(
 
     clear_vllm()
 
-    executor_backend = "ray" if torch.cuda.device_count() > 1 else "mp"
-
     try:
         model = LLM(
             model=model_id,
             tokenizer=model_id,
-            gpu_memory_utilization=0.95,
+            gpu_memory_utilization=0.9,
             max_model_len=min(true_max_model_len, MAX_CONTEXT_LENGTH),
             download_dir=download_dir,
             trust_remote_code=benchmark_config.trust_remote_code,
             revision=revision,
             seed=4242,
-            distributed_executor_backend=executor_backend,
+            distributed_executor_backend=(
+                "ray" if torch.cuda.device_count() > 1 else "mp"
+            ),
             tensor_parallel_size=torch.cuda.device_count(),
             disable_custom_all_reduce=True,
             quantization=quantization,
@@ -1148,13 +1154,16 @@ def _run_engine_with_fixed_progress_bars(
 
 def clear_vllm() -> None:
     """Clear the GPU memory used by the vLLM model, enabling re-initialisation."""
-    try:
+    with contextlib.suppress(ValueError):
         destroy_model_parallel()
-    except ImportError:
-        pass
-    clear_memory()
+        destroy_distributed_environment()
     if ray.is_initialized():
         ray.shutdown()
+    with contextlib.suppress(AssertionError):
+        torch.distributed.destroy_process_group()
+    if ray.is_initialized():
+        ray.shutdown()
+    clear_memory()
 
 
 def get_end_of_reasoning_token_id(
