@@ -1,6 +1,7 @@
 """Generative models using the vLLM inference framework."""
 
 import collections.abc as c
+import contextlib
 import importlib.util
 import itertools as it
 import json
@@ -158,6 +159,7 @@ class VLLMModel(HuggingFaceEncoderModel):
 
     def __del__(self) -> None:
         """Clean up the model and tokenizer."""
+        clear_vllm()
         if hasattr(self, "_model"):
             del self._model
         if hasattr(self, "_tokenizer"):
@@ -1152,15 +1154,16 @@ def _run_engine_with_fixed_progress_bars(
 
 def clear_vllm() -> None:
     """Clear the GPU memory used by the vLLM model, enabling re-initialisation."""
-    try:
+    with contextlib.suppress(ValueError):
         destroy_model_parallel()
         destroy_distributed_environment()
-    # Catch the error "ValueError: Invalid process group specified"
-    except ValueError:
-        pass
-    clear_memory()
     if ray.is_initialized():
         ray.shutdown()
+    with contextlib.suppress(AssertionError):
+        torch.distributed.destroy_process_group()
+    if ray.is_initialized():
+        ray.shutdown()
+    clear_memory()
 
 
 def get_end_of_reasoning_token_id(
