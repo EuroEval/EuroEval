@@ -1156,7 +1156,6 @@ def align_model_and_tokenizer(
     # finding the maximum sequence length of the model
     model_device = model.device
     model.to(torch.device("cpu"))  # type: ignore[arg-type]
-    os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 
     # Manually check that this model max length is valid for the model, and adjust
     # otherwise
@@ -1177,6 +1176,14 @@ def align_model_and_tokenizer(
             # This happens if `max_length` is too large
             except IndexError:
                 continue
+
+            except ValueError as e:
+                # This happens when the model is using Triton, such as with ModernBERT,
+                # which doesn't work with CPU tensors at all
+                if "cpu tensor" in str(e):
+                    break
+                else:
+                    raise e
 
     # Move the model back to the original device
     model.to(model_device)  # type: ignore[arg-type]
