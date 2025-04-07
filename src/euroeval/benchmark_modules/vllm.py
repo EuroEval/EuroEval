@@ -983,12 +983,11 @@ def load_model_and_tokenizer(
         token=benchmark_config.api_key or os.getenv("HUGGINGFACE_API_KEY") or True,
     )
 
-    # TEMP
+    # TODO: Check if this is still needed
     # clear_vllm()
 
-    executor_backend = "ray" if torch.cuda.device_count() > 1 else "mp"
-
-    # TEMP
+    # TODO: Check if "mp" is still required in some cases
+    # executor_backend = "ray" if torch.cuda.device_count() > 1 else "mp"
     executor_backend = "ray"
 
     try:
