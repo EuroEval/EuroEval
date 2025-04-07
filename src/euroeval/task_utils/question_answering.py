@@ -7,6 +7,7 @@ from collections import defaultdict
 
 import evaluate
 import numpy as np
+from datasets.arrow_dataset import Dataset
 from evaluate import EvaluationModule
 from transformers.tokenization_utils import PreTrainedTokenizer
 from transformers.tokenization_utils_base import PreTrainedTokenizerBase
@@ -20,7 +21,6 @@ from ..utils import (
 
 if t.TYPE_CHECKING:
     import torch.nn as nn
-    from datasets.arrow_dataset import Dataset
     from transformers.modeling_utils import PreTrainedModel
     from transformers.tokenization_utils_base import BatchEncoding
     from transformers.trainer_callback import TrainerCallback
