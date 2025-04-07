@@ -302,7 +302,7 @@ def get_training_args(
         per_device_eval_batch_size=batch_size,
         optim=OptimizerNames.ADAMW_TORCH,
         learning_rate=2e-5,
-        weight_decay=1e-6,
+        weight_decay=1e-5,
         warmup_ratio=0.01,
         gradient_accumulation_steps=32 // batch_size,
         load_best_model_at_end=True,
