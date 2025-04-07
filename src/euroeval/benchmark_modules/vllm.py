@@ -78,14 +78,8 @@ from .hf import HuggingFaceEncoderModel, get_model_repo_info, load_hf_model_conf
 
 if t.TYPE_CHECKING or importlib.util.find_spec("vllm") is not None:
     from vllm import LLM, RequestOutput, SamplingParams
+    from vllm.distributed.parallel_state import destroy_model_parallel
     from vllm.lora.request import LoRARequest
-
-    try:
-        from vllm.model_executor.parallel_utils.parallel_state import (
-            destroy_model_parallel,
-        )
-    except ImportError:
-        pass
 
 if t.TYPE_CHECKING or importlib.util.find_spec("outlines") is not None:
     from outlines.models.vllm import adapt_tokenizer
