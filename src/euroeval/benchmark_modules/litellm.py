@@ -316,7 +316,7 @@ class LiteLLMModel(BenchmarkModule):
                 elif isinstance(e, RateLimitError):
                     raise InvalidModel(
                         "You have encountered your rate limit for model "
-                        f"{self.model_config.model_id!r}. The error message was: {e}"
+                        f"{self.model_config.model_id!r}. Skipping."
                     )
                 else:
                     raise InvalidBenchmark(
@@ -737,6 +737,10 @@ class LiteLLMModel(BenchmarkModule):
                     api_version=benchmark_config.api_version,
                 )
                 return True
+            # A rate limit indicates that the model *does* exist, but we are being rate
+            # limited.
+            except RateLimitError:
+                return True
             except (
                 APIConnectionError,
                 Timeout,
@@ -748,12 +752,6 @@ class LiteLLMModel(BenchmarkModule):
                     "Retrying in 10 seconds..."
                 )
                 sleep(5)
-            except RateLimitError:
-                logger.warning(
-                    f"Rate limit exceeded for model {model_id!r}. Retrying in 10 "
-                    "seconds..."
-                )
-                sleep(10)
             except APIError as e:
                 if "'503 Service Unavailable" not in str(e):
                     raise e
