@@ -38,7 +38,7 @@ class ModelCache:
     def __init__(
         self, model_cache_dir: "Path", cache_name: str, max_generated_tokens: int
     ) -> None:
-        """Initialize the model output cache.
+        """Initialise the model output cache.
 
         Args:
             model_cache_dir:

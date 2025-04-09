@@ -44,7 +44,7 @@ class HumanEvaluator:
         description: str,
         dummy_model_id: str = "mistralai/Mistral-7B-v0.1",
     ) -> None:
-        """Initialize the HumanEvaluator.
+        """Initialise the HumanEvaluator.
 
         Args:
             annotator_id:

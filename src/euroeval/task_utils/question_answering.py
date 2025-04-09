@@ -46,7 +46,7 @@ class QuestionAnsweringTrainer(Trainer):
         callbacks: "list[TrainerCallback]",
         data_collator: "c.Callable",
     ) -> None:
-        """Initialize the trainer."""
+        """Initialise the trainer."""
         super().__init__(
             model=model,
             processing_class=processing_class,
