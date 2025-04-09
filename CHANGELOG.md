@@ -25,6 +25,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Fixed issue with benchmarking multiple generative models in the same evaluation
   command. This was caused by vLLM and Ray not being able to release GPU memory
   properly, but this seems to be released properly now.
+- Now only logs when encoder models are being benchmarked on generative tasks if the
+  `--verbose` flag is set (or `verbose=True` in the `Benchmarker` API).
 
 
 ## [v15.5.0] - 2025-04-07
