@@ -10,7 +10,7 @@ from .benchmark_modules import (
 )
 from .constants import GENERATIVE_DATASET_TASK_GROUPS
 from .enums import InferenceBackend, ModelType
-from .exceptions import InvalidBenchmark, InvalidModel
+from .exceptions import InvalidModel, ModelNotSuitedForTask
 
 if t.TYPE_CHECKING:
     from .benchmark_modules import BenchmarkModule
@@ -64,7 +64,7 @@ def load_model(
         dataset_config.task.task_group in GENERATIVE_DATASET_TASK_GROUPS
         and not model_config.model_type == ModelType.GENERATIVE
     ):
-        raise InvalidBenchmark(
+        raise ModelNotSuitedForTask(
             f"Cannot benchmark non-generative model {model_config.model_id!r} on "
             f"generative task {dataset_config.task.name!r}."
         )

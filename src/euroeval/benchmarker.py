@@ -19,7 +19,12 @@ from .data_loading import load_data
 from .data_models import BenchmarkConfigParams, BenchmarkResult
 from .dataset_configs import get_all_dataset_configs
 from .enums import Device, ModelType
-from .exceptions import HuggingFaceHubDown, InvalidBenchmark, InvalidModel
+from .exceptions import (
+    HuggingFaceHubDown,
+    InvalidBenchmark,
+    InvalidModel,
+    ModelNotSuitedForTask,
+)
 from .finetuning import finetune
 from .generation import generate
 from .model_config import get_model_config
@@ -447,32 +452,31 @@ class Benchmarker:
                 ):
                     raise benchmark_output_or_err
 
-                elif isinstance(benchmark_output_or_err, InvalidBenchmark):
-                    if benchmark_config.raise_errors:
-                        raise benchmark_output_or_err
-                    logger.info(
-                        f"{model_id} could not be benchmarked on "
-                        f"{dataset_config.pretty_name}. Skipping. The error message "
-                        f"raised was {benchmark_output_or_err.message!r}."
+                elif isinstance(benchmark_output_or_err, ModelNotSuitedForTask):
+                    logger.debug(
+                        f"The model {model_id!r} is not suited for the task "
+                        f"{dataset_config.task.name!r}, skipping."
                     )
                     num_finished_benchmarks += 1
                     continue
 
+                elif isinstance(benchmark_output_or_err, InvalidBenchmark):
+                    logger.info(benchmark_output_or_err.message)
+                    num_finished_benchmarks += 1
+                    continue
+
                 elif isinstance(benchmark_output_or_err, InvalidModel):
-                    if benchmark_config.raise_errors:
-                        raise benchmark_output_or_err
                     logger.info(benchmark_output_or_err.message)
 
-                    # Add the remaining number of benchmarks for the model to
-                    # our benchmark counter, since we're skipping the
-                    # rest of them
+                    # Add the remaining number of benchmarks for the model to our
+                    # benchmark counter, since we're skipping the rest of them
                     num_finished_benchmarks += (
                         len(dataset_configs) - dataset_configs.index(dataset_config) - 1
                     )
                     break
 
                 else:
-                    record = benchmark_output_or_err
+                    record: BenchmarkResult = benchmark_output_or_err
                     current_benchmark_results.append(record)
                     if benchmark_config.save_results:
                         record.append_to_results(results_path=self.results_path)
