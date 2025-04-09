@@ -41,8 +41,6 @@ class MultipleChoiceClassificationTrainer(Trainer):
         Returns:
             The metrics computed on the evaluation dataset.
         """
-        assert isinstance(eval_dataset, Dataset)
-
         eval_dataloader = self.get_eval_dataloader(eval_dataset)
 
         eval_loop = (
