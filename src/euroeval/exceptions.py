@@ -17,20 +17,6 @@ class InvalidBenchmark(Exception):
         super().__init__(self.message)
 
 
-class ModelNotSuitedForTask(InvalidBenchmark):
-    """The model is not suited for the task."""
-
-    def __init__(self, message: str = "The model is not suited for the task.") -> None:
-        """Initialise the exception.
-
-        Args:
-            message:
-                The message to display.
-        """
-        self.message = message
-        super().__init__(self.message)
-
-
 class InvalidModel(Exception):
     """The model cannot be benchmarked on any datasets."""
 

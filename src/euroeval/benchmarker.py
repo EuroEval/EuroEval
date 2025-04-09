@@ -14,17 +14,12 @@ from time import sleep
 from torch.distributed import destroy_process_group
 
 from .benchmark_config_factory import build_benchmark_config
-from .constants import GENERATIVE_PIPELINE_TAGS
+from .constants import GENERATIVE_DATASET_TASK_GROUPS, GENERATIVE_PIPELINE_TAGS
 from .data_loading import load_data
 from .data_models import BenchmarkConfigParams, BenchmarkResult
 from .dataset_configs import get_all_dataset_configs
 from .enums import Device, ModelType
-from .exceptions import (
-    HuggingFaceHubDown,
-    InvalidBenchmark,
-    InvalidModel,
-    ModelNotSuitedForTask,
-)
+from .exceptions import HuggingFaceHubDown, InvalidBenchmark, InvalidModel
 from .finetuning import finetune
 from .generation import generate
 from .model_config import get_model_config
@@ -405,9 +400,21 @@ class Benchmarker:
                     num_finished_benchmarks += 1
                     continue
 
+                # Skip if the model is an encoder model and the task is generative
+                task_is_generative = (
+                    dataset_config.task.task_group in GENERATIVE_DATASET_TASK_GROUPS
+                )
+                if model_config.model_type == ModelType.ENCODER and task_is_generative:
+                    logger.debug(
+                        f"Skipping benchmarking {model_id} on "
+                        f"{dataset_config.pretty_name}, as it is an encoder model and "
+                        "the task is generative."
+                    )
+                    continue
+
                 # We do not re-initialise generative models as their architecture is not
                 # customised to specific datasets
-                if model_config.task in GENERATIVE_PIPELINE_TAGS:
+                if model_config.model_type == ModelType.GENERATIVE:
                     initial_logging(
                         model_config=model_config,
                         dataset_config=dataset_config,
@@ -427,8 +434,8 @@ class Benchmarker:
                             logger.info(e.message)
 
                             # Add the remaining number of benchmarks for the model to
-                            # our benchmark counter, since we're skipping the
-                            # rest of them
+                            # our benchmark counter, since we're skipping the rest of
+                            # them
                             num_finished_benchmarks += (
                                 len(dataset_configs)
                                 - dataset_configs.index(dataset_config)
@@ -451,14 +458,6 @@ class Benchmarker:
                     and benchmark_config.raise_errors
                 ):
                     raise benchmark_output_or_err
-
-                elif isinstance(benchmark_output_or_err, ModelNotSuitedForTask):
-                    logger.debug(
-                        f"The model {model_id!r} is not suited for the task "
-                        f"{dataset_config.task.name!r}, skipping."
-                    )
-                    num_finished_benchmarks += 1
-                    continue
 
                 elif isinstance(benchmark_output_or_err, InvalidBenchmark):
                     logger.info(benchmark_output_or_err.message)
