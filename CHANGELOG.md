@@ -84,6 +84,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   that it is the German version of the dataset, and to avoid confusion with the Spanish
   'mlsum-es' dataset.
 
+### Added
+- Added support for Finnish 🇫🇮! This includes the Finnish part of the reading comprehension dataset
+  [TydiQA-fi](https://huggingface.co/datasets/google-research-datasets/tydiqa/viewer/secondary_task?views%5B%5D=secondary_task_train),
+  the Finnish part of the binary sentiment classification dataset [ScandiSent](https://github.com/timpal0l/ScandiSent), the
+  NER dataset [Turku NER](https://aclanthology.org/2020.lrec-1.567/), the summarisation dataset [XL-Sum-fi](https://huggingface.co/datasets/TurkuNLP/xlsum-fi).
+
 ### Fixed
 - Now uses `fp16` instead of `bf16` when evaluating decoder models on GPUs with CUDA
   compatibility < 8.0. This was contributed by
