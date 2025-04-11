@@ -148,7 +148,7 @@ $ uv run src/scripts/create_allocine.py
 
 A huge thank you to all the contributors who have helped make this project a success!
 
-<a href="https://github.com/peter-sk">
+<a href="https://github.com/peter-sk" style="text-decoration: none;">
     <img src="https://avatars.githubusercontent.com/u/6168908" width=50/>
 </a>
 <a href="https://github.com/AJDERS">
