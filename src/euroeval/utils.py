@@ -7,6 +7,7 @@ import importlib.util
 import logging
 import os
 import random
+import re
 import sys
 import typing as t
 import warnings
@@ -29,7 +30,8 @@ if importlib.util.find_spec("ray") is not None:
 if t.TYPE_CHECKING:
     from types import TracebackType
 
-    from transformers import PreTrainedTokenizer, PreTrainedTokenizerBase
+    from transformers.tokenization_utils import PreTrainedTokenizer
+    from transformers.tokenization_utils_base import PreTrainedTokenizerBase
 
     from .data_models import DatasetConfig
     from .types import Predictions
@@ -119,6 +121,7 @@ def block_terminal_output() -> None:
     logging.getLogger("vllm.platforms").setLevel(logging.CRITICAL)
     logging.getLogger("httpx").setLevel(logging.CRITICAL)
     logging.getLogger("ray._private.worker").setLevel(logging.CRITICAL)
+    logging.getLogger("ray._private.services").setLevel(logging.CRITICAL)
     logging.getLogger("matplotlib.font_manager").setLevel(logging.CRITICAL)
     logging.getLogger("accelerate").setLevel(logging.CRITICAL)
     logging.getLogger("LiteLLM").setLevel(logging.CRITICAL)
@@ -358,7 +361,6 @@ def should_prompts_be_stripped(
     return strip_prompts
 
 
-# TODO: This is currently not used - maybe remove.
 def should_prefix_space_be_added_to_labels(
     labels_to_be_generated: list[str], tokenizer: "PreTrainedTokenizer"
 ) -> bool:
@@ -482,11 +484,8 @@ def get_end_of_chat_token_ids(tokenizer: "PreTrainedTokenizer") -> list[int] | N
     if tokenizer.chat_template is None:
         return None
 
-    user_message: dict[t.Literal["role", "content"], str] = dict()
-    user_message["role"] = "user"
-    user_message["content"] = "X"
-    token_ids = tokenizer.apply_chat_template(conversation=[user_message])
-    assert isinstance(token_ids, list)
+    user_message: dict[str, str] = dict(role="user", content="X")
+    token_ids: list[int] = tokenizer.apply_chat_template(conversation=[user_message])  # type: ignore[assignment]
 
     for idx, token in enumerate(tokenizer.convert_ids_to_tokens(token_ids)):
         token_id = tokenizer.convert_tokens_to_ids(token)
@@ -602,8 +601,8 @@ def get_first_label_token_mapping(
 
     # If we do not have any tokenizer, then we cannot check if the model should output
     # scores and we just assume it should if the dataset supports it
+    output_scores = dataset_config.task.task_group in TASK_GROUPS_USING_LOGPROBS
     if tokenizer is None:
-        output_scores = dataset_config.task.task_group not in TASK_GROUPS_USING_LOGPROBS
         if output_scores:
             log_once(
                 "The model will output scores, since the dataset supports it and no "
@@ -620,12 +619,32 @@ def get_first_label_token_mapping(
 
     # If there are labels associated with the dataset, and that the first token of each
     # label is distinct, then we can safely use the logprobs
-    if dataset_config.labels:
+    if output_scores and dataset_config.labels:
         local_labels = [
-            dataset_config.prompt_label_mapping[label]
+            dataset_config.prompt_label_mapping[label].strip()
             for label in dataset_config.labels
         ]
-        first_tokens = [tokenizer.tokenize(text=label)[0] for label in local_labels]
+
+        # Get the first token of each label, where we add a prefix space if needed
+        add_prefix_space = (
+            should_prefix_space_be_added_to_labels(
+                labels_to_be_generated=local_labels, tokenizer=tokenizer
+            )
+            and tokenizer.chat_template is None
+        )
+        first_tokens = [
+            tokenizer.tokenize(text=f" {label}" if add_prefix_space else label)[0]
+            for label in local_labels
+        ]
+        first_tokens = [
+            re.sub(
+                pattern=r"^[^a-zæøåüöä]+|[^a-zæøåüöä]+$", repl="", string=token.lower()
+            )
+            for token in first_tokens
+        ]
+
+        # Build a mapping from labels to the first token in each label if the first
+        # tokens are distinct
         if len(first_tokens) == len(set(first_tokens)):
             log_once(
                 "The model will output scores, since the first tokens of the labels "

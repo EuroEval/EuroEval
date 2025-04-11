@@ -14,7 +14,7 @@ from ..exceptions import InvalidBenchmark
 from ..utils import log_once, raise_if_model_output_contains_nan_values
 
 if t.TYPE_CHECKING:
-    from transformers import EvalPrediction
+    from transformers.trainer_utils import EvalPrediction
 
     from ..data_models import DatasetConfig
     from ..types import Labels, Predictions
@@ -247,6 +247,11 @@ def get_closest_logprobs_labels(
                             "Please report this issue to the EuroEval team at "
                             "github.com/EuroEval/EuroEval/issues."
                         )
+                elif len(candidate_output_labels) == 0:
+                    logger.debug(
+                        f"No candidate label found for the generated label "
+                        f"{generated_label!r}. The generated label is thus ignored."
+                    )
 
             if output_label is not None:
                 output_labels.append(output_label)

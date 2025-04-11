@@ -5,7 +5,7 @@ import random
 import numpy as np
 import pytest
 import torch
-from transformers import AutoTokenizer
+from transformers.models.auto.tokenization_auto import AutoTokenizer
 
 from euroeval.benchmark_modules.hf import load_hf_model_config
 from euroeval.utils import (

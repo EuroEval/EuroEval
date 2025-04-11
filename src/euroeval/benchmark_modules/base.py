@@ -10,7 +10,8 @@ from functools import cached_property, partial
 from datasets import DatasetDict
 from torch import nn
 from tqdm.auto import tqdm
-from transformers import PreTrainedTokenizer, Trainer
+from transformers.tokenization_utils import PreTrainedTokenizer
+from transformers.trainer import Trainer
 
 from ..data_models import (
     BenchmarkConfig,

@@ -8,9 +8,8 @@ from .benchmark_modules import (
     LiteLLMModel,
     VLLMModel,
 )
-from .constants import GENERATIVE_DATASET_TASK_GROUPS
 from .enums import InferenceBackend, ModelType
-from .exceptions import InvalidBenchmark, InvalidModel
+from .exceptions import InvalidModel
 
 if t.TYPE_CHECKING:
     from .benchmark_modules import BenchmarkModule
@@ -58,16 +57,6 @@ def load_model(
                 f"Cannot load model with model type {model_config.model_type!r} and "
                 f"inference backend {model_config.inference_backend!r}."
             )
-
-    # Refuse to benchmark non-generative models on generative tasks
-    if (
-        dataset_config.task.task_group in GENERATIVE_DATASET_TASK_GROUPS
-        and not model_config.model_type == ModelType.GENERATIVE
-    ):
-        raise InvalidBenchmark(
-            f"Cannot benchmark non-generative model {model_config.model_id!r} on "
-            f"generative task {dataset_config.task.name!r}."
-        )
 
     model = model_class(
         model_config=model_config,

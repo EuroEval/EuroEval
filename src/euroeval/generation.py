@@ -133,6 +133,7 @@ def generate_single_iteration(
     all_preds: list[str] = list()
 
     if len(non_cached_dataset) > 0:
+        itr: t.Iterable
         match model.batching_preference:
             case BatchingPreference.SINGLE_SAMPLE:
                 itr = tqdm(iterable=non_cached_dataset, leave=False)

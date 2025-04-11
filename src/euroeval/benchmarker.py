@@ -1,5 +1,6 @@
 """Class that benchmarks language models."""
 
+import contextlib
 import json
 import logging
 import re
@@ -13,7 +14,7 @@ from time import sleep
 from torch.distributed import destroy_process_group
 
 from .benchmark_config_factory import build_benchmark_config
-from .constants import GENERATIVE_PIPELINE_TAGS
+from .constants import GENERATIVE_DATASET_TASK_GROUPS, GENERATIVE_PIPELINE_TAGS
 from .data_loading import load_data
 from .data_models import BenchmarkConfigParams, BenchmarkResult
 from .dataset_configs import get_all_dataset_configs
@@ -366,14 +367,18 @@ class Benchmarker:
             dataset_names=benchmark_config.datasets
         )
 
+        total_benchmarks = len(model_ids) * len(dataset_configs)
+        num_finished_benchmarks = 0
+
         current_benchmark_results: list[BenchmarkResult] = list()
-        for m_id in model_ids:
+        for model_id in model_ids:
             try:
                 model_config = get_model_config(
-                    model_id=m_id, benchmark_config=benchmark_config
+                    model_id=model_id, benchmark_config=benchmark_config
                 )
             except InvalidModel as e:
                 logger.info(e.message)
+                num_finished_benchmarks += len(dataset_configs)
                 continue
 
             loaded_model: BenchmarkModule | None = None
@@ -381,21 +386,35 @@ class Benchmarker:
                 # Skip if we have already benchmarked this model on this dataset and
                 # we are not forcing the benchmark
                 if not benchmark_config.force and model_has_been_benchmarked(
-                    model_id=m_id,
+                    model_id=model_id,
                     dataset=dataset_config.name,
                     few_shot=benchmark_config.few_shot,
                     validation_split=not benchmark_config.evaluate_test_split,
                     benchmark_results=self.benchmark_results,
                 ):
                     logger.debug(
-                        f"Skipping benchmarking {m_id} on {dataset_config.pretty_name},"
-                        " as it has already been benchmarked."
+                        f"Skipping benchmarking {model_id} on "
+                        f"{dataset_config.pretty_name}, as it "
+                        "has already been benchmarked."
+                    )
+                    num_finished_benchmarks += 1
+                    continue
+
+                # Skip if the model is an encoder model and the task is generative
+                task_is_generative = (
+                    dataset_config.task.task_group in GENERATIVE_DATASET_TASK_GROUPS
+                )
+                if model_config.model_type == ModelType.ENCODER and task_is_generative:
+                    logger.debug(
+                        f"Skipping benchmarking {model_id} on "
+                        f"{dataset_config.pretty_name}, as it is an encoder model and "
+                        "the task is generative."
                     )
                     continue
 
                 # We do not re-initialise generative models as their architecture is not
                 # customised to specific datasets
-                if model_config.task in GENERATIVE_PIPELINE_TAGS:
+                if model_config.model_type == ModelType.GENERATIVE:
                     initial_logging(
                         model_config=model_config,
                         dataset_config=dataset_config,
@@ -413,6 +432,15 @@ class Benchmarker:
                             if benchmark_config.raise_errors:
                                 raise e
                             logger.info(e.message)
+
+                            # Add the remaining number of benchmarks for the model to
+                            # our benchmark counter, since we're skipping the rest of
+                            # them
+                            num_finished_benchmarks += (
+                                len(dataset_configs)
+                                - dataset_configs.index(dataset_config)
+                                - 1
+                            )
                             break
                     else:
                         loaded_model.dataset_config = dataset_config
@@ -432,27 +460,33 @@ class Benchmarker:
                     raise benchmark_output_or_err
 
                 elif isinstance(benchmark_output_or_err, InvalidBenchmark):
-                    if benchmark_config.raise_errors:
-                        raise benchmark_output_or_err
-                    logger.info(
-                        f"{m_id} could not be benchmarked on "
-                        f"{dataset_config.pretty_name}. Skipping. The error message "
-                        f"raised was {benchmark_output_or_err.message!r}."
-                    )
+                    logger.info(benchmark_output_or_err.message)
+                    num_finished_benchmarks += 1
                     continue
 
                 elif isinstance(benchmark_output_or_err, InvalidModel):
-                    if benchmark_config.raise_errors:
-                        raise benchmark_output_or_err
                     logger.info(benchmark_output_or_err.message)
+
+                    # Add the remaining number of benchmarks for the model to our
+                    # benchmark counter, since we're skipping the rest of them
+                    num_finished_benchmarks += (
+                        len(dataset_configs) - dataset_configs.index(dataset_config) - 1
+                    )
                     break
 
                 else:
-                    record = benchmark_output_or_err
+                    record: BenchmarkResult = benchmark_output_or_err
                     current_benchmark_results.append(record)
                     if benchmark_config.save_results:
                         record.append_to_results(results_path=self.results_path)
 
+                num_finished_benchmarks += 1
+                logger.info(
+                    f"Finished {num_finished_benchmarks} out of "
+                    f"{total_benchmarks} benchmarks."
+                )
+
+            del loaded_model
             if benchmark_config.clear_model_cache:
                 clear_model_cache_fn(cache_dir=benchmark_config.cache_dir)
 
@@ -464,11 +498,8 @@ class Benchmarker:
         #   point and block the progress of another member of the process group. This
         #   constraint has always been present,  but this warning has only been added
         #   since PyTorch 2.4 (function operator())
-        try:
+        with contextlib.suppress(AssertionError):
             destroy_process_group()
-        except AssertionError:
-            pass
-
         return current_benchmark_results
 
     def _get_updated_benchmark_config(

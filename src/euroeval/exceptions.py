@@ -7,7 +7,7 @@ class InvalidBenchmark(Exception):
     def __init__(
         self, message: str = "This model cannot be benchmarked on the given dataset."
     ) -> None:
-        """Initialize the exception.
+        """Initialise the exception.
 
         Args:
             message:
@@ -23,7 +23,7 @@ class InvalidModel(Exception):
     def __init__(
         self, message: str = "The model cannot be benchmarked on any datasets."
     ) -> None:
-        """Initialize the exception.
+        """Initialise the exception.
 
         Args:
             message:
@@ -39,7 +39,7 @@ class HuggingFaceHubDown(Exception):
     def __init__(
         self, message: str = "The Hugging Face Hub is currently down."
     ) -> None:
-        """Initialize the exception.
+        """Initialise the exception.
 
         Args:
             message:
@@ -55,7 +55,7 @@ class NoInternetConnection(Exception):
     def __init__(
         self, message: str = "There is currently no internet connection."
     ) -> None:
-        """Initialize the exception.
+        """Initialise the exception.
 
         Args:
             message:
@@ -71,7 +71,7 @@ class NaNValueInModelOutput(Exception):
     def __init__(
         self, message: str = "There is a NaN value in the model output."
     ) -> None:
-        """Initialize the exception.
+        """Initialise the exception.
 
         Args:
             message:
@@ -93,7 +93,7 @@ class FlashAttentionNotInstalled(Exception):
             "pip install flash-attn --no-build-isolation`."
         ),
     ) -> None:
-        """Initialize the exception.
+        """Initialise the exception.
 
         Args:
             message:
@@ -107,7 +107,7 @@ class NeedsExtraInstalled(InvalidModel):
     """The evaluation requires extra to be installed."""
 
     def __init__(self, extra: str) -> None:
-        """Initialize the exception.
+        """Initialise the exception.
 
         Args:
             extra:
@@ -126,7 +126,7 @@ class NeedsManualDependency(InvalidModel):
     """The evaluation requires a dependency to be manually installed."""
 
     def __init__(self, package: str) -> None:
-        """Initialize the exception.
+        """Initialise the exception.
 
         Args:
             package:
@@ -146,7 +146,7 @@ class NeedsAdditionalArgument(InvalidModel):
     def __init__(
         self, cli_argument: str, script_argument: str, run_with_cli: bool
     ) -> None:
-        """Initialize the exception.
+        """Initialise the exception.
 
         Args:
             cli_argument:
@@ -177,7 +177,7 @@ class NeedsEnvironmentVariable(InvalidModel):
     """The evaluation requires an environment variable to be set."""
 
     def __init__(self, env_var: str) -> None:
-        """Initialize the exception.
+        """Initialise the exception.
 
         Args:
             env_var:

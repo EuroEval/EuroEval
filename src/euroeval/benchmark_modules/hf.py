@@ -13,31 +13,29 @@ import torch
 from datasets import DatasetDict
 from huggingface_hub import HfApi
 from huggingface_hub import whoami as hf_whoami
-from huggingface_hub.hf_api import ModelInfo as HfApiModelInfo
-from huggingface_hub.hf_api import RepositoryNotFoundError, RevisionNotFoundError
-from huggingface_hub.utils import (
+from huggingface_hub.errors import (
     GatedRepoError,
     HFValidationError,
     LocalTokenNotFoundError,
+    RepositoryNotFoundError,
+    RevisionNotFoundError,
 )
+from huggingface_hub.hf_api import ModelInfo as HfApiModelInfo
 from peft import PeftConfig
 from requests.exceptions import RequestException
 from torch import nn
-from transformers import (
-    AutoConfig,
-    AutoTokenizer,
-    BatchEncoding,
+from transformers.configuration_utils import PretrainedConfig
+from transformers.data.data_collator import (
     DataCollatorForTokenClassification,
     DataCollatorWithPadding,
-    PretrainedConfig,
-    PreTrainedModel,
-    PreTrainedTokenizer,
-    Trainer,
 )
 from transformers.modelcard import TASK_MAPPING
-from transformers.models.auto.modeling_auto import (
-    MODEL_FOR_IMAGE_TEXT_TO_TEXT_MAPPING_NAMES,
-)
+from transformers.modeling_utils import PreTrainedModel
+from transformers.models.auto.configuration_auto import AutoConfig
+from transformers.models.auto.tokenization_auto import AutoTokenizer
+from transformers.tokenization_utils import PreTrainedTokenizer
+from transformers.tokenization_utils_base import BatchEncoding
+from transformers.trainer import Trainer
 from urllib3.exceptions import RequestError
 
 from ..constants import (
@@ -690,7 +688,7 @@ def load_model_and_tokenizer(
     assert model is not None, "The model should not be None."
 
     model.eval()
-    model.to(benchmark_config.device)
+    model.to(benchmark_config.device)  # type: ignore[arg-type]
 
     if (
         isinstance(model, PreTrainedModel)
@@ -797,12 +795,6 @@ def get_model_repo_info(
             tags += base_model_info.tags or list()
             tags = list(set(tags))
 
-    # TEMP: This extends the `TASK_MAPPING` dictionary to include the missing
-    # 'image-text-to-text' pipeline tag. This will be added as part of `TASK_MAPPING`
-    # when this PR has been merged in and published:
-    # https://github.com/huggingface/transformers/pull/37107
-    TASK_MAPPING["image-text-to-text"] = MODEL_FOR_IMAGE_TEXT_TO_TEXT_MAPPING_NAMES
-
     # Get the pipeline tag for the model. If it is not specified, then we determine it
     # by checking the model's architecture as written in the model's Hugging Face config
     pipeline_tag = model_info.pipeline_tag
@@ -824,7 +816,7 @@ def get_model_repo_info(
         generative_class_names = [
             class_name
             for tag in GENERATIVE_PIPELINE_TAGS
-            for class_name in TASK_MAPPING.get(tag, dict()).values()
+            for class_name in TASK_MAPPING.get(tag, dict()).values()  # type: ignore[attr-defined]
         ]
         if class_names is not None and any(
             class_name in generative_class_names for class_name in class_names
@@ -1083,17 +1075,20 @@ def setup_model_for_question_answering(model: "PreTrainedModel") -> "PreTrainedM
         for attribute in attribute_list:
             token_type_embeddings = getattr(token_type_embeddings, attribute)
 
+        token_type_embedding_tensor = token_type_embeddings.weight.data
+        assert isinstance(token_type_embedding_tensor, torch.Tensor)
+
         # If the token type embeddings has shape (1, ...) then set the shape to
         # (2, ...) by randomly initializing the second token type embedding
-        if token_type_embeddings.weight.data.shape[0] == 1:
+        if token_type_embedding_tensor.shape[0] == 1:
             token_type_embeddings.weight.data = torch.cat(
                 (
-                    token_type_embeddings.weight.data,
-                    torch.rand_like(token_type_embeddings.weight.data),
+                    token_type_embedding_tensor,
+                    torch.rand_like(token_type_embedding_tensor),
                 ),
                 dim=0,
             )
-            token_type_embeddings.num_embeddings = 2
+            token_type_embeddings.num_embeddings = 2  # type: ignore[assignment]
 
         # Set the model config to use the new type vocab size
         model.config.type_vocab_size = 2
@@ -1160,7 +1155,7 @@ def align_model_and_tokenizer(
     # Move the model to the CPU, since otherwise we can't catch the IndexErrors when
     # finding the maximum sequence length of the model
     model_device = model.device
-    model.to(torch.device("cpu"))
+    model.to(torch.device("cpu"))  # type: ignore[arg-type]
 
     # Manually check that this model max length is valid for the model, and adjust
     # otherwise
@@ -1182,8 +1177,16 @@ def align_model_and_tokenizer(
             except IndexError:
                 continue
 
+            except ValueError as e:
+                # This happens when the model is using Triton, such as with ModernBERT,
+                # which doesn't work with CPU tensors at all
+                if "cpu tensor" in str(e):
+                    break
+                else:
+                    raise e
+
     # Move the model back to the original device
-    model.to(model_device)
+    model.to(model_device)  # type: ignore[arg-type]
 
     # If there is a mismatch between the vocab size according to the tokenizer and
     # the vocab size according to the model, we raise an error

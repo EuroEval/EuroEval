@@ -32,10 +32,10 @@ from litellm.exceptions import (
     Timeout,
 )
 from litellm.llms.vertex_ai.common_utils import VertexAIError
-from litellm.types.utils import ModelResponse
+from litellm.types.utils import ChoiceLogprobs, ModelResponse
 from requests.exceptions import RequestException
 from tqdm.auto import tqdm
-from transformers import Trainer
+from transformers.trainer import Trainer
 
 from ..constants import MAX_LOGPROBS, REASONING_MAX_TOKENS, TASKS_USING_JSON
 from ..data_models import (
@@ -188,6 +188,10 @@ class LiteLLMModel(BenchmarkModule):
             benchmark_config=benchmark_config,
         )
 
+        self.buffer["first_label_token_mapping"] = get_first_label_token_mapping(
+            dataset_config=self.dataset_config, tokenizer=None
+        )
+
     @property
     def generative_type(self) -> GenerativeType | None:
         """Get the generative type of the model.
@@ -312,7 +316,7 @@ class LiteLLMModel(BenchmarkModule):
                 elif isinstance(e, RateLimitError):
                     raise InvalidModel(
                         "You have encountered your rate limit for model "
-                        f"{self.model_config.model_id!r}. The error message was: {e}"
+                        f"{self.model_config.model_id!r}. Skipping."
                     )
                 else:
                     raise InvalidBenchmark(
@@ -345,6 +349,15 @@ class LiteLLMModel(BenchmarkModule):
             )
 
         assert isinstance(model_response, ModelResponse)
+        if not model_response.choices:
+            # This happens for reasoning models, when they don't finish thinking and run
+            # out of tokens. Happens quite rarely, but we need to handle it.
+            logger.warning(
+                f"The model {self.model_config.model_id!r} did not end up generating "
+                "any text. This is likely because the model ran out of tokens while "
+                "reasoning. Returning an empty string."
+            )
+            return GenerativeModelOutput(sequences=[""])
         model_response_choices = model_response.choices[0]
         assert isinstance(model_response_choices, litellm.Choices)
         generation_output = model_response_choices.message["content"] or ""
@@ -353,14 +366,22 @@ class LiteLLMModel(BenchmarkModule):
         # Structure the model output as a GenerativeModelOutput object
         model_output = GenerativeModelOutput(sequences=[generation_output])
         if hasattr(model_response_choices, "logprobs"):
-            logprobs_list: list[list[tuple[str, float]]] = [
-                [
-                    (top_logprob.token, top_logprob.logprob)
-                    for top_logprob in content.top_logprobs
+            logprobs_obj = model_response_choices.logprobs
+            if isinstance(logprobs_obj, ChoiceLogprobs):
+                logprobs_list: list[list[tuple[str, float]]] = [
+                    [
+                        (top_logprob.token, top_logprob.logprob)
+                        for top_logprob in content.top_logprobs
+                    ]
+                    for content in model_response_choices.logprobs.content or list()
                 ]
-                for content in model_response_choices.logprobs.content or list()
-            ]
-            model_output.scores = [logprobs_list]
+                model_output.scores = [logprobs_list]
+            else:
+                log_once(
+                    "The logprobs object is malformed, so we won't use logprobs to "
+                    "determine the labels.",
+                    level=logging.WARNING,
+                )
 
         return model_output
 
@@ -379,7 +400,7 @@ class LiteLLMModel(BenchmarkModule):
         # If it is an Ollama model then we can get the number of parameters from the
         # Ollama Python SDK
         if self.is_ollama:
-            ollama_model_id = self.model_config.model_id.split("/")[-1]
+            ollama_model_id = "/".join(self.model_config.model_id.split("/")[1:])
             model_info = ollama.show(ollama_model_id).modelinfo
             if model_info is not None:
                 num_params = model_info.get("general.parameter_count")
@@ -390,7 +411,7 @@ class LiteLLMModel(BenchmarkModule):
         # get the number of parameters from the Hugging Face model configuration from
         # the Hugging Face Hub
         if self.model_config.model_id.startswith("huggingface/"):
-            model_id = self.model_config.model_id.split(sep="/", maxsplit=1)[-1]
+            model_id = "/".join(self.model_config.model_id.split(sep="/")[-2:])
             if HuggingFaceEncoderModel.model_exists(
                 model_id=model_id, benchmark_config=self.benchmark_config
             ):
@@ -454,7 +475,7 @@ class LiteLLMModel(BenchmarkModule):
         # get the vocabulary size from the Hugging Face model configuration from the
         # Hugging Face Hub
         if self.model_config.model_id.startswith("huggingface/"):
-            model_id = self.model_config.model_id.split(sep="/", maxsplit=1)[-1]
+            model_id = "/".join(self.model_config.model_id.split(sep="/")[-2:])
             if HuggingFaceEncoderModel.model_exists(
                 model_id=model_id, benchmark_config=self.benchmark_config
             ):
@@ -507,7 +528,7 @@ class LiteLLMModel(BenchmarkModule):
         # If it is an Ollama model then we can get the maximum length from the Ollama
         # Python SDK
         if self.is_ollama:
-            ollama_model_id = self.model_config.model_id.split("/")[-1]
+            ollama_model_id = "/".join(self.model_config.model_id.split("/")[1:])
             model_info = ollama.show(ollama_model_id).modelinfo
             if model_info is not None:
                 context_length_keys = [
@@ -534,7 +555,7 @@ class LiteLLMModel(BenchmarkModule):
         # get the maximum length from the Hugging Face model configuration from the
         # Hugging Face Hub
         if self.model_config.model_id.startswith("huggingface/"):
-            model_id = self.model_config.model_id.split(sep="/", maxsplit=1)[-1]
+            model_id = "/".join(self.model_config.model_id.split(sep="/")[-2:])
             if HuggingFaceEncoderModel.model_exists(
                 model_id=model_id, benchmark_config=self.benchmark_config
             ):
@@ -671,48 +692,15 @@ class LiteLLMModel(BenchmarkModule):
             Whether the model exists, or an error describing why we cannot check
             whether the model exists.
         """
-        model_id, revision = (
-            model_id.split("@") if "@" in model_id else (model_id, "main")
-        )
+        model_id, _ = model_id.split("@") if "@" in model_id else (model_id, "main")
         if model_id in litellm.model_list:
             return True
 
-        # If it is an Ollama model then try to download it
+        # Separate check for Ollama models
         if model_id.startswith("ollama/") or model_id.startswith("ollama_chat/"):
-            ollama_model_id = model_id.split("/")[-1]
-            downloaded_ollama_models: list[str] = [
-                model_obj.model
-                for model_obj in ollama.list().models
-                if model_obj.model is not None
-            ]
-            if ollama_model_id not in downloaded_ollama_models:
-                try:
-                    response = ollama.pull(model=ollama_model_id, stream=True)
-                    with tqdm(
-                        desc=f"Downloading {ollama_model_id}",
-                        unit_scale=True,
-                        unit="B",
-                        leave=False,
-                    ) as pbar:
-                        for status in response:
-                            if status.total is not None:
-                                pbar.total = status.total
-                            if status.completed is not None:
-                                pbar.update(status.completed - pbar.n)
-                except ollama.ResponseError as e:
-                    if "file does not exist" in str(e).lower():
-                        return False
-                    else:
-                        raise InvalidModel(
-                            f"Failed to download Ollama model {ollama_model_id}. The "
-                            f"error message was: {e}"
-                        )
-            else:
-                log_once(
-                    f"Ollama model {ollama_model_id!r} already downloaded, so skipping "
-                    "download.",
-                    level=logging.DEBUG,
-                )
+            ollama_model_exists = try_download_ollama_model(model_id=model_id)
+            if ollama_model_exists:
+                return ollama_model_exists
 
         num_attempts = 10
         for _ in range(num_attempts):
@@ -726,12 +714,27 @@ class LiteLLMModel(BenchmarkModule):
                     api_version=benchmark_config.api_version,
                 )
                 return True
+            # A rate limit indicates that the model *does* exist, but we are being rate
+            # limited.
+            except RateLimitError:
+                return True
+            except (
+                APIConnectionError,
+                Timeout,
+                ServiceUnavailableError,
+                InternalServerError,
+            ) as e:
+                logger.debug(
+                    f"Service temporarily unavailable. The error message was: {e}. "
+                    "Retrying in 10 seconds..."
+                )
+                sleep(5)
             except APIError as e:
                 if "'503 Service Unavailable" not in str(e):
                     raise e
                 logger.warning(
-                    f"Failed to check if model {model_id!r} exists. Retrying in "
-                    f"{num_attempts} seconds..."
+                    f"Failed to check if model {model_id!r} exists. Retrying in 10 "
+                    "seconds..."
                 )
                 sleep(10)
             except (BadRequestError, NotFoundError):
@@ -1127,3 +1130,91 @@ def raise_if_wrong_params(
                     msg += " No parameters are allowed."
                 raise InvalidModel(msg)
             return
+
+
+def try_download_ollama_model(model_id: str) -> bool:
+    """Try to download an Ollama model.
+
+    Args:
+        model_id:
+            The model ID. If the model does not start with "ollama/" or "ollama_chat/"
+            then this function will return False.
+
+    Returns:
+        Whether the model was downloaded successfully.
+    """
+    if not (model_id.startswith("ollama/") or model_id.startswith("ollama_chat/")):
+        return False
+
+    if model_id.startswith("ollama/"):
+        log_once(
+            "You're trying to benchmark a model with the old 'ollama/' prefix, which "
+            "probably results in bad performance, as it doesn't use the model's chat "
+            "template. If the model is not a chat model then just disregard this "
+            "warning, but if it is a chat model then please cancel this run and "
+            "use the 'ollama_chat/' prefix instead.",
+            level=logging.WARNING,
+        )
+
+    downloaded_ollama_models: list[str] = [
+        model_obj.model
+        for model_obj in ollama.list().models
+        if model_obj.model is not None
+    ]
+
+    ollama_model_id = "/".join(model_id.split("/")[1:])
+    if ollama_model_id not in downloaded_ollama_models:
+        # Try fetching the model info
+        try:
+            response = ollama.pull(model=ollama_model_id, stream=True)
+        except ollama.ResponseError as e:
+            if "file does not exist" in str(e).lower():
+                # Check if the model exists if we prepend "hf.co/"
+                try:
+                    ollama_model_id_with_prefix = f"hf.co/{ollama_model_id}"
+                    model_id_with_prefix = (
+                        f"{model_id.split('/')[0]}/{ollama_model_id_with_prefix}"
+                    )
+                    ollama.pull(model=ollama_model_id_with_prefix, stream=True)
+                    log_once(
+                        f"The model {model_id!r} cannot be found on Ollama, but the "
+                        f"model {model_id_with_prefix} *was* found, so we would "
+                        "recommend you cancelling this run and trying the evaluation "
+                        "with that model ID instead."
+                    )
+                    return False
+                except ollama.ResponseError as inner_e:
+                    if "file does not exist" in str(inner_e).lower():
+                        return False
+                    else:
+                        raise InvalidModel(
+                            f"Failed to download Ollama model {ollama_model_id}. "
+                            f"The error message was: {inner_e}"
+                        )
+            else:
+                raise InvalidModel(
+                    f"Failed to download Ollama model {ollama_model_id}. "
+                    f"The error message was: {e}"
+                )
+
+        # Download the model
+        with tqdm(
+            desc=f"Downloading {ollama_model_id}",
+            unit_scale=True,
+            unit="B",
+            leave=False,
+        ) as pbar:
+            for status in response:
+                if status.total is not None:
+                    pbar.total = status.total
+                if status.completed is not None:
+                    pbar.update(status.completed - pbar.n)
+        return True
+
+    else:
+        log_once(
+            f"Ollama model {ollama_model_id!r} already downloaded, so skipping "
+            "download.",
+            level=logging.DEBUG,
+        )
+        return True
