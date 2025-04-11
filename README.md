@@ -130,7 +130,9 @@ sentiment-classification`.
 
 
 ### Reproducing the datasets
-All datasets used in this project are generated using the scripts located in the [src/scripts](src/scripts) folder. To reproduce a dataset, run the corresponding script with the following command
+All datasets used in this project are generated using the scripts located in the
+[src/scripts](src/scripts) folder. To reproduce a dataset, run the corresponding script
+with the following command
 
 ```shell
 $ uv run src/scripts/<name-of-script>.py
@@ -142,8 +144,27 @@ Replace <name-of-script> with the specific script you wish to execute, e.g.,
 $ uv run src/scripts/create_allocine.py
 ```
 
+## Contributors :pray:
 
-## Special Thanks :pray:
+A huge thank you to all the contributors who have helped make this project a success!
+
+![Avatar of peter-sk](https://avatars.githubusercontent.com/u/6168908?s=60&v=4)
+![Avatar of AJDERS](https://avatars.githubusercontent.com/u/38854604?s=60&v=4)
+![Avatar of oliverkinch](https://avatars.githubusercontent.com/u/71556498?s=60&v=4)
+![Avatar of versae](https://avatars.githubusercontent.com/u/173537?s=60&v=4)
+![Avatar of viggo-gascou](https://avatars.githubusercontent.com/u/94069687?v=4?size=50)
+![Avatar of mathiasesn](https://avatars.githubusercontent.com/u/27091759?s=60&v=4)
+![Avatar of Alkarex](https://avatars.githubusercontent.com/u/1008324?s=60&v=4)
+![Avatar of marksverdhei](https://avatars.githubusercontent.com/u/46672778?s=60&v=4)
+![Avatar of Mikeriess](https://avatars.githubusercontent.com/u/19728563?s=60&v=4)
+![Avatar of pakagronglb](https://avatars.githubusercontent.com/u/178713124?s=60&v=4)
+![Avatar of ThomasKluiters](https://avatars.githubusercontent.com/u/8137941?s=60&v=4)
+![Avatar of BramVanroy](https://avatars.githubusercontent.com/u/2779410?s=60&v=4)
+![Avatar of peregilk](https://avatars.githubusercontent.com/u/9079808?s=60&v=4)
+
+### Special Thanks
+- Thanks to [Google](https://google.com/) for sponsoring Gemini credits as part of their
+  [Google Cloud for Researchers Program](https://cloud.google.com/edu/researchers).
 - Thanks [@Mikeriess](https://github.com/Mikeriess) for evaluating many of the larger
   models on the leaderboards.
 - Thanks to [OpenAI](https://openai.com/) for sponsoring OpenAI credits as part of their
