@@ -148,19 +148,45 @@ $ uv run src/scripts/create_allocine.py
 
 A huge thank you to all the contributors who have helped make this project a success!
 
-![Avatar of peter-sk](https://avatars.githubusercontent.com/u/6168908?s=60&v=4)
-![Avatar of AJDERS](https://avatars.githubusercontent.com/u/38854604?s=60&v=4)
-![Avatar of oliverkinch](https://avatars.githubusercontent.com/u/71556498?s=60&v=4)
-![Avatar of versae](https://avatars.githubusercontent.com/u/173537?s=60&v=4)
-![Avatar of viggo-gascou](https://avatars.githubusercontent.com/u/94069687?v=4?size=50)
-![Avatar of mathiasesn](https://avatars.githubusercontent.com/u/27091759?s=60&v=4)
-![Avatar of Alkarex](https://avatars.githubusercontent.com/u/1008324?s=60&v=4)
-![Avatar of marksverdhei](https://avatars.githubusercontent.com/u/46672778?s=60&v=4)
-![Avatar of Mikeriess](https://avatars.githubusercontent.com/u/19728563?s=60&v=4)
-![Avatar of pakagronglb](https://avatars.githubusercontent.com/u/178713124?s=60&v=4)
-![Avatar of ThomasKluiters](https://avatars.githubusercontent.com/u/8137941?s=60&v=4)
-![Avatar of BramVanroy](https://avatars.githubusercontent.com/u/2779410?s=60&v=4)
-![Avatar of peregilk](https://avatars.githubusercontent.com/u/9079808?s=60&v=4)
+<a href="https://github.com/peter-sk">
+    <img src="https://avatars.githubusercontent.com/u/6168908" width=60/>
+</a>
+<a href="https://github.com/AJDERS">
+    <img src="https://avatars.githubusercontent.com/u/38854604" width=60/>
+</a>
+<a href="https://github.com/oliverkinch">
+    <img src="https://avatars.githubusercontent.com/u/71556498" width=60/>
+</a>
+<a href="https://github.com/versae">
+    <img src="https://avatars.githubusercontent.com/u/173537" width=60/>
+</a>
+<a href="https://github.com/viggo-gascou">
+    <img src="https://avatars.githubusercontent.com/u/94069687" width=60/>
+</a>
+<a href="https://github.com/mathiasesn">
+    <img src="https://avatars.githubusercontent.com/u/27091759" width=60/>
+</a>
+<a href="https://github.com/Alkarex">
+    <img src="https://avatars.githubusercontent.com/u/1008324" width=60/>
+</a>
+<a href="https://github.com/marksverdhei">
+    <img src="https://avatars.githubusercontent.com/u/46672778" width=60/>
+</a>
+<a href="https://github.com/Mikeriess">
+    <img src="https://avatars.githubusercontent.com/u/19728563" width=60/>
+</a>
+<a href="https://github.com/pakagronglb">
+    <img src="https://avatars.githubusercontent.com/u/178713124" width=60/>
+</a>
+<a href="https://github.com/ThomasKluiters">
+    <img src="https://avatars.githubusercontent.com/u/8137941" width=60/>
+</a>
+<a href="https://github.com/BramVanroy">
+    <img src="https://avatars.githubusercontent.com/u/2779410" width=60/>
+</a>
+<a href="https://github.com/peregilk">
+    <img src="https://avatars.githubusercontent.com/u/9079808" width=60/>
+</a>
 
 ### Special Thanks
 - Thanks to [Google](https://google.com/) for sponsoring Gemini credits as part of their
