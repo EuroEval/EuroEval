@@ -37,6 +37,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   properly, but this seems to be released properly now.
 - Now only logs when encoder models are being benchmarked on generative tasks if the
   `--verbose` flag is set (or `verbose=True` in the `Benchmarker` API).
+- All Spanish NER datasets were mistakenly marked as unofficial. The `conll-es` is now
+  marked as official.
 
 
 ## [v15.5.0] - 2025-04-07
