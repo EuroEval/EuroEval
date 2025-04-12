@@ -68,13 +68,12 @@ from ..task_utils import (
     question_answering,
     token_classification,
 )
+from ..tokenization_utils import get_bos_token, get_eos_token
 from ..types import ExtractLabelsFunction
 from ..utils import (
     block_terminal_output,
     create_model_cache_dir,
-    get_bos_token,
     get_class_by_name,
-    get_eos_token,
     internet_connection_available,
     log_once,
 )
