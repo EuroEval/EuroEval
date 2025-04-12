@@ -5,9 +5,16 @@ from ..languages import DA, DE, EN, ES, FO, FR, IS, IT, NB, NL, NN, NO, SV
 
 NER_TEMPLATES = {
     DA: PromptConfig(
-        prompt_label_mapping=dict(
-            per="person", loc="sted", org="organisation", misc="diverse"
-        ),
+        prompt_label_mapping={
+            "b-per": "person",
+            "i-per": "person",
+            "b-loc": "sted",
+            "i-loc": "sted",
+            "b-org": "organisation",
+            "i-org": "organisation",
+            "b-misc": "diverse",
+            "i-misc": "diverse",
+        },
         prompt_prefix="Følgende er sætninger og JSON-ordbøger med de navngivne "
         "enheder, som forekommer i den givne sætning.",
         prompt_template="Sætning: {text}\nNavngivne enheder: {label}",
@@ -17,9 +24,16 @@ NER_TEMPLATES = {
         "type, præcis som de forekommer i sætningen.",
     ),
     DE: PromptConfig(
-        prompt_label_mapping=dict(
-            per="person", loc="ort", org="organisation", misc="verschiedenes"
-        ),
+        prompt_label_mapping={
+            "b-per": "person",
+            "i-per": "person",
+            "b-loc": "ort",
+            "i-loc": "ort",
+            "b-org": "organisation",
+            "i-org": "organisation",
+            "b-misc": "verschiedenes",
+            "i-misc": "verschiedenes",
+        },
         prompt_prefix="Es folgen Sätze und JSON-Wörterbücher mit den benannten "
         "Entitäten, die in der angegebenen Phrase vorkommen.",
         prompt_template="Satz: {text}\nBenannte Entitäten: {label}",
@@ -29,9 +43,16 @@ NER_TEMPLATES = {
         "benannten Entitäten dieses Typs sein, genau wie sie im Satz erscheinen.",
     ),
     EN: PromptConfig(
-        prompt_label_mapping=dict(
-            per="person", loc="location", org="organization", misc="miscellaneous"
-        ),
+        prompt_label_mapping={
+            "b-per": "person",
+            "i-per": "person",
+            "b-loc": "location",
+            "i-loc": "location",
+            "b-org": "organization",
+            "i-org": "organization",
+            "b-misc": "miscellaneous",
+            "i-misc": "miscellaneous",
+        },
         prompt_prefix="Below are sentences and JSON dictionaries with the named "
         "entities that occur in the given sentence.",
         prompt_template="Sentence: {text}\nNamed entities: {label}",
@@ -41,9 +62,16 @@ NER_TEMPLATES = {
         "type, exactly as they appear in the sentence.",
     ),
     ES: PromptConfig(
-        prompt_label_mapping=dict(
-            per="persona", loc="lugar", org="organización", misc="misceláneo"
-        ),
+        prompt_label_mapping={
+            "b-per": "persona",
+            "i-per": "persona",
+            "b-loc": "lugar",
+            "i-loc": "lugar",
+            "b-org": "organización",
+            "i-org": "organización",
+            "b-misc": "misceláneo",
+            "i-misc": "misceláneo",
+        },
         prompt_prefix="Lo siguiente son oraciones y diccionarios JSON con las "
         "entidades nombradas que aparecen en la oración dada.",
         prompt_template="Oración: {text}\nEntidades nombradas: {label}",
@@ -53,9 +81,16 @@ NER_TEMPLATES = {
         "entidades nombradas de ese tipo, exactamente como aparecen en la oración.",
     ),
     FO: PromptConfig(
-        prompt_label_mapping=dict(
-            per="persónur", loc="staður", org="felagsskapur", misc="ymiskt"
-        ),
+        prompt_label_mapping={
+            "b-per": "persónur",
+            "i-per": "persónur",
+            "b-loc": "staður",
+            "i-loc": "staður",
+            "b-org": "felagsskapur",
+            "i-org": "felagsskapur",
+            "b-misc": "ymiskt",
+            "i-misc": "ymiskt",
+        },
         prompt_prefix="Her eru nakrir setningar og nakrar JSON orðabøkur við "
         "nevndar eindir, sum eru í setningunum.",
         prompt_template="Setningur: {text}\nNevndar eindir: {label}",
@@ -65,9 +100,16 @@ NER_TEMPLATES = {
         "þeirri gerð, nákvæmlega eins og þær koma fram í setningunni.",
     ),
     FR: PromptConfig(
-        prompt_label_mapping=dict(
-            per="personne", loc="lieu", org="organisation", misc="divers"
-        ),
+        prompt_label_mapping={
+            "b-per": "personne",
+            "i-per": "personne",
+            "b-loc": "lieu",
+            "i-loc": "lieu",
+            "b-org": "organisation",
+            "i-org": "organisation",
+            "b-misc": "divers",
+            "i-misc": "divers",
+        },
         prompt_prefix="Vous trouverez ci-dessous des phrases et des "
         "dictionnaires JSON avec les entités nommées qui apparaissent dans la "
         "phrase donnée.",
@@ -79,9 +121,16 @@ NER_TEMPLATES = {
         "la phrase.",
     ),
     IS: PromptConfig(
-        prompt_label_mapping=dict(
-            per="einstaklingur", loc="staðsetning", org="stofnun", misc="ýmislegt"
-        ),
+        prompt_label_mapping={
+            "b-per": "einstaklingur",
+            "i-per": "einstaklingur",
+            "b-loc": "staðsetning",
+            "i-loc": "staðsetning",
+            "b-org": "stofnun",
+            "i-org": "stofnun",
+            "b-misc": "ýmislegt",
+            "i-misc": "ýmislegt",
+        },
         prompt_prefix="Eftirfarandi eru setningar ásamt JSON lyklum með nefndum "
         "einingum sem koma fyrir í setningunum.",
         prompt_template="Setning: {text}\nNefndar einingar: {label}",
@@ -92,9 +141,16 @@ NER_TEMPLATES = {
         "setningunni.",
     ),
     IT: PromptConfig(
-        prompt_label_mapping=dict(
-            per="persona", loc="posizione", org="organizzazione", misc="varie"
-        ),
+        prompt_label_mapping={
+            "b-per": "persona",
+            "i-per": "persona",
+            "b-loc": "posizione",
+            "i-loc": "posizione",
+            "b-org": "organizzazione",
+            "i-org": "organizzazione",
+            "b-misc": "varie",
+            "i-misc": "varie",
+        },
         prompt_prefix="Di seguito sono riportate le frasi e i dizionari JSON "
         "con le entità denominate presenti nella frase data.",
         prompt_template="Frase: {text}\nEntità denominate: {label}",
@@ -104,9 +160,16 @@ NER_TEMPLATES = {
         "nominate di quel tipo, esattamente come appaiono nella frase.",
     ),
     NB: PromptConfig(
-        prompt_label_mapping=dict(
-            per="person", loc="sted", org="organisasjon", misc="diverse"
-        ),
+        prompt_label_mapping={
+            "b-per": "person",
+            "i-per": "person",
+            "b-loc": "sted",
+            "i-loc": "sted",
+            "b-org": "organisasjon",
+            "i-org": "organisasjon",
+            "b-misc": "diverse",
+            "i-misc": "diverse",
+        },
         prompt_prefix="Følgende er fraser og JSON-ordbøker med de navngitte "
         "enhetene som forekommer i den gitte frasen.",
         prompt_template="Frase: {text}\nNavngitte enheter: {label}",
@@ -116,9 +179,16 @@ NER_TEMPLATES = {
         "av den typen, akkurat som de vises i frasen.",
     ),
     NL: PromptConfig(
-        prompt_label_mapping=dict(
-            per="persoon", loc="locatie", org="organisatie", misc="diversen"
-        ),
+        prompt_label_mapping={
+            "b-per": "persoon",
+            "i-per": "persoon",
+            "b-loc": "locatie",
+            "i-loc": "locatie",
+            "b-org": "organisatie",
+            "i-org": "organisatie",
+            "b-misc": "diversen",
+            "i-misc": "diversen",
+        },
         prompt_prefix="Hieronder staan zinnen en JSON woordenboeken met de "
         "genoemde entiteiten die voorkomen in de gegeven zin.",
         prompt_template="Zin: {text}\nGenoemde entiteiten: {label}",
@@ -128,9 +198,16 @@ NER_TEMPLATES = {
         "genoemde entiteiten van dat type, precies zoals ze voorkomen in de zin.",
     ),
     NN: PromptConfig(
-        prompt_label_mapping=dict(
-            per="person", loc="sted", org="organisasjon", misc="diverse"
-        ),
+        prompt_label_mapping={
+            "b-per": "person",
+            "i-per": "person",
+            "b-loc": "sted",
+            "i-loc": "sted",
+            "b-org": "organisasjon",
+            "i-org": "organisasjon",
+            "b-misc": "diverse",
+            "i-misc": "diverse",
+        },
         prompt_prefix="Følgende er fraser og JSON-ordbøker med de navngitte "
         "enhetene som forekommer i den gitte frasen.",
         prompt_template="Frase: {text}\nNavngitte enheter: {label}",
@@ -140,9 +217,16 @@ NER_TEMPLATES = {
         "av den typen, akkurat som de vises i frasen.",
     ),
     NO: PromptConfig(
-        prompt_label_mapping=dict(
-            per="person", loc="sted", org="organisasjon", misc="diverse"
-        ),
+        prompt_label_mapping={
+            "b-per": "person",
+            "i-per": "person",
+            "b-loc": "sted",
+            "i-loc": "sted",
+            "b-org": "organisasjon",
+            "i-org": "organisasjon",
+            "b-misc": "diverse",
+            "i-misc": "diverse",
+        },
         prompt_prefix="Følgende er fraser og JSON-ordbøker med de navngitte "
         "enhetene som forekommer i den gitte frasen.",
         prompt_template="Frase: {text}\nNavngitte enheter: {label}",
@@ -152,9 +236,16 @@ NER_TEMPLATES = {
         "av den typen, akkurat som de vises i frasen.",
     ),
     SV: PromptConfig(
-        prompt_label_mapping=dict(
-            per="person", loc="plats", org="organisation", misc="diverse"
-        ),
+        prompt_label_mapping={
+            "b-per": "person",
+            "i-per": "person",
+            "b-loc": "plats",
+            "i-loc": "plats",
+            "b-org": "organisation",
+            "i-org": "organisation",
+            "b-misc": "diverse",
+            "i-misc": "diverse",
+        },
         prompt_prefix="Följande är meningar och JSON-ordböcker med de namngivna "
         "enheter som förekommer i den givna meningen.",
         prompt_template="Mening: {text}\nNamngivna entiteter: {label}",
