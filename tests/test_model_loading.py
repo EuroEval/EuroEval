@@ -4,7 +4,7 @@ import pytest
 import torch
 
 from euroeval.data_models import BenchmarkConfig
-from euroeval.dataset_configs import ANGRY_TWEETS_CONFIG, NORDJYLLAND_NEWS_CONFIG
+from euroeval.dataset_configs import get_dataset_config
 from euroeval.exceptions import InvalidBenchmark
 from euroeval.model_config import get_model_config
 from euroeval.model_loading import load_model
@@ -19,7 +19,7 @@ def test_load_non_generative_model(
     )
     model = load_model(
         model_config=model_config,
-        dataset_config=ANGRY_TWEETS_CONFIG,
+        dataset_config=get_dataset_config("angry-tweets"),
         benchmark_config=benchmark_config,
     )
     assert model is not None
@@ -37,7 +37,7 @@ def test_load_generative_model(
     )
     model = load_model(
         model_config=model_config,
-        dataset_config=ANGRY_TWEETS_CONFIG,
+        dataset_config=get_dataset_config("angry-tweets"),
         benchmark_config=benchmark_config,
     )
     assert model is not None
@@ -53,6 +53,6 @@ def test_load_non_generative_model_with_generative_data(
     with pytest.raises(InvalidBenchmark):
         load_model(
             model_config=model_config,
-            dataset_config=NORDJYLLAND_NEWS_CONFIG,
+            dataset_config=get_dataset_config("nordjylland-news"),
             benchmark_config=benchmark_config,
         )
