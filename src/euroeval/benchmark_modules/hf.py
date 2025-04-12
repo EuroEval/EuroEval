@@ -63,7 +63,7 @@ from ..exceptions import (
     NoInternetConnection,
 )
 from ..languages import get_all_languages
-from ..task_utils import (
+from ..task_group_utils import (
     multiple_choice_classification,
     question_answering,
     token_classification,

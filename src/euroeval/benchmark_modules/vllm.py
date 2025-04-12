@@ -57,7 +57,7 @@ from ..exceptions import (
     NeedsExtraInstalled,
 )
 from ..languages import get_all_languages
-from ..task_utils import (
+from ..task_group_utils import (
     question_answering,
     sequence_classification,
     text_to_text,

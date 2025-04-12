@@ -59,7 +59,7 @@ from ..exceptions import (
     NeedsEnvironmentVariable,
     NeedsExtraInstalled,
 )
-from ..task_utils import (
+from ..task_group_utils import (
     question_answering,
     sequence_classification,
     text_to_text,

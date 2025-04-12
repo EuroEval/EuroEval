@@ -17,7 +17,7 @@ from .dataset_configs import SPEED_CONFIG, get_all_dataset_configs
 from .enums import GenerativeType, TaskGroup
 from .exceptions import NeedsExtraInstalled
 from .scores import aggregate_scores
-from .task_utils import (
+from .task_group_utils import (
     question_answering,
     sequence_classification,
     text_to_text,
