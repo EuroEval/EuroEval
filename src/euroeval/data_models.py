@@ -413,7 +413,11 @@ class DatasetConfig:
         """The prefix to use in the few-shot prompt."""
         main_language = self.languages[0]
         prompt_config = self.task.template_dict[main_language]
-        prompt_prefix = self._prompt_prefix or prompt_config.default_prompt_prefix
+        prompt_prefix = (
+            prompt_config.default_prompt_prefix
+            if self._prompt_prefix is None
+            else self._prompt_prefix
+        )
         prompt_prefix = prompt_prefix.replace("{labels_str}", self._labels_str)
         return prompt_prefix
 
@@ -422,7 +426,11 @@ class DatasetConfig:
         """The template used during few-shot evaluation."""
         main_language = self.languages[0]
         prompt_config = self.task.template_dict[main_language]
-        prompt_template = self._prompt_template or prompt_config.default_prompt_template
+        prompt_template = (
+            prompt_config.default_prompt_template
+            if self._prompt_template is None
+            else self._prompt_template
+        )
         prompt_template = prompt_template.replace("{labels_str}", self._labels_str)
         return prompt_template
 
@@ -432,7 +440,9 @@ class DatasetConfig:
         main_language = self.languages[0]
         prompt_config = self.task.template_dict[main_language]
         instruction_prompt = (
-            self._instruction_prompt or prompt_config.default_instruction_prompt
+            prompt_config.default_instruction_prompt
+            if self._instruction_prompt is None
+            else self._instruction_prompt
         )
         instruction_prompt = instruction_prompt.replace(
             "{labels_str}", self._labels_str
@@ -442,17 +452,25 @@ class DatasetConfig:
     @property
     def num_few_shot_examples(self) -> int:
         """The number of few-shot examples to use."""
-        return self._num_few_shot_examples or self.task.default_num_few_shot_examples
+        return (
+            self._num_few_shot_examples
+            if self._num_few_shot_examples is not None
+            else self.task.default_num_few_shot_examples
+        )
 
     @property
     def max_generated_tokens(self) -> int:
         """The maximum number of tokens to generate when evaluating a model."""
-        return self._max_generated_tokens or self.task.default_max_generated_tokens
+        return (
+            self._max_generated_tokens
+            if self._max_generated_tokens is not None
+            else self.task.default_max_generated_tokens
+        )
 
     @property
     def labels(self) -> list[str]:
         """The labels in the dataset."""
-        return self._labels or self.task.default_labels
+        return self._labels if self._labels is not None else self.task.default_labels
 
     @property
     def prompt_label_mapping(self) -> dict[str, str]:
