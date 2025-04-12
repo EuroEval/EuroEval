@@ -133,24 +133,24 @@ class Task:
             The template dictionary for the task, from language to prompt template.
         metrics:
             The metrics used to evaluate the task.
-        num_few_shot_examples:
-            The number of examples to use when benchmarking the task using few-shot
-            evaluation. For a classification task, these will be drawn evenly from
-            each label.
-        max_generated_tokens:
-            The maximum number of tokens to generate when benchmarking the task
+        default_num_few_shot_examples:
+            The default number of examples to use when benchmarking the task using
+            few-shot evaluation. For a classification task, these will be drawn evenly
+            from each label.
+        default_max_generated_tokens:
+            The default maximum number of tokens to generate when benchmarking the task
             using few-shot evaluation.
-        labels:
-            The labels in the dataset.
+        default_labels:
+            The default labels for datasets using this task.
     """
 
     name: str
     task_group: TaskGroup
     template_dict: dict["Language", "PromptConfig"]
     metrics: list[MetricConfig]
-    num_few_shot_examples: int
-    max_generated_tokens: int
-    labels: list[str]
+    default_num_few_shot_examples: int
+    default_max_generated_tokens: int
+    default_labels: list[str]
 
     def __hash__(self) -> int:
         """Return a hash of the task."""
@@ -413,7 +413,7 @@ class DatasetConfig:
         """The prefix to use in the few-shot prompt."""
         main_language = self.languages[0]
         prompt_config = self.task.template_dict[main_language]
-        prompt_prefix = self._prompt_prefix or prompt_config.prompt_prefix
+        prompt_prefix = self._prompt_prefix or prompt_config.default_prompt_prefix
         prompt_prefix = prompt_prefix.replace("{labels_str}", self._labels_str)
         return prompt_prefix
 
@@ -422,7 +422,7 @@ class DatasetConfig:
         """The template used during few-shot evaluation."""
         main_language = self.languages[0]
         prompt_config = self.task.template_dict[main_language]
-        prompt_template = self._prompt_template or prompt_config.prompt_template
+        prompt_template = self._prompt_template or prompt_config.default_prompt_template
         prompt_template = prompt_template.replace("{labels_str}", self._labels_str)
         return prompt_template
 
@@ -432,7 +432,7 @@ class DatasetConfig:
         main_language = self.languages[0]
         prompt_config = self.task.template_dict[main_language]
         instruction_prompt = (
-            self._instruction_prompt or prompt_config.instruction_prompt
+            self._instruction_prompt or prompt_config.default_instruction_prompt
         )
         instruction_prompt = instruction_prompt.replace(
             "{labels_str}", self._labels_str
@@ -442,17 +442,17 @@ class DatasetConfig:
     @property
     def num_few_shot_examples(self) -> int:
         """The number of few-shot examples to use."""
-        return self._num_few_shot_examples or self.task.num_few_shot_examples
+        return self._num_few_shot_examples or self.task.default_num_few_shot_examples
 
     @property
     def max_generated_tokens(self) -> int:
         """The maximum number of tokens to generate when evaluating a model."""
-        return self._max_generated_tokens or self.task.max_generated_tokens
+        return self._max_generated_tokens or self.task.default_max_generated_tokens
 
     @property
     def labels(self) -> list[str]:
         """The labels in the dataset."""
-        return self._labels or self.task.labels
+        return self._labels or self.task.default_labels
 
     @property
     def prompt_label_mapping(self) -> dict[str, str]:
@@ -463,10 +463,10 @@ class DatasetConfig:
         main_language = self.languages[0]
         prompt_config = self.task.template_dict[main_language]
 
-        if prompt_config.prompt_label_mapping == "auto":
+        if prompt_config.default_prompt_label_mapping == "auto":
             return {label: label for label in self.labels}
         else:
-            return prompt_config.prompt_label_mapping
+            return prompt_config.default_prompt_label_mapping
 
     @property
     def id2label(self) -> dict[int, str]:
@@ -655,21 +655,21 @@ class PromptConfig:
     language.
 
     Attributes:
-        prompt_prefix:
-            The prefix to use in the few-shot prompt.
-        prompt_template:
-            The template for the prompt to use when benchmarking the dataset using
-            few-shot evaluation.
-        instruction_prompt:
-            The prompt to use when benchmarking the dataset using instruction-based
-            evaluation.
-        prompt_label_mapping:
-            A mapping from the labels to another phrase which is used as a substitute
-            for the label in few-shot evaluation. If set to "auto", the mapping will be
-            set to a 1:1 mapping between the labels and themselves.
+        default_prompt_prefix:
+            The default prefix to use in the few-shot prompt.
+        default_prompt_template:
+            The default template for the prompt to use when benchmarking the dataset
+            using few-shot evaluation.
+        default_instruction_prompt:
+            The default prompt to use when benchmarking the dataset using
+            instruction-based evaluation.
+        default_prompt_label_mapping:
+            The default mapping from the labels to another phrase which is used as a
+            substitute for the label in few-shot evaluation. If set to "auto", the
+            mapping will be set to a 1:1 mapping between the labels and themselves.
     """
 
-    prompt_prefix: str
-    prompt_template: str
-    instruction_prompt: str
-    prompt_label_mapping: dict[str, str] | t.Literal["auto"]
+    default_prompt_prefix: str
+    default_prompt_template: str
+    default_instruction_prompt: str
+    default_prompt_label_mapping: dict[str, str] | t.Literal["auto"]

@@ -40,9 +40,9 @@ LA = Task(
             compute_kwargs=dict(average="macro"),
         ),
     ],
-    num_few_shot_examples=12,
-    max_generated_tokens=5,
-    labels=["correct", "incorrect"],
+    default_num_few_shot_examples=12,
+    default_max_generated_tokens=5,
+    default_labels=["correct", "incorrect"],
 )
 
 
@@ -64,9 +64,9 @@ NER = Task(
             results_key="overall_f1",
         ),
     ],
-    num_few_shot_examples=8,
-    max_generated_tokens=128,
-    labels=[
+    default_num_few_shot_examples=8,
+    default_max_generated_tokens=128,
+    default_labels=[
         "o",
         "b-loc",
         "i-loc",
@@ -100,9 +100,9 @@ RC = Task(
             postprocessing_fn=lambda raw_score: (raw_score, f"{raw_score:.2f}%"),
         ),
     ],
-    num_few_shot_examples=4,
-    max_generated_tokens=32,
-    labels=["start_positions", "end_positions"],
+    default_num_few_shot_examples=4,
+    default_max_generated_tokens=32,
+    default_labels=["start_positions", "end_positions"],
 )
 
 
@@ -125,9 +125,9 @@ SENT = Task(
             compute_kwargs=dict(average="macro"),
         ),
     ],
-    num_few_shot_examples=12,
-    max_generated_tokens=5,
-    labels=["positive", "neutral", "negative"],
+    default_num_few_shot_examples=12,
+    default_max_generated_tokens=5,
+    default_labels=["positive", "neutral", "negative"],
 )
 
 
@@ -152,9 +152,9 @@ SUMM = Task(
             results_key="rougeL",
         ),
     ],
-    num_few_shot_examples=1,
-    max_generated_tokens=256,
-    labels=[],
+    default_num_few_shot_examples=1,
+    default_max_generated_tokens=256,
+    default_labels=[],
 )
 
 
@@ -176,9 +176,9 @@ KNOW = Task(
             results_key="accuracy",
         ),
     ],
-    num_few_shot_examples=5,
-    max_generated_tokens=5,
-    labels=["a", "b", "c", "d"],
+    default_num_few_shot_examples=5,
+    default_max_generated_tokens=5,
+    default_labels=["a", "b", "c", "d"],
 )
 
 
@@ -200,9 +200,9 @@ MCRC = Task(
             results_key="accuracy",
         ),
     ],
-    num_few_shot_examples=5,
-    max_generated_tokens=5,
-    labels=["a", "b", "c", "d"],
+    default_num_few_shot_examples=5,
+    default_max_generated_tokens=5,
+    default_labels=["a", "b", "c", "d"],
 )
 
 
@@ -224,9 +224,9 @@ COMMON_SENSE = Task(
             results_key="accuracy",
         ),
     ],
-    num_few_shot_examples=5,
-    max_generated_tokens=5,
-    labels=["a", "b", "c", "d"],
+    default_num_few_shot_examples=5,
+    default_max_generated_tokens=5,
+    default_labels=["a", "b", "c", "d"],
 )
 
 
@@ -250,7 +250,7 @@ SPEED = Task(
             postprocessing_fn=lambda raw_score: (raw_score, f"{raw_score:,.0f}"),
         ),
     ],
-    num_few_shot_examples=0,
-    max_generated_tokens=5,
-    labels=[],
+    default_num_few_shot_examples=0,
+    default_max_generated_tokens=5,
+    default_labels=[],
 )
