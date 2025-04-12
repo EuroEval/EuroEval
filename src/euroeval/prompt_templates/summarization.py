@@ -1,8 +1,9 @@
 """Templates for the Summarization task."""
 
 from ..data_models import PromptConfig
-from ..languages import DA, DE, EN, ES, FO, FR, IS, IT, NB, NL, NN, NO, SV
+from ..languages import DA, DE, EN, ES, FR, IS, IT, NB, NL, NN, NO, SV
 
+# TODO: Missing Faroese
 SUMM_TEMPLATES = {
     DA: PromptConfig(
         prompt_prefix="Følgende er dokumenter med tilhørende resuméer.",
@@ -30,12 +31,6 @@ SUMM_TEMPLATES = {
         prompt_template="Documento: {text}\nResumen: {target_text}",
         instruction_prompt="Documento: {text}\n\nEscriba un resumen del "
         "documento anterior.",
-        prompt_label_mapping=dict(),
-    ),
-    FO: PromptConfig(
-        prompt_prefix="",
-        prompt_template="",
-        instruction_prompt="",
         prompt_label_mapping=dict(),
     ),
     FR: PromptConfig(

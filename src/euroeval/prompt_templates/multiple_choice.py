@@ -1,8 +1,9 @@
 """Templates for all multiple choice tasks."""
 
 from ..data_models import PromptConfig
-from ..languages import DA, DE, EN, ES, FO, FR, IS, IT, NB, NL, NN, NO, SV
+from ..languages import DA, DE, EN, ES, FR, IS, IT, NB, NL, NN, NO, SV
 
+# TODO: Missing Faroese
 MULTIPLE_CHOICE_TEMPLATES = {
     DA: PromptConfig(
         prompt_prefix="Følgende er multiple choice spørgsmål (med svar).",
@@ -32,12 +33,6 @@ MULTIPLE_CHOICE_TEMPLATES = {
         prompt_template="Pregunta: {text}\nRespuesta: {label}",
         instruction_prompt="Pregunta: {text}\n\nResponda la pregunta anterior "
         "usando solo {labels_str}, y nada más.",
-        prompt_label_mapping="auto",
-    ),
-    FO: PromptConfig(
-        prompt_prefix="",
-        prompt_template="",
-        instruction_prompt="",
         prompt_label_mapping="auto",
     ),
     FR: PromptConfig(
