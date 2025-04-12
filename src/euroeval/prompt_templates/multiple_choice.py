@@ -1,124 +1,101 @@
-"""Templates for the Multiple Choice Reading Comprehension task."""
+"""Templates for all multiple choice tasks."""
 
-from dataclasses import asdict
+from ..data_models import PromptConfig
+from ..languages import DA, DE, EN, ES, FO, FR, IS, IT, NB, NL, NN, NO, SV
 
-from ..types import TemplateDict
-from .base import BasePromptConfig, PromptConfig
-
-
-def get_multiple_choice_templates() -> TemplateDict:
-    """Get the templates for the multiple choice reasoning task.
-
-    Returns:
-        The templates for the multiple choice reasoning task.
-    """
-    # Using a getter to avoid error with circular imports
-    from ..languages import DA, DE, EN, ES, FO, FR, IS, IT, NB, NL, NN, NO, SV
-
-    MULTIPLE_CHOICE_DEFAULTS = BasePromptConfig(
-        labels=["a", "b", "c", "d"],
-        num_few_shot_examples=5,
-        max_generated_tokens=5,
+MULTIPLE_CHOICE_TEMPLATES = {
+    DA: PromptConfig(
+        prompt_prefix="Følgende er multiple choice spørgsmål (med svar).",
+        prompt_template="Spørgsmål: {text}\nSvar: {label}",
+        instruction_prompt="Spørgsmål: {text}\n\nBesvar ovenstående spørgsmål ved "
+        "at svare med {labels_str}, og intet andet.",
         prompt_label_mapping="auto",
-    )
-
-    return {
-        DA: PromptConfig(
-            **asdict(MULTIPLE_CHOICE_DEFAULTS),
-            prompt_prefix="Følgende er tekster med tilhørende multiple choice "
-            "spørgsmål og svar.",
-            prompt_template="{text}\nSvar: {label}",
-            instruction_prompt="{text}\n\nBesvar ovenstående spørgsmål ved at svare "
-            "med {labels_str}, og intet andet.",
-        ),
-        DE: PromptConfig(
-            **asdict(MULTIPLE_CHOICE_DEFAULTS),
-            prompt_prefix="Die folgenden Texte sind mit dazugehörigen "
-            "Multiple-Choice-Fragen und Antworten.",
-            prompt_template="{text}\nAntwort: {label}",
-            instruction_prompt="{text}\n\nBeantworten Sie die obige Frage mit "
-            "{labels_str} , und nichts anderes.",
-        ),
-        EN: PromptConfig(
-            **asdict(MULTIPLE_CHOICE_DEFAULTS),
-            prompt_prefix="The following are texts with accompanying multiple choice "
-            "questions and answers.",
-            prompt_template="{text}\nAnswer: {label}",
-            instruction_prompt="{text}\n\nAnswer the above question by replying with "
-            "{labels_str}, and nothing else.",
-        ),
-        ES: PromptConfig(
-            **asdict(MULTIPLE_CHOICE_DEFAULTS),
-            prompt_prefix="",
-            prompt_template="",
-            instruction_prompt="",
-        ),
-        FO: PromptConfig(
-            **asdict(MULTIPLE_CHOICE_DEFAULTS),
-            prompt_prefix="",
-            prompt_template="",
-            instruction_prompt="",
-        ),
-        FR: PromptConfig(
-            **asdict(MULTIPLE_CHOICE_DEFAULTS),
-            prompt_prefix="Les textes suivants sont accompagnés de questions à choix "
-            "multiples et de réponses.",
-            prompt_template="{text}\nRéponse: {label}",
-            instruction_prompt="{text}\n\nRépondez à la question ci-dessus par "
-            "{labels_str}, et rien d'autre.",
-        ),
-        IS: PromptConfig(
-            **asdict(MULTIPLE_CHOICE_DEFAULTS),
-            prompt_prefix="Eftirfarandi eru textar með tilheyrandi fjölvalsspurningum "
-            "og svörum.",
-            prompt_template="{text}\nSvara: {label}",
-            instruction_prompt="{text}\n\nSvaraðu eftirfarandi spurningum með "
-            "{labels_str}, og engu öðru.",
-        ),
-        IT: PromptConfig(
-            **asdict(MULTIPLE_CHOICE_DEFAULTS),
-            prompt_prefix="",
-            prompt_template="",
-            instruction_prompt="",
-        ),
-        NB: PromptConfig(
-            **asdict(MULTIPLE_CHOICE_DEFAULTS),
-            prompt_prefix="Her følger tekster med tilhørende multiple choice spørsmål "
-            "og svar.",
-            prompt_template="{text}\nSvar: {label}",
-            instruction_prompt="{text}\n\nBesvar følgende spørsmål med {labels_str}, "
-            "og ikke noe annet.",
-        ),
-        NL: PromptConfig(
-            **asdict(MULTIPLE_CHOICE_DEFAULTS),
-            prompt_prefix="Hieronder staan teksten met bijbehorende multiple choice "
-            "vragen en antwoorden.",
-            prompt_template="{text}\nAntwoord: {label}",
-            instruction_prompt="{text}\n\nBeantwoord de bovenstaande vraag met "
-            "{label_str}, en niets anders.",
-        ),
-        NN: PromptConfig(
-            **asdict(MULTIPLE_CHOICE_DEFAULTS),
-            prompt_prefix="Her følger tekster med tilhørende multiple choice spørsmål "
-            "og svar.",
-            prompt_template="{text}\nSvar: {label}",
-            instruction_prompt="{text}\n\nBesvar følgende spørsmål med {labels_str}, "
-            "og ikke noe annet.",
-        ),
-        NO: PromptConfig(
-            **asdict(MULTIPLE_CHOICE_DEFAULTS),
-            prompt_prefix="Her følger tekster med tilhørende multiple choice spørsmål "
-            "og svar.",
-            prompt_template="{text}\nSvar: {label}",
-            instruction_prompt="{text}\n\nBesvar følgende spørsmål med {labels_str}, "
-            "og ikke noe annet.",
-        ),
-        SV: PromptConfig(
-            **asdict(MULTIPLE_CHOICE_DEFAULTS),
-            prompt_prefix="Nedan följer texter med tillhörande multiple choice frågor "
-            "och svar.",
-            prompt_template="{text}\nSvar: {label}",
-            instruction_prompt="{text}\n\nBesvara följande fråga med {labels_str}, "
-            "och inget annat.",
-        ),
-    }
+    ),
+    DE: PromptConfig(
+        prompt_prefix="Die folgenden Fragen sind Multiple-Choice-Fragen "
+        "(mit Antworten).",
+        prompt_template="Frage: {text}\nAntwort: {label}",
+        instruction_prompt="Frage: {text}\n\nBeantworten Sie die obige Frage mit "
+        "{labels_str}, und nichts anderes.",
+        prompt_label_mapping="auto",
+    ),
+    EN: PromptConfig(
+        prompt_prefix="The following are multiple choice questions (with answers).",
+        prompt_template="Question: {text}\nAnswer: {label}",
+        instruction_prompt="Question: {text}\n\nAnswer the above question by "
+        "replying with {labels_str}, and nothing else.",
+        prompt_label_mapping="auto",
+    ),
+    ES: PromptConfig(
+        prompt_prefix="Las siguientes son preguntas de opción múltiple "
+        "(con respuestas).",
+        prompt_template="Pregunta: {text}\nRespuesta: {label}",
+        instruction_prompt="Pregunta: {text}\n\nResponda la pregunta anterior "
+        "usando solo {labels_str}, y nada más.",
+        prompt_label_mapping="auto",
+    ),
+    FO: PromptConfig(
+        prompt_prefix="",
+        prompt_template="",
+        instruction_prompt="",
+        prompt_label_mapping="auto",
+    ),
+    FR: PromptConfig(
+        prompt_prefix="Les questions suivantes sont des questions à choix "
+        "multiples (avec réponses).",
+        prompt_template="Question: {text}\nRéponse: {label}",
+        instruction_prompt="Question: {text}\n\nRépondez à la question ci-dessus "
+        "par {labels_str}, et rien d'autre.",
+        prompt_label_mapping="auto",
+    ),
+    IS: PromptConfig(
+        prompt_prefix="Eftirfarandi eru fjölvalsspurningar (með svörum).",
+        prompt_template="Spurningar: {text}\nSvara: {label}",
+        instruction_prompt="Spurningar: {text}\n\nSvaraðu eftirfarandi spurningum "
+        "með {labels_str}, og engu öðru.",
+        prompt_label_mapping="auto",
+    ),
+    IT: PromptConfig(
+        prompt_prefix="Le seguenti sono domande a scelta multipla "
+        "(con relative risposte).",
+        prompt_template="Domanda: {text}\nRéponse: {label}",
+        instruction_prompt="Domanda: {text}\n\nRispondete alla domanda precedente "
+        "con {labels_str}, e nient'altro.",
+        prompt_label_mapping="auto",
+    ),
+    NB: PromptConfig(
+        prompt_prefix="Følgende er flervalgsspørsmål (med svar).",
+        prompt_template="Spørsmål: {text}\nSvar: {label}",
+        instruction_prompt="Spørsmål: {text}\n\nBesvar følgende spørsmål med "
+        "{labels_str}, og ikke noe annet.",
+        prompt_label_mapping="auto",
+    ),
+    NL: PromptConfig(
+        prompt_prefix="Hieronder staan meerkeuzevragen (met antwoorden).",
+        prompt_template="Vraag: {text}\nAntwoord: {label}",
+        instruction_prompt="Vraag: {text}\n\nBeantwoord de bovenstaande vraag met "
+        "{labels_str}, en niets anders.",
+        prompt_label_mapping="auto",
+    ),
+    NN: PromptConfig(
+        prompt_prefix="Følgende er flervalgsspørsmål (med svar).",
+        prompt_template="Spørsmål: {text}\nSvar: {label}",
+        instruction_prompt="Spørsmål: {text}\n\nBesvar følgende spørsmål med "
+        "{labels_str}, og ikke noe annet.",
+        prompt_label_mapping="auto",
+    ),
+    NO: PromptConfig(
+        prompt_prefix="Følgende er flervalgsspørsmål (med svar).",
+        prompt_template="Spørsmål: {text}\nSvar: {label}",
+        instruction_prompt="Spørsmål: {text}\n\nBesvar følgende spørsmål med "
+        "{labels_str}, og ikke noe annet.",
+        prompt_label_mapping="auto",
+    ),
+    SV: PromptConfig(
+        prompt_prefix="Följande är flervalsfrågor (med svar).",
+        prompt_template="Fråga: {text}\nSvar: {label}",
+        instruction_prompt="Fråga: {text}\n\nBesvara följande fråga med "
+        "{labels_str}, och inget annat.",
+        prompt_label_mapping="auto",
+    ),
+}

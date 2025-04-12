@@ -6,15 +6,12 @@ from numpy.typing import NDArray
 from transformers.trainer_utils import EvalPrediction
 
 if t.TYPE_CHECKING:
-    from .data_models import GenerativeModelOutput, Language
-    from .prompt_templates import PromptConfig
+    from .data_models import GenerativeModelOutput
 
 
 ScoreDict: t.TypeAlias = dict[str, dict[str, float] | list[dict[str, float]]]
 Predictions: t.TypeAlias = NDArray | list[str] | list[list[str]]
 Labels: t.TypeAlias = NDArray | list[str] | list[list[str]]
-
-TemplateDict = dict["Language", "PromptConfig"]
 
 
 class ComputeMetricsFunction(t.Protocol):
