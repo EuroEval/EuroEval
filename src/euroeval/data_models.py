@@ -414,7 +414,7 @@ class DatasetConfig:
         main_language = self.languages[0]
         prompt_config = self.task.template_dict[main_language]
         prompt_prefix = self._prompt_prefix or prompt_config.prompt_prefix
-        prompt_prefix = prompt_prefix.format(labels_str=self._labels_str)
+        prompt_prefix = prompt_prefix.replace("{labels_str}", self._labels_str)
         return prompt_prefix
 
     @property
@@ -423,7 +423,7 @@ class DatasetConfig:
         main_language = self.languages[0]
         prompt_config = self.task.template_dict[main_language]
         prompt_template = self._prompt_template or prompt_config.prompt_template
-        prompt_template = prompt_template.format(labels_str=self._labels_str)
+        prompt_template = prompt_template.replace("{labels_str}", self._labels_str)
         return prompt_template
 
     @property
@@ -434,7 +434,9 @@ class DatasetConfig:
         instruction_prompt = (
             self._instruction_prompt or prompt_config.instruction_prompt
         )
-        instruction_prompt = instruction_prompt.format(labels_str=self._labels_str)
+        instruction_prompt = instruction_prompt.replace(
+            "{labels_str}", self._labels_str
+        )
         return instruction_prompt
 
     @property
