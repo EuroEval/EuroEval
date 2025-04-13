@@ -2248,7 +2248,9 @@
 <span class="normal">1221</span>
 <span class="normal">1222</span>
 <span class="normal">1223</span>
-<span class="normal">1224</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Encoder models from the Hugging Face Hub.&quot;&quot;&quot;</span>
+<span class="normal">1224</span>
+<span class="normal">1225</span>
+<span class="normal">1226</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Encoder models from the Hugging Face Hub.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">c</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
@@ -2263,31 +2265,29 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">datasets</span><span class="w"> </span><span class="kn">import</span> <span class="n">DatasetDict</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">huggingface_hub</span><span class="w"> </span><span class="kn">import</span> <span class="n">HfApi</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">huggingface_hub</span><span class="w"> </span><span class="kn">import</span> <span class="n">whoami</span> <span class="k">as</span> <span class="n">hf_whoami</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">huggingface_hub.hf_api</span><span class="w"> </span><span class="kn">import</span> <span class="n">ModelInfo</span> <span class="k">as</span> <span class="n">HfApiModelInfo</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">huggingface_hub.hf_api</span><span class="w"> </span><span class="kn">import</span> <span class="n">RepositoryNotFoundError</span><span class="p">,</span> <span class="n">RevisionNotFoundError</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">huggingface_hub.utils</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">huggingface_hub.errors</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">GatedRepoError</span><span class="p">,</span>
     <span class="n">HFValidationError</span><span class="p">,</span>
     <span class="n">LocalTokenNotFoundError</span><span class="p">,</span>
+    <span class="n">RepositoryNotFoundError</span><span class="p">,</span>
+    <span class="n">RevisionNotFoundError</span><span class="p">,</span>
 <span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">huggingface_hub.hf_api</span><span class="w"> </span><span class="kn">import</span> <span class="n">ModelInfo</span> <span class="k">as</span> <span class="n">HfApiModelInfo</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">peft</span><span class="w"> </span><span class="kn">import</span> <span class="n">PeftConfig</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">requests.exceptions</span><span class="w"> </span><span class="kn">import</span> <span class="n">RequestException</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">torch</span><span class="w"> </span><span class="kn">import</span> <span class="n">nn</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-    <span class="n">AutoConfig</span><span class="p">,</span>
-    <span class="n">AutoTokenizer</span><span class="p">,</span>
-    <span class="n">BatchEncoding</span><span class="p">,</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">transformers.configuration_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">PretrainedConfig</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">transformers.data.data_collator</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">DataCollatorForTokenClassification</span><span class="p">,</span>
     <span class="n">DataCollatorWithPadding</span><span class="p">,</span>
-    <span class="n">PretrainedConfig</span><span class="p">,</span>
-    <span class="n">PreTrainedModel</span><span class="p">,</span>
-    <span class="n">PreTrainedTokenizer</span><span class="p">,</span>
-    <span class="n">Trainer</span><span class="p">,</span>
 <span class="p">)</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">transformers.modelcard</span><span class="w"> </span><span class="kn">import</span> <span class="n">TASK_MAPPING</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">transformers.models.auto.modeling_auto</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-    <span class="n">MODEL_FOR_IMAGE_TEXT_TO_TEXT_MAPPING_NAMES</span><span class="p">,</span>
-<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">transformers.modeling_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">PreTrainedModel</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">transformers.models.auto.configuration_auto</span><span class="w"> </span><span class="kn">import</span> <span class="n">AutoConfig</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">transformers.models.auto.tokenization_auto</span><span class="w"> </span><span class="kn">import</span> <span class="n">AutoTokenizer</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">transformers.tokenization_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">PreTrainedTokenizer</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">transformers.tokenization_utils_base</span><span class="w"> </span><span class="kn">import</span> <span class="n">BatchEncoding</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">transformers.trainer</span><span class="w"> </span><span class="kn">import</span> <span class="n">Trainer</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">urllib3.exceptions</span><span class="w"> </span><span class="kn">import</span> <span class="n">RequestError</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">..constants</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
@@ -2315,18 +2315,17 @@
     <span class="n">NoInternetConnection</span><span class="p">,</span>
 <span class="p">)</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..languages</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_all_languages</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">..task_utils</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..task_group_utils</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">multiple_choice_classification</span><span class="p">,</span>
     <span class="n">question_answering</span><span class="p">,</span>
     <span class="n">token_classification</span><span class="p">,</span>
 <span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..tokenization_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_bos_token</span><span class="p">,</span> <span class="n">get_eos_token</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..types</span><span class="w"> </span><span class="kn">import</span> <span class="n">ExtractLabelsFunction</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..utils</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">block_terminal_output</span><span class="p">,</span>
     <span class="n">create_model_cache_dir</span><span class="p">,</span>
-    <span class="n">get_bos_token</span><span class="p">,</span>
     <span class="n">get_class_by_name</span><span class="p">,</span>
-    <span class="n">get_eos_token</span><span class="p">,</span>
     <span class="n">internet_connection_available</span><span class="p">,</span>
     <span class="n">log_once</span><span class="p">,</span>
 <span class="p">)</span>
@@ -2940,7 +2939,7 @@
     <span class="k">assert</span> <span class="n">model</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;The model should not be None.&quot;</span>
 
     <span class="n">model</span><span class="o">.</span><span class="n">eval</span><span class="p">()</span>
-    <span class="n">model</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">benchmark_config</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">benchmark_config</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>  <span class="c1"># type: ignore[arg-type]</span>
 
     <span class="k">if</span> <span class="p">(</span>
         <span class="nb">isinstance</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">PreTrainedModel</span><span class="p">)</span>
@@ -3047,12 +3046,6 @@
             <span class="n">tags</span> <span class="o">+=</span> <span class="n">base_model_info</span><span class="o">.</span><span class="n">tags</span> <span class="ow">or</span> <span class="nb">list</span><span class="p">()</span>
             <span class="n">tags</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">tags</span><span class="p">))</span>
 
-    <span class="c1"># TEMP: This extends the `TASK_MAPPING` dictionary to include the missing</span>
-    <span class="c1"># &#39;image-text-to-text&#39; pipeline tag. This will be added as part of `TASK_MAPPING`</span>
-    <span class="c1"># when this PR has been merged in and published:</span>
-    <span class="c1"># https://github.com/huggingface/transformers/pull/37107</span>
-    <span class="n">TASK_MAPPING</span><span class="p">[</span><span class="s2">&quot;image-text-to-text&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">MODEL_FOR_IMAGE_TEXT_TO_TEXT_MAPPING_NAMES</span>
-
     <span class="c1"># Get the pipeline tag for the model. If it is not specified, then we determine it</span>
     <span class="c1"># by checking the model&#39;s architecture as written in the model&#39;s Hugging Face config</span>
     <span class="n">pipeline_tag</span> <span class="o">=</span> <span class="n">model_info</span><span class="o">.</span><span class="n">pipeline_tag</span>
@@ -3074,7 +3067,7 @@
         <span class="n">generative_class_names</span> <span class="o">=</span> <span class="p">[</span>
             <span class="n">class_name</span>
             <span class="k">for</span> <span class="n">tag</span> <span class="ow">in</span> <span class="n">GENERATIVE_PIPELINE_TAGS</span>
-            <span class="k">for</span> <span class="n">class_name</span> <span class="ow">in</span> <span class="n">TASK_MAPPING</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">tag</span><span class="p">,</span> <span class="nb">dict</span><span class="p">())</span><span class="o">.</span><span class="n">values</span><span class="p">()</span>
+            <span class="k">for</span> <span class="n">class_name</span> <span class="ow">in</span> <span class="n">TASK_MAPPING</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">tag</span><span class="p">,</span> <span class="nb">dict</span><span class="p">())</span><span class="o">.</span><span class="n">values</span><span class="p">()</span>  <span class="c1"># type: ignore[attr-defined]</span>
         <span class="p">]</span>
         <span class="k">if</span> <span class="n">class_names</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="nb">any</span><span class="p">(</span>
             <span class="n">class_name</span> <span class="ow">in</span> <span class="n">generative_class_names</span> <span class="k">for</span> <span class="n">class_name</span> <span class="ow">in</span> <span class="n">class_names</span>
@@ -3333,17 +3326,20 @@
         <span class="k">for</span> <span class="n">attribute</span> <span class="ow">in</span> <span class="n">attribute_list</span><span class="p">:</span>
             <span class="n">token_type_embeddings</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">token_type_embeddings</span><span class="p">,</span> <span class="n">attribute</span><span class="p">)</span>
 
+        <span class="n">token_type_embedding_tensor</span> <span class="o">=</span> <span class="n">token_type_embeddings</span><span class="o">.</span><span class="n">weight</span><span class="o">.</span><span class="n">data</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">token_type_embedding_tensor</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span>
+
         <span class="c1"># If the token type embeddings has shape (1, ...) then set the shape to</span>
         <span class="c1"># (2, ...) by randomly initializing the second token type embedding</span>
-        <span class="k">if</span> <span class="n">token_type_embeddings</span><span class="o">.</span><span class="n">weight</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">token_type_embedding_tensor</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
             <span class="n">token_type_embeddings</span><span class="o">.</span><span class="n">weight</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">(</span>
                 <span class="p">(</span>
-                    <span class="n">token_type_embeddings</span><span class="o">.</span><span class="n">weight</span><span class="o">.</span><span class="n">data</span><span class="p">,</span>
-                    <span class="n">torch</span><span class="o">.</span><span class="n">rand_like</span><span class="p">(</span><span class="n">token_type_embeddings</span><span class="o">.</span><span class="n">weight</span><span class="o">.</span><span class="n">data</span><span class="p">),</span>
+                    <span class="n">token_type_embedding_tensor</span><span class="p">,</span>
+                    <span class="n">torch</span><span class="o">.</span><span class="n">rand_like</span><span class="p">(</span><span class="n">token_type_embedding_tensor</span><span class="p">),</span>
                 <span class="p">),</span>
                 <span class="n">dim</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
             <span class="p">)</span>
-            <span class="n">token_type_embeddings</span><span class="o">.</span><span class="n">num_embeddings</span> <span class="o">=</span> <span class="mi">2</span>
+            <span class="n">token_type_embeddings</span><span class="o">.</span><span class="n">num_embeddings</span> <span class="o">=</span> <span class="mi">2</span>  <span class="c1"># type: ignore[assignment]</span>
 
         <span class="c1"># Set the model config to use the new type vocab size</span>
         <span class="n">model</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">type_vocab_size</span> <span class="o">=</span> <span class="mi">2</span>
@@ -3410,7 +3406,7 @@
     <span class="c1"># Move the model to the CPU, since otherwise we can&#39;t catch the IndexErrors when</span>
     <span class="c1"># finding the maximum sequence length of the model</span>
     <span class="n">model_device</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">device</span>
-    <span class="n">model</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">device</span><span class="p">(</span><span class="s2">&quot;cpu&quot;</span><span class="p">))</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">device</span><span class="p">(</span><span class="s2">&quot;cpu&quot;</span><span class="p">))</span>  <span class="c1"># type: ignore[arg-type]</span>
 
     <span class="c1"># Manually check that this model max length is valid for the model, and adjust</span>
     <span class="c1"># otherwise</span>
@@ -3432,8 +3428,16 @@
             <span class="k">except</span> <span class="ne">IndexError</span><span class="p">:</span>
                 <span class="k">continue</span>
 
+            <span class="k">except</span> <span class="ne">ValueError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="c1"># This happens when the model is using Triton, such as with ModernBERT,</span>
+                <span class="c1"># which doesn&#39;t work with CPU tensors at all</span>
+                <span class="k">if</span> <span class="s2">&quot;cpu tensor&quot;</span> <span class="ow">in</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">):</span>
+                    <span class="k">break</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="n">e</span>
+
     <span class="c1"># Move the model back to the original device</span>
-    <span class="n">model</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">model_device</span><span class="p">)</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">model_device</span><span class="p">)</span>  <span class="c1"># type: ignore[arg-type]</span>
 
     <span class="c1"># If there is a mismatch between the vocab size according to the tokenizer and</span>
     <span class="c1"># the vocab size according to the model, we raise an error</span>

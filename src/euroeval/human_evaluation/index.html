@@ -1690,7 +1690,7 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">.enums</span><span class="w"> </span><span class="kn">import</span> <span class="n">GenerativeType</span><span class="p">,</span> <span class="n">TaskGroup</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.exceptions</span><span class="w"> </span><span class="kn">import</span> <span class="n">NeedsExtraInstalled</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.scores</span><span class="w"> </span><span class="kn">import</span> <span class="n">aggregate_scores</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">.task_utils</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.task_group_utils</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">question_answering</span><span class="p">,</span>
     <span class="n">sequence_classification</span><span class="p">,</span>
     <span class="n">text_to_text</span><span class="p">,</span>
@@ -1717,7 +1717,7 @@
         <span class="n">description</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
         <span class="n">dummy_model_id</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;mistralai/Mistral-7B-v0.1&quot;</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize the HumanEvaluator.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialise the HumanEvaluator.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            annotator_id:</span>

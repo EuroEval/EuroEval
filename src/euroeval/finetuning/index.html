@@ -1185,11 +1185,7 @@
 <span class="normal">317</span>
 <span class="normal">318</span>
 <span class="normal">319</span>
-<span class="normal">320</span>
-<span class="normal">321</span>
-<span class="normal">322</span>
-<span class="normal">323</span>
-<span class="normal">324</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Functions related to the finetuning of models.&quot;&quot;&quot;</span>
+<span class="normal">320</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Functions related to the finetuning of models.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
@@ -1198,14 +1194,13 @@
 <span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">datasets</span><span class="w"> </span><span class="kn">import</span> <span class="n">DatasetDict</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">tqdm.auto</span><span class="w"> </span><span class="kn">import</span> <span class="n">tqdm</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">transformers.trainer_callback</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">EarlyStoppingCallback</span><span class="p">,</span>
-    <span class="n">IntervalStrategy</span><span class="p">,</span>
     <span class="n">PrinterCallback</span><span class="p">,</span>
     <span class="n">ProgressCallback</span><span class="p">,</span>
-    <span class="n">TrainingArguments</span><span class="p">,</span>
 <span class="p">)</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">transformers.trainer</span><span class="w"> </span><span class="kn">import</span> <span class="n">OptimizerNames</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">transformers.trainer_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">IntervalStrategy</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">transformers.training_args</span><span class="w"> </span><span class="kn">import</span> <span class="n">OptimizerNames</span><span class="p">,</span> <span class="n">TrainingArguments</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">.benchmark_modules</span><span class="w"> </span><span class="kn">import</span> <span class="n">BenchmarkModule</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.callbacks</span><span class="w"> </span><span class="kn">import</span> <span class="n">NeverLeaveProgressCallback</span>
@@ -1257,9 +1252,6 @@
         <span class="n">dtype</span> <span class="o">=</span> <span class="n">DataType</span><span class="o">.</span><span class="n">FP16</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="n">dtype</span> <span class="o">=</span> <span class="n">DataType</span><span class="o">.</span><span class="n">FP32</span>
-
-    <span class="c1"># TEMP</span>
-    <span class="n">dtype</span> <span class="o">=</span> <span class="n">DataType</span><span class="o">.</span><span class="n">FP32</span>
 
     <span class="n">bs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">benchmark_config</span><span class="o">.</span><span class="n">batch_size</span>
     <span class="n">scores</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]]</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
@@ -1403,7 +1395,7 @@
 
     <span class="k">if</span> <span class="ow">not</span> <span class="n">benchmark_config</span><span class="o">.</span><span class="n">verbose</span><span class="p">:</span>
 
-        <span class="k">def</span><span class="w"> </span><span class="nf">no_logging</span><span class="p">(</span><span class="n">logs</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">no_logging</span><span class="p">(</span><span class="n">logs</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">],</span> <span class="n">start_time</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">return</span>
 
         <span class="n">trainer</span><span class="o">.</span><span class="n">log</span> <span class="o">=</span> <span class="n">no_logging</span>
@@ -1483,7 +1475,7 @@
 
     <span class="n">training_args</span> <span class="o">=</span> <span class="n">TrainingArguments</span><span class="p">(</span>
         <span class="n">output_dir</span><span class="o">=</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_cache_dir</span><span class="p">,</span>
-        <span class="n">evaluation_strategy</span><span class="o">=</span><span class="n">IntervalStrategy</span><span class="o">.</span><span class="n">STEPS</span><span class="p">,</span>
+        <span class="n">eval_strategy</span><span class="o">=</span><span class="n">IntervalStrategy</span><span class="o">.</span><span class="n">STEPS</span><span class="p">,</span>
         <span class="n">logging_strategy</span><span class="o">=</span><span class="n">logging_strategy</span><span class="p">,</span>
         <span class="n">save_strategy</span><span class="o">=</span><span class="n">IntervalStrategy</span><span class="o">.</span><span class="n">STEPS</span><span class="p">,</span>
         <span class="n">eval_steps</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span>
@@ -1495,11 +1487,11 @@
         <span class="n">save_total_limit</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
         <span class="n">per_device_train_batch_size</span><span class="o">=</span><span class="n">batch_size</span><span class="p">,</span>
         <span class="n">per_device_eval_batch_size</span><span class="o">=</span><span class="n">batch_size</span><span class="p">,</span>
+        <span class="n">optim</span><span class="o">=</span><span class="n">OptimizerNames</span><span class="o">.</span><span class="n">ADAMW_TORCH</span><span class="p">,</span>
         <span class="n">learning_rate</span><span class="o">=</span><span class="mf">2e-5</span><span class="p">,</span>
         <span class="n">warmup_ratio</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span>
         <span class="n">gradient_accumulation_steps</span><span class="o">=</span><span class="mi">32</span> <span class="o">//</span> <span class="n">batch_size</span><span class="p">,</span>
         <span class="n">load_best_model_at_end</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-        <span class="n">optim</span><span class="o">=</span><span class="n">OptimizerNames</span><span class="o">.</span><span class="n">ADAMW_TORCH</span><span class="p">,</span>
         <span class="n">seed</span><span class="o">=</span><span class="mi">4242</span> <span class="o">+</span> <span class="n">iteration_idx</span><span class="p">,</span>
         <span class="n">fp16</span><span class="o">=</span><span class="n">dtype</span> <span class="o">==</span> <span class="n">DataType</span><span class="o">.</span><span class="n">FP16</span><span class="p">,</span>
         <span class="n">bf16</span><span class="o">=</span><span class="n">dtype</span> <span class="o">==</span> <span class="n">DataType</span><span class="o">.</span><span class="n">BF16</span><span class="p">,</span>

@@ -2220,9 +2220,25 @@
 <span class="normal">1256</span>
 <span class="normal">1257</span>
 <span class="normal">1258</span>
-<span class="normal">1259</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Generative models using the vLLM inference framework.&quot;&quot;&quot;</span>
+<span class="normal">1259</span>
+<span class="normal">1260</span>
+<span class="normal">1261</span>
+<span class="normal">1262</span>
+<span class="normal">1263</span>
+<span class="normal">1264</span>
+<span class="normal">1265</span>
+<span class="normal">1266</span>
+<span class="normal">1267</span>
+<span class="normal">1268</span>
+<span class="normal">1269</span>
+<span class="normal">1270</span>
+<span class="normal">1271</span>
+<span class="normal">1272</span>
+<span class="normal">1273</span>
+<span class="normal">1274</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Generative models using the vLLM inference framework.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">c</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">contextlib</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">importlib.util</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">itertools</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">it</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
@@ -2242,7 +2258,10 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">huggingface_hub</span><span class="w"> </span><span class="kn">import</span> <span class="n">snapshot_download</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">pydantic</span><span class="w"> </span><span class="kn">import</span> <span class="n">conlist</span><span class="p">,</span> <span class="n">create_model</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">tqdm.auto</span><span class="w"> </span><span class="kn">import</span> <span class="n">tqdm</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">AutoConfig</span><span class="p">,</span> <span class="n">AutoTokenizer</span><span class="p">,</span> <span class="n">PreTrainedTokenizer</span><span class="p">,</span> <span class="n">Trainer</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">transformers.models.auto.configuration_auto</span><span class="w"> </span><span class="kn">import</span> <span class="n">AutoConfig</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">transformers.models.auto.tokenization_auto</span><span class="w"> </span><span class="kn">import</span> <span class="n">AutoTokenizer</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">transformers.tokenization_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">PreTrainedTokenizer</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">transformers.trainer</span><span class="w"> </span><span class="kn">import</span> <span class="n">Trainer</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">urllib3.exceptions</span><span class="w"> </span><span class="kn">import</span> <span class="n">RequestError</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">..constants</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
@@ -2275,40 +2294,39 @@
     <span class="n">NeedsExtraInstalled</span><span class="p">,</span>
 <span class="p">)</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..languages</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_all_languages</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">..task_utils</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..task_group_utils</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">question_answering</span><span class="p">,</span>
     <span class="n">sequence_classification</span><span class="p">,</span>
     <span class="n">text_to_text</span><span class="p">,</span>
     <span class="n">token_classification</span><span class="p">,</span>
 <span class="p">)</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">..types</span><span class="w"> </span><span class="kn">import</span> <span class="n">ExtractLabelsFunction</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">..utils</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-    <span class="n">clear_memory</span><span class="p">,</span>
-    <span class="n">create_model_cache_dir</span><span class="p">,</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..tokenization_utils</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">get_bos_token</span><span class="p">,</span>
     <span class="n">get_end_of_chat_token_ids</span><span class="p">,</span>
     <span class="n">get_eos_token</span><span class="p">,</span>
     <span class="n">get_first_label_token_mapping</span><span class="p">,</span>
+    <span class="n">should_prompts_be_stripped</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..types</span><span class="w"> </span><span class="kn">import</span> <span class="n">ExtractLabelsFunction</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..utils</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">clear_memory</span><span class="p">,</span>
+    <span class="n">create_model_cache_dir</span><span class="p">,</span>
     <span class="n">get_min_cuda_compute_capability</span><span class="p">,</span>
     <span class="n">log_once</span><span class="p">,</span>
-    <span class="n">should_prompts_be_stripped</span><span class="p">,</span>
 <span class="p">)</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.hf</span><span class="w"> </span><span class="kn">import</span> <span class="n">HuggingFaceEncoderModel</span><span class="p">,</span> <span class="n">get_model_repo_info</span><span class="p">,</span> <span class="n">load_hf_model_config</span>
 
 <span class="k">if</span> <span class="n">t</span><span class="o">.</span><span class="n">TYPE_CHECKING</span> <span class="ow">or</span> <span class="n">importlib</span><span class="o">.</span><span class="n">util</span><span class="o">.</span><span class="n">find_spec</span><span class="p">(</span><span class="s2">&quot;vllm&quot;</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">vllm</span><span class="w"> </span><span class="kn">import</span> <span class="n">LLM</span><span class="p">,</span> <span class="n">RequestOutput</span><span class="p">,</span> <span class="n">SamplingParams</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">vllm.distributed.parallel_state</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+        <span class="n">destroy_distributed_environment</span><span class="p">,</span>
+        <span class="n">destroy_model_parallel</span><span class="p">,</span>
+    <span class="p">)</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">vllm.lora.request</span><span class="w"> </span><span class="kn">import</span> <span class="n">LoRARequest</span>
-
-    <span class="k">try</span><span class="p">:</span>
-        <span class="kn">from</span><span class="w"> </span><span class="nn">vllm.model_executor.parallel_utils.parallel_state</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-            <span class="n">destroy_model_parallel</span><span class="p">,</span>
-        <span class="p">)</span>
-    <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
-        <span class="kn">from</span><span class="w"> </span><span class="nn">vllm.distributed.parallel_state</span><span class="w"> </span><span class="kn">import</span> <span class="n">destroy_model_parallel</span>
 
 <span class="k">if</span> <span class="n">t</span><span class="o">.</span><span class="n">TYPE_CHECKING</span> <span class="ow">or</span> <span class="n">importlib</span><span class="o">.</span><span class="n">util</span><span class="o">.</span><span class="n">find_spec</span><span class="p">(</span><span class="s2">&quot;outlines&quot;</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">outlines.models.vllm</span><span class="w"> </span><span class="kn">import</span> <span class="n">adapt_tokenizer</span>
-    <span class="kn">from</span><span class="w"> </span><span class="nn">outlines.processors</span><span class="w"> </span><span class="kn">import</span> <span class="n">JSONLogitsProcessor</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">outlines.processors.structured</span><span class="w"> </span><span class="kn">import</span> <span class="n">JSONLogitsProcessor</span>
 
 <span class="k">if</span> <span class="n">t</span><span class="o">.</span><span class="n">TYPE_CHECKING</span> <span class="ow">or</span> <span class="n">importlib</span><span class="o">.</span><span class="n">util</span><span class="o">.</span><span class="n">find_spec</span><span class="p">(</span><span class="s2">&quot;ray&quot;</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
     <span class="kn">import</span><span class="w"> </span><span class="nn">ray</span>
@@ -2377,6 +2395,14 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">buffer</span><span class="p">[</span><span class="s2">&quot;lora_request&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">LoRARequest</span><span class="p">(</span>
                 <span class="n">lora_name</span><span class="o">=</span><span class="s2">&quot;adapter&quot;</span><span class="p">,</span> <span class="n">lora_int_id</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">lora_path</span><span class="o">=</span><span class="n">adapter_path</span>
             <span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__del__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Clean up the model and tokenizer.&quot;&quot;&quot;</span>
+        <span class="n">clear_vllm</span><span class="p">()</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;_model&quot;</span><span class="p">):</span>
+            <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">_model</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;_tokenizer&quot;</span><span class="p">):</span>
+            <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tokenizer</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">generative_type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">GenerativeType</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span><div class="mkapi-source-link" id="euroeval.benchmark_modules.vllm.VLLMModel.generative_type"><a href="../../../../api/euroeval/benchmark_modules/vllm/#euroeval.benchmark_modules.vllm.VLLMModel.generative_type" title="Go to docs">docs</a></div>
@@ -2552,7 +2578,7 @@
             <span class="n">pydantic_class</span> <span class="o">=</span> <span class="n">create_model</span><span class="p">(</span><span class="s2">&quot;AnswerFormat&quot;</span><span class="p">,</span> <span class="o">**</span><span class="n">keys_and_their_types</span><span class="p">)</span>
             <span class="n">logits_processor</span> <span class="o">=</span> <span class="n">JSONLogitsProcessor</span><span class="p">(</span>
                 <span class="n">schema</span><span class="o">=</span><span class="n">pydantic_class</span><span class="p">,</span>
-                <span class="n">tokenizer</span><span class="o">=</span><span class="n">adapt_tokenizer</span><span class="p">(</span><span class="n">tokenizer</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_tokenizer</span><span class="p">),</span>  <span class="c1">#  type: ignore</span>
+                <span class="n">tokenizer</span><span class="o">=</span><span class="n">adapt_tokenizer</span><span class="p">(</span><span class="n">tokenizer</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_tokenizer</span><span class="p">),</span>  <span class="c1"># type: ignore</span>
                 <span class="n">whitespace_pattern</span><span class="o">=</span><span class="sa">r</span><span class="s2">&quot; ?&quot;</span><span class="p">,</span>
             <span class="p">)</span>
             <span class="n">log_once</span><span class="p">(</span>
@@ -3204,19 +3230,19 @@
 
     <span class="n">clear_vllm</span><span class="p">()</span>
 
-    <span class="n">executor_backend</span> <span class="o">=</span> <span class="s2">&quot;ray&quot;</span> <span class="k">if</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">device_count</span><span class="p">()</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="k">else</span> <span class="s2">&quot;mp&quot;</span>
-
     <span class="k">try</span><span class="p">:</span>
         <span class="n">model</span> <span class="o">=</span> <span class="n">LLM</span><span class="p">(</span>
             <span class="n">model</span><span class="o">=</span><span class="n">model_id</span><span class="p">,</span>
             <span class="n">tokenizer</span><span class="o">=</span><span class="n">model_id</span><span class="p">,</span>
-            <span class="n">gpu_memory_utilization</span><span class="o">=</span><span class="mf">0.95</span><span class="p">,</span>
+            <span class="n">gpu_memory_utilization</span><span class="o">=</span><span class="mf">0.9</span><span class="p">,</span>
             <span class="n">max_model_len</span><span class="o">=</span><span class="nb">min</span><span class="p">(</span><span class="n">true_max_model_len</span><span class="p">,</span> <span class="n">MAX_CONTEXT_LENGTH</span><span class="p">),</span>
             <span class="n">download_dir</span><span class="o">=</span><span class="n">download_dir</span><span class="p">,</span>
             <span class="n">trust_remote_code</span><span class="o">=</span><span class="n">benchmark_config</span><span class="o">.</span><span class="n">trust_remote_code</span><span class="p">,</span>
             <span class="n">revision</span><span class="o">=</span><span class="n">revision</span><span class="p">,</span>
             <span class="n">seed</span><span class="o">=</span><span class="mi">4242</span><span class="p">,</span>
-            <span class="n">distributed_executor_backend</span><span class="o">=</span><span class="n">executor_backend</span><span class="p">,</span>
+            <span class="n">distributed_executor_backend</span><span class="o">=</span><span class="p">(</span>
+                <span class="s2">&quot;ray&quot;</span> <span class="k">if</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">device_count</span><span class="p">()</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="k">else</span> <span class="s2">&quot;mp&quot;</span>
+            <span class="p">),</span>
             <span class="n">tensor_parallel_size</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">device_count</span><span class="p">(),</span>
             <span class="n">disable_custom_all_reduce</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
             <span class="n">quantization</span><span class="o">=</span><span class="n">quantization</span><span class="p">,</span>
@@ -3367,13 +3393,16 @@
 
 <span class="k">def</span><span class="w"> </span><span class="nf">clear_vllm</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span><div class="mkapi-source-link" id="euroeval.benchmark_modules.vllm.clear_vllm"><a href="../../../../api/euroeval/benchmark_modules/vllm/#euroeval.benchmark_modules.vllm.clear_vllm" title="Go to docs">docs</a></div>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Clear the GPU memory used by the vLLM model, enabling re-initialisation.&quot;&quot;&quot;</span>
-    <span class="k">try</span><span class="p">:</span>
+    <span class="k">with</span> <span class="n">contextlib</span><span class="o">.</span><span class="n">suppress</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">):</span>
         <span class="n">destroy_model_parallel</span><span class="p">()</span>
-    <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
-        <span class="k">pass</span>
-    <span class="n">clear_memory</span><span class="p">()</span>
+        <span class="n">destroy_distributed_environment</span><span class="p">()</span>
     <span class="k">if</span> <span class="n">ray</span><span class="o">.</span><span class="n">is_initialized</span><span class="p">():</span>
         <span class="n">ray</span><span class="o">.</span><span class="n">shutdown</span><span class="p">()</span>
+    <span class="k">with</span> <span class="n">contextlib</span><span class="o">.</span><span class="n">suppress</span><span class="p">(</span><span class="ne">AssertionError</span><span class="p">):</span>
+        <span class="n">torch</span><span class="o">.</span><span class="n">distributed</span><span class="o">.</span><span class="n">destroy_process_group</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">ray</span><span class="o">.</span><span class="n">is_initialized</span><span class="p">():</span>
+        <span class="n">ray</span><span class="o">.</span><span class="n">shutdown</span><span class="p">()</span>
+    <span class="n">clear_memory</span><span class="p">()</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">get_end_of_reasoning_token_id</span><span class="p">(</span><div class="mkapi-source-link" id="euroeval.benchmark_modules.vllm.get_end_of_reasoning_token_id"><a href="../../../../api/euroeval/benchmark_modules/vllm/#euroeval.benchmark_modules.vllm.get_end_of_reasoning_token_id" title="Go to docs">docs</a></div>
@@ -3397,12 +3426,13 @@
     <span class="k">if</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">chat_template</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">prompt</span> <span class="o">=</span> <span class="s2">&quot;What is your name?&quot;</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="n">prompt</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">apply_chat_template</span><span class="p">(</span>
+        <span class="n">templated_prompt</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">apply_chat_template</span><span class="p">(</span>
             <span class="n">conversation</span><span class="o">=</span><span class="p">[</span><span class="nb">dict</span><span class="p">(</span><span class="n">role</span><span class="o">=</span><span class="s2">&quot;user&quot;</span><span class="p">,</span> <span class="n">content</span><span class="o">=</span><span class="s2">&quot;What is your name?&quot;</span><span class="p">)],</span>
             <span class="n">add_generation_prompt</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
             <span class="n">tokenize</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
         <span class="p">)</span>
-    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">prompt</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">templated_prompt</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span>
+        <span class="n">prompt</span> <span class="o">=</span> <span class="n">templated_prompt</span>
 
     <span class="c1"># Generate a completion and remove the BOS token from it, to not confuse it with the</span>
     <span class="c1"># potential reasoning token</span>

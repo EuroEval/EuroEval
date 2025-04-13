@@ -959,8 +959,8 @@
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">torch.utils.data</span><span class="w"> </span><span class="kn">import</span> <span class="n">DataLoader</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">tqdm.auto</span><span class="w"> </span><span class="kn">import</span> <span class="n">tqdm</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">TrainerControl</span><span class="p">,</span> <span class="n">TrainerState</span><span class="p">,</span> <span class="n">TrainingArguments</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">transformers.trainer_callback</span><span class="w"> </span><span class="kn">import</span> <span class="n">ProgressCallback</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">transformers.trainer_callback</span><span class="w"> </span><span class="kn">import</span> <span class="n">ProgressCallback</span><span class="p">,</span> <span class="n">TrainerControl</span><span class="p">,</span> <span class="n">TrainerState</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">transformers.training_args</span><span class="w"> </span><span class="kn">import</span> <span class="n">TrainingArguments</span>
 
 
 <span class="k">class</span><span class="w"> </span><span class="nc">NeverLeaveProgressCallback</span><span class="p">(</span><span class="n">ProgressCallback</span><span class="p">):</span><div class="mkapi-source-link" id="euroeval.callbacks.NeverLeaveProgressCallback"><a href="../../../api/euroeval/callbacks/#euroeval.callbacks.NeverLeaveProgressCallback" title="Go to docs">docs</a></div>
