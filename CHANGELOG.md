@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Added more info about SQuAD-nl in the documentation. This was contributed by
   [@Rijgersberg](https://github.com/Rijgersberg) ✨
 
+### Fixed
+- The "E" option for the NorCommonSenseQA dataset was not included in the refactor in
+  v15.6.0, leading to evaluation errors. This has been fixed now.
+
 
 ## [v15.6.0] - 2025-04-13
 ### Added
