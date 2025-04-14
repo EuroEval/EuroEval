@@ -14,6 +14,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Fixed
 - Increased the maximal context length from the previous 5,000 to 6,000, as some of the
   datasets have prompts in the 5,000's
+- The "E" option for the NorCommonSenseQA dataset was not included in the refactor in
+  v15.6.0, leading to evaluation errors. This has been fixed now.
 
 
 ## [v15.6.0] - 2025-04-13

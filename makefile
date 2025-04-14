@@ -81,21 +81,8 @@ test:  ## Run tests
 tree:  ## Print directory tree
 	@tree -a --gitignore -I .git .
 
-lint:  ## Lint the project
-	uv run ruff check . --fix --unsafe-fixes
-
-format:  ## Format the project
-	uv run ruff format .
-
-type-check:  ## Type-check the project
-	@uv run mypy . \
-		--install-types \
-		--non-interactive \
-		--ignore-missing-imports \
-		--show-error-codes \
-		--check-untyped-defs
-
-check: lint format type-check  ## Lint, format, and type-check the code
+check:  ## Lint, format, and type-check the code
+	@uv run pre-commit run --all-files
 
 bump-major:
 	@uv run python -m src.scripts.versioning --major
