@@ -310,12 +310,14 @@ Here are a few examples from the training split:
 This dataset is published
 [here](https://huggingface.co/datasets/GroNLP/squad-nl-v2.0) and is a machine translated
 dataset of the English [SQuAD](https://aclanthology.org/D16-1264/) and
-[XQuAD](https://aclanthology.org/2020.acl-main.421/) datasets. Google Translate was used
-to translate the original datasets to Dutch.
+[XQuAD](https://aclanthology.org/2020.acl-main.421/) datasets, created for the 
+Dutch-language [DUMB](https://dumbench.nl/) benchmark. Google Translate was used to 
+translate the original datasets to Dutch. The test data 
+[was manually corrected](https://aclanthology.org/2023.emnlp-main.447/) by eight BSc 
+students as part of their thesis work. 
 
-These are based on English Wikipedia articles and the questions and answers are written
-by crowdworkers. It is not clear how the translations were done, this information is
-pending from the authors.
+The original SQuAD and XQuAD datasets are based on English Wikipedia articles and the 
+questions and answers are written by crowdworkers.
 
 Here are a few examples from the training split:
 
