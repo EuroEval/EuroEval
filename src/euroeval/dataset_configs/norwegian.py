@@ -83,6 +83,7 @@ NOR_COMMON_SENSE_QA_CONFIG = DatasetConfig(
     huggingface_id="EuroEval/nor-common-sense-qa",
     task=COMMON_SENSE,
     languages=[NB, NN, NO],
+    _labels=["a", "b", "c", "d", "e"],
 )
 
 

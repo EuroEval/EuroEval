@@ -388,8 +388,10 @@ class DatasetConfig:
             language.
         _prompt_label_mapping (optional):
             A mapping from the labels to another phrase which is used as a substitute
-            for the label in few-shot evaluation. Defaults to the template for the task
-            and language.
+            for the label in few-shot evaluation. If "auto" then the mapping will be set
+            to a 1:1 mapping between the labels and themselves. If None then the mapping
+            will be set to the default mapping for the task and language. Defaults to
+            None.
         unofficial (optional):
             Whether the dataset is unofficial. Defaults to False.
     """
@@ -405,7 +407,7 @@ class DatasetConfig:
     _num_few_shot_examples: int | None = None
     _max_generated_tokens: int | None = None
     _labels: list[str] | None = None
-    _prompt_label_mapping: dict[str, str] | None = None
+    _prompt_label_mapping: dict[str, str] | t.Literal["auto"] | None = None
     unofficial: bool = False
 
     @property
@@ -475,7 +477,9 @@ class DatasetConfig:
     @property
     def prompt_label_mapping(self) -> dict[str, str]:
         """Mapping from English labels to localised labels."""
-        if self._prompt_label_mapping is not None:
+        if self._prompt_label_mapping == "auto":
+            return {label: label for label in self.labels}
+        elif self._prompt_label_mapping is not None:
             return self._prompt_label_mapping
 
         main_language = self.languages[0]
