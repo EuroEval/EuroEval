@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Added more info about SQuAD-nl in the documentation. This was contributed by
   [@Rijgersberg](https://github.com/Rijgersberg) ✨
 
+### Fixed
+- Increased the maximal context length from the previous 5,000 to 6,000, as some of the
+  datasets have prompts in the 5,000's
+
 
 ## [v15.6.0] - 2025-04-13
 ### Added
