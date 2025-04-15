@@ -4,7 +4,7 @@ import logging
 
 import pyinfer
 from tqdm.auto import tqdm
-from transformers import AutoTokenizer
+from transformers.models.auto.tokenization_auto import AutoTokenizer
 
 from .benchmark_modules import (
     BenchmarkModule,

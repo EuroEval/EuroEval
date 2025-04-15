@@ -1,6 +1,7 @@
 """Generative models using the vLLM inference framework."""
 
 import collections.abc as c
+import contextlib
 import importlib.util
 import itertools as it
 import json
@@ -20,15 +21,18 @@ from datasets import DatasetDict
 from huggingface_hub import snapshot_download
 from pydantic import conlist, create_model
 from tqdm.auto import tqdm
-from transformers import AutoConfig, AutoTokenizer, PreTrainedTokenizer, Trainer
+from transformers.models.auto.configuration_auto import AutoConfig
+from transformers.models.auto.tokenization_auto import AutoTokenizer
+from transformers.tokenization_utils import PreTrainedTokenizer
+from transformers.trainer import Trainer
 from urllib3.exceptions import RequestError
 
 from ..constants import (
     GENERATIVE_PIPELINE_TAGS,
+    MAX_CONTEXT_LENGTH,
     MAX_LOGPROBS,
     MERGE_TAGS,
     REASONING_MAX_TOKENS,
-    TASK_GROUPS_USING_LOGPROBS,
     TASKS_USING_JSON,
     VLLM_BF16_MIN_CUDA_COMPUTE_CAPABILITY,
 )
@@ -53,39 +57,39 @@ from ..exceptions import (
     NeedsExtraInstalled,
 )
 from ..languages import get_all_languages
-from ..task_utils import (
+from ..task_group_utils import (
     question_answering,
     sequence_classification,
     text_to_text,
     token_classification,
 )
+from ..tokenization_utils import (
+    get_bos_token,
+    get_end_of_chat_token_ids,
+    get_eos_token,
+    get_first_label_token_mapping,
+    should_prompts_be_stripped,
+)
 from ..types import ExtractLabelsFunction
 from ..utils import (
     clear_memory,
     create_model_cache_dir,
-    get_bos_token,
-    get_end_of_chat_token_ids,
-    get_eos_token,
     get_min_cuda_compute_capability,
     log_once,
-    should_prompts_be_stripped,
 )
 from .hf import HuggingFaceEncoderModel, get_model_repo_info, load_hf_model_config
 
 if t.TYPE_CHECKING or importlib.util.find_spec("vllm") is not None:
     from vllm import LLM, RequestOutput, SamplingParams
+    from vllm.distributed.parallel_state import (
+        destroy_distributed_environment,
+        destroy_model_parallel,
+    )
     from vllm.lora.request import LoRARequest
-
-    try:
-        from vllm.model_executor.parallel_utils.parallel_state import (
-            destroy_model_parallel,
-        )
-    except ImportError:
-        from vllm.distributed.parallel_state import destroy_model_parallel
 
 if t.TYPE_CHECKING or importlib.util.find_spec("outlines") is not None:
     from outlines.models.vllm import adapt_tokenizer
-    from outlines.processors import JSONLogitsProcessor
+    from outlines.processors.structured import JSONLogitsProcessor
 
 if t.TYPE_CHECKING or importlib.util.find_spec("ray") is not None:
     import ray
@@ -122,11 +126,8 @@ class VLLMModel(HuggingFaceEncoderModel):
         ):
             raise NeedsExtraInstalled(extra="generative")
 
-        output_scores = dataset_config.task.task_group in TASK_GROUPS_USING_LOGPROBS
         model, tokenizer = load_model_and_tokenizer(
-            model_config=model_config,
-            benchmark_config=benchmark_config,
-            output_scores=output_scores,
+            model_config=model_config, benchmark_config=benchmark_config
         )
         self._model: LLM = model
         self._tokenizer: PreTrainedTokenizer = tokenizer
@@ -142,8 +143,12 @@ class VLLMModel(HuggingFaceEncoderModel):
             benchmark_config=benchmark_config,
         )
 
-        self.buffer["output_scores"] = output_scores
-        self.buffer["instruction_model"] = self._tokenizer.chat_template is not None
+        self.buffer |= dict(
+            instruction_model=self._tokenizer.chat_template is not None,
+            first_label_token_mapping=get_first_label_token_mapping(
+                dataset_config=self.dataset_config, tokenizer=self._tokenizer
+            ),
+        )
         if self.model_config.adapter_base_model_id is not None:
             adapter_path = snapshot_download(
                 repo_id=self.model_config.model_id,
@@ -153,6 +158,14 @@ class VLLMModel(HuggingFaceEncoderModel):
             self.buffer["lora_request"] = LoRARequest(
                 lora_name="adapter", lora_int_id=1, lora_path=adapter_path
             )
+
+    def __del__(self) -> None:
+        """Clean up the model and tokenizer."""
+        clear_vllm()
+        if hasattr(self, "_model"):
+            del self._model
+        if hasattr(self, "_tokenizer"):
+            del self._tokenizer
 
     @property
     def generative_type(self) -> GenerativeType | None:
@@ -185,6 +198,7 @@ class VLLMModel(HuggingFaceEncoderModel):
                 return partial(
                     sequence_classification.extract_labels_from_generation,
                     dataset_config=self.dataset_config,
+                    first_label_token_mapping=self.buffer["first_label_token_mapping"],
                 )
             case TaskGroup.TEXT_TO_TEXT:
                 return text_to_text.extract_labels_from_generation
@@ -327,7 +341,7 @@ class VLLMModel(HuggingFaceEncoderModel):
             pydantic_class = create_model("AnswerFormat", **keys_and_their_types)
             logits_processor = JSONLogitsProcessor(
                 schema=pydantic_class,
-                tokenizer=adapt_tokenizer(tokenizer=self._tokenizer),  #  type: ignore
+                tokenizer=adapt_tokenizer(tokenizer=self._tokenizer),  # type: ignore
                 whitespace_pattern=r" ?",
             )
             log_once(
@@ -338,6 +352,12 @@ class VLLMModel(HuggingFaceEncoderModel):
         else:
             logits_processor = None
 
+        # Get the mapping from labels to the first token in the label. We call this each
+        # time we generate a new dataset since the dataset config can change
+        self.buffer["first_label_token_mapping"] = get_first_label_token_mapping(
+            dataset_config=self.dataset_config, tokenizer=self._tokenizer
+        )
+
         # Define the parameters used for vLLM generation
         max_tokens: int = (
             REASONING_MAX_TOKENS
@@ -346,7 +366,7 @@ class VLLMModel(HuggingFaceEncoderModel):
         )
         sampling_params = SamplingParams(
             max_tokens=max_tokens,
-            logprobs=MAX_LOGPROBS if self.buffer["output_scores"] else None,
+            logprobs=MAX_LOGPROBS if self.buffer["first_label_token_mapping"] else None,
             temperature=0.0,
             stop=[stop_token for stop_token in stop_tokens if stop_token],
             logits_processors=[logits_processor] if logits_processor else None,
@@ -416,7 +436,7 @@ class VLLMModel(HuggingFaceEncoderModel):
         completions = [completion.strip() for completion in completions]
 
         # Add logprobs scores to the output
-        if self.buffer["output_scores"]:
+        if self.buffer["first_label_token_mapping"]:
             scores: list[list[list[tuple[str, float]]]] = [
                 [
                     [
@@ -846,7 +866,7 @@ class VLLMModel(HuggingFaceEncoderModel):
 
 
 def load_model_and_tokenizer(
-    model_config: ModelConfig, benchmark_config: BenchmarkConfig, output_scores: bool
+    model_config: ModelConfig, benchmark_config: BenchmarkConfig
 ) -> "tuple[LLM, PreTrainedTokenizer]":
     """Load the model and tokenizer.
 
@@ -855,11 +875,9 @@ def load_model_and_tokenizer(
             The model configuration.
         benchmark_config:
             The benchmark configuration.
-        output_scores:
-            Whether to output scores.
 
     Returns:
-        The loaded model and tokenizer.
+        A pair (model, tokenizer), with the loaded model and tokenizer
     """
     # Prefer base model ID if the model is an adapter - the adapter will be added on
     # during inference in this case
@@ -893,7 +911,27 @@ def load_model_and_tokenizer(
     if quantization == "awq" and importlib.util.find_spec("awq") is None:
         raise NeedsExtraInstalled(extra="quantization")
 
+    # Start with dtype being the "auto" vLLM dtype
     dtype: str | torch.dtype = "auto"
+
+    # Choose bf16 over fp16 if the model is a fp32 model and the GPU supports it
+    if hf_model_config.torch_dtype == torch.float32:
+        if torch.cuda.is_bf16_supported():
+            logger.info(
+                "You are loading a model with dtype FP32, which we will convert to "
+                "BF16 as FP32 is not supported by vLLM and BF16 is supported by your "
+                "GPU."
+            )
+            dtype = torch.bfloat16
+        else:
+            logger.info(
+                "You are loading a model with dtype FP32, which we will convert to "
+                "FP16 as FP32 is not supported by vLLM and BF16 is not supported by "
+                "your GPU."
+            )
+            dtype = torch.float16
+
+    # If the model is a quantized model, we need to set the dtype to float16
     if quantization is not None and hf_model_config.torch_dtype != torch.float16:
         logger.info(
             "You are loading a quantized model with dtype "
@@ -902,6 +940,7 @@ def load_model_and_tokenizer(
         )
         dtype = torch.float16
 
+    # If the model is a bf16 model, we need to check the CUDA compute capability
     if hf_model_config.torch_dtype == torch.bfloat16:
         min_cuda_compute_capability = get_min_cuda_compute_capability()
         required_capability = VLLM_BF16_MIN_CUDA_COMPUTE_CAPABILITY
@@ -940,29 +979,38 @@ def load_model_and_tokenizer(
     if len(true_max_model_len_candidates) > 0:
         true_max_model_len = min(true_max_model_len_candidates)
     else:
-        true_max_model_len = 5_000
+        true_max_model_len = MAX_CONTEXT_LENGTH
+
+    tokenizer = load_tokenizer(
+        model_id=model_config.model_id,
+        revision=model_config.revision,
+        adapter_base_model_id=model_config.adapter_base_model_id,
+        trust_remote_code=benchmark_config.trust_remote_code,
+        model_max_length=true_max_model_len,
+        model_cache_dir=model_config.model_cache_dir,
+        token=benchmark_config.api_key or os.getenv("HUGGINGFACE_API_KEY") or True,
+    )
 
     clear_vllm()
-
-    executor_backend = "ray" if torch.cuda.device_count() > 1 else "mp"
 
     try:
         model = LLM(
             model=model_id,
             tokenizer=model_id,
-            gpu_memory_utilization=0.95,
-            max_model_len=min(true_max_model_len, 5_000),
+            gpu_memory_utilization=0.9,
+            max_model_len=min(true_max_model_len, MAX_CONTEXT_LENGTH),
             download_dir=download_dir,
             trust_remote_code=benchmark_config.trust_remote_code,
             revision=revision,
             seed=4242,
-            distributed_executor_backend=executor_backend,
+            distributed_executor_backend=(
+                "ray" if torch.cuda.device_count() > 1 else "mp"
+            ),
             tensor_parallel_size=torch.cuda.device_count(),
             disable_custom_all_reduce=True,
             quantization=quantization,
             dtype=dtype,
             enforce_eager=True,
-            max_logprobs=MAX_LOGPROBS if output_scores else None,
             # TEMP: Prefix caching isn't supported with sliding window in vLLM yet,
             # so we disable it for now
             enable_prefix_caching=False,
@@ -987,16 +1035,6 @@ def load_model_and_tokenizer(
 
     model._run_engine = MethodType(_run_engine_with_fixed_progress_bars, model)
     model.config = hf_model_config
-
-    tokenizer = load_tokenizer(
-        model_id=model_config.model_id,
-        revision=model_config.revision,
-        adapter_base_model_id=model_config.adapter_base_model_id,
-        trust_remote_code=benchmark_config.trust_remote_code,
-        model_max_length=true_max_model_len,
-        model_cache_dir=model_config.model_cache_dir,
-        token=benchmark_config.api_key or os.getenv("HUGGINGFACE_API_KEY") or True,
-    )
 
     return model, tokenizer
 
@@ -1118,13 +1156,16 @@ def _run_engine_with_fixed_progress_bars(
 
 def clear_vllm() -> None:
     """Clear the GPU memory used by the vLLM model, enabling re-initialisation."""
-    try:
+    with contextlib.suppress(ValueError):
         destroy_model_parallel()
-    except ImportError:
-        pass
-    clear_memory()
+        destroy_distributed_environment()
     if ray.is_initialized():
         ray.shutdown()
+    with contextlib.suppress(AssertionError):
+        torch.distributed.destroy_process_group()
+    if ray.is_initialized():
+        ray.shutdown()
+    clear_memory()
 
 
 def get_end_of_reasoning_token_id(
@@ -1148,24 +1189,23 @@ def get_end_of_reasoning_token_id(
     if tokenizer.chat_template is None:
         prompt = "What is your name?"
     else:
-        prompt = tokenizer.apply_chat_template(
+        templated_prompt = tokenizer.apply_chat_template(
             conversation=[dict(role="user", content="What is your name?")],
             add_generation_prompt=True,
             tokenize=False,
         )
-    assert isinstance(prompt, str)
+        assert isinstance(templated_prompt, str)
+        prompt = templated_prompt
 
     # Generate a completion and remove the BOS token from it, to not confuse it with the
     # potential reasoning token
-    completion = (
-        model.generate(
-            prompts=[prompt],
-            sampling_params=SamplingParams(max_tokens=3, temperature=0.0),
-            use_tqdm=False,
-        )[0]
-        .outputs[0]
-        .text
+    model_output = model.generate(
+        prompts=[prompt],
+        sampling_params=SamplingParams(max_tokens=3, temperature=0.0),
+        use_tqdm=False,
     )
+    completion = model_output[0].outputs[0].text
+
     if tokenizer.bos_token is not None:
         if isinstance(tokenizer.bos_token, str):
             prompt = prompt.replace(tokenizer.bos_token, "").strip()

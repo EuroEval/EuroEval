@@ -7,12 +7,111 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 
 ## [Unreleased]
+
+
+
+## [v15.6.1] - 2025-04-14
+### Changed
+- Added more info about SQuAD-nl in the documentation. This was contributed by
+  [@Rijgersberg](https://github.com/Rijgersberg) ✨
+
+### Fixed
+- The "E" option for the Norwegian NorCommonSenseQA dataset was not included in the
+  refactor in v15.6.0, leading to evaluation errors. This has been fixed now.
+- The number of few-shot examples for FoSent was not reduced to 5 again during the
+  refactor in v15.6.0, leading to evaluation errors. This has been fixed now.
+
+
+## [v15.6.0] - 2025-04-13
+### Added
+- We now support specifying custom inference providers when benchmarking via the Hugging
+  Face inference APIs. This can be done by specifying the model as
+  `huggingface/<inference-provider>/<organisation>/<model>`, as described in [these
+  LiteLLM docs](https://docs.litellm.ai/docs/providers/huggingface).
+
+### Changed
+- Updated `transformers` to `>=4.51.0`, which includes support for Llama-4, Phi-4,
+  Deepseek-v3 and Qwen3. This also includes the `image-text-to-text` pipeline tag
+  properly, so that we do not have to use a custom fix for it anymore.
+- Updated `vllm` to `>=0.8.3`, which includes support for Llama-4.
+- Set the maximum amount of logprobs for generative models to 8, as that is the upper
+  bound for xAI models.
+- When benchmarking Ollama models, if the model is not found, we now also check if the
+  model exists if prefixed with 'hf.co/'.
+- Uniformised the prompt templates used for each task, so that they are more
+  consistent across tasks. Evaluation tests across different model types and sizes show
+  no significant performance difference between the new and old templates. This was
+  contributed by [@viggo-gascou](https://github.com/viggo-gascou) ✨
+
+### Fixed
+- Avoid duplicate error messages when a rate limit occurs.
+- ModernBERT models cannot be used on a CPU, which caused an error in our check for
+  maximal context length. In this case we simply skip this check and use the reported
+  maximal context length as-is.
+- Fixed issue with benchmarking multiple generative models in the same evaluation
+  command. This was caused by vLLM and Ray not being able to release GPU memory
+  properly, but this seems to be released properly now.
+- Now only logs when encoder models are being benchmarked on generative tasks if the
+  `--verbose` flag is set (or `verbose=True` in the `Benchmarker` API).
+- All Spanish NER datasets were mistakenly marked as unofficial. The `conll-es` is now
+  marked as official.
+
+
+## [v15.5.0] - 2025-04-07
+### Added
+- Now allows supplying a parameter to API models, which is done by using
+  `<model-id>@<parameter>` as the model ID (only a single parameter is supported). The
+  parameters allowed are "low" and "high" for OpenAI models (which is the reasoning
+  effort of the model, supported by the o1- and o3-series, default is "medium"), and
+  "thinking" for Anthropic models, to enable thinking mode (supported for
+  Claude-Sonnet-3.7+). These will appear in the leaderboards as
+  `<model-id>@<parameter>`.
+- Added metadata for Google Gemini and xAI Grok models.
+- Allows all vLLM versions from v0.8.0 again, as the issue with the generation output
+  has been resolved.
+- Added overall progress indicator during evaluation. This was contributed by
+  [@mathiasesn](https://github.com/mathiasesn) ✨
+
+### Changed
+- Now does not use logprobs in text classification tasks with Google VertexAI models, as
+  they heavily rate limit logprobs usage. This shouldn't affect the scores significantly
+  in any case, as the models are very confident in their predictions.
+- Updated `litellm` to `>=1.63.0`, allowing better support for reasoning models.
+
+### Fixed
+- The Gemini-2.5-pro model uses different error messages than the other Gemini models,
+  which caused an error when evaluating it. This has been fixed now.
+- Now registers the Gemini-2.5-pro model series as reasoning models, as otherwise they
+  did not generate any text as they were just generating reasoning tokens.
+- Previously, if there were multiple labels whose first tokens were identical and that
+  the (generative) model did not output the label as the first output token, we would
+  randomly choose one of the labels, resulting in an evaluation error. This is very
+  rare, but *does* happen for very particular (model, dataset) pairs. If we are in this
+  case, we now resort to choosing the label with closest word edit distance instead of
+  relying on logprobs of the first token.
+- Now defaults to BF16 if the model is registered as using FP32, assuming that BF16 is
+  supported by the GPU.
+- Improved model existence pipeline for Ollama model IDs with multiple forward slashes
+  in the name, which caused some models to not be detected as existing.
+
+
+## [v15.4.2] - 2025-03-31
+### Added
+- Now added version metadata to results, to easier track which versions of the various
+  dependencies were used when evaluating a model. This currently includes
+  `transformers`, `torch`, `vllm` and `outlines`.
+
 ### Changed
 - Changed the name of the German 'mlsum' summarisation dataset to 'mlsum-de', to reflect
   that it is the German version of the dataset, and to avoid confusion with the Spanish
   'mlsum-es' dataset.
 
 ### Fixed
+- Now uses `fp16` instead of `bf16` when evaluating decoder models on GPUs with CUDA
+  compatibility < 8.0. This was contributed by
+  [@marksverdhei](https://github.com/marksverdhei) ✨
+- Corrected the name of the French sentiment dataset AlloCiné. This was contributed by
+  [@Alkarex](https://github.com/Alkarex) ✨
 - Evaluating a specific model revision did not work for adapter models, as there was a
   confusion between the revision of the adapter and the revision of the base model. We
   now use the revision for the adapter and use the latest revision for the base model.
@@ -26,8 +125,21 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   not be detected as generative models. This has been patched now, and will be fixed
   properly when [this transformers
   PR](https://github.com/huggingface/transformers/pull/37107) has been merged.
+- Force `vllm` v0.8.0 for now, as the severe degradation in generation output of some
+  models has not been resolved in versions v0.8.2 and v0.8.3.
+- Only accepts the local labels for text classification tasks when evaluating decoder
+  models now, where we before accepted both the local and English labels. The reason is
+  that this caused a confusion mat times when there was a unique local label starting
+  with a particular letter, but a different English label starting with the same letter,
+  causing some models to be evaluated on the wrong label.
+- When fetching the model information from the Hugging Face API we now attempt 3 times,
+  as the API sometimes fails. If it still fails after 3 attempts, we raise the
+  `HuggingFaceHubDown` exception.
 - Now uses `fp16` instead of `bf16` when evaluating decoder models on GPUs with CUDA
-  compatibility < 8.0. This was contributed by [@marksverdhei](https://github.com/marksverdhei) ✨
+  compatibility < 8.0. This was contributed by
+  [@marksverdhei](https://github.com/marksverdhei) ✨
+- Fixed docs for ScandiQA-da and ScandiQA-sv, where it was incorrectly stated that
+  the splits were made by considering the original train/validation/test splits.
 
 
 ## [v15.4.1] - 2025-03-25
@@ -93,18 +205,17 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## [v15.3.0] - 2025-03-12
 ### Added
 - Added support for evaluating Italian 🇮🇹! This includes the reading comprehension
-  dataset [SQuAD-it](https://hf.co/datasets/crux82/squad_it), the summarization
-  dataset [IlPost](https://hf.co/datasets/ARTeLab/ilpost), the sentiment
-  classification
-  [Sentipolc-16](https://hf.co/datasets/cardiffnlp/tweet_sentiment_multilingual),
-  the common-sense reasoning dataset
-  [HellaSwag-it](https://hf.co/datasets/alexandrainst/m_hellaswag), the linguistic acceptability
-  dataset ScaLA with the [Italian Universal Dependencies
+  dataset [SQuAD-it](https://hf.co/datasets/crux82/squad_it), the summarization dataset
+  [IlPost](https://hf.co/datasets/ARTeLab/ilpost), the sentiment classification
+  [Sentipolc-16](https://hf.co/datasets/cardiffnlp/tweet_sentiment_multilingual), the
+  common-sense reasoning dataset
+  [HellaSwag-it](https://hf.co/datasets/alexandrainst/m_hellaswag), the linguistic
+  acceptability dataset ScaLA with the [Italian Universal Dependencies
   treebank](https://github.com/UniversalDependencies/UD_Italian-ISDT), the knowledge
   dataset [MMLU-it](https://hf.co/datasets/alexandrainst/m_mmlu), and the named entity
-  recognition dataset [MultiNERD
-  IT](https://hf.co/datasets/Babelscape/multinerd) (and unofficially
-  [WikiNEuRal IT](https://hf.co/datasets/Babelscape/wikineural)). This was contributed by [@viggo-gascou](https://github.com/viggo-gascou) ✨
+  recognition dataset [MultiNERD IT](https://hf.co/datasets/Babelscape/multinerd) (and
+  unofficially [WikiNEuRal IT](https://hf.co/datasets/Babelscape/wikineural)). This was
+  contributed by [@viggo-gascou](https://github.com/viggo-gascou) ✨
 - Added the new Norwegian knowledge dataset NRK-Quiz-QA, consisting of quizzes on the
   Norwegian language and culture, in both Bokmål and Nynorsk. The dataset has been split
   into 635 / 256 / 2,048 samples for train, val, and test, respectively. This replaces
@@ -231,7 +342,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 - Added support for French! 🇫🇷This includes the sentiment classification dataset
-  [Allocine](https://hf.co/datasets/tblard/allocine), the linguistic acceptability
+  [AlloCiné](https://hf.co/datasets/tblard/allocine), the linguistic acceptability
   dataset ScaLA with the [French Universal
   Dependencies](https://github.com/UniversalDependencies/UD_French-GSD), the reading
   comprehension dataset [FQuAD](https://hf.co/datasets/illuin/fquad) (and unofficially

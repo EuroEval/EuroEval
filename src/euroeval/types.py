@@ -3,14 +3,15 @@
 import typing as t
 
 from numpy.typing import NDArray
+from transformers.trainer_utils import EvalPrediction
 
 if t.TYPE_CHECKING:
     from .data_models import GenerativeModelOutput
 
 
-ScoreDict = dict[str, dict[str, float] | list[dict[str, float]]]
-Predictions = NDArray | list[str] | list[list[str]]
-Labels = NDArray | list[str] | list[list[str]]
+ScoreDict: t.TypeAlias = dict[str, dict[str, float] | list[dict[str, float]]]
+Predictions: t.TypeAlias = NDArray | list[str] | list[list[str]]
+Labels: t.TypeAlias = NDArray | list[str] | list[list[str]]
 
 
 class ComputeMetricsFunction(t.Protocol):
@@ -18,7 +19,8 @@ class ComputeMetricsFunction(t.Protocol):
 
     def __call__(
         self,
-        model_outputs_and_labels: tuple[
+        model_outputs_and_labels: EvalPrediction
+        | tuple[
             NDArray | list[str] | list[list[str]], NDArray | list[str] | list[list[str]]
         ],
     ) -> dict[str, float]:

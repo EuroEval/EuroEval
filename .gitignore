@@ -115,3 +115,7 @@ site/
 
 # Helper files for docs
 docs/datasets/dataset_example_commands.txt
+
+# Various graphics
+gfx/euroeval-italian.png
+gfx/euroeval-italian.xcf

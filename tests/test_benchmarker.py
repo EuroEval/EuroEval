@@ -12,14 +12,13 @@ from requests.exceptions import RequestException
 
 from euroeval.benchmarker import (
     Benchmarker,
-    BenchmarkResult,
     adjust_logging_level,
     clear_model_cache_fn,
     model_has_been_benchmarked,
     prepare_dataset_configs,
 )
-from euroeval.data_models import DatasetConfig, Language, Task
-from euroeval.dataset_configs import ANGRY_TWEETS_CONFIG, DANSK_CONFIG
+from euroeval.data_models import BenchmarkResult, DatasetConfig, Language, Task
+from euroeval.dataset_configs import get_dataset_config
 from euroeval.exceptions import HuggingFaceHubDown
 
 
@@ -59,19 +58,9 @@ def test_benchmark_generative(
     benchmarker: Benchmarker, task: Task, language: Language, generative_model_id: str
 ) -> None:
     """Test that a generative model can be benchmarked."""
-    from euroeval.benchmark_modules.vllm import clear_vllm
-
-    for _ in range(10):
-        clear_vllm()
-        try:
-            benchmark_result = benchmarker.benchmark(
-                model=generative_model_id, task=task.name, language=language.code
-            )
-            break
-        except (HuggingFaceHubDown, RequestException, ConnectionError):
-            time.sleep(5)
-    else:
-        pytest.skip(reason="Hugging Face Hub is down, so we skip this test.")
+    benchmark_result = benchmarker.benchmark(
+        model=generative_model_id, task=task.name, language=language.code
+    )
     assert isinstance(benchmark_result, list)
     assert all(isinstance(result, BenchmarkResult) for result in benchmark_result)
 
@@ -86,21 +75,9 @@ def test_benchmark_generative_adapter(
     generative_adapter_model_id: str,
 ) -> None:
     """Test that a generative adapter model can be benchmarked."""
-    from euroeval.benchmark_modules.vllm import clear_vllm
-
-    for _ in range(10):
-        clear_vllm()
-        try:
-            benchmark_result = benchmarker.benchmark(
-                model=generative_adapter_model_id,
-                task=task.name,
-                language=language.code,
-            )
-            break
-        except (HuggingFaceHubDown, RequestException, ConnectionError):
-            time.sleep(5)
-    else:
-        pytest.skip(reason="Hugging Face Hub is down, so we skip this test.")
+    benchmark_result = benchmarker.benchmark(
+        model=generative_adapter_model_id, task=task.name, language=language.code
+    )
     assert isinstance(benchmark_result, list)
     assert all(isinstance(result, BenchmarkResult) for result in benchmark_result)
 
@@ -130,6 +107,35 @@ def test_benchmark_anthropic(
     """Test that an Anthropic model can be benchmarked."""
     benchmark_result = benchmarker.benchmark(
         model=anthropic_model_id, task=task.name, language=language.code
+    )
+    assert isinstance(benchmark_result, list)
+    assert all(isinstance(result, BenchmarkResult) for result in benchmark_result)
+
+
+@pytest.mark.skipif(
+    condition=os.getenv("GEMINI_API_KEY") is None,
+    reason="Gemini API key is not available.",
+)
+def test_benchmark_gemini(
+    benchmarker: Benchmarker, task: Task, language: Language, gemini_model_id: str
+) -> None:
+    """Test that a Gemini model can be benchmarked."""
+    benchmark_result = benchmarker.benchmark(
+        model=gemini_model_id, task=task.name, language=language.code
+    )
+    assert isinstance(benchmark_result, list)
+    assert all(isinstance(result, BenchmarkResult) for result in benchmark_result)
+
+
+@pytest.mark.skipif(
+    condition=os.getenv("XAI_API_KEY") is None, reason="xAI API key is not available."
+)
+def test_benchmark_xai(
+    benchmarker: Benchmarker, task: Task, language: Language, grok_model_id: str
+) -> None:
+    """Test that a Grok model can be benchmarked."""
+    benchmark_result = benchmarker.benchmark(
+        model=grok_model_id, task=task.name, language=language.code
     )
     assert isinstance(benchmark_result, list)
     assert all(isinstance(result, BenchmarkResult) for result in benchmark_result)
@@ -435,8 +441,11 @@ class TestClearCacheFn:
     argnames=["dataset_names", "dataset_configs"],
     argvalues=[
         ([], []),
-        (["angry-tweets"], [ANGRY_TWEETS_CONFIG]),
-        (["angry-tweets", "dansk"], [ANGRY_TWEETS_CONFIG, DANSK_CONFIG]),
+        (["angry-tweets"], [get_dataset_config("angry-tweets")]),
+        (
+            ["angry-tweets", "dansk"],
+            [get_dataset_config("angry-tweets"), get_dataset_config("dansk")],
+        ),
     ],
 )
 def test_prepare_dataset_configs(

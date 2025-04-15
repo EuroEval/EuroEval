@@ -6,7 +6,8 @@ from typing import Generator
 import pytest
 from datasets import Dataset
 from torch.utils.data import DataLoader
-from transformers import TrainerControl, TrainerState, TrainingArguments
+from transformers.trainer_callback import TrainerControl, TrainerState
+from transformers.training_args import TrainingArguments
 
 from euroeval.callbacks import NeverLeaveProgressCallback
 

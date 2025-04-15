@@ -56,7 +56,6 @@ install-dependencies:
 	@if [ "${NO_FLASH_ATTN}" != "1" ] && [ $$(uname) != "Darwin" ]; then \
 		uv pip install --no-build-isolation flash-attn>=2.7.0.post2; \
 	fi
-	@uv sync -U --only-dev
 
 setup-environment-variables:
 	@uv run python src/scripts/fix_dot_env_file.py
@@ -82,21 +81,8 @@ test:  ## Run tests
 tree:  ## Print directory tree
 	@tree -a --gitignore -I .git .
 
-lint:  ## Lint the project
-	uv run ruff check . --fix --unsafe-fixes
-
-format:  ## Format the project
-	uv run ruff format .
-
-type-check:  ## Type-check the project
-	@uv run mypy . \
-		--install-types \
-		--non-interactive \
-		--ignore-missing-imports \
-		--show-error-codes \
-		--check-untyped-defs
-
-check: lint format type-check  ## Lint, format, and type-check the code
+check:  ## Lint, format, and type-check the code
+	@uv run pre-commit run --all-files
 
 bump-major:
 	@uv run python -m src.scripts.versioning --major
@@ -127,8 +113,7 @@ publish:
 		echo "No PyPI API token specified in the '.env' file, so cannot publish."; \
 	else \
 		echo "Publishing to PyPI..."; \
-		$(MAKE) --quiet check \
-			&& $(MAKE) --quiet publish-euroeval \
+		$(MAKE) --quiet publish-euroeval \
 			&& $(MAKE) --quiet publish-scandeval \
 			&& $(MAKE) --quiet publish-docs \
 			&& $(MAKE) --quiet add-dev-version \
@@ -157,8 +142,8 @@ publish-scandeval:
 	fi
 	@mv src/scandeval src/euroeval
 
-publish-major: bump-major publish  ## Publish a major version
+publish-major: install check bump-major publish  ## Publish a major version
 
-publish-minor: bump-minor publish  ## Publish a minor version
+publish-minor: install check bump-minor publish  ## Publish a minor version
 
-publish-patch: bump-patch publish  ## Publish a patch version
+publish-patch: install check bump-patch publish  ## Publish a patch version

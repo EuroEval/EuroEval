@@ -51,9 +51,9 @@ def auth() -> Generator[str | bool, None, None]:
 @pytest.fixture(scope="session")
 def device() -> Generator[torch.device, None, None]:
     """Yields the device to use for the tests."""
-    if os.getenv("USE_CUDA", "0") == "1":
+    if torch.cuda.is_available():
         device = torch.device("cuda")
-    elif os.getenv("USE_MPS", "0") == "1":
+    elif torch.backends.mps.is_available():
         device = torch.device("mps")
     else:
         device = torch.device("cpu")
@@ -133,13 +133,13 @@ def encoder_model_id() -> Generator[str, None, None]:
 @pytest.fixture(scope="session")
 def generative_model_id() -> Generator[str, None, None]:
     """Yields a generative model ID used in tests."""
-    yield "mhenrichsen/danskgpt-tiny"
+    yield "HuggingFaceTB/SmolLM2-135M"
 
 
 @pytest.fixture(scope="session")
 def generative_adapter_model_id() -> Generator[str, None, None]:
     """Yields a generative adapter model ID used in tests."""
-    yield "grimjim/Llama-3-Instruct-abliteration-LoRA-8B"
+    yield "jekunz/smollm-135m-lora-fineweb-swedish"
 
 
 @pytest.fixture(scope="session")
@@ -152,6 +152,18 @@ def openai_model_id() -> Generator[str, None, None]:
 def anthropic_model_id() -> Generator[str, None, None]:
     """Yields an Anthropic model ID used in tests."""
     yield "claude-3-5-haiku-20241022"
+
+
+@pytest.fixture(scope="session")
+def gemini_model_id() -> Generator[str, None, None]:
+    """Yields a Gemini model ID used in tests."""
+    yield "gemini/gemini-2.0-flash"
+
+
+@pytest.fixture(scope="session")
+def grok_model_id() -> Generator[str, None, None]:
+    """Yields a Grok model ID used in tests."""
+    yield "grok-2-1212"
 
 
 @pytest.fixture(scope="session")
