@@ -195,7 +195,8 @@ def _print_filtering_stats(df: pd.DataFrame, split: str) -> None:
 
     For the Finnish HellaSwag-mini dataset, we don't want to filter
     any samples. These prints give an overview about how many samples
-    in the dataset that would be filtered out by the different filters.
+    in the dataset that would be filtered out by the different filters
+    that are applied in `src/scripts/create_hellaswag.py`.
 
     Args:
         df: The dataframe to print statistics for.
