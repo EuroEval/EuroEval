@@ -1,7 +1,7 @@
 """Templates for the Linguistic Acceptability task."""
 
 from ..data_models import PromptConfig
-from ..languages import DA, DE, EN, ES, FO, FR, IS, IT, NB, NL, NN, NO, SV
+from ..languages import DA, DE, EN, ES, FI, FO, FR, IS, IT, NB, NL, NN, NO, SV
 
 LA_TEMPLATES = {
     DA: PromptConfig(
@@ -35,6 +35,14 @@ LA_TEMPLATES = {
         default_prompt_template="Texto: {text}\nGramaticalmente correcto: {label}",
         default_instruction_prompt="Texto: {text}\n\nDetermina si el texto es "
         "gramaticalmente correcto o no. Responde con {labels_str}, y nada más.",
+    ),
+    FI: PromptConfig(
+        default_prompt_label_mapping=dict(correct="kyllä", incorrect="ei"),
+        default_prompt_prefix="Seuraavat ovat lauseita ja ovatko ne "
+        "kieliopillisesti oikein.",
+        default_prompt_template="Lause: {text}\nKieliopillisesti oikein: {label}",
+        default_instruction_prompt="Lause: {text}\n\nMääritä onko lause "
+        "oikein vai ei. Vastaa {labels_str}, ja ei mitään muuta.",
     ),
     FO: PromptConfig(
         default_prompt_label_mapping=dict(correct="ja", incorrect="nei"),

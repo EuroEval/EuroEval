@@ -1,7 +1,7 @@
 """Templates for the Named Entity Recognition task."""
 
 from ..data_models import PromptConfig
-from ..languages import DA, DE, EN, ES, FO, FR, IS, IT, NB, NL, NN, NO, SV
+from ..languages import DA, DE, EN, ES, FI, FO, FR, IS, IT, NB, NL, NN, NO, SV
 
 NER_TEMPLATES = {
     DA: PromptConfig(
@@ -79,6 +79,25 @@ NER_TEMPLATES = {
         "nombradas en la oración. Debes producir esto como un diccionario JSON con las "
         "claves {labels_str}. Los valores deben ser listas de las "
         "entidades nombradas de ese tipo, exactamente como aparecen en la oración.",
+    ),
+    FI: PromptConfig(
+        default_prompt_label_mapping={
+            "b-per": "henkilö",
+            "i-per": "henkilö",
+            "b-loc": "paikka",
+            "i-loc": "paikka",
+            "b-org": "organisaatio",
+            "i-org": "organisaatio",
+            "b-misc": "muut",
+            "i-misc": "muut",
+        },
+        default_prompt_prefix="Seuraavassa on lauseita ja JSON-sanakirjoja, jotka "
+        "sisältävät annetussa lauseessa esiintyvät nimetyt entiteetit.",
+        default_prompt_template="Lause: {text}\nNimetyt entiteetit: {label}",
+        default_instruction_prompt="Lause: {text}\n\nTunnista lauseessa olevat "
+        "entiteetit. Tulosta ne JSON-sanakirjana, jonka avaimet ovat {labels_str}. "
+        "Arvojen tulee olla listoja kyseisen tyypin nimetyistä entiteeteistä "
+        "täsmälleen siinä muodossa kuin ne esiintyvät lauseessa.",
     ),
     FO: PromptConfig(
         default_prompt_label_mapping={

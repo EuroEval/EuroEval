@@ -1,7 +1,7 @@
 """Templates for all multiple choice tasks."""
 
 from ..data_models import PromptConfig
-from ..languages import DA, DE, EN, ES, FR, IS, IT, NB, NL, NN, NO, SV
+from ..languages import DA, DE, EN, ES, FI, FR, IS, IT, NB, NL, NN, NO, SV
 
 # TODO: Missing Faroese
 MULTIPLE_CHOICE_TEMPLATES = {
@@ -34,6 +34,13 @@ MULTIPLE_CHOICE_TEMPLATES = {
         default_prompt_template="Pregunta: {text}\nRespuesta: {label}",
         default_instruction_prompt="Pregunta: {text}\n\nResponda la pregunta anterior "
         "usando solo {labels_str}, y nada más.",
+        default_prompt_label_mapping="auto",
+    ),
+    FI: PromptConfig(
+        default_prompt_prefix="Seuraavat ovat monivalintakysymyksiä (vastauksineen).",
+        default_prompt_template="Kysymys: {text}\nVastaus: {label}",
+        default_instruction_prompt="Kysymys: {text}\n\nVastaa yllä olevaan kysymykseen "
+        "käyttämällä {labels_str}, äläkä mitään muuta.",
         default_prompt_label_mapping="auto",
     ),
     FR: PromptConfig(
