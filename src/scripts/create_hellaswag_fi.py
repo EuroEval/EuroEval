@@ -19,7 +19,7 @@ def main() -> None:
     """Create the Finnish HellaSwag-mini dataset and upload it to the HF Hub.
 
     HellaSwag-fi is designed to EuroEval so it already has a
-    1,024 / 256 / 2,048 / 1,024 train/val/test split. This script
+    1,024 / 256 / 2,048 train/val/test split. This script
     therefore does not perform the same filtering as seen in
     `src/scripts/create_hellaswag.py`.
     """
