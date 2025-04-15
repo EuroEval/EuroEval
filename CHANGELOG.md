@@ -109,8 +109,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Added
 - Added support for Finnish 🇫🇮! This includes the Finnish part of the reading comprehension dataset
   [TydiQA-fi](https://huggingface.co/datasets/google-research-datasets/tydiqa/viewer/secondary_task?views%5B%5D=secondary_task_train),
-  the Finnish part of the binary sentiment classification dataset [ScandiSent](https://github.com/timpal0l/ScandiSent), the
-  NER dataset [Turku NER](https://aclanthology.org/2020.lrec-1.567/), the summarisation dataset [XL-Sum-fi](https://huggingface.co/datasets/TurkuNLP/xlsum-fi), and the common-sense reasoning dataset [HellaSwag-fi](https://huggingface.co/datasets/Finnish-NLP/hellaswag-fi-google-translate).
+  the Finnish part of the binary sentiment classification dataset [ScandiSent](https://github.com/timpal0l/ScandiSent), the linguistic acceptability dataset ScaLA with the [Finnish Universal
+  Dependencies](https://github.com/UniversalDependencies/UD_Finnish-TDT), the NER dataset [Turku NER](https://aclanthology.org/2020.lrec-1.567/), the summarisation dataset [XL-Sum-fi](https://huggingface.co/datasets/TurkuNLP/xlsum-fi), and the common-sense reasoning dataset [HellaSwag-fi](https://huggingface.co/datasets/Finnish-NLP/hellaswag-fi-google-translate).
 
 ### Fixed
 - Now uses `fp16` instead of `bf16` when evaluating decoder models on GPUs with CUDA
