@@ -1,6 +1,7 @@
 """Create the Finnish HellaSwag-mini dataset and upload it to the HF Hub."""
 
 from collections import Counter
+from logging import getLogger
 
 import pandas as pd
 from constants import (
@@ -13,6 +14,8 @@ from constants import (
 from datasets import Dataset, DatasetDict, Split, load_dataset
 from huggingface_hub import HfApi
 from requests import HTTPError
+
+logger = getLogger(__name__)
 
 
 def main() -> None:
@@ -217,20 +220,20 @@ def _print_filtering_stats(df: pd.DataFrame, split: str) -> None:
             > MAX_NUM_CHARS_IN_OPTION
         )
     )
-    print(f"\nSplit: {split}")
-    print(
+    logger.info(f"\nSplit: {split}")
+    logger.info(
         "Samples with too short context: "
         f"{short_ctx_count} ({short_ctx_count / len(df):.2%})"
     )
-    print(
+    logger.info(
         "Samples with too long context: "
         f"{long_ctx_count} ({long_ctx_count / len(df):.2%})"
     )
-    print(
+    logger.info(
         "Samples with too short options: "
         f"{short_endings_count} ({short_endings_count / len(df):.2%})"
     )
-    print(
+    logger.info(
         "Samples with too long options: "
         f"{long_endings_count} ({long_endings_count / len(df):.2%})"
     )
@@ -247,11 +250,11 @@ def _print_filtering_stats(df: pd.DataFrame, split: str) -> None:
         df.endings.map(lambda endings: any(is_repetitive(ending) for ending in endings))
     )
 
-    print(
+    logger.info(
         "Samples with repetitive context: "
         f"{repetitive_ctx_count} ({repetitive_ctx_count / len(df):.2%})"
     )
-    print(
+    logger.info(
         "Samples with repetitive options: "
         f"{repetitive_endings_count} ({repetitive_endings_count / len(df):.2%})"
     )
@@ -260,11 +263,11 @@ def _print_filtering_stats(df: pd.DataFrame, split: str) -> None:
     infrequent_labels = activity_label_counts[activity_label_counts < 3].index.tolist()
     infrequent_label_count = sum(df["activity_label"].isin(infrequent_labels))
 
-    print(
+    logger.info(
         "Activity labels with fewer than 3 samples: "
         f"{len(infrequent_labels)} out of {len(activity_label_counts)}"
     )
-    print(
+    logger.info(
         "Samples with infrequent activity labels: "
         f"{infrequent_label_count} ({infrequent_label_count / len(df):.2%})"
     )
