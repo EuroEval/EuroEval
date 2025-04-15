@@ -59,14 +59,15 @@ from ..exceptions import (
     NeedsEnvironmentVariable,
     NeedsExtraInstalled,
 )
-from ..task_utils import (
+from ..task_group_utils import (
     question_answering,
     sequence_classification,
     text_to_text,
     token_classification,
 )
+from ..tokenization_utils import get_first_label_token_mapping
 from ..types import ExtractLabelsFunction
-from ..utils import create_model_cache_dir, get_first_label_token_mapping, log_once
+from ..utils import create_model_cache_dir, log_once
 from .base import BenchmarkModule
 from .hf import HuggingFaceEncoderModel, load_hf_model_config, load_tokenizer
 

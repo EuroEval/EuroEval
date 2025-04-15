@@ -203,6 +203,75 @@ $ euroeval --model <model-id> --dataset tydiqa-fi
 
 ## Common-sense Reasoning
 
+### HellaSwag-fi
+
+This dataset is a machine translated version of the English [HellaSwag
+dataset](https://aclanthology.org/P19-1472/). The [dataset](https://huggingface.co/datasets/Finnish-NLP/hellaswag-fi-google-translate) was created by Finnish-NLP using Google Translate. The dataset is designed to
+be used in EuroEval and it therefore already has a 1,024 / 256 / 2,048 split for the train, validation and test splits, respectively.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "[Otsikko ] Tiikkihuonekalujen tahraus [vaihe] Pyyhi lika, pöly ja roskat pois. [vaihe] Voit harjata lian pois kuivalla paperipyyhkeellä tai liinalla. Jos puhdistettavia kohtia on sitkeämpiä, voit hieroa ne puhtaaksi kostealla rievulla.\nVastausvaihtoehdot:\na. [vaihe] Poista tahrat tiikistä pyyhkimällä ne kuivalla talouspaperilla. [vaihe] Noudata samoja puhdistustoimenpiteitä, joita käytit tahran kanssa.\nb. Aja niiden yli puhdistusaineella, kunnes tahra on poissa. [vaihe] Kokeile puupetsin ja öljyn yhdistelmää.\nc. [välivaiheet] Älä käytä puhdistusaineita. Saatat vahingoittaa puuta, mutta vaikeutat varmasti värjäysprosessia.\nd. Poista mahdollisimman paljon likaa levittämällä tahra kevyelle, pörröiselle liinalle tai kädelle ja pyyhkimällä se pois. [vaihe] Käytä hankaamiseen valkaisuainetta ja vettä.",
+  "label": "c",
+}
+```
+```json
+{
+  "text": "Pieni ryhmä ihmisiä nähdään uimassa altaan ympärillä ja johtaa useisiin laukauksiin, joissa uimari heittää pallon verkkoon. Maalivahti torjuu muutaman laukauksen ja vaihtaa sitten toisen joukkuetoverinsa kanssa yleisön hurraten. ihmisiä\nVastausvaihtoehdot:\na. cheer vielä kerran ja palaa uimaan uima-altaan ympärille.\nb. vaihda jatkuvasti pois ja johtaa siihen, että yksi joukkue voittaa ja juhlii kaikki yhdessä vedessä.\nc. Curra ja hyppää vuorotellen ylös ja eteenpäin pelaamalla biljardia.\nd. ensimmäinen video, jossa muut joukkuetoverit sukeltavat altaaseen ja hyppäävät ylös ja alas ponnahduslaudalla.",
+  "label": "b",
+}
+```
+```json
+{
+  "text": "Kahden ihmisen nähdään kävelevän pöytäjalkapallopöydän ympärillä pelaamassa. ihmisiä\nVastausvaihtoehdot:\na. pitäkää kupit ylös ja alakaa pelata peliä ja lyödä toisianne.\nb. Tartu sauvoista ja lyö palloa pöydän ympärillä.\nc. Jatka kävelemistä ja yksi henkilö lyö pallon verkon yli.\nd. siirrä ympäri pöytää heittäen palloa ympäriinsä, kun ihmiset katselevat sivuilla.",
+  "label": "b",
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+  ```
+  Seuraavat ovat monivalintakysymyksiä (vastauksineen).
+  ```
+- Base prompt template:
+  ```
+  Kysymys: {text}
+  Vastausvaihtoehdot:
+  a. {option_a}
+  b. {option_b}
+  c. {option_c}
+  d. {option_c}
+  Vastaus: {label}
+  ```
+- Instruction-tuned prompt template:
+  ```
+  Kysymys: {text}
+  Vastausvaihtoehdot:
+  a. {option_a}
+  b. {option_b}
+  c. {option_c}
+  d. {option_d}
+
+  Vastaa yllä olevaan kysymykseen käyttämällä 'a', 'b', 'c' tai 'd', äläkä mitään muuta.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+$ euroeval --model <model-id> --dataset hellaswag-fi
+```
+
+
+
+
+
+
+
 ## Summarization
 
 ### XLSum-fi

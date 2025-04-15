@@ -57,23 +57,25 @@ from ..exceptions import (
     NeedsExtraInstalled,
 )
 from ..languages import get_all_languages
-from ..task_utils import (
+from ..task_group_utils import (
     question_answering,
     sequence_classification,
     text_to_text,
     token_classification,
 )
-from ..types import ExtractLabelsFunction
-from ..utils import (
-    clear_memory,
-    create_model_cache_dir,
+from ..tokenization_utils import (
     get_bos_token,
     get_end_of_chat_token_ids,
     get_eos_token,
     get_first_label_token_mapping,
+    should_prompts_be_stripped,
+)
+from ..types import ExtractLabelsFunction
+from ..utils import (
+    clear_memory,
+    create_model_cache_dir,
     get_min_cuda_compute_capability,
     log_once,
-    should_prompts_be_stripped,
 )
 from .hf import HuggingFaceEncoderModel, get_model_repo_info, load_hf_model_config
 

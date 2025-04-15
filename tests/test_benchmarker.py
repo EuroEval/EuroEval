@@ -12,14 +12,13 @@ from requests.exceptions import RequestException
 
 from euroeval.benchmarker import (
     Benchmarker,
-    BenchmarkResult,
     adjust_logging_level,
     clear_model_cache_fn,
     model_has_been_benchmarked,
     prepare_dataset_configs,
 )
-from euroeval.data_models import DatasetConfig, Language, Task
-from euroeval.dataset_configs import ANGRY_TWEETS_CONFIG, DANSK_CONFIG
+from euroeval.data_models import BenchmarkResult, DatasetConfig, Language, Task
+from euroeval.dataset_configs import get_dataset_config
 from euroeval.exceptions import HuggingFaceHubDown
 
 
@@ -442,8 +441,11 @@ class TestClearCacheFn:
     argnames=["dataset_names", "dataset_configs"],
     argvalues=[
         ([], []),
-        (["angry-tweets"], [ANGRY_TWEETS_CONFIG]),
-        (["angry-tweets", "dansk"], [ANGRY_TWEETS_CONFIG, DANSK_CONFIG]),
+        (["angry-tweets"], [get_dataset_config("angry-tweets")]),
+        (
+            ["angry-tweets", "dansk"],
+            [get_dataset_config("angry-tweets"), get_dataset_config("dansk")],
+        ),
     ],
 )
 def test_prepare_dataset_configs(

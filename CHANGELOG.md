@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 
 ## [Unreleased]
+
+
+
+## [v15.6.1] - 2025-04-14
+### Changed
+- Added more info about SQuAD-nl in the documentation. This was contributed by
+  [@Rijgersberg](https://github.com/Rijgersberg) ✨
+
+### Fixed
+- The "E" option for the Norwegian NorCommonSenseQA dataset was not included in the
+  refactor in v15.6.0, leading to evaluation errors. This has been fixed now.
+- The number of few-shot examples for FoSent was not reduced to 5 again during the
+  refactor in v15.6.0, leading to evaluation errors. This has been fixed now.
+
+
+## [v15.6.0] - 2025-04-13
 ### Added
 - We now support specifying custom inference providers when benchmarking via the Hugging
   Face inference APIs. This can be done by specifying the model as
@@ -22,6 +38,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   bound for xAI models.
 - When benchmarking Ollama models, if the model is not found, we now also check if the
   model exists if prefixed with 'hf.co/'.
+- Uniformised the prompt templates used for each task, so that they are more
+  consistent across tasks. Evaluation tests across different model types and sizes show
+  no significant performance difference between the new and old templates. This was
+  contributed by [@viggo-gascou](https://github.com/viggo-gascou) ✨
 
 ### Fixed
 - Avoid duplicate error messages when a rate limit occurs.
@@ -33,6 +53,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   properly, but this seems to be released properly now.
 - Now only logs when encoder models are being benchmarked on generative tasks if the
   `--verbose` flag is set (or `verbose=True` in the `Benchmarker` API).
+- All Spanish NER datasets were mistakenly marked as unofficial. The `conll-es` is now
+  marked as official.
 
 
 ## [v15.5.0] - 2025-04-07
@@ -88,7 +110,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Added support for Finnish 🇫🇮! This includes the Finnish part of the reading comprehension dataset
   [TydiQA-fi](https://huggingface.co/datasets/google-research-datasets/tydiqa/viewer/secondary_task?views%5B%5D=secondary_task_train),
   the Finnish part of the binary sentiment classification dataset [ScandiSent](https://github.com/timpal0l/ScandiSent), the
-  NER dataset [Turku NER](https://aclanthology.org/2020.lrec-1.567/), the summarisation dataset [XL-Sum-fi](https://huggingface.co/datasets/TurkuNLP/xlsum-fi).
+  NER dataset [Turku NER](https://aclanthology.org/2020.lrec-1.567/), the summarisation dataset [XL-Sum-fi](https://huggingface.co/datasets/TurkuNLP/xlsum-fi), and the common-sense reasoning dataset [HellaSwag-fi](https://huggingface.co/datasets/Finnish-NLP/hellaswag-fi-google-translate).
 
 ### Fixed
 - Now uses `fp16` instead of `bf16` when evaluating decoder models on GPUs with CUDA

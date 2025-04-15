@@ -13,10 +13,8 @@ from transformers.tokenization_utils_base import PreTrainedTokenizerBase
 from transformers.trainer import Trainer
 
 from ..data_models import BenchmarkConfig, DatasetConfig, GenerativeModelOutput
-from ..utils import (
-    get_special_token_metadata,
-    raise_if_model_output_contains_nan_values,
-)
+from ..tokenization_utils import get_special_token_metadata
+from ..utils import raise_if_model_output_contains_nan_values
 
 if t.TYPE_CHECKING:
     import torch.nn as nn

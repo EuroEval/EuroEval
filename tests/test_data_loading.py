@@ -8,7 +8,7 @@ from numpy.random import default_rng
 
 from euroeval.data_loading import load_data
 from euroeval.data_models import BenchmarkConfig
-from euroeval.dataset_configs import ANGRY_TWEETS_CONFIG
+from euroeval.dataset_configs import get_dataset_config
 
 
 class TestLoadData:
@@ -21,7 +21,7 @@ class TestLoadData:
         """A loaded dataset."""
         yield load_data(
             rng=default_rng(seed=4242),
-            dataset_config=ANGRY_TWEETS_CONFIG,
+            dataset_config=get_dataset_config("angry-tweets"),
             benchmark_config=benchmark_config,
         )
 

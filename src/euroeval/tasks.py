@@ -2,6 +2,14 @@
 
 from .data_models import MetricConfig, Task
 from .enums import TaskGroup
+from .prompt_templates import (
+    LA_TEMPLATES,
+    MULTIPLE_CHOICE_TEMPLATES,
+    NER_TEMPLATES,
+    RC_TEMPLATES,
+    SENT_TEMPLATES,
+    SUMM_TEMPLATES,
+)
 
 
 def get_all_tasks() -> dict[str, Task]:
@@ -16,6 +24,7 @@ def get_all_tasks() -> dict[str, Task]:
 LA = Task(
     name="linguistic-acceptability",
     task_group=TaskGroup.SEQUENCE_CLASSIFICATION,
+    template_dict=LA_TEMPLATES,
     metrics=[
         MetricConfig(
             name="mcc",
@@ -31,12 +40,16 @@ LA = Task(
             compute_kwargs=dict(average="macro"),
         ),
     ],
+    default_num_few_shot_examples=12,
+    default_max_generated_tokens=5,
+    default_labels=["correct", "incorrect"],
 )
 
 
 NER = Task(
     name="named-entity-recognition",
     task_group=TaskGroup.TOKEN_CLASSIFICATION,
+    template_dict=NER_TEMPLATES,
     metrics=[
         MetricConfig(
             name="micro_f1_no_misc",
@@ -51,12 +64,26 @@ NER = Task(
             results_key="overall_f1",
         ),
     ],
+    default_num_few_shot_examples=8,
+    default_max_generated_tokens=128,
+    default_labels=[
+        "o",
+        "b-loc",
+        "i-loc",
+        "b-org",
+        "i-org",
+        "b-per",
+        "i-per",
+        "b-misc",
+        "i-misc",
+    ],
 )
 
 
 RC = Task(
     name="reading-comprehension",
     task_group=TaskGroup.QUESTION_ANSWERING,
+    template_dict=RC_TEMPLATES,
     metrics=[
         MetricConfig(
             name="f1",
@@ -73,12 +100,16 @@ RC = Task(
             postprocessing_fn=lambda raw_score: (raw_score, f"{raw_score:.2f}%"),
         ),
     ],
+    default_num_few_shot_examples=4,
+    default_max_generated_tokens=32,
+    default_labels=["start_positions", "end_positions"],
 )
 
 
 SENT = Task(
     name="sentiment-classification",
     task_group=TaskGroup.SEQUENCE_CLASSIFICATION,
+    template_dict=SENT_TEMPLATES,
     metrics=[
         MetricConfig(
             name="mcc",
@@ -94,12 +125,16 @@ SENT = Task(
             compute_kwargs=dict(average="macro"),
         ),
     ],
+    default_num_few_shot_examples=12,
+    default_max_generated_tokens=5,
+    default_labels=["positive", "neutral", "negative"],
 )
 
 
 SUMM = Task(
     name="summarization",
     task_group=TaskGroup.TEXT_TO_TEXT,
+    template_dict=SUMM_TEMPLATES,
     metrics=[
         MetricConfig(
             name="bertscore",
@@ -117,12 +152,16 @@ SUMM = Task(
             results_key="rougeL",
         ),
     ],
+    default_num_few_shot_examples=1,
+    default_max_generated_tokens=256,
+    default_labels=[],
 )
 
 
 KNOW = Task(
     name="knowledge",
     task_group=TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION,
+    template_dict=MULTIPLE_CHOICE_TEMPLATES,
     metrics=[
         MetricConfig(
             name="mcc",
@@ -137,12 +176,16 @@ KNOW = Task(
             results_key="accuracy",
         ),
     ],
+    default_num_few_shot_examples=5,
+    default_max_generated_tokens=5,
+    default_labels=["a", "b", "c", "d"],
 )
 
 
 MCRC = Task(
     name="multiple-choice-reading-comprehension",
     task_group=TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION,
+    template_dict=MULTIPLE_CHOICE_TEMPLATES,
     metrics=[
         MetricConfig(
             name="mcc",
@@ -157,12 +200,16 @@ MCRC = Task(
             results_key="accuracy",
         ),
     ],
+    default_num_few_shot_examples=5,
+    default_max_generated_tokens=5,
+    default_labels=["a", "b", "c", "d"],
 )
 
 
 COMMON_SENSE = Task(
     name="common-sense-reasoning",
     task_group=TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION,
+    template_dict=MULTIPLE_CHOICE_TEMPLATES,
     metrics=[
         MetricConfig(
             name="mcc",
@@ -177,12 +224,16 @@ COMMON_SENSE = Task(
             results_key="accuracy",
         ),
     ],
+    default_num_few_shot_examples=5,
+    default_max_generated_tokens=5,
+    default_labels=["a", "b", "c", "d"],
 )
 
 
 SPEED = Task(
     name="speed",
     task_group=TaskGroup.SPEED,
+    template_dict={},
     metrics=[
         MetricConfig(
             name="speed",
@@ -199,4 +250,7 @@ SPEED = Task(
             postprocessing_fn=lambda raw_score: (raw_score, f"{raw_score:,.0f}"),
         ),
     ],
+    default_num_few_shot_examples=0,
+    default_max_generated_tokens=5,
+    default_labels=[],
 )

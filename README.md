@@ -13,7 +13,7 @@ ______________________________________________________________________
 [![Second paper](https://img.shields.io/badge/arXiv-2406.13469-b31b1b.svg)](https://arxiv.org/abs/2406.13469)
 [![License](https://img.shields.io/github/license/EuroEval/EuroEval)](https://github.com/EuroEval/EuroEval/blob/main/LICENSE)
 [![LastCommit](https://img.shields.io/github/last-commit/EuroEval/EuroEval)](https://github.com/EuroEval/EuroEval/commits/main)
-[![Code Coverage](https://img.shields.io/badge/Coverage-65%25-yellow.svg)](https://github.com/EuroEval/EuroEval/tree/main/tests)
+[![Code Coverage](https://img.shields.io/badge/Coverage-67%25-yellow.svg)](https://github.com/EuroEval/EuroEval/tree/main/tests)
 [![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.0-4baaaa.svg)](https://github.com/EuroEval/EuroEval/blob/main/CODE_OF_CONDUCT.md)
 
 
@@ -130,7 +130,9 @@ sentiment-classification`.
 
 
 ### Reproducing the datasets
-All datasets used in this project are generated using the scripts located in the [src/scripts](src/scripts) folder. To reproduce a dataset, run the corresponding script with the following command
+All datasets used in this project are generated using the scripts located in the
+[src/scripts](src/scripts) folder. To reproduce a dataset, run the corresponding script
+with the following command
 
 ```shell
 $ uv run src/scripts/<name-of-script>.py
@@ -142,8 +144,28 @@ Replace <name-of-script> with the specific script you wish to execute, e.g.,
 $ uv run src/scripts/create_allocine.py
 ```
 
+## Contributors :pray:
 
-## Special Thanks :pray:
+A huge thank you to all the contributors who have helped make this project a success!
+
+<a href="https://github.com/peter-sk"><img src="https://avatars.githubusercontent.com/u/6168908" width=50 alt="Contributor avatar for peter-sk"/></a>
+<a href="https://github.com/AJDERS"><img src="https://avatars.githubusercontent.com/u/38854604" width=50 alt="Contributor avatar for AJDERS"/></a>
+<a href="https://github.com/oliverkinch"><img src="https://avatars.githubusercontent.com/u/71556498" width=50 alt="Contributor avatar for oliverkinch"/></a>
+<a href="https://github.com/versae"><img src="https://avatars.githubusercontent.com/u/173537" width=50 alt="Contributor avatar for versae"/></a>
+<a href="https://github.com/viggo-gascou"><img src="https://avatars.githubusercontent.com/u/94069687" width=50 alt="Contributor avatar for viggo-gascou"/></a>
+<a href="https://github.com/mathiasesn"><img src="https://avatars.githubusercontent.com/u/27091759" width=50 alt="Contributor avatar for mathiasesn"/></a>
+<a href="https://github.com/Alkarex"><img src="https://avatars.githubusercontent.com/u/1008324" width=50 alt="Contributor avatar for Alkarex"/></a>
+<a href="https://github.com/marksverdhei"><img src="https://avatars.githubusercontent.com/u/46672778" width=50 alt="Contributor avatar for marksverdhei"/></a>
+<a href="https://github.com/Mikeriess"><img src="https://avatars.githubusercontent.com/u/19728563" width=50 alt="Contributor avatar for Mikeriess"/></a>
+<a href="https://github.com/pakagronglb"><img src="https://avatars.githubusercontent.com/u/178713124" width=50 alt="Contributor avatar for pakagronglb"/></a>
+<a href="https://github.com/ThomasKluiters"><img src="https://avatars.githubusercontent.com/u/8137941" width=50 alt="Contributor avatar for ThomasKluiters"/></a>
+<a href="https://github.com/BramVanroy"><img src="https://avatars.githubusercontent.com/u/2779410" width=50 alt="Contributor avatar for BramVanroy"/></a>
+<a href="https://github.com/peregilk"><img src="https://avatars.githubusercontent.com/u/9079808" width=50 alt="Contributor avatar for peregilk"/></a>
+<a href="https://github.com/Rijgersberg"><img src="https://avatars.githubusercontent.com/u/8604946" width=50 alt="Contributor avatar for Rijgersberg"/></a>
+
+### Special Thanks
+- Thanks to [Google](https://google.com/) for sponsoring Gemini credits as part of their
+  [Google Cloud for Researchers Program](https://cloud.google.com/edu/researchers).
 - Thanks [@Mikeriess](https://github.com/Mikeriess) for evaluating many of the larger
   models on the leaderboards.
 - Thanks to [OpenAI](https://openai.com/) for sponsoring OpenAI credits as part of their
