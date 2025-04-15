@@ -130,6 +130,71 @@ $ euroeval --model <model-id> --dataset turku-ner-fi
 
 ## Linguistic Acceptability
 
+### ScaLA-fi
+
+This dataset was published in [this paper](https://aclanthology.org/2023.nodalida-1.20/)
+and was automatically created from the [Finnish Universal Dependencies
+treebank](https://github.com/UniversalDependencies/UD_Finnish-TDT/tree/master) by
+assuming that the documents in the treebank are correct, and corrupting the samples to
+create grammatically incorrect samples. The corruptions were done by either removing a
+word from a sentence, or by swapping two neighbouring words in a sentence. To ensure
+that this does indeed break the grammaticality of the sentence, a set of rules were used
+on the part-of-speech tags of the words in the sentence.
+
+The original dataset consists of 15,136 samples, from which we use 1,024 / 256 / 2,048 samples for training,
+validation and testing, respectively (so 3,328 samples used in total). These splits are
+used as-is in the framework.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Vuotta aiempaan verrattuna uusia ajoneuvoja rekisteröitiin 17,6 prosenttia enemmän.",
+  "label": "correct"
+}
+```
+```json
+{
+  "text": "20-vuotias sai aiemmin marraskuussa 2006 Helsingin käräjäoikeudelta 30 päiväsakkoa Ta... varastettujen vaatteiden hallussapidosta.",
+  "label": "correct"
+}
+```
+```json
+{
+  "text": "Kun käyttäjä kirjoittaa viestin, se näkyy käyttäjän käyttäjälistassa.",
+  "label": "incorrect"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 12
+- Prefix prompt:
+  ```
+  Seuraavat ovat lauseita ja ovatko ne kieliopillisesti oikein.
+  ```
+- Base prompt template:
+  ```
+  Lause: {text}
+  Kieliopillisesti oikein: {label}
+  ```
+- Instruction-tuned prompt template:
+  ```
+  Lause: {text}
+
+  Määritä onko lause kieliopillisesti oikein vai ei. Vastaa 'kyllä', jos lause on oikein, ja 'ei', jos se ei ole.
+  ```
+- Label mapping:
+    - `correct` ➡️ `kyllä`
+    - `incorrect` ➡️ `ei`
+
+You can evaluate this dataset directly as follows:
+
+```bash
+$ euroeval --model <model-id> --dataset scala-fi
+```
+
 ## Reading Comprehension
 
 ### TydiQA-fi

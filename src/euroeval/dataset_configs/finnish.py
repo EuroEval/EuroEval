@@ -2,7 +2,7 @@
 
 from ..data_models import DatasetConfig
 from ..languages import FI
-from ..tasks import COMMON_SENSE, NER, RC, SENT, SUMM
+from ..tasks import COMMON_SENSE, LA, NER, RC, SENT, SUMM
 
 ### Official datasets ###
 
@@ -39,13 +39,20 @@ XLSUM_FI_CONFIG = DatasetConfig(
     languages=[FI],
 )
 
-
 HELLASWAG_FI_CONFIG = DatasetConfig(
     name="hellaswag-fi",
     pretty_name="the truncated version of the Finnish common-sense reasoning dataset "
     "HellaSwag-fi, translated from the English HellaSwag dataset",
     huggingface_id="EuroEval/hellaswag-fi-mini",
     task=COMMON_SENSE,
+    languages=[FI],
+)
+
+SCALA_FI_CONFIG = DatasetConfig(
+    name="scala-fi",
+    pretty_name="the Finnish part of the linguistic acceptability dataset ScaLA",
+    huggingface_id="EuroEval/scala-fi",
+    task=LA,
     languages=[FI],
 )
 
