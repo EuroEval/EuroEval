@@ -266,12 +266,6 @@ You can evaluate this dataset directly as follows:
 $ euroeval --model <model-id> --dataset hellaswag-fi
 ```
 
-
-
-
-
-
-
 ## Summarization
 
 ### XLSum-fi
