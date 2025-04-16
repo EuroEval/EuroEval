@@ -39,32 +39,9 @@ def load_data(
         HuggingFaceHubDown:
             If the Hugging Face Hub is down.
     """
-    num_attempts = 5
-    for _ in range(num_attempts):
-        try:
-            dataset = load_dataset(
-                path=dataset_config.huggingface_id,
-                cache_dir=benchmark_config.cache_dir,
-                token=unscramble("HjccJFhIozVymqXDVqTUTXKvYhZMTbfIjMxG_"),
-            )
-            break
-        except (FileNotFoundError, DatasetsError, ConnectionError, ReadTimeout):
-            logger.warning(
-                f"Failed to load dataset {dataset_config.huggingface_id!r}. Retrying..."
-            )
-            time.sleep(1)
-            continue
-        except HfHubHTTPError:
-            raise HuggingFaceHubDown()
-    else:
-        raise InvalidBenchmark(
-            f"Failed to load dataset {dataset_config.huggingface_id!r} after "
-            f"{num_attempts} attempts."
-        )
-
-    assert isinstance(dataset, DatasetDict)  # type: ignore[used-before-def]
-
-    dataset = DatasetDict({key: dataset[key] for key in ["train", "val", "test"]})
+    dataset = load_raw_data(
+        dataset_config=dataset_config, cache_dir=benchmark_config.cache_dir
+    )
 
     if not benchmark_config.evaluate_test_split:
         dataset["test"] = dataset["val"]
@@ -101,3 +78,41 @@ def load_data(
         for idx in range(benchmark_config.num_iterations)
     ]
     return datasets
+
+
+def load_raw_data(dataset_config: "DatasetConfig", cache_dir: str) -> DatasetDict:
+    """Load the raw dataset.
+
+    Args:
+        dataset_config:
+            The configuration for the dataset.
+        cache_dir:
+            The directory to cache the dataset.
+
+    Returns:
+        The dataset.
+    """
+    num_attempts = 5
+    for _ in range(num_attempts):
+        try:
+            dataset = load_dataset(
+                path=dataset_config.huggingface_id,
+                cache_dir=cache_dir,
+                token=unscramble("HjccJFhIozVymqXDVqTUTXKvYhZMTbfIjMxG_"),
+            )
+            break
+        except (FileNotFoundError, DatasetsError, ConnectionError, ReadTimeout):
+            logger.warning(
+                f"Failed to load dataset {dataset_config.huggingface_id!r}. Retrying..."
+            )
+            time.sleep(1)
+            continue
+        except HfHubHTTPError:
+            raise HuggingFaceHubDown()
+    else:
+        raise InvalidBenchmark(
+            f"Failed to load dataset {dataset_config.huggingface_id!r} after "
+            f"{num_attempts} attempts."
+        )
+    assert isinstance(dataset, DatasetDict)  # type: ignore[used-before-def]
+    return DatasetDict({key: dataset[key] for key in ["train", "val", "test"]})
