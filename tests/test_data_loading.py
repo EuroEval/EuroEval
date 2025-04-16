@@ -14,6 +14,12 @@ from euroeval.data_models import BenchmarkConfig, DatasetConfig
 from euroeval.dataset_configs import get_all_dataset_configs, get_dataset_config
 
 
+@pytest.fixture(scope="module")
+def tokenizer_id() -> Generator[str, None, None]:
+    """Fixture for the tokenizer ID."""
+    yield "google/gemma-3-27b-it"
+
+
 class TestLoadData:
     """Tests for the `load_data` function."""
 
@@ -56,13 +62,17 @@ class TestLoadData:
 
 @pytest.mark.parametrize(
     argnames="dataset_config",
-    argvalues=[cfg for cfg in get_all_dataset_configs().values()],
-    ids=[dataset_name for dataset_name in get_all_dataset_configs().keys()],
+    argvalues=[cfg for cfg in get_all_dataset_configs().values() if not cfg.unofficial],
+    ids=[
+        dataset_name
+        for dataset_name, cfg in get_all_dataset_configs().items()
+        if not cfg.unofficial
+    ],
 )
-def test_that_examples_are_not_too_long(
-    dataset_config: DatasetConfig, benchmark_config: BenchmarkConfig
+def test_examples_in_official_datasets_are_not_too_long(
+    dataset_config: DatasetConfig, benchmark_config: BenchmarkConfig, tokenizer_id: str
 ) -> None:
-    """Test that the examples are not too long."""
+    """Test that the examples are not too long in official datasets."""
     dummy_model_config = LiteLLMModel.get_model_config(
         model_id="", benchmark_config=benchmark_config
     )
@@ -71,7 +81,7 @@ def test_that_examples_are_not_too_long(
         dataset_config=dataset_config,
         benchmark_config=benchmark_config,
     )
-    tokenizer = AutoTokenizer.from_pretrained("google/gemma-3-27b-it")
+    tokenizer = AutoTokenizer.from_pretrained(tokenizer_id)
     dataset = load_raw_data(
         dataset_config=dataset_config, cache_dir=benchmark_config.cache_dir
     )
