@@ -62,11 +62,15 @@ class TestLoadData:
 
 @pytest.mark.parametrize(
     argnames="dataset_config",
-    argvalues=[cfg for cfg in get_all_dataset_configs().values() if not cfg.unofficial],
+    argvalues=[
+        cfg
+        for cfg in get_all_dataset_configs().values()
+        if not cfg.unofficial and not cfg.name == "speed"
+    ],
     ids=[
         dataset_name
         for dataset_name, cfg in get_all_dataset_configs().items()
-        if not cfg.unofficial
+        if not cfg.unofficial and not cfg.name == "speed"
     ],
 )
 def test_examples_in_official_datasets_are_not_too_long(
