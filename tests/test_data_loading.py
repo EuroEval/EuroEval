@@ -5,10 +5,13 @@ from collections.abc import Generator
 import pytest
 from datasets import DatasetDict
 from numpy.random import default_rng
+from transformers.models.auto.tokenization_auto import AutoTokenizer
 
-from euroeval.data_loading import load_data
-from euroeval.data_models import BenchmarkConfig
-from euroeval.dataset_configs import get_dataset_config
+from euroeval.benchmark_modules.litellm import LiteLLMModel
+from euroeval.constants import MAX_CONTEXT_LENGTH
+from euroeval.data_loading import load_data, load_raw_data
+from euroeval.data_models import BenchmarkConfig, DatasetConfig
+from euroeval.dataset_configs import get_all_dataset_configs, get_dataset_config
 
 
 class TestLoadData:
@@ -49,3 +52,37 @@ class TestLoadData:
                 for feature in ["text", "tokens"]:
                     if feature in split.features:
                         assert all(len(x) > 0 for x in split[feature])
+
+
+@pytest.mark.parametrize(
+    argnames="dataset_config",
+    argvalues=[cfg for cfg in get_all_dataset_configs().values()],
+    ids=[dataset_name for dataset_name in get_all_dataset_configs().keys()],
+)
+def test_that_examples_are_not_too_long(
+    dataset_config: DatasetConfig, benchmark_config: BenchmarkConfig
+) -> None:
+    """Test that the examples are not too long."""
+    dummy_model_config = LiteLLMModel.get_model_config(
+        model_id="", benchmark_config=benchmark_config
+    )
+    dummy_model = LiteLLMModel(
+        model_config=dummy_model_config,
+        dataset_config=dataset_config,
+        benchmark_config=benchmark_config,
+    )
+    tokenizer = AutoTokenizer.from_pretrained("google/gemma-3-27b-it")
+    dataset = load_raw_data(
+        dataset_config=dataset_config, cache_dir=benchmark_config.cache_dir
+    )
+    prepared_dataset = dummy_model.prepare_datasets(
+        datasets=[dataset], task=dataset_config.task
+    )[0]
+    for split_name in ["train", "val", "test"]:
+        split = prepared_dataset[split_name]
+        if "messages" not in split.features:
+            continue
+        encoded_texts = [
+            tokenizer.apply_chat_template(messages) for messages in split["messages"]
+        ]
+        assert all(len(x) <= MAX_CONTEXT_LENGTH for x in encoded_texts)
