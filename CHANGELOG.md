@@ -10,6 +10,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Added
 - Added metadata for GPT-4.1 models.
 
+### Changed
+- Updated `datasets` to `>=3.5.0`, as the previous versions were incompatible with the
+  newer versions of `huggingface_hub`.
+
 
 ## [v15.6.1] - 2025-04-14
 ### Changed
