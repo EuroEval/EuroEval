@@ -41,8 +41,9 @@ jobs:
           persist-credentials: false
 
       - name: Install uv and set up Python
-        uses: astral-sh/setup-uv@v4
+        uses: astral-sh/setup-uv@v5
         with:
+          enable-cache: false
           python-version: ${{ matrix.python-version }}
 
       - name: Install Dependencies
