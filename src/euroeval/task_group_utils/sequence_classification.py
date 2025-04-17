@@ -132,22 +132,23 @@ def extract_labels_from_generation(
         The predicted labels.
     """
     if model_output.scores is not None:
-        return get_closest_logprobs_labels(
+        labels = get_closest_logprobs_labels(
             generation_logprobs=model_output.scores,
             dataset_config=dataset_config,
             first_label_token_mapping=first_label_token_mapping,
         )
-    else:
-        return get_closest_word_edit_labels(
-            generated_sequences=model_output.sequences, dataset_config=dataset_config
-        )
+        if labels is not None:
+            return labels
+    return get_closest_word_edit_labels(
+        generated_sequences=model_output.sequences, dataset_config=dataset_config
+    )
 
 
 def get_closest_logprobs_labels(
     generation_logprobs: list[list[list[tuple[str, float]]]],
     dataset_config: "DatasetConfig",
     first_label_token_mapping: dict[str, str] | bool,
-) -> list[str]:
+) -> list[str] | None:
     """Get the labels with the highest predicted logprob value.
 
     In case a candidate label is split into multiple tokens, we only use the first
@@ -167,7 +168,7 @@ def get_closest_logprobs_labels(
             mapping is outputted then the model will always output scores).
 
     Returns:
-        The predicted labels.
+        The predicted labels, or None if labels could not be extracted.
 
     Raises:
         InvalidBenchmark:
@@ -237,16 +238,15 @@ def get_closest_logprobs_labels(
                     else:
                         output_label = candidate_output_labels.pop()
                         candidate_output_labels.add(output_label)
-                        raise InvalidBenchmark(
+                        log_once(
                             "Multiple candidate labels found for the generated label "
                             f"{generated_label!r}: {candidate_output_labels}. Since "
                             "this is not the first generated label, we cannot "
-                            "concatenate it with the next generated label. We are thus "
-                            f"forced to use the arbitrary {output_label!r} as the "
-                            "output label, potentially resulting in worse performance. "
-                            "Please report this issue to the EuroEval team at "
-                            "github.com/EuroEval/EuroEval/issues."
+                            "concatenate it with the next generated label. We will "
+                            "instead extract the labels using word edit distance.",
+                            level=logging.DEBUG,
                         )
+                        return None
                 elif len(candidate_output_labels) == 0:
                     logger.debug(
                         f"No candidate label found for the generated label "

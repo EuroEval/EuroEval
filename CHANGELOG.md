@@ -14,6 +14,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Updated `datasets` to `>=3.5.0`, as the previous versions were incompatible with the
   newer versions of `huggingface_hub`.
 
+### Fixed
+- If we fail to extract labels using a generative model's logprobs, we now fall back to
+  using word edit distance between the outputted text and the labels instead of throwing
+  an error.
+
 
 ## [v15.6.1] - 2025-04-14
 ### Changed
