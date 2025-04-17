@@ -119,6 +119,7 @@ def load_raw_data(dataset_config: "DatasetConfig", cache_dir: str) -> DatasetDic
     missing_keys = [key for key in required_keys if key not in dataset]
     if missing_keys:
         raise InvalidBenchmark(
-            f"The dataset is missing the following required splits: {', '.join(missing_keys)}"
+            f"The dataset is missing the following required splits: "
+            f"{', '.join(missing_keys)}"
         )
     return DatasetDict({key: dataset[key] for key in required_keys})
