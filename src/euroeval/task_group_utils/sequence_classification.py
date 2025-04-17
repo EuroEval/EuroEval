@@ -194,10 +194,7 @@ def get_closest_logprobs_labels(
             # We want to use the first generated label which contains a unique candidate
             # label, as the output label
             output_label: str | None = None
-            previously_generated_labels: list[str] = list()
-            for label_idx, generated_label in enumerate(generated_labels):
-                generated_label = "".join(previously_generated_labels) + generated_label
-
+            for generated_label in generated_labels:
                 # Get the candidate labels that starts with the generated label
                 if isinstance(first_label_token_mapping, dict):
                     if any(
@@ -223,30 +220,28 @@ def get_closest_logprobs_labels(
                         if candidate_label.startswith(generated_label)
                     }
 
-                # If we can uniquely determine the output label, we break the loop. If
-                # there are multiple possible labels then we store the current one, and
-                # concatenate it with the next generated label. We can only do this if
-                # the current one is the first one, however, since we're using greedy
-                # sampling. In case this happens for a label that is not the first one,
-                # we warn the user.
+                # If we can uniquely determine the output label, we break the loop.
                 if len(candidate_output_labels) == 1:
                     output_label = candidate_output_labels.pop()
                     break
+
+                # If we have multiple candidate labels, we cannot uniquely determine the
+                # output label, so we abandon extracting the labels using logprobs and
+                # fall back to using word edit distance.
                 elif len(candidate_output_labels) > 1:
-                    if label_idx == 0:
-                        previously_generated_labels.append(generated_label)
-                    else:
-                        output_label = candidate_output_labels.pop()
-                        candidate_output_labels.add(output_label)
-                        log_once(
-                            "Multiple candidate labels found for the generated label "
-                            f"{generated_label!r}: {candidate_output_labels}. Since "
-                            "this is not the first generated label, we cannot "
-                            "concatenate it with the next generated label. We will "
-                            "instead extract the labels using word edit distance.",
-                            level=logging.DEBUG,
-                        )
-                        return None
+                    log_once(
+                        "Multiple candidate labels found for the generated label "
+                        f"{generated_label!r}: {candidate_output_labels}. This means "
+                        "that using logprobs to extract the labels is not reliable, "
+                        "and we will instead fall back to extracting the labels "
+                        "using word edit distance.",
+                        level=logging.DEBUG,
+                    )
+                    return None
+
+                # If no candidate label is found, we ignore the generated label, as it
+                # basically means that the model is just really bad at generating
+                # labels.
                 elif len(candidate_output_labels) == 0:
                     logger.debug(
                         f"No candidate label found for the generated label "
