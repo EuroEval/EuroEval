@@ -136,9 +136,9 @@ ALLOWED_PARAMS = {
     r"gpt-4.*": [],
     r"o[1-9](-mini|-preview)?(-[0-9]{4}-[0-9]{2}-[0-9]{2})?": ["low", "high"],
     # Anthropic models
-    r"(anthropic/)?claude-3-.*": [],
-    r"(anthropic/)?claude-3.5-.*": [],
-    r"(anthropic/)?claude-3.7-sonnet.*": ["thinking"],
+    r"(anthropic/)?claude-3-(haiku|sonnet|opus).*": [],
+    r"(anthropic/)?claude-3-5-.*": [],
+    r"(anthropic/)?claude-3-7-sonnet.*": ["thinking"],
     # Gemini models
     r"(gemini/)?gemini-.*": [],
     # xAI models
