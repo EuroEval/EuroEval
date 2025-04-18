@@ -26,6 +26,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   due to a typo. This has been fixed now.
 - Now catches the error when an API model requires setting temperature to 1.0, and
   retries the evaluation with temperature set to 1.0.
+- When benchmarking a model with a revision (i.e., of the form `<model-id>@<revision>`),
+  we now correctly store this full model ID to the benchmark results on disk, including
+  the revision.
 
 
 ## [v15.6.1] - 2025-04-14

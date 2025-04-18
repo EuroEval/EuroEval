@@ -782,7 +782,11 @@ class Benchmarker:
                     dataset_languages=[
                         language.code for language in dataset_config.languages
                     ],
-                    model=model_config.model_id,
+                    model=(
+                        f"{model_config.model_id}@{model_config.revision}"
+                        if model_config.revision != "main"
+                        else model_config.model_id
+                    ),
                     results=results,
                     num_model_parameters=model.num_params,
                     max_sequence_length=model.model_max_length,
