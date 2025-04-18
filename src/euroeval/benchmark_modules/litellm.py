@@ -278,7 +278,7 @@ class LiteLLMModel(BenchmarkModule):
 
         if self.model_config.revision == "thinking":
             generation_kwargs["thinking"] = dict(
-                type="enabled", budget_tokens=REASONING_MAX_TOKENS
+                type="enabled", budget_tokens=REASONING_MAX_TOKENS - 1
             )
             log_once(
                 f"Enabling thinking mode for model {self.model_config.model_id!r}",
