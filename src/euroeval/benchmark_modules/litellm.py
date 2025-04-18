@@ -310,6 +310,7 @@ class LiteLLMModel(BenchmarkModule):
                 "'temperature' is not supported with this model.",
                 "temperature is not supported with this model",
             ]
+            temperature_must_be_one_messages = ["`temperature` may only be set to 1"]
             try:
                 model_response = litellm.completion(
                     messages=messages, max_retries=3, **generation_kwargs
@@ -329,6 +330,11 @@ class LiteLLMModel(BenchmarkModule):
                     generation_kwargs.pop("top_logprobs")
                 elif any(msg.lower() in str(e).lower() for msg in temperature_messages):
                     generation_kwargs.pop("temperature")
+                elif any(
+                    msg.lower() in str(e).lower()
+                    for msg in temperature_must_be_one_messages
+                ):
+                    generation_kwargs["temperature"] = 1.0
                 elif isinstance(e, RateLimitError):
                     raise InvalidModel(
                         "You have encountered your rate limit for model "
