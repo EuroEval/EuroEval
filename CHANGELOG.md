@@ -24,6 +24,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   an error.
 - Fixed a bug where we could not use the `thinking` parameter with `claude-3-7-sonnet`,
   due to a typo. This has been fixed now.
+- Now catches the error when an API model requires setting temperature to 1.0, and
+  retries the evaluation with temperature set to 1.0.
 
 
 ## [v15.6.1] - 2025-04-14
