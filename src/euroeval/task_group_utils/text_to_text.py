@@ -7,7 +7,6 @@ import evaluate
 import numpy as np
 from evaluate import EvaluationModule
 
-from ..constants import METRIC_ATTRIBUTES_TAKING_UP_MEMORY
 from ..data_models import BenchmarkConfig, DatasetConfig, GenerativeModelOutput
 from ..exceptions import InvalidBenchmark
 from ..utils import clear_memory, raise_if_model_output_contains_nan_values
@@ -85,14 +84,13 @@ def compute_metrics(
                 score_dict: dict[str, float] | None = metric.compute(
                     predictions=predictions, references=labels, **cfg.compute_kwargs
                 )
-                breakpoint()
 
-                # Clear the cache of the BERTScorer to avoid memory leaks
-                for attribute in METRIC_ATTRIBUTES_TAKING_UP_MEMORY:
-                    if hasattr(metric, attribute):
-                        delattr(metric, attribute)
+                # # Clear the cache of the BERTScorer to avoid memory leaks
+                # for attribute in METRIC_ATTRIBUTES_TAKING_UP_MEMORY:
+                #     if hasattr(metric, attribute):
+                #         delattr(metric, attribute)
 
-                clear_memory()
+                # clear_memory()
                 break
             except Exception as e:
                 # Clear the cache of the BERTScorer to avoid memory leaks
