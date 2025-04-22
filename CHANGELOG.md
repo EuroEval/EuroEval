@@ -29,6 +29,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - When benchmarking a model with a revision (i.e., of the form `<model-id>@<revision>`),
   we now correctly store this full model ID to the benchmark results on disk, including
   the revision.
+- Fixed a GPU memory error while computing the BERTScore for the summarisation task,
+  resulting in a memory crash. This was caused by a GPU memory cleanup after metric
+  computation, which has been postponed to later in the evaluation flow now.
 
 
 ## [v15.6.1] - 2025-04-14
