@@ -7,9 +7,10 @@ import evaluate
 import numpy as np
 from evaluate import EvaluationModule
 
+from ..constants import METRIC_ATTRIBUTES_TAKING_UP_MEMORY
 from ..data_models import BenchmarkConfig, DatasetConfig, GenerativeModelOutput
 from ..exceptions import InvalidBenchmark
-from ..utils import clear_memory, raise_if_model_output_contains_nan_values
+from ..utils import HiddenPrints, raise_if_model_output_contains_nan_values
 
 if t.TYPE_CHECKING:
     from transformers.trainer_utils import EvalPrediction
@@ -80,24 +81,12 @@ def compute_metrics(
 
         while True:
             try:
-                # with HiddenPrints():
-                score_dict: dict[str, float] | None = metric.compute(
-                    predictions=predictions, references=labels, **cfg.compute_kwargs
-                )
-
-                # # Clear the cache of the BERTScorer to avoid memory leaks
-                # for attribute in METRIC_ATTRIBUTES_TAKING_UP_MEMORY:
-                #     if hasattr(metric, attribute):
-                #         delattr(metric, attribute)
-
-                # clear_memory()
+                with HiddenPrints():
+                    score_dict: dict[str, float] | None = metric.compute(
+                        predictions=predictions, references=labels, **cfg.compute_kwargs
+                    )
                 break
             except Exception as e:
-                # Clear the cache of the BERTScorer to avoid memory leaks
-                if hasattr(metric, "cached_bertscorer"):
-                    del metric.cached_bertscorer
-                    clear_memory()
-
                 oom_error = [
                     "CUDA out of memory",
                     "CUDA error",
@@ -124,6 +113,10 @@ def compute_metrics(
                     )
                 else:
                     raise InvalidBenchmark(str(e))
+            finally:
+                for attribute in METRIC_ATTRIBUTES_TAKING_UP_MEMORY:
+                    if hasattr(metric, attribute):
+                        delattr(metric, attribute)
 
         # The metric returns None if we are running on multi-GPU and the current
         # process is not the main process
