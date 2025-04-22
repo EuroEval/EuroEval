@@ -30,8 +30,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   we now correctly store this full model ID to the benchmark results on disk, including
   the revision.
 - Fixed a GPU memory error while computing the BERTScore for the summarisation task,
-  resulting in a memory crash. This was caused by a GPU memory cleanup after metric
-  computation, which has been postponed to later in the evaluation flow now.
+  resulting in a memory crash. We have now reduced the batch size to 1 for this task,
+  making it slightly slower but more memory efficient.
 
 
 ## [v15.6.1] - 2025-04-14
