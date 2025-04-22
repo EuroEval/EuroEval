@@ -10,11 +10,7 @@ from evaluate import EvaluationModule
 from ..constants import METRIC_ATTRIBUTES_TAKING_UP_MEMORY
 from ..data_models import BenchmarkConfig, DatasetConfig, GenerativeModelOutput
 from ..exceptions import InvalidBenchmark
-from ..utils import (
-    HiddenPrints,
-    clear_memory,
-    raise_if_model_output_contains_nan_values,
-)
+from ..utils import clear_memory, raise_if_model_output_contains_nan_values
 
 if t.TYPE_CHECKING:
     from transformers.trainer_utils import EvalPrediction
@@ -85,10 +81,11 @@ def compute_metrics(
 
         while True:
             try:
-                with HiddenPrints():
-                    score_dict: dict[str, float] | None = metric.compute(
-                        predictions=predictions, references=labels, **cfg.compute_kwargs
-                    )
+                # with HiddenPrints():
+                breakpoint()
+                score_dict: dict[str, float] | None = metric.compute(
+                    predictions=predictions, references=labels, **cfg.compute_kwargs
+                )
 
                 # Clear the cache of the BERTScorer to avoid memory leaks
                 for attribute in METRIC_ATTRIBUTES_TAKING_UP_MEMORY:
