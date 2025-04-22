@@ -82,10 +82,10 @@ def compute_metrics(
         while True:
             try:
                 # with HiddenPrints():
-                breakpoint()
                 score_dict: dict[str, float] | None = metric.compute(
                     predictions=predictions, references=labels, **cfg.compute_kwargs
                 )
+                breakpoint()
 
                 # Clear the cache of the BERTScorer to avoid memory leaks
                 for attribute in METRIC_ATTRIBUTES_TAKING_UP_MEMORY:
