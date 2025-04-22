@@ -92,6 +92,7 @@ def compute_metrics(
     for cfg in dataset_config.task.metrics:
         metric = metrics[cfg.name]
         assert isinstance(metric, EvaluationModule)
+        breakpoint()
         score_dict: dict[str, float] | None = metric.compute(
             predictions=predictions, references=label_ids, **cfg.compute_kwargs
         )
