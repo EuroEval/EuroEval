@@ -95,16 +95,7 @@ def compute_metrics(
                 if not any(error in str(e) for error in oom_error):
                     raise InvalidBenchmark(str(e))
 
-                if cfg.compute_kwargs.get("batch_size", 1) > 1:
-                    batch_size = cfg.compute_kwargs["batch_size"]
-                    cfg.compute_kwargs["batch_size"] = batch_size // 2
-                    logger.debug(
-                        "Out of memory error occurred during the computation of "
-                        f"the metric {cfg.pretty_name}. Reducing the batch size to "
-                        f"{cfg.compute_kwargs['batch_size']}."
-                    )
-                elif cfg.compute_kwargs.get("device", "cpu") != "cpu":
-                    cfg.compute_kwargs["batch_size"] = 32
+                if cfg.compute_kwargs.get("device", "cpu") != "cpu":
                     cfg.compute_kwargs["device"] = "cpu"
                     logger.debug(
                         "Out of memory error occurred during the computation of "
@@ -116,6 +107,10 @@ def compute_metrics(
             finally:
                 for attribute in METRIC_ATTRIBUTES_TAKING_UP_MEMORY:
                     if hasattr(metric, attribute):
+                        logger.debug(
+                            f"Deleting the {attribute!r} attribute of the metric "
+                            f"{cfg.pretty_name} to free up memory."
+                        )
                         delattr(metric, attribute)
 
         # The metric returns None if we are running on multi-GPU and the current

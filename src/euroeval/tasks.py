@@ -142,7 +142,7 @@ SUMM = Task(
             huggingface_id="bertscore",
             results_key="f1",
             compute_kwargs=dict(
-                model_type="microsoft/mdeberta-v3-base", device="auto", batch_size=32
+                model_type="microsoft/mdeberta-v3-base", device="auto", batch_size=1
             ),
         ),
         MetricConfig(
