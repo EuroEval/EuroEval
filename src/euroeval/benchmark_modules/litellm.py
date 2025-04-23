@@ -332,7 +332,6 @@ class LiteLLMModel(BenchmarkModule):
                 model_response = litellm.completion(
                     messages=messages, max_retries=3, **generation_kwargs
                 )
-                breakpoint()
                 break
             except (BadRequestError, RateLimitError) as e:
                 if any(msg.lower() in str(e).lower() for msg in stop_messages):
@@ -400,8 +399,11 @@ class LiteLLMModel(BenchmarkModule):
             return GenerativeModelOutput(sequences=[""])
         model_response_choices = model_response.choices[0]
         assert isinstance(model_response_choices, litellm.Choices)
-        generation_output = model_response_choices.message["content"] or ""
-        generation_output = generation_output.strip()
+        generated_message: litellm.Message = model_response_choices.message
+        generation_output = (
+            generated_message.content or generated_message.reasoning_content or ""
+        ).strip()
+        breakpoint()
 
         # Structure the model output as a GenerativeModelOutput object
         model_output = GenerativeModelOutput(sequences=[generation_output])

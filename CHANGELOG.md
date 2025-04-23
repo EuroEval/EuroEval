@@ -17,6 +17,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Increase the number of allowed reasoning tokens from 8,192 to 32,768 for reasoning
   models. This is done as several models did not stop reasoning before running out of
   tokens, yielding a blank output.
+- API models now use JSON schemas for the NER task if they support it, and if not then
+  they resort to standard JSON mode (which does not enforce a specific schema, just that
+  the output is JSON).
 
 ### Fixed
 - If we fail to extract labels using a generative model's logprobs, we now fall back to
@@ -32,6 +35,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Fixed a GPU memory error while computing the BERTScore for the summarisation task,
   resulting in a memory crash. We have now reduced the batch size to 1 for this task,
   making it slightly slower but more memory efficient.
+- Sometimes reasoning models will output the answer within the reasoning content and
+  leave the actual output blank - in this case, we use the reasoning content as the
+  content instead of the blank output.
 
 
 ## [v15.6.1] - 2025-04-14
