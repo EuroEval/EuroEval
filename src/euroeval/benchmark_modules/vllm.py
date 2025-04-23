@@ -404,7 +404,10 @@ class VLLMModel(HuggingFaceEncoderModel):
         ) and should_prompts_be_stripped(
             labels_to_be_generated=labels_to_be_generated, tokenizer=self._tokenizer
         ):
-            log_once(message="Stripping prompts.", level=logging.DEBUG)
+            log_once(
+                f"Stripping prompts for model {self.model_config.model_id!r}.",
+                level=logging.DEBUG,
+            )
             prompts = [prompt.strip() for prompt in prompts]
 
         # Generate sequences using vLLM
@@ -823,7 +826,8 @@ class VLLMModel(HuggingFaceEncoderModel):
                     if name.lower() in language_codes:
                         chat_template = candidate_template
                         log_once(
-                            f"Using the {name!r} chat template for the tokenizer.",
+                            f"Using the {name!r} chat template for the tokenizer for "
+                            f"model {self.model_config.model_id!r}.",
                             level=logging.DEBUG,
                         )
                         break
@@ -1234,10 +1238,8 @@ def get_end_of_reasoning_token_id(
     completion_match = re.search(pattern=r"<\w+>", string=completion)
     if completion_match is None and prompt_match is None:
         log_once(
-            message=(
-                "Could not find a reasoning token, so assuming the model is not a "
-                "reasoning model."
-            ),
+            f"Could not find a reasoning token for model {model.model_id!r}, "
+            "so assuming the model is not a reasoning model.",
             level=logging.DEBUG,
         )
         return None
@@ -1263,20 +1265,17 @@ def get_end_of_reasoning_token_id(
         or end_of_reasoning_token not in special_tokens
     ):
         log_once(
-            message=(
-                f"Detected reasoning token {reasoning_token!r} and end-of-reasoning "
-                f"token {end_of_reasoning_token!r}, but one of them is not registered "
-                "as a special token, so assuming it is not a real reasoning token."
-            ),
+            f"Detected reasoning token {reasoning_token!r} and end-of-reasoning "
+            f"token {end_of_reasoning_token!r} for model {model.model_id!r}, "
+            "but one of them is not registered as a special token, so assuming it "
+            "is not a real reasoning token.",
             level=logging.DEBUG,
         )
         return None
 
     log_once(
-        message=(
-            f"Detected reasoning token {reasoning_token!r} and end-of-reasoning "
-            f"token {end_of_reasoning_token!r}."
-        ),
+        f"Detected reasoning token {reasoning_token!r} and end-of-reasoning "
+        f"token {end_of_reasoning_token!r} for model {model.model_id!r}.",
         level=logging.DEBUG,
     )
 
