@@ -420,6 +420,7 @@ class LiteLLMModel(BenchmarkModule):
                     ]
                     for content in model_response_choices.logprobs.content or list()
                 ]
+                breakpoint()
                 model_output.scores = [logprobs_list]
             else:
                 log_once(
