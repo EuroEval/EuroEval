@@ -33,6 +33,7 @@ from litellm.exceptions import (
 )
 from litellm.llms.vertex_ai.common_utils import VertexAIError
 from litellm.types.utils import ChoiceLogprobs, ModelResponse
+from pydantic import conlist, create_model
 from requests.exceptions import RequestException
 from tqdm.auto import tqdm
 from transformers.trainer import Trainer
@@ -269,12 +270,28 @@ class LiteLLMModel(BenchmarkModule):
             assert "json" in messages[0]["content"].lower(), (
                 "Prompt must contain 'json' for JSON tasks."
             )
-            generation_kwargs["response_format"] = dict(type="json_object")
-            log_once(
-                "Enabling JSON response format for model "
-                f"{self.model_config.model_id!r}",
-                level=logging.DEBUG,
-            )
+            if litellm.utils.supports_response_schema(model=self.model_config.model_id):
+                ner_tag_names = list(self.dataset_config.prompt_label_mapping.values())
+                keys_and_their_types: dict[str, t.Any] = {
+                    tag_name: (conlist(str, max_length=5), ...)
+                    for tag_name in ner_tag_names
+                }
+                pydantic_class = create_model("AnswerFormat", **keys_and_their_types)
+                generation_kwargs["response_format"] = pydantic_class
+                log_once(
+                    "Enabling structured generation for model "
+                    f"{self.model_config.model_id!r} with the JSON schema "
+                    f"{pydantic_class.model_json_schema()}",
+                    level=logging.DEBUG,
+                )
+            else:
+                generation_kwargs["response_format"] = dict(type="json_object")
+                log_once(
+                    "Enabling structured JSON generation for model "
+                    f"{self.model_config.model_id!r} with no JSON schema, as the model "
+                    "does not support schemas.",
+                    level=logging.DEBUG,
+                )
 
         if self.model_config.revision == "thinking":
             generation_kwargs["thinking"] = dict(

@@ -347,7 +347,7 @@ class VLLMModel(HuggingFaceEncoderModel):
                 whitespace_pattern=r" ?",
             )
             log_once(
-                "Using structured generation with the schema "
+                "Using structured generation with the JSON schema "
                 f"{pydantic_class.model_json_schema()}",
                 level=logging.DEBUG,
             )
