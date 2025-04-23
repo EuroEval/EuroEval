@@ -410,6 +410,7 @@ class LiteLLMModel(BenchmarkModule):
 
         # Structure the model output as a GenerativeModelOutput object
         model_output = GenerativeModelOutput(sequences=[generation_output])
+        breakpoint()
         if hasattr(model_response_choices, "logprobs"):
             logprobs_obj = model_response_choices.logprobs
             if isinstance(logprobs_obj, ChoiceLogprobs):
@@ -420,7 +421,6 @@ class LiteLLMModel(BenchmarkModule):
                     ]
                     for content in model_response_choices.logprobs.content or list()
                 ]
-                breakpoint()
                 model_output.scores = [logprobs_list]
             else:
                 log_once(
