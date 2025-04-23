@@ -338,6 +338,11 @@ class LiteLLMModel(BenchmarkModule):
                 break
             except (BadRequestError, RateLimitError) as e:
                 if any(msg.lower() in str(e).lower() for msg in stop_messages):
+                    log_once(
+                        f"The model {self.model_config.model_id!r} does not support "
+                        "stop sequences, so disabling them.",
+                        level=logging.DEBUG,
+                    )
                     generation_kwargs["stop"] = None
                 elif (
                     any(msg.lower() in str(e).lower() for msg in logprobs_messages)
@@ -346,14 +351,29 @@ class LiteLLMModel(BenchmarkModule):
                     # we ignore this since the rate limiting makes it unusable anyway.
                     or (isinstance(e, VertexAIError) and "logprobs" in str(e).lower())
                 ):
+                    log_once(
+                        f"The model {self.model_config.model_id!r} does not support "
+                        "logprobs, so disabling it.",
+                        level=logging.DEBUG,
+                    )
                     generation_kwargs.pop("logprobs")
                     generation_kwargs.pop("top_logprobs")
                 elif any(msg.lower() in str(e).lower() for msg in temperature_messages):
+                    log_once(
+                        f"The model {self.model_config.model_id!r} does not support "
+                        "temperature, so disabling it.",
+                        level=logging.DEBUG,
+                    )
                     generation_kwargs.pop("temperature")
                 elif any(
                     msg.lower() in str(e).lower()
                     for msg in temperature_must_be_one_messages
                 ):
+                    log_once(
+                        f"The model {self.model_config.model_id!r} requires "
+                        "temperature to be set to 1, so setting it.",
+                        level=logging.DEBUG,
+                    )
                     generation_kwargs["temperature"] = 1.0
                 elif isinstance(e, RateLimitError):
                     raise InvalidModel(
