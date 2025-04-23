@@ -436,7 +436,6 @@ class VLLMModel(HuggingFaceEncoderModel):
         completion_ids: list[list[int]] = [
             output.outputs[0].token_ids for output in raw_outputs
         ]
-        breakpoint()
         if self.end_of_reasoning_token_id in completion_ids[0]:
             completion_ids = [
                 token_ids[token_ids.index(self.end_of_reasoning_token_id) + 1 :]
@@ -451,7 +450,6 @@ class VLLMModel(HuggingFaceEncoderModel):
             skip_special_tokens=True,
         )
         completions = [completion.strip() for completion in completions]
-        breakpoint()
 
         # Add logprobs scores to the output
         if self.buffer["first_label_token_mapping"]:
