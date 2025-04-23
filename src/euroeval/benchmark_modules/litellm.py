@@ -432,9 +432,8 @@ class LiteLLMModel(BenchmarkModule):
         model_response_choices = model_response.choices[0]
         assert isinstance(model_response_choices, litellm.Choices)
         generated_message: litellm.Message = model_response_choices.message
-        generation_output = (
-            generated_message.content or generated_message.reasoning_content or ""
-        ).strip()
+        generation_output = generated_message.content or ""
+        generation_output = generation_output.strip()
 
         # Structure the model output as a GenerativeModelOutput object
         model_output = GenerativeModelOutput(sequences=[generation_output])
