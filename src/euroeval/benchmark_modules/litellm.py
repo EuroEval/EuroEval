@@ -288,8 +288,8 @@ class LiteLLMModel(BenchmarkModule):
                 generation_kwargs["response_format"] = dict(type="json_object")
                 log_once(
                     "Enabling structured JSON generation for model "
-                    f"{self.model_config.model_id!r} with no JSON schema, as the model "
-                    "does not support schemas.",
+                    f"{self.model_config.model_id!r} with no custom JSON schema, as "
+                    "the model does not support schemas.",
                     level=logging.DEBUG,
                 )
 
