@@ -315,6 +315,7 @@ class LiteLLMModel(BenchmarkModule):
                 model_response = litellm.completion(
                     messages=messages, max_retries=3, **generation_kwargs
                 )
+                breakpoint()
                 break
             except (BadRequestError, RateLimitError) as e:
                 if any(msg.lower() in str(e).lower() for msg in stop_messages):
