@@ -332,8 +332,8 @@ class LiteLLMModel(BenchmarkModule):
             ]
             temperature_must_be_one_messages = ["`temperature` may only be set to 1"]
             try:
-                model_response = litellm.completion(
-                    messages=messages, max_retries=3, **generation_kwargs
+                model_response = litellm.completion_with_retries(
+                    messages=messages, **generation_kwargs
                 )
                 break
             except (BadRequestError, RateLimitError) as e:
