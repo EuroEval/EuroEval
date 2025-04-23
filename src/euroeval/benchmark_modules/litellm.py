@@ -397,6 +397,7 @@ class LiteLLMModel(BenchmarkModule):
                 "reasoning. Returning an empty string."
             )
             return GenerativeModelOutput(sequences=[""])
+
         model_response_choices = model_response.choices[0]
         assert isinstance(model_response_choices, litellm.Choices)
         generated_message: litellm.Message = model_response_choices.message
