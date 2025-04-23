@@ -135,8 +135,9 @@ def _extract_endings(raw_endings: str) -> list[str]:
     Returns:
         The processed endings.
     """
-    endings = []
-    i = 0
+    endings: list[str] = []
+    i: int = 0
+    start: int = 0
     while i < len(raw_endings) - 2:
         if raw_endings[i].isalpha() or raw_endings[i] == "[":
             start = i
