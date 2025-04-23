@@ -198,6 +198,7 @@ class LiteLLMModel(BenchmarkModule):
             dataset_config=self.dataset_config,
             model_config=self.model_config,
             tokenizer=None,
+            generative_type=self.generative_type,
         )
 
     @property
@@ -260,20 +261,27 @@ class LiteLLMModel(BenchmarkModule):
             dataset_config=self.dataset_config,
             model_config=self.model_config,
             tokenizer=None,
+            generative_type=self.generative_type,
         )
 
         if self.buffer["first_label_token_mapping"]:
             generation_kwargs["logprobs"] = True
             generation_kwargs["top_logprobs"] = MAX_LOGPROBS
 
-        if (
-            self.dataset_config.task in TASKS_USING_JSON
-            and self.generative_type != GenerativeType.REASONING
-        ):
+        if self.dataset_config.task in TASKS_USING_JSON:
             assert "json" in messages[0]["content"].lower(), (
                 "Prompt must contain 'json' for JSON tasks."
             )
-            if litellm.utils.supports_response_schema(model=self.model_config.model_id):
+            if self.generative_type == GenerativeType.REASONING:
+                log_once(
+                    f"The model {self.model_config.model_id!r} is a reasoning model "
+                    "and thus does not support structured generation, so we do not "
+                    "enable it.",
+                    level=logging.DEBUG,
+                )
+            elif litellm.utils.supports_response_schema(
+                model=self.model_config.model_id
+            ):
                 ner_tag_names = list(self.dataset_config.prompt_label_mapping.values())
                 keys_and_their_types: dict[str, t.Any] = {
                     tag_name: (conlist(str, max_length=5), ...)
@@ -430,7 +438,6 @@ class LiteLLMModel(BenchmarkModule):
 
         # Structure the model output as a GenerativeModelOutput object
         model_output = GenerativeModelOutput(sequences=[generation_output])
-        breakpoint()
         if hasattr(model_response_choices, "logprobs"):
             logprobs_obj = model_response_choices.logprobs
             if isinstance(logprobs_obj, ChoiceLogprobs):

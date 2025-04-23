@@ -7,6 +7,7 @@ import typing as t
 import torch
 
 from .constants import TASK_GROUPS_USING_LOGPROBS
+from .enums import GenerativeType
 from .exceptions import InvalidModel
 from .utils import log_once
 
@@ -257,6 +258,7 @@ def get_first_label_token_mapping(
     dataset_config: "DatasetConfig",
     model_config: "ModelConfig",
     tokenizer: "PreTrainedTokenizer | None",
+    generative_type: "GenerativeType | None",
 ) -> dict[str, str] | bool:
     """Check if the model should output scores.
 
@@ -267,12 +269,22 @@ def get_first_label_token_mapping(
             The model configuration.
         tokenizer:
             The tokenizer, or None if not available.
+        generative_type:
+            The generative type, or None if not available.
 
     Returns:
         A mapping from labels to the first token in each label, or alternatively a
         Boolean value indicating whether the model should output scores (if the mapping
         is outputted then the model will always output scores).
     """
+    if generative_type == GenerativeType.REASONING:
+        log_once(
+            f"The model {model_config.model_id!r} is a reasoning model and "
+            "thus does not support logprobs, so we do not enable it.",
+            level=logging.DEBUG,
+        )
+        return False
+
     # If we do not have any tokenizer, then we cannot check if the model should output
     # scores and we just assume it should if the dataset supports it
     output_scores = dataset_config.task.task_group in TASK_GROUPS_USING_LOGPROBS

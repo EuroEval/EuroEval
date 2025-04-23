@@ -149,6 +149,7 @@ class VLLMModel(HuggingFaceEncoderModel):
                 dataset_config=self.dataset_config,
                 model_config=self.model_config,
                 tokenizer=self._tokenizer,
+                generative_type=self.generative_type,
             ),
         )
         if self.model_config.adapter_base_model_id is not None:
@@ -334,25 +335,32 @@ class VLLMModel(HuggingFaceEncoderModel):
             if end_of_chat_token:
                 stop_tokens.append(end_of_chat_token)
 
+        logits_processor = None
         if self.dataset_config.task in TASKS_USING_JSON:
-            ner_tag_names = list(self.dataset_config.prompt_label_mapping.values())
-            keys_and_their_types: dict[str, t.Any] = {
-                tag_name: (conlist(str, max_length=5), ...)
-                for tag_name in ner_tag_names
-            }
-            pydantic_class = create_model("AnswerFormat", **keys_and_their_types)
-            logits_processor = JSONLogitsProcessor(
-                schema=pydantic_class,
-                tokenizer=adapt_tokenizer(tokenizer=self._tokenizer),  # type: ignore
-                whitespace_pattern=r" ?",
-            )
-            log_once(
-                "Using structured generation with the JSON schema "
-                f"{pydantic_class.model_json_schema()}",
-                level=logging.DEBUG,
-            )
-        else:
-            logits_processor = None
+            if self.generative_type == GenerativeType.REASONING:
+                log_once(
+                    f"The model {self.model_config.model_id!r} is a reasoning model "
+                    "and thus does not support structured generation, so we do not "
+                    "enable it.",
+                    level=logging.DEBUG,
+                )
+            else:
+                ner_tag_names = list(self.dataset_config.prompt_label_mapping.values())
+                keys_and_their_types: dict[str, t.Any] = {
+                    tag_name: (conlist(str, max_length=5), ...)
+                    for tag_name in ner_tag_names
+                }
+                pydantic_class = create_model("AnswerFormat", **keys_and_their_types)
+                logits_processor = JSONLogitsProcessor(
+                    schema=pydantic_class,
+                    tokenizer=adapt_tokenizer(tokenizer=self._tokenizer),  # type: ignore
+                    whitespace_pattern=r" ?",
+                )
+                log_once(
+                    "Using structured generation with the JSON schema "
+                    f"{pydantic_class.model_json_schema()}",
+                    level=logging.DEBUG,
+                )
 
         # Get the mapping from labels to the first token in the label. We call this each
         # time we generate a new dataset since the dataset config can change
@@ -360,6 +368,7 @@ class VLLMModel(HuggingFaceEncoderModel):
             dataset_config=self.dataset_config,
             model_config=self.model_config,
             tokenizer=self._tokenizer,
+            generative_type=self.generative_type,
         )
 
         # Define the parameters used for vLLM generation

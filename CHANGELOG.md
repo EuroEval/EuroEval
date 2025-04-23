@@ -36,8 +36,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Fixed a GPU memory error while computing the BERTScore for the summarisation task,
   resulting in a memory crash. We have now reduced the batch size to 1 for this task,
   making it slightly slower but more memory efficient.
-- Disabled structured outputs for reasoning models, to ensure that they are allowed to
-  output reasoning tokens before they output the JSON object.
+- Disabled structured outputs and logprobs for reasoning models, to ensure that they
+  are allowed to output reasoning tokens before they output their answer.
 
 
 ## [v15.6.1] - 2025-04-14
