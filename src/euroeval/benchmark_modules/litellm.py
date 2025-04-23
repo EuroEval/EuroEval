@@ -407,7 +407,6 @@ class LiteLLMModel(BenchmarkModule):
         generation_output = (
             generated_message.content or generated_message.reasoning_content or ""
         ).strip()
-        breakpoint()
 
         # Structure the model output as a GenerativeModelOutput object
         model_output = GenerativeModelOutput(sequences=[generation_output])
