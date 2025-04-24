@@ -13,6 +13,7 @@ SCANDISENT_FI_CONFIG = DatasetConfig(
     huggingface_id="EuroEval/scandisent-fi-mini",
     task=SENT,
     languages=[FI],
+    _labels=["negative", "positive"],
 )
 
 TURKU_NER_FI_CONFIG = DatasetConfig(

@@ -74,9 +74,6 @@ def main() -> None:
 def process_endings(raw_endings: str) -> list[str]:
     """Process the endings of the HellaSwag-fi dataset.
 
-    I wanted to use `ast.literal_eval` to parse the endings, but it failed
-    because of mixed quotes.
-
     Args:
         raw_endings: The endings of the HellaSwag-fi dataset.
 
@@ -105,7 +102,6 @@ def _fix_quotes(ending: str) -> str:
         '\'Aloha"'
     which should be turned into the following:
         'Aloha'
-
 
     Args:
         ending: The ending to process.

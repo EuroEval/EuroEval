@@ -8,7 +8,7 @@ information about what these constitute.
 
 ### ScandiSent-fi
 
-This dataset consists of reviews from Trustpilot and was published [here](https://github.com/timpal0l/ScandiSent). It is a binary sentiment classification dataset, with labels "positive" and "negative".
+This dataset consists of reviews from Trustpilot and was published [here](https://aclanthology.org/2021.nodalida-main.42/). It is a binary sentiment classification dataset, with labels "positive" and "negative".
 
 For the Finnish part of the dataset, there are 10,000 training samples. From these samples, we have created a 1,024 / 256 / 2,048 split for the train, validation and test splits, respectively.
 
@@ -62,11 +62,12 @@ You can evaluate this dataset directly as follows:
 $ euroeval --model <model-id> --dataset scandisent-fi
 ```
 
+
 ## Named Entity Recognition
 
 ### Turku-NER-fi
 
-This dataset was published in [this paper](https://aclanthology.org/2020.lrec-1.567/).
+This dataset was published in [this paper](https://aclanthology.org/2020.lrec-1.567/). The dataset is a manually annotated corpus built on the Universal Dependencies Finnish corpus. The corpus was created by the Turku NLP group.
 
 The original dataset contains 12,217 / 1,364 / 1,555 samples for the training, validation and test splits, respectively. We use 1,024 / 256 / 2,048 samples for our training, validation and test splits, respectively. All the new splits are subsets of the original splits.
 
@@ -80,14 +81,14 @@ Here are a few examples from the training split:
 ```
 ```json
 {
-  "tokens": ["Liuhto", "nosti", "Kreikan", "tapauksen", "yhteydessä", "esille", "kysymyksen", "siitä", ",", "miten", "Euroopan", "unionissa", "yleisesti", "sanktioidaan", "pelisääntöjen", "rikkomisesta", "."],
-  "labels": ["B-PER", "O", "B-LOC", "O", "O", "O", "O", "O", "O", "O", "B-ORG", "I-ORG", "O", "O", "O", "O", "O"],
+  "tokens": array(['Liuhto', 'nosti', 'Kreikan', 'tapauksen', 'yhteydessä', 'esille', 'kysymyksen', 'siitä', ',', 'miten', 'Euroopan', 'unionissa', 'yleisesti', 'sanktioidaan', 'pelisääntöjen', 'rikkomisesta', '.'], dtype=object),
+  "labels": array(['B-PER', 'O', 'B-LOC', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'B-ORG', 'I-ORG', 'O', 'O', 'O', 'O', 'O'], dtype=object)
 }
 ```
 ```json
 {
-  "tokens": ["Mithridates", "oli", "Pontoksen", "merkittävin", "kuningas", "ja", "Rooman", "valtakunnan", "vaarallisin", "vihollinen", "ensimmäisellä", "vuosisadalla", "eaa.", "."],
-  "labels": ["B-PER", "O", "B-LOC", "O", "O", "O", "B-LOC", "I-LOC", "O", "O", "O", "O", "O", "O"],
+  "tokens": array(['Mithridates', 'oli', 'Pontoksen', 'merkittävin', 'kuningas', 'ja', 'Rooman', 'valtakunnan', 'vaarallisin', 'vihollinen', 'ensimmäisellä', 'vuosisadalla', 'eaa.', '.'], dtype=object),
+  "labels": array(['B-PER', 'O', 'B-LOC', 'O', 'O', 'O', 'B-LOC', 'I-LOC', 'O', 'O', 'O', 'O', 'O', 'O'], dtype=object)
 }
 ```
 
@@ -125,7 +126,6 @@ You can evaluate this dataset directly as follows:
 ```bash
 $ euroeval --model <model-id> --dataset turku-ner-fi
 ```
-
 
 
 ## Linguistic Acceptability
@@ -195,11 +195,11 @@ You can evaluate this dataset directly as follows:
 $ euroeval --model <model-id> --dataset scala-fi
 ```
 
+
 ## Reading Comprehension
 
 ### TydiQA-fi
-
-This question-answering dataset was published in [this paper](https://arxiv.org/abs/2003.05002).
+This question-answering dataset was published in [this paper](https://aclanthology.org/2020.tacl-1.30/). TydiQA is a multilingual dataset covering 11 typologically diverse languages with 204K question-answer pairs collected from native speakers genuinely seeking information. It was designed to evaluate models across languages with varied linguistic features and contains questions written directly in each language without translation.
 
 The original Finnish TydiQA dataset contains 6,855 training and 782 validation samples (we use the [secondary task subset](https://huggingface.co/datasets/google-research-datasets/tydiqa/viewer/secondary_task?views%5B%5D=secondary_task_train)).  We created a 1,024 / 256 / 2,024 split, where the samples from the train and validation split are sampled from the original train and validation splits, respectively. The test set consists of the remaining samples from the original validation split + additional samples from the original train split.
 
@@ -224,6 +224,7 @@ Here are a few examples from the training split:
     "answer_start": [16]
   }
 }
+```
 ```json
 {
   "question": "Kuka hallitsi Mithridates VI jälkeen?",
@@ -264,7 +265,6 @@ You can evaluate this dataset directly as follows:
 $ euroeval --model <model-id> --dataset tydiqa-fi
 ```
 
-## Knowledge
 
 ## Common-sense Reasoning
 
@@ -330,6 +330,7 @@ You can evaluate this dataset directly as follows:
 ```bash
 $ euroeval --model <model-id> --dataset hellaswag-fi
 ```
+
 
 ## Summarization
 
