@@ -112,6 +112,10 @@ def compute_metrics(
                             f"{cfg.pretty_name} to free up memory."
                         )
                         delattr(metric, attribute)
+                        logger.debug(
+                            f"Successfully deleted the {attribute!r} attribute of the "
+                            f"metric {cfg.pretty_name}."
+                        )
 
         # The metric returns None if we are running on multi-GPU and the current
         # process is not the main process
