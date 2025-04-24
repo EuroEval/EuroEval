@@ -7,7 +7,38 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 
 ## [Unreleased]
+### Added
+- Added metadata for GPT-4.1 and Grok-3 models.
+- Marked Gemini-2.5-flash and Grok-3-mini as reasoning models, giving them more tokens
+  to think.
 
+### Changed
+- Updated `datasets` to `>=3.5.0`, as the previous versions were incompatible with the
+  newer versions of `huggingface_hub`.
+- Increase the number of allowed reasoning tokens from 8,192 to 32,768 for reasoning
+  models. This is done as several models did not stop reasoning before running out of
+  tokens, yielding a blank output.
+- API models now use JSON schemas for the NER task if they support it, and if not then
+  they resort to standard JSON mode (which does not enforce a specific schema, just that
+  the output is JSON).
+
+### Fixed
+- If we fail to extract labels using a generative model's logprobs, we now fall back to
+  using word edit distance between the outputted text and the labels instead of throwing
+  an error.
+- Fixed a bug where we could not use the `thinking` parameter with `claude-3-7-sonnet`,
+  due to a typo. This has been fixed now.
+- Now catches the error when an API model requires setting temperature to 1.0, and
+  retries the evaluation with temperature set to 1.0.
+- When benchmarking a model with a revision (i.e., of the form `<model-id>@<revision>`),
+  we now correctly store this full model ID to the benchmark results on disk, including
+  the revision.
+- Fixed a GPU memory error while computing the BERTScore for the summarisation task,
+  resulting in a memory crash. We have now reduced the batch size to 1 for this task,
+  making it slightly slower but more memory efficient.
+- Disabled structured outputs and logprobs for reasoning models, to ensure that they
+  are allowed to output reasoning tokens before they output their answer.
+- Do not supply stop sequences to API models if they do not support it.
 
 
 ## [v15.6.1] - 2025-04-14

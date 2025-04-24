@@ -132,22 +132,23 @@ def extract_labels_from_generation(
         The predicted labels.
     """
     if model_output.scores is not None:
-        return get_closest_logprobs_labels(
+        labels = get_closest_logprobs_labels(
             generation_logprobs=model_output.scores,
             dataset_config=dataset_config,
             first_label_token_mapping=first_label_token_mapping,
         )
-    else:
-        return get_closest_word_edit_labels(
-            generated_sequences=model_output.sequences, dataset_config=dataset_config
-        )
+        if labels is not None:
+            return labels
+    return get_closest_word_edit_labels(
+        generated_sequences=model_output.sequences, dataset_config=dataset_config
+    )
 
 
 def get_closest_logprobs_labels(
     generation_logprobs: list[list[list[tuple[str, float]]]],
     dataset_config: "DatasetConfig",
     first_label_token_mapping: dict[str, str] | bool,
-) -> list[str]:
+) -> list[str] | None:
     """Get the labels with the highest predicted logprob value.
 
     In case a candidate label is split into multiple tokens, we only use the first
@@ -167,7 +168,7 @@ def get_closest_logprobs_labels(
             mapping is outputted then the model will always output scores).
 
     Returns:
-        The predicted labels.
+        The predicted labels, or None if labels could not be extracted.
 
     Raises:
         InvalidBenchmark:
@@ -193,10 +194,7 @@ def get_closest_logprobs_labels(
             # We want to use the first generated label which contains a unique candidate
             # label, as the output label
             output_label: str | None = None
-            previously_generated_labels: list[str] = list()
-            for label_idx, generated_label in enumerate(generated_labels):
-                generated_label = "".join(previously_generated_labels) + generated_label
-
+            for generated_label in generated_labels:
                 # Get the candidate labels that starts with the generated label
                 if isinstance(first_label_token_mapping, dict):
                     if any(
@@ -222,31 +220,28 @@ def get_closest_logprobs_labels(
                         if candidate_label.startswith(generated_label)
                     }
 
-                # If we can uniquely determine the output label, we break the loop. If
-                # there are multiple possible labels then we store the current one, and
-                # concatenate it with the next generated label. We can only do this if
-                # the current one is the first one, however, since we're using greedy
-                # sampling. In case this happens for a label that is not the first one,
-                # we warn the user.
+                # If we can uniquely determine the output label, we break the loop.
                 if len(candidate_output_labels) == 1:
                     output_label = candidate_output_labels.pop()
                     break
+
+                # If we have multiple candidate labels, we cannot uniquely determine the
+                # output label, so we abandon extracting the labels using logprobs and
+                # fall back to using word edit distance.
                 elif len(candidate_output_labels) > 1:
-                    if label_idx == 0:
-                        previously_generated_labels.append(generated_label)
-                    else:
-                        output_label = candidate_output_labels.pop()
-                        candidate_output_labels.add(output_label)
-                        raise InvalidBenchmark(
-                            "Multiple candidate labels found for the generated label "
-                            f"{generated_label!r}: {candidate_output_labels}. Since "
-                            "this is not the first generated label, we cannot "
-                            "concatenate it with the next generated label. We are thus "
-                            f"forced to use the arbitrary {output_label!r} as the "
-                            "output label, potentially resulting in worse performance. "
-                            "Please report this issue to the EuroEval team at "
-                            "github.com/EuroEval/EuroEval/issues."
-                        )
+                    log_once(
+                        "Multiple candidate labels found for the generated label "
+                        f"{generated_label!r}: {candidate_output_labels}. This means "
+                        "that using logprobs to extract the labels is not reliable, "
+                        "and we will instead fall back to extracting the labels "
+                        "using word edit distance.",
+                        level=logging.DEBUG,
+                    )
+                    return None
+
+                # If no candidate label is found, we ignore the generated label, as it
+                # basically means that the model is just really bad at generating
+                # labels.
                 elif len(candidate_output_labels) == 0:
                     logger.debug(
                         f"No candidate label found for the generated label "

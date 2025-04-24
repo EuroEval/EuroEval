@@ -521,14 +521,6 @@ class DatasetConfig:
 
         Returns:
             The natural string representation of the labels in specified language.
-
-        Raises:
-            NotImplementedError:
-                If `and_separator` or `or_separator` are `None`, see `Language`.
-
-        Example:
-            >>> get_labels_str(language=DA)
-            "'a', 'b', 'c' eller 'd'"
         """
         main_language = self.languages[0]
 

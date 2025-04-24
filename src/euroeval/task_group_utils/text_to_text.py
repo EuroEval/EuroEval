@@ -10,11 +10,7 @@ from evaluate import EvaluationModule
 from ..constants import METRIC_ATTRIBUTES_TAKING_UP_MEMORY
 from ..data_models import BenchmarkConfig, DatasetConfig, GenerativeModelOutput
 from ..exceptions import InvalidBenchmark
-from ..utils import (
-    HiddenPrints,
-    clear_memory,
-    raise_if_model_output_contains_nan_values,
-)
+from ..utils import HiddenPrints, raise_if_model_output_contains_nan_values
 
 if t.TYPE_CHECKING:
     from transformers.trainer_utils import EvalPrediction
@@ -89,20 +85,8 @@ def compute_metrics(
                     score_dict: dict[str, float] | None = metric.compute(
                         predictions=predictions, references=labels, **cfg.compute_kwargs
                     )
-
-                # Clear the cache of the BERTScorer to avoid memory leaks
-                for attribute in METRIC_ATTRIBUTES_TAKING_UP_MEMORY:
-                    if hasattr(metric, attribute):
-                        delattr(metric, attribute)
-
-                clear_memory()
                 break
             except Exception as e:
-                # Clear the cache of the BERTScorer to avoid memory leaks
-                if hasattr(metric, "cached_bertscorer"):
-                    del metric.cached_bertscorer
-                    clear_memory()
-
                 oom_error = [
                     "CUDA out of memory",
                     "CUDA error",
@@ -111,16 +95,7 @@ def compute_metrics(
                 if not any(error in str(e) for error in oom_error):
                     raise InvalidBenchmark(str(e))
 
-                if cfg.compute_kwargs.get("batch_size", 1) > 1:
-                    batch_size = cfg.compute_kwargs["batch_size"]
-                    cfg.compute_kwargs["batch_size"] = batch_size // 2
-                    logger.debug(
-                        "Out of memory error occurred during the computation of "
-                        f"the metric {cfg.pretty_name}. Reducing the batch size to "
-                        f"{cfg.compute_kwargs['batch_size']}."
-                    )
-                elif cfg.compute_kwargs.get("device", "cpu") != "cpu":
-                    cfg.compute_kwargs["batch_size"] = 32
+                if cfg.compute_kwargs.get("device", "cpu") != "cpu":
                     cfg.compute_kwargs["device"] = "cpu"
                     logger.debug(
                         "Out of memory error occurred during the computation of "
@@ -129,6 +104,14 @@ def compute_metrics(
                     )
                 else:
                     raise InvalidBenchmark(str(e))
+            finally:
+                for attribute in METRIC_ATTRIBUTES_TAKING_UP_MEMORY:
+                    if hasattr(metric, attribute):
+                        logger.debug(
+                            f"Deleting the {attribute!r} attribute of the metric "
+                            f"{cfg.pretty_name} to free up memory."
+                        )
+                        delattr(metric, attribute)
 
         # The metric returns None if we are running on multi-GPU and the current
         # process is not the main process

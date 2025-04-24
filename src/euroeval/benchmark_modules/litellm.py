@@ -33,6 +33,7 @@ from litellm.exceptions import (
 )
 from litellm.llms.vertex_ai.common_utils import VertexAIError
 from litellm.types.utils import ChoiceLogprobs, ModelResponse
+from pydantic import conlist, create_model
 from requests.exceptions import RequestException
 from tqdm.auto import tqdm
 from transformers.trainer import Trainer
@@ -104,6 +105,7 @@ MODEL_MAX_LENGTH_MAPPING = {
     r"o1-(mini|preview)(-[0-9]{4}-[0-9]{2}-[0-9]{2})?": 128_000,
     r"o1(-[0-9]{4}-[0-9]{2}-[0-9]{2})?": 200_000,
     r"o[2-9](-mini|-preview)?(-[0-9]{4}-[0-9]{2}-[0-9]{2})?": 200_000,
+    r"gpt-4.1.*": 1_047_576,
     # Anthropic models
     r"(anthropic/)?claude-[1-9](-[1-9])?-(opus|sonnet|haiku)-[0-9]{8}": 200_000,
     # Gemini models
@@ -135,20 +137,23 @@ ALLOWED_PARAMS = {
     r"gpt-4.*": [],
     r"o[1-9](-mini|-preview)?(-[0-9]{4}-[0-9]{2}-[0-9]{2})?": ["low", "high"],
     # Anthropic models
-    r"(anthropic/)?claude-3-.*": [],
-    r"(anthropic/)?claude-3.5-.*": [],
-    r"(anthropic/)?claude-3.7-sonnet.*": ["thinking"],
+    r"(anthropic/)?claude-3-(haiku|sonnet|opus).*": [],
+    r"(anthropic/)?claude-3-5-.*": [],
+    r"(anthropic/)?claude-3-7-sonnet.*": ["thinking"],
     # Gemini models
     r"(gemini/)?gemini-.*": [],
     # xAI models
-    r"(xai/)?grok.*": [],
+    r"(xai/)?grok-2.*": [],
+    r"(xai/)?grok-3(-fast)?(-beta)?": [],
+    r"(xai/)?grok-3-mini(-fast)?(-beta)?": ["low", "high"],
 }
 
 
 REASONING_MODELS = [
     r"o[1-9](-mini|-preview)?(-[0-9]{4}-[0-9]{2}-[0-9]{2})?",
     r"(gemini/)?gemini.*thinking.*",
-    r"(gemini/)?gemini-2.5-pro.*",
+    r"(gemini/)?gemini-2.5.*",
+    r"(xai/)?grok-3-mini.*",
 ]
 
 
@@ -190,7 +195,10 @@ class LiteLLMModel(BenchmarkModule):
         )
 
         self.buffer["first_label_token_mapping"] = get_first_label_token_mapping(
-            dataset_config=self.dataset_config, tokenizer=None
+            dataset_config=self.dataset_config,
+            model_config=self.model_config,
+            tokenizer=None,
+            generative_type=self.generative_type,
         )
 
     @property
@@ -201,13 +209,20 @@ class LiteLLMModel(BenchmarkModule):
             The generative type of the model, or None if it has not been set yet.
         """
         if self.model_config.revision == "thinking":
-            return GenerativeType.REASONING
+            type_ = GenerativeType.REASONING
         elif re.fullmatch(
             pattern="|".join(REASONING_MODELS), string=self.model_config.model_id
         ):
-            return GenerativeType.REASONING
+            type_ = GenerativeType.REASONING
         else:
-            return GenerativeType.INSTRUCTION_TUNED
+            type_ = GenerativeType.INSTRUCTION_TUNED
+
+        log_once(
+            f"Detected generative type {type_.name!r} for model "
+            f"{self.model_config.model_id!r}",
+            level=logging.DEBUG,
+        )
+        return type_
 
     def generate(self, inputs: dict) -> GenerativeModelOutput:
         """Generate outputs from the model.
@@ -243,7 +258,10 @@ class LiteLLMModel(BenchmarkModule):
         # Get the mapping from labels to the first token in the label. We call this each
         # time we generate a new dataset since the dataset config can change
         self.buffer["first_label_token_mapping"] = get_first_label_token_mapping(
-            dataset_config=self.dataset_config, tokenizer=None
+            dataset_config=self.dataset_config,
+            model_config=self.model_config,
+            tokenizer=None,
+            generative_type=self.generative_type,
         )
 
         if self.buffer["first_label_token_mapping"]:
@@ -254,16 +272,41 @@ class LiteLLMModel(BenchmarkModule):
             assert "json" in messages[0]["content"].lower(), (
                 "Prompt must contain 'json' for JSON tasks."
             )
-            generation_kwargs["response_format"] = dict(type="json_object")
-            log_once(
-                "Enabling JSON response format for model "
-                f"{self.model_config.model_id!r}",
-                level=logging.DEBUG,
-            )
+            if self.generative_type == GenerativeType.REASONING:
+                log_once(
+                    f"The model {self.model_config.model_id!r} is a reasoning model "
+                    "and thus does not support structured generation, so we do not "
+                    "enable it.",
+                    level=logging.DEBUG,
+                )
+            elif litellm.utils.supports_response_schema(
+                model=self.model_config.model_id
+            ):
+                ner_tag_names = list(self.dataset_config.prompt_label_mapping.values())
+                keys_and_their_types: dict[str, t.Any] = {
+                    tag_name: (conlist(str, max_length=5), ...)
+                    for tag_name in ner_tag_names
+                }
+                pydantic_class = create_model("AnswerFormat", **keys_and_their_types)
+                generation_kwargs["response_format"] = pydantic_class
+                log_once(
+                    "Enabling structured generation for model "
+                    f"{self.model_config.model_id!r} with the JSON schema "
+                    f"{pydantic_class.model_json_schema()}",
+                    level=logging.DEBUG,
+                )
+            else:
+                generation_kwargs["response_format"] = dict(type="json_object")
+                log_once(
+                    "Enabling structured JSON generation for model "
+                    f"{self.model_config.model_id!r} with no custom JSON schema, as "
+                    "the model does not support schemas.",
+                    level=logging.DEBUG,
+                )
 
         if self.model_config.revision == "thinking":
             generation_kwargs["thinking"] = dict(
-                type="enabled", budget_tokens=REASONING_MAX_TOKENS
+                type="enabled", budget_tokens=REASONING_MAX_TOKENS - 1
             )
             log_once(
                 f"Enabling thinking mode for model {self.model_config.model_id!r}",
@@ -280,28 +323,40 @@ class LiteLLMModel(BenchmarkModule):
         # This drops generation kwargs that are not supported by the model
         litellm.drop_params = True
 
+        # Error messages that we want to catch and handle
+        stop_messages = ["stop_sequences", "'stop' is not supported with this model"]
+        logprobs_messages = [
+            "you are not allowed to request logprobs",
+            "you've reached the maximum number of requests with logprobs",
+            "logprobs is not supported",
+            "logprobs is not enabled",
+        ]
+        temperature_messages = [
+            "'temperature' is not supported with this model.",
+            "temperature is not supported with this model",
+        ]
+        temperature_must_be_one_messages = [
+            "`temperature` may only be set to 1",
+            "'temperature' does not support 0.0 with this model. Only the default "
+            "(1) value is supported",
+        ]
+
         # Extract the generated sequences from the model response. Some APIs cannot
         # handle using newlines as stop sequences, so we try both.
         num_attempts = 10
         for _ in range(num_attempts):
-            stop_messages = ["stop_sequences"]
-            logprobs_messages = [
-                "you are not allowed to request logprobs",
-                "you've reached the maximum number of requests with logprobs",
-                "logprobs is not supported",
-                "logprobs is not enabled",
-            ]
-            temperature_messages = [
-                "'temperature' is not supported with this model.",
-                "temperature is not supported with this model",
-            ]
             try:
-                model_response = litellm.completion(
-                    messages=messages, max_retries=3, **generation_kwargs
+                model_response = litellm.completion_with_retries(
+                    messages=messages, **generation_kwargs
                 )
                 break
             except (BadRequestError, RateLimitError) as e:
                 if any(msg.lower() in str(e).lower() for msg in stop_messages):
+                    log_once(
+                        f"The model {self.model_config.model_id!r} does not support "
+                        "stop sequences, so disabling them.",
+                        level=logging.DEBUG,
+                    )
                     generation_kwargs["stop"] = None
                 elif (
                     any(msg.lower() in str(e).lower() for msg in logprobs_messages)
@@ -310,10 +365,30 @@ class LiteLLMModel(BenchmarkModule):
                     # we ignore this since the rate limiting makes it unusable anyway.
                     or (isinstance(e, VertexAIError) and "logprobs" in str(e).lower())
                 ):
+                    log_once(
+                        f"The model {self.model_config.model_id!r} does not support "
+                        "logprobs, so disabling it.",
+                        level=logging.DEBUG,
+                    )
                     generation_kwargs.pop("logprobs")
                     generation_kwargs.pop("top_logprobs")
                 elif any(msg.lower() in str(e).lower() for msg in temperature_messages):
+                    log_once(
+                        f"The model {self.model_config.model_id!r} does not support "
+                        "temperature, so disabling it.",
+                        level=logging.DEBUG,
+                    )
                     generation_kwargs.pop("temperature")
+                elif any(
+                    msg.lower() in str(e).lower()
+                    for msg in temperature_must_be_one_messages
+                ):
+                    log_once(
+                        f"The model {self.model_config.model_id!r} requires "
+                        "temperature to be set to 1, so setting it.",
+                        level=logging.DEBUG,
+                    )
+                    generation_kwargs["temperature"] = 1.0
                 elif isinstance(e, RateLimitError):
                     raise InvalidModel(
                         "You have encountered your rate limit for model "
@@ -359,9 +434,11 @@ class LiteLLMModel(BenchmarkModule):
                 "reasoning. Returning an empty string."
             )
             return GenerativeModelOutput(sequences=[""])
+
         model_response_choices = model_response.choices[0]
         assert isinstance(model_response_choices, litellm.Choices)
-        generation_output = model_response_choices.message["content"] or ""
+        generated_message: litellm.Message = model_response_choices.message
+        generation_output = generated_message.content or ""
         generation_output = generation_output.strip()
 
         # Structure the model output as a GenerativeModelOutput object

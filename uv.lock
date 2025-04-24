@@ -1002,7 +1002,7 @@ requires-dist = [
     { name = "bitsandbytes", marker = "sys_platform == 'linux' and extra == 'all'", specifier = ">=0.43.1" },
     { name = "bitsandbytes", marker = "sys_platform == 'linux' and extra == 'generative'", specifier = ">=0.43.1" },
     { name = "click", specifier = ">=8.1.3" },
-    { name = "datasets", specifier = ">=2.15.0" },
+    { name = "datasets", specifier = ">=3.5.0" },
     { name = "demjson3", specifier = ">=3.0.6" },
     { name = "evaluate", specifier = ">=0.4.1" },
     { name = "fbgemm-gpu", marker = "sys_platform == 'linux' and extra == 'all'", specifier = ">=1.0.0" },
