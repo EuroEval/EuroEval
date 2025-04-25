@@ -163,6 +163,16 @@ A huge thank you to all the contributors who have helped make this project a suc
 <a href="https://github.com/peregilk"><img src="https://avatars.githubusercontent.com/u/9079808" width=50 alt="Contributor avatar for peregilk"/></a>
 <a href="https://github.com/Rijgersberg"><img src="https://avatars.githubusercontent.com/u/8604946" width=50 alt="Contributor avatar for Rijgersberg"/></a>
 
+
+### Contribute to EuroEval
+
+We welcome contributions to EuroEval! Whether you're fixing bugs, adding features, or contributing new datasets, your help makes this project better for everyone.
+
+- **General contributions**: Check out our [contribution guidelines](CONTRIBUTING.md) for information on how to get started.
+
+- **Adding datasets**: If you're interested in adding a new dataset to EuroEval, we have a [dedicated guide](docs/contribute/dataset.md) with step-by-step instructions.
+
+
 ### Special Thanks
 - Thanks to [Google](https://google.com/) for sponsoring Gemini credits as part of their
   [Google Cloud for Researchers Program](https://cloud.google.com/edu/researchers).

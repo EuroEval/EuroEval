@@ -22,6 +22,10 @@ resources to help you get started with open source contributions:
 
 ## Getting started
 
+### Adding datasets
+
+EuroEval welcomes contributions of new datasets that help evaluate language models across European languages. A guide for adding datasets to EuroEval can be found [here](docs/contribute/dataset.md).
+
 ### Issues
 
 #### Create a new issue

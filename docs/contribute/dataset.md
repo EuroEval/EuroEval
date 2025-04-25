@@ -2,6 +2,8 @@
 
 This guide will walk you through the process of contributing a new dataset to EuroEval.
 
+For general contribution guidelines, please refer to our [Contributing Guide](CONTRIBUTING.md).
+
 If you have any questions during this process, please open an issue on the [EuroEval GitHub repository](https://github.com/EuroEval/EuroEval/issues).
 
 
