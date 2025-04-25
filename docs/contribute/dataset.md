@@ -4,14 +4,18 @@ This guide will walk you through the process of contributing a new dataset to Eu
 
 If you have any questions during this process, please open an issue on the [EuroEval GitHub repository](https://github.com/EuroEval/EuroEval/issues).
 
+
 ## Step 0: Prerequisites
 
 Before beginning:
-1. Check if your dataset matches one of the supported tasks. The supported tasks are listed in `docs/tasks/README.md`.
-2. If it does, fork the EuroEval repository and create a new branch to work on your dataset contribution
+1. Check if your dataset matches [one of the supported tasks](https://euroeval.com/tasks/). If your dataset doesn't match any supported task, you have two options:
+   1. Try to adapt it to fit an existing task (e.g., by reformatting it or adding multiple choice options)
+   2. Open an issue on the EuroEval repository requesting to add a new task type
+2. If it does, [fork the EuroEval repository](https://github.com/EuroEval/EuroEval/fork) and create a new branch to work on your dataset contribution
 
 
 ## Step 1: Create the Dataset Processing Script
+
 Create a script in the `src/scripts` directory that processes your dataset into the EuroEval format.
 
 The dataset creation script roughly follows this pattern:
@@ -29,31 +33,38 @@ dataset.push_to_hub("EuroEval/your_dataset_name", private=True)
 
 ### Tips for Dataset Processing:
 - Examine existing scripts for datasets with the same task for a reference on how to process your dataset.
-- For reference, `docs/datasets/english.md` contains documentation for datasets across all tasks, including example samples from their training splits. Study these examples to understand the expected format and structure for your own dataset's entries.
-- Split your dataset into train / val / test sets, ideally with 1,024 / 256 / 2,048 samples respectively
+- Take a look at [existing datasets in your language](https://euroeval.com/datasets/) to see how these are usually set up. Study these examples to understand the expected format and structure for your own dataset's entries.
+- Split your dataset into train / val / test sets, ideally with 1,024 / 256 / 2,048 samples, respectively
 - If your dataset already has splits, maintain consistency (e.g., the EuroEval train split should be a subset of the original train split)
 
+
 ## Step 2: Add Dataset Configuration
-Dataset configurations in EuroEval are organized by language, with each language having its own file at `src/euroeval/dataset_configs/{language}.py`. A configuration is made with the `DatasetConfig` class. Here is an example for the fictive English Knowledge dataset Rizzler.
+
+Dataset configurations in EuroEval are organised by language, with each language having its own file at `src/euroeval/dataset_configs/{language}.py`. A configuration is made with the `DatasetConfig` class. Here is an example for the fictive English Knowledge dataset `Rizzler`.
 
 ```python
 RIZZLER_KNOWLEDGE_CONFIG = DatasetConfig(
     name="rizzler_knowledge", # The name of the dataset
     pretty_name="the truncated version of the English knowledge dataset Rizzler", # The pretty name of the dataset used in logs.
-    huggingface_id="EuroEval/rizzer_knowledge", # The same id as used in the dataset creation script
+    huggingface_id="EuroEval/rizzler_knowledge", # The same id as used in the dataset creation script
     task=KNOW, # The task of the dataset
     languages=[EN], # The language of the dataset
     unofficial=True, # Whether the dataset is unofficial
 )
 ```
+
 Every `src/euroeval/dataset_configs/{language}.py` file has two sections:
 - `### Official datasets ###`
 - `### Unofficial datasets ###`
 
-If you are in doubt, make your dataset unofficial. This can always be changed later.
+An unofficial dataset means that the resulting evaluation will not be included in the [official leaderboard](https://euroeval.com/leaderboards/).
+
+As a starting point, make your dataset unofficial. This can always be changed later.
+
 
 ## Step 3: Document Your Dataset
-Dataset documentation in EuroEval is organized by language, with each language having its own file at `docs/datasets/{language}.md`. Within each language file, documentation is further organized by task.
+
+Dataset documentation in EuroEval is organised by language, with each language having its own file at `docs/datasets/{language}.md`. Within each language file, documentation is further organised by task.
 
 Navigate to the documentation file for your dataset's language and add your dataset's documentation in the appropriate task section.
 
@@ -73,6 +84,7 @@ To do this, you can follow these steps:
 
 
 ## Step 4: Modify the Change Log
+
 After completing the previous steps, add an entry to the project's changelog to document your contribution. The entry should be added under the `[Unreleased]` section with a short description of the dataset you have added. Here is an example of a new entry.
 
 ```md
@@ -83,6 +95,7 @@ After completing the previous steps, add an entry to the project's changelog to 
 
 
 ## Step 5: Make a Pull Request
+
 When you have completed all the previous steps, create a pull request to the EuroEval repository.
 
 

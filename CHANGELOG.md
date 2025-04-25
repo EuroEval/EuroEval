@@ -8,7 +8,6 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 ### Added
-- Added a guide on how to contribute a dataset to EuroEval.
 - Added support for Finnish 🇫🇮! This includes the Finnish part of the reading
   comprehension dataset
   [TydiQA-fi](https://huggingface.co/datasets/google-research-datasets/tydiqa/viewer/secondary_task?views%5B%5D=secondary_task_train),
