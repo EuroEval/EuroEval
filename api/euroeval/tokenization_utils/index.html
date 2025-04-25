@@ -629,6 +629,8 @@
       
         
       
+        
+      
     
     
     
@@ -983,6 +985,8 @@
       
         
           
+        
+      
         
       
         
@@ -2332,7 +2336,7 @@ If the end-of-chat token could not be located.</p>
 <i class="fa-regular fa-square-minus"></i>
 </span>
 </span>
-<span class="mkapi-object-name"><a href="./#euroeval.tokenization_utils.get_first_label_token_mapping" title="euroeval.tokenization_utils.get_first_label_token_mapping">get_first_label_token_mapping</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">dataset_config</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><a href="../data_models/#euroeval.data_models.DatasetConfig" title="euroeval.data_models.DatasetConfig">DatasetConfig</a></span><span class="mkapi-comma">, </span><span class="mkapi-arg">tokenizer</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="transformers.tokenization_utils.PreTrainedTokenizer">PreTrainedTokenizer</span> | None</span><span class="mkapi-paren">)</span><span class="mkapi-arrow"> → </span><span class="mkapi-return">dict[str, str] | bool</span></span>
+<span class="mkapi-object-name"><a href="./#euroeval.tokenization_utils.get_first_label_token_mapping" title="euroeval.tokenization_utils.get_first_label_token_mapping">get_first_label_token_mapping</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">dataset_config</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><a href="../data_models/#euroeval.data_models.DatasetConfig" title="euroeval.data_models.DatasetConfig">DatasetConfig</a></span><span class="mkapi-comma">, </span><span class="mkapi-arg">model_config</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><a href="../data_models/#euroeval.data_models.ModelConfig" title="euroeval.data_models.ModelConfig">ModelConfig</a></span><span class="mkapi-comma">, </span><span class="mkapi-arg">tokenizer</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="transformers.tokenization_utils.PreTrainedTokenizer">PreTrainedTokenizer</span> | None</span><span class="mkapi-comma">, </span><span class="mkapi-arg">generative_type</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><a href="../enums/#euroeval.enums.GenerativeType" title="euroeval.enums.GenerativeType">GenerativeType</a> | None</span><span class="mkapi-paren">)</span><span class="mkapi-arrow"> → </span><span class="mkapi-return">dict[str, str] | bool</span></span>
 </p>
 <div class="mkapi-document">
 <p>Check if the model should output scores.</p>
@@ -2352,9 +2356,19 @@ If the end-of-chat token could not be located.</p>
 The dataset configuration.</p>
 </li>
 <li>
+<p><span class="mkapi-item-name">model_config</span> : 
+<span class="mkapi-item-type"><a href="../data_models/#euroeval.data_models.ModelConfig" title="euroeval.data_models.ModelConfig">ModelConfig</a></span> <span class="mkapi-dash">&mdash;</span>
+The model configuration.</p>
+</li>
+<li>
 <p><span class="mkapi-item-name">tokenizer</span> : 
 <span class="mkapi-item-type"><span class="mkapi-tooltip" title="transformers.tokenization_utils.PreTrainedTokenizer">PreTrainedTokenizer</span> | None</span> <span class="mkapi-dash">&mdash;</span>
 The tokenizer, or None if not available.</p>
+</li>
+<li>
+<p><span class="mkapi-item-name">generative_type</span> : 
+<span class="mkapi-item-type"><a href="../enums/#euroeval.enums.GenerativeType" title="euroeval.enums.GenerativeType">GenerativeType</a> | None</span> <span class="mkapi-dash">&mdash;</span>
+The generative type, or None if not available.</p>
 </li>
 </ul>
 </div>

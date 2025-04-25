@@ -621,6 +621,8 @@
       
         
       
+        
+      
     
     
     
@@ -2019,7 +2021,17 @@
 <span class="normal">1100</span>
 <span class="normal">1101</span>
 <span class="normal">1102</span>
-<span class="normal">1103</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Class that benchmarks language models.&quot;&quot;&quot;</span>
+<span class="normal">1103</span>
+<span class="normal">1104</span>
+<span class="normal">1105</span>
+<span class="normal">1106</span>
+<span class="normal">1107</span>
+<span class="normal">1108</span>
+<span class="normal">1109</span>
+<span class="normal">1110</span>
+<span class="normal">1111</span>
+<span class="normal">1112</span>
+<span class="normal">1113</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Class that benchmarks language models.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">contextlib</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
@@ -2803,7 +2815,11 @@
                     <span class="n">dataset_languages</span><span class="o">=</span><span class="p">[</span>
                         <span class="n">language</span><span class="o">.</span><span class="n">code</span> <span class="k">for</span> <span class="n">language</span> <span class="ow">in</span> <span class="n">dataset_config</span><span class="o">.</span><span class="n">languages</span>
                     <span class="p">],</span>
-                    <span class="n">model</span><span class="o">=</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span><span class="p">,</span>
+                    <span class="n">model</span><span class="o">=</span><span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span><span class="si">}</span><span class="s2">@</span><span class="si">{</span><span class="n">model_config</span><span class="o">.</span><span class="n">revision</span><span class="si">}</span><span class="s2">&quot;</span>
+                        <span class="k">if</span> <span class="n">model_config</span><span class="o">.</span><span class="n">revision</span> <span class="ow">and</span> <span class="n">model_config</span><span class="o">.</span><span class="n">revision</span> <span class="o">!=</span> <span class="s2">&quot;main&quot;</span>
+                        <span class="k">else</span> <span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span>
+                    <span class="p">),</span>
                     <span class="n">results</span><span class="o">=</span><span class="n">results</span><span class="p">,</span>
                     <span class="n">num_model_parameters</span><span class="o">=</span><span class="n">model</span><span class="o">.</span><span class="n">num_params</span><span class="p">,</span>
                     <span class="n">max_sequence_length</span><span class="o">=</span><span class="n">model</span><span class="o">.</span><span class="n">model_max_length</span><span class="p">,</span>
@@ -3097,6 +3113,10 @@
 <span class="sd">        benchmark_config:</span>
 <span class="sd">            The general benchmark configuration.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">model_id</span> <span class="o">=</span> <span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span>
+    <span class="k">if</span> <span class="n">model_config</span><span class="o">.</span><span class="n">revision</span> <span class="ow">and</span> <span class="n">model_config</span><span class="o">.</span><span class="n">revision</span> <span class="o">!=</span> <span class="s2">&quot;main&quot;</span><span class="p">:</span>
+        <span class="n">model_id</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot;@</span><span class="si">{</span><span class="n">model_config</span><span class="o">.</span><span class="n">revision</span><span class="si">}</span><span class="s2">&quot;</span>
+
     <span class="n">split_type</span> <span class="o">=</span> <span class="s2">&quot;validation&quot;</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">benchmark_config</span><span class="o">.</span><span class="n">evaluate_test_split</span> <span class="k">else</span> <span class="s2">&quot;test&quot;</span>
     <span class="k">if</span> <span class="n">model_config</span><span class="o">.</span><span class="n">task</span> <span class="ow">in</span> <span class="n">GENERATIVE_PIPELINE_TAGS</span><span class="p">:</span>
         <span class="k">if</span> <span class="n">benchmark_config</span><span class="o">.</span><span class="n">few_shot</span><span class="p">:</span>
@@ -3105,8 +3125,9 @@
             <span class="n">eval_type</span> <span class="o">=</span> <span class="s2">&quot;Zero-shot benchmarking&quot;</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="n">eval_type</span> <span class="o">=</span> <span class="s2">&quot;Benchmarking&quot;</span>
+
     <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
-        <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">eval_type</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span><span class="si">}</span><span class="s2"> on the </span><span class="si">{</span><span class="n">split_type</span><span class="si">}</span><span class="s2"> split of &quot;</span>
+        <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">eval_type</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">model_id</span><span class="si">}</span><span class="s2"> on the </span><span class="si">{</span><span class="n">split_type</span><span class="si">}</span><span class="s2"> split of &quot;</span>
         <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">dataset_config</span><span class="o">.</span><span class="n">pretty_name</span><span class="si">}</span><span class="s2">&quot;</span>
     <span class="p">)</span>
 
@@ -3116,6 +3137,7 @@
             <span class="s2">&quot;meaning that the resulting evaluation will not be included in the &quot;</span>
             <span class="s2">&quot;official leaderboard.&quot;</span>
         <span class="p">)</span>
+
     <span class="k">if</span> <span class="n">benchmark_config</span><span class="o">.</span><span class="n">debug</span><span class="p">:</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
             <span class="s2">&quot;Running in debug mode. This will output additional information, as &quot;</span>

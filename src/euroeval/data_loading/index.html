@@ -621,6 +621,8 @@
       
         
       
+        
+      
     
     
     
@@ -821,6 +823,15 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#euroeval.data_loading.load_raw_data" class="md-nav__link">
+    <span class="md-ellipsis">
+      load_raw_data
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -950,7 +961,29 @@
 <span class="normal">100</span>
 <span class="normal">101</span>
 <span class="normal">102</span>
-<span class="normal">103</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Functions related to the loading of the data.&quot;&quot;&quot;</span>
+<span class="normal">103</span>
+<span class="normal">104</span>
+<span class="normal">105</span>
+<span class="normal">106</span>
+<span class="normal">107</span>
+<span class="normal">108</span>
+<span class="normal">109</span>
+<span class="normal">110</span>
+<span class="normal">111</span>
+<span class="normal">112</span>
+<span class="normal">113</span>
+<span class="normal">114</span>
+<span class="normal">115</span>
+<span class="normal">116</span>
+<span class="normal">117</span>
+<span class="normal">118</span>
+<span class="normal">119</span>
+<span class="normal">120</span>
+<span class="normal">121</span>
+<span class="normal">122</span>
+<span class="normal">123</span>
+<span class="normal">124</span>
+<span class="normal">125</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Functions related to the loading of the data.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
@@ -991,32 +1024,9 @@
 <span class="sd">        HuggingFaceHubDown:</span>
 <span class="sd">            If the Hugging Face Hub is down.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">num_attempts</span> <span class="o">=</span> <span class="mi">5</span>
-    <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_attempts</span><span class="p">):</span>
-        <span class="k">try</span><span class="p">:</span>
-            <span class="n">dataset</span> <span class="o">=</span> <span class="n">load_dataset</span><span class="p">(</span>
-                <span class="n">path</span><span class="o">=</span><span class="n">dataset_config</span><span class="o">.</span><span class="n">huggingface_id</span><span class="p">,</span>
-                <span class="n">cache_dir</span><span class="o">=</span><span class="n">benchmark_config</span><span class="o">.</span><span class="n">cache_dir</span><span class="p">,</span>
-                <span class="n">token</span><span class="o">=</span><span class="n">unscramble</span><span class="p">(</span><span class="s2">&quot;HjccJFhIozVymqXDVqTUTXKvYhZMTbfIjMxG_&quot;</span><span class="p">),</span>
-            <span class="p">)</span>
-            <span class="k">break</span>
-        <span class="k">except</span> <span class="p">(</span><span class="ne">FileNotFoundError</span><span class="p">,</span> <span class="n">DatasetsError</span><span class="p">,</span> <span class="ne">ConnectionError</span><span class="p">,</span> <span class="n">ReadTimeout</span><span class="p">):</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;Failed to load dataset </span><span class="si">{</span><span class="n">dataset_config</span><span class="o">.</span><span class="n">huggingface_id</span><span class="si">!r}</span><span class="s2">. Retrying...&quot;</span>
-            <span class="p">)</span>
-            <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
-            <span class="k">continue</span>
-        <span class="k">except</span> <span class="n">HfHubHTTPError</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="n">HuggingFaceHubDown</span><span class="p">()</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="n">InvalidBenchmark</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;Failed to load dataset </span><span class="si">{</span><span class="n">dataset_config</span><span class="o">.</span><span class="n">huggingface_id</span><span class="si">!r}</span><span class="s2"> after &quot;</span>
-            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">num_attempts</span><span class="si">}</span><span class="s2"> attempts.&quot;</span>
-        <span class="p">)</span>
-
-    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="n">DatasetDict</span><span class="p">)</span>  <span class="c1"># type: ignore[used-before-def]</span>
-
-    <span class="n">dataset</span> <span class="o">=</span> <span class="n">DatasetDict</span><span class="p">({</span><span class="n">key</span><span class="p">:</span> <span class="n">dataset</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;train&quot;</span><span class="p">,</span> <span class="s2">&quot;val&quot;</span><span class="p">,</span> <span class="s2">&quot;test&quot;</span><span class="p">]})</span>
+    <span class="n">dataset</span> <span class="o">=</span> <span class="n">load_raw_data</span><span class="p">(</span>
+        <span class="n">dataset_config</span><span class="o">=</span><span class="n">dataset_config</span><span class="p">,</span> <span class="n">cache_dir</span><span class="o">=</span><span class="n">benchmark_config</span><span class="o">.</span><span class="n">cache_dir</span>
+    <span class="p">)</span>
 
     <span class="k">if</span> <span class="ow">not</span> <span class="n">benchmark_config</span><span class="o">.</span><span class="n">evaluate_test_split</span><span class="p">:</span>
         <span class="n">dataset</span><span class="p">[</span><span class="s2">&quot;test&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">dataset</span><span class="p">[</span><span class="s2">&quot;val&quot;</span><span class="p">]</span>
@@ -1053,6 +1063,51 @@
         <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">benchmark_config</span><span class="o">.</span><span class="n">num_iterations</span><span class="p">)</span>
     <span class="p">]</span>
     <span class="k">return</span> <span class="n">datasets</span>
+
+<div class="mkapi-source-link" id="euroeval.data_loading.load_raw_data"><a href="../../../api/euroeval/data_loading/#euroeval.data_loading.load_raw_data" title="Go to docs">docs</a></div>
+<span class="k">def</span><span class="w"> </span><span class="nf">load_raw_data</span><span class="p">(</span><span class="n">dataset_config</span><span class="p">:</span> <span class="s2">&quot;DatasetConfig&quot;</span><span class="p">,</span> <span class="n">cache_dir</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DatasetDict</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Load the raw dataset.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        dataset_config:</span>
+<span class="sd">            The configuration for the dataset.</span>
+<span class="sd">        cache_dir:</span>
+<span class="sd">            The directory to cache the dataset.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        The dataset.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">num_attempts</span> <span class="o">=</span> <span class="mi">5</span>
+    <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_attempts</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">dataset</span> <span class="o">=</span> <span class="n">load_dataset</span><span class="p">(</span>
+                <span class="n">path</span><span class="o">=</span><span class="n">dataset_config</span><span class="o">.</span><span class="n">huggingface_id</span><span class="p">,</span>
+                <span class="n">cache_dir</span><span class="o">=</span><span class="n">cache_dir</span><span class="p">,</span>
+                <span class="n">token</span><span class="o">=</span><span class="n">unscramble</span><span class="p">(</span><span class="s2">&quot;HjccJFhIozVymqXDVqTUTXKvYhZMTbfIjMxG_&quot;</span><span class="p">),</span>
+            <span class="p">)</span>
+            <span class="k">break</span>
+        <span class="k">except</span> <span class="p">(</span><span class="ne">FileNotFoundError</span><span class="p">,</span> <span class="n">DatasetsError</span><span class="p">,</span> <span class="ne">ConnectionError</span><span class="p">,</span> <span class="n">ReadTimeout</span><span class="p">):</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Failed to load dataset </span><span class="si">{</span><span class="n">dataset_config</span><span class="o">.</span><span class="n">huggingface_id</span><span class="si">!r}</span><span class="s2">. Retrying...&quot;</span>
+            <span class="p">)</span>
+            <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+            <span class="k">continue</span>
+        <span class="k">except</span> <span class="n">HfHubHTTPError</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">HuggingFaceHubDown</span><span class="p">()</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">InvalidBenchmark</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;Failed to load dataset </span><span class="si">{</span><span class="n">dataset_config</span><span class="o">.</span><span class="n">huggingface_id</span><span class="si">!r}</span><span class="s2"> after &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">num_attempts</span><span class="si">}</span><span class="s2"> attempts.&quot;</span>
+        <span class="p">)</span>
+    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="n">DatasetDict</span><span class="p">)</span>  <span class="c1"># type: ignore[used-before-def]</span>
+    <span class="n">required_keys</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;train&quot;</span><span class="p">,</span> <span class="s2">&quot;val&quot;</span><span class="p">,</span> <span class="s2">&quot;test&quot;</span><span class="p">]</span>
+    <span class="n">missing_keys</span> <span class="o">=</span> <span class="p">[</span><span class="n">key</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">required_keys</span> <span class="k">if</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">dataset</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">missing_keys</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">InvalidBenchmark</span><span class="p">(</span>
+            <span class="s2">&quot;The dataset is missing the following required splits: &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">missing_keys</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="p">)</span>
+    <span class="k">return</span> <span class="n">DatasetDict</span><span class="p">({</span><span class="n">key</span><span class="p">:</span> <span class="n">dataset</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">required_keys</span><span class="p">})</span>
 </code></pre></div></td></tr></table></div>
 
 

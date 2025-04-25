@@ -621,6 +621,8 @@
       
         
       
+        
+      
     
     
     
@@ -1788,15 +1790,7 @@
 <span class="normal">686</span>
 <span class="normal">687</span>
 <span class="normal">688</span>
-<span class="normal">689</span>
-<span class="normal">690</span>
-<span class="normal">691</span>
-<span class="normal">692</span>
-<span class="normal">693</span>
-<span class="normal">694</span>
-<span class="normal">695</span>
-<span class="normal">696</span>
-<span class="normal">697</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Data models used in EuroEval.&quot;&quot;&quot;</span>
+<span class="normal">689</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Data models used in EuroEval.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">c</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
@@ -2319,14 +2313,6 @@
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The natural string representation of the labels in specified language.</span>
-
-<span class="sd">        Raises:</span>
-<span class="sd">            NotImplementedError:</span>
-<span class="sd">                If `and_separator` or `or_separator` are `None`, see `Language`.</span>
-
-<span class="sd">        Example:</span>
-<span class="sd">            &gt;&gt;&gt; get_labels_str(language=DA)</span>
-<span class="sd">            &quot;&#39;a&#39;, &#39;b&#39;, &#39;c&#39; eller &#39;d&#39;&quot;</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">main_language</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">languages</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
 

@@ -621,6 +621,8 @@
       
         
       
+        
+      
     
     
     
@@ -1244,7 +1246,23 @@
 <span class="normal">340</span>
 <span class="normal">341</span>
 <span class="normal">342</span>
-<span class="normal">343</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Utility functions related to tokenization.&quot;&quot;&quot;</span>
+<span class="normal">343</span>
+<span class="normal">344</span>
+<span class="normal">345</span>
+<span class="normal">346</span>
+<span class="normal">347</span>
+<span class="normal">348</span>
+<span class="normal">349</span>
+<span class="normal">350</span>
+<span class="normal">351</span>
+<span class="normal">352</span>
+<span class="normal">353</span>
+<span class="normal">354</span>
+<span class="normal">355</span>
+<span class="normal">356</span>
+<span class="normal">357</span>
+<span class="normal">358</span>
+<span class="normal">359</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Utility functions related to tokenization.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
@@ -1253,6 +1271,7 @@
 <span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">.constants</span><span class="w"> </span><span class="kn">import</span> <span class="n">TASK_GROUPS_USING_LOGPROBS</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.enums</span><span class="w"> </span><span class="kn">import</span> <span class="n">GenerativeType</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.exceptions</span><span class="w"> </span><span class="kn">import</span> <span class="n">InvalidModel</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">log_once</span>
 
@@ -1260,7 +1279,7 @@
     <span class="kn">from</span><span class="w"> </span><span class="nn">transformers.tokenization_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">PreTrainedTokenizer</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">transformers.tokenization_utils_base</span><span class="w"> </span><span class="kn">import</span> <span class="n">PreTrainedTokenizerBase</span>
 
-    <span class="kn">from</span><span class="w"> </span><span class="nn">.data_models</span><span class="w"> </span><span class="kn">import</span> <span class="n">DatasetConfig</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">.data_models</span><span class="w"> </span><span class="kn">import</span> <span class="n">DatasetConfig</span><span class="p">,</span> <span class="n">ModelConfig</span>
 
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">&quot;euroeval&quot;</span><span class="p">)</span>
@@ -1500,35 +1519,50 @@
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">get_first_label_token_mapping</span><span class="p">(</span><div class="mkapi-source-link" id="euroeval.tokenization_utils.get_first_label_token_mapping"><a href="../../../api/euroeval/tokenization_utils/#euroeval.tokenization_utils.get_first_label_token_mapping" title="Go to docs">docs</a></div>
-    <span class="n">dataset_config</span><span class="p">:</span> <span class="s2">&quot;DatasetConfig&quot;</span><span class="p">,</span> <span class="n">tokenizer</span><span class="p">:</span> <span class="s2">&quot;PreTrainedTokenizer | None&quot;</span>
+    <span class="n">dataset_config</span><span class="p">:</span> <span class="s2">&quot;DatasetConfig&quot;</span><span class="p">,</span>
+    <span class="n">model_config</span><span class="p">:</span> <span class="s2">&quot;ModelConfig&quot;</span><span class="p">,</span>
+    <span class="n">tokenizer</span><span class="p">:</span> <span class="s2">&quot;PreTrainedTokenizer | None&quot;</span><span class="p">,</span>
+    <span class="n">generative_type</span><span class="p">:</span> <span class="s2">&quot;GenerativeType | None&quot;</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Check if the model should output scores.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        dataset_config:</span>
 <span class="sd">            The dataset configuration.</span>
+<span class="sd">        model_config:</span>
+<span class="sd">            The model configuration.</span>
 <span class="sd">        tokenizer:</span>
 <span class="sd">            The tokenizer, or None if not available.</span>
+<span class="sd">        generative_type:</span>
+<span class="sd">            The generative type, or None if not available.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        A mapping from labels to the first token in each label, or alternatively a</span>
 <span class="sd">        Boolean value indicating whether the model should output scores (if the mapping</span>
 <span class="sd">        is outputted then the model will always output scores).</span>
 <span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">generative_type</span> <span class="o">==</span> <span class="n">GenerativeType</span><span class="o">.</span><span class="n">REASONING</span><span class="p">:</span>
+        <span class="n">log_once</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;The model </span><span class="si">{</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span><span class="si">!r}</span><span class="s2"> is a reasoning model and &quot;</span>
+            <span class="s2">&quot;thus does not support logprobs, so we do not enable it.&quot;</span><span class="p">,</span>
+            <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="kc">False</span>
+
     <span class="c1"># If we do not have any tokenizer, then we cannot check if the model should output</span>
     <span class="c1"># scores and we just assume it should if the dataset supports it</span>
     <span class="n">output_scores</span> <span class="o">=</span> <span class="n">dataset_config</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">task_group</span> <span class="ow">in</span> <span class="n">TASK_GROUPS_USING_LOGPROBS</span>
     <span class="k">if</span> <span class="n">tokenizer</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="k">if</span> <span class="n">output_scores</span><span class="p">:</span>
             <span class="n">log_once</span><span class="p">(</span>
-                <span class="s2">&quot;The model will output scores, since the dataset supports it and no &quot;</span>
-                <span class="s2">&quot;tokenizer is available.&quot;</span><span class="p">,</span>
+                <span class="sa">f</span><span class="s2">&quot;The model </span><span class="si">{</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span><span class="si">!r}</span><span class="s2"> will output scores, since the &quot;</span>
+                <span class="s2">&quot;dataset supports it and no tokenizer is available.&quot;</span><span class="p">,</span>
                 <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
             <span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">log_once</span><span class="p">(</span>
-                <span class="s2">&quot;The model will not output scores, since the dataset does not support &quot;</span>
-                <span class="s2">&quot;it and no tokenizer is available.&quot;</span><span class="p">,</span>
+                <span class="sa">f</span><span class="s2">&quot;The model </span><span class="si">{</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span><span class="si">!r}</span><span class="s2"> will not output scores, since &quot;</span>
+                <span class="s2">&quot;the dataset does not support it and no tokenizer is available.&quot;</span><span class="p">,</span>
                 <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
             <span class="p">)</span>
         <span class="k">return</span> <span class="n">output_scores</span>

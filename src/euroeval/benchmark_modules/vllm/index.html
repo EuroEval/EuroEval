@@ -621,6 +621,8 @@
       
         
       
+        
+      
     
     
     
@@ -2235,7 +2237,21 @@
 <span class="normal">1271</span>
 <span class="normal">1272</span>
 <span class="normal">1273</span>
-<span class="normal">1274</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Generative models using the vLLM inference framework.&quot;&quot;&quot;</span>
+<span class="normal">1274</span>
+<span class="normal">1275</span>
+<span class="normal">1276</span>
+<span class="normal">1277</span>
+<span class="normal">1278</span>
+<span class="normal">1279</span>
+<span class="normal">1280</span>
+<span class="normal">1281</span>
+<span class="normal">1282</span>
+<span class="normal">1283</span>
+<span class="normal">1284</span>
+<span class="normal">1285</span>
+<span class="normal">1286</span>
+<span class="normal">1287</span>
+<span class="normal">1288</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Generative models using the vLLM inference framework.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">c</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">contextlib</span>
@@ -2369,7 +2385,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_model</span><span class="p">:</span> <span class="n">LLM</span> <span class="o">=</span> <span class="n">model</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_tokenizer</span><span class="p">:</span> <span class="n">PreTrainedTokenizer</span> <span class="o">=</span> <span class="n">tokenizer</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">end_of_reasoning_token_id</span> <span class="o">=</span> <span class="n">get_end_of_reasoning_token_id</span><span class="p">(</span>
-            <span class="n">model</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_model</span><span class="p">,</span> <span class="n">tokenizer</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_tokenizer</span>
+            <span class="n">model</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_model</span><span class="p">,</span> <span class="n">tokenizer</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_tokenizer</span><span class="p">,</span> <span class="n">model_id</span><span class="o">=</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span>
         <span class="p">)</span>
 
         <span class="c1"># We specify `HuggingFaceEncoderModel` here instead of `VLLMModel`, as we want</span>
@@ -2383,7 +2399,10 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">buffer</span> <span class="o">|=</span> <span class="nb">dict</span><span class="p">(</span>
             <span class="n">instruction_model</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_tokenizer</span><span class="o">.</span><span class="n">chat_template</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span>
             <span class="n">first_label_token_mapping</span><span class="o">=</span><span class="n">get_first_label_token_mapping</span><span class="p">(</span>
-                <span class="n">dataset_config</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dataset_config</span><span class="p">,</span> <span class="n">tokenizer</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_tokenizer</span>
+                <span class="n">dataset_config</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dataset_config</span><span class="p">,</span>
+                <span class="n">model_config</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="p">,</span>
+                <span class="n">tokenizer</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_tokenizer</span><span class="p">,</span>
+                <span class="n">generative_type</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">generative_type</span><span class="p">,</span>
             <span class="p">),</span>
         <span class="p">)</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">adapter_base_model_id</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
@@ -2569,30 +2588,40 @@
             <span class="k">if</span> <span class="n">end_of_chat_token</span><span class="p">:</span>
                 <span class="n">stop_tokens</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">end_of_chat_token</span><span class="p">)</span>
 
+        <span class="n">logits_processor</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">dataset_config</span><span class="o">.</span><span class="n">task</span> <span class="ow">in</span> <span class="n">TASKS_USING_JSON</span><span class="p">:</span>
-            <span class="n">ner_tag_names</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dataset_config</span><span class="o">.</span><span class="n">prompt_label_mapping</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
-            <span class="n">keys_and_their_types</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">t</span><span class="o">.</span><span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
-                <span class="n">tag_name</span><span class="p">:</span> <span class="p">(</span><span class="n">conlist</span><span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="n">max_length</span><span class="o">=</span><span class="mi">5</span><span class="p">),</span> <span class="o">...</span><span class="p">)</span>
-                <span class="k">for</span> <span class="n">tag_name</span> <span class="ow">in</span> <span class="n">ner_tag_names</span>
-            <span class="p">}</span>
-            <span class="n">pydantic_class</span> <span class="o">=</span> <span class="n">create_model</span><span class="p">(</span><span class="s2">&quot;AnswerFormat&quot;</span><span class="p">,</span> <span class="o">**</span><span class="n">keys_and_their_types</span><span class="p">)</span>
-            <span class="n">logits_processor</span> <span class="o">=</span> <span class="n">JSONLogitsProcessor</span><span class="p">(</span>
-                <span class="n">schema</span><span class="o">=</span><span class="n">pydantic_class</span><span class="p">,</span>
-                <span class="n">tokenizer</span><span class="o">=</span><span class="n">adapt_tokenizer</span><span class="p">(</span><span class="n">tokenizer</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_tokenizer</span><span class="p">),</span>  <span class="c1"># type: ignore</span>
-                <span class="n">whitespace_pattern</span><span class="o">=</span><span class="sa">r</span><span class="s2">&quot; ?&quot;</span><span class="p">,</span>
-            <span class="p">)</span>
-            <span class="n">log_once</span><span class="p">(</span>
-                <span class="s2">&quot;Using structured generation with the schema &quot;</span>
-                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">pydantic_class</span><span class="o">.</span><span class="n">model_json_schema</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
-                <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
-            <span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">logits_processor</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">generative_type</span> <span class="o">==</span> <span class="n">GenerativeType</span><span class="o">.</span><span class="n">REASONING</span><span class="p">:</span>
+                <span class="n">log_once</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;The model </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span><span class="si">!r}</span><span class="s2"> is a reasoning model &quot;</span>
+                    <span class="s2">&quot;and thus does not support structured generation, so we do not &quot;</span>
+                    <span class="s2">&quot;enable it.&quot;</span><span class="p">,</span>
+                    <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
+                <span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">ner_tag_names</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dataset_config</span><span class="o">.</span><span class="n">prompt_label_mapping</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+                <span class="n">keys_and_their_types</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">t</span><span class="o">.</span><span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+                    <span class="n">tag_name</span><span class="p">:</span> <span class="p">(</span><span class="n">conlist</span><span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="n">max_length</span><span class="o">=</span><span class="mi">5</span><span class="p">),</span> <span class="o">...</span><span class="p">)</span>
+                    <span class="k">for</span> <span class="n">tag_name</span> <span class="ow">in</span> <span class="n">ner_tag_names</span>
+                <span class="p">}</span>
+                <span class="n">pydantic_class</span> <span class="o">=</span> <span class="n">create_model</span><span class="p">(</span><span class="s2">&quot;AnswerFormat&quot;</span><span class="p">,</span> <span class="o">**</span><span class="n">keys_and_their_types</span><span class="p">)</span>
+                <span class="n">logits_processor</span> <span class="o">=</span> <span class="n">JSONLogitsProcessor</span><span class="p">(</span>
+                    <span class="n">schema</span><span class="o">=</span><span class="n">pydantic_class</span><span class="p">,</span>
+                    <span class="n">tokenizer</span><span class="o">=</span><span class="n">adapt_tokenizer</span><span class="p">(</span><span class="n">tokenizer</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_tokenizer</span><span class="p">),</span>  <span class="c1"># type: ignore</span>
+                    <span class="n">whitespace_pattern</span><span class="o">=</span><span class="sa">r</span><span class="s2">&quot; ?&quot;</span><span class="p">,</span>
+                <span class="p">)</span>
+                <span class="n">log_once</span><span class="p">(</span>
+                    <span class="s2">&quot;Using structured generation with the JSON schema &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">pydantic_class</span><span class="o">.</span><span class="n">model_json_schema</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                    <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
+                <span class="p">)</span>
 
         <span class="c1"># Get the mapping from labels to the first token in the label. We call this each</span>
         <span class="c1"># time we generate a new dataset since the dataset config can change</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">buffer</span><span class="p">[</span><span class="s2">&quot;first_label_token_mapping&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">get_first_label_token_mapping</span><span class="p">(</span>
-            <span class="n">dataset_config</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dataset_config</span><span class="p">,</span> <span class="n">tokenizer</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_tokenizer</span>
+            <span class="n">dataset_config</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dataset_config</span><span class="p">,</span>
+            <span class="n">model_config</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="p">,</span>
+            <span class="n">tokenizer</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_tokenizer</span><span class="p">,</span>
+            <span class="n">generative_type</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">generative_type</span><span class="p">,</span>
         <span class="p">)</span>
 
         <span class="c1"># Define the parameters used for vLLM generation</span>
@@ -2628,7 +2657,10 @@
         <span class="p">)</span> <span class="ow">and</span> <span class="n">should_prompts_be_stripped</span><span class="p">(</span>
             <span class="n">labels_to_be_generated</span><span class="o">=</span><span class="n">labels_to_be_generated</span><span class="p">,</span> <span class="n">tokenizer</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_tokenizer</span>
         <span class="p">):</span>
-            <span class="n">log_once</span><span class="p">(</span><span class="n">message</span><span class="o">=</span><span class="s2">&quot;Stripping prompts.&quot;</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">)</span>
+            <span class="n">log_once</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Stripping prompts for model </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span><span class="si">!r}</span><span class="s2">.&quot;</span><span class="p">,</span>
+                <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
+            <span class="p">)</span>
             <span class="n">prompts</span> <span class="o">=</span> <span class="p">[</span><span class="n">prompt</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">for</span> <span class="n">prompt</span> <span class="ow">in</span> <span class="n">prompts</span><span class="p">]</span>
 
         <span class="c1"># Generate sequences using vLLM</span>
@@ -2659,7 +2691,7 @@
         <span class="p">]</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">end_of_reasoning_token_id</span> <span class="ow">in</span> <span class="n">completion_ids</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
             <span class="n">completion_ids</span> <span class="o">=</span> <span class="p">[</span>
-                <span class="n">token_ids</span><span class="p">[</span><span class="n">token_ids</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">end_of_reasoning_token_id</span><span class="p">)</span> <span class="o">+</span> <span class="mi">2</span> <span class="p">:]</span>
+                <span class="n">token_ids</span><span class="p">[</span><span class="n">token_ids</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">end_of_reasoning_token_id</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span> <span class="p">:]</span>
                 <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">end_of_reasoning_token_id</span> <span class="ow">in</span> <span class="n">token_ids</span>
                 <span class="k">else</span> <span class="n">token_ids</span>
                 <span class="k">for</span> <span class="n">token_ids</span> <span class="ow">in</span> <span class="n">completion_ids</span>
@@ -3046,7 +3078,8 @@
                     <span class="k">if</span> <span class="n">name</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="ow">in</span> <span class="n">language_codes</span><span class="p">:</span>
                         <span class="n">chat_template</span> <span class="o">=</span> <span class="n">candidate_template</span>
                         <span class="n">log_once</span><span class="p">(</span>
-                            <span class="sa">f</span><span class="s2">&quot;Using the </span><span class="si">{</span><span class="n">name</span><span class="si">!r}</span><span class="s2"> chat template for the tokenizer.&quot;</span><span class="p">,</span>
+                            <span class="sa">f</span><span class="s2">&quot;Using the </span><span class="si">{</span><span class="n">name</span><span class="si">!r}</span><span class="s2"> chat template for the tokenizer for &quot;</span>
+                            <span class="sa">f</span><span class="s2">&quot;model </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span><span class="si">!r}</span><span class="s2">.&quot;</span><span class="p">,</span>
                             <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
                         <span class="p">)</span>
                         <span class="k">break</span>
@@ -3406,7 +3439,7 @@
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">get_end_of_reasoning_token_id</span><span class="p">(</span><div class="mkapi-source-link" id="euroeval.benchmark_modules.vllm.get_end_of_reasoning_token_id"><a href="../../../../api/euroeval/benchmark_modules/vllm/#euroeval.benchmark_modules.vllm.get_end_of_reasoning_token_id" title="Go to docs">docs</a></div>
-    <span class="n">model</span><span class="p">:</span> <span class="s2">&quot;LLM&quot;</span><span class="p">,</span> <span class="n">tokenizer</span><span class="p">:</span> <span class="s2">&quot;PreTrainedTokenizer&quot;</span>
+    <span class="n">model</span><span class="p">:</span> <span class="s2">&quot;LLM&quot;</span><span class="p">,</span> <span class="n">tokenizer</span><span class="p">:</span> <span class="s2">&quot;PreTrainedTokenizer&quot;</span><span class="p">,</span> <span class="n">model_id</span><span class="p">:</span> <span class="nb">str</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the end of reasoning token ID for a generative model.</span>
 
@@ -3419,6 +3452,8 @@
 <span class="sd">            The vLLM model.</span>
 <span class="sd">        tokenizer:</span>
 <span class="sd">            The tokenizer.</span>
+<span class="sd">        model_id:</span>
+<span class="sd">            The model ID.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The end of reasoning token ID, or None if it could not be found.</span>
@@ -3457,10 +3492,8 @@
     <span class="n">completion_match</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">pattern</span><span class="o">=</span><span class="sa">r</span><span class="s2">&quot;&lt;\w+&gt;&quot;</span><span class="p">,</span> <span class="n">string</span><span class="o">=</span><span class="n">completion</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">completion_match</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">prompt_match</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">log_once</span><span class="p">(</span>
-            <span class="n">message</span><span class="o">=</span><span class="p">(</span>
-                <span class="s2">&quot;Could not find a reasoning token, so assuming the model is not a &quot;</span>
-                <span class="s2">&quot;reasoning model.&quot;</span>
-            <span class="p">),</span>
+            <span class="sa">f</span><span class="s2">&quot;Could not find a reasoning token for model </span><span class="si">{</span><span class="n">model_id</span><span class="si">!r}</span><span class="s2">, so assuming &quot;</span>
+            <span class="s2">&quot;the model is not a reasoning model.&quot;</span><span class="p">,</span>
             <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="k">return</span> <span class="kc">None</span>
@@ -3486,20 +3519,17 @@
         <span class="ow">or</span> <span class="n">end_of_reasoning_token</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">special_tokens</span>
     <span class="p">):</span>
         <span class="n">log_once</span><span class="p">(</span>
-            <span class="n">message</span><span class="o">=</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;Detected reasoning token </span><span class="si">{</span><span class="n">reasoning_token</span><span class="si">!r}</span><span class="s2"> and end-of-reasoning &quot;</span>
-                <span class="sa">f</span><span class="s2">&quot;token </span><span class="si">{</span><span class="n">end_of_reasoning_token</span><span class="si">!r}</span><span class="s2">, but one of them is not registered &quot;</span>
-                <span class="s2">&quot;as a special token, so assuming it is not a real reasoning token.&quot;</span>
-            <span class="p">),</span>
+            <span class="sa">f</span><span class="s2">&quot;Detected reasoning token </span><span class="si">{</span><span class="n">reasoning_token</span><span class="si">!r}</span><span class="s2"> and end-of-reasoning &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;token </span><span class="si">{</span><span class="n">end_of_reasoning_token</span><span class="si">!r}</span><span class="s2"> for model </span><span class="si">{</span><span class="n">model_id</span><span class="si">!r}</span><span class="s2">, but one of &quot;</span>
+            <span class="s2">&quot;them is not registered as a special token, so assuming it is not a &quot;</span>
+            <span class="s2">&quot;real reasoning token.&quot;</span><span class="p">,</span>
             <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="k">return</span> <span class="kc">None</span>
 
     <span class="n">log_once</span><span class="p">(</span>
-        <span class="n">message</span><span class="o">=</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;Detected reasoning token </span><span class="si">{</span><span class="n">reasoning_token</span><span class="si">!r}</span><span class="s2"> and end-of-reasoning &quot;</span>
-            <span class="sa">f</span><span class="s2">&quot;token </span><span class="si">{</span><span class="n">end_of_reasoning_token</span><span class="si">!r}</span><span class="s2">.&quot;</span>
-        <span class="p">),</span>
+        <span class="sa">f</span><span class="s2">&quot;Detected reasoning token </span><span class="si">{</span><span class="n">reasoning_token</span><span class="si">!r}</span><span class="s2"> and end-of-reasoning &quot;</span>
+        <span class="sa">f</span><span class="s2">&quot;token </span><span class="si">{</span><span class="n">end_of_reasoning_token</span><span class="si">!r}</span><span class="s2"> for model </span><span class="si">{</span><span class="n">model_id</span><span class="si">!r}</span><span class="s2">.&quot;</span><span class="p">,</span>
         <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
     <span class="p">)</span>
 

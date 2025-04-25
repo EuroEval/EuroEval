@@ -629,6 +629,8 @@
       
         
       
+        
+      
     
     
     
@@ -983,6 +985,8 @@
       
         
           
+        
+      
         
       
         
@@ -2167,7 +2171,7 @@ The predicted labels.</p>
 <i class="fa-regular fa-square-minus"></i>
 </span>
 </span>
-<span class="mkapi-object-name"><a href="./#euroeval.task_group_utils.sequence_classification.get_closest_logprobs_labels" title="euroeval.task_group_utils.sequence_classification.get_closest_logprobs_labels">get_closest_logprobs_labels</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">generation_logprobs</span><span class="mkapi-colon">: </span><span class="mkapi-ann">list[list[list[tuple[str, float]]]]</span><span class="mkapi-comma">, </span><span class="mkapi-arg">dataset_config</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><a href="../../data_models/#euroeval.data_models.DatasetConfig" title="euroeval.data_models.DatasetConfig">DatasetConfig</a></span><span class="mkapi-comma">, </span><span class="mkapi-arg">first_label_token_mapping</span><span class="mkapi-colon">: </span><span class="mkapi-ann">dict[str, str] | bool</span><span class="mkapi-paren">)</span><span class="mkapi-arrow"> → </span><span class="mkapi-return">list[str]</span></span>
+<span class="mkapi-object-name"><a href="./#euroeval.task_group_utils.sequence_classification.get_closest_logprobs_labels" title="euroeval.task_group_utils.sequence_classification.get_closest_logprobs_labels">get_closest_logprobs_labels</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">generation_logprobs</span><span class="mkapi-colon">: </span><span class="mkapi-ann">list[list[list[tuple[str, float]]]]</span><span class="mkapi-comma">, </span><span class="mkapi-arg">dataset_config</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><a href="../../data_models/#euroeval.data_models.DatasetConfig" title="euroeval.data_models.DatasetConfig">DatasetConfig</a></span><span class="mkapi-comma">, </span><span class="mkapi-arg">first_label_token_mapping</span><span class="mkapi-colon">: </span><span class="mkapi-ann">dict[str, str] | bool</span><span class="mkapi-paren">)</span><span class="mkapi-arrow"> → </span><span class="mkapi-return">list[str] | None</span></span>
 </p>
 <div class="mkapi-document">
 <p>Get the labels with the highest predicted logprob value.</p>
@@ -2216,8 +2220,8 @@ mapping is outputted then the model will always output scores).</p>
 <div class="mkapi-section-content">
 <ul class="mkapi-item-list">
 <li>
-<p><span class="mkapi-item-type">list[str]</span> <span class="mkapi-dash">&mdash;</span>
-The predicted labels.</p>
+<p><span class="mkapi-item-type">list[str] | None</span> <span class="mkapi-dash">&mdash;</span>
+The predicted labels, or None if labels could not be extracted.</p>
 </li>
 </ul>
 </div>
