@@ -53,6 +53,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Do not supply stop sequences to API models if they do not support it.
 - If a `SystemError` happens during LiteLLM generation then we now retry the
   generation.
+- Handle if a LiteLLM model does not support specifying maxItems in the JSON schema
+  during structured generation.
 
 
 ## [v15.6.1] - 2025-04-14

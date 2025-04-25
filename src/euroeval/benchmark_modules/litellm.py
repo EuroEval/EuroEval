@@ -340,6 +340,7 @@ class LiteLLMModel(BenchmarkModule):
             "'temperature' does not support 0.0 with this model. Only the default "
             "(1) value is supported",
         ]
+        max_items_messages = ["'maxItems' is not permitted."]
 
         # Extract the generated sequences from the model response. Some APIs cannot
         # handle using newlines as stop sequences, so we try both.
@@ -389,6 +390,17 @@ class LiteLLMModel(BenchmarkModule):
                         level=logging.DEBUG,
                     )
                     generation_kwargs["temperature"] = 1.0
+                elif any(msg.lower() in str(e).lower() for msg in max_items_messages):
+                    ner_tag_names = list(
+                        self.dataset_config.prompt_label_mapping.values()
+                    )
+                    keys_and_their_types = {
+                        tag_name: (list[str], ...) for tag_name in ner_tag_names
+                    }
+                    pydantic_class = create_model(
+                        "AnswerFormat", **keys_and_their_types
+                    )
+                    generation_kwargs["response_format"] = pydantic_class
                 elif isinstance(e, RateLimitError):
                     raise InvalidModel(
                         "You have encountered your rate limit for model "
