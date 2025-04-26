@@ -539,7 +539,7 @@ class LiteLLMModel(BenchmarkModule):
             generation_output = generation_output.strip()
 
             # Structure the model output as a GenerativeModelOutput object
-            model_output = GenerativeModelOutput(sequences=[generation_output])
+            sequences.append(generation_output)
             if hasattr(model_response_choices, "logprobs"):
                 logprobs_obj = model_response_choices.logprobs
                 if isinstance(logprobs_obj, ChoiceLogprobs):
@@ -550,7 +550,7 @@ class LiteLLMModel(BenchmarkModule):
                         ]
                         for content in model_response_choices.logprobs.content or list()
                     ]
-                    model_output.scores = [logprobs_list]
+                    scores.append(logprobs_list)
                 else:
                     log_once(
                         "The logprobs object is malformed, so we won't use logprobs to "
