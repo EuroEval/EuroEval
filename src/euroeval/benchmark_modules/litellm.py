@@ -234,7 +234,6 @@ class LiteLLMModel(BenchmarkModule):
             The generated model outputs.
         """
         assert "messages" in inputs, "The input must contain a 'messages' key."
-        prompts = inputs["text"]
         messages = inputs["messages"]
 
         generation_kwargs: dict[str, t.Any] = dict(
@@ -313,9 +312,8 @@ class LiteLLMModel(BenchmarkModule):
             ]
             temperature_must_be_one_messages = ["`temperature` may only be set to 1"]
             try:
-                model_response, failures = asyncio.run(
-                    self.generate_async(
-                        prompts=prompts,
+                model_response, _ = asyncio.run(
+                    self._generate_async(
                         messages=messages,
                         generation_kwargs=generation_kwargs,
                         max_retries=3,
@@ -376,47 +374,12 @@ class LiteLLMModel(BenchmarkModule):
                 message=f"Failed to generate text, after {num_attempts} attempts."
             )
 
-        assert isinstance(model_response, ModelResponse)
-        if not model_response.choices:
-            # This happens for reasoning models, when they don't finish thinking and run
-            # out of tokens. Happens quite rarely, but we need to handle it.
-            logger.warning(
-                f"The model {self.model_config.model_id!r} did not end up generating "
-                "any text. This is likely because the model ran out of tokens while "
-                "reasoning. Returning an empty string."
-            )
-            return GenerativeModelOutput(sequences=[""])
-
-        model_response_choices = model_response.choices[0]
-        assert isinstance(model_response_choices, litellm.Choices)
-        generation_output = model_response_choices.message["content"] or ""
-        generation_output = generation_output.strip()
-
-        # Structure the model output as a GenerativeModelOutput object
-        model_output = GenerativeModelOutput(sequences=[generation_output])
-        if hasattr(model_response_choices, "logprobs"):
-            logprobs_obj = model_response_choices.logprobs
-            if isinstance(logprobs_obj, ChoiceLogprobs):
-                logprobs_list: list[list[tuple[str, float]]] = [
-                    [
-                        (top_logprob.token, top_logprob.logprob)
-                        for top_logprob in content.top_logprobs
-                    ]
-                    for content in model_response_choices.logprobs.content or list()
-                ]
-                model_output.scores = [logprobs_list]
-            else:
-                log_once(
-                    "The logprobs object is malformed, so we won't use logprobs to "
-                    "determine the labels.",
-                    level=logging.WARNING,
-                )
+        model_output = self._create_model_output(model_responses=model_response)
 
         return model_output
 
-    async def generate_async(
+    async def _generate_async(
         self,
-        prompts: list[str],
         messages: list,
         generation_kwargs: dict,
         max_retries: int = 3,
@@ -425,8 +388,6 @@ class LiteLLMModel(BenchmarkModule):
         """Generate outputs from the model asynchronously.
 
         Args:
-            prompts (list[str]):
-                The prompts to pass to the model.
             messages (list):
                 The messages to pass to the model.
             generation_kwargs (dict):
@@ -442,16 +403,16 @@ class LiteLLMModel(BenchmarkModule):
         success = []
         failures = []
 
-        to_run = list(enumerate(prompts))
+        to_run = list(enumerate(messages))
         for attempt in range(max_reruns + 1):
             if not to_run:
                 break
 
             requests = [
                 litellm.acompletion(
-                    messages=prompt, max_retries=max_retries, **generation_kwargs
+                    messages=msg, max_retries=max_retries, **generation_kwargs
                 )
-                for _, prompt in to_run
+                for _, msg in to_run
             ]
             responses = await asyncio.gather(*requests, return_exceptions=True)
 
@@ -468,6 +429,59 @@ class LiteLLMModel(BenchmarkModule):
             to_run = next_to_run
 
         return success, failures
+
+    def _create_model_output(
+        self, model_responses: list[ModelResponse]
+    ) -> GenerativeModelOutput:
+        sequences = []
+        scores = []
+        for model_response in model_responses:
+            if not isinstance(model_response, ModelResponse):
+                logger.warning(f"Expected a ModelResponse, got {type(model_response)}")
+                continue
+
+            if not model_response.choices:
+                # This happens for reasoning models, when they don't finish thinking
+                # and run out of tokens. Happens quite rarely, but we need to handle it.
+                logger.warning(
+                    f"The model {self.model_config.model_id!r} did not end up "
+                    "generating any text. This is likely because the model ran "
+                    "out of tokens while reasoning. Returning an empty string."
+                )
+                continue
+
+            model_response_choices = model_response.choices[0]
+            assert isinstance(model_response_choices, litellm.Choices)
+            generation_output = model_response_choices.message["content"] or ""
+            generation_output = generation_output.strip()
+
+            # Structure the model output as a GenerativeModelOutput object
+            sequences.append(generation_output)
+            logprobs_obj = getattr(model_response_choices, "logprobs", None)
+            if isinstance(logprobs_obj, ChoiceLogprobs):
+                scores.append(
+                    [
+                        [(tp.token, tp.logprob) for tp in content.top_logprobs]
+                        for content in (logprobs_obj.content or [])
+                    ]
+                )
+            else:
+                if logprobs_obj is not None:
+                    log_once(
+                        "The logprobs object is malformed, so we won't use logprobs to "
+                        "determine the labels.",
+                        level=logging.WARNING,
+                    )
+
+        assert sequences, "No sequences were generated"
+        if scores:
+            assert len(sequences) == len(scores), (
+                "Sequences and scores must have the same length"
+            )
+
+        return GenerativeModelOutput(
+            sequences=sequences, scores=scores if scores else None
+        )
 
     @cached_property
     def num_params(self) -> int:
