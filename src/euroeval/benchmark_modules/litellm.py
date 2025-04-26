@@ -1,5 +1,6 @@
 """Generative models from an inference API, using the LiteLLM framework."""
 
+import asyncio
 import collections.abc as c
 import itertools as it
 import json
@@ -160,7 +161,7 @@ class LiteLLMModel(BenchmarkModule):
     """A generative model from LiteLLM."""
 
     fresh_model = False
-    batching_preference = BatchingPreference.SINGLE_SAMPLE
+    batching_preference = BatchingPreference.ALL_AT_ONCE
     high_priority = False
 
     def __init__(
@@ -312,8 +313,15 @@ class LiteLLMModel(BenchmarkModule):
             ]
             temperature_must_be_one_messages = ["`temperature` may only be set to 1"]
             try:
-                model_response = litellm.completion(
-                    messages=messages, max_retries=3, **generation_kwargs
+                # model_response = litellm.completion(
+                #     messages=messages, max_retries=3, **generation_kwargs
+                # )
+                model_response, failures = asyncio.run(
+                    self.generate_async(
+                        messages=messages,
+                        generation_kwargs=generation_kwargs,
+                        max_retries=3,
+                    )
                 )
                 break
             except (BadRequestError, RateLimitError) as e:
@@ -380,6 +388,7 @@ class LiteLLMModel(BenchmarkModule):
                 "reasoning. Returning an empty string."
             )
             return GenerativeModelOutput(sequences=[""])
+
         model_response_choices = model_response.choices[0]
         assert isinstance(model_response_choices, litellm.Choices)
         generation_output = model_response_choices.message["content"] or ""
@@ -406,6 +415,40 @@ class LiteLLMModel(BenchmarkModule):
                 )
 
         return model_output
+
+    async def generate_async(
+        self, messages: list, generation_kwargs: dict, max_retries: int = 3
+    ) -> tuple[list[ModelResponse], list[tuple[int, Exception]]]:
+        """Generate outputs from the model asynchronously.
+
+        Args:
+            messages:
+                The messages to pass to the model.
+            generation_kwargs:
+                The generation kwargs to pass to the model.
+            max_retries:
+                The maximum number of retries to make.
+
+        Returns:
+            A tuple containing the successful responses and the failed responses.
+        """
+        requests = [
+            litellm.acompletion(
+                messages=msgs, max_retries=max_retries, **generation_kwargs
+            )
+            for msgs in messages
+        ]
+        responses = await asyncio.gather(*requests, return_exceptions=True)
+
+        success = []
+        failures = []
+        for idx, response in enumerate(responses):
+            if isinstance(response, Exception):
+                failures.append((idx, response))
+            else:
+                success.append(response)
+
+        return success, failures
 
     @cached_property
     def num_params(self) -> int:
