@@ -462,17 +462,17 @@ class LiteLLMModel(BenchmarkModule):
 
     async def _generate_async(
         self,
-        messages: list,
-        generation_kwargs: dict,
+        messages: list[dict[str, t.Any]],
+        generation_kwargs: dict[str, t.Any],
         max_retries: int = 3,
         max_reruns: int = 10,
     ) -> tuple[list[ModelResponse], list[tuple[int, Exception]]]:
         """Generate outputs from the model asynchronously.
 
         Args:
-            messages (list):
+            messages (list[dict[str, t.Any]]):
                 The messages to pass to the model.
-            generation_kwargs (dict):
+            generation_kwargs (dict[str, t.Any]):
                 The generation kwargs to pass to the model.
             max_retries (int):
                 The maximum number of retries to make.
@@ -515,6 +515,16 @@ class LiteLLMModel(BenchmarkModule):
     def _create_model_output(
         self, model_responses: list[ModelResponse]
     ) -> GenerativeModelOutput:
+        """Create a GenerativeModelOutput object from a list of ModelResponse objects.
+
+        Args:
+            model_responses (list[ModelResponse]):
+                The list of ModelResponse objects to create the GenerativeModelOutput
+                object from.
+
+        Returns:
+            A GenerativeModelOutput object.
+        """
         sequences = []
         scores = []
         for model_response in model_responses:
