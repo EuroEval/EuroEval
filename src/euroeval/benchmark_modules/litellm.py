@@ -234,10 +234,8 @@ class LiteLLMModel(BenchmarkModule):
             The generated model outputs.
         """
         assert "messages" in inputs, "The input must contain a 'messages' key."
-        assert len(inputs["messages"]) == 1, (
-            "API models only support single-sample batching."
-        )
-        messages = inputs["messages"][0]
+        prompts = inputs["text"]
+        messages = inputs["messages"]
 
         generation_kwargs: dict[str, t.Any] = dict(
             model=self.model_config.model_id,
@@ -267,9 +265,11 @@ class LiteLLMModel(BenchmarkModule):
             generation_kwargs["top_logprobs"] = MAX_LOGPROBS
 
         if self.dataset_config.task in TASKS_USING_JSON:
-            assert "json" in messages[0]["content"].lower(), (
-                "Prompt must contain 'json' for JSON tasks."
-            )
+            for msg in messages:
+                assert "json" in msg["content"].lower(), (
+                    "Prompt must contain 'json' for JSON tasks."
+                )
+
             generation_kwargs["response_format"] = dict(type="json_object")
             log_once(
                 "Enabling JSON response format for model "
@@ -313,11 +313,9 @@ class LiteLLMModel(BenchmarkModule):
             ]
             temperature_must_be_one_messages = ["`temperature` may only be set to 1"]
             try:
-                # model_response = litellm.completion(
-                #     messages=messages, max_retries=3, **generation_kwargs
-                # )
                 model_response, failures = asyncio.run(
                     self.generate_async(
+                        prompts=prompts,
                         messages=messages,
                         generation_kwargs=generation_kwargs,
                         max_retries=3,
@@ -417,36 +415,57 @@ class LiteLLMModel(BenchmarkModule):
         return model_output
 
     async def generate_async(
-        self, messages: list, generation_kwargs: dict, max_retries: int = 3
+        self,
+        prompts: list[str],
+        messages: list,
+        generation_kwargs: dict,
+        max_retries: int = 3,
+        max_reruns: int = 10,
     ) -> tuple[list[ModelResponse], list[tuple[int, Exception]]]:
         """Generate outputs from the model asynchronously.
 
         Args:
-            messages:
+            prompts (list[str]):
+                The prompts to pass to the model.
+            messages (list):
                 The messages to pass to the model.
-            generation_kwargs:
+            generation_kwargs (dict):
                 The generation kwargs to pass to the model.
-            max_retries:
+            max_retries (int):
                 The maximum number of retries to make.
+            max_reruns (int):
+                The maximum number of reruns to make.
 
         Returns:
             A tuple containing the successful responses and the failed responses.
         """
-        requests = [
-            litellm.acompletion(
-                messages=msgs, max_retries=max_retries, **generation_kwargs
-            )
-            for msgs in messages
-        ]
-        responses = await asyncio.gather(*requests, return_exceptions=True)
-
         success = []
         failures = []
-        for idx, response in enumerate(responses):
-            if isinstance(response, Exception):
-                failures.append((idx, response))
-            else:
-                success.append(response)
+
+        to_run = list(enumerate(prompts))
+        for attempt in range(max_reruns + 1):
+            if not to_run:
+                break
+
+            requests = [
+                litellm.acompletion(
+                    messages=prompt, max_retries=max_retries, **generation_kwargs
+                )
+                for _, prompt in to_run
+            ]
+            responses = await asyncio.gather(*requests, return_exceptions=True)
+
+            next_to_run = []
+            for (orig_idx, _), response in zip(to_run, responses):
+                if isinstance(response, Exception):
+                    if attempt >= max_reruns:
+                        failures.append((orig_idx, response))
+                    else:
+                        next_to_run.append((orig_idx, messages[orig_idx]))
+                else:
+                    success.append(response)
+
+            to_run = next_to_run
 
         return success, failures
 
