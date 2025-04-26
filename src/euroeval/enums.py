@@ -49,7 +49,6 @@ class InferenceBackend(AutoStrEnum):
     TRANSFORMERS = auto()
     VLLM = auto()
     LITELLM = auto()
-    OLLAMA = auto()
     NONE = auto()
 
 
