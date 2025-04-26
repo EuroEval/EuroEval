@@ -1,7 +1,7 @@
 """Templates for the Reading Comprehension task."""
 
 from ..data_models import PromptConfig
-from ..languages import DA, DE, EN, ES, FO, FR, IS, IT, NB, NL, NN, NO, SV
+from ..languages import DA, DE, EN, ES, FI, FO, FR, IS, IT, NB, NL, NN, NO, SV
 
 RC_TEMPLATES = {
     DA: PromptConfig(
@@ -37,6 +37,16 @@ RC_TEMPLATES = {
         "máximo 3 palabras: {label}",
         default_instruction_prompt="Texto: {text}\n\nResponda la siguiente pregunta "
         "sobre el texto anterior en máximo 3 palabras.\n\nPregunta: {question}",
+        default_prompt_label_mapping=dict(),
+    ),
+    FI: PromptConfig(
+        default_prompt_prefix="Seuraavassa on tekstejä ja niihin liittyviä kysymyksiä "
+        "ja vastauksia.",
+        default_prompt_template="Teksti: {text}\nKysymys: {question} "
+        "\nVastaa enintään 3 sanalla: {label}",
+        default_instruction_prompt="Teksti: {text}\n\nVastaa seuraavaan "
+        "kysymykseen yllä olevasta tekstistä enintään 3 sanalla.\n\n"
+        "Kysymys: {question}",
         default_prompt_label_mapping=dict(),
     ),
     FO: PromptConfig(

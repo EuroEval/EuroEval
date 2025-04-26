@@ -14,13 +14,21 @@ issue, creating a PR, reviewing, and merging the PR.
 To get an overview of the project, read the [README](README.md). Here are some
 resources to help you get started with open source contributions:
 
-- [Finding ways to contribute to open source on GitHub](https://docs.github.com/en/get-started/exploring-projects-on-github/finding-ways-to-contribute-to-open-source-on-github)
+- [Finding ways to contribute to open source on
+  GitHub](https://docs.github.com/en/get-started/exploring-projects-on-github/finding-ways-to-contribute-to-open-source-on-github)
 - [Set up Git](https://docs.github.com/en/get-started/quickstart/set-up-git)
 - [GitHub flow](https://docs.github.com/en/get-started/quickstart/github-flow)
-- [Collaborating with pull requests](https://docs.github.com/en/github/collaborating-with-pull-requests)
+- [Collaborating with pull
+  requests](https://docs.github.com/en/github/collaborating-with-pull-requests)
 
 
 ## Getting started
+
+### Adding datasets
+
+EuroEval welcomes contributions of new datasets that help evaluate language models
+across European languages. A guide for adding datasets to EuroEval can be found
+[here](NEW_DATASET_GUIDE.md).
 
 ### Issues
 
@@ -42,11 +50,17 @@ find an issue to work on, you are welcome to open a PR with a fix.
 
 1. Fork the repository.
 - Using GitHub Desktop:
-  - [Getting started with GitHub Desktop](https://docs.github.com/en/desktop/installing-and-configuring-github-desktop/getting-started-with-github-desktop) will guide you through setting up Desktop.
-  - Once Desktop is set up, you can use it to [fork the repo](https://docs.github.com/en/desktop/contributing-and-collaborating-using-github-desktop/cloning-and-forking-repositories-from-github-desktop)!
+  - [Getting started with GitHub
+    Desktop](https://docs.github.com/en/desktop/installing-and-configuring-github-desktop/getting-started-with-github-desktop)
+    will guide you through setting up Desktop.
+  - Once Desktop is set up, you can use it to [fork the
+    repo](https://docs.github.com/en/desktop/contributing-and-collaborating-using-github-desktop/cloning-and-forking-repositories-from-github-desktop)!
 
 - Using the command line:
-  - [Fork the repo](https://docs.github.com/en/github/getting-started-with-github/fork-a-repo#fork-an-example-repository) so that you can make your changes without affecting the original project until you're ready to merge them.
+  - [Fork the
+    repo](https://docs.github.com/en/github/getting-started-with-github/fork-a-repo#fork-an-example-repository)
+    so that you can make your changes without affecting the original project until
+    you're ready to merge them.
 
 3. Run `make install` from within the repo to get set up
 

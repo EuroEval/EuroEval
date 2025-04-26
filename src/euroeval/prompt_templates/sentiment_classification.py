@@ -1,7 +1,7 @@
 """Templates for the Sentiment Analysis task."""
 
 from ..data_models import PromptConfig
-from ..languages import DA, DE, EN, ES, FO, FR, IS, IT, NB, NL, NN, NO, SV
+from ..languages import DA, DE, EN, ES, FI, FO, FR, IS, IT, NB, NL, NN, NO, SV
 
 SENT_TEMPLATES = {
     DA: PromptConfig(
@@ -43,6 +43,16 @@ SENT_TEMPLATES = {
         default_prompt_template="Documento: {text}\nSentimiento: {label}",
         default_instruction_prompt="Documento: {text}\n\nClasifica el sentimiento del "
         "documento. Responde con {labels_str}, y nada más.",
+    ),
+    FI: PromptConfig(
+        default_prompt_label_mapping=dict(
+            positive="positiivinen", neutral="neutrali", negative="negatiivinen"
+        ),
+        default_prompt_prefix="Seuraavassa on arvosteluja ja niiden tunnesävy, joka "
+        "voi olla {labels_str}.",
+        default_prompt_template="Teksti: {text}\nTunnesävy: {label}",
+        default_instruction_prompt="Teksti: {text}\n\nLuokittele arvostelun tunnesävy. "
+        "Vastaa vain {labels_str}, ei muuta.",
     ),
     FO: PromptConfig(
         default_prompt_label_mapping=dict(

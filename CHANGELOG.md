@@ -8,8 +8,21 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 ### Added
+- Added support for Finnish 🇫🇮! This includes the Finnish part of the reading
+  comprehension dataset
+  [TydiQA-fi](https://huggingface.co/datasets/google-research-datasets/tydiqa/viewer/secondary_task?views%5B%5D=secondary_task_train),
+  the Finnish part of the binary sentiment classification dataset
+  [ScandiSent](https://github.com/timpal0l/ScandiSent), the linguistic acceptability
+  dataset ScaLA with the [Finnish Universal
+  Dependencies](https://github.com/UniversalDependencies/UD_Finnish-TDT), the NER
+  dataset [Turku NER](https://aclanthology.org/2020.lrec-1.567/), the summarisation
+  dataset [XL-Sum-fi](https://huggingface.co/datasets/TurkuNLP/xlsum-fi), and the
+  common-sense reasoning dataset
+  [HellaSwag-fi](https://huggingface.co/datasets/Finnish-NLP/hellaswag-fi-google-translate).
+  This was contributed by [@oliverkinch](https://github.com/oliverkinch) ✨
 - Added metadata for GPT-4.1 and Grok-3 models.
-- Marked Gemini-2.5-flash as a reasoning model, giving it more tokens to think.
+- Marked Gemini-2.5-flash and Grok-3-mini as reasoning models, giving them more tokens
+  to think.
 
 ### Changed
 - Updated `datasets` to `>=3.5.0`, as the previous versions were incompatible with the
@@ -17,6 +30,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Increase the number of allowed reasoning tokens from 8,192 to 32,768 for reasoning
   models. This is done as several models did not stop reasoning before running out of
   tokens, yielding a blank output.
+- API models now use JSON schemas for the NER task if they support it, and if not then
+  they resort to standard JSON mode (which does not enforce a specific schema, just that
+  the output is JSON).
 
 ### Fixed
 - If we fail to extract labels using a generative model's logprobs, we now fall back to
@@ -29,6 +45,16 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - When benchmarking a model with a revision (i.e., of the form `<model-id>@<revision>`),
   we now correctly store this full model ID to the benchmark results on disk, including
   the revision.
+- Fixed a GPU memory error while computing the BERTScore for the summarisation task,
+  resulting in a memory crash. We have now reduced the batch size to 1 for this task,
+  making it slightly slower but more memory efficient.
+- Disabled structured outputs and logprobs for reasoning models, to ensure that they
+  are allowed to output reasoning tokens before they output their answer.
+- Do not supply stop sequences to API models if they do not support it.
+- If a `SystemError` happens during LiteLLM generation then we now retry the
+  generation.
+- Handle if a LiteLLM model does not support specifying maxItems in the JSON schema
+  during structured generation.
 
 
 ## [v15.6.1] - 2025-04-14

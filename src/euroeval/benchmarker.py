@@ -1080,6 +1080,10 @@ def initial_logging(
         benchmark_config:
             The general benchmark configuration.
     """
+    model_id = model_config.model_id
+    if model_config.revision and model_config.revision != "main":
+        model_id += f"@{model_config.revision}"
+
     split_type = "validation" if not benchmark_config.evaluate_test_split else "test"
     if model_config.task in GENERATIVE_PIPELINE_TAGS:
         if benchmark_config.few_shot:
@@ -1088,8 +1092,9 @@ def initial_logging(
             eval_type = "Zero-shot benchmarking"
     else:
         eval_type = "Benchmarking"
+
     logger.info(
-        f"{eval_type} {model_config.model_id} on the {split_type} split of "
+        f"{eval_type} {model_id} on the {split_type} split of "
         f"{dataset_config.pretty_name}"
     )
 
@@ -1099,6 +1104,7 @@ def initial_logging(
             "meaning that the resulting evaluation will not be included in the "
             "official leaderboard."
         )
+
     if benchmark_config.debug:
         logger.info(
             "Running in debug mode. This will output additional information, as "

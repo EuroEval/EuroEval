@@ -132,7 +132,7 @@ class VLLMModel(HuggingFaceEncoderModel):
         self._model: LLM = model
         self._tokenizer: PreTrainedTokenizer = tokenizer
         self.end_of_reasoning_token_id = get_end_of_reasoning_token_id(
-            model=self._model, tokenizer=self._tokenizer
+            model=self._model, tokenizer=self._tokenizer, model_id=model_config.model_id
         )
 
         # We specify `HuggingFaceEncoderModel` here instead of `VLLMModel`, as we want
@@ -149,6 +149,7 @@ class VLLMModel(HuggingFaceEncoderModel):
                 dataset_config=self.dataset_config,
                 model_config=self.model_config,
                 tokenizer=self._tokenizer,
+                generative_type=self.generative_type,
             ),
         )
         if self.model_config.adapter_base_model_id is not None:
@@ -334,25 +335,32 @@ class VLLMModel(HuggingFaceEncoderModel):
             if end_of_chat_token:
                 stop_tokens.append(end_of_chat_token)
 
+        logits_processor = None
         if self.dataset_config.task in TASKS_USING_JSON:
-            ner_tag_names = list(self.dataset_config.prompt_label_mapping.values())
-            keys_and_their_types: dict[str, t.Any] = {
-                tag_name: (conlist(str, max_length=5), ...)
-                for tag_name in ner_tag_names
-            }
-            pydantic_class = create_model("AnswerFormat", **keys_and_their_types)
-            logits_processor = JSONLogitsProcessor(
-                schema=pydantic_class,
-                tokenizer=adapt_tokenizer(tokenizer=self._tokenizer),  # type: ignore
-                whitespace_pattern=r" ?",
-            )
-            log_once(
-                "Using structured generation with the schema "
-                f"{pydantic_class.model_json_schema()}",
-                level=logging.DEBUG,
-            )
-        else:
-            logits_processor = None
+            if self.generative_type == GenerativeType.REASONING:
+                log_once(
+                    f"The model {self.model_config.model_id!r} is a reasoning model "
+                    "and thus does not support structured generation, so we do not "
+                    "enable it.",
+                    level=logging.DEBUG,
+                )
+            else:
+                ner_tag_names = list(self.dataset_config.prompt_label_mapping.values())
+                keys_and_their_types: dict[str, t.Any] = {
+                    tag_name: (conlist(str, max_length=5), ...)
+                    for tag_name in ner_tag_names
+                }
+                pydantic_class = create_model("AnswerFormat", **keys_and_their_types)
+                logits_processor = JSONLogitsProcessor(
+                    schema=pydantic_class,
+                    tokenizer=adapt_tokenizer(tokenizer=self._tokenizer),  # type: ignore
+                    whitespace_pattern=r" ?",
+                )
+                log_once(
+                    "Using structured generation with the JSON schema "
+                    f"{pydantic_class.model_json_schema()}",
+                    level=logging.DEBUG,
+                )
 
         # Get the mapping from labels to the first token in the label. We call this each
         # time we generate a new dataset since the dataset config can change
@@ -360,6 +368,7 @@ class VLLMModel(HuggingFaceEncoderModel):
             dataset_config=self.dataset_config,
             model_config=self.model_config,
             tokenizer=self._tokenizer,
+            generative_type=self.generative_type,
         )
 
         # Define the parameters used for vLLM generation
@@ -395,7 +404,10 @@ class VLLMModel(HuggingFaceEncoderModel):
         ) and should_prompts_be_stripped(
             labels_to_be_generated=labels_to_be_generated, tokenizer=self._tokenizer
         ):
-            log_once(message="Stripping prompts.", level=logging.DEBUG)
+            log_once(
+                f"Stripping prompts for model {self.model_config.model_id!r}.",
+                level=logging.DEBUG,
+            )
             prompts = [prompt.strip() for prompt in prompts]
 
         # Generate sequences using vLLM
@@ -426,7 +438,7 @@ class VLLMModel(HuggingFaceEncoderModel):
         ]
         if self.end_of_reasoning_token_id in completion_ids[0]:
             completion_ids = [
-                token_ids[token_ids.index(self.end_of_reasoning_token_id) + 2 :]
+                token_ids[token_ids.index(self.end_of_reasoning_token_id) + 1 :]
                 if self.end_of_reasoning_token_id in token_ids
                 else token_ids
                 for token_ids in completion_ids
@@ -813,7 +825,8 @@ class VLLMModel(HuggingFaceEncoderModel):
                     if name.lower() in language_codes:
                         chat_template = candidate_template
                         log_once(
-                            f"Using the {name!r} chat template for the tokenizer.",
+                            f"Using the {name!r} chat template for the tokenizer for "
+                            f"model {self.model_config.model_id!r}.",
                             level=logging.DEBUG,
                         )
                         break
@@ -1173,7 +1186,7 @@ def clear_vllm() -> None:
 
 
 def get_end_of_reasoning_token_id(
-    model: "LLM", tokenizer: "PreTrainedTokenizer"
+    model: "LLM", tokenizer: "PreTrainedTokenizer", model_id: str
 ) -> int | None:
     """Get the end of reasoning token ID for a generative model.
 
@@ -1186,6 +1199,8 @@ def get_end_of_reasoning_token_id(
             The vLLM model.
         tokenizer:
             The tokenizer.
+        model_id:
+            The model ID.
 
     Returns:
         The end of reasoning token ID, or None if it could not be found.
@@ -1224,10 +1239,8 @@ def get_end_of_reasoning_token_id(
     completion_match = re.search(pattern=r"<\w+>", string=completion)
     if completion_match is None and prompt_match is None:
         log_once(
-            message=(
-                "Could not find a reasoning token, so assuming the model is not a "
-                "reasoning model."
-            ),
+            f"Could not find a reasoning token for model {model_id!r}, so assuming "
+            "the model is not a reasoning model.",
             level=logging.DEBUG,
         )
         return None
@@ -1253,20 +1266,17 @@ def get_end_of_reasoning_token_id(
         or end_of_reasoning_token not in special_tokens
     ):
         log_once(
-            message=(
-                f"Detected reasoning token {reasoning_token!r} and end-of-reasoning "
-                f"token {end_of_reasoning_token!r}, but one of them is not registered "
-                "as a special token, so assuming it is not a real reasoning token."
-            ),
+            f"Detected reasoning token {reasoning_token!r} and end-of-reasoning "
+            f"token {end_of_reasoning_token!r} for model {model_id!r}, but one of "
+            "them is not registered as a special token, so assuming it is not a "
+            "real reasoning token.",
             level=logging.DEBUG,
         )
         return None
 
     log_once(
-        message=(
-            f"Detected reasoning token {reasoning_token!r} and end-of-reasoning "
-            f"token {end_of_reasoning_token!r}."
-        ),
+        f"Detected reasoning token {reasoning_token!r} and end-of-reasoning "
+        f"token {end_of_reasoning_token!r} for model {model_id!r}.",
         level=logging.DEBUG,
     )
 

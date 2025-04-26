@@ -34,6 +34,7 @@ from litellm.exceptions import (
 )
 from litellm.llms.vertex_ai.common_utils import VertexAIError
 from litellm.types.utils import ChoiceLogprobs, ModelResponse
+from pydantic import conlist, create_model
 from requests.exceptions import RequestException
 from tqdm.auto import tqdm
 from transformers.trainer import Trainer
@@ -198,6 +199,7 @@ class LiteLLMModel(BenchmarkModule):
             dataset_config=self.dataset_config,
             model_config=self.model_config,
             tokenizer=None,
+            generative_type=self.generative_type,
         )
 
     @property
@@ -257,6 +259,7 @@ class LiteLLMModel(BenchmarkModule):
             dataset_config=self.dataset_config,
             model_config=self.model_config,
             tokenizer=None,
+            generative_type=self.generative_type,
         )
 
         if self.buffer["first_label_token_mapping"]:
@@ -269,12 +272,37 @@ class LiteLLMModel(BenchmarkModule):
                     "Prompt must contain 'json' for JSON tasks."
                 )
 
-            generation_kwargs["response_format"] = dict(type="json_object")
-            log_once(
-                "Enabling JSON response format for model "
-                f"{self.model_config.model_id!r}",
-                level=logging.DEBUG,
-            )
+            if self.generative_type == GenerativeType.REASONING:
+                log_once(
+                    f"The model {self.model_config.model_id!r} is a reasoning model "
+                    "and thus does not support structured generation, so we do not "
+                    "enable it.",
+                    level=logging.DEBUG,
+                )
+            elif litellm.utils.supports_response_schema(
+                model=self.model_config.model_id
+            ):
+                ner_tag_names = list(self.dataset_config.prompt_label_mapping.values())
+                keys_and_their_types: dict[str, t.Any] = {
+                    tag_name: (conlist(str, max_length=5), ...)
+                    for tag_name in ner_tag_names
+                }
+                pydantic_class = create_model("AnswerFormat", **keys_and_their_types)
+                generation_kwargs["response_format"] = pydantic_class
+                log_once(
+                    "Enabling structured generation for model "
+                    f"{self.model_config.model_id!r} with the JSON schema "
+                    f"{pydantic_class.model_json_schema()}",
+                    level=logging.DEBUG,
+                )
+            else:
+                generation_kwargs["response_format"] = dict(type="json_object")
+                log_once(
+                    "Enabling structured JSON generation for model "
+                    f"{self.model_config.model_id!r} with no custom JSON schema, as "
+                    "the model does not support schemas.",
+                    level=logging.DEBUG,
+                )
 
         if self.model_config.revision == "thinking":
             generation_kwargs["thinking"] = dict(
@@ -295,22 +323,30 @@ class LiteLLMModel(BenchmarkModule):
         # This drops generation kwargs that are not supported by the model
         litellm.drop_params = True
 
+        # Error messages that we want to catch and handle
+        stop_messages = ["stop_sequences", "'stop' is not supported with this model"]
+        logprobs_messages = [
+            "you are not allowed to request logprobs",
+            "you've reached the maximum number of requests with logprobs",
+            "logprobs is not supported",
+            "logprobs is not enabled",
+        ]
+        temperature_messages = [
+            "'temperature' is not supported with this model.",
+            "temperature is not supported with this model",
+        ]
+        temperature_must_be_one_messages = [
+            "`temperature` may only be set to 1",
+            "'temperature' does not support 0.0 with this model. Only the default "
+            "(1) value is supported",
+        ]
+        max_items_messages = ["'maxItems' is not permitted."]
+        no_json_schema_messages = ["Property keys should match pattern"]
+
         # Extract the generated sequences from the model response. Some APIs cannot
         # handle using newlines as stop sequences, so we try both.
         num_attempts = 10
         for _ in range(num_attempts):
-            stop_messages = ["stop_sequences"]
-            logprobs_messages = [
-                "you are not allowed to request logprobs",
-                "you've reached the maximum number of requests with logprobs",
-                "logprobs is not supported",
-                "logprobs is not enabled",
-            ]
-            temperature_messages = [
-                "'temperature' is not supported with this model.",
-                "temperature is not supported with this model",
-            ]
-            temperature_must_be_one_messages = ["`temperature` may only be set to 1"]
             try:
                 model_response, _ = asyncio.run(
                     self._generate_async(
@@ -322,6 +358,11 @@ class LiteLLMModel(BenchmarkModule):
                 break
             except (BadRequestError, RateLimitError) as e:
                 if any(msg.lower() in str(e).lower() for msg in stop_messages):
+                    log_once(
+                        f"The model {self.model_config.model_id!r} does not support "
+                        "stop sequences, so disabling them.",
+                        level=logging.DEBUG,
+                    )
                     generation_kwargs["stop"] = None
                 elif (
                     any(msg.lower() in str(e).lower() for msg in logprobs_messages)
@@ -330,15 +371,55 @@ class LiteLLMModel(BenchmarkModule):
                     # we ignore this since the rate limiting makes it unusable anyway.
                     or (isinstance(e, VertexAIError) and "logprobs" in str(e).lower())
                 ):
+                    log_once(
+                        f"The model {self.model_config.model_id!r} does not support "
+                        "logprobs, so disabling it.",
+                        level=logging.DEBUG,
+                    )
                     generation_kwargs.pop("logprobs")
                     generation_kwargs.pop("top_logprobs")
                 elif any(msg.lower() in str(e).lower() for msg in temperature_messages):
+                    log_once(
+                        f"The model {self.model_config.model_id!r} does not support "
+                        "temperature, so disabling it.",
+                        level=logging.DEBUG,
+                    )
                     generation_kwargs.pop("temperature")
                 elif any(
                     msg.lower() in str(e).lower()
                     for msg in temperature_must_be_one_messages
                 ):
+                    log_once(
+                        f"The model {self.model_config.model_id!r} requires "
+                        "temperature to be set to 1, so setting it.",
+                        level=logging.DEBUG,
+                    )
                     generation_kwargs["temperature"] = 1.0
+                elif any(msg.lower() in str(e).lower() for msg in max_items_messages):
+                    log_once(
+                        f"The model {self.model_config.model_id!r} does not support "
+                        "maxItems in the JSON schema, so disabling it.",
+                        level=logging.DEBUG,
+                    )
+                    ner_tag_names = list(
+                        self.dataset_config.prompt_label_mapping.values()
+                    )
+                    keys_and_their_types = {
+                        tag_name: (list[str], ...) for tag_name in ner_tag_names
+                    }
+                    pydantic_class = create_model(
+                        "AnswerFormat", **keys_and_their_types
+                    )
+                    generation_kwargs["response_format"] = pydantic_class
+                elif any(
+                    msg.lower() in str(e).lower() for msg in no_json_schema_messages
+                ):
+                    log_once(
+                        f"The model {self.model_config.model_id!r} does not support "
+                        "JSON schemas, so using the vanilla JSON format.",
+                        level=logging.DEBUG,
+                    )
+                    generation_kwargs["response_format"] = dict(type="json_object")
                 elif isinstance(e, RateLimitError):
                     raise InvalidModel(
                         "You have encountered your rate limit for model "
@@ -357,6 +438,7 @@ class LiteLLMModel(BenchmarkModule):
                 Timeout,
                 ServiceUnavailableError,
                 InternalServerError,
+                SystemError,
             ) as e:
                 logger.debug(
                     f"Service temporarily unavailable. The error message was: {e}. "
@@ -452,21 +534,24 @@ class LiteLLMModel(BenchmarkModule):
 
             model_response_choices = model_response.choices[0]
             assert isinstance(model_response_choices, litellm.Choices)
-            generation_output = model_response_choices.message["content"] or ""
+            generated_message: litellm.Message = model_response_choices.message
+            generation_output = generated_message.content or ""
             generation_output = generation_output.strip()
 
             # Structure the model output as a GenerativeModelOutput object
-            sequences.append(generation_output)
-            logprobs_obj = getattr(model_response_choices, "logprobs", None)
-            if isinstance(logprobs_obj, ChoiceLogprobs):
-                scores.append(
-                    [
-                        [(tp.token, tp.logprob) for tp in content.top_logprobs]
-                        for content in (logprobs_obj.content or [])
+            model_output = GenerativeModelOutput(sequences=[generation_output])
+            if hasattr(model_response_choices, "logprobs"):
+                logprobs_obj = model_response_choices.logprobs
+                if isinstance(logprobs_obj, ChoiceLogprobs):
+                    logprobs_list: list[list[tuple[str, float]]] = [
+                        [
+                            (top_logprob.token, top_logprob.logprob)
+                            for top_logprob in content.top_logprobs
+                        ]
+                        for content in model_response_choices.logprobs.content or list()
                     ]
-                )
-            else:
-                if logprobs_obj is not None:
+                    model_output.scores = [logprobs_list]
+                else:
                     log_once(
                         "The logprobs object is malformed, so we won't use logprobs to "
                         "determine the labels.",
