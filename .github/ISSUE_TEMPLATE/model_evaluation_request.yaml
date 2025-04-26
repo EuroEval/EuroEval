@@ -21,6 +21,7 @@ body:
       - label: Romance languages (French, Italian, Spanish)
       - label: Scandinavian languages (Danish, Faroese, Icelandic, Norwegian, Swedish)
       - label: West Germanic languages (Dutch, English, German)
+      - label: Finnish
   validations:
     required: true
 - type: dropdown

@@ -26,6 +26,7 @@ body:
       - label: Dutch
       - label: English
       - label: Faroese
+      - label: Finnish
       - label: French
       - label: German
       - label: Icelandic
