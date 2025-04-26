@@ -40,8 +40,6 @@ class InferenceBackend(AutoStrEnum):
             VLLM library.
         LITELLM:
             LiteLLM library.
-        OLLAMA:
-            Ollama library.
         NONE:
             No inference backend used (e.g., for human evaluation).
     """
