@@ -480,6 +480,7 @@ class VLLMModel(HuggingFaceEncoderModel):
 
         # Sanity check
         if len(completions) != len(prompts):
+            breakpoint()
             raise InvalidBenchmark(
                 f"Expected {len(prompts):,} completions, but got {len(completions):,}."
             )
