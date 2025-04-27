@@ -437,8 +437,11 @@ class VLLMModel(HuggingFaceEncoderModel):
                     logger.debug(
                         "Prompts are too long, so truncating them and trying again..."
                     )
-                    breakpoint()
-                    tokenized_prompts = self._tokenizer(text=prompts, truncation=True)
+                    tokenized_prompts = self._tokenizer(
+                        text=prompts,
+                        truncation=True,
+                        max_length=self._tokenizer.max_model_length + max_tokens,
+                    )
                     prompts = self._tokenizer.batch_decode(
                         sequences=tokenized_prompts["input_ids"],
                         skip_special_tokens=True,
