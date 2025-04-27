@@ -429,10 +429,11 @@ class VLLMModel(HuggingFaceEncoderModel):
                 sleep(1)
             except ValueError as e:
                 # Truncate the prompts if they are too long for the model
-                if re.search(
-                    pattern=r"prompt (length [0-9]+) is longer than",
-                    string=str(e),
-                    flags=re.IGNORECASE,
+                truncate_error_messages = [r"prompt (length [0-9]+) is longer than"]
+                breakpoint()
+                if any(
+                    re.search(pattern, str(e), flags=re.IGNORECASE) is not None
+                    for pattern in truncate_error_messages
                 ):
                     log_once(
                         "Prompts are too long, so truncating them and trying again...",
