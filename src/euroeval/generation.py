@@ -215,6 +215,7 @@ def generate_single_iteration(
             "The dataset must have either a 'label', 'labels', or 'target_text' column"
         )
 
+    breakpoint()
     itr_scores: dict[str, float] = model.compute_metrics(
         model_outputs_and_labels=(all_preds, ground_truth)
     )
