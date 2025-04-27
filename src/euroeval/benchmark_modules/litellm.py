@@ -351,20 +351,38 @@ class LiteLLMModel(BenchmarkModule):
         # Extract the generated sequences from the model response. Some APIs cannot
         # handle using newlines as stop sequences, so we try both.
         num_attempts = 10
-        for _ in range(num_attempts):
+
+        all_responses = {}
+        all_failures = []
+        to_run = list(enumerate(messages))
+
+        for attempt in range(num_attempts):
             try:
+                if not to_run:
+                    break
+
+                batch_indices, batch_msgs = zip(*to_run)
                 model_response, failures = safe_run(
                     self._generate_async(
-                        messages=messages,
+                        messages=list(batch_msgs),
                         generation_kwargs=generation_kwargs,
                         max_retries=3,
                     )
                 )
-                if failures:
-                    logger.warning(
-                        f"Failures detected during _generate_async: {failures}"
-                    )
-                break
+
+                for orig_idx, model_response in zip(batch_indices, model_response):
+                    all_responses[orig_idx] = model_response
+
+                if not failures:
+                    to_run = []
+                    break
+
+                all_failures.extend(failures)
+                to_run = [(orig_idx, messages[orig_idx]) for orig_idx, _ in failures]
+                logger.warning(
+                    f"Attempt {attempt + 1}/{num_attempts}: "
+                    f"retrying {len(to_run)} failed message(s)"
+                )
             except (BadRequestError, RateLimitError) as e:
                 if any(msg.lower() in str(e).lower() for msg in stop_messages):
                     log_once(
@@ -465,7 +483,14 @@ class LiteLLMModel(BenchmarkModule):
                 message=f"Failed to generate text, after {num_attempts} attempts."
             )
 
-        model_output = self._create_model_output(model_responses=model_response)
+        if to_run:
+            raise InvalidBenchmark(
+                f"Failed to generate text after {num_attempts + 1} attempts. "
+                f"Errors: {all_failures}"
+            )
+
+        ordered_responses = [all_responses[i] for i in range(len(messages))]
+        model_output = self._create_model_output(model_responses=ordered_responses)
 
         return model_output
 
