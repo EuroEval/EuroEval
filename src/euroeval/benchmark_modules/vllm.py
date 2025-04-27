@@ -455,6 +455,7 @@ class VLLMModel(HuggingFaceEncoderModel):
                     prompts = self._tokenizer.batch_decode(
                         sequences=tokenized_prompts.input_ids, skip_special_tokens=True
                     )
+                    breakpoint()
                 else:
                     raise InvalidBenchmark(
                         f"An error occurred during vLLM generation: {str(e)}"
