@@ -434,10 +434,10 @@ class VLLMModel(HuggingFaceEncoderModel):
                     re.search(pattern, str(e), flags=re.IGNORECASE) is not None
                     for pattern in truncate_error_messages
                 ):
-                    log_once(
-                        "Prompts are too long, so truncating them and trying again...",
-                        level=logging.DEBUG,
+                    logger.debug(
+                        "Prompts are too long, so truncating them and trying again..."
                     )
+                    breakpoint()
                     tokenized_prompts = self._tokenizer(text=prompts, truncation=True)
                     prompts = self._tokenizer.batch_decode(
                         sequences=tokenized_prompts["input_ids"],
