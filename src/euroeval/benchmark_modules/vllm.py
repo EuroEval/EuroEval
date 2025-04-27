@@ -429,7 +429,9 @@ class VLLMModel(HuggingFaceEncoderModel):
                 sleep(1)
             except ValueError as e:
                 # Truncate the prompts if they are too long for the model
-                truncate_error_messages = [r"prompt \(length [0-9]+\) is longer than"]
+                truncate_error_messages = [
+                    r"prompt \(length [0-9]+\) is longer than the maximum length"
+                ]
                 if any(
                     re.search(pattern, str(e), flags=re.IGNORECASE) is not None
                     for pattern in truncate_error_messages
@@ -440,9 +442,8 @@ class VLLMModel(HuggingFaceEncoderModel):
                     tokenized_prompts = self._tokenizer(
                         text=prompts,
                         truncation=True,
-                        max_length=self._tokenizer.model_max_length + max_tokens,
+                        max_length=self._tokenizer.model_max_length - max_tokens,
                     )
-                    breakpoint()
                     prompts = self._tokenizer.batch_decode(
                         sequences=tokenized_prompts["input_ids"],
                         skip_special_tokens=True,
