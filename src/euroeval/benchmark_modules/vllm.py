@@ -478,6 +478,12 @@ class VLLMModel(HuggingFaceEncoderModel):
         )
         completions = [completion.strip() for completion in completions]
 
+        # Sanity check
+        if len(completions) != len(prompts):
+            raise InvalidBenchmark(
+                f"Expected {len(prompts):,} completions, but got {len(completions):,}."
+            )
+
         # Add logprobs scores to the output
         if self.buffer["first_label_token_mapping"]:
             scores: list[list[list[tuple[str, float]]]] = [
