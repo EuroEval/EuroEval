@@ -267,8 +267,13 @@ class LiteLLMModel(BenchmarkModule):
             generation_kwargs["top_logprobs"] = MAX_LOGPROBS
 
         if self.dataset_config.task in TASKS_USING_JSON:
-            for msg in messages:
-                assert "json" in msg["content"].lower(), (
+            for msg_list in messages:
+                # msg_list is a list of {'role':…, 'content':…} dicts
+                last = msg_list[-1]
+                assert isinstance(last, dict), (
+                    f"Expected dict message, got {type(last)}"
+                )
+                assert "json" in last["content"].lower(), (
                     "Prompt must contain 'json' for JSON tasks."
                 )
 
@@ -469,7 +474,7 @@ class LiteLLMModel(BenchmarkModule):
         messages: list[dict[str, t.Any]],
         generation_kwargs: dict[str, t.Any],
         max_retries: int = 3,
-        max_reruns: int = 10,
+        max_reruns: int = 30,
     ) -> tuple[list[ModelResponse], list[tuple[int, Exception]]]:
         """Generate outputs from the model asynchronously.
 
