@@ -444,9 +444,10 @@ class VLLMModel(HuggingFaceEncoderModel):
                         sequences=tokenized_prompts["input_ids"],
                         skip_special_tokens=True,
                     )
-                raise InvalidBenchmark(
-                    f"An error occurred during vLLM generation: {str(e)}"
-                )
+                else:
+                    raise InvalidBenchmark(
+                        f"An error occurred during vLLM generation: {str(e)}"
+                    )
         else:
             raise InvalidBenchmark(
                 f"Could not generate sequences after {num_attempts} attempts."
