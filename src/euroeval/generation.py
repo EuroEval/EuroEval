@@ -131,7 +131,6 @@ def generate_single_iteration(
     )
 
     all_preds: list[str] = list()
-    breakpoint()
 
     if len(non_cached_dataset) > 0:
         itr: t.Iterable
