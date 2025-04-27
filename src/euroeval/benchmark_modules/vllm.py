@@ -427,6 +427,25 @@ class VLLMModel(HuggingFaceEncoderModel):
                     f"Encountered error during vLLM generation: {str(e)}. Retrying..."
                 )
                 sleep(1)
+            except ValueError as e:
+                # Truncate the prompts if they are too long for the model
+                if re.search(
+                    pattern=r"prompt (length [0-9]+) is longer than",
+                    string=str(e),
+                    flags=re.IGNORECASE,
+                ):
+                    log_once(
+                        "Prompts are too long, so truncating them and trying again...",
+                        level=logging.DEBUG,
+                    )
+                    tokenized_prompts = self._tokenizer(text=prompts, truncation=True)
+                    prompts = self._tokenizer.batch_decode(
+                        sequences=tokenized_prompts["input_ids"],
+                        skip_special_tokens=True,
+                    )
+                raise InvalidBenchmark(
+                    f"An error occurred during vLLM generation: {str(e)}"
+                )
         else:
             raise InvalidBenchmark(
                 f"Could not generate sequences after {num_attempts} attempts."

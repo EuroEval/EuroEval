@@ -55,6 +55,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   generation.
 - Handle if a LiteLLM model does not support specifying maxItems in the JSON schema
   during structured generation.
+- Truncate prompts to decoder model's maximum sequence length if the model's maximum
+  sequence length is smaller than 5,000 tokens.
 
 
 ## [v15.6.1] - 2025-04-14
