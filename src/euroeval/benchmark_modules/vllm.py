@@ -446,9 +446,14 @@ class VLLMModel(HuggingFaceEncoderModel):
                             self._tokenizer.model_max_length - max_tokens, 0
                         ),
                     )
+                    if len(prompts) != len(tokenized_prompts.input_ids):
+                        breakpoint()
+                        raise InvalidBenchmark(
+                            f"Expected {len(prompts):,} prompts, but got "
+                            f"{len(tokenized_prompts.input_ids):,}."
+                        )
                     prompts = self._tokenizer.batch_decode(
-                        sequences=tokenized_prompts["input_ids"],
-                        skip_special_tokens=True,
+                        sequences=tokenized_prompts.input_ids, skip_special_tokens=True
                     )
                 else:
                     raise InvalidBenchmark(
