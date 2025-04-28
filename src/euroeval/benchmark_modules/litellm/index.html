@@ -2271,7 +2271,34 @@
 <span class="normal">1296</span>
 <span class="normal">1297</span>
 <span class="normal">1298</span>
-<span class="normal">1299</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Generative models from an inference API, using the LiteLLM framework.&quot;&quot;&quot;</span>
+<span class="normal">1299</span>
+<span class="normal">1300</span>
+<span class="normal">1301</span>
+<span class="normal">1302</span>
+<span class="normal">1303</span>
+<span class="normal">1304</span>
+<span class="normal">1305</span>
+<span class="normal">1306</span>
+<span class="normal">1307</span>
+<span class="normal">1308</span>
+<span class="normal">1309</span>
+<span class="normal">1310</span>
+<span class="normal">1311</span>
+<span class="normal">1312</span>
+<span class="normal">1313</span>
+<span class="normal">1314</span>
+<span class="normal">1315</span>
+<span class="normal">1316</span>
+<span class="normal">1317</span>
+<span class="normal">1318</span>
+<span class="normal">1319</span>
+<span class="normal">1320</span>
+<span class="normal">1321</span>
+<span class="normal">1322</span>
+<span class="normal">1323</span>
+<span class="normal">1324</span>
+<span class="normal">1325</span>
+<span class="normal">1326</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Generative models from an inference API, using the LiteLLM framework.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">c</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">itertools</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">it</span>
@@ -2613,6 +2640,8 @@
             <span class="s2">&quot;&#39;temperature&#39; does not support 0.0 with this model. Only the default &quot;</span>
             <span class="s2">&quot;(1) value is supported&quot;</span><span class="p">,</span>
         <span class="p">]</span>
+        <span class="n">max_items_messages</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;&#39;maxItems&#39; is not permitted.&quot;</span><span class="p">]</span>
+        <span class="n">no_json_schema_messages</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;Property keys should match pattern&quot;</span><span class="p">]</span>
 
         <span class="c1"># Extract the generated sequences from the model response. Some APIs cannot</span>
         <span class="c1"># handle using newlines as stop sequences, so we try both.</span>
@@ -2662,6 +2691,31 @@
                         <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
                     <span class="p">)</span>
                     <span class="n">generation_kwargs</span><span class="p">[</span><span class="s2">&quot;temperature&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1.0</span>
+                <span class="k">elif</span> <span class="nb">any</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="ow">in</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="k">for</span> <span class="n">msg</span> <span class="ow">in</span> <span class="n">max_items_messages</span><span class="p">):</span>
+                    <span class="n">log_once</span><span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">&quot;The model </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span><span class="si">!r}</span><span class="s2"> does not support &quot;</span>
+                        <span class="s2">&quot;maxItems in the JSON schema, so disabling it.&quot;</span><span class="p">,</span>
+                        <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
+                    <span class="p">)</span>
+                    <span class="n">ner_tag_names</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">dataset_config</span><span class="o">.</span><span class="n">prompt_label_mapping</span><span class="o">.</span><span class="n">values</span><span class="p">()</span>
+                    <span class="p">)</span>
+                    <span class="n">keys_and_their_types</span> <span class="o">=</span> <span class="p">{</span>
+                        <span class="n">tag_name</span><span class="p">:</span> <span class="p">(</span><span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="o">...</span><span class="p">)</span> <span class="k">for</span> <span class="n">tag_name</span> <span class="ow">in</span> <span class="n">ner_tag_names</span>
+                    <span class="p">}</span>
+                    <span class="n">pydantic_class</span> <span class="o">=</span> <span class="n">create_model</span><span class="p">(</span>
+                        <span class="s2">&quot;AnswerFormat&quot;</span><span class="p">,</span> <span class="o">**</span><span class="n">keys_and_their_types</span>
+                    <span class="p">)</span>
+                    <span class="n">generation_kwargs</span><span class="p">[</span><span class="s2">&quot;response_format&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">pydantic_class</span>
+                <span class="k">elif</span> <span class="nb">any</span><span class="p">(</span>
+                    <span class="n">msg</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="ow">in</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="k">for</span> <span class="n">msg</span> <span class="ow">in</span> <span class="n">no_json_schema_messages</span>
+                <span class="p">):</span>
+                    <span class="n">log_once</span><span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">&quot;The model </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span><span class="si">!r}</span><span class="s2"> does not support &quot;</span>
+                        <span class="s2">&quot;JSON schemas, so using the vanilla JSON format.&quot;</span><span class="p">,</span>
+                        <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
+                    <span class="p">)</span>
+                    <span class="n">generation_kwargs</span><span class="p">[</span><span class="s2">&quot;response_format&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="nb">type</span><span class="o">=</span><span class="s2">&quot;json_object&quot;</span><span class="p">)</span>
                 <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">e</span><span class="p">,</span> <span class="n">RateLimitError</span><span class="p">):</span>
                     <span class="k">raise</span> <span class="n">InvalidModel</span><span class="p">(</span>
                         <span class="s2">&quot;You have encountered your rate limit for model &quot;</span>
