@@ -6,13 +6,15 @@ from ..tasks import COMMON_SENSE, KNOW, LA, MCRC, NER, RC, SENT, SUMM
 
 ### Official datasets ###
 
-DUTCH_SOCIAL_CONFIG = DatasetConfig(
-    name="dutch-social",
+DBRD_CONFIG = DatasetConfig(
+    name="dbrd",
     pretty_name="the truncated version of the Dutch sentiment classification "
-    "dataset Dutch Social",
-    huggingface_id="EuroEval/dutch-social-mini",
+    "dataset DBRD",
+    huggingface_id="EuroEval/dbrd-mini",
     task=SENT,
     languages=[NL],
+    _labels=["negative", "positive"],
+    _num_few_shot_examples=8,
 )
 
 SCALA_NL_CONFIG = DatasetConfig(
@@ -70,18 +72,6 @@ HELLASWAG_NL_CONFIG = DatasetConfig(
 
 
 ### Unofficial datasets ###
-
-DBRD_CONFIG = DatasetConfig(
-    name="dbrd",
-    pretty_name="the truncated version of the Dutch sentiment classification "
-    "dataset DBRD",
-    huggingface_id="EuroEval/dbrd-mini",
-    task=SENT,
-    languages=[NL],
-    _labels=["negative", "positive"],
-    _prompt_label_mapping=dict(positive="positief", negative="negatief"),
-    unofficial=True,
-)
 
 DUTCH_COLA_CONFIG = DatasetConfig(
     name="dutch-cola",
