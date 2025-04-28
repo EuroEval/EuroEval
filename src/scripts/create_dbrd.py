@@ -41,16 +41,19 @@ def main() -> None:
     train_df = train_df[train_df.text.map(lambda x: not x.endswith("…"))]
     test_df = test_df[test_df.text.map(lambda x: not x.endswith("…"))]
 
+    # We impose stricter maximum sizes of documents, as many of them are too long
+    max_num_chars = min(MAX_NUM_CHARS_IN_DOCUMENT, 3_500)  # noqa: F841
+
     # Only work with samples where the document is not very large or small
     train_df = train_df.copy()
     train_df["text_len"] = train_df.text.str.len()
     train_df = train_df.query("text_len >= @MIN_NUM_CHARS_IN_DOCUMENT").query(
-        "text_len <= @MAX_NUM_CHARS_IN_DOCUMENT"
+        "text_len <= @max_num_chars"
     )
     test_df = test_df.copy()
     test_df["text_len"] = test_df.text.str.len()
     test_df = test_df.query("text_len >= @MIN_NUM_CHARS_IN_DOCUMENT").query(
-        "text_len <= @MAX_NUM_CHARS_IN_DOCUMENT"
+        "text_len <= @max_num_chars"
     )
 
     # Create validation split
