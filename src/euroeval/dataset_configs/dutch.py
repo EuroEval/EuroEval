@@ -14,7 +14,6 @@ DBRD_CONFIG = DatasetConfig(
     task=SENT,
     languages=[NL],
     _labels=["negative", "positive"],
-    _num_few_shot_examples=8,
 )
 
 SCALA_NL_CONFIG = DatasetConfig(
