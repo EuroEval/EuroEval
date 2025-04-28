@@ -498,19 +498,19 @@ class LiteLLMModel(BenchmarkModule):
         self,
         messages: list[dict[str, t.Any]],
         generation_kwargs: dict[str, t.Any],
-        max_retries: int = 3,
-        max_reruns: int = 30,
+        max_retries: int,
+        max_reruns: int,
     ) -> tuple[list[ModelResponse], list[tuple[int, Exception]]]:
         """Generate outputs from the model asynchronously.
 
         Args:
-            messages (list[dict[str, t.Any]]):
+            messages:
                 The messages to pass to the model.
-            generation_kwargs (dict[str, t.Any]):
+            generation_kwargs:
                 The generation kwargs to pass to the model.
-            max_retries (int):
+            max_retries:
                 The maximum number of retries to make.
-            max_reruns (int):
+            max_reruns:
                 The maximum number of reruns to make.
 
         Returns:
@@ -552,7 +552,7 @@ class LiteLLMModel(BenchmarkModule):
         """Create a GenerativeModelOutput object from a list of ModelResponse objects.
 
         Args:
-            model_responses (list[ModelResponse]):
+            model_responses:
                 The list of ModelResponse objects to create the GenerativeModelOutput
                 object from.
 
@@ -562,10 +562,6 @@ class LiteLLMModel(BenchmarkModule):
         sequences = []
         scores = []
         for model_response in model_responses:
-            if not isinstance(model_response, ModelResponse):
-                logger.warning(f"Expected a ModelResponse, got {type(model_response)}")
-                continue
-
             if not model_response.choices:
                 # This happens for reasoning models, when they don't finish thinking
                 # and run out of tokens. Happens quite rarely, but we need to handle it.
@@ -610,6 +606,7 @@ class LiteLLMModel(BenchmarkModule):
                 "Returning an empty GenerativeModelOutput."
             )
             return GenerativeModelOutput(sequences=[], scores=None)
+
         if scores and len(sequences) != len(scores):
             raise ValueError(
                 "Sequences and scores must have the same length. "
