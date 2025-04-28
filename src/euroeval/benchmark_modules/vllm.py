@@ -415,6 +415,7 @@ class VLLMModel(HuggingFaceEncoderModel):
         num_attempts = 3
         for _ in range(num_attempts):
             try:
+                breakpoint()
                 raw_outputs = self._model.generate(
                     prompts=prompts,
                     sampling_params=sampling_params,
@@ -447,7 +448,6 @@ class VLLMModel(HuggingFaceEncoderModel):
                         ),
                     )
                     if len(prompts) != len(tokenized_prompts.input_ids):
-                        breakpoint()
                         raise InvalidBenchmark(
                             f"Expected {len(prompts):,} prompts, but got "
                             f"{len(tokenized_prompts.input_ids):,}."
@@ -455,7 +455,6 @@ class VLLMModel(HuggingFaceEncoderModel):
                     prompts = self._tokenizer.batch_decode(
                         sequences=tokenized_prompts.input_ids, skip_special_tokens=True
                     )
-                    breakpoint()
                 else:
                     raise InvalidBenchmark(
                         f"An error occurred during vLLM generation: {str(e)}"
