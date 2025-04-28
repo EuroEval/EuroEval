@@ -1,6 +1,7 @@
 """Tests for the `data_loading` module."""
 
 from collections.abc import Generator
+from functools import partial
 
 import pytest
 from datasets import DatasetDict
@@ -12,6 +13,7 @@ from euroeval.constants import MAX_CONTEXT_LENGTH
 from euroeval.data_loading import load_data, load_raw_data
 from euroeval.data_models import BenchmarkConfig, DatasetConfig
 from euroeval.dataset_configs import get_all_dataset_configs, get_dataset_config
+from euroeval.generation_utils import apply_prompt, extract_few_shot_examples
 
 
 @pytest.fixture(scope="module")
@@ -80,30 +82,39 @@ def test_examples_in_official_datasets_are_not_too_long(
     dummy_model_config = LiteLLMModel.get_model_config(
         model_id="", benchmark_config=benchmark_config
     )
-    dummy_model = LiteLLMModel(
-        model_config=dummy_model_config,
-        dataset_config=dataset_config,
-        benchmark_config=benchmark_config,
-    )
     tokenizer = AutoTokenizer.from_pretrained(tokenizer_id)
     dataset = load_raw_data(
         dataset_config=dataset_config, cache_dir=benchmark_config.cache_dir
     )
-    prepared_dataset = dummy_model.prepare_datasets(
-        datasets=[dataset], task=dataset_config.task
-    )[0]
-    for split_name in ["train", "val", "test"]:
-        split = prepared_dataset[split_name]
-        if "messages" not in split.features:
-            continue
-        encoded_texts = [
-            tokenizer.apply_chat_template(messages) for messages in split["messages"]
-        ]
-        max_input_length = max(len(x) for x in encoded_texts)
-        max_output_length = dataset_config.max_generated_tokens
-        max_length = max_input_length + max_output_length
-        assert max_length <= MAX_CONTEXT_LENGTH, (
-            f"Max length of {max_length:,} exceeds the maximum context length "
-            f"({MAX_CONTEXT_LENGTH:,}) for dataset {dataset_config.name} in split "
-            f"{split_name!r}."
+
+    for itr_idx in range(10):
+        few_shot_examples = extract_few_shot_examples(
+            dataset=dataset, dataset_config=dataset_config, itr_idx=itr_idx
         )
+        for instruction_model in [True, False]:
+            prepared_test = dataset["test"].map(
+                partial(
+                    apply_prompt,
+                    few_shot_examples=few_shot_examples,
+                    model_config=dummy_model_config,
+                    dataset_config=dataset_config,
+                    instruction_model=instruction_model,
+                    always_populate_text_field=True,
+                    tokenizer=tokenizer,
+                ),
+                batched=True,
+                load_from_cache_file=False,
+                keep_in_memory=True,
+            )
+
+            max_input_length = max(
+                len(tokenizer(prompt)["input_ids"]) for prompt in prepared_test["text"]
+            )
+            max_output_length = dataset_config.max_generated_tokens
+            max_length = max_input_length + max_output_length
+
+            assert max_length <= MAX_CONTEXT_LENGTH, (
+                f"Max length of {max_length:,} exceeds the maximum context length "
+                f"({MAX_CONTEXT_LENGTH:,}) for dataset {dataset_config.name} in "
+                f"iteration {itr_idx} and when instruction_model={instruction_model}."
+            )
