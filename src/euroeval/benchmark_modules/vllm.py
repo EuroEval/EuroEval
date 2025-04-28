@@ -415,7 +415,6 @@ class VLLMModel(HuggingFaceEncoderModel):
         num_attempts = 3
         for _ in range(num_attempts):
             try:
-                breakpoint()
                 raw_outputs = self._model.generate(
                     prompts=prompts,
                     sampling_params=sampling_params,
@@ -447,11 +446,6 @@ class VLLMModel(HuggingFaceEncoderModel):
                             self._tokenizer.model_max_length - max_tokens, 0
                         ),
                     )
-                    if len(prompts) != len(tokenized_prompts.input_ids):
-                        raise InvalidBenchmark(
-                            f"Expected {len(prompts):,} prompts, but got "
-                            f"{len(tokenized_prompts.input_ids):,}."
-                        )
                     prompts = self._tokenizer.batch_decode(
                         sequences=tokenized_prompts.input_ids, skip_special_tokens=True
                     )
@@ -463,6 +457,26 @@ class VLLMModel(HuggingFaceEncoderModel):
             raise InvalidBenchmark(
                 f"Could not generate sequences after {num_attempts} attempts."
             )
+
+        # When we shorten the prompts then some residual model outputs persist, so we
+        # need to filter these out
+        num_extra_outputs = len(raw_outputs) - len(prompts)
+        if num_extra_outputs > 0:
+            raw_outputs = raw_outputs[num_extra_outputs:]
+            if not all(
+                raw_output.prompt == prompt
+                for raw_output, prompt in zip(raw_outputs, prompts)
+            ):
+                raise InvalidBenchmark(
+                    f"The prompts and the model outputs do not match. There were "
+                    f"{num_extra_outputs!r} extra outputs."
+                )
+            else:
+                logger.debug(
+                    f"Filtered out {num_extra_outputs:,} extra outputs from the model, "
+                    "which occured as we interupted the generation when we truncated "
+                    "the prompts."
+                )
 
         # Parse the raw model outputs
         completion_ids: list[list[int]] = [
