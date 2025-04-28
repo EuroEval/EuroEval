@@ -440,6 +440,7 @@ class VLLMModel(HuggingFaceEncoderModel):
                         "Prompts are too long, so truncating them and trying again..."
                     )
                     logger.debug(f"The error message was: {str(e)}")
+                    breakpoint()
                     tokenized_prompts = self._tokenizer(
                         text=prompts,
                         truncation=True,
