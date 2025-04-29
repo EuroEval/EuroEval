@@ -531,7 +531,9 @@ class DatasetConfig:
 
         # Convert labels to single-quoted labels - and remove duplicates
         quoted_labels = [
-            f"'{self.prompt_label_mapping[label]}'" for label in set(self.labels)
+            f"'{self.prompt_label_mapping[label]}'"
+            for label in set(self.labels)
+            if label in self.prompt_label_mapping
         ]
 
         if not quoted_labels:

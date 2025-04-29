@@ -11,6 +11,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Marked the DBRD Dutch sentiment classification as official, as the quality is
   substantially better than the previous Dutch Social.
 
+### Fixed
+- Fixed an issue with NER evaluation of instruction-tuned models, which was caused by
+  the "O" label mistakenly being included in the prompt template, causing an error
+  during evaluation. No evaluations were affected by this, only that some evaluations
+  could not be run.
+
 
 ## [v15.7.0] - 2025-04-28
 ### Added
