@@ -944,18 +944,7 @@
 <span class="normal">109</span>
 <span class="normal">110</span>
 <span class="normal">111</span>
-<span class="normal">112</span>
-<span class="normal">113</span>
-<span class="normal">114</span>
-<span class="normal">115</span>
-<span class="normal">116</span>
-<span class="normal">117</span>
-<span class="normal">118</span>
-<span class="normal">119</span>
-<span class="normal">120</span>
-<span class="normal">121</span>
-<span class="normal">122</span>
-<span class="normal">123</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;All Dutch dataset configurations used in EuroEval.&quot;&quot;&quot;</span>
+<span class="normal">112</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;All Dutch dataset configurations used in EuroEval.&quot;&quot;&quot;</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">..data_models</span><span class="w"> </span><span class="kn">import</span> <span class="n">DatasetConfig</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..languages</span><span class="w"> </span><span class="kn">import</span> <span class="n">NL</span>
@@ -963,13 +952,14 @@
 
 <span class="c1">### Official datasets ###</span>
 
-<span class="n">DUTCH_SOCIAL_CONFIG</span> <span class="o">=</span> <span class="n">DatasetConfig</span><span class="p">(</span>
-    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;dutch-social&quot;</span><span class="p">,</span>
+<span class="n">DBRD_CONFIG</span> <span class="o">=</span> <span class="n">DatasetConfig</span><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;dbrd&quot;</span><span class="p">,</span>
     <span class="n">pretty_name</span><span class="o">=</span><span class="s2">&quot;the truncated version of the Dutch sentiment classification &quot;</span>
-    <span class="s2">&quot;dataset Dutch Social&quot;</span><span class="p">,</span>
-    <span class="n">huggingface_id</span><span class="o">=</span><span class="s2">&quot;EuroEval/dutch-social-mini&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;dataset DBRD&quot;</span><span class="p">,</span>
+    <span class="n">huggingface_id</span><span class="o">=</span><span class="s2">&quot;EuroEval/dbrd-mini&quot;</span><span class="p">,</span>
     <span class="n">task</span><span class="o">=</span><span class="n">SENT</span><span class="p">,</span>
     <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">NL</span><span class="p">],</span>
+    <span class="n">_labels</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;negative&quot;</span><span class="p">,</span> <span class="s2">&quot;positive&quot;</span><span class="p">],</span>
 <span class="p">)</span>
 
 <span class="n">SCALA_NL_CONFIG</span> <span class="o">=</span> <span class="n">DatasetConfig</span><span class="p">(</span>
@@ -1027,18 +1017,6 @@
 
 
 <span class="c1">### Unofficial datasets ###</span>
-
-<span class="n">DBRD_CONFIG</span> <span class="o">=</span> <span class="n">DatasetConfig</span><span class="p">(</span>
-    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;dbrd&quot;</span><span class="p">,</span>
-    <span class="n">pretty_name</span><span class="o">=</span><span class="s2">&quot;the truncated version of the Dutch sentiment classification &quot;</span>
-    <span class="s2">&quot;dataset DBRD&quot;</span><span class="p">,</span>
-    <span class="n">huggingface_id</span><span class="o">=</span><span class="s2">&quot;EuroEval/dbrd-mini&quot;</span><span class="p">,</span>
-    <span class="n">task</span><span class="o">=</span><span class="n">SENT</span><span class="p">,</span>
-    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">NL</span><span class="p">],</span>
-    <span class="n">_labels</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;negative&quot;</span><span class="p">,</span> <span class="s2">&quot;positive&quot;</span><span class="p">],</span>
-    <span class="n">_prompt_label_mapping</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">positive</span><span class="o">=</span><span class="s2">&quot;positief&quot;</span><span class="p">,</span> <span class="n">negative</span><span class="o">=</span><span class="s2">&quot;negatief&quot;</span><span class="p">),</span>
-    <span class="n">unofficial</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-<span class="p">)</span>
 
 <span class="n">DUTCH_COLA_CONFIG</span> <span class="o">=</span> <span class="n">DatasetConfig</span><span class="p">(</span>
     <span class="n">name</span><span class="o">=</span><span class="s2">&quot;dutch-cola&quot;</span><span class="p">,</span>

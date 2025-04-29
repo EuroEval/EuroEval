@@ -771,18 +771,9 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#dutch-social" class="md-nav__link">
+  <a href="#dbrd" class="md-nav__link">
     <span class="md-ellipsis">
-      Dutch Social
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#unofficial-dbrd" class="md-nav__link">
-    <span class="md-ellipsis">
-      Unofficial: DBRD
+      DBRD
     </span>
   </a>
   
@@ -1362,18 +1353,9 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#dutch-social" class="md-nav__link">
+  <a href="#dbrd" class="md-nav__link">
     <span class="md-ellipsis">
-      Dutch Social
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#unofficial-dbrd" class="md-nav__link">
-    <span class="md-ellipsis">
-      Unofficial: DBRD
+      DBRD
     </span>
   </a>
   
@@ -1570,56 +1552,7 @@
 datasets are grouped by their task - see the <a href="/tasks">task overview</a> for more
 information about what these constitute.</p>
 <h2 id="sentiment-classification">Sentiment Classification</h2>
-<h3 id="dutch-social">Dutch Social</h3>
-<p>This dataset consists of Dutch tweets annotated with sentiment labels. It is not sure
-how the sentiment labels were assigned, this information is pending from the authors.</p>
-<p>The original full dataset consists of 162,805 / 54,269 / 54,268 samples for training,
-validation and testing, respectively (so 271,342 samples used in total). We use a 1,024
-/ 256 / 1,024 split for training, validation and testing, respectively. All the new
-splits are subsets of the original splits.</p>
-<p>Here are a few examples from the training split:</p>
-<p><div class="highlight"><pre><span></span><code><span class="p">{</span>
-<span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="err">&#39;Novak</span><span class="w"> </span><span class="err">Djokovic</span><span class="w"> </span><span class="err">posi</span><span class="kc">t</span><span class="err">ie</span><span class="kc">f</span><span class="w"> </span><span class="err">ge</span><span class="kc">test</span><span class="w"> </span><span class="err">op</span><span class="w"> </span><span class="err">coro</span><span class="kc">na</span><span class="err">virus</span><span class="w"> </span><span class="kc">na</span><span class="w"> </span><span class="err">eige</span><span class="kc">n</span><span class="w"> </span><span class="kc">tenn</span><span class="err">is</span><span class="kc">t</span><span class="err">oer</span><span class="kc">n</span><span class="err">ooi\</span><span class="kc">n</span><span class="err">\</span><span class="kc">n</span><span class="err">h</span><span class="kc">tt</span><span class="err">ps</span><span class="p">:</span><span class="c1">//t.co/U7VOcjANh9&#39;,</span>
-<span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="err">&#39;posi</span><span class="kc">t</span><span class="err">ive&#39;</span>
-<span class="p">}</span>
-</code></pre></div>
-<div class="highlight"><pre><span></span><code><span class="p">{</span>
-<span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;via @NYTimes  https://t.co/IjbCWIwYvR&quot;</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;neutral&quot;</span>
-<span class="p">}</span>
-</code></pre></div>
-<div class="highlight"><pre><span></span><code><span class="p">{</span>
-<span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;@backinflow 30 min Corona tijd....&quot;</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;negative&quot;</span>
-<span class="p">}</span>
-</code></pre></div></p>
-<p>When evaluating generative models, we use the following setup (see the
-<a href="/methodology">methodology</a> for more information on how these are used):</p>
-<ul>
-<li>Number of few-shot examples: 12</li>
-<li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>Hieronder staan tweets en hun sentiment, dat &#39;positief&#39;, &#39;neutraal&#39; of &#39;negatief&#39; kan zijn.
-</code></pre></div></li>
-<li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>Tweet: {text}
-Sentiment: {label}
-</code></pre></div></li>
-<li>Instruction-tuned prompt template:
-  <div class="highlight"><pre><span></span><code>Tweet: {text}
-
-Classificeer het sentiment in de tweet. Antwoord met &#39;positief&#39;, &#39;neutraal&#39; of &#39;negatief&#39;.
-</code></pre></div></li>
-<li>Label mapping:<ul>
-<li><code>positive</code> ➡️ <code>positief</code></li>
-<li><code>neutral</code> ➡️ <code>neutraal</code></li>
-<li><code>negative</code> ➡️ <code>negatief</code></li>
-</ul>
-</li>
-</ul>
-<p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>dutch-social
-</code></pre></div>
-<h3 id="unofficial-dbrd">Unofficial: DBRD</h3>
+<h3 id="dbrd">DBRD</h3>
 <p>This dataset was published in <a href="https://doi.org/10.48550/arXiv.1910.00896">this paper</a>
 and features Dutch book reviews from <a href="https://www.hebban.nl">Hebban.nl</a>, annotated with
 sentiment labels, written by the users of the website.</p>
