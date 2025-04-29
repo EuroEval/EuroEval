@@ -40,7 +40,7 @@ def log_scores(
         identical to `scores` and 'total' being a dictionary with the aggregated scores
         (means and standard errors).
     """
-    if model_revision:
+    if model_revision and model_revision != "main":
         model_id += f"@{model_revision}"
 
     logger.info(f"Finished evaluation of {model_id} on {dataset_name}.")
