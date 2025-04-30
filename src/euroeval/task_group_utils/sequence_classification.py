@@ -243,11 +243,21 @@ def get_closest_logprobs_labels(
                 # basically means that the model is just really bad at generating
                 # labels.
                 elif len(candidate_output_labels) == 0:
-                    breakpoint()
-                    logger.info(
+                    logger.debug(
                         f"No candidate label found for the generated label "
                         f"{generated_label!r}. The generated label is thus ignored."
                     )
+            else:
+                # If we did not find any candidate label for any of the generated
+                # labels, we assume that something is wrong with the model output, and
+                # we fall back to using word edit distance to extract the labels
+                logger.debug(
+                    f"No candidate label found for any of the generated labels "
+                    f"{generated_labels}. This means that using logprobs to extract "
+                    "the labels is not reliable, and we will instead fall back to "
+                    "extracting the labels using word edit distance."
+                )
+                return None
 
             if output_label is not None:
                 output_labels.append(output_label)

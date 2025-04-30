@@ -351,10 +351,19 @@ def get_first_label_token_mapping(
         ]
 
         # Extract the first token of each label
-        first_tokens = [
-            [tok for tok in token_list if tok and label.startswith(tok)][0]
-            for token_list, label in zip(all_tokens, local_labels)
-        ]
+        first_tokens: list[str] = list()
+        for token_list, label in zip(all_tokens, local_labels):
+            matching_tokens = [
+                tok for tok in token_list if tok and label.startswith(tok)
+            ]
+            if not matching_tokens:
+                log_once(
+                    f"No matching token found in token_list for label '{label}', so "
+                    "we will not output scores.",
+                    level=logging.DEBUG,
+                )
+                return False
+            first_tokens.append(matching_tokens[0])
 
         # Build a mapping from labels to the first token in each label if the first
         # tokens are distinct
