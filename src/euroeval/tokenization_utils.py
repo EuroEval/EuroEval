@@ -349,7 +349,7 @@ def get_first_label_token_mapping(
             for token_list in all_tokens
         ]
         first_tokens = [
-            [tok for tok in token_list if label.startswith(tok)][0]
+            [tok for tok in token_list if tok and label.startswith(tok)][0]
             for token_list, label in zip(all_tokens, local_labels)
         ]
         breakpoint()
