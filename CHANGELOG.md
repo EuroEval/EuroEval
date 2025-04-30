@@ -10,6 +10,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Fixed
 - Now does not check if a model exists if it has already been evaluated. This is an
   issue when evaluating Ollama models, if the Ollama server is not running.
+- When evaluating instruction-tuned models on text classification tasks, the chat
+  template sometimes ends with special symbols, such as a newline, which can change the
+  tokenisation of the generated label. When we are evaluating the model using logprobs
+  we are thus looking for the wrong label in these cases. We now take this into account,
+  and log it to the user if the labels are not found, to avoid confusion.
 
 
 ## [v15.7.1] - 2025-04-29
