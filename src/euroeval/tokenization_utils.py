@@ -328,6 +328,7 @@ def get_first_label_token_mapping(
             )
             for token in first_tokens
         ]
+        breakpoint()
 
         # Build a mapping from labels to the first token in each label if the first
         # tokens are distinct
