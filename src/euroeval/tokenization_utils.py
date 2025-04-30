@@ -312,16 +312,38 @@ def get_first_label_token_mapping(
         ]
 
         # Get the first token of each label, where we add a prefix space if needed
-        add_prefix_space = (
-            should_prefix_space_be_added_to_labels(
+        if tokenizer.chat_template is None:
+            add_prefix_space = should_prefix_space_be_added_to_labels(
                 labels_to_be_generated=local_labels, tokenizer=tokenizer
             )
-            and tokenizer.chat_template is None
-        )
-        first_tokens = [
-            tokenizer.tokenize(text=f" {label}" if add_prefix_space else label)[0]
-            for label in local_labels
-        ]
+            first_tokens = [
+                tokenizer.tokenize(text=f" {label}" if add_prefix_space else label)[0]
+                for label in local_labels
+            ]
+
+        else:
+            chat_template_ends_with_a_newline = (
+                tokenizer.apply_chat_template(
+                    conversation=[dict(role="user", content="")],
+                    add_generation_prompt=True,
+                    tokenize=False,
+                )[-1]
+                == "\n"
+            )
+            if chat_template_ends_with_a_newline:
+                first_tokens = [
+                    [
+                        tok
+                        for tok in tokenizer.tokenize(text=f"\n{label}")
+                        if label.startswith(tok)
+                    ][0]
+                    for label in local_labels
+                ]
+            else:
+                first_tokens = [
+                    tokenizer.tokenize(text=label)[0] for label in local_labels
+                ]
+
         first_tokens = [
             re.sub(
                 pattern=r"^[^a-zæøåüöä]+|[^a-zæøåüöä]+$", repl="", string=token.lower()
