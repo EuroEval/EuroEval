@@ -7,7 +7,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 
 ## [Unreleased]
-
+### Fixed
+- Now does not check if a model exists if it has already been evaluated. This is an
+  issue when evaluating Ollama models, if the Ollama server is not running.
 
 
 ## [v15.7.1] - 2025-04-29

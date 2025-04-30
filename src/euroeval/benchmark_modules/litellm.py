@@ -1007,6 +1007,10 @@ def try_download_ollama_model(model_id: str) -> bool:
 
     Returns:
         Whether the model was downloaded successfully.
+
+    Raises:
+        InvalidModel:
+            If Ollama is not running or the model cannot be downloaded.
     """
     if not (model_id.startswith("ollama/") or model_id.startswith("ollama_chat/")):
         return False
@@ -1021,11 +1025,17 @@ def try_download_ollama_model(model_id: str) -> bool:
             level=logging.WARNING,
         )
 
-    downloaded_ollama_models: list[str] = [
-        model_obj.model
-        for model_obj in ollama.list().models
-        if model_obj.model is not None
-    ]
+    try:
+        downloaded_ollama_models: list[str] = [
+            model_obj.model
+            for model_obj in ollama.list().models
+            if model_obj.model is not None
+        ]
+    except ConnectionError:
+        raise InvalidModel(
+            "Ollama does not seem to be running, so we cannot evaluate the model "
+            f"{model_id!r}. Please make sure that Ollama is running and try again."
+        )
 
     ollama_model_id = "/".join(model_id.split("/")[1:])
     if ollama_model_id not in downloaded_ollama_models:
