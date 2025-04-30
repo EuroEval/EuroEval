@@ -322,27 +322,21 @@ def get_first_label_token_mapping(
             ]
 
         else:
-            chat_template_ends_with_a_newline = (
-                tokenizer.apply_chat_template(
-                    conversation=[dict(role="user", content="")],
-                    add_generation_prompt=True,
-                    tokenize=False,
-                )[-1]
-                == "\n"
-            )
-            if chat_template_ends_with_a_newline:
-                first_tokens = [
-                    [
-                        tok
-                        for tok in tokenizer.tokenize(text=f"\n{label}")
-                        if label.startswith(tok)
-                    ][0]
-                    for label in local_labels
-                ]
-            else:
-                first_tokens = [
-                    tokenizer.tokenize(text=label)[0] for label in local_labels
-                ]
+            first_tokens = [
+                [
+                    tok
+                    for tok in tokenizer.apply_chat_template(
+                        conversation=[
+                            dict(role="user", content=""),
+                            dict(role="assistant", content=label),
+                        ],
+                        add_generation_prompt=True,
+                        tokenize=False,
+                    )
+                    if label.startswith(tok)
+                ][0]
+                for label in local_labels
+            ]
 
         first_tokens = [
             re.sub(
