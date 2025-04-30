@@ -243,6 +243,7 @@ def get_closest_logprobs_labels(
                 # basically means that the model is just really bad at generating
                 # labels.
                 elif len(candidate_output_labels) == 0:
+                    breakpoint()
                     logger.debug(
                         f"No candidate label found for the generated label "
                         f"{generated_label!r}. The generated label is thus ignored."
