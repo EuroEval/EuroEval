@@ -311,7 +311,8 @@ def get_first_label_token_mapping(
             for label in dataset_config.labels
         ]
 
-        # Get the first token of each label, where we add a prefix space if needed
+        # Tokenize some text containing each label, which we will use to extract the
+        # first token of each label
         all_tokens: list[list[str]]
         if tokenizer.chat_template is None:
             add_prefix_space = should_prefix_space_be_added_to_labels(
@@ -321,7 +322,6 @@ def get_first_label_token_mapping(
                 tokenizer.tokenize(text=f" {label}" if add_prefix_space else label)
                 for label in local_labels
             ]
-
         else:
             all_tokens = [
                 tokenizer.convert_ids_to_tokens(
@@ -337,6 +337,7 @@ def get_first_label_token_mapping(
                 for label in local_labels
             ]
 
+        # Remove any non-alphabetic characters from the tokens
         all_tokens = [
             [
                 re.sub(
@@ -348,11 +349,12 @@ def get_first_label_token_mapping(
             ]
             for token_list in all_tokens
         ]
+
+        # Extract the first token of each label
         first_tokens = [
             [tok for tok in token_list if tok and label.startswith(tok)][0]
             for token_list, label in zip(all_tokens, local_labels)
         ]
-        breakpoint()
 
         # Build a mapping from labels to the first token in each label if the first
         # tokens are distinct
