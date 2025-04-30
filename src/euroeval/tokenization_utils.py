@@ -312,37 +312,45 @@ def get_first_label_token_mapping(
         ]
 
         # Get the first token of each label, where we add a prefix space if needed
+        all_tokens: list[list[str]]
         if tokenizer.chat_template is None:
             add_prefix_space = should_prefix_space_be_added_to_labels(
                 labels_to_be_generated=local_labels, tokenizer=tokenizer
             )
-            first_tokens = [
-                tokenizer.tokenize(text=f" {label}" if add_prefix_space else label)[0]
+            all_tokens = [
+                tokenizer.tokenize(text=f" {label}" if add_prefix_space else label)
                 for label in local_labels
             ]
 
         else:
-            first_tokens = [
-                [
-                    tok
-                    for tok in tokenizer.apply_chat_template(
+            all_tokens = [
+                tokenizer.convert_ids_to_tokens(
+                    ids=tokenizer.apply_chat_template(
                         conversation=[
                             dict(role="user", content=""),
                             dict(role="assistant", content=label),
                         ],
                         add_generation_prompt=True,
-                        tokenize=False,
+                        tokenize=True,
                     )
-                    if label.startswith(tok)
-                ][0]
+                )
                 for label in local_labels
             ]
 
+        all_tokens = [
+            [
+                re.sub(
+                    pattern=r"^[^a-zæøåüöä]+|[^a-zæøåüöä]+$",
+                    repl="",
+                    string=token.lower(),
+                )
+                for token in token_list
+            ]
+            for token_list in all_tokens
+        ]
         first_tokens = [
-            re.sub(
-                pattern=r"^[^a-zæøåüöä]+|[^a-zæøåüöä]+$", repl="", string=token.lower()
-            )
-            for token in first_tokens
+            [tok for tok in token_list if label.startswith(tok)][0]
+            for token_list, label in zip(all_tokens, local_labels)
         ]
         breakpoint()
 
