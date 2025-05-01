@@ -165,6 +165,18 @@ class LiteLLMModel(BenchmarkModule):
     batching_preference = BatchingPreference.ALL_AT_ONCE
     high_priority = False
 
+    _handleable_exceptions = (
+        BadRequestError,
+        RateLimitError,
+        APIError,
+        APIConnectionError,
+        Timeout,
+        ServiceUnavailableError,
+        InternalServerError,
+        SystemError,
+        AuthenticationError,
+    )
+
     def __init__(
         self,
         model_config: ModelConfig,
@@ -383,100 +395,32 @@ class LiteLLMModel(BenchmarkModule):
                     f"Attempt {attempt + 1}/{num_attempts}: "
                     f"retrying {len(to_run)} failed message(s)"
                 )
-            except (BadRequestError, RateLimitError) as e:
-                if any(msg.lower() in str(e).lower() for msg in stop_messages):
-                    log_once(
-                        f"The model {self.model_config.model_id!r} does not support "
-                        "stop sequences, so disabling them.",
-                        level=logging.DEBUG,
-                    )
-                    generation_kwargs["stop"] = None
-                elif (
-                    any(msg.lower() in str(e).lower() for msg in logprobs_messages)
-                    # Special case for Vertex AI models, since they have strict rate
-                    # limits on using logprobs. They also have a cap of 5 logprobs, but
-                    # we ignore this since the rate limiting makes it unusable anyway.
-                    or (isinstance(e, VertexAIError) and "logprobs" in str(e).lower())
-                ):
-                    log_once(
-                        f"The model {self.model_config.model_id!r} does not support "
-                        "logprobs, so disabling it.",
-                        level=logging.DEBUG,
-                    )
-                    generation_kwargs.pop("logprobs")
-                    generation_kwargs.pop("top_logprobs")
-                elif any(msg.lower() in str(e).lower() for msg in temperature_messages):
-                    log_once(
-                        f"The model {self.model_config.model_id!r} does not support "
-                        "temperature, so disabling it.",
-                        level=logging.DEBUG,
-                    )
-                    generation_kwargs.pop("temperature")
-                elif any(
-                    msg.lower() in str(e).lower()
-                    for msg in temperature_must_be_one_messages
-                ):
-                    log_once(
-                        f"The model {self.model_config.model_id!r} requires "
-                        "temperature to be set to 1, so setting it.",
-                        level=logging.DEBUG,
-                    )
-                    generation_kwargs["temperature"] = 1.0
-                elif any(msg.lower() in str(e).lower() for msg in max_items_messages):
-                    log_once(
-                        f"The model {self.model_config.model_id!r} does not support "
-                        "maxItems in the JSON schema, so disabling it.",
-                        level=logging.DEBUG,
-                    )
-                    ner_tag_names = list(
-                        self.dataset_config.prompt_label_mapping.values()
-                    )
-                    keys_and_their_types = {
-                        tag_name: (list[str], ...) for tag_name in ner_tag_names
-                    }
-                    pydantic_class = create_model(
-                        "AnswerFormat", **keys_and_their_types
-                    )
-                    generation_kwargs["response_format"] = pydantic_class
-                elif any(
-                    msg.lower() in str(e).lower() for msg in no_json_schema_messages
-                ):
-                    log_once(
-                        f"The model {self.model_config.model_id!r} does not support "
-                        "JSON schemas, so using the vanilla JSON format.",
-                        level=logging.DEBUG,
-                    )
-                    generation_kwargs["response_format"] = dict(type="json_object")
-                elif isinstance(e, RateLimitError):
-                    raise InvalidModel(
-                        "You have encountered your rate limit for model "
-                        f"{self.model_config.model_id!r}. Skipping."
-                    )
-                else:
-                    raise InvalidBenchmark(
-                        f"Failed to generate text. The error message was: {e}"
-                    )
-            except APIError as e:
-                raise InvalidBenchmark(
-                    f"Failed to generate text. The error message was: {e}"
-                )
-            except (
-                APIConnectionError,
-                Timeout,
-                ServiceUnavailableError,
-                InternalServerError,
-                SystemError,
-            ) as e:
-                logger.debug(
-                    f"Service temporarily unavailable. The error message was: {e}. "
-                    f"Retrying in 5 seconds..."
-                )
-                sleep(5)
-            except AuthenticationError:
-                raise NeedsAdditionalArgument(
-                    cli_argument="--api-key",
-                    script_argument="api_key=<your-api-key>",
-                    run_with_cli=self.benchmark_config.run_with_cli,
+
+                for _, error in failures:
+                    if isinstance(error, self._handlable_exceptions):
+                        self._handle_error(
+                            error=error,
+                            generation_kwargs=generation_kwargs,
+                            stop_messages=stop_messages,
+                            logprobs_messages=logprobs_messages,
+                            temperature_messages=temperature_messages,
+                            temperature_must_be_one_messages=temperature_must_be_one_messages,
+                            max_items_messages=max_items_messages,
+                            no_json_schema_messages=no_json_schema_messages,
+                        )
+                    else:
+                        raise error  # Unhandleable error, raise it
+
+            except self._handleable_exceptions as e:
+                self._handle_exception(
+                    error=e,
+                    generation_kwargs=generation_kwargs,
+                    stop_messages=stop_messages,
+                    logprobs_messages=logprobs_messages,
+                    temperature_messages=temperature_messages,
+                    temperature_must_be_one_messages=temperature_must_be_one_messages,
+                    max_items_messages=max_items_messages,
+                    no_json_schema_messages=no_json_schema_messages,
                 )
         else:
             raise InvalidBenchmark(
@@ -493,6 +437,141 @@ class LiteLLMModel(BenchmarkModule):
         model_output = self._create_model_output(model_responses=ordered_responses)
 
         return model_output
+
+    def _handle_exception(
+        self,
+        error: BadRequestError
+        | RateLimitError
+        | APIError
+        | APIConnectionError
+        | Timeout
+        | ServiceUnavailableError
+        | InternalServerError
+        | SystemError
+        | AuthenticationError,
+        generation_kwargs: dict[str, t.Any],
+        stop_messages: list[str],
+        logprobs_messages: list[str],
+        temperature_messages: list[str],
+        temperature_must_be_one_messages: list[str],
+        max_items_messages: list[str],
+        no_json_schema_messages: list[str],
+    ) -> None:
+        msg = str(error).lower()
+        model_id = self.model_config.model_id
+
+        def disable_stop() -> None:
+            log_once(
+                f"The model {model_id!r} does not support stop sequences, "
+                "so disabling them.",
+                level=logging.DEBUG,
+            )
+            generation_kwargs["stop"] = None
+
+        def disable_logprobs() -> None:
+            log_once(
+                f"The model {model_id!r} does not support logprobs, so disabling it.",
+                level=logging.DEBUG,
+            )
+            generation_kwargs.pop("logprobs", None)
+            generation_kwargs.pop("top_logprobs", None)
+
+        def disable_temperature() -> None:
+            log_once(
+                f"The model {model_id!r} does not support temperature, "
+                "so disabling it.",
+                level=logging.DEBUG,
+            )
+            generation_kwargs.pop("temperature", None)
+
+        def force_temperature_one() -> None:
+            log_once(
+                f"The model {model_id!r} requires temperature to be set to 1, "
+                "so setting it.",
+                level=logging.DEBUG,
+            )
+            generation_kwargs["temperature"] = 1.0
+
+        def disable_max_items() -> None:
+            log_once(
+                f"The model {model_id!r} does not support maxItems in the JSON schema, "
+                "so disabling it.",
+                level=logging.DEBUG,
+            )
+            tags = list(self.dataset_config.prompt_label_mapping.values())
+            schema = {t: (list[str], ...) for t in tags}
+            generation_kwargs["response_format"] = create_model(
+                "AnswerFormat", **schema
+            )
+
+        def fallback_json_schema() -> None:
+            log_once(
+                f"The model {model_id!r} does not support JSON schemas, so using the "
+                "vanilla JSON format.",
+                level=logging.DEBUG,
+            )
+            generation_kwargs["response_format"] = {"type": "json_object"}
+
+        def service_unavailable() -> None:
+            logger.debug(
+                f"Service temporarily unavailable. The error message was: {error}. "
+                f"Retrying in 5 seconds..."
+            )
+            sleep(5)
+
+        handlers = [
+            (lambda: any(m in msg for m in stop_messages), disable_stop),
+            (
+                lambda: any(m in msg for m in logprobs_messages)
+                or (isinstance(error, VertexAIError) and "logprobs" in msg),
+                disable_logprobs,
+            ),
+            (lambda: any(m in msg for m in temperature_messages), disable_temperature),
+            (
+                lambda: any(m in msg for m in temperature_must_be_one_messages),
+                force_temperature_one,
+            ),
+            (lambda: any(m in msg for m in max_items_messages), disable_max_items),
+            (
+                lambda: any(m in msg for m in no_json_schema_messages),
+                fallback_json_schema,
+            ),
+            (
+                lambda: isinstance(
+                    error,
+                    (
+                        APIConnectionError,
+                        Timeout,
+                        ServiceUnavailableError,
+                        InternalServerError,
+                        SystemError,
+                    ),
+                ),
+                service_unavailable,
+            ),
+        ]
+
+        for predicate, handler in handlers:
+            if predicate():
+                handler()
+                return
+
+        if isinstance(error, RateLimitError):
+            raise InvalidModel(
+                f"You have encountered your rate limit for model {model_id!r}. "
+                "Skipping."
+            )
+
+        if isinstance(error, AuthenticationError):
+            raise NeedsAdditionalArgument(
+                cli_argument="--api-key",
+                script_argument="api_key=<your-api-key>",
+                run_with_cli=self.benchmark_config.run_with_cli,
+            )
+
+        raise InvalidBenchmark(
+            f"Failed to generate text. The error message was: {error}"
+        )
 
     async def _generate_async(
         self,
@@ -608,7 +687,7 @@ class LiteLLMModel(BenchmarkModule):
             return GenerativeModelOutput(sequences=[], scores=None)
 
         if scores and len(sequences) != len(scores):
-            raise ValueError(
+            raise InvalidBenchmark(
                 "Sequences and scores must have the same length. "
                 f"Got {len(sequences)} sequences and {len(scores)} scores."
             )
