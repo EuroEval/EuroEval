@@ -395,8 +395,8 @@ class LiteLLMModel(BenchmarkModule):
                 )
 
                 for _, error in failures:
-                    if isinstance(error, self._handlable_exceptions):
-                        self._handle_error(
+                    if isinstance(error, self._handleable_exceptions):
+                        self._handle_exception(
                             error=error,
                             generation_kwargs=generation_kwargs,
                             stop_messages=stop_messages,
