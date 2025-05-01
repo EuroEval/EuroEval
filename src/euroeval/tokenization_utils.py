@@ -311,23 +311,59 @@ def get_first_label_token_mapping(
             for label in dataset_config.labels
         ]
 
-        # Get the first token of each label, where we add a prefix space if needed
-        add_prefix_space = (
-            should_prefix_space_be_added_to_labels(
+        # Tokenize some text containing each label, which we will use to extract the
+        # first token of each label
+        all_tokens: list[list[str]]
+        if tokenizer.chat_template is None:
+            add_prefix_space = should_prefix_space_be_added_to_labels(
                 labels_to_be_generated=local_labels, tokenizer=tokenizer
             )
-            and tokenizer.chat_template is None
-        )
-        first_tokens = [
-            tokenizer.tokenize(text=f" {label}" if add_prefix_space else label)[0]
-            for label in local_labels
+            all_tokens = [
+                tokenizer.tokenize(text=f" {label}" if add_prefix_space else label)
+                for label in local_labels
+            ]
+        else:
+            all_tokens = [
+                tokenizer.convert_ids_to_tokens(
+                    ids=tokenizer.apply_chat_template(
+                        conversation=[
+                            dict(role="user", content=""),
+                            dict(role="assistant", content=label),
+                        ],
+                        add_generation_prompt=True,
+                        tokenize=True,
+                    )
+                )
+                for label in local_labels
+            ]
+
+        # Remove any non-alphabetic characters from the tokens
+        all_tokens = [
+            [
+                re.sub(
+                    pattern=r"^[^a-zæøåüöä]+|[^a-zæøåüöä]+$",
+                    repl="",
+                    string=token.lower(),
+                )
+                for token in token_list
+            ]
+            for token_list in all_tokens
         ]
-        first_tokens = [
-            re.sub(
-                pattern=r"^[^a-zæøåüöä]+|[^a-zæøåüöä]+$", repl="", string=token.lower()
-            )
-            for token in first_tokens
-        ]
+
+        # Extract the first token of each label
+        first_tokens: list[str] = list()
+        for token_list, label in zip(all_tokens, local_labels):
+            matching_tokens = [
+                tok for tok in token_list if tok and label.startswith(tok)
+            ]
+            if not matching_tokens:
+                log_once(
+                    f"No matching token found in token_list for label '{label}', so "
+                    "we will not output scores.",
+                    level=logging.DEBUG,
+                )
+                return False
+            first_tokens.append(matching_tokens[0])
 
         # Build a mapping from labels to the first token in each label if the first
         # tokens are distinct

@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 
 ## [Unreleased]
+### Fixed
+- Now does not check if a model exists if it has already been evaluated. This is an
+  issue when evaluating Ollama models, if the Ollama server is not running.
+- When evaluating instruction-tuned models on text classification tasks, the chat
+  template sometimes ends with special symbols, such as a newline, which can change the
+  tokenisation of the generated label. When we are evaluating the model using logprobs
+  we are thus looking for the wrong label in these cases. We now take this into account,
+  and log it to the user if the labels are not found, to avoid confusion.
+- Finnish datasets were not included in the default "all" dataset list, which is the
+  default used when no datasets are specified. This has been fixed now.
+
+
+## [v15.7.1] - 2025-04-29
+### Changed
+- Marked the DBRD Dutch sentiment classification as official, as the quality is
+  substantially better than the previous Dutch Social.
+
+### Fixed
+- Fixed an issue with NER evaluation of instruction-tuned models, which was caused by
+  the "O" label mistakenly being included in the prompt template, causing an error
+  during evaluation. No evaluations were affected by this, only that some evaluations
+  could not be run.
+
+
+## [v15.7.0] - 2025-04-28
 ### Added
 - Added support for Finnish 🇫🇮! This includes the Finnish part of the reading
   comprehension dataset
@@ -55,6 +80,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   generation.
 - Handle if a LiteLLM model does not support specifying maxItems in the JSON schema
   during structured generation.
+- Truncate prompts to decoder model's maximum sequence length if the model's maximum
+  sequence length is smaller than 5,000 tokens.
 
 
 ## [v15.6.1] - 2025-04-14

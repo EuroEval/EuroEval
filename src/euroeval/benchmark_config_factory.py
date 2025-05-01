@@ -238,7 +238,7 @@ def prepare_languages(
             The default language codes of the languages to include.
 
     Returns:
-        The prepared model or dataset languages.
+        The prepared dataset languages.
     """
     # Create a dictionary that maps languages to their associated language objects
     language_mapping = get_all_languages()

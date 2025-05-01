@@ -132,6 +132,11 @@ def extract_labels_from_generation(
         The predicted labels.
     """
     if model_output.scores is not None:
+        if first_label_token_mapping is False:
+            raise InvalidBenchmark(
+                "The model outputted logprobs, but the first label token mapping is "
+                "not provided. This means that the model should not output logprobs."
+            )
         labels = get_closest_logprobs_labels(
             generation_logprobs=model_output.scores,
             dataset_config=dataset_config,
@@ -147,7 +152,7 @@ def extract_labels_from_generation(
 def get_closest_logprobs_labels(
     generation_logprobs: list[list[list[tuple[str, float]]]],
     dataset_config: "DatasetConfig",
-    first_label_token_mapping: dict[str, str] | bool,
+    first_label_token_mapping: dict[str, str] | t.Literal[True],
 ) -> list[str] | None:
     """Get the labels with the highest predicted logprob value.
 
@@ -164,8 +169,7 @@ def get_closest_logprobs_labels(
             The configuration of the dataset.
         first_label_token_mapping:
             A mapping from labels to the first token in each label, or alternatively a
-            Boolean value indicating whether the model should output scores (if the
-            mapping is outputted then the model will always output scores).
+            `True` value indicating that the model should output logprobs.
 
     Returns:
         The predicted labels, or None if labels could not be extracted.
@@ -195,7 +199,9 @@ def get_closest_logprobs_labels(
             # label, as the output label
             output_label: str | None = None
             for generated_label in generated_labels:
-                # Get the candidate labels that starts with the generated label
+                # Get the candidate labels. If we have a first label token mapping, we
+                # use it to get the candidate labels. Otherwise, we check if any of the
+                # labels start with the generated label.
                 if isinstance(first_label_token_mapping, dict):
                     if any(
                         candidate_label not in first_label_token_mapping
@@ -239,14 +245,43 @@ def get_closest_logprobs_labels(
                     )
                     return None
 
-                # If no candidate label is found, we ignore the generated label, as it
-                # basically means that the model is just really bad at generating
-                # labels.
+                # If no candidate label is found, we first check if any of the labels
+                # start with the generated label. This could be the case if the labels
+                # in the first token mapping is inaccurate or incomplete, for instance
+                # if 'pos' is in the first label token mapping, but the model outputted
+                # 'posit'. If this is the case then we cannot trust the first label
+                # token mapping, and we fall back to using word edit distance.
+                # Otherwise, the generated label is just bad, and we skip to the next
+                # generated label.
                 elif len(candidate_output_labels) == 0:
-                    logger.debug(
-                        f"No candidate label found for the generated label "
-                        f"{generated_label!r}. The generated label is thus ignored."
-                    )
+                    candidate_output_labels_starting_with_generated_label = [
+                        candidate_label
+                        for candidate_label in candidate_labels
+                        if candidate_label.startswith(generated_label)
+                    ]
+                    if candidate_output_labels_starting_with_generated_label:
+                        log_once(
+                            f"No candidate label found for the generated label "
+                            f"{generated_label!r}. This means that using logprobs to "
+                            "extract the labels is not reliable, and we will instead "
+                            "fall back to extracting the labels using word edit "
+                            "distance.",
+                            level=logging.DEBUG,
+                        )
+                        return None
+
+            # If we did not find any candidate label for any of the generated labels, we
+            # assume that something is wrong with the model output, and we fall back to
+            # using word edit distance to extract the labels
+            else:
+                log_once(
+                    f"No candidate label found for any of the generated labels "
+                    f"{generated_labels}. This means that using logprobs to extract "
+                    "the labels is not reliable, and we will instead fall back to "
+                    "extracting the labels using word edit distance.",
+                    level=logging.DEBUG,
+                )
+                return None
 
             if output_label is not None:
                 output_labels.append(output_label)

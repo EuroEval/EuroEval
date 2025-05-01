@@ -18,6 +18,7 @@ def log_scores(
     metric_configs: list["MetricConfig"],
     scores: list[dict[str, float]],
     model_id: str,
+    model_revision: str,
 ) -> "ScoreDict":
     """Log the scores.
 
@@ -30,13 +31,18 @@ def log_scores(
             The scores that are to be logged. This is a list of dictionaries full of
             scores.
         model_id:
-            The full Hugging Face Hub path to the pretrained transformer model.
+            The model ID of the model that was evaluated.
+        model_revision:
+            The revision of the model.
 
     Returns:
         A dictionary with keys 'raw_scores' and 'total', with 'raw_scores' being
         identical to `scores` and 'total' being a dictionary with the aggregated scores
         (means and standard errors).
     """
+    if model_revision and model_revision != "main":
+        model_id += f"@{model_revision}"
+
     logger.info(f"Finished evaluation of {model_id} on {dataset_name}.")
 
     total_dict: dict[str, float] = dict()

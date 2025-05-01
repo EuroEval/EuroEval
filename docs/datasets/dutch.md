@@ -7,68 +7,7 @@ information about what these constitute.
 
 ## Sentiment Classification
 
-### Dutch Social
-
-This dataset consists of Dutch tweets annotated with sentiment labels. It is not sure
-how the sentiment labels were assigned, this information is pending from the authors.
-
-The original full dataset consists of 162,805 / 54,269 / 54,268 samples for training,
-validation and testing, respectively (so 271,342 samples used in total). We use a 1,024
-/ 256 / 1,024 split for training, validation and testing, respectively. All the new
-splits are subsets of the original splits.
-
-Here are a few examples from the training split:
-
-```json
-{
-  "text": 'Novak Djokovic positief getest op coronavirus na eigen tennistoernooi\n\nhttps://t.co/U7VOcjANh9',
-  "label": 'positive'
-}
-```
-```json
-{
-  "text": "via @NYTimes  https://t.co/IjbCWIwYvR",
-  "label": "neutral"
-}
-```
-```json
-{
-  "text": "@backinflow 30 min Corona tijd....",
-  "label": "negative"
-}
-```
-
-When evaluating generative models, we use the following setup (see the
-[methodology](/methodology) for more information on how these are used):
-
-- Number of few-shot examples: 12
-- Prefix prompt:
-  ```
-  Hieronder staan tweets en hun sentiment, dat 'positief', 'neutraal' of 'negatief' kan zijn.
-  ```
-- Base prompt template:
-  ```
-  Tweet: {text}
-  Sentiment: {label}
-  ```
-- Instruction-tuned prompt template:
-  ```
-  Tweet: {text}
-
-  Classificeer het sentiment in de tweet. Antwoord met 'positief', 'neutraal' of 'negatief'.
-  ```
-- Label mapping:
-    - `positive` ➡️ `positief`
-    - `neutral` ➡️ `neutraal`
-    - `negative` ➡️ `negatief`
-
-You can evaluate this dataset directly as follows:
-
-```bash
-$ euroeval --model <model-id> --dataset dutch-social
-```
-
-### Unofficial: DBRD
+### DBRD
 
 This dataset was published in [this paper](https://doi.org/10.48550/arXiv.1910.00896)
 and features Dutch book reviews from [Hebban.nl](https://www.hebban.nl), annotated with
