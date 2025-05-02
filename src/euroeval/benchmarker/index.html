@@ -2032,7 +2032,9 @@
 <span class="normal">1111</span>
 <span class="normal">1112</span>
 <span class="normal">1113</span>
-<span class="normal">1114</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Class that benchmarks language models.&quot;&quot;&quot;</span>
+<span class="normal">1114</span>
+<span class="normal">1115</span>
+<span class="normal">1116</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Class that benchmarks language models.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">contextlib</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
@@ -2406,15 +2408,7 @@
 
         <span class="n">current_benchmark_results</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">BenchmarkResult</span><span class="p">]</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
         <span class="k">for</span> <span class="n">model_id</span> <span class="ow">in</span> <span class="n">model_ids</span><span class="p">:</span>
-            <span class="k">try</span><span class="p">:</span>
-                <span class="n">model_config</span> <span class="o">=</span> <span class="n">get_model_config</span><span class="p">(</span>
-                    <span class="n">model_id</span><span class="o">=</span><span class="n">model_id</span><span class="p">,</span> <span class="n">benchmark_config</span><span class="o">=</span><span class="n">benchmark_config</span>
-                <span class="p">)</span>
-            <span class="k">except</span> <span class="n">InvalidModel</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">message</span><span class="p">)</span>
-                <span class="n">num_finished_benchmarks</span> <span class="o">+=</span> <span class="nb">len</span><span class="p">(</span><span class="n">dataset_configs</span><span class="p">)</span>
-                <span class="k">continue</span>
-
+            <span class="n">model_config</span><span class="p">:</span> <span class="n">ModelConfig</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
             <span class="n">loaded_model</span><span class="p">:</span> <span class="n">BenchmarkModule</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
             <span class="k">for</span> <span class="n">dataset_config</span> <span class="ow">in</span> <span class="n">dataset_configs</span><span class="p">:</span>
                 <span class="c1"># Skip if we have already benchmarked this model on this dataset and</span>
@@ -2428,11 +2422,21 @@
                 <span class="p">):</span>
                     <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
                         <span class="sa">f</span><span class="s2">&quot;Skipping benchmarking </span><span class="si">{</span><span class="n">model_id</span><span class="si">}</span><span class="s2"> on &quot;</span>
-                        <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">dataset_config</span><span class="o">.</span><span class="n">pretty_name</span><span class="si">}</span><span class="s2">, as it &quot;</span>
-                        <span class="s2">&quot;has already been benchmarked.&quot;</span>
+                        <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">dataset_config</span><span class="o">.</span><span class="n">pretty_name</span><span class="si">}</span><span class="s2">, as it has already been &quot;</span>
+                        <span class="s2">&quot;benchmarked.&quot;</span>
                     <span class="p">)</span>
                     <span class="n">num_finished_benchmarks</span> <span class="o">+=</span> <span class="mi">1</span>
                     <span class="k">continue</span>
+
+                <span class="k">if</span> <span class="n">model_config</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="k">try</span><span class="p">:</span>
+                        <span class="n">model_config</span> <span class="o">=</span> <span class="n">get_model_config</span><span class="p">(</span>
+                            <span class="n">model_id</span><span class="o">=</span><span class="n">model_id</span><span class="p">,</span> <span class="n">benchmark_config</span><span class="o">=</span><span class="n">benchmark_config</span>
+                        <span class="p">)</span>
+                    <span class="k">except</span> <span class="n">InvalidModel</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">message</span><span class="p">)</span>
+                        <span class="n">num_finished_benchmarks</span> <span class="o">+=</span> <span class="nb">len</span><span class="p">(</span><span class="n">dataset_configs</span><span class="p">)</span>
+                        <span class="k">continue</span>
 
                 <span class="c1"># Skip if the model is an encoder model and the task is generative</span>
                 <span class="n">task_is_generative</span> <span class="o">=</span> <span class="p">(</span>
