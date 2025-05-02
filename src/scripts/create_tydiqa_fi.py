@@ -1,3 +1,13 @@
+# /// script
+# requires-python = ">=3.10,<4.0"
+# dependencies = [
+#     "datasets==3.5.0",
+#     "huggingface-hub==0.24.0",
+#     "pandas==2.2.0",
+#     "requests==2.32.3",
+# ]
+# ///
+
 """Create the TydiQA-mini Finnish dataset and upload it to the HF Hub."""
 
 import pandas as pd

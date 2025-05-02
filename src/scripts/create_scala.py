@@ -2,7 +2,6 @@
 # requires-python = ">=3.10,<4.0"
 # dependencies = [
 #     "datasets==3.5.0",
-#     "euroeval",
 #     "huggingface-hub==0.24.0",
 #     "pandas==2.2.0",
 #     "requests==2.32.3",
@@ -41,14 +40,9 @@ from pandas.errors import SettingWithCopyWarning
 from requests.exceptions import HTTPError
 from tqdm.auto import tqdm
 
-from euroeval.utils import block_terminal_output
-
 
 def main() -> None:
     """Create the ScaLA datasets and upload them to the HF Hub."""
-    # Block terminal output
-    block_terminal_output()
-
     # Set up the POS dataset loaders
     pos_datasets = {
         "da": load_dadt_pos,

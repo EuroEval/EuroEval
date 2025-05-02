@@ -1,3 +1,13 @@
+# /// script
+# requires-python = ">=3.10,<4.0"
+# dependencies = [
+#     "datasets==3.5.0",
+#     "huggingface-hub==0.24.0",
+#     "pandas==2.2.0",
+#     "requests==2.32.3",
+# ]
+# ///
+
 """Create the Finnish HellaSwag-mini dataset and upload it to the HF Hub."""
 
 from collections import Counter
@@ -30,12 +40,16 @@ def main() -> None:
     repo_id = "Finnish-NLP/hellaswag-fi-google-translate"
 
     dataset = load_dataset(path=repo_id, token=True)
-    dfs = {}
-    for split in ["train", "validation", "test"]:
+    assert isinstance(dataset, DatasetDict)
+
+    splits = ["train", "validation", "test"]
+    assert list(dataset.keys()) == splits
+
+    dfs: dict[str, pd.DataFrame] = dict()
+    for split in splits:
         df = dataset[split].to_pandas()
-
-        df["endings"] = df["endings"].apply(process_endings)
-
+        assert isinstance(df, pd.DataFrame)
+        df.endings = df.endings.apply(process_endings)
         df = process_split(df=df, split=split)
         dfs[split] = df
 

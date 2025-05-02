@@ -1,3 +1,13 @@
+# /// script
+# requires-python = ">=3.10,<4.0"
+# dependencies = [
+#     "datasets==3.5.0",
+#     "huggingface-hub==0.24.0",
+#     "pandas==2.2.0",
+#     "requests==2.32.3",
+# ]
+# ///
+
 """Create the Finnish version of the XLSum summarisation dataset."""
 
 import pandas as pd
@@ -11,7 +21,7 @@ def main() -> None:
     """Create the Finnish XL-Sum dataset and upload to HF Hub."""
     dataset_id = "TurkuNLP/xlsum-fi"
 
-    dataset = load_dataset(dataset_id)
+    dataset = load_dataset(dataset_id, trust_remote_code=True, token=True)
     assert isinstance(dataset, DatasetDict)
 
     dataset = dataset.rename_columns(column_mapping=dict(summary="target_text"))

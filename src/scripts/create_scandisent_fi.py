@@ -1,3 +1,13 @@
+# /// script
+# requires-python = ">=3.10,<4.0"
+# dependencies = [
+#     "datasets==3.5.0",
+#     "huggingface-hub==0.24.0",
+#     "pandas==2.2.0",
+#     "requests==2.32.3",
+# ]
+# ///
+
 """Create the Finnish part of the ScandiSent dataset and upload it to the HF Hub."""
 
 import pandas as pd
@@ -14,7 +24,7 @@ def main() -> None:
 
     # Download the dataset
     dataset = load_dataset(path=repo_id, token=True, split="train")
-    assert isinstance(dataset, DatasetDict)
+    assert isinstance(dataset, Dataset)
 
     # Convert the dataset to a dataframe
     df = dataset.to_pandas()

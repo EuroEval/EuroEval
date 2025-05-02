@@ -2,7 +2,7 @@
 
 from ..data_models import DatasetConfig
 from ..languages import FI
-from ..tasks import COMMON_SENSE, LA, NER, RC, SENT, SUMM
+from ..tasks import LA, NER, RC, SENT, SUMM
 
 ### Official datasets ###
 
@@ -40,14 +40,16 @@ XLSUM_FI_CONFIG = DatasetConfig(
     languages=[FI],
 )
 
-HELLASWAG_FI_CONFIG = DatasetConfig(
-    name="hellaswag-fi",
-    pretty_name="the truncated version of the Finnish common-sense reasoning dataset "
-    "HellaSwag-fi, translated from the English HellaSwag dataset",
-    huggingface_id="EuroEval/hellaswag-fi-mini",
-    task=COMMON_SENSE,
-    languages=[FI],
-)
+# TODO: Include when this issue has been resolved:
+# https://github.com/EuroEval/EuroEval/issues/158#issuecomment-2846664885
+# HELLASWAG_FI_CONFIG = DatasetConfig(
+#     name="hellaswag-fi",
+#     pretty_name="the truncated version of the Finnish common-sense reasoning dataset "
+#     "HellaSwag-fi, translated from the English HellaSwag dataset",
+#     huggingface_id="EuroEval/hellaswag-fi-mini",
+#     task=COMMON_SENSE,
+#     languages=[FI],
+# )
 
 SCALA_FI_CONFIG = DatasetConfig(
     name="scala-fi",

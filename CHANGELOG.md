@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 
 ## [Unreleased]
+
+
+
+## [v15.7.2] - 2025-05-02
 ### Fixed
 - Now does not check if a model exists if it has already been evaluated. This is an
   issue when evaluating Ollama models, if the Ollama server is not running.
@@ -17,6 +21,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   and log it to the user if the labels are not found, to avoid confusion.
 - Finnish datasets were not included in the default "all" dataset list, which is the
   default used when no datasets are specified. This has been fixed now.
+- Temporarily disabled HellaSwag-fi, as there is an issue with the labels in the test
+  split, causing errors during evaluation. We will re-enable in a future release, when
+  this has been fixed.
 
 
 ## [v15.7.1] - 2025-04-29
