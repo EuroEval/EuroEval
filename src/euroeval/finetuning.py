@@ -242,8 +242,10 @@ def finetune_single_iteration(
             except TypeError:
                 evaluate_kwargs.pop("orig_eval_dataset")
             except torch.OutOfMemoryError:
-                logger.debug(
-                    "Out of memory error during evaluation. Trying to evaluate on CPU."
+                log_once(
+                    "Out of memory error during evaluation of model "
+                    f"{model_config.model_id!r}. Trying to evaluate on CPU.",
+                    level=logging.DEBUG,
                 )
                 trainer.args.use_cpu = True
             except NaNValueInModelOutput as e:
