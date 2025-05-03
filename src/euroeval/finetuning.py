@@ -222,7 +222,7 @@ def finetune_single_iteration(
         trainer.add_callback(NeverLeaveProgressCallback)
 
     try:
-        # trainer.train()
+        trainer.train()
         trainer.args.use_cpu = True
         with torch.inference_mode():
             try:
