@@ -597,7 +597,11 @@ class LiteLLMModel(BenchmarkModule):
         failures = []
 
         to_run = list(enumerate(messages))
-        for attempt in range(max_reruns + 1):
+
+        prev_fail_count = len(to_run)
+        rerun_count = 0
+
+        while to_run and rerun_count < max_reruns and prev_fail_count > 0:
             if not to_run:
                 break
 
@@ -610,16 +614,30 @@ class LiteLLMModel(BenchmarkModule):
             responses = await asyncio.gather(*requests, return_exceptions=True)
 
             next_to_run = []
+            current_fail_count = 0
+
             for (orig_idx, _), response in zip(to_run, responses):
                 if isinstance(response, Exception):
-                    if attempt >= max_reruns:
-                        failures.append((orig_idx, response))
-                    else:
-                        next_to_run.append((orig_idx, messages[orig_idx]))
+                    current_fail_count += 1
+                    next_to_run.append((orig_idx, messages[orig_idx]))
                 else:
                     success.append(response)
 
+            if current_fail_count >= prev_fail_count:
+                failures.extend(
+                    (idx, Exception("Exceeded adaptive rerun threshold"))
+                    for idx, _ in to_run
+                )
+                break
+
+            prev_fail_count = current_fail_count
             to_run = next_to_run
+            rerun_count += 1
+
+        for idx, _ in to_run:
+            failures.append(
+                (idx, Exception("Max reruns reached without further improvement"))
+            )
 
         return success, failures
 
