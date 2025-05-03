@@ -10,7 +10,7 @@
 
 """Create the Jentoft linguistic acceptability dataset."""
 
-from logging import getLogger
+import logging
 
 import pandas as pd
 from constants import MAX_NUM_CHARS_IN_DOCUMENT, MIN_NUM_CHARS_IN_DOCUMENT  # noqa
@@ -18,7 +18,8 @@ from datasets import Dataset, DatasetDict, Split
 from huggingface_hub import HfApi
 from requests import HTTPError
 
-logger = getLogger(__name__)
+logging.basicConfig(format="%(asctime)s ⋅ %(message)s", level=logging.INFO)
+logger = logging.getLogger("create_jentoft")
 
 
 def main() -> None:

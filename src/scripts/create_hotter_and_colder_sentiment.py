@@ -30,6 +30,7 @@ from datasets import Dataset, DatasetDict, Split
 from huggingface_hub import HfApi
 from tqdm.auto import tqdm
 
+logging.basicConfig(format="%(asctime)s ⋅ %(message)s", level=logging.INFO)
 logger = logging.getLogger("create_hotter_and_colder")
 
 

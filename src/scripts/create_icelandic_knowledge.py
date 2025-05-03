@@ -15,10 +15,10 @@
 """Create mideind/icelandic_qa_scandeval as a knowledge task dataset."""
 
 import json
+import logging
 import os
 import random
 import re
-from logging import getLogger
 
 import pandas as pd
 from datasets import Dataset, DatasetDict, Split, load_dataset
@@ -30,7 +30,8 @@ from pydantic import BaseModel
 from requests import HTTPError
 from tqdm.auto import tqdm
 
-logger = getLogger(__name__)
+logging.basicConfig(format="%(asctime)s ⋅ %(message)s", level=logging.INFO)
+logger = logging.getLogger("create_icelandic_knowledge")
 
 
 load_dotenv()

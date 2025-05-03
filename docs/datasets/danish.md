@@ -608,7 +608,7 @@ When evaluating generative models, we use the following setup (see the
   a. {option_a}
   b. {option_b}
   c. {option_c}
-  d. {option_c}
+  d. {option_d}
   Svar: {label}
   ```
 - Instruction-tuned prompt template:
@@ -673,7 +673,7 @@ When evaluating generative models, we use the following setup (see the
   a. {option_a}
   b. {option_b}
   c. {option_c}
-  d. {option_c}
+  d. {option_d}
   Svar: {label}
   ```
 - Instruction-tuned prompt template:
