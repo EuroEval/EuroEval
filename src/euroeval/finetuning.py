@@ -221,9 +221,11 @@ def finetune_single_iteration(
     if benchmark_config.progress_bar:
         trainer.add_callback(NeverLeaveProgressCallback)
 
-    # Train and evaluate the model
+    # Train the model
+    trainer.train()
+
+    # Evaluate the model
     with torch.inference_mode():
-        trainer.train()
         try:
             test_scores = trainer.evaluate(
                 eval_dataset=dataset["test"],
