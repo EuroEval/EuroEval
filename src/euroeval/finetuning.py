@@ -222,7 +222,8 @@ def finetune_single_iteration(
         trainer.add_callback(NeverLeaveProgressCallback)
 
     try:
-        trainer.train()
+        # trainer.train()
+        trainer.args.use_cpu = True
         with torch.inference_mode():
             try:
                 test_scores = trainer.evaluate(
@@ -231,7 +232,6 @@ def finetune_single_iteration(
                     metric_key_prefix="test",
                 )
             except TypeError:
-                trainer.model.to("cpu")
                 test_scores = trainer.evaluate(
                     eval_dataset=dataset["test"], metric_key_prefix="test"
                 )
