@@ -7,7 +7,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 
 ## [Unreleased]
-
+### Added
+- Added the BeleBele datasets for Finnish, Italian and Spanish. They are listed as unofficial for now.
 
 
 ## [v15.7.2] - 2025-05-02
