@@ -234,6 +234,7 @@ def finetune_single_iteration(
         orig_eval_dataset=dataset["original_test"],
         metric_key_prefix="test",
     )
+    trainer.args.use_cpu = True
     with torch.inference_mode():
         while True:
             try:
@@ -241,15 +242,6 @@ def finetune_single_iteration(
                 break
             except TypeError:
                 evaluate_kwargs.pop("orig_eval_dataset")
-            except torch.OutOfMemoryError as e:
-                log_once(
-                    "Out of memory error during evaluation of model "
-                    f"{model_config.model_id!r}. Trying to evaluate on CPU.",
-                    level=logging.DEBUG,
-                )
-                if trainer.args.use_cpu:
-                    raise e
-                trainer.args.use_cpu = True
             except NaNValueInModelOutput as e:
                 del trainer
                 del model
