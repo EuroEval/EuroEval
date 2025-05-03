@@ -209,42 +209,52 @@ def finetune_single_iteration(
 
         trainer.log = no_logging
 
-    # Re-block terminal output, as it gets unblocked by the `transformers`
-    # package before training
+    # Re-block terminal output, as it gets unblocked by the `transformers` package
+    # before training
     block_terminal_output()
 
-    # Sort out callbacks. We remove the callbacks that are producing unnecessary
-    # output, to avoid cluttering the terminal output
+    # Sort out callbacks. We remove the callbacks that are producing unnecessary output,
+    # to avoid cluttering the terminal output
     if not benchmark_config.verbose:
         trainer.remove_callback(PrinterCallback)
     trainer.remove_callback(ProgressCallback)
     if benchmark_config.progress_bar:
         trainer.add_callback(NeverLeaveProgressCallback)
 
+    # Train the model
     try:
         trainer.train()
-        trainer.args.use_cpu = True
-        with torch.inference_mode():
-            try:
-                test_scores = trainer.evaluate(
-                    eval_dataset=dataset["test"],
-                    orig_eval_dataset=dataset["original_test"],
-                    metric_key_prefix="test",
-                )
-            except TypeError:
-                test_scores = trainer.evaluate(
-                    eval_dataset=dataset["test"], metric_key_prefix="test"
-                )
-        return test_scores
-
-    except NaNValueInModelOutput as e:
-        del trainer
-        del model
-        clear_memory()
-        raise e
-
     except (RuntimeError, ValueError, IndexError) as e:
         raise InvalidBenchmark(str(e))
+
+    # Final evaluation of the model on the test set. We compute this on the CPU to avoid
+    # out of memory errors on the GPU.
+    evaluate_kwargs = dict(
+        eval_dataset=dataset["test"],
+        orig_eval_dataset=dataset["original_test"],
+        metric_key_prefix="test",
+    )
+    with torch.inference_mode():
+        while True:
+            try:
+                test_scores = trainer.evaluate(**evaluate_kwargs)
+                break
+            except TypeError:
+                evaluate_kwargs.pop("orig_eval_dataset")
+            except torch.OutOfMemoryError:
+                logger.debug(
+                    "Out of memory error during evaluation. Trying to evaluate on CPU."
+                )
+                trainer.args.use_cpu = True
+            except NaNValueInModelOutput as e:
+                del trainer
+                del model
+                clear_memory()
+                raise e
+            except (RuntimeError, ValueError, IndexError) as e:
+                raise InvalidBenchmark(str(e))
+
+    return test_scores
 
 
 def get_training_args(

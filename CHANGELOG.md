@@ -7,7 +7,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 
 ## [Unreleased]
-
+### Fixed
+- If we run out of GPU memory during evaluation of encoder models, we now attempt to
+  evaluate on CPU instead.
 
 
 ## [v15.7.2] - 2025-05-02
