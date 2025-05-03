@@ -226,6 +226,7 @@ def finetune_single_iteration(
         trainer.add_callback(NeverLeaveProgressCallback)
 
     try:
+        breakpoint()
         trainer.train()
         with torch.inference_mode():
             try:
