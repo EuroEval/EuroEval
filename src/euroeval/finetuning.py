@@ -223,7 +223,7 @@ def finetune_single_iteration(
 
     # Train and evaluate the model
     with torch.inference_mode():
-        # trainer.train()
+        trainer.train()
         try:
             test_scores = trainer.evaluate(
                 eval_dataset=dataset["test"],

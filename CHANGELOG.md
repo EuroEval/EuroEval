@@ -8,8 +8,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 ### Fixed
-- If we run out of GPU memory during evaluation of encoder models, we now attempt to
-  evaluate on CPU instead.
+- Now uses `eval_accumulation_steps` (set to 32) when evaluating encoder models, to
+  avoid running out of memory during evaluation.
 
 
 ## [v15.7.2] - 2025-05-02
