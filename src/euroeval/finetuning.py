@@ -103,7 +103,6 @@ def finetune(
                 itr_scores = finetune_single_iteration(
                     model=model if model_already_initialized else None,
                     dataset=datasets[idx],
-                    iteration_idx=idx,
                     training_args=training_args,
                     model_config=model_config,
                     dataset_config=dataset_config,
@@ -158,7 +157,6 @@ def finetune(
 def finetune_single_iteration(
     model: BenchmarkModule | None,
     dataset: DatasetDict,
-    iteration_idx: int,
     training_args: TrainingArguments,
     model_config: "ModelConfig",
     dataset_config: "DatasetConfig",
@@ -171,8 +169,6 @@ def finetune_single_iteration(
             The model to use in the benchmark. If None then a new model will be loaded.
         dataset:
             The dataset to use for training and evaluation.
-        iteration_idx:
-            The index of the iteration.
         training_args:
             The training arguments.
         model_config:
