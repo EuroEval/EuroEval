@@ -221,34 +221,26 @@ def finetune_single_iteration(
     if benchmark_config.progress_bar:
         trainer.add_callback(NeverLeaveProgressCallback)
 
-    # Train the model
-    try:
-        trainer.train()
-    except (RuntimeError, ValueError, IndexError) as e:
-        raise InvalidBenchmark(str(e))
-
-    # Final evaluation of the model on the test set. We compute this on the CPU to avoid
-    # out of memory errors on the GPU.
-    evaluate_kwargs = dict(
-        eval_dataset=dataset["test"],
-        orig_eval_dataset=dataset["original_test"],
-        metric_key_prefix="test",
-    )
-    trainer.args.use_cpu = True
+    # Train and evaluate the model
     with torch.inference_mode():
-        while True:
-            try:
-                test_scores = trainer.evaluate(**evaluate_kwargs)
-                break
-            except TypeError:
-                evaluate_kwargs.pop("orig_eval_dataset")
-            except NaNValueInModelOutput as e:
-                del trainer
-                del model
-                clear_memory()
-                raise e
-            except (RuntimeError, ValueError, IndexError) as e:
-                raise InvalidBenchmark(str(e))
+        # trainer.train()
+        try:
+            test_scores = trainer.evaluate(
+                eval_dataset=dataset["test"],
+                orig_eval_dataset=dataset["original_test"],
+                metric_key_prefix="test",
+            )
+        except TypeError:
+            test_scores = trainer.evaluate(
+                eval_dataset=dataset["test"], metric_key_prefix="test"
+            )
+        except NaNValueInModelOutput as e:
+            del trainer
+            del model
+            clear_memory()
+            raise e
+        except (RuntimeError, ValueError, IndexError) as e:
+            raise InvalidBenchmark(str(e))
 
     return test_scores
 
