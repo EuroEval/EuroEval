@@ -356,6 +356,7 @@ class LiteLLMModel(BenchmarkModule):
                     messages=list(batch_msgs),
                     generation_kwargs=generation_kwargs,
                     max_retries=3,
+                    max_reruns=15,
                 )
             )
 
