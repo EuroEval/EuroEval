@@ -380,8 +380,8 @@ class LiteLLMModel(BenchmarkModule):
                     )
                 )
 
-                for orig_idx, model_response in zip(batch_indices, model_response):
-                    all_responses[orig_idx] = model_response
+                for orig_idx, response in zip(batch_indices, model_response):
+                    all_responses[orig_idx] = response
 
                 if not failures:
                     to_run = []
@@ -389,7 +389,7 @@ class LiteLLMModel(BenchmarkModule):
 
                 all_failures.extend(failures)
                 to_run = [(orig_idx, messages[orig_idx]) for orig_idx, _ in failures]
-                logger.warning(
+                logger.debug(
                     f"Attempt {attempt + 1}/{num_attempts}: "
                     f"retrying {len(to_run)} failed message(s)"
                 )
@@ -427,7 +427,7 @@ class LiteLLMModel(BenchmarkModule):
 
         if to_run:
             raise InvalidBenchmark(
-                f"Failed to generate text after {num_attempts + 1} attempts. "
+                f"Failed to generate text after {num_attempts} attempts. "
                 f"Errors: {all_failures}"
             )
 
@@ -438,15 +438,7 @@ class LiteLLMModel(BenchmarkModule):
 
     def _handle_exception(
         self,
-        error: BadRequestError
-        | RateLimitError
-        | APIError
-        | APIConnectionError
-        | Timeout
-        | ServiceUnavailableError
-        | InternalServerError
-        | SystemError
-        | AuthenticationError,
+        error: Exception,
         generation_kwargs: dict[str, t.Any],
         stop_messages: list[str],
         logprobs_messages: list[str],
