@@ -544,10 +544,8 @@ class LiteLLMModel(BenchmarkModule):
             A tuple containing the successful responses and the failed responses.
         """
         success = []
-        all_failures = []
-
+        all_failures = {}
         to_run = list(enumerate(messages))
-
         prev_fail_count = len(to_run)
         rerun_count = 0
 
@@ -566,7 +564,7 @@ class LiteLLMModel(BenchmarkModule):
             for (orig_idx, _), response in zip(to_run, responses):
                 if isinstance(response, Exception):
                     current_fail_count += 1
-                    all_failures.append((orig_idx, response))
+                    all_failures[orig_idx] = response
                     next_to_run.append((orig_idx, messages[orig_idx]))
                 else:
                     success.append(response)
