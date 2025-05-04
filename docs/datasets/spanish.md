@@ -330,6 +330,71 @@ You can evaluate this dataset directly as follows:
 $ euroeval --model <model-id> --dataset xquad-es
 ```
 
+
+### Unofficial: BeleBele-es
+
+This dataset was published in [this paper](https://aclanthology.org/2024.acl-long.44/) and features multiple-choice reading comprehension questions across 122 languages.
+
+The original dataset contains 900 unique multiple-choice reading comprehension passages and questions. From these, we use a 256 / 64 / 580 split for training, validation and testing, respectively.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Texto: Beba alcohol con moderación. Este afecta a cada persona de manera diferente y conocer sus propios límites es sumamente importante. La ingesta excesiva de alcohol puede causar problemas de salud crónicos como daño hepático e incluso ceguera y muerte. El peligro potencial se incrementa con el consumo de alcohol elaborado de forma ilegal. En las bebidas alcohólicas ilegales puede haber varias impurezas amenazantes, como el metanol, capaz de provocar ceguera o incluso la muerte, aun cuando se ingiera poca cantidad.\nPregunta: Según el fragmento, ¿cuál de los siguientes sentidos puede verse afectado por el consumo excesivo de alcohol?\nOpciones:\na. Audición\nb. Vista\nc. Gusto\nd. Olfato",
+  "label": "b"
+}
+```
+```json
+{
+  "text": "Texto: Leslie Aun, vocero de la Fundación Komen, informó que rige una nueva normativa en la organización conforme la cual no procederá el otorgamiento de subvenciones o fondos en favor de entidades que sean objeto de investigación oficial. La política de Komen desacreditó a Planned Parenthood a raíz de una investigación en curso que dirige el representante Cliff Stearns sobre la forma en la que esta organización informa y utiliza sus fondos. En su rol de director del Subcomité de Supervisión e Investigación, que se encuentra bajo el paraguas del Comité de Energía y Comercio, Stearns conduce una investigación para determinar si los impuestos se usan para financiar interrupciones de embarazos a través de Paternidad Planificada.\nPregunta: ¿Qué comité preside Cliff Stearns?\nOpciones:\na. Comité de Energía y Comercio de la Cámara de Representantes\nb. La Fundación Komen\nc. Planned Parenthood\nd. El Subcomité de Supervisión e Investigación",
+  "label": "d"
+}
+```
+```json
+{
+  "text": "Texto: El elemento del determinismo cultural se encontraba muy presente en el romanticismo, según estudiosos como Goether, Fichte y Schlegel. En el contexto del Romanticismo, la geografía moldeó a las personas y, con el transcurso del tiempo, se desarrollaron costumbres y culturas relacionadas con esa geografía que, al estar en armonía con la localización de esa sociedad, eran preferibles a leyes que se impusieran de forma arbitraria.\nPregunta: De acuerdo con el texto, ¿qué moldeó a las personas durante el período del Romanticismo?\nOpciones:\na. Leyes\nb. Geografía\nc. Costumbres\nd. Cultura",
+  "label": "b"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+  ```
+  Las siguientes son preguntas de opción múltiple (con respuestas).
+  ```
+- Base prompt template:
+  ```
+  Pregunta: {text}
+  Opciones:
+  a. {option_a}
+  b. {option_b}
+  c. {option_c}
+  d. {option_d}
+  Respuesta: {label}
+  ```
+- Instruction-tuned prompt template:
+  ```
+  Pregunta: {text}
+  Opciones:
+  a. {option_a}
+  b. {option_b}
+  c. {option_c}
+  d. {option_d}
+
+  Responda la pregunta anterior usando solo 'a', 'b', 'c' o 'd', y nada más.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+$ euroeval --model <model-id> --dataset belebele-es
+```
+
+
 ## Knowledge
 
 ### MMLU-es
