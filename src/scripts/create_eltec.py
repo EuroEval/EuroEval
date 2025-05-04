@@ -29,7 +29,7 @@ from huggingface_hub import HfApi
 from tqdm.auto import tqdm
 from urllib3.exceptions import InsecureRequestWarning
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(format="%(asctime)s ⋅ %(message)s", level=logging.INFO)
 logger = logging.getLogger("create_eltec")
 
 
