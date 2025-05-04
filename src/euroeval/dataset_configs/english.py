@@ -79,7 +79,7 @@ ARC_CONFIG = DatasetConfig(
 )
 
 BELEBELE_CONFIG = DatasetConfig(
-    name="belebele",
+    name="belebele-en",
     pretty_name="the English multiple choice reading comprehension dataset BeleBele",
     huggingface_id="EuroEval/belebele-mini",
     task=MCRC,
