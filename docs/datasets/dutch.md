@@ -323,6 +323,70 @@ $ euroeval --model <model-id> --dataset squad-nl
 ```
 
 
+### Unofficial: BeleBele-nl
+
+This dataset was published in [this paper](https://aclanthology.org/2024.acl-long.44/) and features multiple-choice reading comprehension questions across 122 languages.
+
+The original dataset contains 900 unique multiple-choice reading comprehension passages and questions. From these, we use a 256 / 64 / 580 split for training, validation and testing, respectively.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Tekst: Mystiek is het geloven in, identificeren met of bewustzijn van een ultieme werkelijkheid, goddelijkheid, spirituele waarheid of God. De kerkganger streeft naar een directe gewaarwording, intuïtie of inzicht in de goddelijke werkelijkheid. Volgers streven een bepaalde manier van leven na of willen ervaringen opdoen die ze datzelfde gevoel geven. In tegenstelling tot andere religieuze overtuigingen en aanbidding, legt mystiek nadruk op de rechtstreekse persoonlijke beleving van een unieke staat van bewustzijn, vooral van een vredige, inzichtelijke, gelukzalige of extatische aard.\nVraag: Wat is geen juiste omschrijving van mystiek?\nAntwoordopties:\na. De nadruk ligt op het ervaren van een vredige, gelukzalige staat van bewustzijn\nb. Volgers van mystiek streven bewustwording na van een spirituele werkelijkheid\nc. Volgers van mystiek passen gebruiken toe die hun inzicht in een goddelijke werkelijkheid vergroten\nd. De nadruk op het streven naar een directe persoonlijke beleving is vergelijkbaar met veel andere vormen van religieuze overtuiging en aanbidding",
+  "label": "d"
+}
+```
+```json
+{
+  "text": "Tekst: Het favoriete maaltje van ocelotten zijn kleine dieren. Ze vangen apen, slangen, knaagdieren en vogels als dat lukt. De ocelot jaagt bijna uitsluitend op dieren die veel kleiner zijn dan hij zelf is. Geleerden vermoeden dat ocelotten hun reukvermogen gebruiken om op kleine dieren (hun prooi) te jagen, door aan de grond te ruiken waar deze zijn geweest. Ze kunnen door nachtvisie heel goed in het donker zien en bewegen zich heel onopvallend voort. Ocelotten jagen op prooi door zich één te maken met de omgeving en vervolgens op hun prooi te springen.\nVraag: Welke uitspraak over een ocelot is onjuist?\nAntwoordopties:\na. Ze kunnen goed in het donker jagen\nb. Ze bewegen zich in stilte voort\nc. Hun reukvermogen is zwak\nd. Ze jagen het liefst op kleine dieren",
+  "label": "c"
+}
+```
+```json
+{
+  "text": "Tekst: Er was 120-160 kubieke meter brandstof aan boord van de Luno toen het schip motorproblemen kreeg en door de harde wind en golven tegen de golfbreker werd geduwd. De twaalf crewleden zijn met helikopters in veiligheid gebracht, met als enige verwonding een gebroken neus. Het 100 meter lange schip was onderweg om de gebruikelijke lading kunstmest op te halen. In eerste instantie vreesden autoriteiten dat het vaartuig met de lading zou kunnen gaan lekken.\nVraag: Waar vreesden de autoriteiten volgens de tekst in eerste instantie voor wat betreft de Luno?\nAntwoordopties:\na. Gebrek aan een lading kunstmest\nb. Golven en harde wind\nc. Lekken van brandstof\nd. Verwondingen van bemanningsleden",
+  "label": "c"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+  ```
+  Hieronder staan meerkeuzevragen (met antwoorden).
+  ```
+- Base prompt template:
+  ```
+  Vraag: {text}
+  Antwoordopties:
+  a. {option_a}
+  b. {option_b}
+  c. {option_c}
+  d. {option_d}
+  Antwoord: {label}
+  ```
+- Instruction-tuned prompt template:
+  ```
+  Vraag: {text}
+  Antwoordopties:
+  a. {option_a}
+  b. {option_b}
+  c. {option_c}
+  d. {option_d}
+
+  Beantwoord de bovenstaande vraag met 'a', 'b', 'c' of 'd', en niets anders.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+$ euroeval --model <model-id> --dataset belebele-nl
+```
+
+
 ## Knowledge
 
 ### MMLU-nl

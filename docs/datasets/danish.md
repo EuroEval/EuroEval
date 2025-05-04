@@ -353,6 +353,70 @@ $ euroeval --model <model-id> --dataset scandiqa-da
 ```
 
 
+### Unofficial: BeleBele-da
+
+This dataset was published in [this paper](https://aclanthology.org/2024.acl-long.44/) and features multiple-choice reading comprehension questions across 122 languages.
+
+The original dataset contains 900 unique multiple-choice reading comprehension passages and questions. From these, we use a 256 / 64 / 580 split for training, validation and testing, respectively.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Tekst: Prognoserne siger, at stormen, der er omkring 645 mil (1040 km) vest for Kap Verde-øerne, sandsynligvis vil forsvinde, før den truer nogen landområder. Fred har i øjeblikket vinde på 165 km/t og bevæger sig mod nordvest. Fred er den heftigste tropiske cyklon, der nogensinde er blevet registreret så sydligt og østligt i Atlanterhavet, siden man begyndte at bruge satellitbilleder, og kun den tredje store orkan, der er registreret øst for 35°V.\nSpørgsmål: Da Fred befandt sig nær Kap Verde-øerne, hvilken retning bevægede den sig så mod?\nSvarmuligheder:\na. Vest\nb. Syd\nc. Øst\nd. Nordvest",
+  "label": "d"
+}
+```
+```json
+{
+  "text": "Tekst: "Siden Pakistan i 1947 blev uafhængigt af det britiske styre, har den pakistanske præsident udpeget ""politiske agenter"", som styrer FATA, og som har næsten fuldstændig kontrol over områderne. Disse agenter er ansvarlige for at levere regerings- og retstjenester i henhold til artikel 247 i den pakistanske forfatning."\nSpørgsmål: Hvem leverer retslige tjenester til FATA?\nSvarmuligheder:\na. Den pakistanske regering\nb. Politiske agenter\nc. Pakistans præsident\nd. Den britiske regering",
+  "label": "b"
+}
+```
+```json
+{
+  "text": "Tekst: Alle er en del af samfundet og benytter transportsystemerne. Næsten alle klager over transportsystemerne. I udviklede lande hører du sjældent ligeså mange klager over vandkvalitet eller broer, der styrter sammen. Hvorfor giver transportsystemerne anledning til sådanne klager, hvorfor svigter de på daglig basis? Er transportingeniører blot inkompetente? Eller foregår der noget mere fundamentalt?\nSpørgsmål: Hvilken offentlig service siges at skabe størst utilfredshed i udviklede lande?\nSvarmuligheder:\na. Vandkvalitet\nb. Brobyggelse\nc. Offentlig transport\nd. Uddannelse",
+  "label": "c"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+  ```
+  Følgende er multiple choice spørgsmål (med svar).
+  ```
+- Base prompt template:
+  ```
+  Spørgsmål: {text}
+  Svarmuligheder:
+  a. {option_a}
+  b. {option_b}
+  c. {option_c}
+  d. {option_d}
+  Svar: {label}
+  ```
+- Instruction-tuned prompt template:
+  ```
+  Spørgsmål: {text}
+  Svarmuligheder:
+  a. {option_a}
+  b. {option_b}
+  c. {option_c}
+  d. {option_d}
+
+  Besvar ovenstående spørgsmål ved at svare med 'a', 'b', 'c' eller 'd', og intet andet.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+$ euroeval --model <model-id> --dataset belebele-da
+```
+
+
 ## Knowledge
 
 ### Danske Talemåder

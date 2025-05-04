@@ -489,6 +489,70 @@ $ euroeval --model <model-id> --dataset icelandic-qa
 ```
 
 
+### Unofficial: BeleBele-is
+
+This dataset was published in [this paper](https://aclanthology.org/2024.acl-long.44/) and features multiple-choice reading comprehension questions across 122 languages.
+
+The original dataset contains 900 unique multiple-choice reading comprehension passages and questions. From these, we use a 256 / 64 / 580 split for training, validation and testing, respectively.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Texti: Í Frelsisstríðinu mynduðu ríkin þrettán veikburða ríkisstjórn – með Þjóðþingið sem eina þátt þess – skv. fyrstu stjórnarskránni. Þingið var ekki með nægar valdheimildir til að leggja á skatta, og vegna þess að ekki var neinn alríkisstjóri eða dómsvald til staðar, treysti það á yfirvöld í hverju ríki fyrir sig, sem voru oft og tíðum ósamvinnuþýð, til að framfylgja lögum þess. Það hafði heldur engar valdheimildir til að fella niður skattalög og tolla á milli ríkja. Greinarnar gerðu kröfu um samhljóða samþykki allra ríkjanna áður en hægt var að breyta þeim og ríkin sýndu ríkisvaldinu svo mikla lítilsvirðingu að fulltrúar þeirra voru oft fjarverandi.\nSpurning: Samkvæmt því sem fram kemur í kaflanum, hvaða fullyrðing á nákvæmlega við um ástand ríkisvaldsins í frelsisstríðinu?\nSvarmöguleikar:\na. Skattar voru innheimtir af þinginu og ríkisstofnunum\nb. Breytingar á stjórnarskránni þurftu samþykki þingsins\nc. Fulltrúar ríkjanna voru oft fjarverandi\nd. Hin miðlæga ríkisstjórn var mynduð í kringum tvo meginþætti",
+  "label": "c"
+}
+```
+```json
+{
+  "text": "Texti: İzmir er þriðja stærsta borg Tyrklands með um 3,7 milljónir íbúa, næststærstu höfnina á eftir Istanbúl og er mjög góð samgöngumiðstöð. Hin forna borg Smyrna er núna nútímaleg, þróuð og iðandi viðskiptamiðstöð sem staðsett er við gríðarstóran flóa og umkringd er fjöllum. Hinar breiðu breiðgötur, byggingar með framhliðum úr gleri og nútímalegar verslunarmiðstöðvar með hefðbundnum rauðum þakskífum, 18. aldar markaðurinn og gamlar moskur og kirkjur, þó að andrúmsloft borgarinnar tengist meira Miðjarðarhafssvæði Evrópu en hefðbundnu Tyrklandi.\nSpurning: Hvert eftirfarandi einkennir Izmir er frá fornri tíð?\nSvarmöguleikar:\na. Breiðar breiðgötur\nb. Byggingar með framhliðum úr gleri\nc. Verslanamiðstöðvar\nd. rauðar þakskífur",
+  "label": "d"
+}
+```
+```json
+{
+  "text": "Texti: Dæmigert fyrir það tímabil er Kirby Muxloe Castle sem er frekar víggirt hús en raunverulegur kastali. Stóru gljáðu gluggarnir og þunnu veggirnir hefðu ekki getað staðist stórárás í langan tíma. Árið 1480, þegar Hastings lávarður hóf byggingarframkvæmdirnar, ríkti friður í nánast öllu landinu og aðeins var þörf á varnarmúrum gegn litlum ræningjahópum.\nSpurning: Hvert af eftirtöldu hefði verið talið óvenjulegt við byggingu Kirby Muxloe kastala á þeim tíma sem talað er um í kaflanum?\nSvarmöguleikar:\na. Stórir gluggar\nb. Grunnur sem á að standast árásir\nc. Minna af varnarútbúnaði en í öðrum köstulum\nd. Þunnir veggir",
+  "label": "b"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+  ```
+  Eftirfarandi eru fjölvalsspurningar (með svörum).
+  ```
+- Base prompt template:
+  ```
+  Spurningar: {text}
+  Svarmöguleikar:
+  a. {option_a}
+  b. {option_b}
+  c. {option_c}
+  d. {option_d}
+  Svara: {label}
+  ```
+- Instruction-tuned prompt template:
+  ```
+  Spurningar: {text}
+  Svarmöguleikar:
+  a. {option_a}
+  b. {option_b}
+  c. {option_c}
+  d. {option_d}
+
+  Svaraðu eftirfarandi spurningum með 'a', 'b', 'c' eða 'd', og engu öðru.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+$ euroeval --model <model-id> --dataset belebele-is
+```
+
+
 ## Knowledge
 
 ### IcelandicKnowledge

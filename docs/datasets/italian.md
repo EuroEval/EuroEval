@@ -371,6 +371,70 @@ $ euroeval --model <model-id> --dataset squad-it
 ```
 
 
+### Unofficial: BeleBele-it
+
+This dataset was published in [this paper](https://aclanthology.org/2024.acl-long.44/) and features multiple-choice reading comprehension questions across 122 languages.
+
+The original dataset contains 900 unique multiple-choice reading comprehension passages and questions. From these, we use a 256 / 64 / 580 split for training, validation and testing, respectively.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Testo: Con la decisione del signor Rudd di firmare l’accordo sul clima di Kyoto, gli Stati Uniti, che ora saranno l’unica nazione sviluppata a non averlo ratificato, rimangono isolati. Il precedente governo conservatore australiano aveva rifiutato di ratificare gli accordi di Kyoto asserendo che avrebbero danneggiato l'economia, data la pesante dipendenza dalle esportazioni di carbone, mentre gli obiettivi sulle emissioni non sarebbero stati vincolanti per Paesi come l'India e la Cina.\nDomanda: Il precedente governo australiano pensava che la ratifica di Kyoto avrebbe causato danni a cosa?\nOpzioni:\na. Stati Uniti\nb. Economia del Paese\nc. Esportazioni di carbone\nd. Gli obiettivi di emissione del Paese",
+  "label": "b"
+}
+```
+```json
+{
+  "text": "Testo: "I commenti, in diretta televisiva, hanno rappresentato la prima occasione per autorevoli fonti iraniane per ammettere che le sanzioni sono efficaci. Esse comprendono limitazioni finanziarie e il divieto dell\'Unione europea all\'esportazione di petrolio greggio, che rappresenta l\'80% del reddito estero nell\'economia dell\'Iran. Secondo l\'ultimo rapporto mensile dell’OPEC, il volume delle esportazioni di greggio è sceso al livello più basso degli ultimi vent\'anni, con 2,8 milioni di barili al giorno. Il leader supremo del Paese, l’Ayatollah Ali Khamenei, ha parlato della dipendenza dal petrolio paragonandola ad ""una trappola"" che risale al periodo precedente la rivoluzione islamica iraniana del 1979 e dalla quale il Paese si dovrebbe liberare."\nDomanda: Secondo il passaggio, chi ha ammesso gli effetti delle sanzioni sull\'economia iraniana?\nOpzioni:\na. Autorevoli fonti\nb. OPEC\nc. Ayatollah Ali Khamenei\nd. L\'Unione Europea",
+  "label": "a"
+}
+```
+```json
+{
+  "text": "Testo: Il dottor Lee si è detto preoccupato anche in merito ai rapporti che rivelano che i bambini in Turchia ora sono stati contagiati dal virus dell'influenza aviaria A(H5N1) senza ammalarsi. Ha sottolineato che secondo alcuni studi la malattia diventerà meno mortale prima che possa causare un'epidemia globale. Si teme che se permangono sintomi influenzali di lieve entità, i pazienti possano continuare a contagiare più persone durante la loro routine quotidiana.\nDomanda: Secondo il brano, cosa dovrebbe accadere alla malattia prima di causare un'epidemia globale?\nOpzioni:\na. Deve diventare meno letale\nb. I sintomi devono rimanere lievi\nc. Occorre che più pazienti vengano infettati\nd. I bambini devono manifestare i sintomi",
+  "label": "a"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+  ```
+  Le seguenti sono domande a scelta multipla (con relative risposte).
+  ```
+- Base prompt template:
+  ```
+  Domanda: {text}
+  Opzioni:
+  a. {option_a}
+  b. {option_b}
+  c. {option_c}
+  d. {option_d}
+  Risposta: {label}
+  ```
+- Instruction-tuned prompt template:
+  ```
+  Domanda: {text}
+  Opzioni:
+  a. {option_a}
+  b. {option_b}
+  c. {option_c}
+  d. {option_d}
+
+  Rispondete alla domanda precedente con 'a', 'b', 'c' o 'd', e nient'altro.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+$ euroeval --model <model-id> --dataset belebele-it
+```
+
+
 ## Knowledge
 
 ### MMLU-it

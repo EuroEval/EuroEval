@@ -284,6 +284,65 @@ $ euroeval --model <model-id> --dataset germanquad
 ```
 
 
+### Unofficial: BeleBele-de
+
+This dataset was published in [this paper](https://aclanthology.org/2024.acl-long.44/) and features multiple-choice reading comprehension questions across 122 languages.
+
+The original dataset contains 900 unique multiple-choice reading comprehension passages and questions. From these, we use a 256 / 64 / 580 split for training, validation and testing, respectively.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Text: Es gibt viele Dinge, die Sie vor und während einer Reise berücksichtigen müssen. Erwarten Sie nicht, dass die Dinge beim Reisen genau so sind wie „zuhause“. Umgangsformen, Gesetze, Essen, Verkehr, Unterkünfte, Standards, Spache und so weiter werden zu einem gewissen Grad anders sein als dort, wo Sie leben. Dies ist etwas, was man immer im Hinterkopf behalten sollte, um Enttäuschung oder gar Abneigung über lokale Vorgehensweisen zu vermeiden.\nFragen: Was kann Reisenden dem Abschnitt nach helfen, Enttäuschung beim Besuch neuer Orte zu vermeiden?\nAntwortmöglichkeiten:\na. Ähnliche Standards wie zuhause erwarten\nb. Essen probieren, das ungewohnt ist\nc. Die gleichen Gesetze wie zuhause einhalten\nd. Nicht vorher nach Unterkünften recherchieren",
+  "label": "b"
+}
+```
+```json
+{
+  "text": "Text: Genehmigungen müssen im Voraus bestellt werden. Sie benötigen eine Genehmigung, um in La Sirena zu übernachten. Sirena ist die einzige Rangerstation, die neben Zelten auch Übernachtung im Schlafsaal und warme Mahlzeiten anbietet. La Leona, San Pedrillo und Los Patos bieten nur Camping ohne Verpflegung an. Es ist möglich, eine Parklizenz direkt bei der Rangerstation in Puerto Jiménez zu bekommen, aber sie akzeptieren keine Kreditkarten Die Parkverwaltung (MINAE) stellt Genehmigungen  für den Park nicht früher als einen Monat vor der geplanten Ankunft aus. CafeNet El Sol bietet einen Reservierungsservice gegen eine Gebühr von 30 US-Dollar bzw. 10 US-Dollar für Tageskarten an. Einzelheiten dazu findet man auf deren Corcovado-Seite.\nFragen: Welche der folgenden Rangerstationen bietet zwei Übernachtungsmöglichkeiten an?\nAntwortmöglichkeiten:\na. Sirena\nb. Los Patos\nc. La Leona\nd. San Pedrillo",
+  "label": "a"
+}
+```
+```json
+{
+  "text": "Text: Naturnaher Tourismus zieht Leute an, die daran interessiert sind, Naturgebiete zu besuchen, um die Landschaft zu genießen, einschließlich der wilden Pflanzen und Tiere. Beispiele für Aktivitäten vor Ort sind Jagen, Angeln, Fotografie, Vogelbeobachtung, der Besuch von Parks und das Lernen von Informationen über das Ökosystem. Ein Beispiel dafür ist der Besuch, das Fotografieren und das Studieren von Orangutangs in Borneo.\nFragen: Welche der folgenden Aktivitäten ist kein Beispiel für naturnahen Tourismus?\nAntwortmöglichkeiten:\na. Wandern zu einem Wasserfall\nb. Fotografieren von Wildblumen\nc. Besuch eines Wissenschaftsmuseum\nd. Fliegenfischen",
+  "label": "c"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+  ```
+  Die folgenden Fragen sind Multiple-Choice-Fragen (mit Antworten).
+  ```
+- Base prompt template:
+  ```
+  Frage: {text}
+  Antwort: {label}
+  ```
+- Instruction-tuned prompt template:
+  ```
+  Frage: {text}
+  Antwortmöglichkeiten:
+  a. {option_a}
+  b. {option_b}
+  c. {option_c}
+  d. {option_d}
+
+  Beantworten Sie die obige Frage mit 'a', 'b', 'c' oder 'd', und nichts anderes.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+$ euroeval --model <model-id> --dataset belebele-de
+```
+
+
 ## Knowledge
 
 ### MMLU-de

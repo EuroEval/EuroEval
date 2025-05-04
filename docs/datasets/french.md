@@ -296,6 +296,70 @@ $ euroeval --model <model-id> --dataset fquad
 ```
 
 
+### Unofficial: BeleBele-fr
+
+This dataset was published in [this paper](https://aclanthology.org/2024.acl-long.44/) and features multiple-choice reading comprehension questions across 122 languages.
+
+The original dataset contains 900 unique multiple-choice reading comprehension passages and questions. From these, we use a 256 / 64 / 580 split for training, validation and testing, respectively.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Texte: Lorsqu’un petit groupe d’êtres vivants (une petite population) est séparé de la population principale dont il est issu (par exemple, s’il se déplace au-dessus d’une chaîne de montagnes ou d’une rivière, ou s’il se déplace vers une nouvelle île de sorte qu’il ne peut pas facilement revenir en arrière), il se retrouve souvent dans un environnement différent de celui dans lequel il était auparavant. Ce nouvel environnement a des ressources et des concurrents différents, de sorte que la nouvelle population aura besoin de caractéristiques ou d'adaptations nouvelles pour être un concurrent puissant par rapport à ce dont elle avait besoin auparavant. La population d'origine n'a pas changé du tout,\xa0elle a toujours besoin des mêmes adaptations. Au fil du temps, à mesure que la nouvelle population s'adapte à son nouvel environnement, elle commence à ressembler de moins en moins à l'autre population. Enfin, après des milliers ou même des millions d'années, les deux populations paraîtront tellement différentes qu'elles ne pourront plus être considérées comme appartenant à la même espèce. Nous appelons ce processus «\u2009spéciation\u2009», ce qui signifie simplement la formation de nouvelles espèces. La spéciation est une conséquence inévitable et une partie très importante de l’évolution.\nQuestion: D’après l’extrait et parmi les exemples ci-dessous, qu’est-ce qui gênerait le processus d’évolution\xa0?\nChoix:\na. La difficulté pour un petit groupe à s’épanouir dans un nouvel endroit\nb. La migration d’une portion d’une population vers un nouvel environnement\nc. L’ajustement par une population de son adaptation à un nouvel environnement\nd. Le fait qu’une population finisse par devenir deux populations distinctes",
+  "label": "a"
+}
+```
+```json
+{
+  "text": "Texte: Le pillage généralisé se serait poursuivi pendant la nuit, les forces de l'ordre n'étant pas présentes dans les rues de Bichkek. Un observateur a décrit Bichkek comme étant en train de sombrer dans un état d’« anarchie », tandis que la population se déplaçait en bandes dans les rues et pillait les magasins de biens de consommation. Plusieurs habitants de Bichkek ont reproché les manifestants du sud d'être responsables de l'anarchie.\nQuestion: Qui a accusé les manifestants du sud de pillage\xa0?\nChoix:\na. Des habitants de Bichkek\nb. Les forces de l’ordre\nc. Les anarchistes\nd. Des bandes de personnes",
+  "label": "a"
+}
+```
+```json
+{
+  "text": "Texte: Dans de nombreuses régions du monde, faire un signe de la main est un geste amical signifiant «\u2009bonjour\u2009». En revanche, en Malaisie, du moins chez les Malais des zones rurales, cela signifie « viens par ici », comme le fait de plier l'index vers soi, geste utilisé dans certains pays occidentaux, et il ne devrait être utilisé qu'en ce sens. De même, un voyageur britannique en Espagne pourrait confondre un signe d'adieu fait par une personne qui tourne la paume de sa main vers elle-même (plutôt que vers la personne à qui elle adresse le signe) avec une invitation à revenir.\nQuestion: Dans les zones rurales de la Malaisie, quel geste signifie « viens par ici » ?\nChoix:\na. Plier l’index\nb. Faire un signe de la main\nc. Faire un « high five »\nd. Lever le pouce",
+  "label": "b"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+  ```
+  Les questions suivantes sont des questions à choix multiples (avec réponses).
+  ```
+- Base prompt template:
+  ```
+  Question: {text}
+  Choix:
+  a. {option_a}
+  b. {option_b}
+  c. {option_c}
+  d. {option_d}
+  Réponse: {label}
+  ```
+- Instruction-tuned prompt template:
+  ```
+  Question: {text}
+  Choix:
+  a. {option_a}
+  b. {option_b}
+  c. {option_c}
+  d. {option_d}
+
+  Répondez à la question ci-dessus par 'a', 'b', 'c' ou 'd', et rien d'autre.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+$ euroeval --model <model-id> --dataset belebele-fr
+```
+
+
 ## Knowledge
 
 ### MMLU-fr

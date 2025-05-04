@@ -2,7 +2,7 @@
 
 from ..data_models import DatasetConfig
 from ..languages import IT
-from ..tasks import COMMON_SENSE, KNOW, LA, NER, RC, SENT, SUMM
+from ..tasks import COMMON_SENSE, KNOW, LA, MCRC, NER, RC, SENT, SUMM
 
 ### Official datasets ###
 
@@ -76,6 +76,16 @@ WIKINEURAL_IT_CONFIG = DatasetConfig(
     "entity recognition dataset WikiNEuRal IT",
     huggingface_id="EuroEval/wikineural-mini-it",
     task=NER,
+    languages=[IT],
+    unofficial=True,
+)
+
+BELEBELE_IT_CONFIG = DatasetConfig(
+    name="belebele-it",
+    pretty_name="the Italian multiple choice reading comprehension dataset "
+    "BeleBele-it, translated from the English BeleBele dataset",
+    huggingface_id="EuroEval/belebele-it-mini",
+    task=MCRC,
     languages=[IT],
     unofficial=True,
 )

@@ -644,6 +644,70 @@ $ euroeval --model <model-id> --dataset norglm-multi-qa
 ```
 
 
+### Unofficial: BeleBele-no
+
+This dataset was published in [this paper](https://aclanthology.org/2024.acl-long.44/) and features multiple-choice reading comprehension questions across 122 languages.
+
+The original dataset contains 900 unique multiple-choice reading comprehension passages and questions. From these, we use a 256 / 64 / 580 split for training, validation and testing, respectively.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Tekst: Det kinesiske nyhetsbyrået Xinhua meldte tidligere fra om at et fly var kapret. Det ble senere rapportert at flyet fikk en bombetrussel og ble veiledet mot retur til Afghanistan med landing i Kandahar. Ifølge de første rapportene ble flyet dirigert tilbake til Afghanistan etter å ha blitt nektet nødlanding i Ürümqi.\nSpørsmål: Hva ble ikke sagt i den nyeste rapporten fra nyhetsbyrået Xinhua?\nSvaralternativer:\na. Flyet fikk en bombetrussel\nb. Flyet landet i Ürümqi\nc. Flyet ble dirigert til Afghanistan\nd. Flyet landet i Kandahar",
+  "label": "b"
+}
+```
+```json
+{
+  "text": "Tekst: Tyskland begynte å gjøre seg klare til å invadere Storbritannia da kampen om Frankrike var over. Tyskland gav angrepet kodenavnet «operasjon sjøløve». Mesteparten av den britiske hærens tunge våpen og forsyninger hadde gått tapt da den flyktet fra Dunkirk, så de var svært sårbar. Den britiske marinen var imidlertid fremdeles mye kraftigere enn den tyske («Kriegsmarine») og kunne ha ødelagt en eventuell invasjonsflåte sendt over den engelske kanal. Det var likevel svært få skip fra Royal Navy som ble stasjonert nær de sannsynlige invasjonsrutene siden admiralene var engstelige for at de kom til å bli senket av tyske luftangrep.\nSpørsmål: Hva kalte Tyskland angrepet på Storbritannia?\nSvaralternativer:\na. Dunkirk\nb. Operasjon sjøløve\nc. Kriegsmarine\nd. Royal Navy",
+  "label": "b"
+}
+```
+```json
+{
+  "text": "Tekst: Det italienske og det tyske landslaget er de nest beste lagene i verden og var FIFA World Cup-mestere i 2006. Fotball, basketball, volleyball, vannpolo, fekting, rugby, sykling, ishockey, rullehockey og Formel-1 bilsport er godt likte sportsgrener. Vintersport er mest populært i nordlige områder, der italienere deltar i internasjonale konkurranser og OL-arrangementer.\nSpørsmål: Hvilke av følgende sporter vant et verdensmesterskap for Italia, basert på informasjonen i avsnittet?\nSvaralternativer:\na. Fotball\nb. Vannpolo\nc. Basketball\nd. Sykling",
+  "label": "a"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+  ```
+  Følgende er flervalgsspørsmål (med svar).
+  ```
+- Base prompt template:
+  ```
+  Spørsmål: {text}
+  Svaralternativer:
+  a. {option_a}
+  b. {option_b}
+  c. {option_c}
+  d. {option_d}
+  Svar: {label}
+  ```
+- Instruction-tuned prompt template:
+  ```
+  Spørsmål: {text}
+  Svaralternativer:
+  a. {option_a}
+  b. {option_b}
+  c. {option_c}
+  d. {option_d}
+
+  Besvar følgende spørsmål med 'a', 'b', 'c' eller 'd', og ikke noe annet.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+$ euroeval --model <model-id> --dataset belebele-no
+```
+
+
 ## Knowledge
 
 ### NRK Quiz QA
