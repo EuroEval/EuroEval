@@ -9,12 +9,14 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## [Unreleased]
 ### Added
 - Added the BeleBele datasets for Finnish, Italian and Spanish. They are listed as unofficial for now.
-- Add HellaSwag-fi back in, as the issue with the labels in the test split has been
-  fixed.
 
 ### Fixed
+- Add HellaSwag-fi back in, as the issue with the labels in the test split has been
+  fixed.
 - Now uses `eval_accumulation_steps` (set to 32) when evaluating encoder models, to
   avoid running out of memory during evaluation.
+- Now also looks for `<|startoftext|>` as BOS token if the BOS token is not set in the
+  model's config.
 
 
 ## [v15.7.2] - 2025-05-02

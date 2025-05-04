@@ -169,7 +169,7 @@ def get_bos_token(tokenizer: "PreTrainedTokenizer") -> tuple[str, int]:
 
     vocab: dict[str, int] = tokenizer.get_vocab()
 
-    candidate_bos_tokens = ["<s>", "<|begin_of_text|>", "[CLS]"]
+    candidate_bos_tokens = ["<s>", "<|begin_of_text|>", "<|startoftext|>", "[CLS]"]
     for candidate_bos_token in candidate_bos_tokens:
         if candidate_bos_token in vocab:
             bos_token = candidate_bos_token
@@ -200,7 +200,7 @@ def get_eos_token(tokenizer: "PreTrainedTokenizer") -> tuple[str, int]:
 
     vocab: dict[str, int] = tokenizer.get_vocab()
 
-    candidate_eos_tokens = ["</s>", "<|end_of_text|>", "[SEP]"]
+    candidate_eos_tokens = ["</s>", "<|end_of_text|>", "<|endoftext|>", "[SEP]"]
     for candidate_eos_token in candidate_eos_tokens:
         if candidate_eos_token in vocab:
             eos_token = candidate_eos_token
