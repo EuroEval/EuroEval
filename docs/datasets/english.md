@@ -350,6 +350,70 @@ $ euroeval --model <model-id> --dataset belebele
 ```
 
 
+### Unofficial: BeleBele
+
+This dataset was published in [this paper](https://aclanthology.org/2024.acl-long.44/) and features multiple-choice reading comprehension questions across 122 languages.
+
+The original dataset contains 900 unique multiple-choice reading comprehension passages and questions. From these, we use a 256 / 64 / 580 split for training, validation and testing, respectively.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "A plant that grows red flowers was crossed with the same kind of plant that grows white flowers. Their offspring grew pink flowers. Which best explains why the offspring grew pink flowers?\nChoices:\na. The offspring experienced a genetic mutation.\nb. The offspring resulted from asexual reproduction.\nc. The genes for flower color exhibited incomplete dominance.\nd. A gene for pink-colored flowers was recessive in one of the parents.",
+  "label": "c"
+}
+```
+```json
+{
+  "text": "Buses depart the inter-district bus station (across the river) throughout the day, though most, especially those heading to the east and Jakar/Bumthang leave between 06:30 and 07:30. As the inter-district buses are often full, it is advisable to purchase a ticket a few days in advance. Most districts are served by small Japanese Coaster Buses, which are comfortable and sturdy. Shared taxis are a quick and comfortable means to travel to nearby places, such as Paro (Nu 150) and Punakha (Nu 200).\nQuestion: According to the passage, which scenario would be ideal for a traveler planning to take a bus from the inter-district station?\nChoices:\na. The traveler is heading to Jakar and has already purchased a ticket prior\nb. The traveler is heading to Bumthang and needs to leave by 7\nc. The traveler is heading to Paro and needs to leave after  11\nd. The traveler is heading east and arrives at the station before 6:20",
+  "label": "c"
+}
+```
+```json
+{
+  "text": "The glaciers are not stable, but flow down the mountain. This will cause cracks, crevasses, which may be obscured by snow bridges. The walls and roofs of ice caves can collapse and cracks can get closed. At the edge of glaciers huge blocks break loose, fall down and perhaps jump or roll farther from the edge.\nQuestion: According to the passage, which of these can be hidden by snow bridges?\nChoices:\na. Cracks\nb. Ice caves\nc. Walls\nd. Large blocks",
+  "label": "a"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+  ```
+  The following are multiple choice questions (with answers).
+  ```
+- Base prompt template:
+  ```
+  Question: {text}
+  Options:
+  a. {option_a}
+  b. {option_b}
+  c. {option_c}
+  d. {option_d}
+  Answer: {label}
+  ```
+- Instruction-tuned prompt template:
+  ```
+  Question: {text}
+  Options:
+  a. {option_a}
+  b. {option_b}
+  c. {option_c}
+  d. {option_d}
+
+  Answer the above question by replying with 'a', 'b', 'c' or 'd', and nothing else.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+$ euroeval --model <model-id> --dataset belebele
+```
+
+
 ## Knowledge
 
 ### MMLU
@@ -487,70 +551,6 @@ You can evaluate this dataset directly as follows:
 
 ```bash
 $ euroeval --model <model-id> --dataset arc
-```
-
-
-### Unofficial: BeleBele
-
-This dataset was published in [this paper](https://aclanthology.org/2024.acl-long.44/) and features multiple-choice reading comprehension questions across 122 languages.
-
-The original dataset contains 900 unique multiple-choice reading comprehension passages and questions. From these, we use a 256 / 64 / 580 split for training, validation and testing, respectively.
-
-Here are a few examples from the training split:
-
-```json
-{
-  "text": "A plant that grows red flowers was crossed with the same kind of plant that grows white flowers. Their offspring grew pink flowers. Which best explains why the offspring grew pink flowers?\nChoices:\na. The offspring experienced a genetic mutation.\nb. The offspring resulted from asexual reproduction.\nc. The genes for flower color exhibited incomplete dominance.\nd. A gene for pink-colored flowers was recessive in one of the parents.",
-  "label": "c"
-}
-```
-```json
-{
-  "text": "Buses depart the inter-district bus station (across the river) throughout the day, though most, especially those heading to the east and Jakar/Bumthang leave between 06:30 and 07:30. As the inter-district buses are often full, it is advisable to purchase a ticket a few days in advance. Most districts are served by small Japanese Coaster Buses, which are comfortable and sturdy. Shared taxis are a quick and comfortable means to travel to nearby places, such as Paro (Nu 150) and Punakha (Nu 200).\nQuestion: According to the passage, which scenario would be ideal for a traveler planning to take a bus from the inter-district station?\nChoices:\na. The traveler is heading to Jakar and has already purchased a ticket prior\nb. The traveler is heading to Bumthang and needs to leave by 7\nc. The traveler is heading to Paro and needs to leave after  11\nd. The traveler is heading east and arrives at the station before 6:20",
-  "label": "c"
-}
-```
-```json
-{
-  "text": "The glaciers are not stable, but flow down the mountain. This will cause cracks, crevasses, which may be obscured by snow bridges. The walls and roofs of ice caves can collapse and cracks can get closed. At the edge of glaciers huge blocks break loose, fall down and perhaps jump or roll farther from the edge.\nQuestion: According to the passage, which of these can be hidden by snow bridges?\nChoices:\na. Cracks\nb. Ice caves\nc. Walls\nd. Large blocks",
-  "label": "a"
-}
-```
-
-When evaluating generative models, we use the following setup (see the
-[methodology](/methodology) for more information on how these are used):
-
-- Number of few-shot examples: 5
-- Prefix prompt:
-  ```
-  The following are multiple choice questions (with answers).
-  ```
-- Base prompt template:
-  ```
-  Question: {text}
-  Options:
-  a. {option_a}
-  b. {option_b}
-  c. {option_c}
-  d. {option_d}
-  Answer: {label}
-  ```
-- Instruction-tuned prompt template:
-  ```
-  Question: {text}
-  Options:
-  a. {option_a}
-  b. {option_b}
-  c. {option_c}
-  d. {option_d}
-
-  Answer the above question by replying with 'a', 'b', 'c' or 'd', and nothing else.
-  ```
-
-You can evaluate this dataset directly as follows:
-
-```bash
-$ euroeval --model <model-id> --dataset belebele
 ```
 
 

@@ -299,6 +299,70 @@ $ euroeval --model <model-id> --dataset scandiqa-sv
 ```
 
 
+### Unofficial: BeleBele-sv
+
+This dataset was published in [this paper](https://aclanthology.org/2024.acl-long.44/) and features multiple-choice reading comprehension questions across 122 languages.
+
+The original dataset contains 900 unique multiple-choice reading comprehension passages and questions. From these, we use a 256 / 64 / 580 split for training, validation and testing, respectively.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Sundarbans är det största kustmangrovebältet i världen och sträcker sig 80 km in i Bangladesh och det indiska inlandet från kusten. Sundarbans har antagits på Unescos världsarvslista. Den del av skogen som ligger på indiskt territorium kallas Sundarbans National Park. Skogarna är dock inte bara mangroveträsk — de innehåller några av de sista kvarvarande ståndorterna av de stora djunglerna som en gång täckte Gangesslätten. Sundarban täcker ett område på 3 850 km², varav ungefär en tredjedel utgörs av våtmarker. Sedan 1966 har Sundarbans varit ett reservat för vilda djur, och det uppskattas att det nu finns 400 bengaliska tigrar och omkring 30 000 axishjortar i området.\nFråga: Vilken del av skogen ligger på indiskt territorium?\nSvarsalternativ:\na. Sundarbans National Park\nb. Reservatet för vilda djur\nc. Världsarvet\nd. Gangesslätten",
+  "label": "a"
+}
+```
+```json
+{
+  "text": "Italiens nationella fotboll, tillsammans med det tyska fotbollslaget, är världens näst mest framgångsrika lag och var mästare i FIFA-världscupen år 2006. Populära sporter inkluderar fotboll, basket, volleyboll, vattenpolo, fäktning, rugby, cykel, ishockey, rullskridskohockey och Formel 1. Vintersporter är mest populära i de norra regionerna, där italienare tävlar i internationella tävlingar och olympiska evenemang.\nFråga: I vilken av följande sporter vann Italien en världscup enligt avsnittet?\nSvarsalternativ:\na. Fotboll\nb. Vattenpolo\nc. Basket\nd. Cykel",
+  "label": "a"
+}
+```
+```json
+{
+  "text": "Bokning i förväg ger resenären trygghet och en försäkran om att de kommer att ha någonstans att sova när de anländer till sin destination. Resebyråer har ofta avtal med särskilda hotell, men det kan vara möjligt att boka andra typer av boenden, såsom campingplatser, genom en resebyrå. Resebyråer erbjuder ofta paket som inkluderar frukost, transfer till och från flygplatsen, och till och med paketresor som kombinerar flyg och hotell. De kan också reservera din bokning åt dig om du behöver tid att tänka över erbjudandet eller skaffa fram ytterligare dokument som krävs för din destination (t.ex. visering). Alla ändringar och förfrågningar ska dock gå genom resebyrån först, och inte direkt till hotellet.\nFråga: Vilken typ av resenär kommer sannolikt inte att dra nytta av att använda sig av tjänster från en resebyrå, enligt det som står i texten?\nSvarsalternativ:\na. En obeslutsam resenär\nb. En resenär som är spontan\nc. En resenär som inte har skaffat visum än\nd. En resenär som föredra att boka paketerbjudanden",
+  "label": "b"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+  ```
+  Följande är flervalsfrågor (med svar).
+  ```
+- Base prompt template:
+  ```
+  Fråga: {text}
+  Svarsalternativ:
+  a. {option_a}
+  b. {option_b}
+  c. {option_c}
+  d. {option_d}
+  Svar: {label}
+  ```
+- Instruction-tuned prompt template:
+  ```
+  Fråga: {text}
+  Svarsalternativ:
+  a. {option_a}
+  b. {option_b}
+  c. {option_c}
+  d. {option_d}
+
+  Besvara följande fråga med 'a', 'b', 'c' eller 'd', och inget annat.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+$ euroeval --model <model-id> --dataset belebele-sv
+```
+
+
 ## Knowledge
 
 ### MMLU-sv

@@ -266,6 +266,70 @@ $ euroeval --model <model-id> --dataset tydiqa-fi
 ```
 
 
+### Unofficial: BeleBele-fi
+
+This dataset was published in [this paper](https://aclanthology.org/2024.acl-long.44/) and features multiple-choice reading comprehension questions across 122 languages.
+
+The original dataset contains 900 unique multiple-choice reading comprehension passages and questions. From these, we use a 256 / 64 / 580 split for training, validation and testing, respectively.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Toisin kuin muut kädelliset, isot ihmisapinat eivät enää käytä käsiään liikkumiseen, painon kannattelemiseen tai liikkumiseen puissa itseään heilautellen. Simpanssin käsi ja jalka ovat samankokoisia ja -pituisia, mikä viittaa siihen, että kädelle varataan painoa rystykävelyssä. Ihmisen käsi on lyhyempi kuin jalka, ja sen sormiluut ovat suoremmat. Kahden-kolmen miljoonan vuoden ikäiset käsiluiden fossiilit paljastavat käden erikoistumisessa tämän muutoksen liikkumisesta käyttelyyn.\nKysymys: Mikä seuraavista kuvaa tarkasti simpanssin sormiluita?\nVaihtoehdot:\na. Ne ovat suoremmat kuin ihmisillä\nb. Niiden kädet ja jalat ovat erikokoisia\nc. Niitä käytetään painon kannattelemiseen\nd. Niitä käytetään pääasiassa käyttelyyn",
+  "label": "c"
+}
+```
+```json
+{
+  "text": "Panaman paperit on yläkäsite panamalaisen lakiyrityksen Mossack Fonsecan noin kymmenelle miljoonalle asiakirjalle, jotka vuodettiin lehdistölle keväällä 2016. Asiakirjoista selvisi, että neljätoista pankkia auttoi varakkaita asiakkaita piilottamaan miljardeja USA:n dollareita verojen ja muiden sääntelyjen välttämiseksi. Brittiläisen sanomalehden The Guardianin mukaan Deutsche Bank hallitsi tämän toteuttamiseen käytetyistä 1 200 postilaatikkoyrityksestä suunnilleen kolmasosaa. Seurasi maailmanlaajuisia protesteja ja useita rikossyytteitä, ja Islannin ja Pakistanin hallitusten johtajat kumpikin erosivat.\nKysymys: Kuka brittiläisen lehdistön väitteen mukaan hallinnoi monia varojen piilottamisessa käytettyjä yrityksiä tekstikatkelman mukaan?\nVaihtoehdot:\na. Eri pankkien varakkaat asiakkaat\nb. Panamalainen lakiyritys\nc. Deutsche Bank\nd. Pakistanin hallitus",
+  "label": "c"
+}
+```
+```json
+{
+  "text": "Teksti: Sundarban on maailman suurin mangrovemetsäalue. Se ulottuu 80 kilometriä (50 mailia) rannikolta Bangladeshin ja Intian takamaille. Sundarban on julistettu Unescon maailmanperintökohteeksi. Metsän Intian puolella sijaitsevaa osaa kutsutaan Sundarbanin kansallispuistoksi. Metsät eivät kuitenkaan ole pelkkiä mangrovesoita, vaan niihin kuuluu joitakin viimeisiä jäänteitä niistä mahtavista viidakoista, jotka aikoinaan peittivät koko Gangesin tasangon. Sundarban kattaa 3 850 neliökilometrin alueen, josta noin kolmasosa on vesi- tai suoalueiden peitossa. Vuodesta 1966 asti Sundarbans on ollut villieläinten suojelualue. Arvioidaan, että siellä on nykyään 400 intiantiikeriä ja suunnilleen 30 000 aksishirveä.\nKysymys: Mikä metsän osa on Intian puolella?\nVaihtoehdot:\na. Sundarbanin kansallispuisto\nb. Villieläinten suojelualue\nc. Maailmanperintökohde\nd. Gangesin tasanko",
+  "label": "a"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+  ```
+  Seuraavat ovat monivalintakysymyksiä (vastauksineen).
+  ```
+- Base prompt template:
+  ```
+  Kysymys: {text}
+  Vaihtoehdot:
+  a. {option_a}
+  b. {option_b}
+  c. {option_c}
+  d. {option_d}
+  Vastaus: {label}
+  ```
+- Instruction-tuned prompt template:
+  ```
+  Kysymys: {text}
+  Vaihtoehdot:
+  a. {option_a}
+  b. {option_b}
+  c. {option_c}
+  d. {option_d}
+
+  Vastaa yllä olevaan kysymykseen käyttämällä 'a', 'b', 'c' tai 'd', äläkä mitään muuta.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+$ euroeval --model <model-id> --dataset belebele-fi
+```
+
+
 ## Common-sense Reasoning
 
 ### HellaSwag-fi
