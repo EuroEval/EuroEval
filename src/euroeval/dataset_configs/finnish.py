@@ -61,7 +61,6 @@ SCALA_FI_CONFIG = DatasetConfig(
 
 ### Unofficial datasets ###
 
-
 BELEBELE_FI_CONFIG = DatasetConfig(
     name="belebele-fi",
     pretty_name="the Finnish multiple choice reading comprehension dataset "
