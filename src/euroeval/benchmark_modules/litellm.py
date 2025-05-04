@@ -602,9 +602,6 @@ class LiteLLMModel(BenchmarkModule):
         rerun_count = 0
 
         while to_run and rerun_count < max_reruns and prev_fail_count > 0:
-            if not to_run:
-                break
-
             requests = [
                 litellm.acompletion(
                     messages=msg, max_retries=max_retries, **generation_kwargs
@@ -624,20 +621,14 @@ class LiteLLMModel(BenchmarkModule):
                     success.append(response)
 
             if current_fail_count >= prev_fail_count:
-                failures.extend(
-                    (idx, Exception("Exceeded adaptive rerun threshold"))
-                    for idx, _ in to_run
-                )
-                break
+                raise InvalidBenchmark("Exceeded adaptive rerun threshold")
 
             prev_fail_count = current_fail_count
             to_run = next_to_run
             rerun_count += 1
 
-        for idx, _ in to_run:
-            failures.append(
-                (idx, Exception("Max reruns reached without further improvement"))
-            )
+        if to_run:
+            raise InvalidBenchmark("Max reruns reached without further improvement")
 
         return success, failures
 
