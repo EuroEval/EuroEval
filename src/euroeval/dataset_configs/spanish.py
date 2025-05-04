@@ -2,7 +2,7 @@
 
 from ..data_models import DatasetConfig
 from ..languages import ES
-from ..tasks import COMMON_SENSE, KNOW, LA, NER, RC, SENT, SUMM
+from ..tasks import COMMON_SENSE, KNOW, LA, MCRC, NER, RC, SENT, SUMM
 
 ### Official datasets ###
 
@@ -73,6 +73,16 @@ XQUAD_ES_CONFIG = DatasetConfig(
     pretty_name="the Spanish version of the XQuAD reading comprehension dataset",
     huggingface_id="EuroEval/xquad-es",
     task=RC,
+    languages=[ES],
+    unofficial=True,
+)
+
+BELEBELE_ES_CONFIG = DatasetConfig(
+    name="belebele-es",
+    pretty_name="the Spanish multiple choice reading comprehension dataset "
+    "BeleBele-es, translated from the English BeleBele dataset",
+    huggingface_id="EuroEval/belebele-es-mini",
+    task=MCRC,
     languages=[ES],
     unofficial=True,
 )

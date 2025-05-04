@@ -2,7 +2,7 @@
 
 from ..data_models import DatasetConfig
 from ..languages import FI
-from ..tasks import COMMON_SENSE, LA, NER, RC, SENT, SUMM
+from ..tasks import COMMON_SENSE, LA, MCRC, NER, RC, SENT, SUMM
 
 ### Official datasets ###
 
@@ -58,3 +58,13 @@ SCALA_FI_CONFIG = DatasetConfig(
 )
 
 ### Unofficial datasets ###
+
+BELEBELE_FI_CONFIG = DatasetConfig(
+    name="belebele-fi",
+    pretty_name="the Finnish multiple choice reading comprehension dataset "
+    "BeleBele-fi, translated from the English BeleBele dataset",
+    huggingface_id="EuroEval/belebele-fi-mini",
+    task=MCRC,
+    languages=[FI],
+    unofficial=True,
+)

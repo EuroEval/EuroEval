@@ -41,6 +41,9 @@ def main() -> None:
         "nl": "nld_Latn",
         "en": "eng_Latn",
         "fr": "fra_Latn",
+        "fi": "fin_Latn",
+        "it": "ita_Latn",
+        "es": "spa_Latn",
     }
     text_mapping = {
         "da": "Tekst",
@@ -51,6 +54,9 @@ def main() -> None:
         "nl": "Tekst",
         "en": "Text",
         "fr": "Texte",
+        "fi": "Teksti",
+        "it": "Testo",
+        "es": "Texto",
     }
     question_mapping = {
         "da": "Spørgsmål",
@@ -61,6 +67,9 @@ def main() -> None:
         "nl": "Vraag",
         "en": "Question",
         "fr": "Question",
+        "fi": "Kysymys",
+        "it": "Domanda",
+        "es": "Pregunta",
     }
     choices_mapping = {
         "da": "Svarmuligheder",
@@ -71,6 +80,9 @@ def main() -> None:
         "nl": "Antwoordopties",
         "en": "Choices",
         "fr": "Choix",
+        "fi": "Vaihtoehdot",
+        "it": "Opzioni",
+        "es": "Opciones",
     }
 
     for language in choices_mapping.keys():
