@@ -103,7 +103,6 @@ def finetune(
                 itr_scores = finetune_single_iteration(
                     model=model if model_already_initialized else None,
                     dataset=datasets[idx],
-                    iteration_idx=idx,
                     training_args=training_args,
                     model_config=model_config,
                     dataset_config=dataset_config,
@@ -158,7 +157,6 @@ def finetune(
 def finetune_single_iteration(
     model: BenchmarkModule | None,
     dataset: DatasetDict,
-    iteration_idx: int,
     training_args: TrainingArguments,
     model_config: "ModelConfig",
     dataset_config: "DatasetConfig",
@@ -171,8 +169,6 @@ def finetune_single_iteration(
             The model to use in the benchmark. If None then a new model will be loaded.
         dataset:
             The dataset to use for training and evaluation.
-        iteration_idx:
-            The index of the iteration.
         training_args:
             The training arguments.
         model_config:
@@ -213,41 +209,42 @@ def finetune_single_iteration(
 
         trainer.log = no_logging
 
-    # Re-block terminal output, as it gets unblocked by the `transformers`
-    # package before training
+    # Re-block terminal output, as it gets unblocked by the `transformers` package
+    # before training
     block_terminal_output()
 
-    # Sort out callbacks. We remove the callbacks that are producing unnecessary
-    # output, to avoid cluttering the terminal output
+    # Sort out callbacks. We remove the callbacks that are producing unnecessary output,
+    # to avoid cluttering the terminal output
     if not benchmark_config.verbose:
         trainer.remove_callback(PrinterCallback)
     trainer.remove_callback(ProgressCallback)
     if benchmark_config.progress_bar:
         trainer.add_callback(NeverLeaveProgressCallback)
 
-    try:
-        trainer.train()
-        with torch.inference_mode():
-            try:
-                test_scores = trainer.evaluate(
-                    eval_dataset=dataset["test"],
-                    orig_eval_dataset=dataset["original_test"],
-                    metric_key_prefix="test",
-                )
-            except TypeError:
-                test_scores = trainer.evaluate(
-                    eval_dataset=dataset["test"], metric_key_prefix="test"
-                )
-        return test_scores
+    # Train the model
+    trainer.train()
 
-    except NaNValueInModelOutput as e:
-        del trainer
-        del model
-        clear_memory()
-        raise e
+    # Evaluate the model
+    with torch.inference_mode():
+        try:
+            test_scores = trainer.evaluate(
+                eval_dataset=dataset["test"],
+                orig_eval_dataset=dataset["original_test"],
+                metric_key_prefix="test",
+            )
+        except TypeError:
+            test_scores = trainer.evaluate(
+                eval_dataset=dataset["test"], metric_key_prefix="test"
+            )
+        except NaNValueInModelOutput as e:
+            del trainer
+            del model
+            clear_memory()
+            raise e
+        except (RuntimeError, ValueError, IndexError) as e:
+            raise InvalidBenchmark(str(e))
 
-    except (RuntimeError, ValueError, IndexError) as e:
-        raise InvalidBenchmark(str(e))
+    return test_scores
 
 
 def get_training_args(
@@ -300,6 +297,7 @@ def get_training_args(
         save_total_limit=1,
         per_device_train_batch_size=batch_size,
         per_device_eval_batch_size=batch_size,
+        eval_accumulation_steps=32,
         optim=OptimizerNames.ADAMW_TORCH,
         learning_rate=2e-5,
         warmup_ratio=0.01,

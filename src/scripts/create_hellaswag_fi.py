@@ -10,8 +10,9 @@
 
 """Create the Finnish HellaSwag-mini dataset and upload it to the HF Hub."""
 
+import logging
+import warnings
 from collections import Counter
-from logging import getLogger
 
 import pandas as pd
 from constants import (
@@ -23,18 +24,21 @@ from constants import (
 )
 from datasets import Dataset, DatasetDict, Split, load_dataset
 from huggingface_hub import HfApi
+from pandas.errors import SettingWithCopyWarning
 from requests import HTTPError
 
-logger = getLogger(__name__)
+logging.basicConfig(format="%(asctime)s ⋅ %(message)s", level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+warnings.filterwarnings(action="ignore", category=SettingWithCopyWarning)
 
 
 def main() -> None:
     """Create the Finnish HellaSwag-mini dataset and upload it to the HF Hub.
 
-    HellaSwag-fi is designed to EuroEval so it already has a
-    1,024 / 256 / 2,048 train/val/test split. This script
-    therefore does not perform the same filtering as seen in
-    `src/scripts/create_hellaswag.py`.
+    HellaSwag-fi is designed to EuroEval so it already has a 1,024 / 256 / 2,048
+    train/val/test split. This script therefore does not perform the same filtering as
+    seen in `src/scripts/create_hellaswag.py`.
     """
     # Define the base download URL
     repo_id = "Finnish-NLP/hellaswag-fi-google-translate"
@@ -50,6 +54,14 @@ def main() -> None:
         df = dataset[split].to_pandas()
         assert isinstance(df, pd.DataFrame)
         df.endings = df.endings.apply(process_endings)
+        num_samples_before = len(df)
+        df.dropna(subset=["endings"], inplace=True, ignore_index=True)
+        num_samples_removed = num_samples_before - len(df)
+        if num_samples_removed:
+            logger.warning(
+                f"Removed {num_samples_removed} samples from the {split!r} split with "
+                "missing endings."
+            )
         df = process_split(df=df, split=split)
         dfs[split] = df
 
@@ -59,7 +71,7 @@ def main() -> None:
 
     # Create test split
     test_df = dfs["test"]
-    assert len(test_df) == 2_048
+    assert len(test_df) > 1_500
 
     # Create train split
     train_df = dfs["train"]
@@ -85,62 +97,42 @@ def main() -> None:
     dataset.push_to_hub(dataset_id, private=True)
 
 
-def process_endings(raw_endings: str) -> list[str]:
+def process_endings(raw_endings: str) -> list[str] | None:
     """Process the endings of the HellaSwag-fi dataset.
 
     Args:
         raw_endings: The endings of the HellaSwag-fi dataset.
 
     Returns:
-        The processed endings.
+        The processed endings, or None if the endings couldn't be extracted properly.
     """
     # Remove starting/ending square brackets and quotes
     raw_endings = raw_endings[2:-2]
 
     # Most endings are separated by newline characters
     endings = raw_endings.split("\n")
+
+    # If not, try a more hacky approach
     if len(endings) != 4:
-        # If not, try a more hacky approach
-        endings = _extract_endings(raw_endings=raw_endings)
-        assert len(endings) == 4
-    else:
-        # Fix quotes
-        endings = [_fix_quotes(ending) for ending in endings]
-    return endings
+        endings = [
+            ending
+            for newline_ending in endings
+            for ending in _extract_endings(string=newline_ending)
+        ]
+    if len(endings) != 4:
+        return None
+
+    return [ending.strip(" '\"") for ending in endings]
 
 
-def _fix_quotes(ending: str) -> str:
-    r"""Remove starting and ending quotes.
-
-    Some entries have mixed quotes, e.g.
-        '\'Aloha"'
-    which should be turned into the following:
-        'Aloha'
-
-    Args:
-        ending: The ending to process.
-
-    Returns:
-        The processed ending.
-    """
-    ending = ending.strip()
-    # Remove start and end quotes
-    if ending[0] in ['"', "'"]:
-        ending = ending[1:]
-    if ending[-1] in ['"', "'"]:
-        ending = ending[:-1]
-
-    return ending
-
-
-def _extract_endings(raw_endings: str) -> list[str]:
+def _extract_endings(string: str) -> list[str]:
     """Extract endings from the HellaSwag-fi dataset.
 
-    This strategy is used for samples where the endings are
-    not simply separated by newline characters.
+    This strategy is used for samples where the endings are not simply separated by
+    newline characters.
 
     Args:
-        raw_endings: The endings of the HellaSwag-fi dataset.
+        string: The endings of the HellaSwag-fi dataset.
 
     Returns:
         The processed endings.
@@ -148,16 +140,15 @@ def _extract_endings(raw_endings: str) -> list[str]:
     endings: list[str] = []
     i: int = 0
     start: int = 0
-    while i < len(raw_endings) - 2:
-        if raw_endings[i].isalpha() or raw_endings[i] == "[":
+    while i < len(string) - 2:
+        if string[i].isalpha() or string[i] == "[":
             start = i
 
-            while i < len(raw_endings) - 2:
-                # An ending seems to end with one of the following
-                # char combinations.
+            while i < len(string) - 2:
+                # An ending seems to end with one of the following char combinations
                 ends = ['."', ".'", "'.", '".', ".\n"]
-                if raw_endings[i : i + 2] in ends:
-                    ending = raw_endings[start : i + 1].strip()
+                if string[i : i + 2] in ends:
+                    ending = string[start : i + 1].strip()
                     endings.append(ending)
                     i += 1
                     break
@@ -166,7 +157,7 @@ def _extract_endings(raw_endings: str) -> list[str]:
             i += 1
 
     # Last ending
-    ending = raw_endings[start:].strip()
+    ending = string[start:].strip()
     endings.append(ending)
     return endings
 
@@ -185,12 +176,12 @@ def process_split(df: pd.DataFrame, split: str) -> pd.DataFrame:
 
     # Make a `text` column with all the options in it
     df["text"] = [
-        row.ctx.replace("\n", " ").strip() + "\n"
-        "Vastausvaihtoehdot:\n"
-        "a. " + row.endings[0].replace("\n", " ").strip() + "\n"
-        "b. " + row.endings[1].replace("\n", " ").strip() + "\n"
-        "c. " + row.endings[2].replace("\n", " ").strip() + "\n"
-        "d. " + row.endings[3].replace("\n", " ").strip()
+        row.ctx.replace("\n", " ").strip()
+        + "\nVastausvaihtoehdot:\n"
+        + "\n".join(
+            f"{letter}. " + ending.replace("\n", " ").strip()
+            for letter, ending in zip("abcd", row.endings)
+        )
         for _, row in df.iterrows()
     ]
 
@@ -231,7 +222,7 @@ def _print_filtering_stats(df: pd.DataFrame, split: str) -> None:
             > MAX_NUM_CHARS_IN_OPTION
         )
     )
-    logger.info(f"\nSplit: {split}")
+    logger.info(f"Split: {split}")
     logger.info(
         "Samples with too short context: "
         f"{short_ctx_count} ({short_ctx_count / len(df):.2%})"

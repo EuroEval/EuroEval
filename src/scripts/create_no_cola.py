@@ -11,7 +11,7 @@
 
 """Create the NoCoLA linguistic acceptability dataset."""
 
-from logging import getLogger
+import logging
 
 import pandas as pd
 import requests
@@ -21,7 +21,8 @@ from huggingface_hub import HfApi
 from requests import HTTPError
 from sklearn.model_selection import train_test_split
 
-logger = getLogger(__name__)
+logging.basicConfig(format="%(asctime)s ⋅ %(message)s", level=logging.INFO)
+logger = logging.getLogger("create_no_cola")
 
 
 def main() -> None:

@@ -11,6 +11,7 @@ from pathlib import Path
 from shutil import rmtree
 from time import sleep
 
+from huggingface_hub.constants import HF_HUB_ENABLE_HF_TRANSFER
 from torch.distributed import destroy_process_group
 
 from .benchmark_config_factory import build_benchmark_config
@@ -27,7 +28,7 @@ from .model_loading import load_model
 from .scores import log_scores
 from .speed_benchmark import benchmark_speed
 from .tasks import SPEED
-from .utils import enforce_reproducibility
+from .utils import enforce_reproducibility, get_package_version
 
 if t.TYPE_CHECKING:
     from .benchmark_modules import BenchmarkModule
@@ -163,6 +164,15 @@ class Benchmarker:
         """
         if task is not None and dataset is not None:
             raise ValueError("Only one of `task` and `dataset` can be specified.")
+
+        # Bail early if hf_transfer is enabled but not installed.
+        if HF_HUB_ENABLE_HF_TRANSFER and get_package_version("hf_transfer") is None:
+            raise ImportError(
+                "Fast download using 'hf_transfer' is enabled "
+                "(HF_HUB_ENABLE_HF_TRANSFER=1) but the 'hf_transfer' "
+                "package is not available in your environment. "
+                "Try installing it with `pip install hf_transfer`."
+            )
 
         self.benchmark_config_default_params = BenchmarkConfigParams(
             progress_bar=progress_bar,
