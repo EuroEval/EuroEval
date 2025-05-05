@@ -1,6 +1,5 @@
 """Generative models from an inference API, using the LiteLLM framework."""
 
-import asyncio
 import collections.abc as c
 import logging
 import os
@@ -33,6 +32,7 @@ from litellm.llms.vertex_ai.common_utils import VertexAIError
 from litellm.types.utils import ChoiceLogprobs, ModelResponse
 from pydantic import conlist, create_model
 from requests.exceptions import RequestException
+from tqdm.asyncio import tqdm as tqdm_async
 from tqdm.auto import tqdm
 from transformers.trainer import Trainer
 
@@ -556,7 +556,7 @@ class LiteLLMModel(BenchmarkModule):
                 )
                 for _, msg in to_run
             ]
-            responses = await asyncio.gather(*requests, return_exceptions=True)
+            responses = await tqdm_async.gather(*requests, return_exceptions=True)
 
             next_to_run = []
             current_fail_count = 0
