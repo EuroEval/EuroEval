@@ -350,3 +350,19 @@ def safe_run(coroutine: t.Coroutine[t.Any, t.Any, T]) -> T:
     finally:
         loop.close()
         asyncio.set_event_loop(None)
+
+
+async def catch_coroutine_exception(coroutine: t.Coroutine[t.Any, t.Any, T]) -> T:
+    """Run a coroutine, catching any exceptions and returning them.
+
+    Args:
+        coroutine:
+            The coroutine to run.
+
+    Returns:
+        The result of the coroutine, or the exception if it was raised.
+    """
+    try:
+        return await coroutine
+    except Exception as exc:
+        return exc

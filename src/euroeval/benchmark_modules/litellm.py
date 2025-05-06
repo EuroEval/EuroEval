@@ -67,7 +67,12 @@ from ..task_group_utils import (
 )
 from ..tokenization_utils import get_first_label_token_mapping
 from ..types import ExtractLabelsFunction
-from ..utils import create_model_cache_dir, log_once, safe_run
+from ..utils import (
+    catch_coroutine_exception,
+    create_model_cache_dir,
+    log_once,
+    safe_run,
+)
 from .base import BenchmarkModule
 from .hf import HuggingFaceEncoderModel, load_hf_model_config, load_tokenizer
 
@@ -556,7 +561,10 @@ class LiteLLMModel(BenchmarkModule):
                 )
                 for _, msg in to_run
             ]
-            responses = await tqdm_async.gather(*requests, return_exceptions=True)
+            wrapped_requests = [
+                catch_coroutine_exception(request) for request in requests
+            ]
+            responses = await tqdm_async.gather(*wrapped_requests, leave=False)
 
             next_to_run = []
             current_fail_count = 0
