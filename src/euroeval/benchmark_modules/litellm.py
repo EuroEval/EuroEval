@@ -582,6 +582,10 @@ class LiteLLMModel(BenchmarkModule):
                     success.append(response)
 
             if current_fail_count >= prev_fail_count:
+                logger.warning(
+                    "Retry loop aborting due to no progress: "
+                    f"current_fail_count={current_fail_count}, prev_fail_count={prev_fail_count}"
+                )
                 break
 
             prev_fail_count = current_fail_count
