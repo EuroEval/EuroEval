@@ -2034,7 +2034,17 @@
 <span class="normal">1113</span>
 <span class="normal">1114</span>
 <span class="normal">1115</span>
-<span class="normal">1116</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Class that benchmarks language models.&quot;&quot;&quot;</span>
+<span class="normal">1116</span>
+<span class="normal">1117</span>
+<span class="normal">1118</span>
+<span class="normal">1119</span>
+<span class="normal">1120</span>
+<span class="normal">1121</span>
+<span class="normal">1122</span>
+<span class="normal">1123</span>
+<span class="normal">1124</span>
+<span class="normal">1125</span>
+<span class="normal">1126</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Class that benchmarks language models.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">contextlib</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
@@ -2047,6 +2057,7 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">shutil</span><span class="w"> </span><span class="kn">import</span> <span class="n">rmtree</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">time</span><span class="w"> </span><span class="kn">import</span> <span class="n">sleep</span>
 
+<span class="kn">from</span><span class="w"> </span><span class="nn">huggingface_hub.constants</span><span class="w"> </span><span class="kn">import</span> <span class="n">HF_HUB_ENABLE_HF_TRANSFER</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">torch.distributed</span><span class="w"> </span><span class="kn">import</span> <span class="n">destroy_process_group</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">.benchmark_config_factory</span><span class="w"> </span><span class="kn">import</span> <span class="n">build_benchmark_config</span>
@@ -2063,7 +2074,7 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">.scores</span><span class="w"> </span><span class="kn">import</span> <span class="n">log_scores</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.speed_benchmark</span><span class="w"> </span><span class="kn">import</span> <span class="n">benchmark_speed</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.tasks</span><span class="w"> </span><span class="kn">import</span> <span class="n">SPEED</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">enforce_reproducibility</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">enforce_reproducibility</span><span class="p">,</span> <span class="n">get_package_version</span>
 
 <span class="k">if</span> <span class="n">t</span><span class="o">.</span><span class="n">TYPE_CHECKING</span><span class="p">:</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">.benchmark_modules</span><span class="w"> </span><span class="kn">import</span> <span class="n">BenchmarkModule</span>
@@ -2199,6 +2210,15 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="n">task</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">dataset</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Only one of `task` and `dataset` can be specified.&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Bail early if hf_transfer is enabled but not installed.</span>
+        <span class="k">if</span> <span class="n">HF_HUB_ENABLE_HF_TRANSFER</span> <span class="ow">and</span> <span class="n">get_package_version</span><span class="p">(</span><span class="s2">&quot;hf_transfer&quot;</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ImportError</span><span class="p">(</span>
+                <span class="s2">&quot;Fast download using &#39;hf_transfer&#39; is enabled &quot;</span>
+                <span class="s2">&quot;(HF_HUB_ENABLE_HF_TRANSFER=1) but the &#39;hf_transfer&#39; &quot;</span>
+                <span class="s2">&quot;package is not available in your environment. &quot;</span>
+                <span class="s2">&quot;Try installing it with `pip install hf_transfer`.&quot;</span>
+            <span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">benchmark_config_default_params</span> <span class="o">=</span> <span class="n">BenchmarkConfigParams</span><span class="p">(</span>
             <span class="n">progress_bar</span><span class="o">=</span><span class="n">progress_bar</span><span class="p">,</span>

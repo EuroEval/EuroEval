@@ -1016,6 +1016,15 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#unofficial-belebele-is" class="md-nav__link">
+    <span class="md-ellipsis">
+      Unofficial: BeleBele-is
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1491,6 +1500,15 @@
   <a href="#unofficial-icelandicqa" class="md-nav__link">
     <span class="md-ellipsis">
       Unofficial: IcelandicQA
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#unofficial-belebele-is" class="md-nav__link">
+    <span class="md-ellipsis">
+      Unofficial: BeleBele-is
     </span>
   </a>
   
@@ -2006,6 +2024,55 @@ Spurning: {question}
 </ul>
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>icelandic-qa
+</code></pre></div>
+<h3 id="unofficial-belebele-is">Unofficial: BeleBele-is</h3>
+<p>This dataset was published in <a href="https://aclanthology.org/2024.acl-long.44/">this paper</a> and features multiple-choice reading comprehension questions across 122 languages.</p>
+<p>The original dataset contains 900 unique multiple-choice reading comprehension passages and questions. From these, we use a 256 / 64 / 580 split for training, validation and testing, respectively.</p>
+<p>Here are a few examples from the training split:</p>
+<p><div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Texti: Í Frelsisstríðinu mynduðu ríkin þrettán veikburða ríkisstjórn – með Þjóðþingið sem eina þátt þess – skv. fyrstu stjórnarskránni. Þingið var ekki með nægar valdheimildir til að leggja á skatta, og vegna þess að ekki var neinn alríkisstjóri eða dómsvald til staðar, treysti það á yfirvöld í hverju ríki fyrir sig, sem voru oft og tíðum ósamvinnuþýð, til að framfylgja lögum þess. Það hafði heldur engar valdheimildir til að fella niður skattalög og tolla á milli ríkja. Greinarnar gerðu kröfu um samhljóða samþykki allra ríkjanna áður en hægt var að breyta þeim og ríkin sýndu ríkisvaldinu svo mikla lítilsvirðingu að fulltrúar þeirra voru oft fjarverandi.\nSpurning: Samkvæmt því sem fram kemur í kaflanum, hvaða fullyrðing á nákvæmlega við um ástand ríkisvaldsins í frelsisstríðinu?\nSvarmöguleikar:\na. Skattar voru innheimtir af þinginu og ríkisstofnunum\nb. Breytingar á stjórnarskránni þurftu samþykki þingsins\nc. Fulltrúar ríkjanna voru oft fjarverandi\nd. Hin miðlæga ríkisstjórn var mynduð í kringum tvo meginþætti&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;c&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Texti: İzmir er þriðja stærsta borg Tyrklands með um 3,7 milljónir íbúa, næststærstu höfnina á eftir Istanbúl og er mjög góð samgöngumiðstöð. Hin forna borg Smyrna er núna nútímaleg, þróuð og iðandi viðskiptamiðstöð sem staðsett er við gríðarstóran flóa og umkringd er fjöllum. Hinar breiðu breiðgötur, byggingar með framhliðum úr gleri og nútímalegar verslunarmiðstöðvar með hefðbundnum rauðum þakskífum, 18. aldar markaðurinn og gamlar moskur og kirkjur, þó að andrúmsloft borgarinnar tengist meira Miðjarðarhafssvæði Evrópu en hefðbundnu Tyrklandi.\nSpurning: Hvert eftirfarandi einkennir Izmir er frá fornri tíð?\nSvarmöguleikar:\na. Breiðar breiðgötur\nb. Byggingar með framhliðum úr gleri\nc. Verslanamiðstöðvar\nd. rauðar þakskífur&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;d&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Texti: Dæmigert fyrir það tímabil er Kirby Muxloe Castle sem er frekar víggirt hús en raunverulegur kastali. Stóru gljáðu gluggarnir og þunnu veggirnir hefðu ekki getað staðist stórárás í langan tíma. Árið 1480, þegar Hastings lávarður hóf byggingarframkvæmdirnar, ríkti friður í nánast öllu landinu og aðeins var þörf á varnarmúrum gegn litlum ræningjahópum.\nSpurning: Hvert af eftirtöldu hefði verið talið óvenjulegt við byggingu Kirby Muxloe kastala á þeim tíma sem talað er um í kaflanum?\nSvarmöguleikar:\na. Stórir gluggar\nb. Grunnur sem á að standast árásir\nc. Minna af varnarútbúnaði en í öðrum köstulum\nd. Þunnir veggir&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;b&quot;</span>
+<span class="p">}</span>
+</code></pre></div></p>
+<p>When evaluating generative models, we use the following setup (see the
+<a href="/methodology">methodology</a> for more information on how these are used):</p>
+<ul>
+<li>Number of few-shot examples: 5</li>
+<li>Prefix prompt:
+  <div class="highlight"><pre><span></span><code>Eftirfarandi eru fjölvalsspurningar (með svörum).
+</code></pre></div></li>
+<li>Base prompt template:
+  <div class="highlight"><pre><span></span><code>Spurningar: {text}
+Svarmöguleikar:
+a. {option_a}
+b. {option_b}
+c. {option_c}
+d. {option_d}
+Svara: {label}
+</code></pre></div></li>
+<li>Instruction-tuned prompt template:
+  <div class="highlight"><pre><span></span><code>Spurningar: {text}
+Svarmöguleikar:
+a. {option_a}
+b. {option_b}
+c. {option_c}
+d. {option_d}
+
+Svaraðu eftirfarandi spurningum með &#39;a&#39;, &#39;b&#39;, &#39;c&#39; eða &#39;d&#39;, og engu öðru.
+</code></pre></div></li>
+</ul>
+<p>You can evaluate this dataset directly as follows:</p>
+<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>belebele-is
 </code></pre></div>
 <h2 id="knowledge">Knowledge</h2>
 <h3 id="icelandicknowledge">IcelandicKnowledge</h3>

@@ -894,11 +894,19 @@
 <span class="normal">59</span>
 <span class="normal">60</span>
 <span class="normal">61</span>
-<span class="normal">62</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;All Finnish dataset configurations used in EuroEval.&quot;&quot;&quot;</span>
+<span class="normal">62</span>
+<span class="normal">63</span>
+<span class="normal">64</span>
+<span class="normal">65</span>
+<span class="normal">66</span>
+<span class="normal">67</span>
+<span class="normal">68</span>
+<span class="normal">69</span>
+<span class="normal">70</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;All Finnish dataset configurations used in EuroEval.&quot;&quot;&quot;</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">..data_models</span><span class="w"> </span><span class="kn">import</span> <span class="n">DatasetConfig</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..languages</span><span class="w"> </span><span class="kn">import</span> <span class="n">FI</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">..tasks</span><span class="w"> </span><span class="kn">import</span> <span class="n">LA</span><span class="p">,</span> <span class="n">NER</span><span class="p">,</span> <span class="n">RC</span><span class="p">,</span> <span class="n">SENT</span><span class="p">,</span> <span class="n">SUMM</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..tasks</span><span class="w"> </span><span class="kn">import</span> <span class="n">COMMON_SENSE</span><span class="p">,</span> <span class="n">LA</span><span class="p">,</span> <span class="n">MCRC</span><span class="p">,</span> <span class="n">NER</span><span class="p">,</span> <span class="n">RC</span><span class="p">,</span> <span class="n">SENT</span><span class="p">,</span> <span class="n">SUMM</span>
 
 <span class="c1">### Official datasets ###</span>
 
@@ -936,16 +944,14 @@
     <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">FI</span><span class="p">],</span>
 <span class="p">)</span>
 
-<span class="c1"># TODO: Include when this issue has been resolved:</span>
-<span class="c1"># https://github.com/EuroEval/EuroEval/issues/158#issuecomment-2846664885</span>
-<span class="c1"># HELLASWAG_FI_CONFIG = DatasetConfig(</span>
-<span class="c1">#     name=&quot;hellaswag-fi&quot;,</span>
-<span class="c1">#     pretty_name=&quot;the truncated version of the Finnish common-sense reasoning dataset &quot;</span>
-<span class="c1">#     &quot;HellaSwag-fi, translated from the English HellaSwag dataset&quot;,</span>
-<span class="c1">#     huggingface_id=&quot;EuroEval/hellaswag-fi-mini&quot;,</span>
-<span class="c1">#     task=COMMON_SENSE,</span>
-<span class="c1">#     languages=[FI],</span>
-<span class="c1"># )</span>
+<span class="n">HELLASWAG_FI_CONFIG</span> <span class="o">=</span> <span class="n">DatasetConfig</span><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;hellaswag-fi&quot;</span><span class="p">,</span>
+    <span class="n">pretty_name</span><span class="o">=</span><span class="s2">&quot;the truncated version of the Finnish common-sense reasoning dataset &quot;</span>
+    <span class="s2">&quot;HellaSwag-fi, translated from the English HellaSwag dataset&quot;</span><span class="p">,</span>
+    <span class="n">huggingface_id</span><span class="o">=</span><span class="s2">&quot;EuroEval/hellaswag-fi-mini&quot;</span><span class="p">,</span>
+    <span class="n">task</span><span class="o">=</span><span class="n">COMMON_SENSE</span><span class="p">,</span>
+    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">FI</span><span class="p">],</span>
+<span class="p">)</span>
 
 <span class="n">SCALA_FI_CONFIG</span> <span class="o">=</span> <span class="n">DatasetConfig</span><span class="p">(</span>
     <span class="n">name</span><span class="o">=</span><span class="s2">&quot;scala-fi&quot;</span><span class="p">,</span>
@@ -956,6 +962,16 @@
 <span class="p">)</span>
 
 <span class="c1">### Unofficial datasets ###</span>
+
+<span class="n">BELEBELE_FI_CONFIG</span> <span class="o">=</span> <span class="n">DatasetConfig</span><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;belebele-fi&quot;</span><span class="p">,</span>
+    <span class="n">pretty_name</span><span class="o">=</span><span class="s2">&quot;the Finnish multiple choice reading comprehension dataset &quot;</span>
+    <span class="s2">&quot;BeleBele-fi, translated from the English BeleBele dataset&quot;</span><span class="p">,</span>
+    <span class="n">huggingface_id</span><span class="o">=</span><span class="s2">&quot;EuroEval/belebele-fi-mini&quot;</span><span class="p">,</span>
+    <span class="n">task</span><span class="o">=</span><span class="n">MCRC</span><span class="p">,</span>
+    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">FI</span><span class="p">],</span>
+    <span class="n">unofficial</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<span class="p">)</span>
 </code></pre></div></td></tr></table></div>
 
 

@@ -1469,7 +1469,7 @@
 
     <span class="n">vocab</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">get_vocab</span><span class="p">()</span>
 
-    <span class="n">candidate_bos_tokens</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;&lt;s&gt;&quot;</span><span class="p">,</span> <span class="s2">&quot;&lt;|begin_of_text|&gt;&quot;</span><span class="p">,</span> <span class="s2">&quot;[CLS]&quot;</span><span class="p">]</span>
+    <span class="n">candidate_bos_tokens</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;&lt;s&gt;&quot;</span><span class="p">,</span> <span class="s2">&quot;&lt;|begin_of_text|&gt;&quot;</span><span class="p">,</span> <span class="s2">&quot;&lt;|startoftext|&gt;&quot;</span><span class="p">,</span> <span class="s2">&quot;[CLS]&quot;</span><span class="p">]</span>
     <span class="k">for</span> <span class="n">candidate_bos_token</span> <span class="ow">in</span> <span class="n">candidate_bos_tokens</span><span class="p">:</span>
         <span class="k">if</span> <span class="n">candidate_bos_token</span> <span class="ow">in</span> <span class="n">vocab</span><span class="p">:</span>
             <span class="n">bos_token</span> <span class="o">=</span> <span class="n">candidate_bos_token</span>
@@ -1500,7 +1500,7 @@
 
     <span class="n">vocab</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">get_vocab</span><span class="p">()</span>
 
-    <span class="n">candidate_eos_tokens</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;&lt;/s&gt;&quot;</span><span class="p">,</span> <span class="s2">&quot;&lt;|end_of_text|&gt;&quot;</span><span class="p">,</span> <span class="s2">&quot;[SEP]&quot;</span><span class="p">]</span>
+    <span class="n">candidate_eos_tokens</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;&lt;/s&gt;&quot;</span><span class="p">,</span> <span class="s2">&quot;&lt;|end_of_text|&gt;&quot;</span><span class="p">,</span> <span class="s2">&quot;&lt;|endoftext|&gt;&quot;</span><span class="p">,</span> <span class="s2">&quot;[SEP]&quot;</span><span class="p">]</span>
     <span class="k">for</span> <span class="n">candidate_eos_token</span> <span class="ow">in</span> <span class="n">candidate_eos_tokens</span><span class="p">:</span>
         <span class="k">if</span> <span class="n">candidate_eos_token</span> <span class="ow">in</span> <span class="n">vocab</span><span class="p">:</span>
             <span class="n">eos_token</span> <span class="o">=</span> <span class="n">candidate_eos_token</span>

@@ -920,6 +920,15 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#unofficial-belebele-fi" class="md-nav__link">
+    <span class="md-ellipsis">
+      Unofficial: BeleBele-fi
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1391,6 +1400,15 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#unofficial-belebele-fi" class="md-nav__link">
+    <span class="md-ellipsis">
+      Unofficial: BeleBele-fi
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1673,6 +1691,55 @@ Kysymys: {question}
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>tydiqa-fi
 </code></pre></div>
+<h3 id="unofficial-belebele-fi">Unofficial: BeleBele-fi</h3>
+<p>This dataset was published in <a href="https://aclanthology.org/2024.acl-long.44/">this paper</a> and features multiple-choice reading comprehension questions across 122 languages.</p>
+<p>The original dataset contains 900 unique multiple-choice reading comprehension passages and questions. From these, we use a 256 / 64 / 580 split for training, validation and testing, respectively.</p>
+<p>Here are a few examples from the training split:</p>
+<p><div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Toisin kuin muut kädelliset, isot ihmisapinat eivät enää käytä käsiään liikkumiseen, painon kannattelemiseen tai liikkumiseen puissa itseään heilautellen. Simpanssin käsi ja jalka ovat samankokoisia ja -pituisia, mikä viittaa siihen, että kädelle varataan painoa rystykävelyssä. Ihmisen käsi on lyhyempi kuin jalka, ja sen sormiluut ovat suoremmat. Kahden-kolmen miljoonan vuoden ikäiset käsiluiden fossiilit paljastavat käden erikoistumisessa tämän muutoksen liikkumisesta käyttelyyn.\nKysymys: Mikä seuraavista kuvaa tarkasti simpanssin sormiluita?\nVaihtoehdot:\na. Ne ovat suoremmat kuin ihmisillä\nb. Niiden kädet ja jalat ovat erikokoisia\nc. Niitä käytetään painon kannattelemiseen\nd. Niitä käytetään pääasiassa käyttelyyn&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;c&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Panaman paperit on yläkäsite panamalaisen lakiyrityksen Mossack Fonsecan noin kymmenelle miljoonalle asiakirjalle, jotka vuodettiin lehdistölle keväällä 2016. Asiakirjoista selvisi, että neljätoista pankkia auttoi varakkaita asiakkaita piilottamaan miljardeja USA:n dollareita verojen ja muiden sääntelyjen välttämiseksi. Brittiläisen sanomalehden The Guardianin mukaan Deutsche Bank hallitsi tämän toteuttamiseen käytetyistä 1 200 postilaatikkoyrityksestä suunnilleen kolmasosaa. Seurasi maailmanlaajuisia protesteja ja useita rikossyytteitä, ja Islannin ja Pakistanin hallitusten johtajat kumpikin erosivat.\nKysymys: Kuka brittiläisen lehdistön väitteen mukaan hallinnoi monia varojen piilottamisessa käytettyjä yrityksiä tekstikatkelman mukaan?\nVaihtoehdot:\na. Eri pankkien varakkaat asiakkaat\nb. Panamalainen lakiyritys\nc. Deutsche Bank\nd. Pakistanin hallitus&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;c&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Teksti: Sundarban on maailman suurin mangrovemetsäalue. Se ulottuu 80 kilometriä (50 mailia) rannikolta Bangladeshin ja Intian takamaille. Sundarban on julistettu Unescon maailmanperintökohteeksi. Metsän Intian puolella sijaitsevaa osaa kutsutaan Sundarbanin kansallispuistoksi. Metsät eivät kuitenkaan ole pelkkiä mangrovesoita, vaan niihin kuuluu joitakin viimeisiä jäänteitä niistä mahtavista viidakoista, jotka aikoinaan peittivät koko Gangesin tasangon. Sundarban kattaa 3 850 neliökilometrin alueen, josta noin kolmasosa on vesi- tai suoalueiden peitossa. Vuodesta 1966 asti Sundarbans on ollut villieläinten suojelualue. Arvioidaan, että siellä on nykyään 400 intiantiikeriä ja suunnilleen 30 000 aksishirveä.\nKysymys: Mikä metsän osa on Intian puolella?\nVaihtoehdot:\na. Sundarbanin kansallispuisto\nb. Villieläinten suojelualue\nc. Maailmanperintökohde\nd. Gangesin tasanko&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;a&quot;</span>
+<span class="p">}</span>
+</code></pre></div></p>
+<p>When evaluating generative models, we use the following setup (see the
+<a href="/methodology">methodology</a> for more information on how these are used):</p>
+<ul>
+<li>Number of few-shot examples: 5</li>
+<li>Prefix prompt:
+  <div class="highlight"><pre><span></span><code>Seuraavat ovat monivalintakysymyksiä (vastauksineen).
+</code></pre></div></li>
+<li>Base prompt template:
+  <div class="highlight"><pre><span></span><code>Kysymys: {text}
+Vaihtoehdot:
+a. {option_a}
+b. {option_b}
+c. {option_c}
+d. {option_d}
+Vastaus: {label}
+</code></pre></div></li>
+<li>Instruction-tuned prompt template:
+  <div class="highlight"><pre><span></span><code>Kysymys: {text}
+Vaihtoehdot:
+a. {option_a}
+b. {option_b}
+c. {option_c}
+d. {option_d}
+
+Vastaa yllä olevaan kysymykseen käyttämällä &#39;a&#39;, &#39;b&#39;, &#39;c&#39; tai &#39;d&#39;, äläkä mitään muuta.
+</code></pre></div></li>
+</ul>
+<p>You can evaluate this dataset directly as follows:</p>
+<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>belebele-fi
+</code></pre></div>
 <h2 id="common-sense-reasoning">Common-sense Reasoning</h2>
 <h3 id="hellaswag-fi">HellaSwag-fi</h3>
 <p>This dataset is a machine translated version of the English <a href="https://aclanthology.org/P19-1472/">HellaSwag
@@ -1707,7 +1774,7 @@ Vastausvaihtoehdot:
 a. {option_a}
 b. {option_b}
 c. {option_c}
-d. {option_c}
+d. {option_d}
 Vastaus: {label}
 </code></pre></div></li>
 <li>Instruction-tuned prompt template:

@@ -837,6 +837,15 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#unofficial-belebele-da" class="md-nav__link">
+    <span class="md-ellipsis">
+      Unofficial: BeleBele-da
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1460,6 +1469,15 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#unofficial-belebele-da" class="md-nav__link">
+    <span class="md-ellipsis">
+      Unofficial: BeleBele-da
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1868,6 +1886,55 @@ Spørgsmål: {question}
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>scandiqa-da
 </code></pre></div>
+<h3 id="unofficial-belebele-da">Unofficial: BeleBele-da</h3>
+<p>This dataset was published in <a href="https://aclanthology.org/2024.acl-long.44/">this paper</a> and features multiple-choice reading comprehension questions across 122 languages.</p>
+<p>The original dataset contains 900 unique multiple-choice reading comprehension passages and questions. From these, we use a 256 / 64 / 580 split for training, validation and testing, respectively.</p>
+<p>Here are a few examples from the training split:</p>
+<p><div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Tekst: Prognoserne siger, at stormen, der er omkring 645 mil (1040 km) vest for Kap Verde-øerne, sandsynligvis vil forsvinde, før den truer nogen landområder. Fred har i øjeblikket vinde på 165 km/t og bevæger sig mod nordvest. Fred er den heftigste tropiske cyklon, der nogensinde er blevet registreret så sydligt og østligt i Atlanterhavet, siden man begyndte at bruge satellitbilleder, og kun den tredje store orkan, der er registreret øst for 35°V.\nSpørgsmål: Da Fred befandt sig nær Kap Verde-øerne, hvilken retning bevægede den sig så mod?\nSvarmuligheder:\na. Vest\nb. Syd\nc. Øst\nd. Nordvest&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;d&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Tekst: &quot;</span><span class="err">Side</span><span class="kc">n</span><span class="w"> </span><span class="err">Pakis</span><span class="kc">tan</span><span class="w"> </span><span class="err">i</span><span class="w"> </span><span class="mi">1947</span><span class="w"> </span><span class="err">blev</span><span class="w"> </span><span class="err">ua</span><span class="kc">f</span><span class="err">hæ</span><span class="kc">n</span><span class="err">gig</span><span class="kc">t</span><span class="w"> </span><span class="err">a</span><span class="kc">f</span><span class="w"> </span><span class="err">de</span><span class="kc">t</span><span class="w"> </span><span class="err">bri</span><span class="kc">t</span><span class="err">iske</span><span class="w"> </span><span class="err">s</span><span class="kc">t</span><span class="err">yre</span><span class="p">,</span><span class="w"> </span><span class="err">har</span><span class="w"> </span><span class="err">de</span><span class="kc">n</span><span class="w"> </span><span class="err">pakis</span><span class="kc">tans</span><span class="err">ke</span><span class="w"> </span><span class="err">præside</span><span class="kc">nt</span><span class="w"> </span><span class="err">udpege</span><span class="kc">t</span><span class="w"> </span><span class="s2">&quot;&quot;</span><span class="err">poli</span><span class="kc">t</span><span class="err">iske</span><span class="w"> </span><span class="err">age</span><span class="kc">nter</span><span class="s2">&quot;&quot;</span><span class="p">,</span><span class="w"> </span><span class="err">som</span><span class="w"> </span><span class="err">s</span><span class="kc">t</span><span class="err">yrer</span><span class="w"> </span><span class="err">FATA</span><span class="p">,</span><span class="w"> </span><span class="err">og</span><span class="w"> </span><span class="err">som</span><span class="w"> </span><span class="err">har</span><span class="w"> </span><span class="kc">n</span><span class="err">æs</span><span class="kc">ten</span><span class="w"> </span><span class="kc">ful</span><span class="err">ds</span><span class="kc">t</span><span class="err">æ</span><span class="kc">n</span><span class="err">dig</span><span class="w"> </span><span class="err">ko</span><span class="kc">ntr</span><span class="err">ol</span><span class="w"> </span><span class="err">over</span><span class="w"> </span><span class="err">områder</span><span class="kc">ne</span><span class="err">.</span><span class="w"> </span><span class="err">Disse</span><span class="w"> </span><span class="err">age</span><span class="kc">nter</span><span class="w"> </span><span class="err">er</span><span class="w"> </span><span class="err">a</span><span class="kc">ns</span><span class="err">varlige</span><span class="w"> </span><span class="kc">f</span><span class="err">or</span><span class="w"> </span><span class="err">a</span><span class="kc">t</span><span class="w"> </span><span class="err">levere</span><span class="w"> </span><span class="err">regeri</span><span class="kc">n</span><span class="err">gs</span><span class="mi">-</span><span class="w"> </span><span class="err">og</span><span class="w"> </span><span class="err">re</span><span class="kc">tst</span><span class="err">je</span><span class="kc">nester</span><span class="w"> </span><span class="err">i</span><span class="w"> </span><span class="err">he</span><span class="kc">n</span><span class="err">hold</span><span class="w"> </span><span class="kc">t</span><span class="err">il</span><span class="w"> </span><span class="err">ar</span><span class="kc">t</span><span class="err">ikel</span><span class="w"> </span><span class="mi">247</span><span class="w"> </span><span class="err">i</span><span class="w"> </span><span class="err">de</span><span class="kc">n</span><span class="w"> </span><span class="err">pakis</span><span class="kc">tans</span><span class="err">ke</span><span class="w"> </span><span class="kc">f</span><span class="err">or</span><span class="kc">fatn</span><span class="err">i</span><span class="kc">n</span><span class="err">g.</span><span class="s2">&quot;\nSpørgsmål: Hvem leverer retslige tjenester til FATA?\nSvarmuligheder:\na. Den pakistanske regering\nb. Politiske agenter\nc. Pakistans præsident\nd. Den britiske regering&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;b&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Tekst: Alle er en del af samfundet og benytter transportsystemerne. Næsten alle klager over transportsystemerne. I udviklede lande hører du sjældent ligeså mange klager over vandkvalitet eller broer, der styrter sammen. Hvorfor giver transportsystemerne anledning til sådanne klager, hvorfor svigter de på daglig basis? Er transportingeniører blot inkompetente? Eller foregår der noget mere fundamentalt?\nSpørgsmål: Hvilken offentlig service siges at skabe størst utilfredshed i udviklede lande?\nSvarmuligheder:\na. Vandkvalitet\nb. Brobyggelse\nc. Offentlig transport\nd. Uddannelse&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;c&quot;</span>
+<span class="p">}</span>
+</code></pre></div></p>
+<p>When evaluating generative models, we use the following setup (see the
+<a href="/methodology">methodology</a> for more information on how these are used):</p>
+<ul>
+<li>Number of few-shot examples: 5</li>
+<li>Prefix prompt:
+  <div class="highlight"><pre><span></span><code>Følgende er multiple choice spørgsmål (med svar).
+</code></pre></div></li>
+<li>Base prompt template:
+  <div class="highlight"><pre><span></span><code>Spørgsmål: {text}
+Svarmuligheder:
+a. {option_a}
+b. {option_b}
+c. {option_c}
+d. {option_d}
+Svar: {label}
+</code></pre></div></li>
+<li>Instruction-tuned prompt template:
+  <div class="highlight"><pre><span></span><code>Spørgsmål: {text}
+Svarmuligheder:
+a. {option_a}
+b. {option_b}
+c. {option_c}
+d. {option_d}
+
+Besvar ovenstående spørgsmål ved at svare med &#39;a&#39;, &#39;b&#39;, &#39;c&#39; eller &#39;d&#39;, og intet andet.
+</code></pre></div></li>
+</ul>
+<p>You can evaluate this dataset directly as follows:</p>
+<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>belebele-da
+</code></pre></div>
 <h2 id="knowledge">Knowledge</h2>
 <h3 id="danske-talemader">Danske Talemåder</h3>
 <p>This dataset was created by The Danish Language and Literature Society, published
@@ -2070,7 +2137,7 @@ Svarmuligheder:
 a. {option_a}
 b. {option_b}
 c. {option_c}
-d. {option_c}
+d. {option_d}
 Svar: {label}
 </code></pre></div></li>
 <li>Instruction-tuned prompt template:
@@ -2122,7 +2189,7 @@ Svarmuligheder:
 a. {option_a}
 b. {option_b}
 c. {option_c}
-d. {option_c}
+d. {option_d}
 Svar: {label}
 </code></pre></div></li>
 <li>Instruction-tuned prompt template:

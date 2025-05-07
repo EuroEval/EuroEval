@@ -1080,6 +1080,15 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#unofficial-belebele-no" class="md-nav__link">
+    <span class="md-ellipsis">
+      Unofficial: BeleBele-no
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1554,6 +1563,15 @@
   <a href="#unofficial-norglm-multi-qa" class="md-nav__link">
     <span class="md-ellipsis">
       Unofficial: NorGLM Multi QA
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#unofficial-belebele-no" class="md-nav__link">
+    <span class="md-ellipsis">
+      Unofficial: BeleBele-no
     </span>
   </a>
   
@@ -2227,6 +2245,55 @@ Spørsmål: {question}
 </ul>
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>norglm-multi-qa
+</code></pre></div>
+<h3 id="unofficial-belebele-no">Unofficial: BeleBele-no</h3>
+<p>This dataset was published in <a href="https://aclanthology.org/2024.acl-long.44/">this paper</a> and features multiple-choice reading comprehension questions across 122 languages.</p>
+<p>The original dataset contains 900 unique multiple-choice reading comprehension passages and questions. From these, we use a 256 / 64 / 580 split for training, validation and testing, respectively.</p>
+<p>Here are a few examples from the training split:</p>
+<p><div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Tekst: Det kinesiske nyhetsbyrået Xinhua meldte tidligere fra om at et fly var kapret. Det ble senere rapportert at flyet fikk en bombetrussel og ble veiledet mot retur til Afghanistan med landing i Kandahar. Ifølge de første rapportene ble flyet dirigert tilbake til Afghanistan etter å ha blitt nektet nødlanding i Ürümqi.\nSpørsmål: Hva ble ikke sagt i den nyeste rapporten fra nyhetsbyrået Xinhua?\nSvaralternativer:\na. Flyet fikk en bombetrussel\nb. Flyet landet i Ürümqi\nc. Flyet ble dirigert til Afghanistan\nd. Flyet landet i Kandahar&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;b&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Tekst: Tyskland begynte å gjøre seg klare til å invadere Storbritannia da kampen om Frankrike var over. Tyskland gav angrepet kodenavnet «operasjon sjøløve». Mesteparten av den britiske hærens tunge våpen og forsyninger hadde gått tapt da den flyktet fra Dunkirk, så de var svært sårbar. Den britiske marinen var imidlertid fremdeles mye kraftigere enn den tyske («Kriegsmarine») og kunne ha ødelagt en eventuell invasjonsflåte sendt over den engelske kanal. Det var likevel svært få skip fra Royal Navy som ble stasjonert nær de sannsynlige invasjonsrutene siden admiralene var engstelige for at de kom til å bli senket av tyske luftangrep.\nSpørsmål: Hva kalte Tyskland angrepet på Storbritannia?\nSvaralternativer:\na. Dunkirk\nb. Operasjon sjøløve\nc. Kriegsmarine\nd. Royal Navy&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;b&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Tekst: Det italienske og det tyske landslaget er de nest beste lagene i verden og var FIFA World Cup-mestere i 2006. Fotball, basketball, volleyball, vannpolo, fekting, rugby, sykling, ishockey, rullehockey og Formel-1 bilsport er godt likte sportsgrener. Vintersport er mest populært i nordlige områder, der italienere deltar i internasjonale konkurranser og OL-arrangementer.\nSpørsmål: Hvilke av følgende sporter vant et verdensmesterskap for Italia, basert på informasjonen i avsnittet?\nSvaralternativer:\na. Fotball\nb. Vannpolo\nc. Basketball\nd. Sykling&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;a&quot;</span>
+<span class="p">}</span>
+</code></pre></div></p>
+<p>When evaluating generative models, we use the following setup (see the
+<a href="/methodology">methodology</a> for more information on how these are used):</p>
+<ul>
+<li>Number of few-shot examples: 5</li>
+<li>Prefix prompt:
+  <div class="highlight"><pre><span></span><code>Følgende er flervalgsspørsmål (med svar).
+</code></pre></div></li>
+<li>Base prompt template:
+  <div class="highlight"><pre><span></span><code>Spørsmål: {text}
+Svaralternativer:
+a. {option_a}
+b. {option_b}
+c. {option_c}
+d. {option_d}
+Svar: {label}
+</code></pre></div></li>
+<li>Instruction-tuned prompt template:
+  <div class="highlight"><pre><span></span><code>Spørsmål: {text}
+Svaralternativer:
+a. {option_a}
+b. {option_b}
+c. {option_c}
+d. {option_d}
+
+Besvar følgende spørsmål med &#39;a&#39;, &#39;b&#39;, &#39;c&#39; eller &#39;d&#39;, og ikke noe annet.
+</code></pre></div></li>
+</ul>
+<p>You can evaluate this dataset directly as follows:</p>
+<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>belebele-no
 </code></pre></div>
 <h2 id="knowledge">Knowledge</h2>
 <h3 id="nrk-quiz-qa">NRK Quiz QA</h3>

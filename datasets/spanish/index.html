@@ -1067,6 +1067,15 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#unofficial-belebele-es" class="md-nav__link">
+    <span class="md-ellipsis">
+      Unofficial: BeleBele-es
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1428,6 +1437,15 @@
   <a href="#unofficial-xquad-es" class="md-nav__link">
     <span class="md-ellipsis">
       Unofficial: XQuAD-es
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#unofficial-belebele-es" class="md-nav__link">
+    <span class="md-ellipsis">
+      Unofficial: BeleBele-es
     </span>
   </a>
   
@@ -1824,6 +1842,55 @@ Pregunta: {question}
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>xquad-es
 </code></pre></div>
+<h3 id="unofficial-belebele-es">Unofficial: BeleBele-es</h3>
+<p>This dataset was published in <a href="https://aclanthology.org/2024.acl-long.44/">this paper</a> and features multiple-choice reading comprehension questions across 122 languages.</p>
+<p>The original dataset contains 900 unique multiple-choice reading comprehension passages and questions. From these, we use a 256 / 64 / 580 split for training, validation and testing, respectively.</p>
+<p>Here are a few examples from the training split:</p>
+<p><div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Texto: Beba alcohol con moderación. Este afecta a cada persona de manera diferente y conocer sus propios límites es sumamente importante. La ingesta excesiva de alcohol puede causar problemas de salud crónicos como daño hepático e incluso ceguera y muerte. El peligro potencial se incrementa con el consumo de alcohol elaborado de forma ilegal. En las bebidas alcohólicas ilegales puede haber varias impurezas amenazantes, como el metanol, capaz de provocar ceguera o incluso la muerte, aun cuando se ingiera poca cantidad.\nPregunta: Según el fragmento, ¿cuál de los siguientes sentidos puede verse afectado por el consumo excesivo de alcohol?\nOpciones:\na. Audición\nb. Vista\nc. Gusto\nd. Olfato&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;b&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Texto: Leslie Aun, vocero de la Fundación Komen, informó que rige una nueva normativa en la organización conforme la cual no procederá el otorgamiento de subvenciones o fondos en favor de entidades que sean objeto de investigación oficial. La política de Komen desacreditó a Planned Parenthood a raíz de una investigación en curso que dirige el representante Cliff Stearns sobre la forma en la que esta organización informa y utiliza sus fondos. En su rol de director del Subcomité de Supervisión e Investigación, que se encuentra bajo el paraguas del Comité de Energía y Comercio, Stearns conduce una investigación para determinar si los impuestos se usan para financiar interrupciones de embarazos a través de Paternidad Planificada.\nPregunta: ¿Qué comité preside Cliff Stearns?\nOpciones:\na. Comité de Energía y Comercio de la Cámara de Representantes\nb. La Fundación Komen\nc. Planned Parenthood\nd. El Subcomité de Supervisión e Investigación&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;d&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Texto: El elemento del determinismo cultural se encontraba muy presente en el romanticismo, según estudiosos como Goether, Fichte y Schlegel. En el contexto del Romanticismo, la geografía moldeó a las personas y, con el transcurso del tiempo, se desarrollaron costumbres y culturas relacionadas con esa geografía que, al estar en armonía con la localización de esa sociedad, eran preferibles a leyes que se impusieran de forma arbitraria.\nPregunta: De acuerdo con el texto, ¿qué moldeó a las personas durante el período del Romanticismo?\nOpciones:\na. Leyes\nb. Geografía\nc. Costumbres\nd. Cultura&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;b&quot;</span>
+<span class="p">}</span>
+</code></pre></div></p>
+<p>When evaluating generative models, we use the following setup (see the
+<a href="/methodology">methodology</a> for more information on how these are used):</p>
+<ul>
+<li>Number of few-shot examples: 5</li>
+<li>Prefix prompt:
+  <div class="highlight"><pre><span></span><code>Las siguientes son preguntas de opción múltiple (con respuestas).
+</code></pre></div></li>
+<li>Base prompt template:
+  <div class="highlight"><pre><span></span><code>Pregunta: {text}
+Opciones:
+a. {option_a}
+b. {option_b}
+c. {option_c}
+d. {option_d}
+Respuesta: {label}
+</code></pre></div></li>
+<li>Instruction-tuned prompt template:
+  <div class="highlight"><pre><span></span><code>Pregunta: {text}
+Opciones:
+a. {option_a}
+b. {option_b}
+c. {option_c}
+d. {option_d}
+
+Responda la pregunta anterior usando solo &#39;a&#39;, &#39;b&#39;, &#39;c&#39; o &#39;d&#39;, y nada más.
+</code></pre></div></li>
+</ul>
+<p>You can evaluate this dataset directly as follows:</p>
+<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>belebele-es
+</code></pre></div>
 <h2 id="knowledge">Knowledge</h2>
 <h3 id="mmlu-es">MMLU-es</h3>
 <p>This dataset is a machine translated version of the English <a href="https://openreview.net/forum?id=d7KBjmI3GmQ">MMLU
@@ -1920,7 +1987,7 @@ Opciones:
 a. {option_a}
 b. {option_b}
 c. {option_c}
-d. {option_c}
+d. {option_d}
 Respuesta: {label}
 </code></pre></div></li>
 <li>Instruction-tuned prompt template:

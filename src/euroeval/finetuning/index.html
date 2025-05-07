@@ -1185,9 +1185,7 @@
 <span class="normal">315</span>
 <span class="normal">316</span>
 <span class="normal">317</span>
-<span class="normal">318</span>
-<span class="normal">319</span>
-<span class="normal">320</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Functions related to the finetuning of models.&quot;&quot;&quot;</span>
+<span class="normal">318</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Functions related to the finetuning of models.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
@@ -1292,7 +1290,6 @@
                 <span class="n">itr_scores</span> <span class="o">=</span> <span class="n">finetune_single_iteration</span><span class="p">(</span>
                     <span class="n">model</span><span class="o">=</span><span class="n">model</span> <span class="k">if</span> <span class="n">model_already_initialized</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
                     <span class="n">dataset</span><span class="o">=</span><span class="n">datasets</span><span class="p">[</span><span class="n">idx</span><span class="p">],</span>
-                    <span class="n">iteration_idx</span><span class="o">=</span><span class="n">idx</span><span class="p">,</span>
                     <span class="n">training_args</span><span class="o">=</span><span class="n">training_args</span><span class="p">,</span>
                     <span class="n">model_config</span><span class="o">=</span><span class="n">model_config</span><span class="p">,</span>
                     <span class="n">dataset_config</span><span class="o">=</span><span class="n">dataset_config</span><span class="p">,</span>
@@ -1347,7 +1344,6 @@
 <span class="k">def</span><span class="w"> </span><span class="nf">finetune_single_iteration</span><span class="p">(</span><div class="mkapi-source-link" id="euroeval.finetuning.finetune_single_iteration"><a href="../../../api/euroeval/finetuning/#euroeval.finetuning.finetune_single_iteration" title="Go to docs">docs</a></div>
     <span class="n">model</span><span class="p">:</span> <span class="n">BenchmarkModule</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">dataset</span><span class="p">:</span> <span class="n">DatasetDict</span><span class="p">,</span>
-    <span class="n">iteration_idx</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
     <span class="n">training_args</span><span class="p">:</span> <span class="n">TrainingArguments</span><span class="p">,</span>
     <span class="n">model_config</span><span class="p">:</span> <span class="s2">&quot;ModelConfig&quot;</span><span class="p">,</span>
     <span class="n">dataset_config</span><span class="p">:</span> <span class="s2">&quot;DatasetConfig&quot;</span><span class="p">,</span>
@@ -1360,8 +1356,6 @@
 <span class="sd">            The model to use in the benchmark. If None then a new model will be loaded.</span>
 <span class="sd">        dataset:</span>
 <span class="sd">            The dataset to use for training and evaluation.</span>
-<span class="sd">        iteration_idx:</span>
-<span class="sd">            The index of the iteration.</span>
 <span class="sd">        training_args:</span>
 <span class="sd">            The training arguments.</span>
 <span class="sd">        model_config:</span>
@@ -1402,41 +1396,42 @@
 
         <span class="n">trainer</span><span class="o">.</span><span class="n">log</span> <span class="o">=</span> <span class="n">no_logging</span>
 
-    <span class="c1"># Re-block terminal output, as it gets unblocked by the `transformers`</span>
-    <span class="c1"># package before training</span>
+    <span class="c1"># Re-block terminal output, as it gets unblocked by the `transformers` package</span>
+    <span class="c1"># before training</span>
     <span class="n">block_terminal_output</span><span class="p">()</span>
 
-    <span class="c1"># Sort out callbacks. We remove the callbacks that are producing unnecessary</span>
-    <span class="c1"># output, to avoid cluttering the terminal output</span>
+    <span class="c1"># Sort out callbacks. We remove the callbacks that are producing unnecessary output,</span>
+    <span class="c1"># to avoid cluttering the terminal output</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">benchmark_config</span><span class="o">.</span><span class="n">verbose</span><span class="p">:</span>
         <span class="n">trainer</span><span class="o">.</span><span class="n">remove_callback</span><span class="p">(</span><span class="n">PrinterCallback</span><span class="p">)</span>
     <span class="n">trainer</span><span class="o">.</span><span class="n">remove_callback</span><span class="p">(</span><span class="n">ProgressCallback</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">benchmark_config</span><span class="o">.</span><span class="n">progress_bar</span><span class="p">:</span>
         <span class="n">trainer</span><span class="o">.</span><span class="n">add_callback</span><span class="p">(</span><span class="n">NeverLeaveProgressCallback</span><span class="p">)</span>
 
-    <span class="k">try</span><span class="p">:</span>
-        <span class="n">trainer</span><span class="o">.</span><span class="n">train</span><span class="p">()</span>
-        <span class="k">with</span> <span class="n">torch</span><span class="o">.</span><span class="n">inference_mode</span><span class="p">():</span>
-            <span class="k">try</span><span class="p">:</span>
-                <span class="n">test_scores</span> <span class="o">=</span> <span class="n">trainer</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span>
-                    <span class="n">eval_dataset</span><span class="o">=</span><span class="n">dataset</span><span class="p">[</span><span class="s2">&quot;test&quot;</span><span class="p">],</span>
-                    <span class="n">orig_eval_dataset</span><span class="o">=</span><span class="n">dataset</span><span class="p">[</span><span class="s2">&quot;original_test&quot;</span><span class="p">],</span>
-                    <span class="n">metric_key_prefix</span><span class="o">=</span><span class="s2">&quot;test&quot;</span><span class="p">,</span>
-                <span class="p">)</span>
-            <span class="k">except</span> <span class="ne">TypeError</span><span class="p">:</span>
-                <span class="n">test_scores</span> <span class="o">=</span> <span class="n">trainer</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span>
-                    <span class="n">eval_dataset</span><span class="o">=</span><span class="n">dataset</span><span class="p">[</span><span class="s2">&quot;test&quot;</span><span class="p">],</span> <span class="n">metric_key_prefix</span><span class="o">=</span><span class="s2">&quot;test&quot;</span>
-                <span class="p">)</span>
-        <span class="k">return</span> <span class="n">test_scores</span>
+    <span class="c1"># Train the model</span>
+    <span class="n">trainer</span><span class="o">.</span><span class="n">train</span><span class="p">()</span>
 
-    <span class="k">except</span> <span class="n">NaNValueInModelOutput</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-        <span class="k">del</span> <span class="n">trainer</span>
-        <span class="k">del</span> <span class="n">model</span>
-        <span class="n">clear_memory</span><span class="p">()</span>
-        <span class="k">raise</span> <span class="n">e</span>
+    <span class="c1"># Evaluate the model</span>
+    <span class="k">with</span> <span class="n">torch</span><span class="o">.</span><span class="n">inference_mode</span><span class="p">():</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">test_scores</span> <span class="o">=</span> <span class="n">trainer</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span>
+                <span class="n">eval_dataset</span><span class="o">=</span><span class="n">dataset</span><span class="p">[</span><span class="s2">&quot;test&quot;</span><span class="p">],</span>
+                <span class="n">orig_eval_dataset</span><span class="o">=</span><span class="n">dataset</span><span class="p">[</span><span class="s2">&quot;original_test&quot;</span><span class="p">],</span>
+                <span class="n">metric_key_prefix</span><span class="o">=</span><span class="s2">&quot;test&quot;</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">except</span> <span class="ne">TypeError</span><span class="p">:</span>
+            <span class="n">test_scores</span> <span class="o">=</span> <span class="n">trainer</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span>
+                <span class="n">eval_dataset</span><span class="o">=</span><span class="n">dataset</span><span class="p">[</span><span class="s2">&quot;test&quot;</span><span class="p">],</span> <span class="n">metric_key_prefix</span><span class="o">=</span><span class="s2">&quot;test&quot;</span>
+            <span class="p">)</span>
+        <span class="k">except</span> <span class="n">NaNValueInModelOutput</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="k">del</span> <span class="n">trainer</span>
+            <span class="k">del</span> <span class="n">model</span>
+            <span class="n">clear_memory</span><span class="p">()</span>
+            <span class="k">raise</span> <span class="n">e</span>
+        <span class="k">except</span> <span class="p">(</span><span class="ne">RuntimeError</span><span class="p">,</span> <span class="ne">ValueError</span><span class="p">,</span> <span class="ne">IndexError</span><span class="p">)</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">InvalidBenchmark</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">))</span>
 
-    <span class="k">except</span> <span class="p">(</span><span class="ne">RuntimeError</span><span class="p">,</span> <span class="ne">ValueError</span><span class="p">,</span> <span class="ne">IndexError</span><span class="p">)</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="n">InvalidBenchmark</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">test_scores</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">get_training_args</span><span class="p">(</span><div class="mkapi-source-link" id="euroeval.finetuning.get_training_args"><a href="../../../api/euroeval/finetuning/#euroeval.finetuning.get_training_args" title="Go to docs">docs</a></div>
@@ -1489,6 +1484,7 @@
         <span class="n">save_total_limit</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
         <span class="n">per_device_train_batch_size</span><span class="o">=</span><span class="n">batch_size</span><span class="p">,</span>
         <span class="n">per_device_eval_batch_size</span><span class="o">=</span><span class="n">batch_size</span><span class="p">,</span>
+        <span class="n">eval_accumulation_steps</span><span class="o">=</span><span class="mi">32</span><span class="p">,</span>
         <span class="n">optim</span><span class="o">=</span><span class="n">OptimizerNames</span><span class="o">.</span><span class="n">ADAMW_TORCH</span><span class="p">,</span>
         <span class="n">learning_rate</span><span class="o">=</span><span class="mf">2e-5</span><span class="p">,</span>
         <span class="n">warmup_ratio</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span>
