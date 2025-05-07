@@ -352,7 +352,7 @@ def safe_run(coroutine: t.Coroutine[t.Any, t.Any, T]) -> T:
         asyncio.set_event_loop(None)
 
 
-async def catch_coroutine_exception(coroutine: t.Coroutine[t.Any, t.Any, T]) -> T:
+async def catch_coroutine_exception(coroutine: t.Coroutine[t.Any, t.Any, T]) -> T | Exception:
     """Run a coroutine, catching any exceptions and returning them.
 
     Args:

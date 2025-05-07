@@ -285,7 +285,7 @@ class LiteLLMModel(BenchmarkModule):
             for msg_list in messages:
                 # msg_list is a list of {'role':…, 'content':…} dicts
                 if not msg_list:
-                    raise ValueError("Encountered an empty message list in 'messages'.")
+                    raise InvalidBenchmark("Encountered an empty message list in 'messages'.")
                 last = msg_list[-1]
                 assert isinstance(last, dict), (
                     f"Expected dict message, got {type(last)}"
