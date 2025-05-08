@@ -151,21 +151,18 @@ def extract_labels_from_generation(
     ]
     new_predicted_labels: list[str] = list()
     for predicted_label in model_output.sequences:
-        # If the prediction includes a boxed answer, use that
+        # If the prediction includes a boxed answer, use that instead of the full
+        # generation
         if (m := re.search(r"boxed\{(.*?)\}", predicted_label)) is not None:
+            breakpoint()
             predicted_label = m.group(1)
 
-        # Otherwise, we pick the label with the smallest word edit distance to the
-        # predicted label
-        else:
-            edit_distances = [
-                Levenshtein.distance(
-                    s1=predicted_label.lower(), s2=candidate_label.lower()
-                )
-                for candidate_label in candidate_labels
-            ]
-            predicted_label = candidate_labels[np.argmin(edit_distances).item()]
-
+        # Pick the label with the smallest word edit distance to the predicted label
+        edit_distances = [
+            Levenshtein.distance(s1=predicted_label.lower(), s2=candidate_label.lower())
+            for candidate_label in candidate_labels
+        ]
+        predicted_label = candidate_labels[np.argmin(edit_distances).item()]
         new_predicted_labels.append(predicted_label)
 
     return new_predicted_labels
