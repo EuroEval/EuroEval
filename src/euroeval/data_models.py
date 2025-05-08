@@ -538,9 +538,7 @@ class DatasetConfig:
                 local_labels.append(local_label)
 
         # Convert labels to single-quoted labels - and remove duplicates
-        quoted_labels = list(
-            {f"'{self.prompt_label_mapping[label]}'" for label in local_labels}
-        )
+        quoted_labels = [f"'{label}'" for label in local_labels]
         breakpoint()
 
         if not quoted_labels:
