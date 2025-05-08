@@ -7,7 +7,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 
 ## [Unreleased]
-
+### Fixed
+- NER labels were included twice in the prompt templates (which was due to there being
+  both, e.g., `B-ORG` and `I-ORG`). This caused models not using structured generation,
+  such as reasoning models, to sometimes output the wrong labels. This has been fixed
+  now.
 
 
 ## [v15.8.0] - 2025-05-07

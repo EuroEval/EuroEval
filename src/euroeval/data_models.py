@@ -539,7 +539,6 @@ class DatasetConfig:
 
         # Convert labels to single-quoted labels - and remove duplicates
         quoted_labels = [f"'{label}'" for label in local_labels]
-        breakpoint()
 
         if not quoted_labels:
             return ""
