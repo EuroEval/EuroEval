@@ -144,9 +144,31 @@ def extract_labels_from_generation(
         )
         if labels is not None:
             return labels
-    return get_closest_word_edit_labels(
-        generated_sequences=model_output.sequences, dataset_config=dataset_config
-    )
+
+    candidate_labels = [
+        dataset_config.prompt_label_mapping[lbl]
+        for lbl in dataset_config.id2label.values()
+    ]
+    new_predicted_labels: list[str] = list()
+    for predicted_label in model_output.sequences:
+        # If the prediction includes a boxed answer, use that
+        if (m := re.search(r"boxed\{(.*?)\}", predicted_label)) is not None:
+            predicted_label = m.group(1)
+
+        # Otherwise, we pick the label with the smallest word edit distance to the
+        # predicted label
+        else:
+            edit_distances = [
+                Levenshtein.distance(
+                    s1=predicted_label.lower(), s2=candidate_label.lower()
+                )
+                for candidate_label in candidate_labels
+            ]
+            predicted_label = candidate_labels[np.argmin(edit_distances).item()]
+
+        new_predicted_labels.append(predicted_label)
+
+    return new_predicted_labels
 
 
 def get_closest_logprobs_labels(
@@ -305,32 +327,3 @@ def get_closest_logprobs_labels(
 
     assert len(output_labels) == len(generation_logprobs)
     return output_labels
-
-
-def get_closest_word_edit_labels(
-    generated_sequences: list[str], dataset_config: "DatasetConfig"
-) -> list[str]:
-    """Get the labels with the smallest edit distance to the predicted labels.
-
-    Args:
-        generated_sequences:
-            The generated sequences from the model.
-        dataset_config:
-            The configuration of the dataset.
-
-    Returns:
-        The candidate labels with the smallest edit distance to the predicted labels.
-    """
-    candidate_labels = [
-        dataset_config.prompt_label_mapping[lbl]
-        for lbl in dataset_config.id2label.values()
-    ]
-    new_predicted_labels: list[str] = list()
-    for predicted_label in generated_sequences:
-        edit_distances = [
-            Levenshtein.distance(s1=predicted_label.lower(), s2=candidate_label.lower())
-            for candidate_label in candidate_labels
-        ]
-        closest_label = candidate_labels[np.argmin(edit_distances).item()]
-        new_predicted_labels.append(closest_label)
-    return new_predicted_labels
