@@ -154,7 +154,6 @@ def extract_labels_from_generation(
         # If the prediction includes a boxed answer, use that instead of the full
         # generation
         if (m := re.search(r"boxed\{(.*?)\}", predicted_label)) is not None:
-            breakpoint()
             predicted_label = m.group(1)
 
         # Pick the label with the smallest word edit distance to the predicted label
