@@ -841,15 +841,6 @@
   
 </li>
       
-        <li class="md-nav__item">
-  <a href="#euroeval.task_group_utils.sequence_classification.get_closest_word_edit_labels" class="md-nav__link">
-    <span class="md-ellipsis">
-      get_closest_word_edit_labels
-    </span>
-  </a>
-  
-</li>
-      
     </ul>
   
 </nav>
@@ -1201,18 +1192,7 @@
 <span class="normal">322</span>
 <span class="normal">323</span>
 <span class="normal">324</span>
-<span class="normal">325</span>
-<span class="normal">326</span>
-<span class="normal">327</span>
-<span class="normal">328</span>
-<span class="normal">329</span>
-<span class="normal">330</span>
-<span class="normal">331</span>
-<span class="normal">332</span>
-<span class="normal">333</span>
-<span class="normal">334</span>
-<span class="normal">335</span>
-<span class="normal">336</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Utility functions related to the sequence-classification task group.&quot;&quot;&quot;</span>
+<span class="normal">325</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Utility functions related to the sequence-classification task group.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
@@ -1358,9 +1338,27 @@
         <span class="p">)</span>
         <span class="k">if</span> <span class="n">labels</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">labels</span>
-    <span class="k">return</span> <span class="n">get_closest_word_edit_labels</span><span class="p">(</span>
-        <span class="n">generated_sequences</span><span class="o">=</span><span class="n">model_output</span><span class="o">.</span><span class="n">sequences</span><span class="p">,</span> <span class="n">dataset_config</span><span class="o">=</span><span class="n">dataset_config</span>
-    <span class="p">)</span>
+
+    <span class="n">candidate_labels</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="n">dataset_config</span><span class="o">.</span><span class="n">prompt_label_mapping</span><span class="p">[</span><span class="n">lbl</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">lbl</span> <span class="ow">in</span> <span class="n">dataset_config</span><span class="o">.</span><span class="n">id2label</span><span class="o">.</span><span class="n">values</span><span class="p">()</span>
+    <span class="p">]</span>
+    <span class="n">new_predicted_labels</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">predicted_label</span> <span class="ow">in</span> <span class="n">model_output</span><span class="o">.</span><span class="n">sequences</span><span class="p">:</span>
+        <span class="c1"># If the prediction includes a boxed answer, use that instead of the full</span>
+        <span class="c1"># generation</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">m</span> <span class="o">:=</span> <span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;boxed\{(.*?)\}&quot;</span><span class="p">,</span> <span class="n">predicted_label</span><span class="p">))</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">predicted_label</span> <span class="o">=</span> <span class="n">m</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+
+        <span class="c1"># Pick the label with the smallest word edit distance to the predicted label</span>
+        <span class="n">edit_distances</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">Levenshtein</span><span class="o">.</span><span class="n">distance</span><span class="p">(</span><span class="n">s1</span><span class="o">=</span><span class="n">predicted_label</span><span class="o">.</span><span class="n">lower</span><span class="p">(),</span> <span class="n">s2</span><span class="o">=</span><span class="n">candidate_label</span><span class="o">.</span><span class="n">lower</span><span class="p">())</span>
+            <span class="k">for</span> <span class="n">candidate_label</span> <span class="ow">in</span> <span class="n">candidate_labels</span>
+        <span class="p">]</span>
+        <span class="n">predicted_label</span> <span class="o">=</span> <span class="n">candidate_labels</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">argmin</span><span class="p">(</span><span class="n">edit_distances</span><span class="p">)</span><span class="o">.</span><span class="n">item</span><span class="p">()]</span>
+        <span class="n">new_predicted_labels</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">predicted_label</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">new_predicted_labels</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">get_closest_logprobs_labels</span><span class="p">(</span><div class="mkapi-source-link" id="euroeval.task_group_utils.sequence_classification.get_closest_logprobs_labels"><a href="../../../../api/euroeval/task_group_utils/sequence_classification/#euroeval.task_group_utils.sequence_classification.get_closest_logprobs_labels" title="Go to docs">docs</a></div>
@@ -1519,35 +1517,6 @@
 
     <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">output_labels</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">generation_logprobs</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">output_labels</span>
-
-
-<span class="k">def</span><span class="w"> </span><span class="nf">get_closest_word_edit_labels</span><span class="p">(</span><div class="mkapi-source-link" id="euroeval.task_group_utils.sequence_classification.get_closest_word_edit_labels"><a href="../../../../api/euroeval/task_group_utils/sequence_classification/#euroeval.task_group_utils.sequence_classification.get_closest_word_edit_labels" title="Go to docs">docs</a></div>
-    <span class="n">generated_sequences</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">dataset_config</span><span class="p">:</span> <span class="s2">&quot;DatasetConfig&quot;</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the labels with the smallest edit distance to the predicted labels.</span>
-
-<span class="sd">    Args:</span>
-<span class="sd">        generated_sequences:</span>
-<span class="sd">            The generated sequences from the model.</span>
-<span class="sd">        dataset_config:</span>
-<span class="sd">            The configuration of the dataset.</span>
-
-<span class="sd">    Returns:</span>
-<span class="sd">        The candidate labels with the smallest edit distance to the predicted labels.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">candidate_labels</span> <span class="o">=</span> <span class="p">[</span>
-        <span class="n">dataset_config</span><span class="o">.</span><span class="n">prompt_label_mapping</span><span class="p">[</span><span class="n">lbl</span><span class="p">]</span>
-        <span class="k">for</span> <span class="n">lbl</span> <span class="ow">in</span> <span class="n">dataset_config</span><span class="o">.</span><span class="n">id2label</span><span class="o">.</span><span class="n">values</span><span class="p">()</span>
-    <span class="p">]</span>
-    <span class="n">new_predicted_labels</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
-    <span class="k">for</span> <span class="n">predicted_label</span> <span class="ow">in</span> <span class="n">generated_sequences</span><span class="p">:</span>
-        <span class="n">edit_distances</span> <span class="o">=</span> <span class="p">[</span>
-            <span class="n">Levenshtein</span><span class="o">.</span><span class="n">distance</span><span class="p">(</span><span class="n">s1</span><span class="o">=</span><span class="n">predicted_label</span><span class="o">.</span><span class="n">lower</span><span class="p">(),</span> <span class="n">s2</span><span class="o">=</span><span class="n">candidate_label</span><span class="o">.</span><span class="n">lower</span><span class="p">())</span>
-            <span class="k">for</span> <span class="n">candidate_label</span> <span class="ow">in</span> <span class="n">candidate_labels</span>
-        <span class="p">]</span>
-        <span class="n">closest_label</span> <span class="o">=</span> <span class="n">candidate_labels</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">argmin</span><span class="p">(</span><span class="n">edit_distances</span><span class="p">)</span><span class="o">.</span><span class="n">item</span><span class="p">()]</span>
-        <span class="n">new_predicted_labels</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">closest_label</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">new_predicted_labels</span>
 </code></pre></div></td></tr></table></div>
 
 
