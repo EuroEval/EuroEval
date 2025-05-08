@@ -12,6 +12,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   both, e.g., `B-ORG` and `I-ORG`). This caused models not using structured generation,
   such as reasoning models, to sometimes output the wrong labels. This has been fixed
   now.
+- If a model outputs a `\boxed{}` answer, we now extract and use that, rather than the
+  full generated answer.
 
 
 ## [v15.8.0] - 2025-05-07
