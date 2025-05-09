@@ -401,6 +401,13 @@ class LiteLLMModel(BenchmarkModule):
             model_responses=ordered_responses, model_id=self.model_config.model_id
         )
 
+        if len(messages) != len(model_output.sequences):
+            breakpoint()
+            raise InvalidBenchmark(
+                f"Number of model inputs ({len(messages):,}) does not match the "
+                f"number of model outputs ({len(model_output.sequences):,})."
+            )
+
         return model_output
 
     def _handle_exception(
