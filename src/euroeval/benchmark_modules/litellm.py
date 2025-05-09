@@ -402,7 +402,6 @@ class LiteLLMModel(BenchmarkModule):
         )
 
         if len(messages) != len(model_output.sequences):
-            breakpoint()
             raise InvalidBenchmark(
                 f"Number of model inputs ({len(messages):,}) does not match the "
                 f"number of model outputs ({len(model_output.sequences):,})."
