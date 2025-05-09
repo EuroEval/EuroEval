@@ -170,6 +170,7 @@ class ModelCache:
 
         # Double check that the number of inputs and outputs match
         if not len(model_inputs) == len(model_output.sequences):
+            breakpoint()
             logger.warning(
                 f"Number of model inputs ({len(model_inputs)}) does not match the "
                 f"number of model outputs ({len(model_output.sequences)}). We will not "
