@@ -623,8 +623,7 @@ class LiteLLMModel(BenchmarkModule):
         scores = []
         for model_response in model_responses:
             if not model_response.choices:
-                # This happens for reasoning models, when they don't finish thinking
-                # and run out of tokens. Happens quite rarely, but we need to handle it.
+                sequences.append("")
                 logger.warning(
                     f"The model {model_id!r} did not end up "
                     "generating any text. This is likely because the model ran "
