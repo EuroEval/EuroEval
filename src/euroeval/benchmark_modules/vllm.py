@@ -523,6 +523,7 @@ class VLLMModel(HuggingFaceEncoderModel):
                 ]
                 for raw_output in raw_outputs
             ]
+            breakpoint()
             scores = [
                 score_list[
                     raw_output.outputs[0].token_ids.index(
