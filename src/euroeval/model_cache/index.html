@@ -1162,7 +1162,16 @@
 <span class="normal">250</span>
 <span class="normal">251</span>
 <span class="normal">252</span>
-<span class="normal">253</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;ModelCache class for caching model outputs.&quot;&quot;&quot;</span>
+<span class="normal">253</span>
+<span class="normal">254</span>
+<span class="normal">255</span>
+<span class="normal">256</span>
+<span class="normal">257</span>
+<span class="normal">258</span>
+<span class="normal">259</span>
+<span class="normal">260</span>
+<span class="normal">261</span>
+<span class="normal">262</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;ModelCache class for caching model outputs.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">hashlib</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
@@ -1331,6 +1340,15 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">input_column</span> <span class="o">=</span> <span class="s2">&quot;messages&quot;</span> <span class="k">if</span> <span class="s2">&quot;messages&quot;</span> <span class="ow">in</span> <span class="n">model_inputs</span> <span class="k">else</span> <span class="s2">&quot;text&quot;</span>
         <span class="n">model_inputs</span> <span class="o">=</span> <span class="n">model_inputs</span><span class="p">[</span><span class="n">input_column</span><span class="p">]</span>
+
+        <span class="c1"># Double check that the number of inputs and outputs match</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">len</span><span class="p">(</span><span class="n">model_inputs</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">model_output</span><span class="o">.</span><span class="n">sequences</span><span class="p">):</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Number of model inputs (</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">model_inputs</span><span class="p">)</span><span class="si">}</span><span class="s2">) does not match the &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;number of model outputs (</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">model_output</span><span class="o">.</span><span class="n">sequences</span><span class="p">)</span><span class="si">}</span><span class="s2">). We will not &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;cache the model outputs.&quot;</span>
+            <span class="p">)</span>
+            <span class="k">return</span>
 
         <span class="c1"># Store the generated sequences in the cache, one by one</span>
         <span class="k">with</span> <span class="n">tqdm</span><span class="p">(</span>
