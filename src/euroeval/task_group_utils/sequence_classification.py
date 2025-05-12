@@ -203,7 +203,6 @@ def get_closest_logprobs_labels(
     output_labels: list[str] = list()
     for sample in generation_logprobs:
         for logprob_list in sample:
-            breakpoint()
             generated_labels = [
                 re.sub(
                     pattern=r"^[^a-zæøåüöä]+|[^a-zæøåüöä]+$",
