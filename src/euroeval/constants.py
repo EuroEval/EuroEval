@@ -64,3 +64,8 @@ MERGE_TAGS = ["merge", "mergekit"]
 
 # The minimum required CUDA compute capability for using bfloat16 in vLLM
 VLLM_BF16_MIN_CUDA_COMPUTE_CAPABILITY = 8.0
+
+# Threshold for language confidence scores.
+# When a sample's language confidence score is greater than or equal to this value,
+# its evaluation score is kept as is. Otherwise, the score is set to 0.
+MIN_CONFIDENCE_SCORE = 0.75

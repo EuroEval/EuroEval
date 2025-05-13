@@ -150,6 +150,7 @@ SUMM = Task(
             pretty_name="ROUGE-L",
             huggingface_id="rouge",
             results_key="rougeL",
+            compute_kwargs=dict(use_aggregator=False),
         ),
     ],
     default_num_few_shot_examples=1,
