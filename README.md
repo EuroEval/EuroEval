@@ -21,8 +21,6 @@ ______________________________________________________________________
 
 - Dan Saattrup Nielsen ([@saattrupdan](https://github.com/saattrupdan),
   dan.nielsen@alexandra.dk)
-- Kenneth Enevoldsen ([@KennethEnevoldsen](https://github.com/KennethEnevoldsen),
-  kenneth.enevoldsen@cas.au.dk)
 
 
 ## Installation

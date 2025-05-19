@@ -32,6 +32,5 @@ models. It started as a hobby project including Danish, Swedish and Norwegian, b
 since grown to include 8+ European languages.
 
 EuroEval is maintained by [Dan Saattrup Nielsen](https://www.saattrupdan.com/) from the
-[Alexandra Institute](https://alexandra.dk) and [Kenneth
-Enevoldsen](https://www.kennethenevoldsen.com/) from [Aarhus University](https://au.dk),
-and is funded by the EU project [TrustLLM](https://trustllm.eu/).
+[Alexandra Institute](https://alexandra.dk), and is funded by the EU project
+[TrustLLM](https://trustllm.eu/).
