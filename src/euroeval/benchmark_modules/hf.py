@@ -54,13 +54,11 @@ from ..enums import (
     TaskGroup,
 )
 from ..exceptions import (
-    HuggingFaceHubDown,
     InvalidBenchmark,
     InvalidModel,
     NeedsAdditionalArgument,
     NeedsEnvironmentVariable,
     NeedsExtraInstalled,
-    NoInternetConnection,
 )
 from ..languages import get_all_languages
 from ..task_group_utils import (
@@ -719,16 +717,6 @@ def get_model_repo_info(
 
     Returns:
         The information about the model, or None if the model could not be found.
-
-    Raises:
-        InvalidModel:
-            If the model could not be found.
-        NeedsAdditionalArgument:
-            If the API key is not set and the model is gated.
-        NoInternetConnection:
-            If there is no internet connection.
-        HuggingFaceHubDown:
-            If the Hugging Face Hub is down.
     """
     token = benchmark_config.api_key or os.getenv("HUGGINGFACE_API_KEY") or True
     hf_api = HfApi(token=token)
@@ -747,9 +735,10 @@ def get_model_repo_info(
             model_info = HfApiModelInfo(id=model_id, tags=None, pipeline_tag=None)
 
     # If the model does not exist locally, then we get the model info from the Hugging
-    # Face Hub
+    # Face Hub, if possible
     if model_info is None:
         num_attempts = 3
+        errors: list[Exception] = list()
         for _ in range(num_attempts):
             try:
                 model_info = hf_api.model_info(
@@ -759,25 +748,37 @@ def get_model_repo_info(
             except (GatedRepoError, LocalTokenNotFoundError) as e:
                 try:
                     hf_whoami(token=token)
-                    logger.warning(
+                    logger.debug(
                         f"Could not access the model {model_id} with the revision "
                         f"{revision}. The error was {str(e)!r}."
                     )
                     return None
                 except LocalTokenNotFoundError:
-                    raise NeedsAdditionalArgument(
-                        cli_argument="--api-key",
-                        script_argument="api_key=<your-api-key>",
-                        run_with_cli=benchmark_config.run_with_cli,
+                    logger.debug(
+                        "Could not access the model {model_id} with the revision "
+                        "{revision}. The error was {str(e)!r}. Please set the "
+                        "`HUGGINGFACE_API_KEY` environment variable or use the "
+                        "`--api-key` argument."
                     )
+                    return None
             except (RepositoryNotFoundError, HFValidationError):
                 return None
-            except (OSError, RequestException):
+            except (OSError, RequestException) as e:
                 if internet_connection_available():
+                    errors.append(e)
                     continue
-                raise NoInternetConnection()
+                logger.debug(
+                    "Could not access the Hugging Face Hub. Please check your internet "
+                    "connection."
+                )
+                return None
         else:
-            raise HuggingFaceHubDown()
+            logger.debug(
+                f"Could not access model info for the model {model_id!r} from the "
+                f"Hugging Face Hub, after {num_attempts} attempts. The errors "
+                f"encountered were {errors!r}."
+            )
+            return None
 
     # Get all the Hugging Face repository tags for the model. If the model is an adapter
     # model, then we also get the tags for the base model
@@ -846,7 +847,8 @@ def get_model_repo_info(
                     "Skipping since the `only_allow_safetensors` argument is set "
                     "to `True`."
                 )
-            raise InvalidModel(msg)
+            logging.warning(msg)
+            return None
 
         # Also check base model if we are evaluating an adapter
         if base_model_id is not None:
@@ -866,7 +868,8 @@ def get_model_repo_info(
                         " Skipping since the `only_allow_safetensors` argument is set "
                         "to `True`."
                     )
-                raise InvalidModel(msg)
+                logging.warning(msg)
+                return None
 
     return HFModelInfo(
         pipeline_tag=pipeline_tag, tags=tags, adapter_base_model_id=base_model_id
