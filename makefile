@@ -44,10 +44,10 @@ install-rust:
 install-uv:
 	@if [ "$(shell which uv)" = "" ]; then \
 		curl -LsSf https://astral.sh/uv/install.sh | sh; \
-        echo "Installed uv."; \
-    else \
-		echo "Updating uv..."; \
-		uv self update; \
+			echo "Installed uv."; \
+		else \
+			echo "Updating uv..."; \
+			uv self update; \
 	fi
 
 install-dependencies:
