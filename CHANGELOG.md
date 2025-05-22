@@ -7,7 +7,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 
 ## [Unreleased]
-
+### Fixed
+- When truncating prompts with vLLM models, we now correctly truncate them down below
+  the `MAX_CONTEXT_LENGTH` (set to 5,000 tokens). We have already ensured that all
+  prompts have less than 5,000 Gemma-3 tokens, but sometimes tokenizers add a few more
+  tokens.
 
 
 ## [v15.8.2] - 2025-05-12
