@@ -719,6 +719,16 @@ def get_model_repo_info(
 
     Returns:
         The information about the model, or None if the model could not be found.
+
+    Raises:
+        InvalidModel:
+            If the model could not be found.
+        NeedsAdditionalArgument:
+            If the API key is not set and the model is gated.
+        NoInternetConnection:
+            If there is no internet connection.
+        HuggingFaceHubDown:
+            If the Hugging Face Hub is down.
     """
     token = benchmark_config.api_key or os.getenv("HUGGINGFACE_API_KEY") or True
     hf_api = HfApi(token=token)
