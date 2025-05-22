@@ -12,6 +12,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   the `MAX_CONTEXT_LENGTH` (set to 5,000 tokens). We have already ensured that all
   prompts have less than 5,000 Gemma-3 tokens, but sometimes tokenizers add a few more
   tokens.
+- Fixed an issue regarding model existence check when benchmarking models on custom
+  inference API servers.
 
 
 ## [v15.8.2] - 2025-05-12
