@@ -755,8 +755,8 @@ def get_model_repo_info(
                     return None
                 except LocalTokenNotFoundError:
                     logger.debug(
-                        "Could not access the model {model_id} with the revision "
-                        "{revision}. The error was {str(e)!r}. Please set the "
+                        f"Could not access the model {model_id} with the revision "
+                        f"{revision}. The error was {str(e)!r}. Please set the "
                         "`HUGGINGFACE_API_KEY` environment variable or use the "
                         "`--api-key` argument."
                     )
