@@ -847,7 +847,7 @@ def get_model_repo_info(
                     "Skipping since the `only_allow_safetensors` argument is set "
                     "to `True`."
                 )
-            logging.warning(msg)
+            logger.warning(msg)
             return None
 
         # Also check base model if we are evaluating an adapter
