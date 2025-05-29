@@ -1,6 +1,5 @@
 """Factory class for creating dataset configurations."""
 
-import importlib.util
 import logging
 import sys
 import typing as t
@@ -13,7 +12,6 @@ from .enums import Device
 from .exceptions import InvalidBenchmark
 from .languages import get_all_languages
 from .tasks import SPEED, get_all_tasks
-from .utils import log_once
 
 if t.TYPE_CHECKING:
     from .data_models import Language, Task
@@ -38,7 +36,6 @@ def build_benchmark_config(
     force: bool,
     verbose: bool,
     trust_remote_code: bool,
-    use_flash_attention: bool | None,
     clear_model_cache: bool,
     evaluate_test_split: bool,
     few_shot: bool,
@@ -92,9 +89,6 @@ def build_benchmark_config(
             automatically set if `debug` is True.
         trust_remote_code:
             Whether to trust remote code when running the benchmark.
-        use_flash_attention:
-            Whether to use Flash Attention for the models. If None then it will be used
-            if it is available.
         clear_model_cache:
             Whether to clear the model cache before running the benchmark.
         evaluate_test_split:
@@ -135,30 +129,6 @@ def build_benchmark_config(
 
     torch_device = prepare_device(device=device)
 
-    if use_flash_attention is None:
-        if torch_device.type != "cuda":
-            use_flash_attention = False
-        elif (
-            importlib.util.find_spec("flash_attn") is None
-            and importlib.util.find_spec("vllm_flash_attn") is None
-        ):
-            use_flash_attention = False
-            if first_time and torch_device.type == "cuda":
-                message = (
-                    "Flash attention has not been installed, so this will not be used. "
-                    "To install it, run `pip install -U wheel && "
-                    "FLASH_ATTENTION_SKIP_CUDA_BUILD=TRUE pip install flash-attn "
-                    "--no-build-isolation`. Alternatively, you can disable this "
-                    "message by setting "
-                )
-                if run_with_cli:
-                    message += "the flag `--no-use-flash-attention`."
-                else:
-                    message += (
-                        "the argument `use_flash_attention=False` in the `Benchmarker`."
-                    )
-                log_once(message=message, level=logging.INFO)
-
     # Set variable with number of iterations
     if hasattr(sys, "_called_from_test"):
         num_iterations = 1
@@ -178,7 +148,6 @@ def build_benchmark_config(
         verbose=verbose or debug,
         device=torch_device,
         trust_remote_code=trust_remote_code,
-        use_flash_attention=use_flash_attention,
         clear_model_cache=clear_model_cache,
         evaluate_test_split=evaluate_test_split,
         few_shot=few_shot,

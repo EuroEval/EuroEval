@@ -35,7 +35,6 @@ def test_cli_param_names(params: dict[str, ParamType]) -> None:
         "force",
         "device",
         "trust_remote_code",
-        "use_flash_attention",
         "clear_model_cache",
         "evaluate_test_split",
         "few_shot",
@@ -66,7 +65,6 @@ def test_cli_param_types(params: dict[str, ParamType]) -> None:
     assert params["force"] == BOOL
     assert isinstance(params["device"], Choice)
     assert params["trust_remote_code"] == BOOL
-    assert params["use_flash_attention"] == BOOL
     assert params["clear_model_cache"] == BOOL
     assert params["evaluate_test_split"] == BOOL
     assert params["few_shot"] == BOOL

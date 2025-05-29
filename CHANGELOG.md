@@ -14,6 +14,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   tokens.
 - Fixed an issue regarding model existence check when benchmarking models on custom
   inference API servers.
+- Removed the `--use-flash-attention` flag as well as the corresponding warning, as
+  flash attention is now built-in to vLLM and is used by default.
 
 
 ## [v15.8.2] - 2025-05-12

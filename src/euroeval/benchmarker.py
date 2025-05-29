@@ -72,7 +72,6 @@ class Benchmarker:
         force: bool = False,
         verbose: bool = False,
         trust_remote_code: bool = False,
-        use_flash_attention: bool | None = None,
         clear_model_cache: bool = False,
         evaluate_test_split: bool = False,
         few_shot: bool = True,
@@ -129,9 +128,6 @@ class Benchmarker:
                 `debug` is True. Defaults to False.
             trust_remote_code:
                 Whether to trust remote code when loading models. Defaults to False.
-            use_flash_attention:
-                Whether to use Flash Attention. If None then it will be used if it is
-                installed and the model is a decoder model. Defaults to None.
             clear_model_cache:
                 Whether to clear the model cache after benchmarking each model.
                 Defaults to False.
@@ -190,7 +186,6 @@ class Benchmarker:
             force=force,
             verbose=verbose,
             trust_remote_code=trust_remote_code,
-            use_flash_attention=use_flash_attention,
             clear_model_cache=clear_model_cache,
             evaluate_test_split=evaluate_test_split,
             few_shot=few_shot,
@@ -243,7 +238,6 @@ class Benchmarker:
         force: bool | None = None,
         verbose: bool | None = None,
         trust_remote_code: bool | None = None,
-        use_flash_attention: bool | None = None,
         clear_model_cache: bool | None = None,
         evaluate_test_split: bool | None = None,
         few_shot: bool | None = None,
@@ -311,9 +305,6 @@ class Benchmarker:
             trust_remote_code:
                 Whether to trust remote code when loading models. Defaults to the value
                 specified when initialising the benchmarker.
-            use_flash_attention:
-                Whether to use Flash Attention. Defaults to the value specified when
-                initialising the benchmarker.
             clear_model_cache:
                 Whether to clear the model cache after benchmarking each model. Defaults
                 to the value specified when initialising the benchmarker.
@@ -359,7 +350,6 @@ class Benchmarker:
             force=force,
             verbose=verbose,
             trust_remote_code=trust_remote_code,
-            use_flash_attention=use_flash_attention,
             clear_model_cache=clear_model_cache,
             evaluate_test_split=evaluate_test_split,
             few_shot=few_shot,
@@ -531,7 +521,6 @@ class Benchmarker:
         force: bool | None = None,
         verbose: bool | None = None,
         trust_remote_code: bool | None = None,
-        use_flash_attention: bool | None | None = None,
         clear_model_cache: bool | None = None,
         evaluate_test_split: bool | None = None,
         few_shot: bool | None = None,
@@ -590,9 +579,6 @@ class Benchmarker:
             trust_remote_code:
                 Whether to trust remote code when loading models. If None, then this
                 value will not be updated.
-            use_flash_attention:
-                Whether to use Flash Attention. If None, then this value will not be
-                updated.
             clear_model_cache:
                 Whether to clear the model cache after benchmarking each model. If None,
                 then this value will not be updated.
@@ -658,8 +644,6 @@ class Benchmarker:
             benchmark_config_params.verbose = verbose
         if trust_remote_code is not None:
             benchmark_config_params.trust_remote_code = trust_remote_code
-        if use_flash_attention is not None:
-            benchmark_config_params.use_flash_attention = use_flash_attention
         if clear_model_cache is not None:
             benchmark_config_params.clear_model_cache = clear_model_cache
         if evaluate_test_split is not None:
@@ -863,7 +847,6 @@ class Benchmarker:
         force: bool | None = None,
         verbose: bool | None = None,
         trust_remote_code: bool | None = None,
-        use_flash_attention: bool | None = None,
         clear_model_cache: bool | None = None,
         evaluate_test_split: bool | None = None,
         few_shot: bool | None = None,
@@ -931,9 +914,6 @@ class Benchmarker:
             trust_remote_code:
                 Whether to trust remote code when loading models. Defaults to the value
                 specified when initialising the benchmarker.
-            use_flash_attention:
-                Whether to use Flash Attention. Defaults to the value specified when
-                initialising the benchmarker.
             clear_model_cache:
                 Whether to clear the model cache after benchmarking each model. Defaults
                 to the value specified when initialising the benchmarker.
@@ -981,7 +961,6 @@ class Benchmarker:
             force=force,
             verbose=verbose,
             trust_remote_code=trust_remote_code,
-            use_flash_attention=use_flash_attention,
             clear_model_cache=clear_model_cache,
             evaluate_test_split=evaluate_test_split,
             few_shot=few_shot,

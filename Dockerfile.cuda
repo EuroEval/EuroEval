@@ -5,8 +5,7 @@ RUN apt-get -y update && \
     apt-get -y upgrade && \
     DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends gcc python3.11 python3-pip python3-dev git-all && \
     python3 -m pip install --upgrade pip wheel && \
-    python3 -m pip install euroeval[all] && \
-    FLASH_ATTENTION_SKIP_CUDA_BUILD=TRUE python3 -m pip install flash-attn --no-build-isolation
+    python3 -m pip install euroeval[all]
 
 # Move the existing evaluation results into the container, to avoid re-running the
 # evaluation

@@ -81,28 +81,6 @@ class NaNValueInModelOutput(Exception):
         super().__init__(self.message)
 
 
-class FlashAttentionNotInstalled(Exception):
-    """The `flash-attn` package has not been installed."""
-
-    def __init__(
-        self,
-        message: str = (
-            "The model you are trying to load requires Flash Attention. To use Flash "
-            "Attention, please install the `flash-attn` package, which can be done by "
-            "running `pip install -U wheel && FLASH_ATTENTION_SKIP_CUDA_BUILD=TRUE "
-            "pip install flash-attn --no-build-isolation`."
-        ),
-    ) -> None:
-        """Initialise the exception.
-
-        Args:
-            message:
-                The message to display.
-        """
-        self.message = message
-        super().__init__(self.message)
-
-
 class NeedsExtraInstalled(InvalidModel):
     """The evaluation requires extra to be installed."""
 

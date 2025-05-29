@@ -80,7 +80,6 @@ def benchmark_config(
         device=device,
         verbose=False,
         trust_remote_code=True,
-        use_flash_attention=False,
         clear_model_cache=False,
         evaluate_test_split=False,
         few_shot=True,

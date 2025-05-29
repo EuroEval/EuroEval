@@ -142,14 +142,6 @@ from .tasks import get_all_tasks
     of the model.""",
 )
 @click.option(
-    "--use-flash-attention/--no-use-flash-attention",
-    default=None,
-    show_default=True,
-    help="""Whether to use Flash Attention. If not specified then the model will use
-    Flash Attention for generative models if a CUDA GPU is available and `flash-attn`
-    or `vllm-flash-attn` are installed.""",
-)
-@click.option(
     "--clear-model-cache/--no-clear-model-cache",
     default=False,
     show_default=True,
@@ -225,7 +217,6 @@ def benchmark(
     verbose: bool,
     device: str | None,
     trust_remote_code: bool,
-    use_flash_attention: bool | None,
     clear_model_cache: bool,
     evaluate_test_split: bool,
     few_shot: bool,
@@ -261,7 +252,6 @@ def benchmark(
         cache_dir=cache_dir,
         device=device,
         trust_remote_code=trust_remote_code,
-        use_flash_attention=use_flash_attention,
         clear_model_cache=clear_model_cache,
         evaluate_test_split=evaluate_test_split,
         few_shot=few_shot,
