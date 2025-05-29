@@ -946,17 +946,14 @@ def _run_engine_with_fixed_progress_bars(
 
 def _validate_and_add_requests_with_fixed_progress_bars(
     self: "LLM",
-    prompts: PromptType | c.Sequence[PromptType],
-    params: SamplingParams
-    | c.Sequence[SamplingParams]
-    | PoolingParams
-    | c.Sequence[PoolingParams],
+    prompts: "PromptType | c.Sequence[PromptType]",
+    params: "SamplingParams | c.Sequence[SamplingParams] | PoolingParams | c.Sequence[PoolingParams]",  # noqa: E501
     *,
     use_tqdm: bool,
-    lora_request: c.Sequence[LoRARequest] | LoRARequest | None,
-    prompt_adapter_request: PromptAdapterRequest | None,
+    lora_request: "c.Sequence[LoRARequest] | LoRARequest | None",
+    prompt_adapter_request: "PromptAdapterRequest | None",
     tokenization_kwargs: dict[str, t.Any] | None = None,
-    guided_options: GuidedDecodingRequest | None = None,
+    guided_options: "GuidedDecodingRequest | None" = None,
     priority: list[int] | None = None,
 ) -> None:
     if isinstance(prompts, (str, dict)):
