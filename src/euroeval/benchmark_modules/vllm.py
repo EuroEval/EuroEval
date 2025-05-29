@@ -84,7 +84,12 @@ if t.TYPE_CHECKING or importlib.util.find_spec("vllm") is not None:
         destroy_distributed_environment,
         destroy_model_parallel,
     )
+    from vllm.inputs import PromptType
     from vllm.lora.request import LoRARequest
+    from vllm.model_executor.guided_decoding.guided_fields import GuidedDecodingRequest
+    from vllm.pooling_params import PoolingParams
+    from vllm.prompt_adapter.request import PromptAdapterRequest
+    from vllm.sampling_params import RequestOutputKind
 
 if t.TYPE_CHECKING or importlib.util.find_spec("outlines") is not None:
     from outlines.models.vllm import adapt_tokenizer
@@ -816,6 +821,9 @@ def load_model_and_tokenizer(
         )
 
     model._run_engine = MethodType(_run_engine_with_fixed_progress_bars, model)
+    model._validate_and_add_requests = MethodType(
+        _validate_and_add_requests_with_fixed_progress_bars, model
+    )
     model.config = hf_model_config
 
     return model, tokenizer
@@ -934,6 +942,56 @@ def _run_engine_with_fixed_progress_bars(
     outputs = sorted(outputs, key=lambda x: int(x.request_id))
 
     return outputs
+
+
+def _validate_and_add_requests_with_fixed_progress_bars(
+    self: "LLM",
+    prompts: PromptType | c.Sequence[PromptType],
+    params: SamplingParams
+    | c.Sequence[SamplingParams]
+    | PoolingParams
+    | c.Sequence[PoolingParams],
+    *,
+    use_tqdm: bool,
+    lora_request: c.Sequence[LoRARequest] | LoRARequest | None,
+    prompt_adapter_request: PromptAdapterRequest | None,
+    tokenization_kwargs: dict[str, t.Any] | None = None,
+    guided_options: GuidedDecodingRequest | None = None,
+    priority: list[int] | None = None,
+) -> None:
+    if isinstance(prompts, (str, dict)):
+        # Convert a single prompt to a list.
+        prompts = [prompts]
+
+    num_requests = len(prompts)
+    if isinstance(params, list) and len(params) != num_requests:
+        raise ValueError("The lengths of prompts and params must be the same.")
+    if isinstance(lora_request, list) and len(lora_request) != num_requests:
+        raise ValueError("The lengths of prompts and lora_request must be the same.")
+
+    for sp in params if isinstance(params, list) else (params,):
+        if isinstance(sp, SamplingParams):
+            self._add_guided_params(sp, guided_options)
+
+            # We only care about the final output
+            sp.output_kind = RequestOutputKind.FINAL_ONLY
+
+    # Add requests to the engine.
+    it = prompts
+    if use_tqdm:
+        it = tqdm(it, desc="Adding requests", leave=False)
+
+    for i, prompt in enumerate(it):
+        self._add_request(
+            prompt,
+            params[i] if isinstance(params, c.Sequence) else params,
+            tokenization_kwargs=tokenization_kwargs,
+            lora_request=lora_request[i]
+            if isinstance(lora_request, c.Sequence)
+            else lora_request,
+            prompt_adapter_request=prompt_adapter_request,
+            priority=priority[i] if priority else 0,
+        )
 
 
 def clear_vllm() -> None:
