@@ -3,6 +3,7 @@
 ### STAGE 1 ###
 ### Block unwanted terminal output that happens on importing external modules ###
 
+import importlib.util
 import logging
 import os
 import sys
@@ -27,6 +28,19 @@ logging.basicConfig(
 
 
 ### STAGE 2 ###
+### Check for incompatible packages ###
+
+# Throw informative error if `flash_attn` is installed ###
+if importlib.util.find_spec("flash_attn") is not None:
+    logging.critical(
+        "The `flash_attn` package is not supported by EuroEval, as it is now built "
+        "into the other packages and it conflicts with the other implementations. "
+        "Please uninstall it using `pip uninstall flash_attn` and try again."
+    )
+    sys.exit(1)
+
+
+### STAGE 3 ###
 ### Set the rest up ###
 
 import importlib.metadata  # noqa: E402
