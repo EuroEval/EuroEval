@@ -2014,7 +2014,75 @@
 <span class="normal">1048</span>
 <span class="normal">1049</span>
 <span class="normal">1050</span>
-<span class="normal">1051</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Generative models using the vLLM inference framework.&quot;&quot;&quot;</span>
+<span class="normal">1051</span>
+<span class="normal">1052</span>
+<span class="normal">1053</span>
+<span class="normal">1054</span>
+<span class="normal">1055</span>
+<span class="normal">1056</span>
+<span class="normal">1057</span>
+<span class="normal">1058</span>
+<span class="normal">1059</span>
+<span class="normal">1060</span>
+<span class="normal">1061</span>
+<span class="normal">1062</span>
+<span class="normal">1063</span>
+<span class="normal">1064</span>
+<span class="normal">1065</span>
+<span class="normal">1066</span>
+<span class="normal">1067</span>
+<span class="normal">1068</span>
+<span class="normal">1069</span>
+<span class="normal">1070</span>
+<span class="normal">1071</span>
+<span class="normal">1072</span>
+<span class="normal">1073</span>
+<span class="normal">1074</span>
+<span class="normal">1075</span>
+<span class="normal">1076</span>
+<span class="normal">1077</span>
+<span class="normal">1078</span>
+<span class="normal">1079</span>
+<span class="normal">1080</span>
+<span class="normal">1081</span>
+<span class="normal">1082</span>
+<span class="normal">1083</span>
+<span class="normal">1084</span>
+<span class="normal">1085</span>
+<span class="normal">1086</span>
+<span class="normal">1087</span>
+<span class="normal">1088</span>
+<span class="normal">1089</span>
+<span class="normal">1090</span>
+<span class="normal">1091</span>
+<span class="normal">1092</span>
+<span class="normal">1093</span>
+<span class="normal">1094</span>
+<span class="normal">1095</span>
+<span class="normal">1096</span>
+<span class="normal">1097</span>
+<span class="normal">1098</span>
+<span class="normal">1099</span>
+<span class="normal">1100</span>
+<span class="normal">1101</span>
+<span class="normal">1102</span>
+<span class="normal">1103</span>
+<span class="normal">1104</span>
+<span class="normal">1105</span>
+<span class="normal">1106</span>
+<span class="normal">1107</span>
+<span class="normal">1108</span>
+<span class="normal">1109</span>
+<span class="normal">1110</span>
+<span class="normal">1111</span>
+<span class="normal">1112</span>
+<span class="normal">1113</span>
+<span class="normal">1114</span>
+<span class="normal">1115</span>
+<span class="normal">1116</span>
+<span class="normal">1117</span>
+<span class="normal">1118</span>
+<span class="normal">1119</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Generative models using the vLLM inference framework.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">c</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">contextlib</span>
@@ -2100,7 +2168,12 @@
         <span class="n">destroy_distributed_environment</span><span class="p">,</span>
         <span class="n">destroy_model_parallel</span><span class="p">,</span>
     <span class="p">)</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">vllm.inputs</span><span class="w"> </span><span class="kn">import</span> <span class="n">PromptType</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">vllm.lora.request</span><span class="w"> </span><span class="kn">import</span> <span class="n">LoRARequest</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">vllm.model_executor.guided_decoding.guided_fields</span><span class="w"> </span><span class="kn">import</span> <span class="n">GuidedDecodingRequest</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">vllm.pooling_params</span><span class="w"> </span><span class="kn">import</span> <span class="n">PoolingParams</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">vllm.prompt_adapter.request</span><span class="w"> </span><span class="kn">import</span> <span class="n">PromptAdapterRequest</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">vllm.sampling_params</span><span class="w"> </span><span class="kn">import</span> <span class="n">RequestOutputKind</span>
 
 <span class="k">if</span> <span class="n">t</span><span class="o">.</span><span class="n">TYPE_CHECKING</span> <span class="ow">or</span> <span class="n">importlib</span><span class="o">.</span><span class="n">util</span><span class="o">.</span><span class="n">find_spec</span><span class="p">(</span><span class="s2">&quot;outlines&quot;</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">outlines.models.vllm</span><span class="w"> </span><span class="kn">import</span> <span class="n">adapt_tokenizer</span>
@@ -2467,7 +2540,9 @@
                         <span class="n">text</span><span class="o">=</span><span class="n">prompts</span><span class="p">,</span>
                         <span class="n">truncation</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
                         <span class="n">max_length</span><span class="o">=</span><span class="nb">max</span><span class="p">(</span>
-                            <span class="bp">self</span><span class="o">.</span><span class="n">_tokenizer</span><span class="o">.</span><span class="n">model_max_length</span> <span class="o">-</span> <span class="n">max_tokens</span><span class="p">,</span> <span class="mi">0</span>
+                            <span class="nb">min</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_tokenizer</span><span class="o">.</span><span class="n">model_max_length</span><span class="p">,</span> <span class="n">MAX_CONTEXT_LENGTH</span><span class="p">)</span>
+                            <span class="o">-</span> <span class="n">max_tokens</span><span class="p">,</span>
+                            <span class="mi">0</span><span class="p">,</span>
                         <span class="p">),</span>
                     <span class="p">)</span>
                     <span class="n">prompts</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tokenizer</span><span class="o">.</span><span class="n">batch_decode</span><span class="p">(</span>
@@ -2507,8 +2582,19 @@
             <span class="n">output</span><span class="o">.</span><span class="n">outputs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">token_ids</span> <span class="k">for</span> <span class="n">output</span> <span class="ow">in</span> <span class="n">raw_outputs</span>
         <span class="p">]</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">end_of_reasoning_token_id</span> <span class="ow">in</span> <span class="n">completion_ids</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
+            <span class="c1"># Find the latest index of the end of reasoning token and slice</span>
+            <span class="c1"># the token IDs to only include the tokens after it</span>
             <span class="n">completion_ids</span> <span class="o">=</span> <span class="p">[</span>
-                <span class="n">token_ids</span><span class="p">[</span><span class="n">token_ids</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">end_of_reasoning_token_id</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span> <span class="p">:]</span>
+                <span class="n">token_ids</span><span class="p">[</span>
+                    <span class="nb">max</span><span class="p">(</span>
+                        <span class="p">[</span>
+                            <span class="n">i</span>
+                            <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">token_ids</span><span class="p">)</span>
+                            <span class="k">if</span> <span class="n">x</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">end_of_reasoning_token_id</span>
+                        <span class="p">]</span>
+                    <span class="p">)</span>
+                    <span class="o">+</span> <span class="mi">1</span> <span class="p">:</span>
+                <span class="p">]</span>
                 <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">end_of_reasoning_token_id</span> <span class="ow">in</span> <span class="n">token_ids</span>
                 <span class="k">else</span> <span class="n">token_ids</span>
                 <span class="k">for</span> <span class="n">token_ids</span> <span class="ow">in</span> <span class="n">completion_ids</span>
@@ -2830,6 +2916,9 @@
         <span class="p">)</span>
 
     <span class="n">model</span><span class="o">.</span><span class="n">_run_engine</span> <span class="o">=</span> <span class="n">MethodType</span><span class="p">(</span><span class="n">_run_engine_with_fixed_progress_bars</span><span class="p">,</span> <span class="n">model</span><span class="p">)</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">_validate_and_add_requests</span> <span class="o">=</span> <span class="n">MethodType</span><span class="p">(</span>
+        <span class="n">_validate_and_add_requests_with_fixed_progress_bars</span><span class="p">,</span> <span class="n">model</span>
+    <span class="p">)</span>
     <span class="n">model</span><span class="o">.</span><span class="n">config</span> <span class="o">=</span> <span class="n">hf_model_config</span>
 
     <span class="k">return</span> <span class="n">model</span><span class="p">,</span> <span class="n">tokenizer</span>
@@ -2948,6 +3037,53 @@
     <span class="n">outputs</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">outputs</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">request_id</span><span class="p">))</span>
 
     <span class="k">return</span> <span class="n">outputs</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_validate_and_add_requests_with_fixed_progress_bars</span><span class="p">(</span>
+    <span class="bp">self</span><span class="p">:</span> <span class="s2">&quot;LLM&quot;</span><span class="p">,</span>
+    <span class="n">prompts</span><span class="p">:</span> <span class="s2">&quot;PromptType | c.Sequence[PromptType]&quot;</span><span class="p">,</span>
+    <span class="n">params</span><span class="p">:</span> <span class="s2">&quot;SamplingParams | c.Sequence[SamplingParams] | PoolingParams | c.Sequence[PoolingParams]&quot;</span><span class="p">,</span>  <span class="c1"># noqa: E501</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">use_tqdm</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+    <span class="n">lora_request</span><span class="p">:</span> <span class="s2">&quot;c.Sequence[LoRARequest] | LoRARequest | None&quot;</span><span class="p">,</span>
+    <span class="n">prompt_adapter_request</span><span class="p">:</span> <span class="s2">&quot;PromptAdapterRequest | None&quot;</span><span class="p">,</span>
+    <span class="n">tokenization_kwargs</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">t</span><span class="o">.</span><span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">guided_options</span><span class="p">:</span> <span class="s2">&quot;GuidedDecodingRequest | None&quot;</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">priority</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">prompts</span><span class="p">,</span> <span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)):</span>
+        <span class="c1"># Convert a single prompt to a list.</span>
+        <span class="n">prompts</span> <span class="o">=</span> <span class="p">[</span><span class="n">prompts</span><span class="p">]</span>
+
+    <span class="n">num_requests</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">prompts</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">params</span><span class="p">)</span> <span class="o">!=</span> <span class="n">num_requests</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;The lengths of prompts and params must be the same.&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">lora_request</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">lora_request</span><span class="p">)</span> <span class="o">!=</span> <span class="n">num_requests</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;The lengths of prompts and lora_request must be the same.&quot;</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">sp</span> <span class="ow">in</span> <span class="n">params</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span> <span class="k">else</span> <span class="p">(</span><span class="n">params</span><span class="p">,):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">sp</span><span class="p">,</span> <span class="n">SamplingParams</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_add_guided_params</span><span class="p">(</span><span class="n">sp</span><span class="p">,</span> <span class="n">guided_options</span><span class="p">)</span>
+
+            <span class="c1"># We only care about the final output</span>
+            <span class="n">sp</span><span class="o">.</span><span class="n">output_kind</span> <span class="o">=</span> <span class="n">RequestOutputKind</span><span class="o">.</span><span class="n">FINAL_ONLY</span>
+
+    <span class="c1"># Add requests to the engine.</span>
+    <span class="n">it</span> <span class="o">=</span> <span class="n">prompts</span>
+    <span class="k">if</span> <span class="n">use_tqdm</span><span class="p">:</span>
+        <span class="n">it</span> <span class="o">=</span> <span class="n">tqdm</span><span class="p">(</span><span class="n">it</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s2">&quot;Adding requests&quot;</span><span class="p">,</span> <span class="n">leave</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">prompt</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">it</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_add_request</span><span class="p">(</span>
+            <span class="n">prompt</span><span class="p">,</span>
+            <span class="n">params</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="n">c</span><span class="o">.</span><span class="n">Sequence</span><span class="p">)</span> <span class="k">else</span> <span class="n">params</span><span class="p">,</span>
+            <span class="n">tokenization_kwargs</span><span class="o">=</span><span class="n">tokenization_kwargs</span><span class="p">,</span>
+            <span class="n">lora_request</span><span class="o">=</span><span class="n">lora_request</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">lora_request</span><span class="p">,</span> <span class="n">c</span><span class="o">.</span><span class="n">Sequence</span><span class="p">)</span>
+            <span class="k">else</span> <span class="n">lora_request</span><span class="p">,</span>
+            <span class="n">prompt_adapter_request</span><span class="o">=</span><span class="n">prompt_adapter_request</span><span class="p">,</span>
+            <span class="n">priority</span><span class="o">=</span><span class="n">priority</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">if</span> <span class="n">priority</span> <span class="k">else</span> <span class="mi">0</span><span class="p">,</span>
+        <span class="p">)</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">clear_vllm</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span><div class="mkapi-source-link" id="euroeval.benchmark_modules.vllm.clear_vllm"><a href="../../../../api/euroeval/benchmark_modules/vllm/#euroeval.benchmark_modules.vllm.clear_vllm" title="Go to docs">docs</a></div>

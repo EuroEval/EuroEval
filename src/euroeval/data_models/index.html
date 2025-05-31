@@ -1791,12 +1791,7 @@
 <span class="normal">687</span>
 <span class="normal">688</span>
 <span class="normal">689</span>
-<span class="normal">690</span>
-<span class="normal">691</span>
-<span class="normal">692</span>
-<span class="normal">693</span>
-<span class="normal">694</span>
-<span class="normal">695</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Data models used in EuroEval.&quot;&quot;&quot;</span>
+<span class="normal">690</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Data models used in EuroEval.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">c</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
@@ -1989,9 +1984,6 @@
 <span class="sd">            Whether to print verbose output.</span>
 <span class="sd">        trust_remote_code:</span>
 <span class="sd">            Whether to trust remote code when loading models from the Hugging Face Hub.</span>
-<span class="sd">        use_flash_attention:</span>
-<span class="sd">            Whether to use Flash Attention. If None then this will be used for</span>
-<span class="sd">            generative models.</span>
 <span class="sd">        clear_model_cache:</span>
 <span class="sd">            Whether to clear the model cache after benchmarking each model.</span>
 <span class="sd">        evaluate_test_split:</span>
@@ -2029,7 +2021,6 @@
     <span class="n">device</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">device</span>
     <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span>
     <span class="n">trust_remote_code</span><span class="p">:</span> <span class="nb">bool</span>
-    <span class="n">use_flash_attention</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="kc">None</span>
     <span class="n">clear_model_cache</span><span class="p">:</span> <span class="nb">bool</span>
     <span class="n">evaluate_test_split</span><span class="p">:</span> <span class="nb">bool</span>
     <span class="n">few_shot</span><span class="p">:</span> <span class="nb">bool</span>
@@ -2061,7 +2052,6 @@
     <span class="n">force</span><span class="p">:</span> <span class="nb">bool</span>
     <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span>
     <span class="n">trust_remote_code</span><span class="p">:</span> <span class="nb">bool</span>
-    <span class="n">use_flash_attention</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="kc">None</span>
     <span class="n">clear_model_cache</span><span class="p">:</span> <span class="nb">bool</span>
     <span class="n">evaluate_test_split</span><span class="p">:</span> <span class="nb">bool</span>
     <span class="n">few_shot</span><span class="p">:</span> <span class="nb">bool</span>

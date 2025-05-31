@@ -860,15 +860,6 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#euroeval.exceptions.FlashAttentionNotInstalled" class="md-nav__link">
-    <span class="md-ellipsis">
-      FlashAttentionNotInstalled
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
   <a href="#euroeval.exceptions.NeedsExtraInstalled" class="md-nav__link">
     <span class="md-ellipsis">
       NeedsExtraInstalled
@@ -1099,29 +1090,7 @@
 <span class="normal">166</span>
 <span class="normal">167</span>
 <span class="normal">168</span>
-<span class="normal">169</span>
-<span class="normal">170</span>
-<span class="normal">171</span>
-<span class="normal">172</span>
-<span class="normal">173</span>
-<span class="normal">174</span>
-<span class="normal">175</span>
-<span class="normal">176</span>
-<span class="normal">177</span>
-<span class="normal">178</span>
-<span class="normal">179</span>
-<span class="normal">180</span>
-<span class="normal">181</span>
-<span class="normal">182</span>
-<span class="normal">183</span>
-<span class="normal">184</span>
-<span class="normal">185</span>
-<span class="normal">186</span>
-<span class="normal">187</span>
-<span class="normal">188</span>
-<span class="normal">189</span>
-<span class="normal">190</span>
-<span class="normal">191</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Exceptions to used by other functions.&quot;&quot;&quot;</span>
+<span class="normal">169</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Exceptions to used by other functions.&quot;&quot;&quot;</span>
 
 
 <span class="k">class</span><span class="w"> </span><span class="nc">InvalidBenchmark</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span><div class="mkapi-source-link" id="euroeval.exceptions.InvalidBenchmark"><a href="../../../api/euroeval/exceptions/#euroeval.exceptions.InvalidBenchmark" title="Go to docs">docs</a></div>
@@ -1193,28 +1162,6 @@
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;There is a NaN value in the model output.&quot;</span>
-    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialise the exception.</span>
-
-<span class="sd">        Args:</span>
-<span class="sd">            message:</span>
-<span class="sd">                The message to display.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">message</span> <span class="o">=</span> <span class="n">message</span>
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">message</span><span class="p">)</span>
-
-
-<span class="k">class</span><span class="w"> </span><span class="nc">FlashAttentionNotInstalled</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span><div class="mkapi-source-link" id="euroeval.exceptions.FlashAttentionNotInstalled"><a href="../../../api/euroeval/exceptions/#euroeval.exceptions.FlashAttentionNotInstalled" title="Go to docs">docs</a></div>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;The `flash-attn` package has not been installed.&quot;&quot;&quot;</span>
-
-    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span>
-        <span class="n">message</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="p">(</span>
-            <span class="s2">&quot;The model you are trying to load requires Flash Attention. To use Flash &quot;</span>
-            <span class="s2">&quot;Attention, please install the `flash-attn` package, which can be done by &quot;</span>
-            <span class="s2">&quot;running `pip install -U wheel &amp;&amp; FLASH_ATTENTION_SKIP_CUDA_BUILD=TRUE &quot;</span>
-            <span class="s2">&quot;pip install flash-attn --no-build-isolation`.&quot;</span>
-        <span class="p">),</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialise the exception.</span>
 

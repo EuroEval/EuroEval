@@ -1120,17 +1120,7 @@
 <span class="normal">268</span>
 <span class="normal">269</span>
 <span class="normal">270</span>
-<span class="normal">271</span>
-<span class="normal">272</span>
-<span class="normal">273</span>
-<span class="normal">274</span>
-<span class="normal">275</span>
-<span class="normal">276</span>
-<span class="normal">277</span>
-<span class="normal">278</span>
-<span class="normal">279</span>
-<span class="normal">280</span>
-<span class="normal">281</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Command-line interface for benchmarking.&quot;&quot;&quot;</span>
+<span class="normal">271</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Command-line interface for benchmarking.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">click</span>
 
@@ -1274,14 +1264,6 @@
 <span class="s2">    of the model.&quot;&quot;&quot;</span><span class="p">,</span>
 <span class="p">)</span>
 <span class="nd">@click</span><span class="o">.</span><span class="n">option</span><span class="p">(</span>
-    <span class="s2">&quot;--use-flash-attention/--no-use-flash-attention&quot;</span><span class="p">,</span>
-    <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-    <span class="n">show_default</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-    <span class="n">help</span><span class="o">=</span><span class="s2">&quot;&quot;&quot;Whether to use Flash Attention. If not specified then the model will use</span>
-<span class="s2">    Flash Attention for generative models if a CUDA GPU is available and `flash-attn`</span>
-<span class="s2">    or `vllm-flash-attn` are installed.&quot;&quot;&quot;</span><span class="p">,</span>
-<span class="p">)</span>
-<span class="nd">@click</span><span class="o">.</span><span class="n">option</span><span class="p">(</span>
     <span class="s2">&quot;--clear-model-cache/--no-clear-model-cache&quot;</span><span class="p">,</span>
     <span class="n">default</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
     <span class="n">show_default</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
@@ -1357,7 +1339,6 @@
     <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
     <span class="n">device</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">trust_remote_code</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
-    <span class="n">use_flash_attention</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">clear_model_cache</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
     <span class="n">evaluate_test_split</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
     <span class="n">few_shot</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
@@ -1393,7 +1374,6 @@
         <span class="n">cache_dir</span><span class="o">=</span><span class="n">cache_dir</span><span class="p">,</span>
         <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">,</span>
         <span class="n">trust_remote_code</span><span class="o">=</span><span class="n">trust_remote_code</span><span class="p">,</span>
-        <span class="n">use_flash_attention</span><span class="o">=</span><span class="n">use_flash_attention</span><span class="p">,</span>
         <span class="n">clear_model_cache</span><span class="o">=</span><span class="n">clear_model_cache</span><span class="p">,</span>
         <span class="n">evaluate_test_split</span><span class="o">=</span><span class="n">evaluate_test_split</span><span class="p">,</span>
         <span class="n">few_shot</span><span class="o">=</span><span class="n">few_shot</span><span class="p">,</span>

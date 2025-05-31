@@ -2023,28 +2023,7 @@
 <span class="normal">1102</span>
 <span class="normal">1103</span>
 <span class="normal">1104</span>
-<span class="normal">1105</span>
-<span class="normal">1106</span>
-<span class="normal">1107</span>
-<span class="normal">1108</span>
-<span class="normal">1109</span>
-<span class="normal">1110</span>
-<span class="normal">1111</span>
-<span class="normal">1112</span>
-<span class="normal">1113</span>
-<span class="normal">1114</span>
-<span class="normal">1115</span>
-<span class="normal">1116</span>
-<span class="normal">1117</span>
-<span class="normal">1118</span>
-<span class="normal">1119</span>
-<span class="normal">1120</span>
-<span class="normal">1121</span>
-<span class="normal">1122</span>
-<span class="normal">1123</span>
-<span class="normal">1124</span>
-<span class="normal">1125</span>
-<span class="normal">1126</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Class that benchmarks language models.&quot;&quot;&quot;</span>
+<span class="normal">1105</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Class that benchmarks language models.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">contextlib</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
@@ -2118,7 +2097,6 @@
         <span class="n">force</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
         <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
         <span class="n">trust_remote_code</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
-        <span class="n">use_flash_attention</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">clear_model_cache</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
         <span class="n">evaluate_test_split</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
         <span class="n">few_shot</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
@@ -2175,9 +2153,6 @@
 <span class="sd">                `debug` is True. Defaults to False.</span>
 <span class="sd">            trust_remote_code:</span>
 <span class="sd">                Whether to trust remote code when loading models. Defaults to False.</span>
-<span class="sd">            use_flash_attention:</span>
-<span class="sd">                Whether to use Flash Attention. If None then it will be used if it is</span>
-<span class="sd">                installed and the model is a decoder model. Defaults to None.</span>
 <span class="sd">            clear_model_cache:</span>
 <span class="sd">                Whether to clear the model cache after benchmarking each model.</span>
 <span class="sd">                Defaults to False.</span>
@@ -2236,7 +2211,6 @@
             <span class="n">force</span><span class="o">=</span><span class="n">force</span><span class="p">,</span>
             <span class="n">verbose</span><span class="o">=</span><span class="n">verbose</span><span class="p">,</span>
             <span class="n">trust_remote_code</span><span class="o">=</span><span class="n">trust_remote_code</span><span class="p">,</span>
-            <span class="n">use_flash_attention</span><span class="o">=</span><span class="n">use_flash_attention</span><span class="p">,</span>
             <span class="n">clear_model_cache</span><span class="o">=</span><span class="n">clear_model_cache</span><span class="p">,</span>
             <span class="n">evaluate_test_split</span><span class="o">=</span><span class="n">evaluate_test_split</span><span class="p">,</span>
             <span class="n">few_shot</span><span class="o">=</span><span class="n">few_shot</span><span class="p">,</span>
@@ -2289,7 +2263,6 @@
         <span class="n">force</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">trust_remote_code</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">use_flash_attention</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">clear_model_cache</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">evaluate_test_split</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">few_shot</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -2357,9 +2330,6 @@
 <span class="sd">            trust_remote_code:</span>
 <span class="sd">                Whether to trust remote code when loading models. Defaults to the value</span>
 <span class="sd">                specified when initialising the benchmarker.</span>
-<span class="sd">            use_flash_attention:</span>
-<span class="sd">                Whether to use Flash Attention. Defaults to the value specified when</span>
-<span class="sd">                initialising the benchmarker.</span>
 <span class="sd">            clear_model_cache:</span>
 <span class="sd">                Whether to clear the model cache after benchmarking each model. Defaults</span>
 <span class="sd">                to the value specified when initialising the benchmarker.</span>
@@ -2405,7 +2375,6 @@
             <span class="n">force</span><span class="o">=</span><span class="n">force</span><span class="p">,</span>
             <span class="n">verbose</span><span class="o">=</span><span class="n">verbose</span><span class="p">,</span>
             <span class="n">trust_remote_code</span><span class="o">=</span><span class="n">trust_remote_code</span><span class="p">,</span>
-            <span class="n">use_flash_attention</span><span class="o">=</span><span class="n">use_flash_attention</span><span class="p">,</span>
             <span class="n">clear_model_cache</span><span class="o">=</span><span class="n">clear_model_cache</span><span class="p">,</span>
             <span class="n">evaluate_test_split</span><span class="o">=</span><span class="n">evaluate_test_split</span><span class="p">,</span>
             <span class="n">few_shot</span><span class="o">=</span><span class="n">few_shot</span><span class="p">,</span>
@@ -2577,7 +2546,6 @@
         <span class="n">force</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">trust_remote_code</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">use_flash_attention</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">clear_model_cache</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">evaluate_test_split</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">few_shot</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -2636,9 +2604,6 @@
 <span class="sd">            trust_remote_code:</span>
 <span class="sd">                Whether to trust remote code when loading models. If None, then this</span>
 <span class="sd">                value will not be updated.</span>
-<span class="sd">            use_flash_attention:</span>
-<span class="sd">                Whether to use Flash Attention. If None, then this value will not be</span>
-<span class="sd">                updated.</span>
 <span class="sd">            clear_model_cache:</span>
 <span class="sd">                Whether to clear the model cache after benchmarking each model. If None,</span>
 <span class="sd">                then this value will not be updated.</span>
@@ -2704,8 +2669,6 @@
             <span class="n">benchmark_config_params</span><span class="o">.</span><span class="n">verbose</span> <span class="o">=</span> <span class="n">verbose</span>
         <span class="k">if</span> <span class="n">trust_remote_code</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">benchmark_config_params</span><span class="o">.</span><span class="n">trust_remote_code</span> <span class="o">=</span> <span class="n">trust_remote_code</span>
-        <span class="k">if</span> <span class="n">use_flash_attention</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">benchmark_config_params</span><span class="o">.</span><span class="n">use_flash_attention</span> <span class="o">=</span> <span class="n">use_flash_attention</span>
         <span class="k">if</span> <span class="n">clear_model_cache</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">benchmark_config_params</span><span class="o">.</span><span class="n">clear_model_cache</span> <span class="o">=</span> <span class="n">clear_model_cache</span>
         <span class="k">if</span> <span class="n">evaluate_test_split</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
@@ -2909,7 +2872,6 @@
         <span class="n">force</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">trust_remote_code</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">use_flash_attention</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">clear_model_cache</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">evaluate_test_split</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">few_shot</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -2977,9 +2939,6 @@
 <span class="sd">            trust_remote_code:</span>
 <span class="sd">                Whether to trust remote code when loading models. Defaults to the value</span>
 <span class="sd">                specified when initialising the benchmarker.</span>
-<span class="sd">            use_flash_attention:</span>
-<span class="sd">                Whether to use Flash Attention. Defaults to the value specified when</span>
-<span class="sd">                initialising the benchmarker.</span>
 <span class="sd">            clear_model_cache:</span>
 <span class="sd">                Whether to clear the model cache after benchmarking each model. Defaults</span>
 <span class="sd">                to the value specified when initialising the benchmarker.</span>
@@ -3027,7 +2986,6 @@
             <span class="n">force</span><span class="o">=</span><span class="n">force</span><span class="p">,</span>
             <span class="n">verbose</span><span class="o">=</span><span class="n">verbose</span><span class="p">,</span>
             <span class="n">trust_remote_code</span><span class="o">=</span><span class="n">trust_remote_code</span><span class="p">,</span>
-            <span class="n">use_flash_attention</span><span class="o">=</span><span class="n">use_flash_attention</span><span class="p">,</span>
             <span class="n">clear_model_cache</span><span class="o">=</span><span class="n">clear_model_cache</span><span class="p">,</span>
             <span class="n">evaluate_test_split</span><span class="o">=</span><span class="n">evaluate_test_split</span><span class="p">,</span>
             <span class="n">few_shot</span><span class="o">=</span><span class="n">few_shot</span><span class="p">,</span>

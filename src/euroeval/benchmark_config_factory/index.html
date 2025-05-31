@@ -1212,40 +1212,8 @@
 <span class="normal">324</span>
 <span class="normal">325</span>
 <span class="normal">326</span>
-<span class="normal">327</span>
-<span class="normal">328</span>
-<span class="normal">329</span>
-<span class="normal">330</span>
-<span class="normal">331</span>
-<span class="normal">332</span>
-<span class="normal">333</span>
-<span class="normal">334</span>
-<span class="normal">335</span>
-<span class="normal">336</span>
-<span class="normal">337</span>
-<span class="normal">338</span>
-<span class="normal">339</span>
-<span class="normal">340</span>
-<span class="normal">341</span>
-<span class="normal">342</span>
-<span class="normal">343</span>
-<span class="normal">344</span>
-<span class="normal">345</span>
-<span class="normal">346</span>
-<span class="normal">347</span>
-<span class="normal">348</span>
-<span class="normal">349</span>
-<span class="normal">350</span>
-<span class="normal">351</span>
-<span class="normal">352</span>
-<span class="normal">353</span>
-<span class="normal">354</span>
-<span class="normal">355</span>
-<span class="normal">356</span>
-<span class="normal">357</span>
-<span class="normal">358</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Factory class for creating dataset configurations.&quot;&quot;&quot;</span>
+<span class="normal">327</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Factory class for creating dataset configurations.&quot;&quot;&quot;</span>
 
-<span class="kn">import</span><span class="w"> </span><span class="nn">importlib.util</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">t</span>
@@ -1258,7 +1226,6 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">.exceptions</span><span class="w"> </span><span class="kn">import</span> <span class="n">InvalidBenchmark</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.languages</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_all_languages</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.tasks</span><span class="w"> </span><span class="kn">import</span> <span class="n">SPEED</span><span class="p">,</span> <span class="n">get_all_tasks</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">log_once</span>
 
 <span class="k">if</span> <span class="n">t</span><span class="o">.</span><span class="n">TYPE_CHECKING</span><span class="p">:</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">.data_models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Language</span><span class="p">,</span> <span class="n">Task</span>
@@ -1283,7 +1250,6 @@
     <span class="n">force</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
     <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
     <span class="n">trust_remote_code</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
-    <span class="n">use_flash_attention</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">clear_model_cache</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
     <span class="n">evaluate_test_split</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
     <span class="n">few_shot</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
@@ -1337,9 +1303,6 @@
 <span class="sd">            automatically set if `debug` is True.</span>
 <span class="sd">        trust_remote_code:</span>
 <span class="sd">            Whether to trust remote code when running the benchmark.</span>
-<span class="sd">        use_flash_attention:</span>
-<span class="sd">            Whether to use Flash Attention for the models. If None then it will be used</span>
-<span class="sd">            if it is available.</span>
 <span class="sd">        clear_model_cache:</span>
 <span class="sd">            Whether to clear the model cache before running the benchmark.</span>
 <span class="sd">        evaluate_test_split:</span>
@@ -1380,30 +1343,6 @@
 
     <span class="n">torch_device</span> <span class="o">=</span> <span class="n">prepare_device</span><span class="p">(</span><span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">)</span>
 
-    <span class="k">if</span> <span class="n">use_flash_attention</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="k">if</span> <span class="n">torch_device</span><span class="o">.</span><span class="n">type</span> <span class="o">!=</span> <span class="s2">&quot;cuda&quot;</span><span class="p">:</span>
-            <span class="n">use_flash_attention</span> <span class="o">=</span> <span class="kc">False</span>
-        <span class="k">elif</span> <span class="p">(</span>
-            <span class="n">importlib</span><span class="o">.</span><span class="n">util</span><span class="o">.</span><span class="n">find_spec</span><span class="p">(</span><span class="s2">&quot;flash_attn&quot;</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">None</span>
-            <span class="ow">and</span> <span class="n">importlib</span><span class="o">.</span><span class="n">util</span><span class="o">.</span><span class="n">find_spec</span><span class="p">(</span><span class="s2">&quot;vllm_flash_attn&quot;</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">None</span>
-        <span class="p">):</span>
-            <span class="n">use_flash_attention</span> <span class="o">=</span> <span class="kc">False</span>
-            <span class="k">if</span> <span class="n">first_time</span> <span class="ow">and</span> <span class="n">torch_device</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="s2">&quot;cuda&quot;</span><span class="p">:</span>
-                <span class="n">message</span> <span class="o">=</span> <span class="p">(</span>
-                    <span class="s2">&quot;Flash attention has not been installed, so this will not be used. &quot;</span>
-                    <span class="s2">&quot;To install it, run `pip install -U wheel &amp;&amp; &quot;</span>
-                    <span class="s2">&quot;FLASH_ATTENTION_SKIP_CUDA_BUILD=TRUE pip install flash-attn &quot;</span>
-                    <span class="s2">&quot;--no-build-isolation`. Alternatively, you can disable this &quot;</span>
-                    <span class="s2">&quot;message by setting &quot;</span>
-                <span class="p">)</span>
-                <span class="k">if</span> <span class="n">run_with_cli</span><span class="p">:</span>
-                    <span class="n">message</span> <span class="o">+=</span> <span class="s2">&quot;the flag `--no-use-flash-attention`.&quot;</span>
-                <span class="k">else</span><span class="p">:</span>
-                    <span class="n">message</span> <span class="o">+=</span> <span class="p">(</span>
-                        <span class="s2">&quot;the argument `use_flash_attention=False` in the `Benchmarker`.&quot;</span>
-                    <span class="p">)</span>
-                <span class="n">log_once</span><span class="p">(</span><span class="n">message</span><span class="o">=</span><span class="n">message</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">)</span>
-
     <span class="c1"># Set variable with number of iterations</span>
     <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">sys</span><span class="p">,</span> <span class="s2">&quot;_called_from_test&quot;</span><span class="p">):</span>
         <span class="n">num_iterations</span> <span class="o">=</span> <span class="mi">1</span>
@@ -1423,7 +1362,6 @@
         <span class="n">verbose</span><span class="o">=</span><span class="n">verbose</span> <span class="ow">or</span> <span class="n">debug</span><span class="p">,</span>
         <span class="n">device</span><span class="o">=</span><span class="n">torch_device</span><span class="p">,</span>
         <span class="n">trust_remote_code</span><span class="o">=</span><span class="n">trust_remote_code</span><span class="p">,</span>
-        <span class="n">use_flash_attention</span><span class="o">=</span><span class="n">use_flash_attention</span><span class="p">,</span>
         <span class="n">clear_model_cache</span><span class="o">=</span><span class="n">clear_model_cache</span><span class="p">,</span>
         <span class="n">evaluate_test_split</span><span class="o">=</span><span class="n">evaluate_test_split</span><span class="p">,</span>
         <span class="n">few_shot</span><span class="o">=</span><span class="n">few_shot</span><span class="p">,</span>
