@@ -37,7 +37,7 @@ if "flash_attn" in sys.modules:
     sys.exit(1)
 
 
-### STAGE 2 ###
+### STAGE 3 ###
 ### Set the rest up ###
 
 import importlib.metadata  # noqa: E402
