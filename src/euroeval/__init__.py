@@ -28,7 +28,9 @@ logging.basicConfig(
 
 
 ### STAGE 2 ###
-### Throw informative error if `flash_attn` is installed ###
+### Check for incompatible packages ###
+
+# Throw informative error if `flash_attn` is installed ###
 if importlib.util.find_spec("flash_attn") is not None:
     logging.critical(
         "The `flash_attn` package is not supported by EuroEval, as it is now built "
