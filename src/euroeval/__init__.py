@@ -27,6 +27,16 @@ logging.basicConfig(
 
 
 ### STAGE 2 ###
+### Throw informative error if `flash_attn` is installed ###
+if "flash_attn" in sys.modules:
+    logging.critical(
+        "The `flash_attn` package is not supported by EuroEval. Please uninstall it "
+        "using `pip uninstall flash_attn` and try again."
+    )
+    sys.exit(1)
+
+
+### STAGE 2 ###
 ### Set the rest up ###
 
 import importlib.metadata  # noqa: E402
