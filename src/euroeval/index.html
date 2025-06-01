@@ -965,11 +965,26 @@
 <span class="normal">80</span>
 <span class="normal">81</span>
 <span class="normal">82</span>
-<span class="normal">83</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;EuroEval - A benchmarking framework for language models.&quot;&quot;&quot;</span>
+<span class="normal">83</span>
+<span class="normal">84</span>
+<span class="normal">85</span>
+<span class="normal">86</span>
+<span class="normal">87</span>
+<span class="normal">88</span>
+<span class="normal">89</span>
+<span class="normal">90</span>
+<span class="normal">91</span>
+<span class="normal">92</span>
+<span class="normal">93</span>
+<span class="normal">94</span>
+<span class="normal">95</span>
+<span class="normal">96</span>
+<span class="normal">97</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;EuroEval - A benchmarking framework for language models.&quot;&quot;&quot;</span>
 
 <span class="c1">### STAGE 1 ###</span>
 <span class="c1">### Block unwanted terminal output that happens on importing external modules ###</span>
 
+<span class="kn">import</span><span class="w"> </span><span class="nn">importlib.util</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
@@ -994,6 +1009,19 @@
 
 
 <span class="c1">### STAGE 2 ###</span>
+<span class="c1">### Check for incompatible packages ###</span>
+
+<span class="c1"># Throw informative error if `flash_attn` is installed ###</span>
+<span class="k">if</span> <span class="n">importlib</span><span class="o">.</span><span class="n">util</span><span class="o">.</span><span class="n">find_spec</span><span class="p">(</span><span class="s2">&quot;flash_attn&quot;</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="n">logging</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span>
+        <span class="s2">&quot;The `flash_attn` package is not supported by EuroEval, as it is now built &quot;</span>
+        <span class="s2">&quot;into the other packages and it conflicts with the other implementations. &quot;</span>
+        <span class="s2">&quot;Please uninstall it using `pip uninstall flash_attn` and try again.&quot;</span>
+    <span class="p">)</span>
+    <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+
+
+<span class="c1">### STAGE 3 ###</span>
 <span class="c1">### Set the rest up ###</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">importlib.metadata</span>  <span class="c1"># noqa: E402</span>
