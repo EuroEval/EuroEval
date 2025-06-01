@@ -8,7 +8,6 @@ import torch
 
 from .constants import TASK_GROUPS_USING_LOGPROBS
 from .enums import GenerativeType
-from .exceptions import InvalidModel
 from .utils import log_once
 
 if t.TYPE_CHECKING:
@@ -153,7 +152,9 @@ def should_prefix_space_be_added_to_labels(
     return add_prefix_space
 
 
-def get_bos_token(tokenizer: "PreTrainedTokenizer") -> tuple[str, int]:
+def get_bos_token(
+    tokenizer: "PreTrainedTokenizer",
+) -> tuple[str, int] | tuple[None, None]:
     """Get the beginning-of-sequence token from a tokenizer.
 
     Args:
@@ -162,7 +163,7 @@ def get_bos_token(tokenizer: "PreTrainedTokenizer") -> tuple[str, int]:
 
     Returns:
         A pair (token, token_id) representing the beginning-of-sequence token and its
-        token ID.
+        token ID, or (None, None) if no BOS token is found.
     """
     if isinstance(tokenizer.bos_token, str) and isinstance(tokenizer.bos_token_id, int):
         return tokenizer.bos_token, tokenizer.bos_token_id
@@ -176,15 +177,20 @@ def get_bos_token(tokenizer: "PreTrainedTokenizer") -> tuple[str, int]:
             bos_token_id = vocab[bos_token]
             break
     else:
-        raise InvalidModel(
+        log_once(
             "The model does not have a beginning-of-sequence token. Please ensure that "
-            "this has been set in the tokenizer's configuration."
+            "this has been set in the tokenizer's configuration. Using no BOS token."
+            " This may lead to unexpected behavior in the model.",
+            level=logging.INFO,
         )
+        return None, None
 
     return bos_token, bos_token_id
 
 
-def get_eos_token(tokenizer: "PreTrainedTokenizer") -> tuple[str, int]:
+def get_eos_token(
+    tokenizer: "PreTrainedTokenizer",
+) -> tuple[str, int] | tuple[None, None]:
     """Get the end-of-sequence token from a tokenizer.
 
     Args:
@@ -193,7 +199,7 @@ def get_eos_token(tokenizer: "PreTrainedTokenizer") -> tuple[str, int]:
 
     Returns:
         A pair (token, token_id) representing the end-of-sequence token and its token
-        ID.
+        ID, or (None, None) if no EOS token is found.
     """
     if isinstance(tokenizer.eos_token, str) and isinstance(tokenizer.eos_token_id, int):
         return tokenizer.eos_token, tokenizer.eos_token_id
@@ -207,10 +213,13 @@ def get_eos_token(tokenizer: "PreTrainedTokenizer") -> tuple[str, int]:
             eos_token_id = vocab[eos_token]
             break
     else:
-        raise InvalidModel(
+        log_once(
             "The model does not have an end-of-sequence token. Please ensure that this "
-            "has been set in the tokenizer's configuration."
+            "has been set in the tokenizer's configuration. Using no EOS token. This "
+            "may lead to unexpected behavior in the model.",
+            level=logging.INFO,
         )
+        return None, None
 
     return eos_token, eos_token_id
 
