@@ -1097,7 +1097,6 @@ def get_end_of_reasoning_token_id(
 
     # Remove any reasoning tokens that are not special tokens or do not have an
     # associated end-of-reasoning token which is also a special token
-    breakpoint()
     reasoning_token_candidates = [
         reasoning_token
         for reasoning_token in reasoning_token_candidates
@@ -1115,7 +1114,6 @@ def get_end_of_reasoning_token_id(
 
     # If there are multiple reasoning tokens, we prioritise the ones that are in the
     # shortlist of reasoning tokens, as these are the most likely to be the correct ones
-    breakpoint()
     if len(reasoning_token_candidates) > 1:
         prioritised_reasoning_tokens = [
             reasoning_token
