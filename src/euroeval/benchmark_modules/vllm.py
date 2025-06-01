@@ -1052,7 +1052,7 @@ def get_end_of_reasoning_token_id(
     # potential reasoning token
     model_output = model.generate(
         prompts=[prompt],
-        sampling_params=SamplingParams(max_tokens=3, temperature=0.0),
+        sampling_params=SamplingParams(max_tokens=10, temperature=0.0),
         use_tqdm=False,
     )
     completion = model_output[0].outputs[0].text
