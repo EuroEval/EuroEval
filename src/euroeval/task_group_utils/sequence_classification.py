@@ -135,7 +135,7 @@ def extract_labels_from_generation(
         if first_label_token_mapping is False:
             raise InvalidBenchmark(
                 "The model outputted logprobs, but the first label token mapping is "
-                "not provided. This means that the model should not output logprobs."
+                "not provided, which is not supported."
             )
         labels = get_closest_logprobs_labels(
             generation_logprobs=model_output.scores,
