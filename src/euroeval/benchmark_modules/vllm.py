@@ -1097,6 +1097,7 @@ def get_end_of_reasoning_token_id(
 
     # Remove any reasoning tokens that are not special tokens or do not have an
     # associated end-of-reasoning token which is also a special token
+    breakpoint()
     reasoning_token_candidates = [
         reasoning_token
         for reasoning_token in reasoning_token_candidates
