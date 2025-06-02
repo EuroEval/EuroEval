@@ -31,6 +31,7 @@ from ..constants import (
     MAX_LOGPROBS,
     MERGE_TAGS,
     REASONING_MAX_TOKENS,
+    REASONING_TOKEN_SHORTLIST,
     TASKS_USING_JSON,
     VLLM_BF16_MIN_CUDA_COMPUTE_CAPABILITY,
 )
@@ -1051,7 +1052,7 @@ def get_end_of_reasoning_token_id(
     # potential reasoning token
     model_output = model.generate(
         prompts=[prompt],
-        sampling_params=SamplingParams(max_tokens=3, temperature=0.0),
+        sampling_params=SamplingParams(max_tokens=10, temperature=0.0),
         use_tqdm=False,
     )
     completion = model_output[0].outputs[0].text
@@ -1066,9 +1067,9 @@ def get_end_of_reasoning_token_id(
                 completion = completion.replace(bos_token, "").strip()
 
     # If it doesn't contain a reasoning token, we can't find the end of reasoning token
-    prompt_match = re.search(pattern=r"<\w+>", string=prompt)
-    completion_match = re.search(pattern=r"<\w+>", string=completion)
-    if completion_match is None and prompt_match is None:
+    prompt_matches = re.findall(pattern=r"<\w+>", string=prompt)
+    completion_matches = re.findall(pattern=r"<\w+>", string=completion)
+    if not completion_matches and not prompt_matches:
         log_once(
             f"Could not find a reasoning token for model {model_id!r}, so assuming "
             "the model is not a reasoning model.",
@@ -1078,12 +1079,13 @@ def get_end_of_reasoning_token_id(
 
     # Check that the found reasoning token and its associated end-of-reasoning tokens
     # are both special tokens
-    elif completion_match is not None:
-        reasoning_token = completion_match.group()
+    elif completion_matches:
+        reasoning_token_candidates = completion_matches
     else:
-        assert prompt_match is not None
-        reasoning_token = prompt_match.group()
-    end_of_reasoning_token = f"</{reasoning_token[1:-1]}>"
+        assert prompt_matches
+        reasoning_token_candidates = prompt_matches
+
+    # Get the tokenizer's special tokens
     special_tokens = [
         decoder_token.content
         for decoder_token in tokenizer.added_tokens_decoder.values()
@@ -1092,18 +1094,63 @@ def get_end_of_reasoning_token_id(
         [encoder_token for encoder_token in tokenizer.added_tokens_encoder.keys()]
     )
     special_tokens.extend(tokenizer.all_special_tokens)
-    if (
-        reasoning_token not in special_tokens
-        or end_of_reasoning_token not in special_tokens
-    ):
+
+    # Remove any reasoning tokens that are not special tokens or do not have an
+    # associated end-of-reasoning token which is also a special token
+    reasoning_token_candidates = [
+        reasoning_token
+        for reasoning_token in reasoning_token_candidates
+        if reasoning_token not in special_tokens
+        or f"</{reasoning_token[1:-1]}>" not in special_tokens
+    ]
+
+    if not reasoning_token_candidates:
         log_once(
-            f"Detected reasoning token {reasoning_token!r} and end-of-reasoning "
-            f"token {end_of_reasoning_token!r} for model {model_id!r}, but one of "
-            "them is not registered as a special token, so assuming it is not a "
-            "real reasoning token.",
+            f"Could not find a reasoning token for model {model_id!r}, so assuming "
+            "the model is not a reasoning model.",
             level=logging.DEBUG,
         )
         return None
+
+    # If there are multiple reasoning tokens, we prioritise the ones that are in the
+    # shortlist of reasoning tokens, as these are the most likely to be the correct ones
+    if len(reasoning_token_candidates) > 1:
+        prioritised_reasoning_tokens = [
+            reasoning_token
+            for reasoning_token in reasoning_token_candidates
+            if re.search(
+                pattern="|".join(REASONING_TOKEN_SHORTLIST), string=reasoning_token
+            )
+            is not None
+        ]
+        if len(prioritised_reasoning_tokens) > 1:
+            log_once(
+                f"Found multiple reasoning tokens {prioritised_reasoning_tokens} for "
+                f"model {model_id!r}. Using {prioritised_reasoning_tokens[0]!r} as "
+                "the reasoning token. If this is not the correct reasoning token, "
+                "please report this issue.",
+                level=logging.INFO,
+            )
+            reasoning_token_candidates = prioritised_reasoning_tokens[:1]
+        elif not prioritised_reasoning_tokens:
+            log_once(
+                f"Found multiple reasoning tokens {reasoning_token_candidates!r} for "
+                f"model {model_id!r}, but none of them are in the shortlist of "
+                "reasoning tokens. Using the first one as the reasoning token. If "
+                "this is not the correct reasoning token, please report this issue.",
+                level=logging.INFO,
+            )
+            reasoning_token_candidates = reasoning_token_candidates[:1]
+
+    if len(reasoning_token_candidates) != 1:
+        raise InvalidModel(
+            f"Found {len(reasoning_token_candidates)} reasoning tokens "
+            f"{reasoning_token_candidates!r} for model {model_id!r}. Please report "
+            "this issue."
+        )
+
+    reasoning_token = reasoning_token_candidates[0]
+    end_of_reasoning_token = f"</{reasoning_token[1:-1]}>"
 
     log_once(
         f"Detected reasoning token {reasoning_token!r} and end-of-reasoning "

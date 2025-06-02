@@ -64,3 +64,6 @@ MERGE_TAGS = ["merge", "mergekit"]
 
 # The minimum required CUDA compute capability for using bfloat16 in vLLM
 VLLM_BF16_MIN_CUDA_COMPUTE_CAPABILITY = 8.0
+
+# Used to identify reasoning tokens for tokenizers with multiple candidates
+REASONING_TOKEN_SHORTLIST = ["think", "reason"]
