@@ -1139,6 +1139,7 @@ def get_end_of_reasoning_token_id(
         for bor_token, eor_token in bor_reasoning_matches
         if eor_token in completion
     ]
+    breakpoint()
     if not eor_reasoning_matches:
         log_once(
             f"The model {model_id!r} did not generate any end-of-reasoning tokens in "
