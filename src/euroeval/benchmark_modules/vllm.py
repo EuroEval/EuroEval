@@ -137,14 +137,14 @@ class VLLMModel(HuggingFaceEncoderModel):
         )
         self._model: LLM = model
         self._tokenizer: PreTrainedTokenizer = tokenizer
-        self.end_of_reasoning_token_id = get_end_of_reasoning_token_id(
+        self.end_of_reasoning_token = get_end_of_reasoning_token(
             model=self._model, tokenizer=self._tokenizer, model_id=model_config.model_id
         )
         self.custom_stop_tokens = get_custom_stop_tokens(
             model=self._model,
             tokenizer=self._tokenizer,
             model_id=model_config.model_id,
-            is_reasoning_model=self.end_of_reasoning_token_id is not None,
+            is_reasoning_model=self.end_of_reasoning_token is not None,
         )
 
         # We specify `HuggingFaceEncoderModel` here instead of `VLLMModel`, as we want
@@ -191,7 +191,7 @@ class VLLMModel(HuggingFaceEncoderModel):
         """
         if not hasattr(self, "_tokenizer"):
             return None
-        elif self.end_of_reasoning_token_id is not None:
+        elif self.end_of_reasoning_token is not None:
             return GenerativeType.REASONING
         elif self._tokenizer.chat_template is not None:
             return GenerativeType.INSTRUCTION_TUNED
@@ -505,32 +505,17 @@ class VLLMModel(HuggingFaceEncoderModel):
         completion_ids: list[list[int]] = [
             output.outputs[0].token_ids for output in raw_outputs
         ]
-        if self.end_of_reasoning_token_id in completion_ids[0]:
-            # Find the latest index of the end of reasoning token and slice
-            # the token IDs to only include the tokens after it
-            breakpoint()
-            completion_ids = [
-                token_ids[
-                    max(
-                        [
-                            i
-                            for i, x in enumerate(token_ids)
-                            if x == self.end_of_reasoning_token_id
-                        ]
-                    )
-                    + 1 :
-                ]
-                if self.end_of_reasoning_token_id in token_ids
-                else token_ids
-                for token_ids in completion_ids
-            ]
-            breakpoint()
         completions = self._tokenizer.batch_decode(
             sequences=[
                 torch.LongTensor(completion_id) for completion_id in completion_ids
             ],
             skip_special_tokens=True,
         )
+        if self.end_of_reasoning_token is not None:
+            completions = [
+                completion.split(self.end_of_reasoning_token)[-1]
+                for completion in completions
+            ]
         completions = [completion.strip() for completion in completions]
         breakpoint()
 
@@ -551,17 +536,6 @@ class VLLMModel(HuggingFaceEncoderModel):
                     for token_logprobs_dict in raw_output.outputs[0].logprobs
                 ]
                 for raw_output in raw_outputs
-            ]
-            scores = [
-                score_list[
-                    raw_output.outputs[0].token_ids.index(
-                        self.end_of_reasoning_token_id
-                    )
-                    + 2 :
-                ]
-                if self.end_of_reasoning_token_id in raw_output.outputs[0].token_ids
-                else score_list
-                for raw_output, score_list in zip(raw_outputs, scores)
             ]
             output = GenerativeModelOutput(sequences=completions, scores=scores)
         else:
@@ -1027,10 +1001,10 @@ def clear_vllm() -> None:
     clear_memory()
 
 
-def get_end_of_reasoning_token_id(
+def get_end_of_reasoning_token(
     model: "LLM", tokenizer: "PreTrainedTokenizer", model_id: str
-) -> int | None:
-    """Get the end-of-reasoning token ID for a generative model.
+) -> str | None:
+    """Get the end-of-reasoning token for a generative model.
 
     Args:
         model:
@@ -1041,7 +1015,7 @@ def get_end_of_reasoning_token_id(
             The model ID.
 
     Returns:
-        The end of reasoning token ID, or None if it could not be found.
+        The end of reasoning token, or None if it could not be found.
     """
     # Create a prompt to check if the model uses the reasoning tokens
     prompt = "What is your name?"
@@ -1122,14 +1096,7 @@ def get_end_of_reasoning_token_id(
         level=logging.INFO,
     )
 
-    # Encode the end of reasoning token and return its ID
-    eor_token_id = tokenizer.convert_tokens_to_ids(tokens=eor_token)
-    assert isinstance(eor_token_id, int), (
-        f"The end of reasoning token {eor_token!r} for model {model_id!r} "
-        "could not be converted to an ID."
-    )
-
-    return eor_token_id
+    return eor_token
 
 
 def get_custom_stop_tokens(
