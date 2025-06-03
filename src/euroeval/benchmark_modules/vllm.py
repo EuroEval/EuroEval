@@ -527,7 +527,6 @@ class VLLMModel(HuggingFaceEncoderModel):
                 for completion in completions
             ]
         completions = [completion.strip() for completion in completions]
-        breakpoint()
 
         # Sanity check
         if len(completions) != len(prompts):
