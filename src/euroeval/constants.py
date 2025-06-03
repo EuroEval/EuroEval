@@ -71,3 +71,9 @@ REASONING_TOKENS = [
     ("<reason>", "</reason>"),
     ("<reasoning>", "</reasoning>"),
 ]
+
+# These tokens are sometimes used by models to indicate the end of a generated
+# response, but they do not use them as a proper EOS token, so we have to deal with them
+# manually. We only use them as stop tokens if they actually appear in the model's
+# output
+CUSTOM_STOP_TOKENS = ["<sep>"]
