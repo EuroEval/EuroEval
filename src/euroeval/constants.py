@@ -66,4 +66,8 @@ MERGE_TAGS = ["merge", "mergekit"]
 VLLM_BF16_MIN_CUDA_COMPUTE_CAPABILITY = 8.0
 
 # Used to identify reasoning tokens for tokenizers with multiple candidates
-REASONING_TOKEN_SHORTLIST = ["think", "reason"]
+REASONING_TOKENS = [
+    ("<think>", "</think>"),
+    ("<reason>", "</reason>"),
+    ("<reasoning>", "</reasoning>"),
+]
