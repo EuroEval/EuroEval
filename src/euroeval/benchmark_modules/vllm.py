@@ -1085,7 +1085,6 @@ def get_end_of_reasoning_token(
             "This is probably not correct, so please report this issue.",
             level=logging.INFO,
         )
-        breakpoint()
         return None
 
     if len(eor_reasoning_matches) > 1:
