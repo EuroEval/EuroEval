@@ -516,6 +516,11 @@ class VLLMModel(HuggingFaceEncoderModel):
                 completion.split(self.end_of_reasoning_token)[-1]
                 for completion in completions
             ]
+        if self.custom_stop_tokens:
+            completions = [
+                completion.split(stop_token)[0]
+                for completion, stop_token in zip(completions, stop_tokens)
+            ]
         completions = [completion.strip() for completion in completions]
         breakpoint()
 
