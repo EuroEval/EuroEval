@@ -1038,7 +1038,6 @@ def get_end_of_reasoning_token_id(
         for bor_token, eor_token in REASONING_TOKENS
         if bor_token in tokenizer.get_vocab() and eor_token in tokenizer.get_vocab()
     ]
-    breakpoint()
 
     if not reasoning_tokens_in_vocab:
         reasoning_tokens_str = ", ".join(
