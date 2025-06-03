@@ -1065,9 +1065,7 @@ def get_end_of_reasoning_token(
     completion = (
         model.generate(
             prompts=[prompt],
-            sampling_params=SamplingParams(
-                max_tokens=REASONING_MAX_TOKENS, temperature=0.0
-            ),
+            sampling_params=SamplingParams(max_tokens=REASONING_MAX_TOKENS),
             use_tqdm=False,
         )[0]
         .outputs[0]
