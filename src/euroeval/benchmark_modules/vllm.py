@@ -505,12 +505,10 @@ class VLLMModel(HuggingFaceEncoderModel):
         completion_ids: list[list[int]] = [
             output.outputs[0].token_ids for output in raw_outputs
         ]
-        breakpoint()
         completions = self._tokenizer.batch_decode(
             sequences=[
                 torch.LongTensor(completion_id) for completion_id in completion_ids
-            ],
-            skip_special_tokens=True,
+            ]
         )
         if self.end_of_reasoning_token is not None:
             completions = [
