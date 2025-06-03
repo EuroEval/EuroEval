@@ -508,6 +508,7 @@ class VLLMModel(HuggingFaceEncoderModel):
         if self.end_of_reasoning_token_id in completion_ids[0]:
             # Find the latest index of the end of reasoning token and slice
             # the token IDs to only include the tokens after it
+            breakpoint()
             completion_ids = [
                 token_ids[
                     max(
@@ -523,6 +524,7 @@ class VLLMModel(HuggingFaceEncoderModel):
                 else token_ids
                 for token_ids in completion_ids
             ]
+            breakpoint()
         completions = self._tokenizer.batch_decode(
             sequences=[
                 torch.LongTensor(completion_id) for completion_id in completion_ids
@@ -530,6 +532,7 @@ class VLLMModel(HuggingFaceEncoderModel):
             skip_special_tokens=True,
         )
         completions = [completion.strip() for completion in completions]
+        breakpoint()
 
         # Sanity check
         if len(completions) != len(prompts):
