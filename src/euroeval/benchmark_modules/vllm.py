@@ -511,7 +511,6 @@ class VLLMModel(HuggingFaceEncoderModel):
             ]
         )
         if self.end_of_reasoning_token is not None:
-            breakpoint()
             completions = [
                 completion.split(self.end_of_reasoning_token)[-1]
                 for completion in completions
