@@ -517,9 +517,14 @@ class VLLMModel(HuggingFaceEncoderModel):
                 for completion in completions
             ]
         if self.custom_stop_tokens:
+            stop_token_pattern = re.compile(
+                "|".join(
+                    re.escape(stop_token) for stop_token in self.custom_stop_tokens
+                )
+            )
             completions = [
-                completion.split(stop_token)[0]
-                for completion, stop_token in zip(completions, stop_tokens)
+                re.split(pattern=stop_token_pattern, string=completion)[0]
+                for completion in completions
             ]
         completions = [completion.strip() for completion in completions]
         breakpoint()
