@@ -1090,7 +1090,8 @@ def get_end_of_reasoning_token_id(
         log_once(
             f"The model {model_id!r} did not generate any end-of-reasoning "
             "tokens in the prompt or the completion, even though it generated "
-            f"the beginning-of-reasoning tokens {bor_reasoning_matches}. "
+            "the beginning-of-reasoning tokens "
+            f"{[bor_token for bor_token, _ in bor_reasoning_matches]!r}. "
             "This is probably not correct, so please report this issue.",
             level=logging.INFO,
         )
