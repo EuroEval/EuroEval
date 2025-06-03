@@ -1050,7 +1050,7 @@ def get_end_of_reasoning_token_id(
             f"Model {model_id!r} does not have any of the reasoning tokens "
             f"{reasoning_tokens_str} in its vocabulary, so assuming it is not a "
             "reasoning model.",
-            level=logging.DEBUG,
+            level=logging.INFO,
         )
         return None
 
@@ -1080,7 +1080,7 @@ def get_end_of_reasoning_token_id(
             f"Model {model_id!r} does not have any of the reasoning tokens "
             f"{reasoning_tokens_str} as special tokens, so assuming it is not a "
             "reasoning model.",
-            level=logging.DEBUG,
+            level=logging.INFO,
         )
         return None
 
@@ -1118,7 +1118,7 @@ def get_end_of_reasoning_token_id(
             "beginning-of-reasoning tokens "
             f"{[bor_token for bor_token, _ in special_reasoning_tokens]}. Assuming "
             "the model is not a reasoning model.",
-            level=logging.DEBUG,
+            level=logging.INFO,
         )
         return None
 
@@ -1146,7 +1146,7 @@ def get_end_of_reasoning_token_id(
             "the prompt or the completion, out of the potential end-of-reasoning "
             f"tokens {[eor_token for _, eor_token in bor_reasoning_matches]}. "
             "Assuming the model is not a reasoning model.",
-            level=logging.DEBUG,
+            level=logging.INFO,
         )
         return None
 
@@ -1163,7 +1163,7 @@ def get_end_of_reasoning_token_id(
     log_once(
         f"Detected beginning-of-reasoning token {bor_token!r} and end-of-reasoning "
         f"token {eor_token!r} for model {model_id!r}.",
-        level=logging.DEBUG,
+        level=logging.INFO,
     )
 
     # Encode the end of reasoning token and return its ID
