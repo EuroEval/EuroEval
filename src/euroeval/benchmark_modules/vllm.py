@@ -1125,7 +1125,6 @@ def get_end_of_reasoning_token_id(
         f"The end of reasoning token {eor_token!r} for model {model_id!r} "
         "could not be converted to an ID."
     )
-    breakpoint()
 
     return eor_token_id
 
