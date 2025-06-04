@@ -898,7 +898,20 @@
 <span class="normal">63</span>
 <span class="normal">64</span>
 <span class="normal">65</span>
-<span class="normal">66</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Constants used throughout the project.&quot;&quot;&quot;</span>
+<span class="normal">66</span>
+<span class="normal">67</span>
+<span class="normal">68</span>
+<span class="normal">69</span>
+<span class="normal">70</span>
+<span class="normal">71</span>
+<span class="normal">72</span>
+<span class="normal">73</span>
+<span class="normal">74</span>
+<span class="normal">75</span>
+<span class="normal">76</span>
+<span class="normal">77</span>
+<span class="normal">78</span>
+<span class="normal">79</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Constants used throughout the project.&quot;&quot;&quot;</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">.enums</span><span class="w"> </span><span class="kn">import</span> <span class="n">TaskGroup</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.tasks</span><span class="w"> </span><span class="kn">import</span> <span class="n">NER</span>
@@ -964,6 +977,19 @@
 
 <span class="c1"># The minimum required CUDA compute capability for using bfloat16 in vLLM</span>
 <span class="n">VLLM_BF16_MIN_CUDA_COMPUTE_CAPABILITY</span> <span class="o">=</span> <span class="mf">8.0</span>
+
+<span class="c1"># Used to detect whether a model is a reasoning model</span>
+<span class="n">REASONING_TOKENS</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="p">(</span><span class="s2">&quot;&lt;think&gt;&quot;</span><span class="p">,</span> <span class="s2">&quot;&lt;/think&gt;&quot;</span><span class="p">),</span>
+    <span class="p">(</span><span class="s2">&quot;&lt;reason&gt;&quot;</span><span class="p">,</span> <span class="s2">&quot;&lt;/reason&gt;&quot;</span><span class="p">),</span>
+    <span class="p">(</span><span class="s2">&quot;&lt;reasoning&gt;&quot;</span><span class="p">,</span> <span class="s2">&quot;&lt;/reasoning&gt;&quot;</span><span class="p">),</span>
+<span class="p">]</span>
+
+<span class="c1"># These tokens are sometimes used by models to indicate the end of a generated</span>
+<span class="c1"># response, but they do not use them as a proper EOS token, so we have to deal with them</span>
+<span class="c1"># manually. We only use them as stop tokens if they actually appear in the model&#39;s</span>
+<span class="c1"># output</span>
+<span class="n">CUSTOM_STOP_TOKENS</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;&lt;sep&gt;&quot;</span><span class="p">]</span>
 </code></pre></div></td></tr></table></div>
 
 

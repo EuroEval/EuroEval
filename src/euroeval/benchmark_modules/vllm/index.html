@@ -929,9 +929,18 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#euroeval.benchmark_modules.vllm.get_end_of_reasoning_token_id" class="md-nav__link">
+  <a href="#euroeval.benchmark_modules.vllm.get_end_of_reasoning_token" class="md-nav__link">
     <span class="md-ellipsis">
-      get_end_of_reasoning_token_id
+      get_end_of_reasoning_token
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#euroeval.benchmark_modules.vllm.get_custom_stop_tokens" class="md-nav__link">
+    <span class="md-ellipsis">
+      get_custom_stop_tokens
     </span>
   </a>
   
@@ -2082,7 +2091,56 @@
 <span class="normal">1116</span>
 <span class="normal">1117</span>
 <span class="normal">1118</span>
-<span class="normal">1119</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Generative models using the vLLM inference framework.&quot;&quot;&quot;</span>
+<span class="normal">1119</span>
+<span class="normal">1120</span>
+<span class="normal">1121</span>
+<span class="normal">1122</span>
+<span class="normal">1123</span>
+<span class="normal">1124</span>
+<span class="normal">1125</span>
+<span class="normal">1126</span>
+<span class="normal">1127</span>
+<span class="normal">1128</span>
+<span class="normal">1129</span>
+<span class="normal">1130</span>
+<span class="normal">1131</span>
+<span class="normal">1132</span>
+<span class="normal">1133</span>
+<span class="normal">1134</span>
+<span class="normal">1135</span>
+<span class="normal">1136</span>
+<span class="normal">1137</span>
+<span class="normal">1138</span>
+<span class="normal">1139</span>
+<span class="normal">1140</span>
+<span class="normal">1141</span>
+<span class="normal">1142</span>
+<span class="normal">1143</span>
+<span class="normal">1144</span>
+<span class="normal">1145</span>
+<span class="normal">1146</span>
+<span class="normal">1147</span>
+<span class="normal">1148</span>
+<span class="normal">1149</span>
+<span class="normal">1150</span>
+<span class="normal">1151</span>
+<span class="normal">1152</span>
+<span class="normal">1153</span>
+<span class="normal">1154</span>
+<span class="normal">1155</span>
+<span class="normal">1156</span>
+<span class="normal">1157</span>
+<span class="normal">1158</span>
+<span class="normal">1159</span>
+<span class="normal">1160</span>
+<span class="normal">1161</span>
+<span class="normal">1162</span>
+<span class="normal">1163</span>
+<span class="normal">1164</span>
+<span class="normal">1165</span>
+<span class="normal">1166</span>
+<span class="normal">1167</span>
+<span class="normal">1168</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Generative models using the vLLM inference framework.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">c</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">contextlib</span>
@@ -2110,11 +2168,13 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">urllib3.exceptions</span><span class="w"> </span><span class="kn">import</span> <span class="n">RequestError</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">..constants</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">CUSTOM_STOP_TOKENS</span><span class="p">,</span>
     <span class="n">GENERATIVE_PIPELINE_TAGS</span><span class="p">,</span>
     <span class="n">MAX_CONTEXT_LENGTH</span><span class="p">,</span>
     <span class="n">MAX_LOGPROBS</span><span class="p">,</span>
     <span class="n">MERGE_TAGS</span><span class="p">,</span>
     <span class="n">REASONING_MAX_TOKENS</span><span class="p">,</span>
+    <span class="n">REASONING_TOKENS</span><span class="p">,</span>
     <span class="n">TASKS_USING_JSON</span><span class="p">,</span>
     <span class="n">VLLM_BF16_MIN_CUDA_COMPUTE_CAPABILITY</span><span class="p">,</span>
 <span class="p">)</span>
@@ -2219,8 +2279,14 @@
         <span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_model</span><span class="p">:</span> <span class="n">LLM</span> <span class="o">=</span> <span class="n">model</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_tokenizer</span><span class="p">:</span> <span class="n">PreTrainedTokenizer</span> <span class="o">=</span> <span class="n">tokenizer</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">end_of_reasoning_token_id</span> <span class="o">=</span> <span class="n">get_end_of_reasoning_token_id</span><span class="p">(</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">end_of_reasoning_token</span> <span class="o">=</span> <span class="n">get_end_of_reasoning_token</span><span class="p">(</span>
             <span class="n">model</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_model</span><span class="p">,</span> <span class="n">tokenizer</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_tokenizer</span><span class="p">,</span> <span class="n">model_id</span><span class="o">=</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">custom_stop_tokens</span> <span class="o">=</span> <span class="n">get_custom_stop_tokens</span><span class="p">(</span>
+            <span class="n">model</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_model</span><span class="p">,</span>
+            <span class="n">tokenizer</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_tokenizer</span><span class="p">,</span>
+            <span class="n">model_id</span><span class="o">=</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span><span class="p">,</span>
+            <span class="n">is_reasoning_model</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">end_of_reasoning_token</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span>
         <span class="p">)</span>
 
         <span class="c1"># We specify `HuggingFaceEncoderModel` here instead of `VLLMModel`, as we want</span>
@@ -2267,7 +2333,7 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;_tokenizer&quot;</span><span class="p">):</span>
             <span class="k">return</span> <span class="kc">None</span>
-        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">end_of_reasoning_token_id</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">end_of_reasoning_token</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">GenerativeType</span><span class="o">.</span><span class="n">REASONING</span>
         <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tokenizer</span><span class="o">.</span><span class="n">chat_template</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">GenerativeType</span><span class="o">.</span><span class="n">INSTRUCTION_TUNED</span>
@@ -2383,7 +2449,7 @@
         <span class="c1"># token, end-of-sentence token, and a double newline if the model isn&#39;t</span>
         <span class="c1"># instruction tuned (since these separate the few-shot examples in the input in</span>
         <span class="c1"># this case)</span>
-        <span class="n">stop_tokens</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
+        <span class="n">stop_tokens</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">custom_stop_tokens</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">buffer</span><span class="p">[</span><span class="s2">&quot;instruction_model&quot;</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">False</span><span class="p">:</span>
             <span class="n">stop_tokens</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n\n</span><span class="s2">&quot;</span><span class="p">)</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tokenizer</span><span class="o">.</span><span class="n">pad_token_id</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
@@ -2581,30 +2647,26 @@
         <span class="n">completion_ids</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[</span>
             <span class="n">output</span><span class="o">.</span><span class="n">outputs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">token_ids</span> <span class="k">for</span> <span class="n">output</span> <span class="ow">in</span> <span class="n">raw_outputs</span>
         <span class="p">]</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">end_of_reasoning_token_id</span> <span class="ow">in</span> <span class="n">completion_ids</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
-            <span class="c1"># Find the latest index of the end of reasoning token and slice</span>
-            <span class="c1"># the token IDs to only include the tokens after it</span>
-            <span class="n">completion_ids</span> <span class="o">=</span> <span class="p">[</span>
-                <span class="n">token_ids</span><span class="p">[</span>
-                    <span class="nb">max</span><span class="p">(</span>
-                        <span class="p">[</span>
-                            <span class="n">i</span>
-                            <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">token_ids</span><span class="p">)</span>
-                            <span class="k">if</span> <span class="n">x</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">end_of_reasoning_token_id</span>
-                        <span class="p">]</span>
-                    <span class="p">)</span>
-                    <span class="o">+</span> <span class="mi">1</span> <span class="p">:</span>
-                <span class="p">]</span>
-                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">end_of_reasoning_token_id</span> <span class="ow">in</span> <span class="n">token_ids</span>
-                <span class="k">else</span> <span class="n">token_ids</span>
-                <span class="k">for</span> <span class="n">token_ids</span> <span class="ow">in</span> <span class="n">completion_ids</span>
-            <span class="p">]</span>
         <span class="n">completions</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tokenizer</span><span class="o">.</span><span class="n">batch_decode</span><span class="p">(</span>
             <span class="n">sequences</span><span class="o">=</span><span class="p">[</span>
                 <span class="n">torch</span><span class="o">.</span><span class="n">LongTensor</span><span class="p">(</span><span class="n">completion_id</span><span class="p">)</span> <span class="k">for</span> <span class="n">completion_id</span> <span class="ow">in</span> <span class="n">completion_ids</span>
-            <span class="p">],</span>
-            <span class="n">skip_special_tokens</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="p">]</span>
         <span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">end_of_reasoning_token</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">completions</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="n">completion</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">end_of_reasoning_token</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+                <span class="k">for</span> <span class="n">completion</span> <span class="ow">in</span> <span class="n">completions</span>
+            <span class="p">]</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">custom_stop_tokens</span><span class="p">:</span>
+            <span class="n">stop_token_pattern</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span>
+                <span class="s2">&quot;|&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+                    <span class="n">re</span><span class="o">.</span><span class="n">escape</span><span class="p">(</span><span class="n">stop_token</span><span class="p">)</span> <span class="k">for</span> <span class="n">stop_token</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">custom_stop_tokens</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+            <span class="n">completions</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="n">re</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">pattern</span><span class="o">=</span><span class="n">stop_token_pattern</span><span class="p">,</span> <span class="n">string</span><span class="o">=</span><span class="n">completion</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+                <span class="k">for</span> <span class="n">completion</span> <span class="ow">in</span> <span class="n">completions</span>
+            <span class="p">]</span>
         <span class="n">completions</span> <span class="o">=</span> <span class="p">[</span><span class="n">completion</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">for</span> <span class="n">completion</span> <span class="ow">in</span> <span class="n">completions</span><span class="p">]</span>
 
         <span class="c1"># Sanity check</span>
@@ -2624,17 +2686,6 @@
                     <span class="k">for</span> <span class="n">token_logprobs_dict</span> <span class="ow">in</span> <span class="n">raw_output</span><span class="o">.</span><span class="n">outputs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">logprobs</span>
                 <span class="p">]</span>
                 <span class="k">for</span> <span class="n">raw_output</span> <span class="ow">in</span> <span class="n">raw_outputs</span>
-            <span class="p">]</span>
-            <span class="n">scores</span> <span class="o">=</span> <span class="p">[</span>
-                <span class="n">score_list</span><span class="p">[</span>
-                    <span class="n">raw_output</span><span class="o">.</span><span class="n">outputs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">token_ids</span><span class="o">.</span><span class="n">index</span><span class="p">(</span>
-                        <span class="bp">self</span><span class="o">.</span><span class="n">end_of_reasoning_token_id</span>
-                    <span class="p">)</span>
-                    <span class="o">+</span> <span class="mi">2</span> <span class="p">:</span>
-                <span class="p">]</span>
-                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">end_of_reasoning_token_id</span> <span class="ow">in</span> <span class="n">raw_output</span><span class="o">.</span><span class="n">outputs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">token_ids</span>
-                <span class="k">else</span> <span class="n">score_list</span>
-                <span class="k">for</span> <span class="n">raw_output</span><span class="p">,</span> <span class="n">score_list</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">raw_outputs</span><span class="p">,</span> <span class="n">scores</span><span class="p">)</span>
             <span class="p">]</span>
             <span class="n">output</span> <span class="o">=</span> <span class="n">GenerativeModelOutput</span><span class="p">(</span><span class="n">sequences</span><span class="o">=</span><span class="n">completions</span><span class="p">,</span> <span class="n">scores</span><span class="o">=</span><span class="n">scores</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
@@ -3100,14 +3151,10 @@
     <span class="n">clear_memory</span><span class="p">()</span>
 
 
-<span class="k">def</span><span class="w"> </span><span class="nf">get_end_of_reasoning_token_id</span><span class="p">(</span><div class="mkapi-source-link" id="euroeval.benchmark_modules.vllm.get_end_of_reasoning_token_id"><a href="../../../../api/euroeval/benchmark_modules/vllm/#euroeval.benchmark_modules.vllm.get_end_of_reasoning_token_id" title="Go to docs">docs</a></div>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_end_of_reasoning_token</span><span class="p">(</span><div class="mkapi-source-link" id="euroeval.benchmark_modules.vllm.get_end_of_reasoning_token"><a href="../../../../api/euroeval/benchmark_modules/vllm/#euroeval.benchmark_modules.vllm.get_end_of_reasoning_token" title="Go to docs">docs</a></div>
     <span class="n">model</span><span class="p">:</span> <span class="s2">&quot;LLM&quot;</span><span class="p">,</span> <span class="n">tokenizer</span><span class="p">:</span> <span class="s2">&quot;PreTrainedTokenizer&quot;</span><span class="p">,</span> <span class="n">model_id</span><span class="p">:</span> <span class="nb">str</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the end of reasoning token ID for a generative model.</span>
-
-<span class="sd">    This assumes that the reasoning token is of the form &lt;X&gt; and that the end of</span>
-<span class="sd">    reasoning token is &lt;/X&gt; (for X being any string without spaces). We disallow the</span>
-<span class="sd">    reasoning token to be the same as the beginning-of-sentence token.</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the end-of-reasoning token for a generative model.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        model:</span>
@@ -3118,89 +3165,149 @@
 <span class="sd">            The model ID.</span>
 
 <span class="sd">    Returns:</span>
-<span class="sd">        The end of reasoning token ID, or None if it could not be found.</span>
+<span class="sd">        The end of reasoning token, or None if it could not be found.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">if</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">chat_template</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">prompt</span> <span class="o">=</span> <span class="s2">&quot;What is your name?&quot;</span>
-    <span class="k">else</span><span class="p">:</span>
+    <span class="c1"># Create a prompt to check if the model uses the reasoning tokens</span>
+    <span class="n">prompt</span> <span class="o">=</span> <span class="s2">&quot;What is your name?&quot;</span>
+    <span class="k">if</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">chat_template</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">templated_prompt</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">apply_chat_template</span><span class="p">(</span>
-            <span class="n">conversation</span><span class="o">=</span><span class="p">[</span><span class="nb">dict</span><span class="p">(</span><span class="n">role</span><span class="o">=</span><span class="s2">&quot;user&quot;</span><span class="p">,</span> <span class="n">content</span><span class="o">=</span><span class="s2">&quot;What is your name?&quot;</span><span class="p">)],</span>
+            <span class="n">conversation</span><span class="o">=</span><span class="p">[</span><span class="nb">dict</span><span class="p">(</span><span class="n">role</span><span class="o">=</span><span class="s2">&quot;user&quot;</span><span class="p">,</span> <span class="n">content</span><span class="o">=</span><span class="n">prompt</span><span class="p">)],</span>
             <span class="n">add_generation_prompt</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
             <span class="n">tokenize</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">templated_prompt</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span>
         <span class="n">prompt</span> <span class="o">=</span> <span class="n">templated_prompt</span>
 
-    <span class="c1"># Generate a completion and remove the BOS token from it, to not confuse it with the</span>
-    <span class="c1"># potential reasoning token</span>
-    <span class="n">model_output</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span>
-        <span class="n">prompts</span><span class="o">=</span><span class="p">[</span><span class="n">prompt</span><span class="p">],</span>
-        <span class="n">sampling_params</span><span class="o">=</span><span class="n">SamplingParams</span><span class="p">(</span><span class="n">max_tokens</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">temperature</span><span class="o">=</span><span class="mf">0.0</span><span class="p">),</span>
-        <span class="n">use_tqdm</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="c1"># Check that the beginning-of-reasoning token is actually used by the model</span>
+    <span class="n">completion</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">model</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span>
+            <span class="n">prompts</span><span class="o">=</span><span class="p">[</span><span class="n">prompt</span><span class="p">],</span>
+            <span class="n">sampling_params</span><span class="o">=</span><span class="n">SamplingParams</span><span class="p">(</span><span class="n">max_tokens</span><span class="o">=</span><span class="mi">10</span><span class="p">),</span>
+            <span class="n">use_tqdm</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="o">.</span><span class="n">outputs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="o">.</span><span class="n">text</span>
     <span class="p">)</span>
-    <span class="n">completion</span> <span class="o">=</span> <span class="n">model_output</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">outputs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">text</span>
-
-    <span class="k">if</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">bos_token</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">tokenizer</span><span class="o">.</span><span class="n">bos_token</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
-            <span class="n">prompt</span> <span class="o">=</span> <span class="n">prompt</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">tokenizer</span><span class="o">.</span><span class="n">bos_token</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
-            <span class="n">completion</span> <span class="o">=</span> <span class="n">completion</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">tokenizer</span><span class="o">.</span><span class="n">bos_token</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
-        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">tokenizer</span><span class="o">.</span><span class="n">bos_token</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
-            <span class="k">for</span> <span class="n">bos_token</span> <span class="ow">in</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">bos_token</span><span class="p">:</span>
-                <span class="n">prompt</span> <span class="o">=</span> <span class="n">prompt</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">bos_token</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
-                <span class="n">completion</span> <span class="o">=</span> <span class="n">completion</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">bos_token</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
-
-    <span class="c1"># If it doesn&#39;t contain a reasoning token, we can&#39;t find the end of reasoning token</span>
-    <span class="n">prompt_match</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">pattern</span><span class="o">=</span><span class="sa">r</span><span class="s2">&quot;&lt;\w+&gt;&quot;</span><span class="p">,</span> <span class="n">string</span><span class="o">=</span><span class="n">prompt</span><span class="p">)</span>
-    <span class="n">completion_match</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">pattern</span><span class="o">=</span><span class="sa">r</span><span class="s2">&quot;&lt;\w+&gt;&quot;</span><span class="p">,</span> <span class="n">string</span><span class="o">=</span><span class="n">completion</span><span class="p">)</span>
-    <span class="k">if</span> <span class="n">completion_match</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">prompt_match</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">log_once</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;Could not find a reasoning token for model </span><span class="si">{</span><span class="n">model_id</span><span class="si">!r}</span><span class="s2">, so assuming &quot;</span>
-            <span class="s2">&quot;the model is not a reasoning model.&quot;</span><span class="p">,</span>
-            <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
-        <span class="p">)</span>
-        <span class="k">return</span> <span class="kc">None</span>
-
-    <span class="c1"># Check that the found reasoning token and its associated end-of-reasoning tokens</span>
-    <span class="c1"># are both special tokens</span>
-    <span class="k">elif</span> <span class="n">completion_match</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">reasoning_token</span> <span class="o">=</span> <span class="n">completion_match</span><span class="o">.</span><span class="n">group</span><span class="p">()</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="k">assert</span> <span class="n">prompt_match</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
-        <span class="n">reasoning_token</span> <span class="o">=</span> <span class="n">prompt_match</span><span class="o">.</span><span class="n">group</span><span class="p">()</span>
-    <span class="n">end_of_reasoning_token</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;&lt;/</span><span class="si">{</span><span class="n">reasoning_token</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="s2">&gt;&quot;</span>
-    <span class="n">special_tokens</span> <span class="o">=</span> <span class="p">[</span>
-        <span class="n">decoder_token</span><span class="o">.</span><span class="n">content</span>
-        <span class="k">for</span> <span class="n">decoder_token</span> <span class="ow">in</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">added_tokens_decoder</span><span class="o">.</span><span class="n">values</span><span class="p">()</span>
+    <span class="n">bor_reasoning_matches</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="p">(</span><span class="n">bor_token</span><span class="p">,</span> <span class="n">eor_token</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">bor_token</span><span class="p">,</span> <span class="n">eor_token</span> <span class="ow">in</span> <span class="n">REASONING_TOKENS</span>
+        <span class="k">if</span> <span class="n">bor_token</span> <span class="ow">in</span> <span class="n">prompt</span> <span class="ow">or</span> <span class="n">bor_token</span> <span class="ow">in</span> <span class="n">completion</span>
     <span class="p">]</span>
-    <span class="n">special_tokens</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span>
-        <span class="p">[</span><span class="n">encoder_token</span> <span class="k">for</span> <span class="n">encoder_token</span> <span class="ow">in</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">added_tokens_encoder</span><span class="o">.</span><span class="n">keys</span><span class="p">()]</span>
-    <span class="p">)</span>
-    <span class="n">special_tokens</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">tokenizer</span><span class="o">.</span><span class="n">all_special_tokens</span><span class="p">)</span>
-    <span class="k">if</span> <span class="p">(</span>
-        <span class="n">reasoning_token</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">special_tokens</span>
-        <span class="ow">or</span> <span class="n">end_of_reasoning_token</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">special_tokens</span>
-    <span class="p">):</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">bor_reasoning_matches</span><span class="p">:</span>
         <span class="n">log_once</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;Detected reasoning token </span><span class="si">{</span><span class="n">reasoning_token</span><span class="si">!r}</span><span class="s2"> and end-of-reasoning &quot;</span>
-            <span class="sa">f</span><span class="s2">&quot;token </span><span class="si">{</span><span class="n">end_of_reasoning_token</span><span class="si">!r}</span><span class="s2"> for model </span><span class="si">{</span><span class="n">model_id</span><span class="si">!r}</span><span class="s2">, but one of &quot;</span>
-            <span class="s2">&quot;them is not registered as a special token, so assuming it is not a &quot;</span>
-            <span class="s2">&quot;real reasoning token.&quot;</span><span class="p">,</span>
-            <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
+            <span class="sa">f</span><span class="s2">&quot;The model </span><span class="si">{</span><span class="n">model_id</span><span class="si">!r}</span><span class="s2"> did not generate any beginning-of-reasoning &quot;</span>
+            <span class="s2">&quot;tokens in the prompt or the completion. Assuming the model is not &quot;</span>
+            <span class="s2">&quot;a reasoning model.&quot;</span><span class="p">,</span>
+            <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="k">return</span> <span class="kc">None</span>
 
+    <span class="c1"># Check that the beginning-of-reasoning token is actually used by the model</span>
+    <span class="n">completion</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">model</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span>
+            <span class="n">prompts</span><span class="o">=</span><span class="p">[</span><span class="n">prompt</span><span class="p">],</span>
+            <span class="n">sampling_params</span><span class="o">=</span><span class="n">SamplingParams</span><span class="p">(</span><span class="n">max_tokens</span><span class="o">=</span><span class="n">REASONING_MAX_TOKENS</span><span class="p">),</span>
+            <span class="n">use_tqdm</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="o">.</span><span class="n">outputs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="o">.</span><span class="n">text</span>
+    <span class="p">)</span>
+    <span class="n">eor_reasoning_matches</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="p">(</span><span class="n">bor_token</span><span class="p">,</span> <span class="n">eor_token</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">bor_token</span><span class="p">,</span> <span class="n">eor_token</span> <span class="ow">in</span> <span class="n">bor_reasoning_matches</span>
+        <span class="k">if</span> <span class="n">eor_token</span> <span class="ow">in</span> <span class="n">completion</span>
+    <span class="p">]</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">eor_reasoning_matches</span><span class="p">:</span>
+        <span class="n">log_once</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;The model </span><span class="si">{</span><span class="n">model_id</span><span class="si">!r}</span><span class="s2"> did not generate any end-of-reasoning &quot;</span>
+            <span class="s2">&quot;tokens in the prompt or the completion, even though it generated &quot;</span>
+            <span class="s2">&quot;the beginning-of-reasoning tokens &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="p">[</span><span class="n">bor_token</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">bor_token</span><span class="p">,</span><span class="w"> </span><span class="n">_</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="n">bor_reasoning_matches</span><span class="p">]</span><span class="si">!r}</span><span class="s2">. &quot;</span>
+            <span class="s2">&quot;This is probably not correct, so please report this issue.&quot;</span><span class="p">,</span>
+            <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="kc">None</span>
+
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">eor_reasoning_matches</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="n">log_once</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;Found multiple reasoning tokens </span><span class="si">{</span><span class="n">eor_reasoning_matches</span><span class="si">}</span><span class="s2"> for &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;model </span><span class="si">{</span><span class="n">model_id</span><span class="si">!r}</span><span class="s2">. Using </span><span class="si">{</span><span class="n">eor_reasoning_matches</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">!r}</span><span class="s2"> as &quot;</span>
+            <span class="s2">&quot;the reasoning token. If this is not the correct reasoning token, &quot;</span>
+            <span class="s2">&quot;please report this issue.&quot;</span><span class="p">,</span>
+            <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="n">bor_token</span><span class="p">,</span> <span class="n">eor_token</span> <span class="o">=</span> <span class="n">eor_reasoning_matches</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
     <span class="n">log_once</span><span class="p">(</span>
-        <span class="sa">f</span><span class="s2">&quot;Detected reasoning token </span><span class="si">{</span><span class="n">reasoning_token</span><span class="si">!r}</span><span class="s2"> and end-of-reasoning &quot;</span>
-        <span class="sa">f</span><span class="s2">&quot;token </span><span class="si">{</span><span class="n">end_of_reasoning_token</span><span class="si">!r}</span><span class="s2"> for model </span><span class="si">{</span><span class="n">model_id</span><span class="si">!r}</span><span class="s2">.&quot;</span><span class="p">,</span>
-        <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
+        <span class="sa">f</span><span class="s2">&quot;Detected beginning-of-reasoning token </span><span class="si">{</span><span class="n">bor_token</span><span class="si">!r}</span><span class="s2"> and end-of-reasoning &quot;</span>
+        <span class="sa">f</span><span class="s2">&quot;token </span><span class="si">{</span><span class="n">eor_token</span><span class="si">!r}</span><span class="s2"> for model </span><span class="si">{</span><span class="n">model_id</span><span class="si">!r}</span><span class="s2">.&quot;</span><span class="p">,</span>
+        <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">,</span>
     <span class="p">)</span>
 
-    <span class="c1"># Encode the end of reasoning token and return its ID</span>
-    <span class="n">end_of_reasoning_token_id</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span>
-        <span class="n">text</span><span class="o">=</span><span class="n">end_of_reasoning_token</span><span class="p">,</span> <span class="n">add_special_tokens</span><span class="o">=</span><span class="kc">False</span>
-    <span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">eor_token</span>
 
-    <span class="k">return</span> <span class="n">end_of_reasoning_token_id</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">get_custom_stop_tokens</span><span class="p">(</span><div class="mkapi-source-link" id="euroeval.benchmark_modules.vllm.get_custom_stop_tokens"><a href="../../../../api/euroeval/benchmark_modules/vllm/#euroeval.benchmark_modules.vllm.get_custom_stop_tokens" title="Go to docs">docs</a></div>
+    <span class="n">model</span><span class="p">:</span> <span class="s2">&quot;LLM&quot;</span><span class="p">,</span>
+    <span class="n">tokenizer</span><span class="p">:</span> <span class="s2">&quot;PreTrainedTokenizer&quot;</span><span class="p">,</span>
+    <span class="n">model_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">is_reasoning_model</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the stop tokens for a generative model.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        model:</span>
+<span class="sd">            The vLLM model.</span>
+<span class="sd">        tokenizer:</span>
+<span class="sd">            The tokenizer.</span>
+<span class="sd">        model_id:</span>
+<span class="sd">            The model ID.</span>
+<span class="sd">        is_reasoning_model:</span>
+<span class="sd">            Whether the model is a reasoning model. This is used to determine the number</span>
+<span class="sd">            of generated tokens to allow before stopping the generation.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        A list of stop tokens.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">candidate_stop_tokens</span> <span class="o">=</span> <span class="n">CUSTOM_STOP_TOKENS</span>
+
+    <span class="c1"># Create a prompt to check if the model uses the reasoning tokens</span>
+    <span class="n">prompt</span> <span class="o">=</span> <span class="s2">&quot;Hello&quot;</span>
+    <span class="k">if</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">chat_template</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">templated_prompt</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">apply_chat_template</span><span class="p">(</span>
+            <span class="n">conversation</span><span class="o">=</span><span class="p">[</span><span class="nb">dict</span><span class="p">(</span><span class="n">role</span><span class="o">=</span><span class="s2">&quot;user&quot;</span><span class="p">,</span> <span class="n">content</span><span class="o">=</span><span class="n">prompt</span><span class="p">)],</span>
+            <span class="n">add_generation_prompt</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="n">tokenize</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">templated_prompt</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span>
+        <span class="n">prompt</span> <span class="o">=</span> <span class="n">templated_prompt</span>
+
+    <span class="c1"># Check that the beginning-of-reasoning token is actually used by the model</span>
+    <span class="n">max_tokens</span> <span class="o">=</span> <span class="n">REASONING_MAX_TOKENS</span> <span class="k">if</span> <span class="n">is_reasoning_model</span> <span class="k">else</span> <span class="mi">10</span>
+    <span class="n">completion</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">model</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span>
+            <span class="n">prompts</span><span class="o">=</span><span class="p">[</span><span class="n">prompt</span><span class="p">],</span>
+            <span class="n">sampling_params</span><span class="o">=</span><span class="n">SamplingParams</span><span class="p">(</span><span class="n">max_tokens</span><span class="o">=</span><span class="n">max_tokens</span><span class="p">,</span> <span class="n">temperature</span><span class="o">=</span><span class="mf">0.0</span><span class="p">),</span>
+            <span class="n">use_tqdm</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="o">.</span><span class="n">outputs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="o">.</span><span class="n">text</span>
+    <span class="p">)</span>
+
+    <span class="n">stop_tokens</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="n">stop_token</span>
+        <span class="k">for</span> <span class="n">stop_token</span> <span class="ow">in</span> <span class="n">candidate_stop_tokens</span>
+        <span class="k">if</span> <span class="n">stop_token</span> <span class="ow">in</span> <span class="n">prompt</span> <span class="ow">or</span> <span class="n">stop_token</span> <span class="ow">in</span> <span class="n">completion</span>
+    <span class="p">]</span>
+    <span class="k">if</span> <span class="n">stop_tokens</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;Found the following custom stop tokens for model </span><span class="si">{</span><span class="n">model_id</span><span class="si">!r}</span><span class="s2">: &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">stop_tokens</span><span class="si">}</span><span class="s2">.&quot;</span>
+        <span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Found no custom stop tokens for model </span><span class="si">{</span><span class="n">model_id</span><span class="si">!r}</span><span class="s2">.&quot;</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">stop_tokens</span>
 </code></pre></div></td></tr></table></div>
 
 

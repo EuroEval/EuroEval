@@ -1298,7 +1298,16 @@
 <span class="normal">392</span>
 <span class="normal">393</span>
 <span class="normal">394</span>
-<span class="normal">395</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Utility functions related to tokenization.&quot;&quot;&quot;</span>
+<span class="normal">395</span>
+<span class="normal">396</span>
+<span class="normal">397</span>
+<span class="normal">398</span>
+<span class="normal">399</span>
+<span class="normal">400</span>
+<span class="normal">401</span>
+<span class="normal">402</span>
+<span class="normal">403</span>
+<span class="normal">404</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Utility functions related to tokenization.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
@@ -1308,7 +1317,6 @@
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">.constants</span><span class="w"> </span><span class="kn">import</span> <span class="n">TASK_GROUPS_USING_LOGPROBS</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.enums</span><span class="w"> </span><span class="kn">import</span> <span class="n">GenerativeType</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">.exceptions</span><span class="w"> </span><span class="kn">import</span> <span class="n">InvalidModel</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">log_once</span>
 
 <span class="k">if</span> <span class="n">t</span><span class="o">.</span><span class="n">TYPE_CHECKING</span><span class="p">:</span>
@@ -1453,7 +1461,9 @@
     <span class="k">return</span> <span class="n">add_prefix_space</span>
 
 
-<span class="k">def</span><span class="w"> </span><span class="nf">get_bos_token</span><span class="p">(</span><span class="n">tokenizer</span><span class="p">:</span> <span class="s2">&quot;PreTrainedTokenizer&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">]:</span><div class="mkapi-source-link" id="euroeval.tokenization_utils.get_bos_token"><a href="../../../api/euroeval/tokenization_utils/#euroeval.tokenization_utils.get_bos_token" title="Go to docs">docs</a></div>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_bos_token</span><span class="p">(</span><div class="mkapi-source-link" id="euroeval.tokenization_utils.get_bos_token"><a href="../../../api/euroeval/tokenization_utils/#euroeval.tokenization_utils.get_bos_token" title="Go to docs">docs</a></div>
+    <span class="n">tokenizer</span><span class="p">:</span> <span class="s2">&quot;PreTrainedTokenizer&quot;</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">]</span> <span class="o">|</span> <span class="nb">tuple</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the beginning-of-sequence token from a tokenizer.</span>
 
 <span class="sd">    Args:</span>
@@ -1462,7 +1472,7 @@
 
 <span class="sd">    Returns:</span>
 <span class="sd">        A pair (token, token_id) representing the beginning-of-sequence token and its</span>
-<span class="sd">        token ID.</span>
+<span class="sd">        token ID, or (None, None) if no BOS token is found.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">tokenizer</span><span class="o">.</span><span class="n">bos_token</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">tokenizer</span><span class="o">.</span><span class="n">bos_token_id</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
         <span class="k">return</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">bos_token</span><span class="p">,</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">bos_token_id</span>
@@ -1476,15 +1486,20 @@
             <span class="n">bos_token_id</span> <span class="o">=</span> <span class="n">vocab</span><span class="p">[</span><span class="n">bos_token</span><span class="p">]</span>
             <span class="k">break</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="n">InvalidModel</span><span class="p">(</span>
+        <span class="n">log_once</span><span class="p">(</span>
             <span class="s2">&quot;The model does not have a beginning-of-sequence token. Please ensure that &quot;</span>
-            <span class="s2">&quot;this has been set in the tokenizer&#39;s configuration.&quot;</span>
+            <span class="s2">&quot;this has been set in the tokenizer&#39;s configuration. Using no BOS token.&quot;</span>
+            <span class="s2">&quot; This may lead to unexpected behavior in the model.&quot;</span><span class="p">,</span>
+            <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">,</span>
         <span class="p">)</span>
+        <span class="k">return</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span>
 
     <span class="k">return</span> <span class="n">bos_token</span><span class="p">,</span> <span class="n">bos_token_id</span>
 
 
-<span class="k">def</span><span class="w"> </span><span class="nf">get_eos_token</span><span class="p">(</span><span class="n">tokenizer</span><span class="p">:</span> <span class="s2">&quot;PreTrainedTokenizer&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">]:</span><div class="mkapi-source-link" id="euroeval.tokenization_utils.get_eos_token"><a href="../../../api/euroeval/tokenization_utils/#euroeval.tokenization_utils.get_eos_token" title="Go to docs">docs</a></div>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_eos_token</span><span class="p">(</span><div class="mkapi-source-link" id="euroeval.tokenization_utils.get_eos_token"><a href="../../../api/euroeval/tokenization_utils/#euroeval.tokenization_utils.get_eos_token" title="Go to docs">docs</a></div>
+    <span class="n">tokenizer</span><span class="p">:</span> <span class="s2">&quot;PreTrainedTokenizer&quot;</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">]</span> <span class="o">|</span> <span class="nb">tuple</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the end-of-sequence token from a tokenizer.</span>
 
 <span class="sd">    Args:</span>
@@ -1493,7 +1508,7 @@
 
 <span class="sd">    Returns:</span>
 <span class="sd">        A pair (token, token_id) representing the end-of-sequence token and its token</span>
-<span class="sd">        ID.</span>
+<span class="sd">        ID, or (None, None) if no EOS token is found.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">tokenizer</span><span class="o">.</span><span class="n">eos_token</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">tokenizer</span><span class="o">.</span><span class="n">eos_token_id</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
         <span class="k">return</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">eos_token</span><span class="p">,</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">eos_token_id</span>
@@ -1507,10 +1522,13 @@
             <span class="n">eos_token_id</span> <span class="o">=</span> <span class="n">vocab</span><span class="p">[</span><span class="n">eos_token</span><span class="p">]</span>
             <span class="k">break</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="n">InvalidModel</span><span class="p">(</span>
+        <span class="n">log_once</span><span class="p">(</span>
             <span class="s2">&quot;The model does not have an end-of-sequence token. Please ensure that this &quot;</span>
-            <span class="s2">&quot;has been set in the tokenizer&#39;s configuration.&quot;</span>
+            <span class="s2">&quot;has been set in the tokenizer&#39;s configuration. Using no EOS token. This &quot;</span>
+            <span class="s2">&quot;may lead to unexpected behavior in the model.&quot;</span><span class="p">,</span>
+            <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">,</span>
         <span class="p">)</span>
+        <span class="k">return</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span>
 
     <span class="k">return</span> <span class="n">eos_token</span><span class="p">,</span> <span class="n">eos_token_id</span>
 

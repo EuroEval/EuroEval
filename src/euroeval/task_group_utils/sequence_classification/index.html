@@ -1329,7 +1329,7 @@
         <span class="k">if</span> <span class="n">first_label_token_mapping</span> <span class="ow">is</span> <span class="kc">False</span><span class="p">:</span>
             <span class="k">raise</span> <span class="n">InvalidBenchmark</span><span class="p">(</span>
                 <span class="s2">&quot;The model outputted logprobs, but the first label token mapping is &quot;</span>
-                <span class="s2">&quot;not provided. This means that the model should not output logprobs.&quot;</span>
+                <span class="s2">&quot;not provided, which is not supported.&quot;</span>
             <span class="p">)</span>
         <span class="n">labels</span> <span class="o">=</span> <span class="n">get_closest_logprobs_labels</span><span class="p">(</span>
             <span class="n">generation_logprobs</span><span class="o">=</span><span class="n">model_output</span><span class="o">.</span><span class="n">scores</span><span class="p">,</span>
