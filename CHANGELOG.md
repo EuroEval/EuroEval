@@ -7,7 +7,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 
 ## [Unreleased]
-
+### Fixed
+- Fixed an issue where the EOS token would be included in the vLLM generation output,
+  leading to incorrect evaluation results. We now manually remove all stop tokens from
+  the generation output, which fixes this issue.
 
 
 ## [v15.9.2] - 2025-06-04
