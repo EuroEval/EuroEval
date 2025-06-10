@@ -224,6 +224,72 @@ def get_eos_token(
     return eos_token, eos_token_id
 
 
+def get_pad_token(
+    tokenizer: "PreTrainedTokenizer",
+) -> tuple[str, int] | tuple[None, None]:
+    """Get the padding token from a tokenizer.
+
+    Args:
+        tokenizer:
+            The tokenizer.
+
+    Returns:
+        A pair (token, token_id) representing the padding token and its token ID, or
+        (None, None) if no padding token is found.
+    """
+    # If the tokenizer already has a padding token, return it
+    if tokenizer.pad_token is not None and tokenizer.pad_token_id is not None:
+        assert isinstance(tokenizer.pad_token, str), (
+            "Expected tokenizer.pad_token to be a string, but got "
+            f"{type(tokenizer.pad_token)}."
+        )
+        assert isinstance(tokenizer.pad_token_id, int), (
+            "Expected tokenizer.pad_token_id to be an integer, but got "
+            f"{type(tokenizer.pad_token_id)}."
+        )
+        return (tokenizer.pad_token, tokenizer.pad_token_id)
+
+    # If the tokenizer has a BOS token, use it as the padding token
+    if tokenizer.bos_token is not None and tokenizer.bos_token_id is not None:
+        assert isinstance(tokenizer.bos_token, str), (
+            "Expected tokenizer.bos_token to be a string, but got "
+            f"{type(tokenizer.bos_token)}."
+        )
+        assert isinstance(tokenizer.bos_token_id, int), (
+            "Expected tokenizer.bos_token_id to be an integer, but got "
+            f"{type(tokenizer.bos_token_id)}."
+        )
+        return (tokenizer.bos_token, tokenizer.bos_token_id)
+
+    # If the tokenizer has an EOS token, use it as the padding token
+    if tokenizer.eos_token is not None and tokenizer.eos_token_id is not None:
+        assert isinstance(tokenizer.eos_token, str), (
+            "Expected tokenizer.eos_token to be a string, but got "
+            f"{type(tokenizer.eos_token)}."
+        )
+        assert isinstance(tokenizer.eos_token_id, int), (
+            "Expected tokenizer.eos_token_id to be an integer, but got "
+            f"{type(tokenizer.eos_token_id)}."
+        )
+        return (tokenizer.eos_token, tokenizer.eos_token_id)
+
+    # Otherwise, try to find a candidate padding token in the vocabulary
+    pad_token_candidates = [
+        "<pad>",
+        "[pad]",
+        "<|endoftext|>",
+        "<｜end▁of▁sentence｜>",
+        "<|im_end|>",
+    ]
+    pad_token_candidates.extend([c.upper() for c in pad_token_candidates])
+    for candidate in pad_token_candidates:
+        if candidate in tokenizer.get_vocab():
+            pad_token_id = tokenizer.get_vocab()[candidate]
+            return candidate, pad_token_id
+    else:
+        return None, None
+
+
 def get_end_of_chat_token_ids(tokenizer: "PreTrainedTokenizer") -> list[int] | None:
     """Get the end token ID for chat models.
 

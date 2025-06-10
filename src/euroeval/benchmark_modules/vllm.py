@@ -69,6 +69,7 @@ from ..tokenization_utils import (
     get_end_of_chat_token_ids,
     get_eos_token,
     get_first_label_token_mapping,
+    get_pad_token,
     should_prompts_be_stripped,
 )
 from ..types import ExtractLabelsFunction
@@ -139,6 +140,9 @@ class VLLMModel(HuggingFaceEncoderModel):
         self._tokenizer: PreTrainedTokenizer = tokenizer
         self.end_of_reasoning_token = get_end_of_reasoning_token(
             model=self._model, tokenizer=self._tokenizer, model_id=model_config.model_id
+        )
+        self.end_of_chat_token_ids = get_end_of_chat_token_ids(
+            tokenizer=self._tokenizer
         )
         self.custom_stop_tokens = get_custom_stop_tokens(
             model=self._model,
@@ -303,55 +307,29 @@ class VLLMModel(HuggingFaceEncoderModel):
         Returns:
             The generated model outputs.
         """
-        # Define which tokens to use as stopping criteria. We want to use the padding
-        # token, end-of-sentence token, and a double newline if the model isn't
-        # instruction tuned (since these separate the few-shot examples in the input in
-        # this case)
+        # Get stopping tokens
         stop_tokens: list[str] = self.custom_stop_tokens.copy()
         if self.buffer["instruction_model"] is False:
             stop_tokens.append("\n\n")
         if self._tokenizer.pad_token_id is not None:
+            assert isinstance(self._tokenizer.pad_token, str), (
+                f"The pad token for the model {self.model_config.model_id!r} "
+                f"is not a string, which is unexpected: {self._tokenizer.pad_token!r}."
+            )
             stop_tokens.append(self._tokenizer.pad_token)
         if self._tokenizer.eos_token_id is not None:
+            assert isinstance(self._tokenizer.eos_token, str), (
+                f"The EOS token for the model {self.model_config.model_id!r} "
+                f"is not a string, which is unexpected: {self._tokenizer.eos_token!r}."
+            )
             stop_tokens.append(self._tokenizer.eos_token)
             if self._tokenizer.pad_token_id is None:
                 self._tokenizer.pad_token_id = self._tokenizer.eos_token_id
                 self._tokenizer.pad_token = self._tokenizer.eos_token
-        if (
-            self._tokenizer.bos_token_id is not None
-            and self._tokenizer.pad_token_id is None
-        ):
-            self._tokenizer.pad_token_id = self._tokenizer.bos_token_id
-            self._tokenizer.pad_token = self._tokenizer.bos_token
-        elif (
-            self._tokenizer.eos_token_id is not None
-            and self._tokenizer.pad_token_id is None
-        ):
-            self._tokenizer.pad_token_id = self._tokenizer.eos_token_id
-            self._tokenizer.pad_token = self._tokenizer.eos_token
-        elif self._tokenizer.pad_token_id is None:
-            pad_token_candidates = ["<pad>", "[pad]", "<|endoftext|>", "<|im_end|>"]
-            pad_token_candidates.extend([c.upper() for c in pad_token_candidates])
-            for candidate in pad_token_candidates:
-                if candidate in self._tokenizer.get_vocab():
-                    pad_token_id = self._tokenizer.get_vocab()[candidate]
-                    self._tokenizer.pad_token = candidate
-                    self._tokenizer.pad_token_id = pad_token_id
-                    break
-            else:
-                raise InvalidModel(
-                    "Could not find a suitable token to use as a padding token, since "
-                    "the model does not have a BOS, EOS, or padding token, and does "
-                    f"not have any of the following tokens in its vocabulary: "
-                    f"{pad_token_candidates}."
-                )
-
-        assert self._tokenizer.pad_token_id is not None
-
-        # Add end of chat token as a stopping token, if it exists
-        end_of_chat_token_ids = get_end_of_chat_token_ids(tokenizer=self._tokenizer)
-        if end_of_chat_token_ids is not None:
-            end_of_chat_token = self._tokenizer.decode(end_of_chat_token_ids).strip()
+        if self.end_of_chat_token_ids is not None:
+            end_of_chat_token = self._tokenizer.decode(
+                self.end_of_chat_token_ids
+            ).strip()
             if end_of_chat_token:
                 stop_tokens.append(end_of_chat_token)
 
@@ -912,8 +890,7 @@ def load_tokenizer(
     # Ensure that BOS, EOS and PAD tokens are set
     tokenizer.bos_token, tokenizer.bos_token_id = get_bos_token(tokenizer=tokenizer)
     tokenizer.eos_token, tokenizer.eos_token_id = get_eos_token(tokenizer=tokenizer)
-    if tokenizer.pad_token_id is None:
-        tokenizer.pad_token = tokenizer.eos_token
+    tokenizer.pad_token, tokenizer.pad_token_id = get_pad_token(tokenizer=tokenizer)
 
     return tokenizer
 
