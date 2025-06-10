@@ -185,6 +185,11 @@ def get_bos_token(
         )
         return None, None
 
+    log_once(
+        f"Beginning-of-sequence token was not set, but detected it as {bos_token!r} "
+        f"with ID {bos_token_id}.",
+        level=logging.DEBUG,
+    )
     return bos_token, bos_token_id
 
 
@@ -221,6 +226,11 @@ def get_eos_token(
         )
         return None, None
 
+    log_once(
+        f"End-of-sequence token was not set, but detected it as {eos_token!r} with "
+        f"ID {eos_token_id}.",
+        level=logging.DEBUG,
+    )
     return eos_token, eos_token_id
 
 
@@ -259,10 +269,11 @@ def get_pad_token(
             "Expected tokenizer.bos_token_id to be an integer, but got "
             f"{type(tokenizer.bos_token_id)}."
         )
-        return (tokenizer.bos_token, tokenizer.bos_token_id)
+        pad_token = tokenizer.bos_token
+        pad_token_id = tokenizer.bos_token_id
 
     # If the tokenizer has an EOS token, use it as the padding token
-    if tokenizer.eos_token is not None and tokenizer.eos_token_id is not None:
+    elif tokenizer.eos_token is not None and tokenizer.eos_token_id is not None:
         assert isinstance(tokenizer.eos_token, str), (
             "Expected tokenizer.eos_token to be a string, but got "
             f"{type(tokenizer.eos_token)}."
@@ -271,23 +282,39 @@ def get_pad_token(
             "Expected tokenizer.eos_token_id to be an integer, but got "
             f"{type(tokenizer.eos_token_id)}."
         )
-        return (tokenizer.eos_token, tokenizer.eos_token_id)
+        pad_token = tokenizer.eos_token
+        pad_token_id = tokenizer.eos_token_id
 
     # Otherwise, try to find a candidate padding token in the vocabulary
-    pad_token_candidates = [
-        "<pad>",
-        "[pad]",
-        "<|endoftext|>",
-        "<｜end▁of▁sentence｜>",
-        "<|im_end|>",
-    ]
-    pad_token_candidates.extend([c.upper() for c in pad_token_candidates])
-    for candidate in pad_token_candidates:
-        if candidate in tokenizer.get_vocab():
-            pad_token_id = tokenizer.get_vocab()[candidate]
-            return candidate, pad_token_id
     else:
-        return None, None
+        pad_token_candidates = [
+            "<pad>",
+            "[pad]",
+            "<|endoftext|>",
+            "<｜end▁of▁sentence｜>",
+            "<|im_end|>",
+        ]
+        pad_token_candidates.extend([c.upper() for c in pad_token_candidates])
+        for candidate in pad_token_candidates:
+            if candidate in tokenizer.get_vocab():
+                pad_token = candidate
+                pad_token_id = tokenizer.get_vocab()[candidate]
+                break
+        else:
+            log_once(
+                "Could not identify a padding token for the model. Please ensure that "
+                "this has been set in the tokenizer's configuration. Using no padding "
+                "token. This may lead to unexpected behavior in the model.",
+                level=logging.INFO,
+            )
+            return None, None
+
+    log_once(
+        f"Padding token was not set, but detected it as {pad_token!r} with ID "
+        f"{pad_token_id}.",
+        level=logging.DEBUG,
+    )
+    return pad_token, pad_token_id
 
 
 def get_end_of_chat_token_ids(tokenizer: "PreTrainedTokenizer") -> list[int] | None:
