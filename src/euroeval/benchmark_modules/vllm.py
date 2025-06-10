@@ -488,22 +488,18 @@ class VLLMModel(HuggingFaceEncoderModel):
                 torch.LongTensor(completion_id) for completion_id in completion_ids
             ]
         )
-        logger.debug(f"Very raw first output: {completions[0]!r}")  # TEMP
         if self.end_of_reasoning_token is not None:
             completions = [
                 completion.split(self.end_of_reasoning_token)[-1]
                 for completion in completions
             ]
-        if self.custom_stop_tokens:
-            stop_token_pattern = re.compile(
-                "|".join(
-                    re.escape(stop_token) for stop_token in self.custom_stop_tokens
-                )
-            )
-            completions = [
-                re.split(pattern=stop_token_pattern, string=completion)[0]
-                for completion in completions
-            ]
+        stop_token_pattern = re.compile(
+            "|".join(re.escape(stop_token) for stop_token in stop_tokens)
+        )
+        completions = [
+            re.split(pattern=stop_token_pattern, string=completion)[0]
+            for completion in completions
+        ]
         completions = [completion.strip() for completion in completions]
 
         # Sanity check
