@@ -355,6 +355,7 @@ class VLLMModel(HuggingFaceEncoderModel):
             if end_of_chat_token:
                 stop_tokens.append(end_of_chat_token)
 
+        breakpoint()
         logits_processor = None
         if self.dataset_config.task in TASKS_USING_JSON:
             if self.generative_type == GenerativeType.REASONING:
