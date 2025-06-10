@@ -393,14 +393,14 @@ def get_first_label_token_mapping(
     if tokenizer is None:
         if output_scores:
             log_once(
-                f"The model {model_config.model_id!r} will output scores, since the "
-                "dataset supports it and no tokenizer is available.",
+                f"We will use logprobs with the model {model_config.model_id!r} "
+                "since the dataset supports it and no tokenizer is available.",
                 level=logging.DEBUG,
             )
         else:
             log_once(
-                f"The model {model_config.model_id!r} will not output scores, since "
-                "the dataset does not support it and no tokenizer is available.",
+                f"We will not use logprobs with the model {model_config.model_id!r} "
+                "since the dataset does not support it and no tokenizer is available.",
                 level=logging.DEBUG,
             )
         return output_scores
@@ -461,7 +461,7 @@ def get_first_label_token_mapping(
             if not matching_tokens:
                 log_once(
                     f"No matching token found in token_list for label '{label}', so "
-                    "we will not output scores.",
+                    "we will not use logprobs with the model.",
                     level=logging.DEBUG,
                 )
                 return False
@@ -471,8 +471,8 @@ def get_first_label_token_mapping(
         # tokens are distinct
         if len(first_tokens) == len(set(first_tokens)):
             log_once(
-                "The model will output scores, since the first tokens of the labels "
-                "are distinct.",
+                "We will use logprobs with the model since the first tokens of the "
+                "labels are distinct.",
                 level=logging.DEBUG,
             )
             return {
@@ -481,7 +481,7 @@ def get_first_label_token_mapping(
             }
         else:
             log_once(
-                "The model will not output scores, since the first tokens of the "
+                "We will not use logprobs with the model since the first tokens of the "
                 "labels are not distinct. The first tokens for the labels "
                 f"{local_labels} are {first_tokens}"
             )
@@ -491,7 +491,8 @@ def get_first_label_token_mapping(
     # evaluation errors. This will force the label extraction to rely on word edit
     # distance instead of logprobs.
     log_once(
-        "The model will not output scores, since the dataset does not have labels.",
+        "We will not use logprobs with the model, since the dataset does not have "
+        "labels.",
         level=logging.DEBUG,
     )
     return False
