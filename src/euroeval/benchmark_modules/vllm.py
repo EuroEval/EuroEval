@@ -355,7 +355,6 @@ class VLLMModel(HuggingFaceEncoderModel):
             if end_of_chat_token:
                 stop_tokens.append(end_of_chat_token)
 
-        breakpoint()
         logits_processor = None
         if self.dataset_config.task in TASKS_USING_JSON:
             if self.generative_type == GenerativeType.REASONING:
@@ -782,6 +781,7 @@ def load_model_and_tokenizer(
         model_cache_dir=model_config.model_cache_dir,
         token=benchmark_config.api_key or os.getenv("HUGGINGFACE_API_KEY") or True,
     )
+    breakpoint()
 
     clear_vllm()
 
