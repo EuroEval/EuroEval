@@ -150,8 +150,6 @@ ALLOWED_PARAMS = {
     r"(xai/)?grok-2.*": [],
     r"(xai/)?grok-3(-fast)?(-beta)?": [],
     r"(xai/)?grok-3-mini(-fast)?(-beta)?": ["low", "high"],
-    # Ollama models
-    r"ollama_chat/.*": ["think"],
 }
 
 
@@ -226,7 +224,15 @@ class LiteLLMModel(BenchmarkModule):
         Returns:
             The generative type of the model, or None if it has not been set yet.
         """
-        if self.model_config.revision in {"think", "thinking"}:
+        if self.is_ollama:
+            ollama_model_id = "/".join(self.model_config.model_id.split("/")[1:])
+            reasoning_model = "thinking" in ollama.show(ollama_model_id).capabilities
+            type_ = (
+                GenerativeType.REASONING
+                if reasoning_model
+                else GenerativeType.INSTRUCTION_TUNED
+            )
+        elif self.model_config.revision in {"thinking"}:
             type_ = GenerativeType.REASONING
         elif re.fullmatch(
             pattern="|".join(REASONING_MODELS), string=self.model_config.model_id
@@ -330,18 +336,22 @@ class LiteLLMModel(BenchmarkModule):
                     level=logging.DEBUG,
                 )
 
+        # If the model is an Ollama reasoning model, we ensure that thinking is enabled
+        if self.is_ollama and self.generative_type == GenerativeType.REASONING:
+            generation_kwargs["think"] = True
+            log_once(
+                "Enabling thinking mode for Ollama model "
+                f"{self.model_config.model_id!r}",
+                level=logging.DEBUG,
+            )
+
+        # Handle manually set parameters
         if self.model_config.revision == "thinking":
             generation_kwargs["thinking"] = dict(
                 type="enabled", budget_tokens=REASONING_MAX_TOKENS - 1
             )
             log_once(
                 f"Enabling thinking mode for model {self.model_config.model_id!r}",
-                level=logging.DEBUG,
-            )
-        elif self.model_config.revision == "think":
-            generation_kwargs["think"] = True
-            log_once(
-                f"Enabling think mode for model {self.model_config.model_id!r}",
                 level=logging.DEBUG,
             )
         elif self.model_config.revision in {"low", "high"}:
@@ -700,7 +710,6 @@ class LiteLLMModel(BenchmarkModule):
         if self.is_ollama:
             ollama_model_id = "/".join(self.model_config.model_id.split("/")[1:])
             model_info = ollama.show(ollama_model_id).modelinfo
-            breakpoint()
             if model_info is not None:
                 num_params = model_info.get("general.parameter_count")
                 if num_params is not None:
