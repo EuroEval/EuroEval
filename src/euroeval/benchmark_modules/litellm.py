@@ -201,6 +201,11 @@ class LiteLLMModel(BenchmarkModule):
         self.is_ollama = model_config.model_id.startswith(
             "ollama/"
         ) or model_config.model_id.startswith("ollama_chat/")
+        self._ollama_show: ollama.ShowResponse = (
+            ollama.show("/".join(model_config.model_id.split("/")[1:]))
+            if self.is_ollama
+            else ollama.ShowResponse(model_info=None)
+        )
 
         raise_if_wrong_params(model_config=model_config, allowed_params=ALLOWED_PARAMS)
 
@@ -208,12 +213,6 @@ class LiteLLMModel(BenchmarkModule):
             model_config=model_config,
             dataset_config=dataset_config,
             benchmark_config=benchmark_config,
-        )
-
-        self._ollama_show: ollama.ShowResponse = (
-            ollama.show("/".join(self.model_config.model_id.split("/")[1:]))
-            if self.is_ollama
-            else ollama.ShowResponse(model_info=None)
         )
 
         self.buffer["first_label_token_mapping"] = get_first_label_token_mapping(
