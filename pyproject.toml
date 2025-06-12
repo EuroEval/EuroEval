@@ -38,7 +38,7 @@ dependencies = [
     "scikit-learn<1.6.0",
     "setuptools>=75.8.2",
     "demjson3>=3.0.6",
-    "ollama>=0.4.7",
+    "ollama>=0.5.1",
     "peft>=0.15.0",
 ]
 
