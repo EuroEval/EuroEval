@@ -150,6 +150,8 @@ ALLOWED_PARAMS = {
     r"(xai/)?grok-2.*": [],
     r"(xai/)?grok-3(-fast)?(-beta)?": [],
     r"(xai/)?grok-3-mini(-fast)?(-beta)?": ["low", "high"],
+    # Ollama models
+    r"ollama_chat/.*": ["think"],
 }
 
 
@@ -224,7 +226,7 @@ class LiteLLMModel(BenchmarkModule):
         Returns:
             The generative type of the model, or None if it has not been set yet.
         """
-        if self.model_config.revision == "thinking":
+        if self.model_config.revision in {"think", "thinking"}:
             type_ = GenerativeType.REASONING
         elif re.fullmatch(
             pattern="|".join(REASONING_MODELS), string=self.model_config.model_id
@@ -334,6 +336,12 @@ class LiteLLMModel(BenchmarkModule):
             )
             log_once(
                 f"Enabling thinking mode for model {self.model_config.model_id!r}",
+                level=logging.DEBUG,
+            )
+        elif self.model_config.revision == "think":
+            generation_kwargs["think"] = True
+            log_once(
+                f"Enabling think mode for model {self.model_config.model_id!r}",
                 level=logging.DEBUG,
             )
         elif self.model_config.revision in {"low", "high"}:
