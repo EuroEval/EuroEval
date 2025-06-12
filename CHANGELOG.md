@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 
 ## [Unreleased]
+### Changed
+- Updated `litellm` to `>=1.72.2`.
+- Updated `ollama` to `>=0.5.1`.
+
 ### Fixed
 - Fixed an issue where the EOS token would be included in the vLLM generation output,
   leading to incorrect evaluation results. We now manually remove all stop tokens from
