@@ -17,6 +17,7 @@ from types import MethodType
 import torch
 from datasets import DatasetDict
 from huggingface_hub import snapshot_download
+from mistral_common.tokens.tokenizers.mistral import MistralTokenizer
 from pydantic import conlist, create_model
 from tqdm.auto import tqdm
 from transformers.models.auto.configuration_auto import AutoConfig
@@ -783,9 +784,6 @@ def load_model_and_tokenizer(
             enable_prefix_caching=False,
             enable_lora=model_config.adapter_base_model_id is not None,
             max_lora_rank=256,
-            tokenizer_mode="mistral" if model_id.startswith("mistralai/") else "auto",
-            config_format="mistral" if model_id.startswith("mistralai/") else "auto",
-            load_format="mistral" if model_id.startswith("mistralai/") else "auto",
         )
     except (RuntimeError, ValueError, OSError) as e:
         if "awaiting a review from the repo authors" in str(e):
@@ -857,17 +855,22 @@ def load_tokenizer(
     num_retries = 5
     for _ in range(num_retries):
         try:
-            tokenizer = AutoTokenizer.from_pretrained(
-                model_id,
-                use_fast=True,
-                verbose=False,
-                trust_remote_code=trust_remote_code,
-                padding_side="left",
-                truncation_side="left",
-                model_max_length=model_max_length,
-                config=config,
-                token=token,
-            )
+            if model_id.startswith("mistralai/"):
+                tokenizer = MistralTokenizer.from_hf_hub(
+                    model_id, revision=revision, token=token
+                )
+            else:
+                tokenizer = AutoTokenizer.from_pretrained(
+                    model_id,
+                    use_fast=True,
+                    verbose=False,
+                    trust_remote_code=trust_remote_code,
+                    padding_side="left",
+                    truncation_side="left",
+                    model_max_length=model_max_length,
+                    config=config,
+                    token=token,
+                )
             break
         except (json.JSONDecodeError, OSError, TypeError) as e:
             if raise_errors:
