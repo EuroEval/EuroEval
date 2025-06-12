@@ -866,7 +866,7 @@ def load_tokenizer(
             if adapter_base_model_id is None or model_id == adapter_base_model_id:
                 raise InvalidModel(
                     f"Could not load tokenizer for model {model_id!r}. The error was "
-                    f"{str(e)}."
+                    f"{str(e)!r}."
                 )
             logger.debug(
                 f"Could not load tokenizer for {model_id!r}. Falling back to "
