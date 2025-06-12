@@ -783,6 +783,8 @@ def load_model_and_tokenizer(
             enable_prefix_caching=False,
             enable_lora=model_config.adapter_base_model_id is not None,
             max_lora_rank=256,
+            tokenizer_mode="mistral" if model_id.startswith("mistralai/") else "auto",
+            config_format="mistral" if model_id.startswith("mistralai/") else "auto",
         )
     except (RuntimeError, ValueError, OSError) as e:
         if "awaiting a review from the repo authors" in str(e):
