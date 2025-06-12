@@ -165,7 +165,12 @@ def get_bos_token(
         A pair (token, token_id) representing the beginning-of-sequence token and its
         token ID, or (None, None) if no BOS token is found.
     """
-    if isinstance(tokenizer.bos_token, str) and isinstance(tokenizer.bos_token_id, int):
+    if (
+        hasattr(tokenizer, "bos_token")
+        and hasattr(tokenizer, "bos_token_id")
+        and isinstance(tokenizer.bos_token, str)
+        and isinstance(tokenizer.bos_token_id, int)
+    ):
         return tokenizer.bos_token, tokenizer.bos_token_id
 
     vocab: dict[str, int] = tokenizer.get_vocab()
@@ -206,7 +211,12 @@ def get_eos_token(
         A pair (token, token_id) representing the end-of-sequence token and its token
         ID, or (None, None) if no EOS token is found.
     """
-    if isinstance(tokenizer.eos_token, str) and isinstance(tokenizer.eos_token_id, int):
+    if (
+        hasattr(tokenizer, "eos_token")
+        and hasattr(tokenizer, "eos_token_id")
+        and isinstance(tokenizer.eos_token, str)
+        and isinstance(tokenizer.eos_token_id, int)
+    ):
         return tokenizer.eos_token, tokenizer.eos_token_id
 
     vocab: dict[str, int] = tokenizer.get_vocab()
@@ -248,7 +258,12 @@ def get_pad_token(
         (None, None) if no padding token is found.
     """
     # If the tokenizer already has a padding token, return it
-    if tokenizer.pad_token is not None and tokenizer.pad_token_id is not None:
+    if (
+        hasattr(tokenizer, "pad_token")
+        and hasattr(tokenizer, "pad_token_id")
+        and tokenizer.pad_token is not None
+        and tokenizer.pad_token_id is not None
+    ):
         assert isinstance(tokenizer.pad_token, str), (
             "Expected tokenizer.pad_token to be a string, but got "
             f"{type(tokenizer.pad_token)}."
@@ -260,7 +275,12 @@ def get_pad_token(
         return (tokenizer.pad_token, tokenizer.pad_token_id)
 
     # If the tokenizer has a BOS token, use it as the padding token
-    if tokenizer.bos_token is not None and tokenizer.bos_token_id is not None:
+    if (
+        hasattr(tokenizer, "bos_token")
+        and hasattr(tokenizer, "bos_token_id")
+        and tokenizer.bos_token is not None
+        and tokenizer.bos_token_id is not None
+    ):
         assert isinstance(tokenizer.bos_token, str), (
             "Expected tokenizer.bos_token to be a string, but got "
             f"{type(tokenizer.bos_token)}."
@@ -273,7 +293,12 @@ def get_pad_token(
         pad_token_id = tokenizer.bos_token_id
 
     # If the tokenizer has an EOS token, use it as the padding token
-    elif tokenizer.eos_token is not None and tokenizer.eos_token_id is not None:
+    elif (
+        hasattr(tokenizer, "eos_token")
+        and hasattr(tokenizer, "eos_token_id")
+        and tokenizer.eos_token is not None
+        and tokenizer.eos_token_id is not None
+    ):
         assert isinstance(tokenizer.eos_token, str), (
             "Expected tokenizer.eos_token to be a string, but got "
             f"{type(tokenizer.eos_token)}."
@@ -334,7 +359,7 @@ def get_end_of_chat_token_ids(tokenizer: "PreTrainedTokenizer") -> list[int] | N
         ValueError:
             If the end-of-chat token could not be located.
     """
-    if tokenizer.chat_template is None:
+    if hasattr(tokenizer, "chat_template") and tokenizer.chat_template is None:
         return None
 
     user_message: dict[str, str] = dict(role="user", content="X")
