@@ -755,6 +755,7 @@ def load_model_and_tokenizer(
         model_max_length=true_max_model_len,
         model_cache_dir=model_config.model_cache_dir,
         token=benchmark_config.api_key or os.getenv("HUGGINGFACE_API_KEY") or True,
+        raise_errors=benchmark_config.raise_errors,
     )
 
     clear_vllm()
@@ -816,6 +817,7 @@ def load_tokenizer(
     model_max_length: int,
     model_cache_dir: str,
     token: str | bool,
+    raise_errors: bool,
 ) -> "PreTrainedTokenizer":
     """Load the tokenizer.
 
@@ -835,6 +837,8 @@ def load_tokenizer(
             The cache directory for the model.
         token:
             The Hugging Face API token.
+        raise_errors:
+            Whether to raise errors when loading the tokenizer.
 
     Returns:
         The loaded tokenizer.
@@ -863,7 +867,8 @@ def load_tokenizer(
             )
             break
         except (json.JSONDecodeError, OSError, TypeError) as e:
-            raise e
+            if raise_errors:
+                raise e
             if adapter_base_model_id is None or model_id == adapter_base_model_id:
                 raise InvalidModel(
                     f"Could not load tokenizer for model {model_id!r}. The error was "
