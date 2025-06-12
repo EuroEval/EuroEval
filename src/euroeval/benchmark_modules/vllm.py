@@ -863,6 +863,7 @@ def load_tokenizer(
             )
             break
         except (json.JSONDecodeError, OSError, TypeError) as e:
+            raise e
             if adapter_base_model_id is None or model_id == adapter_base_model_id:
                 raise InvalidModel(
                     f"Could not load tokenizer for model {model_id!r}. The error was "
