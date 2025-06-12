@@ -700,6 +700,7 @@ class LiteLLMModel(BenchmarkModule):
         if self.is_ollama:
             ollama_model_id = "/".join(self.model_config.model_id.split("/")[1:])
             model_info = ollama.show(ollama_model_id).modelinfo
+            breakpoint()
             if model_info is not None:
                 num_params = model_info.get("general.parameter_count")
                 if num_params is not None:
