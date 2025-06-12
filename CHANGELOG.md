@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 
 ## [Unreleased]
+### Added
+- Added `mistral_common` to dependencies, as it is required for the newer Mistral
+  models.
+
 ### Fixed
 - Fixed an issue where the EOS token would be included in the vLLM generation output,
   leading to incorrect evaluation results. We now manually remove all stop tokens from
