@@ -342,7 +342,7 @@ class LiteLLMModel(BenchmarkModule):
 
         # If the model is an Ollama reasoning model, we ensure that thinking is enabled
         if self.is_ollama and self.generative_type == GenerativeType.REASONING:
-            generation_kwargs["think"] = True
+            generation_kwargs["think"] = False
             log_once(
                 "Enabling thinking mode for Ollama model "
                 f"{self.model_config.model_id!r}",
