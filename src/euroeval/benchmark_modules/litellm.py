@@ -12,6 +12,7 @@ from time import sleep
 
 import litellm
 import ollama
+from aiohttp import ClientSession
 from datasets import DatasetDict
 from huggingface_hub import HfApi
 from huggingface_hub.errors import (
@@ -591,18 +592,22 @@ class LiteLLMModel(BenchmarkModule):
             is either the model response or an Exception.
         """
         # Get the LLM generations asynchronously
-        max_concurrent_calls = 20
-        semaphore = asyncio.Semaphore(max_concurrent_calls)
-        requests = [
-            add_semaphore_and_catch_exception(
-                litellm.acompletion(
-                    messages=conversation, max_retries=3, **generation_kwargs
-                ),
-                semaphore=semaphore,
-            )
-            for conversation in conversations
-        ]
-        responses = await tqdm_async.gather(*requests, leave=False)
+        async with ClientSession() as session:
+            max_concurrent_calls = 20
+            semaphore = asyncio.Semaphore(max_concurrent_calls)
+            requests = [
+                add_semaphore_and_catch_exception(
+                    litellm.acompletion(
+                        messages=conversation,
+                        max_retries=3,
+                        client=session,
+                        **generation_kwargs,
+                    ),
+                    semaphore=semaphore,
+                )
+                for conversation in conversations
+            ]
+            responses = await tqdm_async.gather(*requests, leave=False)
 
         # Separate the successful responses from the failed ones
         successes = [
