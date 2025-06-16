@@ -1056,16 +1056,15 @@ def get_custom_stop_tokens(
     return stop_tokens
 
 
-def get_pbar_without_leave(iterable: t.Iterable, **tqdm_kwargs) -> tqdm:
+def get_pbar_without_leave(**tqdm_kwargs) -> tqdm:
     """Get a progress bar for vLLM which disappears after completion.
 
     Args:
-        iterable:
-            The iterable to wrap with a progress bar.
         **tqdm_kwargs:
             Additional keyword arguments to pass to tqdm.
 
     Returns:
         A tqdm progress bar.
     """
-    return tqdm(iterable=iterable, leave=False, **tqdm_kwargs)
+    tqdm_kwargs.pop("leave", None)  # Remove the 'leave' key if it exists
+    return tqdm(leave=False, **tqdm_kwargs)
