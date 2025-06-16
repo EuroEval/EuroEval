@@ -24,6 +24,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   error _still_ occurs, we now give the user an informative error message on how to
   increase the maximum number of open file descriptors on their system.
 - Catch requests.ConnectionError when loading datasets.
+- When benchmarking encoder models on reading comprehension tasks, we allow the model
+  outputs to have more than two elements (start and end position logits), where we
+  instead just use the first two elements and ignore the rest.
 
 
 ## [v15.9.2] - 2025-06-04
