@@ -27,8 +27,6 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - When benchmarking encoder models on reading comprehension tasks, we allow the model
   outputs to have more than two elements (start and end position logits), where we
   instead just use the first two elements and ignore the rest.
-- Set `eval_accumulation_steps` to `32 / batch_size` rather than `32` to avoid out of
-  memory errors when evaluating encoder models.
 
 
 ## [v15.9.2] - 2025-06-04
