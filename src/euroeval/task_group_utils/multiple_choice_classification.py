@@ -21,7 +21,7 @@ logger = logging.getLogger("euroeval")
 
 
 class MultipleChoiceClassificationTrainer(Trainer):
-    """Trainer subclass for question answering tasks."""
+    """Trainer subclass for multiple-choice classification tasks."""
 
     def evaluate(  # type: ignore[override]
         self,
@@ -166,6 +166,7 @@ def postprocess_predictions_and_labels(
     all_labels: list[str] = list()
 
     pred_label_dict = defaultdict(list)
+    breakpoint()
     for pred_arr, example in zip(predictions, dataset):
         pred_label_dict[example["id"]].append((pred_arr[1], example["label"]))
 
