@@ -27,6 +27,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - When benchmarking encoder models on reading comprehension tasks, we allow the model
   outputs to have more than two elements (start and end position logits), where we
   instead just use the first two elements and ignore the rest.
+- When an encoder model outputs additional tensors aside from the logits, we now remove
+  these tensors from the output dictionary via the `preprocess_logits_for_metrics`
+  argument to `Trainer`.
 
 
 ## [v15.9.2] - 2025-06-04
