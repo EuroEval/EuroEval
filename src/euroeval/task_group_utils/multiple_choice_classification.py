@@ -166,7 +166,6 @@ def postprocess_predictions_and_labels(
     all_labels: list[str] = list()
 
     pred_label_dict = defaultdict(list)
-    breakpoint()
     for pred_arr, example in zip(predictions, dataset):
         pred_label_dict[example["id"]].append((pred_arr[1], example["label"]))
 

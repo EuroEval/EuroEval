@@ -200,6 +200,7 @@ def finetune_single_iteration(
         compute_metrics=model.compute_metrics,
         callbacks=[EarlyStoppingCallback(early_stopping_patience=2)],
         data_collator=model.data_collator,
+        preprocess_logits_for_metrics=remove_extra_tensors_from_logits,
     )
 
     if not benchmark_config.verbose:
@@ -316,3 +317,22 @@ def get_training_args(
         training_args._n_gpu = 1
 
     return training_args
+
+
+def remove_extra_tensors_from_logits(
+    logits: torch.Tensor | tuple[torch.Tensor, ...], labels: torch.Tensor
+) -> torch.Tensor:
+    """If the logits are a tuple, return only the first element.
+
+    Args:
+        logits:
+            The logits to process.
+        labels:
+            The labels to use for the processing.
+
+    Returns:
+        The processed logits.
+    """
+    if isinstance(logits, tuple):
+        logits = logits[0]
+    return logits
