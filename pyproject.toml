@@ -150,6 +150,8 @@ ignore = [
     "ANN101",
     # Type annotations for "cls" arguments
     "ANN102",
+    # Type annotations for *args
+    "ANN002",
     # Type annotations for **kwargs
     "ANN003",
     # Docstrings for **kwargs
