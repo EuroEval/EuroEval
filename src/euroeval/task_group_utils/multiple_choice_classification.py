@@ -57,6 +57,8 @@ class MultipleChoiceClassificationTrainer(Trainer):
         )
 
         predictions = output.predictions
+        if isinstance(predictions, tuple):
+            predictions = predictions[0]
         assert isinstance(predictions, np.ndarray)
 
         metrics = output.metrics
