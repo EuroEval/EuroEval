@@ -60,7 +60,6 @@ class MultipleChoiceClassificationTrainer(Trainer):
 
         predictions = output.predictions
         if isinstance(predictions, tuple):
-            breakpoint()
             predictions = predictions[0]
         assert isinstance(predictions, np.ndarray)
 
