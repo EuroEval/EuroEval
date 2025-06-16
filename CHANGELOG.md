@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 ### Changed
+- Updated `vllm` to `>=0.9.1`.
 - Updated `litellm` to `>=1.72.2`.
 - Updated `ollama` to `>=0.5.1`.
 - Better detecmtion of instruction-tuned models.

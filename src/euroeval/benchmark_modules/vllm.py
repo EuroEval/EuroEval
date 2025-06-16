@@ -7,12 +7,10 @@ import json
 import logging
 import os
 import re
-import sys
 import typing as t
 from functools import partial
 from pathlib import Path
 from time import sleep
-from types import MethodType
 
 import torch
 from datasets import DatasetDict
@@ -82,17 +80,12 @@ from ..utils import (
 from .hf import HuggingFaceEncoderModel, get_model_repo_info, load_hf_model_config
 
 if t.TYPE_CHECKING or importlib.util.find_spec("vllm") is not None:
-    from vllm import LLM, RequestOutput, SamplingParams
+    from vllm import LLM, SamplingParams
     from vllm.distributed.parallel_state import (
         destroy_distributed_environment,
         destroy_model_parallel,
     )
-    from vllm.inputs import PromptType
     from vllm.lora.request import LoRARequest
-    from vllm.model_executor.guided_decoding.guided_fields import GuidedDecodingRequest
-    from vllm.pooling_params import PoolingParams
-    from vllm.prompt_adapter.request import PromptAdapterRequest
-    from vllm.sampling_params import RequestOutputKind
 
 if t.TYPE_CHECKING or importlib.util.find_spec("outlines") is not None:
     from outlines.models.vllm import adapt_tokenizer
@@ -419,7 +412,7 @@ class VLLMModel(HuggingFaceEncoderModel):
                 raw_outputs = self._model.generate(
                     prompts=prompts,
                     sampling_params=sampling_params,
-                    use_tqdm=(not input_is_a_test),
+                    use_tqdm=False if input_is_a_test else get_pbar,
                     lora_request=self.buffer.get("lora_request"),
                 )
                 break
@@ -802,10 +795,6 @@ def load_model_and_tokenizer(
             f"The model {model_id!r} could not be loaded. The error was {e!r}."
         )
 
-    model._run_engine = MethodType(_run_engine_with_fixed_progress_bars, model)
-    model._validate_and_add_requests = MethodType(
-        _validate_and_add_requests_with_fixed_progress_bars, model
-    )
     model.config = hf_model_config
 
     return model, tokenizer
@@ -892,84 +881,6 @@ def load_tokenizer(
     tokenizer.pad_token, tokenizer.pad_token_id = get_pad_token(tokenizer=tokenizer)
 
     return tokenizer
-
-
-def _run_engine_with_fixed_progress_bars(
-    self: "LLM", use_tqdm: bool
-) -> list["RequestOutput"]:
-    if use_tqdm:
-        num_requests = self.llm_engine.get_num_unfinished_requests()
-        pbar = tqdm(
-            total=num_requests, leave=False, disable=hasattr(sys, "_called_from_test")
-        )
-    else:
-        pbar = None
-
-    # Run the engine.
-    outputs: list["RequestOutput"] = list()
-    while self.llm_engine.has_unfinished_requests():
-        step_outputs = self.llm_engine.step()
-        for output in step_outputs:
-            if output.finished:
-                outputs.append(output)
-                if pbar is not None:
-                    pbar.update(1)
-
-    if pbar is not None:
-        pbar.close()
-
-    # Sort the outputs by request ID. This is necessary because some requests may be
-    # finished earlier than its previous requests.
-    outputs = sorted(outputs, key=lambda x: int(x.request_id))
-
-    return outputs
-
-
-def _validate_and_add_requests_with_fixed_progress_bars(
-    self: "LLM",
-    prompts: "PromptType | c.Sequence[PromptType]",
-    params: "SamplingParams | c.Sequence[SamplingParams] | PoolingParams | c.Sequence[PoolingParams]",  # noqa: E501
-    *,
-    use_tqdm: bool,
-    lora_request: "c.Sequence[LoRARequest] | LoRARequest | None",
-    prompt_adapter_request: "PromptAdapterRequest | None",
-    tokenization_kwargs: dict[str, t.Any] | None = None,
-    guided_options: "GuidedDecodingRequest | None" = None,
-    priority: list[int] | None = None,
-) -> None:
-    if isinstance(prompts, (str, dict)):
-        # Convert a single prompt to a list.
-        prompts = [prompts]
-
-    num_requests = len(prompts)
-    if isinstance(params, list) and len(params) != num_requests:
-        raise ValueError("The lengths of prompts and params must be the same.")
-    if isinstance(lora_request, list) and len(lora_request) != num_requests:
-        raise ValueError("The lengths of prompts and lora_request must be the same.")
-
-    for sp in params if isinstance(params, list) else (params,):
-        if isinstance(sp, SamplingParams):
-            self._add_guided_params(sp, guided_options)
-
-            # We only care about the final output
-            sp.output_kind = RequestOutputKind.FINAL_ONLY
-
-    # Add requests to the engine.
-    it = prompts
-    if use_tqdm:
-        it = tqdm(it, desc="Adding requests", leave=False)
-
-    for i, prompt in enumerate(it):
-        self._add_request(
-            prompt,
-            params[i] if isinstance(params, c.Sequence) else params,
-            tokenization_kwargs=tokenization_kwargs,
-            lora_request=lora_request[i]
-            if isinstance(lora_request, c.Sequence)
-            else lora_request,
-            prompt_adapter_request=prompt_adapter_request,
-            priority=priority[i] if priority else 0,
-        )
 
 
 def clear_vllm() -> None:
@@ -1143,3 +1054,18 @@ def get_custom_stop_tokens(
         logger.debug(f"Found no custom stop tokens for model {model_id!r}.")
 
     return stop_tokens
+
+
+def get_pbar(iterable: t.Iterable, **tqdm_kwargs) -> tqdm:
+    """Get a progress bar for vLLM.
+
+    Args:
+        iterable:
+            The iterable to wrap with a progress bar.
+        **tqdm_kwargs:
+            Additional keyword arguments to pass to tqdm.
+
+    Returns:
+        A tqdm progress bar.
+    """
+    return tqdm(iterable=iterable, **tqdm_kwargs)
