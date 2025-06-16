@@ -13,6 +13,7 @@ from transformers.tokenization_utils_base import PreTrainedTokenizerBase
 from transformers.trainer import Trainer
 
 from ..data_models import BenchmarkConfig, DatasetConfig, GenerativeModelOutput
+from ..exceptions import InvalidBenchmark
 from ..tokenization_utils import get_special_token_metadata
 from ..utils import raise_if_model_output_contains_nan_values
 
@@ -495,6 +496,17 @@ def postprocess_predictions_and_labels(
     Returns:
         The postprocessed predictions and labels.
     """
+    if not isinstance(predictions, tuple):
+        raise InvalidBenchmark(
+            "The predictions should be a tuple of (start_logits, end_logits), but "
+            f"got {type(predictions)} instead."
+        )
+    elif len(predictions) != 2:
+        raise InvalidBenchmark(
+            "The predictions should be a tuple of (start_logits, end_logits), but "
+            f"got {len(predictions)} elements instead: {predictions}."
+        )
+
     all_start_logits, all_end_logits = predictions
 
     # Build a map from an example to its corresponding features, being the blocks of
