@@ -476,7 +476,7 @@ def prepare_test_examples(
 
 
 def postprocess_predictions_and_labels(
-    predictions: tuple[np.ndarray, np.ndarray],
+    predictions: tuple[np.ndarray, ...],
     dataset: "Dataset",
     prepared_dataset: "Dataset",
     cls_token_index: int,
@@ -485,7 +485,7 @@ def postprocess_predictions_and_labels(
 
     Args:
         predictions:
-            A pair of (start_logits, end_logits) predictions.
+            A tuple whose first two elements are (start_logits, end_logits).
         dataset:
             The dataset containing the examples.
         prepared_dataset:
@@ -496,18 +496,14 @@ def postprocess_predictions_and_labels(
     Returns:
         The postprocessed predictions and labels.
     """
-    if not isinstance(predictions, tuple):
+    if len(predictions) < 2:
         raise InvalidBenchmark(
-            "The predictions should be a tuple of (start_logits, end_logits), but "
-            f"got {type(predictions)} instead."
-        )
-    elif len(predictions) != 2:
-        raise InvalidBenchmark(
-            "The predictions should be a tuple of (start_logits, end_logits), but "
-            f"got {len(predictions)} elements instead: {predictions}."
+            "The predictions should be a tuple with the first two elements being "
+            "(start_logits, end_logits), but got {len(predictions)} elements instead: "
+            f"{predictions}."
         )
 
-    all_start_logits, all_end_logits = predictions
+    all_start_logits, all_end_logits = predictions[:2]
 
     # Build a map from an example to its corresponding features, being the blocks of
     # text from the context that we're feeding into the model. An example can have
