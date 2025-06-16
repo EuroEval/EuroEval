@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   avoid running into errors related to too many open file descriptors. In case this
   error _still_ occurs, we now give the user an informative error message on how to
   increase the maximum number of open file descriptors on their system.
+- Catch requests.ConnectionError when loading datasets.
 
 
 ## [v15.9.2] - 2025-06-04
