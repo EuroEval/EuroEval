@@ -30,6 +30,7 @@ from litellm.exceptions import (
     Timeout,
 )
 from litellm.llms.vertex_ai.common_utils import VertexAIError
+from litellm.router import Router
 from litellm.types.utils import ChoiceLogprobs, ModelResponse
 from pydantic import conlist, create_model
 from requests.exceptions import RequestException
@@ -264,7 +265,7 @@ class LiteLLMModel(BenchmarkModule):
             The generated model outputs.
         """
         assert "messages" in inputs, "The input must contain a 'messages' key."
-        conversations: list[list[dict[str, t.Any]]] = inputs["messages"]
+        conversations: list[list[litellm.AllMessageValues]] = inputs["messages"]
 
         # Get the mapping from labels to the first token in the label. We call this each
         # time we generate a new dataset since the dataset config can change
@@ -289,6 +290,7 @@ class LiteLLMModel(BenchmarkModule):
             api_key=self.benchmark_config.api_key,
             api_base=self.benchmark_config.api_base,
             api_version=self.benchmark_config.api_version,
+            max_retries=3,
         )
 
         # Set up the `response_format` generation argument if we are dealing with a task
@@ -304,6 +306,12 @@ class LiteLLMModel(BenchmarkModule):
                 last_message = conversation[-1]
                 assert isinstance(last_message, dict), (
                     f"Expected dict message, got {type(last_message)}"
+                )
+                assert "content" in last_message, (
+                    "Expected 'content' key in the last message of the conversation."
+                )
+                assert isinstance(last_message["content"], str), (
+                    "Expected 'content' to be a string."
                 )
                 assert "json" in last_message["content"].lower(), (
                     "Prompt must contain 'json' for JSON tasks."
@@ -374,7 +382,7 @@ class LiteLLMModel(BenchmarkModule):
         litellm.drop_params = True
 
         all_responses: dict[int, ModelResponse] = {}
-        conversations_to_run: list[tuple[int, list[dict[str, t.Any]]]] = list(
+        conversations_to_run: list[tuple[int, list[litellm.AllMessageValues]]] = list(
             enumerate(conversations)
         )
         for attempt in range(num_attempts := 10):
@@ -384,8 +392,9 @@ class LiteLLMModel(BenchmarkModule):
             batch_indices, batch_conversations = zip(*conversations_to_run)
             successes, failures = safe_run(
                 self._generate_async(
+                    model_id=self.model_config.model_id,
                     conversations=list(batch_conversations),
-                    generation_kwargs=generation_kwargs,
+                    **generation_kwargs,
                 )
             )
 
@@ -569,30 +578,42 @@ class LiteLLMModel(BenchmarkModule):
 
     async def _generate_async(
         self,
-        conversations: list[list[dict[str, t.Any]]],
-        generation_kwargs: dict[str, t.Any],
+        model_id: str,
+        conversations: list[list[litellm.AllMessageValues]],
+        **generation_kwargs,
     ) -> tuple[list[tuple[int, ModelResponse]], list[tuple[int, Exception]]]:
         """Generate outputs from the model asynchronously.
 
         Args:
+            model_id:
+                The ID of the model to use for generation.
             conversations:
                 The conversations to pass to the model.
-            generation_kwargs:
-                The generation kwargs to pass to the model.
+            **generation_kwargs:
+                Additional generation arguments to pass to the model.
 
         Returns:
             A tuple (successes, failures), each being a list of tuples (idx, content),
             where the `idx` corresponds to the index of `conversations`, and `content`
             is either the model response or an Exception.
         """
+        # Create a LiteLLM router, which will ensure that we only use a single client
+        # for all the requests, preventing "too many open files" errors
+        router = Router(
+            model_list=[
+                dict(
+                    model_name=self.model_config.model_id,
+                    litellm_params=generation_kwargs,
+                )
+            ]
+        )
+
         # Get the LLM generations asynchronously
         max_concurrent_calls = 20
         semaphore = asyncio.Semaphore(max_concurrent_calls)
         requests = [
             add_semaphore_and_catch_exception(
-                litellm.acompletion(
-                    messages=conversation, max_retries=3, **generation_kwargs
-                ),
+                router.acompletion(model=model_id, messages=conversation),
                 semaphore=semaphore,
             )
             for conversation in conversations
