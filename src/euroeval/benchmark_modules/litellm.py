@@ -530,15 +530,15 @@ class LiteLLMModel(BenchmarkModule):
             generation_kwargs["response_format"] = dict(type="json_object")
             return
         elif isinstance(
-            error,
-            (
-                APIConnectionError,
-                Timeout,
-                ServiceUnavailableError,
-                InternalServerError,
-                SystemError,
-            ),
+            error, (Timeout, ServiceUnavailableError, InternalServerError, SystemError)
         ):
+            logger.debug(
+                f"Service temporarily unavailable. The error message was: {error}. "
+                f"Retrying in 5 seconds..."
+            )
+            sleep(5)
+            return
+        elif isinstance(error, (APIConnectionError, OSError)):
             # If there are too many I/O connections, we increase the number of allowed
             # file descriptors
             if "too many open files" in error_msg:
@@ -551,12 +551,9 @@ class LiteLLMModel(BenchmarkModule):
                     "`ulimit -n <new-value>`, with <new-value> being greater than "
                     f"{previous_ulimit:,}. "
                 )
-            logger.debug(
-                f"Service temporarily unavailable. The error message was: {error}. "
-                f"Retrying in 5 seconds..."
+            raise InvalidBenchmark(
+                f"Encountered {type(error)} during generation: {error}."
             )
-            sleep(5)
-            return
 
         if isinstance(error, RateLimitError):
             raise InvalidModel(
