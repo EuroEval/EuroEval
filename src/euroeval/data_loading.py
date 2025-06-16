@@ -4,11 +4,11 @@ import logging
 import sys
 import time
 
+import requests
 from datasets import Dataset, DatasetDict, load_dataset
 from datasets.exceptions import DatasetsError
 from huggingface_hub.errors import HfHubHTTPError
 from numpy.random import Generator
-from requests import ReadTimeout
 
 from .data_models import BenchmarkConfig, DatasetConfig
 from .exceptions import HuggingFaceHubDown, InvalidBenchmark
@@ -101,7 +101,13 @@ def load_raw_data(dataset_config: "DatasetConfig", cache_dir: str) -> DatasetDic
                 token=unscramble("HjccJFhIozVymqXDVqTUTXKvYhZMTbfIjMxG_"),
             )
             break
-        except (FileNotFoundError, DatasetsError, ConnectionError, ReadTimeout):
+        except (
+            FileNotFoundError,
+            ConnectionError,
+            DatasetsError,
+            requests.ConnectionError,
+            requests.ReadTimeout,
+        ):
             logger.warning(
                 f"Failed to load dataset {dataset_config.huggingface_id!r}. Retrying..."
             )
