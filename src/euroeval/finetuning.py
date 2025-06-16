@@ -297,7 +297,7 @@ def get_training_args(
         save_total_limit=1,
         per_device_train_batch_size=batch_size,
         per_device_eval_batch_size=batch_size,
-        eval_accumulation_steps=32,
+        eval_accumulation_steps=32 // batch_size,
         optim=OptimizerNames.ADAMW_TORCH,
         learning_rate=2e-5,
         warmup_ratio=0.01,
