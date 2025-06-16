@@ -4,6 +4,7 @@ import collections.abc as c
 import logging
 import os
 import re
+import subprocess
 import typing as t
 from functools import cached_property, partial
 from time import sleep
@@ -537,12 +538,45 @@ class LiteLLMModel(BenchmarkModule):
                 SystemError,
             ),
         ):
-            logger.debug(
-                f"Service temporarily unavailable. The error message was: {error}. "
-                f"Retrying in 5 seconds..."
-            )
-            sleep(5)
-            return
+            # If there are too many I/O connections, we increase the number of allowed
+            # file descriptors
+            if "too many open files" in error_msg:
+                try:
+                    previous_ulimit = int(
+                        subprocess.check_output(["ulimit", "-n"], text=True).strip()
+                    )
+                    if previous_ulimit >= 8192:
+                        raise InvalidBenchmark(
+                            "There are too many file descriptors running. It is "
+                            f"currently set to {previous_ulimit:,}. Try increasing it "
+                            "by running `ulimit -n <new-value>`, with <new-value> "
+                            "being greater than {previous_ulimit:,}. "
+                        )
+                    subprocess.run(
+                        ["ulimit", "-n", "8192"],
+                        check=True,  # Throw CalledProcessError if the command fails
+                    )
+                    logger.info(
+                        "Increased the number of file descriptors from "
+                        f"{previous_ulimit:,} to 8,192 to avoid errors when "
+                        "evaluating the model. You can resume your previous value by "
+                        f"running `ulimit -n {previous_ulimit}` after the benchmark "
+                        "is done."
+                    )
+                    return
+                except subprocess.CalledProcessError:
+                    raise InvalidBenchmark(
+                        "Failed to increase the number of allowed open files. "
+                        "Please increase this with, e.g., `ulimit -n 8192`, and try "
+                        f"again. The error message was: {error}"
+                    )
+            else:
+                logger.debug(
+                    f"Service temporarily unavailable. The error message was: {error}. "
+                    f"Retrying in 5 seconds..."
+                )
+                sleep(5)
+                return
 
         if isinstance(error, RateLimitError):
             raise InvalidModel(
