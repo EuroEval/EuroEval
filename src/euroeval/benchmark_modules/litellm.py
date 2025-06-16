@@ -602,6 +602,11 @@ class LiteLLMModel(BenchmarkModule):
             if isinstance(response, Exception)
         ]
 
+        # Close connections
+        for request in requests:
+            if hasattr(request, "close"):
+                request.close()
+
         return successes, failures
 
     @staticmethod
