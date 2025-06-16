@@ -12,6 +12,8 @@ from transformers.tokenization_utils import PreTrainedTokenizer
 from transformers.tokenization_utils_base import BatchEncoding
 from transformers.trainer import Trainer
 
+from ..exceptions import InvalidBenchmark
+
 if t.TYPE_CHECKING:
     from ..types import Labels, Predictions
 
@@ -153,6 +155,12 @@ def postprocess_predictions_and_labels(
     Returns:
         The postprocessed predictions and labels.
     """
+    if predictions.ndim != 2 or predictions.shape[1] != 2:
+        raise InvalidBenchmark(
+            "Predictions must be a 2D array with shape (num_examples, 2). Found "
+            f"shape {predictions.shape}."
+        )
+
     mapping = {0: "a", 1: "b", 2: "c", 3: "d", 4: "e"}
 
     all_predictions: list[str] = list()
