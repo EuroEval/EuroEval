@@ -18,8 +18,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   the generation output, which fixes this issue.
 - Now correctly detects reasoning models for Ollama models and enables their new "think"
   parameter whenever a reasoning model is detected.
-- Now detects if too many I/O connections are open when evaluating API models, and fixes
-  it by increasing the maximum number of open file descriptors to 8,192.
+- Added a cap on the number of concurrent connections when evaluating API models, to
+  avoid running into errors related to too many open file descriptors. In case this
+  error _still_ occurs, we now give the user an informative error message on how to
+  increase the maximum number of open file descriptors on their system.
 
 
 ## [v15.9.2] - 2025-06-04
