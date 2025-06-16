@@ -121,6 +121,8 @@ def block_terminal_output() -> None:
     logging.getLogger("matplotlib.font_manager").setLevel(logging.CRITICAL)
     logging.getLogger("accelerate").setLevel(logging.CRITICAL)
     logging.getLogger("LiteLLM").setLevel(logging.CRITICAL)
+    logging.getLogger("LiteLLM Router").setLevel(logging.CRITICAL)
+    logging.getLogger("LiteLLM Proxy").setLevel(logging.CRITICAL)
     logging.getLogger("huggingface_hub").setLevel(logging.CRITICAL)
 
     # This suppresses vLLM logging
