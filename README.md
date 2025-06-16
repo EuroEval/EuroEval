@@ -17,7 +17,7 @@ ______________________________________________________________________
 [![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.0-4baaaa.svg)](https://github.com/EuroEval/EuroEval/blob/main/CODE_OF_CONDUCT.md)
 
 
-## Maintainers
+## Maintainer
 
 - Dan Saattrup Nielsen ([@saattrupdan](https://github.com/saattrupdan),
   dan.nielsen@alexandra.dk)
