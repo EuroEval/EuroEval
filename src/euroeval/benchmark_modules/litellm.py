@@ -5,14 +5,12 @@ import collections.abc as c
 import logging
 import os
 import re
-import subprocess
 import typing as t
 from functools import cached_property, partial
 from time import sleep
 
 import litellm
 import ollama
-from aiohttp import ClientSession
 from datasets import DatasetDict
 from huggingface_hub import HfApi
 from huggingface_hub.errors import (
@@ -543,14 +541,10 @@ class LiteLLMModel(BenchmarkModule):
             # If there are too many I/O connections, we increase the number of allowed
             # file descriptors
             if "too many open files" in error_msg:
-                previous_ulimit = int(
-                    subprocess.check_output(["ulimit", "-n"], text=True).strip()
-                )
                 raise InvalidBenchmark(
-                    "There are too many file descriptors running. It is currently set "
-                    f"to {previous_ulimit:,}. Try increasing it by running "
-                    "`ulimit -n <new-value>`, with <new-value> being greater than "
-                    f"{previous_ulimit:,}. "
+                    "There are too many file descriptors running. See the current "
+                    "value by running `ulimit -n`. Try increasing it by running "
+                    "`ulimit -n <new-value>` and try again."
                 )
             raise InvalidBenchmark(
                 f"Encountered {type(error)} during generation: {error}."
@@ -592,22 +586,18 @@ class LiteLLMModel(BenchmarkModule):
             is either the model response or an Exception.
         """
         # Get the LLM generations asynchronously
-        async with ClientSession() as session:
-            max_concurrent_calls = 20
-            semaphore = asyncio.Semaphore(max_concurrent_calls)
-            requests = [
-                add_semaphore_and_catch_exception(
-                    litellm.acompletion(
-                        messages=conversation,
-                        max_retries=3,
-                        client=session,
-                        **generation_kwargs,
-                    ),
-                    semaphore=semaphore,
-                )
-                for conversation in conversations
-            ]
-            responses = await tqdm_async.gather(*requests, leave=False)
+        max_concurrent_calls = 20
+        semaphore = asyncio.Semaphore(max_concurrent_calls)
+        requests = [
+            add_semaphore_and_catch_exception(
+                litellm.acompletion(
+                    messages=conversation, max_retries=3, **generation_kwargs
+                ),
+                semaphore=semaphore,
+            )
+            for conversation in conversations
+        ]
+        responses = await tqdm_async.gather(*requests, leave=False)
 
         # Separate the successful responses from the failed ones
         successes = [
