@@ -412,7 +412,7 @@ class VLLMModel(HuggingFaceEncoderModel):
                 raw_outputs = self._model.generate(
                     prompts=prompts,
                     sampling_params=sampling_params,
-                    use_tqdm=False if input_is_a_test else get_pbar,
+                    use_tqdm=False if input_is_a_test else get_pbar_without_leave,
                     lora_request=self.buffer.get("lora_request"),
                 )
                 break
@@ -1056,8 +1056,8 @@ def get_custom_stop_tokens(
     return stop_tokens
 
 
-def get_pbar(iterable: t.Iterable, **tqdm_kwargs) -> tqdm:
-    """Get a progress bar for vLLM.
+def get_pbar_without_leave(iterable: t.Iterable, **tqdm_kwargs) -> tqdm:
+    """Get a progress bar for vLLM which disappears after completion.
 
     Args:
         iterable:
@@ -1068,4 +1068,4 @@ def get_pbar(iterable: t.Iterable, **tqdm_kwargs) -> tqdm:
     Returns:
         A tqdm progress bar.
     """
-    return tqdm(iterable=iterable, **tqdm_kwargs)
+    return tqdm(iterable=iterable, leave=False, **tqdm_kwargs)
