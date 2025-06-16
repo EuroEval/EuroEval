@@ -1,5 +1,6 @@
 """Generative models from an inference API, using the LiteLLM framework."""
 
+import asyncio
 import collections.abc as c
 import logging
 import os
@@ -69,7 +70,7 @@ from ..task_group_utils import (
 from ..tokenization_utils import get_first_label_token_mapping
 from ..types import ExtractLabelsFunction
 from ..utils import (
-    catch_coroutine_exception,
+    add_semaphore_and_catch_exception,
     create_model_cache_dir,
     log_once,
     safe_run,
@@ -614,11 +615,14 @@ class LiteLLMModel(BenchmarkModule):
             is either the model response or an Exception.
         """
         # Get the LLM generations asynchronously
+        max_concurrent_calls = 20
+        semaphore = asyncio.Semaphore(max_concurrent_calls)
         requests = [
-            catch_coroutine_exception(
+            add_semaphore_and_catch_exception(
                 litellm.acompletion(
                     messages=conversation, max_retries=3, **generation_kwargs
-                )
+                ),
+                semaphore=semaphore,
             )
             for conversation in conversations
         ]
