@@ -298,11 +298,6 @@ def prepare_train_example(
         padding="max_length",
     )
 
-    # Since one example might give us several features if it has a long context, we
-    # need a map from a feature to its corresponding example. This key gives us just
-    # that
-    sample_mapping = tokenized_example.pop("overflow_to_sample_mapping")
-
     # The offset mappings will give us a map from token to character position in the
     # original context. This will help us compute the start_positions and
     # end_positions.
@@ -335,8 +330,7 @@ def prepare_train_example(
 
         # One example can give several spans, this is the index of the example
         # containing this span of text.
-        sample_index = sample_mapping[i]
-        answers = example["answers"][sample_index]
+        answers = example["answers"]
 
         # If no answers are given, set the cls_index as answer.
         if len(answers["answer_start"]) == 0:
