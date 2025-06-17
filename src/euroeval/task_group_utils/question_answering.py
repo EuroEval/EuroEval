@@ -56,7 +56,6 @@ class QuestionAnsweringTrainer(Trainer):
             compute_metrics=compute_metrics,
             callbacks=callbacks,
             data_collator=data_collator,
-            **kwargs,
         )
 
         # Get the CLS token id for the tokenizer
@@ -102,7 +101,6 @@ class QuestionAnsweringTrainer(Trainer):
             if self.args.use_legacy_prediction_loop
             else self.evaluation_loop
         )
-        breakpoint()
         try:
             output = eval_loop(
                 eval_dataloader,
@@ -115,6 +113,7 @@ class QuestionAnsweringTrainer(Trainer):
             self.compute_metrics = compute_metrics
 
         predictions = output.predictions
+        breakpoint()
         assert isinstance(predictions, tuple)
 
         metrics = output.metrics
