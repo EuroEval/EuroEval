@@ -8,11 +8,8 @@ from collections import defaultdict
 import evaluate
 import numpy as np
 from evaluate import EvaluationModule
-from transformers.tokenization_utils import PreTrainedTokenizer
-from transformers.tokenization_utils_base import PreTrainedTokenizerBase
 from transformers.trainer import Trainer
 
-from ..data_models import BenchmarkConfig, DatasetConfig, GenerativeModelOutput
 from ..exceptions import InvalidBenchmark
 from ..tokenization_utils import get_special_token_metadata
 from ..utils import raise_if_model_output_contains_nan_values
@@ -22,10 +19,16 @@ if t.TYPE_CHECKING:
     from datasets.arrow_dataset import Dataset
     from datasets.formatting.formatting import LazyRow
     from transformers.modeling_utils import PreTrainedModel
+    from transformers.tokenization_utils import PreTrainedTokenizer
+    from transformers.tokenization_utils_base import (
+        BatchEncoding,
+        PreTrainedTokenizerBase,
+    )
     from transformers.trainer_callback import TrainerCallback
     from transformers.trainer_utils import EvalPrediction
     from transformers.training_args import TrainingArguments
 
+    from ..data_models import BenchmarkConfig, DatasetConfig, GenerativeModelOutput
     from ..types import Labels, Predictions
 
 logger = logging.getLogger("euroeval")
@@ -239,7 +242,7 @@ def extract_labels_from_generation(
 
 def prepare_train_example(
     example: "LazyRow", tokenizer: "PreTrainedTokenizer"
-) -> "LazyRow":
+) -> "BatchEncoding":
     """Prepare the features for training.
 
     Args:
@@ -299,7 +302,6 @@ def prepare_train_example(
     # need a map from a feature to its corresponding example. This key gives us just
     # that
     sample_mapping = tokenized_example.pop("overflow_to_sample_mapping")
-    breakpoint()
 
     # The offset mappings will give us a map from token to character position in the
     # original context. This will help us compute the start_positions and
@@ -390,7 +392,7 @@ def prepare_train_example(
 
 def prepare_test_example(
     example: "LazyRow", tokenizer: "PreTrainedTokenizer"
-) -> "LazyRow":
+) -> "BatchEncoding":
     """Prepare test example.
 
     Args:
@@ -447,11 +449,6 @@ def prepare_test_example(
         padding="max_length",
     )
 
-    # Since one example might give us several features if it has a long context, we
-    # need a map from a feature to its corresponding example. This key gives us just
-    # that.
-    sample_mapping = tokenized_example.pop("overflow_to_sample_mapping")
-
     # We keep the id that gave us this feature and we will store the offset mappings.
     tokenized_example["id"] = list()
 
@@ -463,8 +460,7 @@ def prepare_test_example(
 
         # One example can give several spans, this is the index of the example
         # containing this span of text.
-        sample_index = sample_mapping[i]
-        tokenized_example.id.append(example["id"][sample_index])
+        tokenized_example.id.append(example["id"])
 
         # Set to (-1, -1) the offset_mapping that are not part of the context so it's
         # easy to determine if a token position is part of the context or not.
