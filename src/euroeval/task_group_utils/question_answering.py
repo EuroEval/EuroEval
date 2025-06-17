@@ -401,7 +401,7 @@ def prepare_test_example(
     # Some of the questions have lots of whitespace on the left, which is not useful
     # and will make the truncation of the context fail (the tokenized question will
     # take a lots of space). So we remove that left whitespace
-    example["question"] = [q.lstrip() for q in example["question"]]
+    example["question"] = example["question"].lstrip()
 
     # Extract special token metadata from the tokenizer
     special_token_metadata = get_special_token_metadata(tokenizer=tokenizer)
@@ -412,16 +412,14 @@ def prepare_test_example(
 
     # If the tokenizer is not adding special tokens, then we add them manually
     if not has_cls_token and not has_sep_token:
-        example["question"] = [
-            f"{cls_token}{q}{sep_token}" for q in example["question"]
-        ]
-        example["context"] = [f"{c}{sep_token}" for c in example["context"]]
+        example["question"] = cls_token + example["question"] + sep_token
+        example["context"] = example["context"] + sep_token
 
     # Set the stride used during tokenization, when the context is long enough to be
     # split into several features. Since we are always keeping the question tokens, we
     # need to make sure that the stride does not exceed the resulting maximum context
     # length.
-    max_question_tokens = max(len(tokenizer(q).input_ids) for q in example["question"])
+    max_question_tokens = len(tokenizer(example["question"]).input_ids)
     num_special_tokens = int(has_cls_token) + int(has_sep_token)
     stride = tokenizer.model_max_length // 4
     max_length = tokenizer.model_max_length - stride
