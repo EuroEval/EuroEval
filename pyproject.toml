@@ -26,7 +26,6 @@ dependencies = [
     "huggingface-hub>=0.30.1",
     "pyinfer>=0.0.3",
     "sentencepiece>=0.1.96",
-    "protobuf~=3.20.0",
     "sacremoses>=0.1.1",
     "more-itertools>=10.5.0",
     "tenacity>=9.0.0",
