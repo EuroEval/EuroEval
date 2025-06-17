@@ -432,27 +432,33 @@ class HuggingFaceEncoderModel(BenchmarkModule):
                     dict(
                         train=dataset["train"].map(
                             partial(
-                                question_answering.prepare_train_example,
+                                question_answering.prepare_train_examples,
                                 tokenizer=self._tokenizer,
                             ),
+                            batched=True,
+                            batch_size=1,
                             remove_columns=dataset["test"].column_names,
                             load_from_cache_file=False,
                             keep_in_memory=True,
                         ),
                         val=dataset["val"].map(
                             partial(
-                                question_answering.prepare_train_example,
+                                question_answering.prepare_train_examples,
                                 tokenizer=self._tokenizer,
                             ),
+                            batched=True,
+                            batch_size=1,
                             remove_columns=dataset["test"].column_names,
                             load_from_cache_file=False,
                             keep_in_memory=True,
                         ),
                         test=dataset["test"].map(
                             partial(
-                                question_answering.prepare_test_example,
+                                question_answering.prepare_test_examples,
                                 tokenizer=self._tokenizer,
                             ),
+                            batched=True,
+                            batch_size=1,
                             remove_columns=dataset["test"].column_names,
                             load_from_cache_file=False,
                             keep_in_memory=True,
