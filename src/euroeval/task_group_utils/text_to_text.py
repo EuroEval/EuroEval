@@ -6,8 +6,10 @@ import typing as t
 import evaluate
 import numpy as np
 from evaluate import EvaluationModule
+from lingua import IsoCode639_1, LanguageDetectorBuilder
 
-from ..constants import METRIC_ATTRIBUTES_TAKING_UP_MEMORY
+from ..benchmark_config_factory import get_correct_language_codes
+from ..constants import METRIC_ATTRIBUTES_TAKING_UP_MEMORY, MIN_CONFIDENCE_SCORE
 from ..data_models import BenchmarkConfig, DatasetConfig, GenerativeModelOutput
 from ..exceptions import InvalidBenchmark
 from ..utils import HiddenPrints, raise_if_model_output_contains_nan_values
@@ -69,6 +71,22 @@ def compute_metrics(
     else:
         predictions = model_outputs
 
+    # Set up languages and language detector with lingua
+    target_langs = get_correct_language_codes(
+        language_codes=[lang.code for lang in dataset_config.languages]
+    )
+    lingua_langs = [IsoCode639_1.from_str(lang_code) for lang_code in target_langs]
+
+    # We use the detector with all latin languages, since we do not want to be in
+    # single language mode for datasets that only have a single language.
+    # This is important for datasets that have 'multiple' languages, such as Norwegian.
+    # See: https://github.com/pemistahl/lingua-py#116-single-language-mode
+    detector = (
+        LanguageDetectorBuilder.from_all_languages_with_latin_script()
+        .with_preloaded_language_models()
+        .build()
+    )
+
     results: dict[str, float] = dict()
     for cfg in dataset_config.task.metrics:
         metric = metrics[cfg.name]
@@ -117,9 +135,40 @@ def compute_metrics(
         # process is not the main process
         if score_dict is not None:
             scores = score_dict[cfg.results_key]
+            confidence_values = detector.compute_language_confidence_values_in_parallel(
+                predictions
+            )
+
+            confidence_mask = []
+            # collect mask for samples with correct language
+            for confidences in confidence_values:
+                sample_confidence = sum(
+                    conf.value
+                    for conf in confidences
+                    if conf.language.iso_code_639_1 in lingua_langs
+                )
+                if sample_confidence >= MIN_CONFIDENCE_SCORE:
+                    confidence_mask.append(1)
+                else:
+                    confidence_mask.append(0)
+
+            # if scores is not an aggregate, then we multiply the sample scores with
+            # the mask
+            # otherwise we multiply the aggregate score with the proportion of samples
+            # that are in the correct language
             if isinstance(scores, list):
-                scores = sum(scores) / len(scores)
-            results[cfg.name] = scores
+                scores_np = np.array(scores)
+                confidence_mask_np = np.array(confidence_mask)
+                corrected_scores = scores_np * confidence_mask_np
+
+                final_score = np.mean(corrected_scores).item()
+            else:
+                proportion_correct = np.mean(confidence_mask).item()
+                corrected_score = scores * proportion_correct
+
+                final_score = corrected_score
+
+            results[cfg.name] = final_score
 
     return results
 
