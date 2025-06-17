@@ -102,6 +102,7 @@ class QuestionAnsweringTrainer(Trainer):
             if self.args.use_legacy_prediction_loop
             else self.evaluation_loop
         )
+        breakpoint()
         try:
             output = eval_loop(
                 eval_dataloader,
