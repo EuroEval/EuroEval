@@ -16,7 +16,7 @@
       
       
       <link rel="icon" href="../../../../gfx/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.11">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.14">
     
     
       
@@ -24,7 +24,7 @@
       
     
     
-      <link rel="stylesheet" href="../../../../assets/stylesheets/main.4af4bdda.min.css">
+      <link rel="stylesheet" href="../../../../assets/stylesheets/main.342714a4.min.css">
       
         
         <link rel="stylesheet" href="../../../../assets/stylesheets/palette.06af60db.min.css">
@@ -2417,8 +2417,8 @@ Convert a task group to a class name.</p>
 <span class="mkapi-object-name"><a href="./#euroeval.benchmark_modules.hf.HuggingFaceEncoderModel" title="euroeval.benchmark_modules.hf.HuggingFaceEncoderModel">HuggingFaceEncoderModel</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">model_config</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><a href="../../data_models/#euroeval.data_models.ModelConfig" title="euroeval.data_models.ModelConfig">ModelConfig</a></span><span class="mkapi-comma">, </span><span class="mkapi-arg">dataset_config</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><a href="../../data_models/#euroeval.data_models.DatasetConfig" title="euroeval.data_models.DatasetConfig">DatasetConfig</a></span><span class="mkapi-comma">, </span><span class="mkapi-arg">benchmark_config</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><a href="../../data_models/#euroeval.data_models.BenchmarkConfig" title="euroeval.data_models.BenchmarkConfig">BenchmarkConfig</a></span><span class="mkapi-paren">)</span></span>
 </p>
 <div class="mkapi-document">
-<p><p class="mkapi-bases" markdown="1">Bases :
-<span class="mkapi-base"><a href="../base/#euroeval.benchmark_modules.base.BenchmarkModule" title="euroeval.benchmark_modules.base.BenchmarkModule">BenchmarkModule</a></span></p></p>
+<p class="mkapi-bases">Bases :
+<span class="mkapi-base"><a href="../base/#euroeval.benchmark_modules.base.BenchmarkModule" title="euroeval.benchmark_modules.base.BenchmarkModule">BenchmarkModule</a></span></p>
 <p>An encoder model from the Hugging Face Hub.</p>
 <p>Initialise the model.</p>
 <p class="mkapi-section">
@@ -2459,9 +2459,24 @@ The benchmark configuration.</p>
 <div class="mkapi-section-content">
 <ul class="mkapi-item-list">
 <li>
+<p><span class="mkapi-item-name">num_params</span> : 
+<span class="mkapi-item-type">int</span> <span class="mkapi-dash">&mdash;</span>
+The number of parameters in the model.</p>
+</li>
+<li>
 <p><span class="mkapi-item-name">generative_type</span> : 
 <span class="mkapi-item-type"><a href="../../enums/#euroeval.enums.GenerativeType" title="euroeval.enums.GenerativeType">GenerativeType</a> | None</span> <span class="mkapi-dash">&mdash;</span>
 Get the generative type of the model.</p>
+</li>
+<li>
+<p><span class="mkapi-item-name">vocab_size</span> : 
+<span class="mkapi-item-type">int</span> <span class="mkapi-dash">&mdash;</span>
+The vocabulary size of the model.</p>
+</li>
+<li>
+<p><span class="mkapi-item-name">model_max_length</span> : 
+<span class="mkapi-item-type">int</span> <span class="mkapi-dash">&mdash;</span>
+The maximum context length of the model.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">data_collator</span> : 
@@ -2496,21 +2511,6 @@ The Trainer class to use for finetuning.</p>
 <div class="mkapi-section-content">
 <ul class="mkapi-item-list">
 <li>
-<p><span class="mkapi-item-name"><a href="./#euroeval.benchmark_modules.hf.HuggingFaceEncoderModel.num_params" title="euroeval.benchmark_modules.hf.HuggingFaceEncoderModel.num_params">num_params</a></span>
- <span class="mkapi-dash">&mdash;</span>
-The number of parameters in the model.</p>
-</li>
-<li>
-<p><span class="mkapi-item-name"><a href="./#euroeval.benchmark_modules.hf.HuggingFaceEncoderModel.vocab_size" title="euroeval.benchmark_modules.hf.HuggingFaceEncoderModel.vocab_size">vocab_size</a></span>
- <span class="mkapi-dash">&mdash;</span>
-The vocabulary size of the model.</p>
-</li>
-<li>
-<p><span class="mkapi-item-name"><a href="./#euroeval.benchmark_modules.hf.HuggingFaceEncoderModel.model_max_length" title="euroeval.benchmark_modules.hf.HuggingFaceEncoderModel.model_max_length">model_max_length</a></span>
- <span class="mkapi-dash">&mdash;</span>
-The maximum context length of the model.</p>
-</li>
-<li>
 <p><span class="mkapi-item-name"><a href="./#euroeval.benchmark_modules.hf.HuggingFaceEncoderModel.prepare_dataset" title="euroeval.benchmark_modules.hf.HuggingFaceEncoderModel.prepare_dataset">prepare_dataset</a></span>
  <span class="mkapi-dash">&mdash;</span>
 Prepare the dataset for the model.</p>
@@ -2538,9 +2538,9 @@ Fetch the model configuration.</p>
 <span class="mkapi-document-toggle" title="Toggle all docs">
 <i class="fa-regular fa-square-minus"></i>
 </span>
-</span><span class="mkapi-object-kind">method</span>
+</span><span class="mkapi-object-kind">property</span>
 <span class="mkapi-object-parent">
-<a href="./#euroeval.benchmark_modules.hf.HuggingFaceEncoderModel" title="euroeval.benchmark_modules.hf.HuggingFaceEncoderModel">HuggingFaceEncoderModel</a><span class="mkapi-dot">.</span></span><span class="mkapi-object-name"><a href="./#euroeval.benchmark_modules.hf.HuggingFaceEncoderModel.num_params" title="euroeval.benchmark_modules.hf.HuggingFaceEncoderModel.num_params">num_params</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-paren">)</span><span class="mkapi-arrow"> → </span><span class="mkapi-return">int</span></span>
+<a href="./#euroeval.benchmark_modules.hf.HuggingFaceEncoderModel" title="euroeval.benchmark_modules.hf.HuggingFaceEncoderModel">HuggingFaceEncoderModel</a><span class="mkapi-dot">.</span></span><span class="mkapi-object-name"><a href="./#euroeval.benchmark_modules.hf.HuggingFaceEncoderModel.num_params" title="euroeval.benchmark_modules.hf.HuggingFaceEncoderModel.num_params">num_params</a></span><span class="mkapi-signature"><span class="mkapi-colon">: </span><span class="mkapi-return">int</span></span>
 </p>
 <div class="mkapi-document">
 <p>The number of parameters in the model.</p>
@@ -2571,9 +2571,9 @@ The number of parameters in the model.</p>
 <span class="mkapi-document-toggle" title="Toggle all docs">
 <i class="fa-regular fa-square-minus"></i>
 </span>
-</span><span class="mkapi-object-kind">method</span>
+</span><span class="mkapi-object-kind">property</span>
 <span class="mkapi-object-parent">
-<a href="./#euroeval.benchmark_modules.hf.HuggingFaceEncoderModel" title="euroeval.benchmark_modules.hf.HuggingFaceEncoderModel">HuggingFaceEncoderModel</a><span class="mkapi-dot">.</span></span><span class="mkapi-object-name"><a href="./#euroeval.benchmark_modules.hf.HuggingFaceEncoderModel.vocab_size" title="euroeval.benchmark_modules.hf.HuggingFaceEncoderModel.vocab_size">vocab_size</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-paren">)</span><span class="mkapi-arrow"> → </span><span class="mkapi-return">int</span></span>
+<a href="./#euroeval.benchmark_modules.hf.HuggingFaceEncoderModel" title="euroeval.benchmark_modules.hf.HuggingFaceEncoderModel">HuggingFaceEncoderModel</a><span class="mkapi-dot">.</span></span><span class="mkapi-object-name"><a href="./#euroeval.benchmark_modules.hf.HuggingFaceEncoderModel.vocab_size" title="euroeval.benchmark_modules.hf.HuggingFaceEncoderModel.vocab_size">vocab_size</a></span><span class="mkapi-signature"><span class="mkapi-colon">: </span><span class="mkapi-return">int</span></span>
 </p>
 <div class="mkapi-document">
 <p>The vocabulary size of the model.</p>
@@ -2604,9 +2604,9 @@ The vocabulary size of the model.</p>
 <span class="mkapi-document-toggle" title="Toggle all docs">
 <i class="fa-regular fa-square-minus"></i>
 </span>
-</span><span class="mkapi-object-kind">method</span>
+</span><span class="mkapi-object-kind">property</span>
 <span class="mkapi-object-parent">
-<a href="./#euroeval.benchmark_modules.hf.HuggingFaceEncoderModel" title="euroeval.benchmark_modules.hf.HuggingFaceEncoderModel">HuggingFaceEncoderModel</a><span class="mkapi-dot">.</span></span><span class="mkapi-object-name"><a href="./#euroeval.benchmark_modules.hf.HuggingFaceEncoderModel.model_max_length" title="euroeval.benchmark_modules.hf.HuggingFaceEncoderModel.model_max_length">model_max_length</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-paren">)</span><span class="mkapi-arrow"> → </span><span class="mkapi-return">int</span></span>
+<a href="./#euroeval.benchmark_modules.hf.HuggingFaceEncoderModel" title="euroeval.benchmark_modules.hf.HuggingFaceEncoderModel">HuggingFaceEncoderModel</a><span class="mkapi-dot">.</span></span><span class="mkapi-object-name"><a href="./#euroeval.benchmark_modules.hf.HuggingFaceEncoderModel.model_max_length" title="euroeval.benchmark_modules.hf.HuggingFaceEncoderModel.model_max_length">model_max_length</a></span><span class="mkapi-signature"><span class="mkapi-colon">: </span><span class="mkapi-return">int</span></span>
 </p>
 <div class="mkapi-document">
 <p>The maximum context length of the model.</p>
@@ -3613,10 +3613,10 @@ The class name.</p>
     
     
       
-      <script id="__config" type="application/json">{"base": "../../../..", "features": ["navigation.top", "navigation.path", "navigation.prune", "navigation.indexes", "navigation.tabs", "navigation.tabs.sticky", "navigation.instant", "navigation.instant.prefetch", "navigation.instant.progress", "navigation.tracking", "navigation.sections"], "search": "../../../../assets/javascripts/workers/search.f8cc74c7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"base": "../../../..", "features": ["navigation.top", "navigation.path", "navigation.prune", "navigation.indexes", "navigation.tabs", "navigation.tabs.sticky", "navigation.instant", "navigation.instant.prefetch", "navigation.instant.progress", "navigation.tracking", "navigation.sections"], "search": "../../../../assets/javascripts/workers/search.d50fe291.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../../../assets/javascripts/bundle.c8b220af.min.js"></script>
+      <script src="../../../../assets/javascripts/bundle.13a4f30d.min.js"></script>
       
         <script src="../../../../javascript/mkapi.js"></script>
       

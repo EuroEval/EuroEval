@@ -12,7 +12,7 @@
       
       
       <link rel="icon" href="../../../gfx/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.11">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.14">
     
     
       
@@ -20,7 +20,7 @@
       
     
     
-      <link rel="stylesheet" href="../../../assets/stylesheets/main.4af4bdda.min.css">
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.342714a4.min.css">
       
         
         <link rel="stylesheet" href="../../../assets/stylesheets/palette.06af60db.min.css">
@@ -852,7 +852,7 @@
 <span class="mkapi-object-link">
 
 
-<a href="../../../api/euroeval/data_loading/#euroeval.data_loading" title="Go to docs">docs</a>
+<a href="../../../api/euroeval/data_loading/#euroeval.data_loading" title="Go to docs">[docs]</a>
 <span class="mkapi-document-toggle" title="Toggle all docs">
 <i class="fa-regular fa-square-minus"></i>
 </span>
@@ -983,17 +983,23 @@
 <span class="normal">122</span>
 <span class="normal">123</span>
 <span class="normal">124</span>
-<span class="normal">125</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Functions related to the loading of the data.&quot;&quot;&quot;</span>
+<span class="normal">125</span>
+<span class="normal">126</span>
+<span class="normal">127</span>
+<span class="normal">128</span>
+<span class="normal">129</span>
+<span class="normal">130</span>
+<span class="normal">131</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Functions related to the loading of the data.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
 
+<span class="kn">import</span><span class="w"> </span><span class="nn">requests</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">datasets</span><span class="w"> </span><span class="kn">import</span> <span class="n">Dataset</span><span class="p">,</span> <span class="n">DatasetDict</span><span class="p">,</span> <span class="n">load_dataset</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">datasets.exceptions</span><span class="w"> </span><span class="kn">import</span> <span class="n">DatasetsError</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">huggingface_hub.errors</span><span class="w"> </span><span class="kn">import</span> <span class="n">HfHubHTTPError</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">numpy.random</span><span class="w"> </span><span class="kn">import</span> <span class="n">Generator</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">requests</span><span class="w"> </span><span class="kn">import</span> <span class="n">ReadTimeout</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">.data_models</span><span class="w"> </span><span class="kn">import</span> <span class="n">BenchmarkConfig</span><span class="p">,</span> <span class="n">DatasetConfig</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.exceptions</span><span class="w"> </span><span class="kn">import</span> <span class="n">HuggingFaceHubDown</span><span class="p">,</span> <span class="n">InvalidBenchmark</span>
@@ -1002,7 +1008,7 @@
 <span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">&quot;euroeval&quot;</span><span class="p">)</span>
 
 
-<span class="k">def</span><span class="w"> </span><span class="nf">load_data</span><span class="p">(</span><div class="mkapi-source-link" id="euroeval.data_loading.load_data"><a href="../../../api/euroeval/data_loading/#euroeval.data_loading.load_data" title="Go to docs">docs</a></div>
+<span class="k">def</span><span class="w"> </span><span class="nf">load_data</span><span class="p">(</span><div class="mkapi-source-link" id="euroeval.data_loading.load_data"><a href="../../../api/euroeval/data_loading/#euroeval.data_loading.load_data" title="Go to docs">[docs]</a></div>
     <span class="n">rng</span><span class="p">:</span> <span class="n">Generator</span><span class="p">,</span> <span class="n">dataset_config</span><span class="p">:</span> <span class="s2">&quot;DatasetConfig&quot;</span><span class="p">,</span> <span class="n">benchmark_config</span><span class="p">:</span> <span class="s2">&quot;BenchmarkConfig&quot;</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">DatasetDict</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Load the raw bootstrapped datasets.</span>
@@ -1064,7 +1070,7 @@
     <span class="p">]</span>
     <span class="k">return</span> <span class="n">datasets</span>
 
-<div class="mkapi-source-link" id="euroeval.data_loading.load_raw_data"><a href="../../../api/euroeval/data_loading/#euroeval.data_loading.load_raw_data" title="Go to docs">docs</a></div>
+<div class="mkapi-source-link" id="euroeval.data_loading.load_raw_data"><a href="../../../api/euroeval/data_loading/#euroeval.data_loading.load_raw_data" title="Go to docs">[docs]</a></div>
 <span class="k">def</span><span class="w"> </span><span class="nf">load_raw_data</span><span class="p">(</span><span class="n">dataset_config</span><span class="p">:</span> <span class="s2">&quot;DatasetConfig&quot;</span><span class="p">,</span> <span class="n">cache_dir</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DatasetDict</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Load the raw dataset.</span>
 
@@ -1086,7 +1092,13 @@
                 <span class="n">token</span><span class="o">=</span><span class="n">unscramble</span><span class="p">(</span><span class="s2">&quot;HjccJFhIozVymqXDVqTUTXKvYhZMTbfIjMxG_&quot;</span><span class="p">),</span>
             <span class="p">)</span>
             <span class="k">break</span>
-        <span class="k">except</span> <span class="p">(</span><span class="ne">FileNotFoundError</span><span class="p">,</span> <span class="n">DatasetsError</span><span class="p">,</span> <span class="ne">ConnectionError</span><span class="p">,</span> <span class="n">ReadTimeout</span><span class="p">):</span>
+        <span class="k">except</span> <span class="p">(</span>
+            <span class="ne">FileNotFoundError</span><span class="p">,</span>
+            <span class="ne">ConnectionError</span><span class="p">,</span>
+            <span class="n">DatasetsError</span><span class="p">,</span>
+            <span class="n">requests</span><span class="o">.</span><span class="n">ConnectionError</span><span class="p">,</span>
+            <span class="n">requests</span><span class="o">.</span><span class="n">ReadTimeout</span><span class="p">,</span>
+        <span class="p">):</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
                 <span class="sa">f</span><span class="s2">&quot;Failed to load dataset </span><span class="si">{</span><span class="n">dataset_config</span><span class="o">.</span><span class="n">huggingface_id</span><span class="si">!r}</span><span class="s2">. Retrying...&quot;</span>
             <span class="p">)</span>
@@ -1116,6 +1128,9 @@
 
 
 
+
+  
+  
 
 
 
@@ -1166,10 +1181,10 @@
     
     
       
-      <script id="__config" type="application/json">{"base": "../../..", "features": ["navigation.top", "navigation.path", "navigation.prune", "navigation.indexes", "navigation.tabs", "navigation.tabs.sticky", "navigation.instant", "navigation.instant.prefetch", "navigation.instant.progress", "navigation.tracking", "navigation.sections"], "search": "../../../assets/javascripts/workers/search.f8cc74c7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"base": "../../..", "features": ["navigation.top", "navigation.path", "navigation.prune", "navigation.indexes", "navigation.tabs", "navigation.tabs.sticky", "navigation.instant", "navigation.instant.prefetch", "navigation.instant.progress", "navigation.tracking", "navigation.sections"], "search": "../../../assets/javascripts/workers/search.d50fe291.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../../assets/javascripts/bundle.c8b220af.min.js"></script>
+      <script src="../../../assets/javascripts/bundle.13a4f30d.min.js"></script>
       
         <script src="../../../javascript/mkapi.js"></script>
       

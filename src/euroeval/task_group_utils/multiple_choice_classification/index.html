@@ -12,7 +12,7 @@
       
       
       <link rel="icon" href="../../../../gfx/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.11">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.14">
     
     
       
@@ -20,7 +20,7 @@
       
     
     
-      <link rel="stylesheet" href="../../../../assets/stylesheets/main.4af4bdda.min.css">
+      <link rel="stylesheet" href="../../../../assets/stylesheets/main.342714a4.min.css">
       
         
         <link rel="stylesheet" href="../../../../assets/stylesheets/palette.06af60db.min.css">
@@ -876,7 +876,7 @@
 <span class="mkapi-object-link">
 
 
-<a href="../../../../api/euroeval/task_group_utils/multiple_choice_classification/#euroeval.task_group_utils.multiple_choice_classification" title="Go to docs">docs</a>
+<a href="../../../../api/euroeval/task_group_utils/multiple_choice_classification/#euroeval.task_group_utils.multiple_choice_classification" title="Go to docs">[docs]</a>
 <span class="mkapi-document-toggle" title="Toggle all docs">
 <i class="fa-regular fa-square-minus"></i>
 </span>
@@ -1066,7 +1066,17 @@
 <span class="normal">181</span>
 <span class="normal">182</span>
 <span class="normal">183</span>
-<span class="normal">184</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Utility functions related to the multiple-choice classification task group.&quot;&quot;&quot;</span>
+<span class="normal">184</span>
+<span class="normal">185</span>
+<span class="normal">186</span>
+<span class="normal">187</span>
+<span class="normal">188</span>
+<span class="normal">189</span>
+<span class="normal">190</span>
+<span class="normal">191</span>
+<span class="normal">192</span>
+<span class="normal">193</span>
+<span class="normal">194</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Utility functions related to the multiple-choice classification task group.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">hashlib</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
@@ -1080,16 +1090,18 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">transformers.tokenization_utils_base</span><span class="w"> </span><span class="kn">import</span> <span class="n">BatchEncoding</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">transformers.trainer</span><span class="w"> </span><span class="kn">import</span> <span class="n">Trainer</span>
 
+<span class="kn">from</span><span class="w"> </span><span class="nn">..exceptions</span><span class="w"> </span><span class="kn">import</span> <span class="n">InvalidBenchmark</span>
+
 <span class="k">if</span> <span class="n">t</span><span class="o">.</span><span class="n">TYPE_CHECKING</span><span class="p">:</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">..types</span><span class="w"> </span><span class="kn">import</span> <span class="n">Labels</span><span class="p">,</span> <span class="n">Predictions</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">&quot;euroeval&quot;</span><span class="p">)</span>
 
 
-<span class="k">class</span><span class="w"> </span><span class="nc">MultipleChoiceClassificationTrainer</span><span class="p">(</span><span class="n">Trainer</span><span class="p">):</span><div class="mkapi-source-link" id="euroeval.task_group_utils.multiple_choice_classification.MultipleChoiceClassificationTrainer"><a href="../../../../api/euroeval/task_group_utils/multiple_choice_classification/#euroeval.task_group_utils.multiple_choice_classification.MultipleChoiceClassificationTrainer" title="Go to docs">docs</a></div>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Trainer subclass for question answering tasks.&quot;&quot;&quot;</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">MultipleChoiceClassificationTrainer</span><span class="p">(</span><span class="n">Trainer</span><span class="p">):</span><div class="mkapi-source-link" id="euroeval.task_group_utils.multiple_choice_classification.MultipleChoiceClassificationTrainer"><a href="../../../../api/euroeval/task_group_utils/multiple_choice_classification/#euroeval.task_group_utils.multiple_choice_classification.MultipleChoiceClassificationTrainer" title="Go to docs">[docs]</a></div>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Trainer subclass for multiple-choice classification tasks.&quot;&quot;&quot;</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="nf">evaluate</span><span class="p">(</span>  <span class="c1"># type: ignore[override]</span><div class="mkapi-source-link" id="euroeval.task_group_utils.multiple_choice_classification.MultipleChoiceClassificationTrainer.evaluate"><a href="../../../../api/euroeval/task_group_utils/multiple_choice_classification/#euroeval.task_group_utils.multiple_choice_classification.MultipleChoiceClassificationTrainer.evaluate" title="Go to docs">docs</a></div>
+    <span class="k">def</span><span class="w"> </span><span class="nf">evaluate</span><span class="p">(</span>  <span class="c1"># type: ignore[override]</span><div class="mkapi-source-link" id="euroeval.task_group_utils.multiple_choice_classification.MultipleChoiceClassificationTrainer.evaluate"><a href="../../../../api/euroeval/task_group_utils/multiple_choice_classification/#euroeval.task_group_utils.multiple_choice_classification.MultipleChoiceClassificationTrainer.evaluate" title="Go to docs">[docs]</a></div>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">eval_dataset</span><span class="p">:</span> <span class="s2">&quot;Dataset | None&quot;</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">ignore_keys</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -1125,6 +1137,8 @@
         <span class="p">)</span>
 
         <span class="n">predictions</span> <span class="o">=</span> <span class="n">output</span><span class="o">.</span><span class="n">predictions</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">predictions</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">):</span>
+            <span class="n">predictions</span> <span class="o">=</span> <span class="n">predictions</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
         <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">predictions</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span>
 
         <span class="n">metrics</span> <span class="o">=</span> <span class="n">output</span><span class="o">.</span><span class="n">metrics</span>
@@ -1156,7 +1170,7 @@
         <span class="k">return</span> <span class="n">metrics</span>
 
 
-<span class="k">def</span><span class="w"> </span><span class="nf">prepare_examples</span><span class="p">(</span><div class="mkapi-source-link" id="euroeval.task_group_utils.multiple_choice_classification.prepare_examples"><a href="../../../../api/euroeval/task_group_utils/multiple_choice_classification/#euroeval.task_group_utils.multiple_choice_classification.prepare_examples" title="Go to docs">docs</a></div>
+<span class="k">def</span><span class="w"> </span><span class="nf">prepare_examples</span><span class="p">(</span><div class="mkapi-source-link" id="euroeval.task_group_utils.multiple_choice_classification.prepare_examples"><a href="../../../../api/euroeval/task_group_utils/multiple_choice_classification/#euroeval.task_group_utils.multiple_choice_classification.prepare_examples" title="Go to docs">[docs]</a></div>
     <span class="n">examples</span><span class="p">:</span> <span class="s2">&quot;BatchEncoding&quot;</span><span class="p">,</span> <span class="n">tokenizer</span><span class="p">:</span> <span class="s2">&quot;PreTrainedTokenizer&quot;</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;BatchEncoding&quot;</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Prepare the features.</span>
@@ -1204,7 +1218,7 @@
     <span class="k">return</span> <span class="n">new_examples</span>
 
 
-<span class="k">def</span><span class="w"> </span><span class="nf">postprocess_predictions_and_labels</span><span class="p">(</span><div class="mkapi-source-link" id="euroeval.task_group_utils.multiple_choice_classification.postprocess_predictions_and_labels"><a href="../../../../api/euroeval/task_group_utils/multiple_choice_classification/#euroeval.task_group_utils.multiple_choice_classification.postprocess_predictions_and_labels" title="Go to docs">docs</a></div>
+<span class="k">def</span><span class="w"> </span><span class="nf">postprocess_predictions_and_labels</span><span class="p">(</span><div class="mkapi-source-link" id="euroeval.task_group_utils.multiple_choice_classification.postprocess_predictions_and_labels"><a href="../../../../api/euroeval/task_group_utils/multiple_choice_classification/#euroeval.task_group_utils.multiple_choice_classification.postprocess_predictions_and_labels" title="Go to docs">[docs]</a></div>
     <span class="n">predictions</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">dataset</span><span class="p">:</span> <span class="s2">&quot;Dataset&quot;</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="s2">&quot;Predictions&quot;</span><span class="p">,</span> <span class="s2">&quot;Labels&quot;</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Postprocess the predictions and labels.</span>
@@ -1218,6 +1232,12 @@
 <span class="sd">    Returns:</span>
 <span class="sd">        The postprocessed predictions and labels.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">predictions</span><span class="o">.</span><span class="n">ndim</span> <span class="o">!=</span> <span class="mi">2</span> <span class="ow">or</span> <span class="n">predictions</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">!=</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">InvalidBenchmark</span><span class="p">(</span>
+            <span class="s2">&quot;Predictions must be a 2D array with shape (num_examples, 2). Found &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;shape </span><span class="si">{</span><span class="n">predictions</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">.&quot;</span>
+        <span class="p">)</span>
+
     <span class="n">mapping</span> <span class="o">=</span> <span class="p">{</span><span class="mi">0</span><span class="p">:</span> <span class="s2">&quot;a&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">:</span> <span class="s2">&quot;b&quot;</span><span class="p">,</span> <span class="mi">2</span><span class="p">:</span> <span class="s2">&quot;c&quot;</span><span class="p">,</span> <span class="mi">3</span><span class="p">:</span> <span class="s2">&quot;d&quot;</span><span class="p">,</span> <span class="mi">4</span><span class="p">:</span> <span class="s2">&quot;e&quot;</span><span class="p">}</span>
 
     <span class="n">all_predictions</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
@@ -1258,6 +1278,9 @@
 
 
 
+
+  
+  
 
 
 
@@ -1308,10 +1331,10 @@
     
     
       
-      <script id="__config" type="application/json">{"base": "../../../..", "features": ["navigation.top", "navigation.path", "navigation.prune", "navigation.indexes", "navigation.tabs", "navigation.tabs.sticky", "navigation.instant", "navigation.instant.prefetch", "navigation.instant.progress", "navigation.tracking", "navigation.sections"], "search": "../../../../assets/javascripts/workers/search.f8cc74c7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"base": "../../../..", "features": ["navigation.top", "navigation.path", "navigation.prune", "navigation.indexes", "navigation.tabs", "navigation.tabs.sticky", "navigation.instant", "navigation.instant.prefetch", "navigation.instant.progress", "navigation.tracking", "navigation.sections"], "search": "../../../../assets/javascripts/workers/search.d50fe291.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../../../assets/javascripts/bundle.c8b220af.min.js"></script>
+      <script src="../../../../assets/javascripts/bundle.13a4f30d.min.js"></script>
       
         <script src="../../../../javascript/mkapi.js"></script>
       

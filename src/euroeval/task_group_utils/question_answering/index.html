@@ -12,7 +12,7 @@
       
       
       <link rel="icon" href="../../../../gfx/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.11">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.14">
     
     
       
@@ -20,7 +20,7 @@
       
     
     
-      <link rel="stylesheet" href="../../../../assets/stylesheets/main.4af4bdda.min.css">
+      <link rel="stylesheet" href="../../../../assets/stylesheets/main.342714a4.min.css">
       
         
         <link rel="stylesheet" href="../../../../assets/stylesheets/palette.06af60db.min.css">
@@ -921,7 +921,7 @@
 <span class="mkapi-object-link">
 
 
-<a href="../../../../api/euroeval/task_group_utils/question_answering/#euroeval.task_group_utils.question_answering" title="Go to docs">docs</a>
+<a href="../../../../api/euroeval/task_group_utils/question_answering/#euroeval.task_group_utils.question_answering" title="Go to docs">[docs]</a>
 <span class="mkapi-document-toggle" title="Toggle all docs">
 <i class="fa-regular fa-square-minus"></i>
 </span>
@@ -1629,7 +1629,17 @@
 <span class="normal">699</span>
 <span class="normal">700</span>
 <span class="normal">701</span>
-<span class="normal">702</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Utility functions related to the question-answering task group.&quot;&quot;&quot;</span>
+<span class="normal">702</span>
+<span class="normal">703</span>
+<span class="normal">704</span>
+<span class="normal">705</span>
+<span class="normal">706</span>
+<span class="normal">707</span>
+<span class="normal">708</span>
+<span class="normal">709</span>
+<span class="normal">710</span>
+<span class="normal">711</span>
+<span class="normal">712</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Utility functions related to the question-answering task group.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">c</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
@@ -1639,11 +1649,11 @@
 <span class="kn">import</span><span class="w"> </span><span class="nn">evaluate</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">evaluate</span><span class="w"> </span><span class="kn">import</span> <span class="n">EvaluationModule</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">transformers.tokenization_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">PreTrainedTokenizer</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">transformers.tokenization_utils_base</span><span class="w"> </span><span class="kn">import</span> <span class="n">PreTrainedTokenizerBase</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">transformers.trainer</span><span class="w"> </span><span class="kn">import</span> <span class="n">Trainer</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">..data_models</span><span class="w"> </span><span class="kn">import</span> <span class="n">BenchmarkConfig</span><span class="p">,</span> <span class="n">DatasetConfig</span><span class="p">,</span> <span class="n">GenerativeModelOutput</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..exceptions</span><span class="w"> </span><span class="kn">import</span> <span class="n">InvalidBenchmark</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..tokenization_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_special_token_metadata</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">raise_if_model_output_contains_nan_values</span>
 
@@ -1651,6 +1661,7 @@
     <span class="kn">import</span><span class="w"> </span><span class="nn">torch.nn</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">nn</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">datasets.arrow_dataset</span><span class="w"> </span><span class="kn">import</span> <span class="n">Dataset</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">transformers.modeling_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">PreTrainedModel</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">transformers.tokenization_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">PreTrainedTokenizer</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">transformers.tokenization_utils_base</span><span class="w"> </span><span class="kn">import</span> <span class="n">BatchEncoding</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">transformers.trainer_callback</span><span class="w"> </span><span class="kn">import</span> <span class="n">TrainerCallback</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">transformers.trainer_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">EvalPrediction</span>
@@ -1661,7 +1672,7 @@
 <span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">&quot;euroeval&quot;</span><span class="p">)</span>
 
 
-<span class="k">class</span><span class="w"> </span><span class="nc">QuestionAnsweringTrainer</span><span class="p">(</span><span class="n">Trainer</span><span class="p">):</span><div class="mkapi-source-link" id="euroeval.task_group_utils.question_answering.QuestionAnsweringTrainer"><a href="../../../../api/euroeval/task_group_utils/question_answering/#euroeval.task_group_utils.question_answering.QuestionAnsweringTrainer" title="Go to docs">docs</a></div>
+<span class="k">class</span><span class="w"> </span><span class="nc">QuestionAnsweringTrainer</span><span class="p">(</span><span class="n">Trainer</span><span class="p">):</span><div class="mkapi-source-link" id="euroeval.task_group_utils.question_answering.QuestionAnsweringTrainer"><a href="../../../../api/euroeval/task_group_utils/question_answering/#euroeval.task_group_utils.question_answering.QuestionAnsweringTrainer" title="Go to docs">[docs]</a></div>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Trainer subclass for question answering tasks.&quot;&quot;&quot;</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
@@ -1674,6 +1685,7 @@
         <span class="n">compute_metrics</span><span class="p">:</span> <span class="s2">&quot;c.Callable[[EvalPrediction], dict[str, float]]&quot;</span><span class="p">,</span>
         <span class="n">callbacks</span><span class="p">:</span> <span class="s2">&quot;list[TrainerCallback]&quot;</span><span class="p">,</span>
         <span class="n">data_collator</span><span class="p">:</span> <span class="s2">&quot;c.Callable&quot;</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialise the trainer.&quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
@@ -1685,6 +1697,7 @@
             <span class="n">compute_metrics</span><span class="o">=</span><span class="n">compute_metrics</span><span class="p">,</span>
             <span class="n">callbacks</span><span class="o">=</span><span class="n">callbacks</span><span class="p">,</span>
             <span class="n">data_collator</span><span class="o">=</span><span class="n">data_collator</span><span class="p">,</span>
+            <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
         <span class="p">)</span>
 
         <span class="c1"># Get the CLS token id for the tokenizer</span>
@@ -1696,7 +1709,7 @@
         <span class="c1"># Set the label names</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">label_names</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;start_positions&quot;</span><span class="p">,</span> <span class="s2">&quot;end_positions&quot;</span><span class="p">]</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="nf">evaluate</span><span class="p">(</span>  <span class="c1"># type: ignore[override]</span><div class="mkapi-source-link" id="euroeval.task_group_utils.question_answering.QuestionAnsweringTrainer.evaluate"><a href="../../../../api/euroeval/task_group_utils/question_answering/#euroeval.task_group_utils.question_answering.QuestionAnsweringTrainer.evaluate" title="Go to docs">docs</a></div>
+    <span class="k">def</span><span class="w"> </span><span class="nf">evaluate</span><span class="p">(</span>  <span class="c1"># type: ignore[override]</span><div class="mkapi-source-link" id="euroeval.task_group_utils.question_answering.QuestionAnsweringTrainer.evaluate"><a href="../../../../api/euroeval/task_group_utils/question_answering/#euroeval.task_group_utils.question_answering.QuestionAnsweringTrainer.evaluate" title="Go to docs">[docs]</a></div>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">eval_dataset</span><span class="p">:</span> <span class="s2">&quot;Dataset | None&quot;</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">orig_eval_dataset</span><span class="p">:</span> <span class="s2">&quot;Dataset | None&quot;</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -1776,7 +1789,7 @@
         <span class="k">return</span> <span class="n">metrics</span>
 
 
-<span class="k">def</span><span class="w"> </span><span class="nf">compute_metrics</span><span class="p">(</span><div class="mkapi-source-link" id="euroeval.task_group_utils.question_answering.compute_metrics"><a href="../../../../api/euroeval/task_group_utils/question_answering/#euroeval.task_group_utils.question_answering.compute_metrics" title="Go to docs">docs</a></div>
+<span class="k">def</span><span class="w"> </span><span class="nf">compute_metrics</span><span class="p">(</span><div class="mkapi-source-link" id="euroeval.task_group_utils.question_answering.compute_metrics"><a href="../../../../api/euroeval/task_group_utils/question_answering/#euroeval.task_group_utils.question_answering.compute_metrics" title="Go to docs">[docs]</a></div>
     <span class="n">model_outputs_and_labels</span><span class="p">:</span> <span class="s2">&quot;tuple[Predictions, Labels] | EvalPrediction&quot;</span><span class="p">,</span>
     <span class="n">dataset_config</span><span class="p">:</span> <span class="s2">&quot;DatasetConfig&quot;</span><span class="p">,</span>
     <span class="n">benchmark_config</span><span class="p">:</span> <span class="s2">&quot;BenchmarkConfig&quot;</span><span class="p">,</span>
@@ -1842,7 +1855,7 @@
     <span class="k">return</span> <span class="n">results</span>
 
 
-<span class="k">def</span><span class="w"> </span><span class="nf">extract_labels_from_generation</span><span class="p">(</span><div class="mkapi-source-link" id="euroeval.task_group_utils.question_answering.extract_labels_from_generation"><a href="../../../../api/euroeval/task_group_utils/question_answering/#euroeval.task_group_utils.question_answering.extract_labels_from_generation" title="Go to docs">docs</a></div>
+<span class="k">def</span><span class="w"> </span><span class="nf">extract_labels_from_generation</span><span class="p">(</span><div class="mkapi-source-link" id="euroeval.task_group_utils.question_answering.extract_labels_from_generation"><a href="../../../../api/euroeval/task_group_utils/question_answering/#euroeval.task_group_utils.question_answering.extract_labels_from_generation" title="Go to docs">[docs]</a></div>
     <span class="n">input_batch</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">list</span><span class="p">],</span> <span class="n">model_output</span><span class="p">:</span> <span class="s2">&quot;GenerativeModelOutput&quot;</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">Any</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Extract the predicted labels from the generated output.</span>
@@ -1865,7 +1878,7 @@
     <span class="k">return</span> <span class="n">predictions</span>
 
 
-<span class="k">def</span><span class="w"> </span><span class="nf">prepare_train_examples</span><span class="p">(</span><div class="mkapi-source-link" id="euroeval.task_group_utils.question_answering.prepare_train_examples"><a href="../../../../api/euroeval/task_group_utils/question_answering/#euroeval.task_group_utils.question_answering.prepare_train_examples" title="Go to docs">docs</a></div>
+<span class="k">def</span><span class="w"> </span><span class="nf">prepare_train_examples</span><span class="p">(</span><div class="mkapi-source-link" id="euroeval.task_group_utils.question_answering.prepare_train_examples"><a href="../../../../api/euroeval/task_group_utils/question_answering/#euroeval.task_group_utils.question_answering.prepare_train_examples" title="Go to docs">[docs]</a></div>
     <span class="n">examples</span><span class="p">:</span> <span class="s2">&quot;BatchEncoding&quot;</span><span class="p">,</span> <span class="n">tokenizer</span><span class="p">:</span> <span class="s2">&quot;PreTrainedTokenizer&quot;</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;BatchEncoding&quot;</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Prepare the features for training.</span>
@@ -2017,7 +2030,7 @@
     <span class="k">return</span> <span class="n">tokenized_examples</span>
 
 
-<span class="k">def</span><span class="w"> </span><span class="nf">prepare_test_examples</span><span class="p">(</span><div class="mkapi-source-link" id="euroeval.task_group_utils.question_answering.prepare_test_examples"><a href="../../../../api/euroeval/task_group_utils/question_answering/#euroeval.task_group_utils.question_answering.prepare_test_examples" title="Go to docs">docs</a></div>
+<span class="k">def</span><span class="w"> </span><span class="nf">prepare_test_examples</span><span class="p">(</span><div class="mkapi-source-link" id="euroeval.task_group_utils.question_answering.prepare_test_examples"><a href="../../../../api/euroeval/task_group_utils/question_answering/#euroeval.task_group_utils.question_answering.prepare_test_examples" title="Go to docs">[docs]</a></div>
     <span class="n">examples</span><span class="p">:</span> <span class="s2">&quot;BatchEncoding&quot;</span><span class="p">,</span> <span class="n">tokenizer</span><span class="p">:</span> <span class="s2">&quot;PreTrainedTokenizer&quot;</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;BatchEncoding&quot;</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Prepare test examples.</span>
@@ -2105,8 +2118,8 @@
     <span class="k">return</span> <span class="n">tokenized_examples</span>
 
 
-<span class="k">def</span><span class="w"> </span><span class="nf">postprocess_predictions_and_labels</span><span class="p">(</span><div class="mkapi-source-link" id="euroeval.task_group_utils.question_answering.postprocess_predictions_and_labels"><a href="../../../../api/euroeval/task_group_utils/question_answering/#euroeval.task_group_utils.question_answering.postprocess_predictions_and_labels" title="Go to docs">docs</a></div>
-    <span class="n">predictions</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">postprocess_predictions_and_labels</span><span class="p">(</span><div class="mkapi-source-link" id="euroeval.task_group_utils.question_answering.postprocess_predictions_and_labels"><a href="../../../../api/euroeval/task_group_utils/question_answering/#euroeval.task_group_utils.question_answering.postprocess_predictions_and_labels" title="Go to docs">[docs]</a></div>
+    <span class="n">predictions</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="o">...</span><span class="p">],</span>
     <span class="n">dataset</span><span class="p">:</span> <span class="s2">&quot;Dataset&quot;</span><span class="p">,</span>
     <span class="n">prepared_dataset</span><span class="p">:</span> <span class="s2">&quot;Dataset&quot;</span><span class="p">,</span>
     <span class="n">cls_token_index</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
@@ -2115,7 +2128,7 @@
 
 <span class="sd">    Args:</span>
 <span class="sd">        predictions:</span>
-<span class="sd">            A pair of (start_logits, end_logits) predictions.</span>
+<span class="sd">            A tuple whose first two elements are (start_logits, end_logits).</span>
 <span class="sd">        dataset:</span>
 <span class="sd">            The dataset containing the examples.</span>
 <span class="sd">        prepared_dataset:</span>
@@ -2126,7 +2139,14 @@
 <span class="sd">    Returns:</span>
 <span class="sd">        The postprocessed predictions and labels.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">all_start_logits</span><span class="p">,</span> <span class="n">all_end_logits</span> <span class="o">=</span> <span class="n">predictions</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">predictions</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">InvalidBenchmark</span><span class="p">(</span>
+            <span class="s2">&quot;The predictions should be a tuple with the first two elements being &quot;</span>
+            <span class="s2">&quot;(start_logits, end_logits), but got {len(predictions)} elements instead: &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">predictions</span><span class="si">}</span><span class="s2">.&quot;</span>
+        <span class="p">)</span>
+
+    <span class="n">all_start_logits</span><span class="p">,</span> <span class="n">all_end_logits</span> <span class="o">=</span> <span class="n">predictions</span><span class="p">[:</span><span class="mi">2</span><span class="p">]</span>
 
     <span class="c1"># Build a map from an example to its corresponding features, being the blocks of</span>
     <span class="c1"># text from the context that we&#39;re feeding into the model. An example can have</span>
@@ -2180,7 +2200,7 @@
     <span class="k">return</span> <span class="n">prediction_list</span><span class="p">,</span> <span class="n">labels</span>
 
 
-<span class="k">def</span><span class="w"> </span><span class="nf">find_best_answer</span><span class="p">(</span><div class="mkapi-source-link" id="euroeval.task_group_utils.question_answering.find_best_answer"><a href="../../../../api/euroeval/task_group_utils/question_answering/#euroeval.task_group_utils.question_answering.find_best_answer" title="Go to docs">docs</a></div>
+<span class="k">def</span><span class="w"> </span><span class="nf">find_best_answer</span><span class="p">(</span><div class="mkapi-source-link" id="euroeval.task_group_utils.question_answering.find_best_answer"><a href="../../../../api/euroeval/task_group_utils/question_answering/#euroeval.task_group_utils.question_answering.find_best_answer" title="Go to docs">[docs]</a></div>
     <span class="n">all_start_logits</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
     <span class="n">all_end_logits</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
     <span class="n">prepared_dataset</span><span class="p">:</span> <span class="s2">&quot;Dataset&quot;</span><span class="p">,</span>
@@ -2255,7 +2275,7 @@
     <span class="k">return</span> <span class="n">best_answer_dict</span><span class="p">[</span><span class="s2">&quot;text&quot;</span><span class="p">]</span>
 
 
-<span class="k">def</span><span class="w"> </span><span class="nf">find_valid_answers</span><span class="p">(</span><div class="mkapi-source-link" id="euroeval.task_group_utils.question_answering.find_valid_answers"><a href="../../../../api/euroeval/task_group_utils/question_answering/#euroeval.task_group_utils.question_answering.find_valid_answers" title="Go to docs">docs</a></div>
+<span class="k">def</span><span class="w"> </span><span class="nf">find_valid_answers</span><span class="p">(</span><div class="mkapi-source-link" id="euroeval.task_group_utils.question_answering.find_valid_answers"><a href="../../../../api/euroeval/task_group_utils/question_answering/#euroeval.task_group_utils.question_answering.find_valid_answers" title="Go to docs">[docs]</a></div>
     <span class="n">start_logits</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
     <span class="n">end_logits</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
     <span class="n">offset_mapping</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]],</span>
@@ -2340,6 +2360,9 @@
 
 
 
+  
+  
+
 
 
 
@@ -2389,10 +2412,10 @@
     
     
       
-      <script id="__config" type="application/json">{"base": "../../../..", "features": ["navigation.top", "navigation.path", "navigation.prune", "navigation.indexes", "navigation.tabs", "navigation.tabs.sticky", "navigation.instant", "navigation.instant.prefetch", "navigation.instant.progress", "navigation.tracking", "navigation.sections"], "search": "../../../../assets/javascripts/workers/search.f8cc74c7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"base": "../../../..", "features": ["navigation.top", "navigation.path", "navigation.prune", "navigation.indexes", "navigation.tabs", "navigation.tabs.sticky", "navigation.instant", "navigation.instant.prefetch", "navigation.instant.progress", "navigation.tracking", "navigation.sections"], "search": "../../../../assets/javascripts/workers/search.d50fe291.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../../../assets/javascripts/bundle.c8b220af.min.js"></script>
+      <script src="../../../../assets/javascripts/bundle.13a4f30d.min.js"></script>
       
         <script src="../../../../javascript/mkapi.js"></script>
       

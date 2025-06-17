@@ -12,7 +12,7 @@
       
       
       <link rel="icon" href="../../../../gfx/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.11">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.14">
     
     
       
@@ -20,7 +20,7 @@
       
     
     
-      <link rel="stylesheet" href="../../../../assets/stylesheets/main.4af4bdda.min.css">
+      <link rel="stylesheet" href="../../../../assets/stylesheets/main.342714a4.min.css">
       
         
         <link rel="stylesheet" href="../../../../assets/stylesheets/palette.06af60db.min.css">
@@ -946,6 +946,15 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#euroeval.benchmark_modules.vllm.get_pbar_without_leave" class="md-nav__link">
+    <span class="md-ellipsis">
+      get_pbar_without_leave
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -966,7 +975,7 @@
 <span class="mkapi-object-link">
 
 
-<a href="../../../../api/euroeval/benchmark_modules/vllm/#euroeval.benchmark_modules.vllm" title="Go to docs">docs</a>
+<a href="../../../../api/euroeval/benchmark_modules/vllm/#euroeval.benchmark_modules.vllm" title="Go to docs">[docs]</a>
 <span class="mkapi-document-toggle" title="Toggle all docs">
 <i class="fa-regular fa-square-minus"></i>
 </span>
@@ -2044,103 +2053,7 @@
 <span class="normal">1069</span>
 <span class="normal">1070</span>
 <span class="normal">1071</span>
-<span class="normal">1072</span>
-<span class="normal">1073</span>
-<span class="normal">1074</span>
-<span class="normal">1075</span>
-<span class="normal">1076</span>
-<span class="normal">1077</span>
-<span class="normal">1078</span>
-<span class="normal">1079</span>
-<span class="normal">1080</span>
-<span class="normal">1081</span>
-<span class="normal">1082</span>
-<span class="normal">1083</span>
-<span class="normal">1084</span>
-<span class="normal">1085</span>
-<span class="normal">1086</span>
-<span class="normal">1087</span>
-<span class="normal">1088</span>
-<span class="normal">1089</span>
-<span class="normal">1090</span>
-<span class="normal">1091</span>
-<span class="normal">1092</span>
-<span class="normal">1093</span>
-<span class="normal">1094</span>
-<span class="normal">1095</span>
-<span class="normal">1096</span>
-<span class="normal">1097</span>
-<span class="normal">1098</span>
-<span class="normal">1099</span>
-<span class="normal">1100</span>
-<span class="normal">1101</span>
-<span class="normal">1102</span>
-<span class="normal">1103</span>
-<span class="normal">1104</span>
-<span class="normal">1105</span>
-<span class="normal">1106</span>
-<span class="normal">1107</span>
-<span class="normal">1108</span>
-<span class="normal">1109</span>
-<span class="normal">1110</span>
-<span class="normal">1111</span>
-<span class="normal">1112</span>
-<span class="normal">1113</span>
-<span class="normal">1114</span>
-<span class="normal">1115</span>
-<span class="normal">1116</span>
-<span class="normal">1117</span>
-<span class="normal">1118</span>
-<span class="normal">1119</span>
-<span class="normal">1120</span>
-<span class="normal">1121</span>
-<span class="normal">1122</span>
-<span class="normal">1123</span>
-<span class="normal">1124</span>
-<span class="normal">1125</span>
-<span class="normal">1126</span>
-<span class="normal">1127</span>
-<span class="normal">1128</span>
-<span class="normal">1129</span>
-<span class="normal">1130</span>
-<span class="normal">1131</span>
-<span class="normal">1132</span>
-<span class="normal">1133</span>
-<span class="normal">1134</span>
-<span class="normal">1135</span>
-<span class="normal">1136</span>
-<span class="normal">1137</span>
-<span class="normal">1138</span>
-<span class="normal">1139</span>
-<span class="normal">1140</span>
-<span class="normal">1141</span>
-<span class="normal">1142</span>
-<span class="normal">1143</span>
-<span class="normal">1144</span>
-<span class="normal">1145</span>
-<span class="normal">1146</span>
-<span class="normal">1147</span>
-<span class="normal">1148</span>
-<span class="normal">1149</span>
-<span class="normal">1150</span>
-<span class="normal">1151</span>
-<span class="normal">1152</span>
-<span class="normal">1153</span>
-<span class="normal">1154</span>
-<span class="normal">1155</span>
-<span class="normal">1156</span>
-<span class="normal">1157</span>
-<span class="normal">1158</span>
-<span class="normal">1159</span>
-<span class="normal">1160</span>
-<span class="normal">1161</span>
-<span class="normal">1162</span>
-<span class="normal">1163</span>
-<span class="normal">1164</span>
-<span class="normal">1165</span>
-<span class="normal">1166</span>
-<span class="normal">1167</span>
-<span class="normal">1168</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Generative models using the vLLM inference framework.&quot;&quot;&quot;</span>
+<span class="normal">1072</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Generative models using the vLLM inference framework.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">c</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">contextlib</span>
@@ -2149,12 +2062,10 @@
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">t</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">functools</span><span class="w"> </span><span class="kn">import</span> <span class="n">partial</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">time</span><span class="w"> </span><span class="kn">import</span> <span class="n">sleep</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">types</span><span class="w"> </span><span class="kn">import</span> <span class="n">MethodType</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">datasets</span><span class="w"> </span><span class="kn">import</span> <span class="n">DatasetDict</span>
@@ -2211,6 +2122,7 @@
     <span class="n">get_end_of_chat_token_ids</span><span class="p">,</span>
     <span class="n">get_eos_token</span><span class="p">,</span>
     <span class="n">get_first_label_token_mapping</span><span class="p">,</span>
+    <span class="n">get_pad_token</span><span class="p">,</span>
     <span class="n">should_prompts_be_stripped</span><span class="p">,</span>
 <span class="p">)</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..types</span><span class="w"> </span><span class="kn">import</span> <span class="n">ExtractLabelsFunction</span>
@@ -2223,17 +2135,12 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">.hf</span><span class="w"> </span><span class="kn">import</span> <span class="n">HuggingFaceEncoderModel</span><span class="p">,</span> <span class="n">get_model_repo_info</span><span class="p">,</span> <span class="n">load_hf_model_config</span>
 
 <span class="k">if</span> <span class="n">t</span><span class="o">.</span><span class="n">TYPE_CHECKING</span> <span class="ow">or</span> <span class="n">importlib</span><span class="o">.</span><span class="n">util</span><span class="o">.</span><span class="n">find_spec</span><span class="p">(</span><span class="s2">&quot;vllm&quot;</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="kn">from</span><span class="w"> </span><span class="nn">vllm</span><span class="w"> </span><span class="kn">import</span> <span class="n">LLM</span><span class="p">,</span> <span class="n">RequestOutput</span><span class="p">,</span> <span class="n">SamplingParams</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">vllm</span><span class="w"> </span><span class="kn">import</span> <span class="n">LLM</span><span class="p">,</span> <span class="n">SamplingParams</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">vllm.distributed.parallel_state</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
         <span class="n">destroy_distributed_environment</span><span class="p">,</span>
         <span class="n">destroy_model_parallel</span><span class="p">,</span>
     <span class="p">)</span>
-    <span class="kn">from</span><span class="w"> </span><span class="nn">vllm.inputs</span><span class="w"> </span><span class="kn">import</span> <span class="n">PromptType</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">vllm.lora.request</span><span class="w"> </span><span class="kn">import</span> <span class="n">LoRARequest</span>
-    <span class="kn">from</span><span class="w"> </span><span class="nn">vllm.model_executor.guided_decoding.guided_fields</span><span class="w"> </span><span class="kn">import</span> <span class="n">GuidedDecodingRequest</span>
-    <span class="kn">from</span><span class="w"> </span><span class="nn">vllm.pooling_params</span><span class="w"> </span><span class="kn">import</span> <span class="n">PoolingParams</span>
-    <span class="kn">from</span><span class="w"> </span><span class="nn">vllm.prompt_adapter.request</span><span class="w"> </span><span class="kn">import</span> <span class="n">PromptAdapterRequest</span>
-    <span class="kn">from</span><span class="w"> </span><span class="nn">vllm.sampling_params</span><span class="w"> </span><span class="kn">import</span> <span class="n">RequestOutputKind</span>
 
 <span class="k">if</span> <span class="n">t</span><span class="o">.</span><span class="n">TYPE_CHECKING</span> <span class="ow">or</span> <span class="n">importlib</span><span class="o">.</span><span class="n">util</span><span class="o">.</span><span class="n">find_spec</span><span class="p">(</span><span class="s2">&quot;outlines&quot;</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">outlines.models.vllm</span><span class="w"> </span><span class="kn">import</span> <span class="n">adapt_tokenizer</span>
@@ -2245,7 +2152,7 @@
 <span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">&quot;euroeval&quot;</span><span class="p">)</span>
 
 
-<span class="k">class</span><span class="w"> </span><span class="nc">VLLMModel</span><span class="p">(</span><span class="n">HuggingFaceEncoderModel</span><span class="p">):</span><div class="mkapi-source-link" id="euroeval.benchmark_modules.vllm.VLLMModel"><a href="../../../../api/euroeval/benchmark_modules/vllm/#euroeval.benchmark_modules.vllm.VLLMModel" title="Go to docs">docs</a></div>
+<span class="k">class</span><span class="w"> </span><span class="nc">VLLMModel</span><span class="p">(</span><span class="n">HuggingFaceEncoderModel</span><span class="p">):</span><div class="mkapi-source-link" id="euroeval.benchmark_modules.vllm.VLLMModel"><a href="../../../../api/euroeval/benchmark_modules/vllm/#euroeval.benchmark_modules.vllm.VLLMModel" title="Go to docs">[docs]</a></div>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;A generative model using the vLLM inference framework.&quot;&quot;&quot;</span>
 
     <span class="n">fresh_model</span> <span class="o">=</span> <span class="kc">False</span>
@@ -2281,6 +2188,9 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_tokenizer</span><span class="p">:</span> <span class="n">PreTrainedTokenizer</span> <span class="o">=</span> <span class="n">tokenizer</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">end_of_reasoning_token</span> <span class="o">=</span> <span class="n">get_end_of_reasoning_token</span><span class="p">(</span>
             <span class="n">model</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_model</span><span class="p">,</span> <span class="n">tokenizer</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_tokenizer</span><span class="p">,</span> <span class="n">model_id</span><span class="o">=</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">end_of_chat_token_ids</span> <span class="o">=</span> <span class="n">get_end_of_chat_token_ids</span><span class="p">(</span>
+            <span class="n">tokenizer</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_tokenizer</span>
         <span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">custom_stop_tokens</span> <span class="o">=</span> <span class="n">get_custom_stop_tokens</span><span class="p">(</span>
             <span class="n">model</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_model</span><span class="p">,</span>
@@ -2325,7 +2235,7 @@
             <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tokenizer</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">generative_type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">GenerativeType</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span><div class="mkapi-source-link" id="euroeval.benchmark_modules.vllm.VLLMModel.generative_type"><a href="../../../../api/euroeval/benchmark_modules/vllm/#euroeval.benchmark_modules.vllm.VLLMModel.generative_type" title="Go to docs">docs</a></div>
+    <span class="k">def</span><span class="w"> </span><span class="nf">generative_type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">GenerativeType</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span><div class="mkapi-source-link" id="euroeval.benchmark_modules.vllm.VLLMModel.generative_type"><a href="../../../../api/euroeval/benchmark_modules/vllm/#euroeval.benchmark_modules.vllm.VLLMModel.generative_type" title="Go to docs">[docs]</a></div>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the generative type of the model.</span>
 
 <span class="sd">        Returns:</span>
@@ -2335,13 +2245,16 @@
             <span class="k">return</span> <span class="kc">None</span>
         <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">end_of_reasoning_token</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">GenerativeType</span><span class="o">.</span><span class="n">REASONING</span>
-        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tokenizer</span><span class="o">.</span><span class="n">chat_template</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">elif</span> <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_tokenizer</span><span class="o">.</span><span class="n">chat_template</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+            <span class="ow">or</span> <span class="s2">&quot;instruct&quot;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+        <span class="p">):</span>
             <span class="k">return</span> <span class="n">GenerativeType</span><span class="o">.</span><span class="n">INSTRUCTION_TUNED</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">GenerativeType</span><span class="o">.</span><span class="n">BASE</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">extract_labels_from_generation</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ExtractLabelsFunction</span><span class="p">:</span><div class="mkapi-source-link" id="euroeval.benchmark_modules.vllm.VLLMModel.extract_labels_from_generation"><a href="../../../../api/euroeval/benchmark_modules/vllm/#euroeval.benchmark_modules.vllm.VLLMModel.extract_labels_from_generation" title="Go to docs">docs</a></div>
+    <span class="k">def</span><span class="w"> </span><span class="nf">extract_labels_from_generation</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ExtractLabelsFunction</span><span class="p">:</span><div class="mkapi-source-link" id="euroeval.benchmark_modules.vllm.VLLMModel.extract_labels_from_generation"><a href="../../../../api/euroeval/benchmark_modules/vllm/#euroeval.benchmark_modules.vllm.VLLMModel.extract_labels_from_generation" title="Go to docs">[docs]</a></div>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;The function used to extract the labels from the generated output.</span>
 
 <span class="sd">        Returns:</span>
@@ -2371,7 +2284,7 @@
                     <span class="sa">f</span><span class="s2">&quot;Unsupported task group: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">dataset_config</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">task_group</span><span class="si">}</span><span class="s2">.&quot;</span>
                 <span class="p">)</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="nf">prepare_dataset</span><span class="p">(</span><div class="mkapi-source-link" id="euroeval.benchmark_modules.vllm.VLLMModel.prepare_dataset"><a href="../../../../api/euroeval/benchmark_modules/vllm/#euroeval.benchmark_modules.vllm.VLLMModel.prepare_dataset" title="Go to docs">docs</a></div>
+    <span class="k">def</span><span class="w"> </span><span class="nf">prepare_dataset</span><span class="p">(</span><div class="mkapi-source-link" id="euroeval.benchmark_modules.vllm.VLLMModel.prepare_dataset"><a href="../../../../api/euroeval/benchmark_modules/vllm/#euroeval.benchmark_modules.vllm.VLLMModel.prepare_dataset" title="Go to docs">[docs]</a></div>
         <span class="bp">self</span><span class="p">,</span> <span class="n">dataset</span><span class="p">:</span> <span class="n">DatasetDict</span><span class="p">,</span> <span class="n">task</span><span class="p">:</span> <span class="n">Task</span><span class="p">,</span> <span class="n">itr_idx</span><span class="p">:</span> <span class="nb">int</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DatasetDict</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Prepare the dataset for the model.</span>
@@ -2435,7 +2348,7 @@
 
         <span class="k">return</span> <span class="n">dataset</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="nf">generate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">inputs</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">GenerativeModelOutput</span><span class="p">:</span><div class="mkapi-source-link" id="euroeval.benchmark_modules.vllm.VLLMModel.generate"><a href="../../../../api/euroeval/benchmark_modules/vllm/#euroeval.benchmark_modules.vllm.VLLMModel.generate" title="Go to docs">docs</a></div>
+    <span class="k">def</span><span class="w"> </span><span class="nf">generate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">inputs</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">GenerativeModelOutput</span><span class="p">:</span><div class="mkapi-source-link" id="euroeval.benchmark_modules.vllm.VLLMModel.generate"><a href="../../../../api/euroeval/benchmark_modules/vllm/#euroeval.benchmark_modules.vllm.VLLMModel.generate" title="Go to docs">[docs]</a></div>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Generate outputs from the model.</span>
 
 <span class="sd">        Args:</span>
@@ -2445,55 +2358,29 @@
 <span class="sd">        Returns:</span>
 <span class="sd">            The generated model outputs.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="c1"># Define which tokens to use as stopping criteria. We want to use the padding</span>
-        <span class="c1"># token, end-of-sentence token, and a double newline if the model isn&#39;t</span>
-        <span class="c1"># instruction tuned (since these separate the few-shot examples in the input in</span>
-        <span class="c1"># this case)</span>
+        <span class="c1"># Get stopping tokens</span>
         <span class="n">stop_tokens</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">custom_stop_tokens</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">buffer</span><span class="p">[</span><span class="s2">&quot;instruction_model&quot;</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">False</span><span class="p">:</span>
             <span class="n">stop_tokens</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n\n</span><span class="s2">&quot;</span><span class="p">)</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tokenizer</span><span class="o">.</span><span class="n">pad_token_id</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_tokenizer</span><span class="o">.</span><span class="n">pad_token</span><span class="p">,</span> <span class="nb">str</span><span class="p">),</span> <span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;The pad token for the model </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span><span class="si">!r}</span><span class="s2"> &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;is not a string, which is unexpected: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_tokenizer</span><span class="o">.</span><span class="n">pad_token</span><span class="si">!r}</span><span class="s2">.&quot;</span>
+            <span class="p">)</span>
             <span class="n">stop_tokens</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_tokenizer</span><span class="o">.</span><span class="n">pad_token</span><span class="p">)</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tokenizer</span><span class="o">.</span><span class="n">eos_token_id</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_tokenizer</span><span class="o">.</span><span class="n">eos_token</span><span class="p">,</span> <span class="nb">str</span><span class="p">),</span> <span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;The EOS token for the model </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span><span class="si">!r}</span><span class="s2"> &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;is not a string, which is unexpected: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_tokenizer</span><span class="o">.</span><span class="n">eos_token</span><span class="si">!r}</span><span class="s2">.&quot;</span>
+            <span class="p">)</span>
             <span class="n">stop_tokens</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_tokenizer</span><span class="o">.</span><span class="n">eos_token</span><span class="p">)</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tokenizer</span><span class="o">.</span><span class="n">pad_token_id</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_tokenizer</span><span class="o">.</span><span class="n">pad_token_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tokenizer</span><span class="o">.</span><span class="n">eos_token_id</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_tokenizer</span><span class="o">.</span><span class="n">pad_token</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tokenizer</span><span class="o">.</span><span class="n">eos_token</span>
-        <span class="k">if</span> <span class="p">(</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_tokenizer</span><span class="o">.</span><span class="n">bos_token_id</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
-            <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tokenizer</span><span class="o">.</span><span class="n">pad_token_id</span> <span class="ow">is</span> <span class="kc">None</span>
-        <span class="p">):</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_tokenizer</span><span class="o">.</span><span class="n">pad_token_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tokenizer</span><span class="o">.</span><span class="n">bos_token_id</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_tokenizer</span><span class="o">.</span><span class="n">pad_token</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tokenizer</span><span class="o">.</span><span class="n">bos_token</span>
-        <span class="k">elif</span> <span class="p">(</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_tokenizer</span><span class="o">.</span><span class="n">eos_token_id</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
-            <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tokenizer</span><span class="o">.</span><span class="n">pad_token_id</span> <span class="ow">is</span> <span class="kc">None</span>
-        <span class="p">):</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_tokenizer</span><span class="o">.</span><span class="n">pad_token_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tokenizer</span><span class="o">.</span><span class="n">eos_token_id</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_tokenizer</span><span class="o">.</span><span class="n">pad_token</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tokenizer</span><span class="o">.</span><span class="n">eos_token</span>
-        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tokenizer</span><span class="o">.</span><span class="n">pad_token_id</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">pad_token_candidates</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;&lt;pad&gt;&quot;</span><span class="p">,</span> <span class="s2">&quot;[pad]&quot;</span><span class="p">,</span> <span class="s2">&quot;&lt;|endoftext|&gt;&quot;</span><span class="p">,</span> <span class="s2">&quot;&lt;|im_end|&gt;&quot;</span><span class="p">]</span>
-            <span class="n">pad_token_candidates</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span><span class="n">c</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">pad_token_candidates</span><span class="p">])</span>
-            <span class="k">for</span> <span class="n">candidate</span> <span class="ow">in</span> <span class="n">pad_token_candidates</span><span class="p">:</span>
-                <span class="k">if</span> <span class="n">candidate</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tokenizer</span><span class="o">.</span><span class="n">get_vocab</span><span class="p">():</span>
-                    <span class="n">pad_token_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tokenizer</span><span class="o">.</span><span class="n">get_vocab</span><span class="p">()[</span><span class="n">candidate</span><span class="p">]</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">_tokenizer</span><span class="o">.</span><span class="n">pad_token</span> <span class="o">=</span> <span class="n">candidate</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">_tokenizer</span><span class="o">.</span><span class="n">pad_token_id</span> <span class="o">=</span> <span class="n">pad_token_id</span>
-                    <span class="k">break</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="k">raise</span> <span class="n">InvalidModel</span><span class="p">(</span>
-                    <span class="s2">&quot;Could not find a suitable token to use as a padding token, since &quot;</span>
-                    <span class="s2">&quot;the model does not have a BOS, EOS, or padding token, and does &quot;</span>
-                    <span class="sa">f</span><span class="s2">&quot;not have any of the following tokens in its vocabulary: &quot;</span>
-                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">pad_token_candidates</span><span class="si">}</span><span class="s2">.&quot;</span>
-                <span class="p">)</span>
-
-        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tokenizer</span><span class="o">.</span><span class="n">pad_token_id</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
-
-        <span class="c1"># Add end of chat token as a stopping token, if it exists</span>
-        <span class="n">end_of_chat_token_ids</span> <span class="o">=</span> <span class="n">get_end_of_chat_token_ids</span><span class="p">(</span><span class="n">tokenizer</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_tokenizer</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">end_of_chat_token_ids</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">end_of_chat_token</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tokenizer</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">end_of_chat_token_ids</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">end_of_chat_token_ids</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">end_of_chat_token</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tokenizer</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">end_of_chat_token_ids</span>
+            <span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
             <span class="k">if</span> <span class="n">end_of_chat_token</span><span class="p">:</span>
                 <span class="n">stop_tokens</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">end_of_chat_token</span><span class="p">)</span>
 
@@ -2580,7 +2467,7 @@
                 <span class="n">raw_outputs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_model</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span>
                     <span class="n">prompts</span><span class="o">=</span><span class="n">prompts</span><span class="p">,</span>
                     <span class="n">sampling_params</span><span class="o">=</span><span class="n">sampling_params</span><span class="p">,</span>
-                    <span class="n">use_tqdm</span><span class="o">=</span><span class="p">(</span><span class="ow">not</span> <span class="n">input_is_a_test</span><span class="p">),</span>
+                    <span class="n">use_tqdm</span><span class="o">=</span><span class="kc">False</span> <span class="k">if</span> <span class="n">input_is_a_test</span> <span class="k">else</span> <span class="n">get_pbar_without_leave</span><span class="p">,</span>
                     <span class="n">lora_request</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">buffer</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;lora_request&quot;</span><span class="p">),</span>
                 <span class="p">)</span>
                 <span class="k">break</span>
@@ -2657,16 +2544,13 @@
                 <span class="n">completion</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">end_of_reasoning_token</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
                 <span class="k">for</span> <span class="n">completion</span> <span class="ow">in</span> <span class="n">completions</span>
             <span class="p">]</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">custom_stop_tokens</span><span class="p">:</span>
-            <span class="n">stop_token_pattern</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span>
-                <span class="s2">&quot;|&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
-                    <span class="n">re</span><span class="o">.</span><span class="n">escape</span><span class="p">(</span><span class="n">stop_token</span><span class="p">)</span> <span class="k">for</span> <span class="n">stop_token</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">custom_stop_tokens</span>
-                <span class="p">)</span>
-            <span class="p">)</span>
-            <span class="n">completions</span> <span class="o">=</span> <span class="p">[</span>
-                <span class="n">re</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">pattern</span><span class="o">=</span><span class="n">stop_token_pattern</span><span class="p">,</span> <span class="n">string</span><span class="o">=</span><span class="n">completion</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
-                <span class="k">for</span> <span class="n">completion</span> <span class="ow">in</span> <span class="n">completions</span>
-            <span class="p">]</span>
+        <span class="n">stop_token_pattern</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span>
+            <span class="s2">&quot;|&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">re</span><span class="o">.</span><span class="n">escape</span><span class="p">(</span><span class="n">stop_token</span><span class="p">)</span> <span class="k">for</span> <span class="n">stop_token</span> <span class="ow">in</span> <span class="n">stop_tokens</span><span class="p">)</span>
+        <span class="p">)</span>
+        <span class="n">completions</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">re</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">pattern</span><span class="o">=</span><span class="n">stop_token_pattern</span><span class="p">,</span> <span class="n">string</span><span class="o">=</span><span class="n">completion</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="k">for</span> <span class="n">completion</span> <span class="ow">in</span> <span class="n">completions</span>
+        <span class="p">]</span>
         <span class="n">completions</span> <span class="o">=</span> <span class="p">[</span><span class="n">completion</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">for</span> <span class="n">completion</span> <span class="ow">in</span> <span class="n">completions</span><span class="p">]</span>
 
         <span class="c1"># Sanity check</span>
@@ -2694,7 +2578,7 @@
         <span class="k">return</span> <span class="n">output</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">model_exists</span><span class="p">(</span><div class="mkapi-source-link" id="euroeval.benchmark_modules.vllm.VLLMModel.model_exists"><a href="../../../../api/euroeval/benchmark_modules/vllm/#euroeval.benchmark_modules.vllm.VLLMModel.model_exists" title="Go to docs">docs</a></div>
+    <span class="k">def</span><span class="w"> </span><span class="nf">model_exists</span><span class="p">(</span><div class="mkapi-source-link" id="euroeval.benchmark_modules.vllm.VLLMModel.model_exists"><a href="../../../../api/euroeval/benchmark_modules/vllm/#euroeval.benchmark_modules.vllm.VLLMModel.model_exists" title="Go to docs">[docs]</a></div>
         <span class="bp">cls</span><span class="p">,</span> <span class="n">model_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">benchmark_config</span><span class="p">:</span> <span class="n">BenchmarkConfig</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span> <span class="o">|</span> <span class="n">NeedsExtraInstalled</span> <span class="o">|</span> <span class="n">NeedsEnvironmentVariable</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Check if a model exists.</span>
@@ -2728,7 +2612,7 @@
         <span class="p">)</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">get_model_config</span><span class="p">(</span><div class="mkapi-source-link" id="euroeval.benchmark_modules.vllm.VLLMModel.get_model_config"><a href="../../../../api/euroeval/benchmark_modules/vllm/#euroeval.benchmark_modules.vllm.VLLMModel.get_model_config" title="Go to docs">docs</a></div>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_model_config</span><span class="p">(</span><div class="mkapi-source-link" id="euroeval.benchmark_modules.vllm.VLLMModel.get_model_config"><a href="../../../../api/euroeval/benchmark_modules/vllm/#euroeval.benchmark_modules.vllm.VLLMModel.get_model_config" title="Go to docs">[docs]</a></div>
         <span class="bp">cls</span><span class="p">,</span> <span class="n">model_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">benchmark_config</span><span class="p">:</span> <span class="n">BenchmarkConfig</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ModelConfig</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Fetch the model configuration.</span>
@@ -2775,7 +2659,7 @@
 
         <span class="k">return</span> <span class="n">model_config</span>
 
-    <span class="nd">@property</span><div class="mkapi-source-link" id="euroeval.benchmark_modules.vllm.VLLMModel.data_collator"><a href="../../../../api/euroeval/benchmark_modules/vllm/#euroeval.benchmark_modules.vllm.VLLMModel.data_collator" title="Go to docs">docs</a></div>
+    <span class="nd">@property</span><div class="mkapi-source-link" id="euroeval.benchmark_modules.vllm.VLLMModel.data_collator"><a href="../../../../api/euroeval/benchmark_modules/vllm/#euroeval.benchmark_modules.vllm.VLLMModel.data_collator" title="Go to docs">[docs]</a></div>
     <span class="k">def</span><span class="w"> </span><span class="nf">data_collator</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">c</span><span class="o">.</span><span class="n">Callable</span><span class="p">[[</span><span class="nb">list</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">Any</span><span class="p">]],</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">t</span><span class="o">.</span><span class="n">Any</span><span class="p">]]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;The data collator used to prepare samples during finetuning.</span>
 
@@ -2787,7 +2671,7 @@
         <span class="p">)</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">trainer_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Type</span><span class="p">[</span><span class="s2">&quot;Trainer&quot;</span><span class="p">]:</span><div class="mkapi-source-link" id="euroeval.benchmark_modules.vllm.VLLMModel.trainer_class"><a href="../../../../api/euroeval/benchmark_modules/vllm/#euroeval.benchmark_modules.vllm.VLLMModel.trainer_class" title="Go to docs">docs</a></div>
+    <span class="k">def</span><span class="w"> </span><span class="nf">trainer_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Type</span><span class="p">[</span><span class="s2">&quot;Trainer&quot;</span><span class="p">]:</span><div class="mkapi-source-link" id="euroeval.benchmark_modules.vllm.VLLMModel.trainer_class"><a href="../../../../api/euroeval/benchmark_modules/vllm/#euroeval.benchmark_modules.vllm.VLLMModel.trainer_class" title="Go to docs">[docs]</a></div>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;The Trainer class to use for finetuning.</span>
 
 <span class="sd">        Returns:</span>
@@ -2798,7 +2682,7 @@
         <span class="p">)</span>
 
 
-<span class="k">def</span><span class="w"> </span><span class="nf">load_model_and_tokenizer</span><span class="p">(</span><div class="mkapi-source-link" id="euroeval.benchmark_modules.vllm.load_model_and_tokenizer"><a href="../../../../api/euroeval/benchmark_modules/vllm/#euroeval.benchmark_modules.vllm.load_model_and_tokenizer" title="Go to docs">docs</a></div>
+<span class="k">def</span><span class="w"> </span><span class="nf">load_model_and_tokenizer</span><span class="p">(</span><div class="mkapi-source-link" id="euroeval.benchmark_modules.vllm.load_model_and_tokenizer"><a href="../../../../api/euroeval/benchmark_modules/vllm/#euroeval.benchmark_modules.vllm.load_model_and_tokenizer" title="Go to docs">[docs]</a></div>
     <span class="n">model_config</span><span class="p">:</span> <span class="n">ModelConfig</span><span class="p">,</span> <span class="n">benchmark_config</span><span class="p">:</span> <span class="n">BenchmarkConfig</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;tuple[LLM, PreTrainedTokenizer]&quot;</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Load the model and tokenizer.</span>
@@ -2966,16 +2850,12 @@
             <span class="sa">f</span><span class="s2">&quot;The model </span><span class="si">{</span><span class="n">model_id</span><span class="si">!r}</span><span class="s2"> could not be loaded. The error was </span><span class="si">{</span><span class="n">e</span><span class="si">!r}</span><span class="s2">.&quot;</span>
         <span class="p">)</span>
 
-    <span class="n">model</span><span class="o">.</span><span class="n">_run_engine</span> <span class="o">=</span> <span class="n">MethodType</span><span class="p">(</span><span class="n">_run_engine_with_fixed_progress_bars</span><span class="p">,</span> <span class="n">model</span><span class="p">)</span>
-    <span class="n">model</span><span class="o">.</span><span class="n">_validate_and_add_requests</span> <span class="o">=</span> <span class="n">MethodType</span><span class="p">(</span>
-        <span class="n">_validate_and_add_requests_with_fixed_progress_bars</span><span class="p">,</span> <span class="n">model</span>
-    <span class="p">)</span>
     <span class="n">model</span><span class="o">.</span><span class="n">config</span> <span class="o">=</span> <span class="n">hf_model_config</span>
 
     <span class="k">return</span> <span class="n">model</span><span class="p">,</span> <span class="n">tokenizer</span>
 
 
-<span class="k">def</span><span class="w"> </span><span class="nf">load_tokenizer</span><span class="p">(</span><div class="mkapi-source-link" id="euroeval.benchmark_modules.vllm.load_tokenizer"><a href="../../../../api/euroeval/benchmark_modules/vllm/#euroeval.benchmark_modules.vllm.load_tokenizer" title="Go to docs">docs</a></div>
+<span class="k">def</span><span class="w"> </span><span class="nf">load_tokenizer</span><span class="p">(</span><div class="mkapi-source-link" id="euroeval.benchmark_modules.vllm.load_tokenizer"><a href="../../../../api/euroeval/benchmark_modules/vllm/#euroeval.benchmark_modules.vllm.load_tokenizer" title="Go to docs">[docs]</a></div>
     <span class="n">model_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">revision</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">adapter_base_model_id</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
@@ -3053,91 +2933,12 @@
     <span class="c1"># Ensure that BOS, EOS and PAD tokens are set</span>
     <span class="n">tokenizer</span><span class="o">.</span><span class="n">bos_token</span><span class="p">,</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">bos_token_id</span> <span class="o">=</span> <span class="n">get_bos_token</span><span class="p">(</span><span class="n">tokenizer</span><span class="o">=</span><span class="n">tokenizer</span><span class="p">)</span>
     <span class="n">tokenizer</span><span class="o">.</span><span class="n">eos_token</span><span class="p">,</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">eos_token_id</span> <span class="o">=</span> <span class="n">get_eos_token</span><span class="p">(</span><span class="n">tokenizer</span><span class="o">=</span><span class="n">tokenizer</span><span class="p">)</span>
-    <span class="k">if</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">pad_token_id</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">tokenizer</span><span class="o">.</span><span class="n">pad_token</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">eos_token</span>
+    <span class="n">tokenizer</span><span class="o">.</span><span class="n">pad_token</span><span class="p">,</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">pad_token_id</span> <span class="o">=</span> <span class="n">get_pad_token</span><span class="p">(</span><span class="n">tokenizer</span><span class="o">=</span><span class="n">tokenizer</span><span class="p">)</span>
 
     <span class="k">return</span> <span class="n">tokenizer</span>
 
 
-<span class="k">def</span><span class="w"> </span><span class="nf">_run_engine_with_fixed_progress_bars</span><span class="p">(</span>
-    <span class="bp">self</span><span class="p">:</span> <span class="s2">&quot;LLM&quot;</span><span class="p">,</span> <span class="n">use_tqdm</span><span class="p">:</span> <span class="nb">bool</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="s2">&quot;RequestOutput&quot;</span><span class="p">]:</span>
-    <span class="k">if</span> <span class="n">use_tqdm</span><span class="p">:</span>
-        <span class="n">num_requests</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">llm_engine</span><span class="o">.</span><span class="n">get_num_unfinished_requests</span><span class="p">()</span>
-        <span class="n">pbar</span> <span class="o">=</span> <span class="n">tqdm</span><span class="p">(</span>
-            <span class="n">total</span><span class="o">=</span><span class="n">num_requests</span><span class="p">,</span> <span class="n">leave</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">disable</span><span class="o">=</span><span class="nb">hasattr</span><span class="p">(</span><span class="n">sys</span><span class="p">,</span> <span class="s2">&quot;_called_from_test&quot;</span><span class="p">)</span>
-        <span class="p">)</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="n">pbar</span> <span class="o">=</span> <span class="kc">None</span>
-
-    <span class="c1"># Run the engine.</span>
-    <span class="n">outputs</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="s2">&quot;RequestOutput&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
-    <span class="k">while</span> <span class="bp">self</span><span class="o">.</span><span class="n">llm_engine</span><span class="o">.</span><span class="n">has_unfinished_requests</span><span class="p">():</span>
-        <span class="n">step_outputs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">llm_engine</span><span class="o">.</span><span class="n">step</span><span class="p">()</span>
-        <span class="k">for</span> <span class="n">output</span> <span class="ow">in</span> <span class="n">step_outputs</span><span class="p">:</span>
-            <span class="k">if</span> <span class="n">output</span><span class="o">.</span><span class="n">finished</span><span class="p">:</span>
-                <span class="n">outputs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">output</span><span class="p">)</span>
-                <span class="k">if</span> <span class="n">pbar</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                    <span class="n">pbar</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
-
-    <span class="k">if</span> <span class="n">pbar</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">pbar</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
-
-    <span class="c1"># Sort the outputs by request ID. This is necessary because some requests may be</span>
-    <span class="c1"># finished earlier than its previous requests.</span>
-    <span class="n">outputs</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">outputs</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">request_id</span><span class="p">))</span>
-
-    <span class="k">return</span> <span class="n">outputs</span>
-
-
-<span class="k">def</span><span class="w"> </span><span class="nf">_validate_and_add_requests_with_fixed_progress_bars</span><span class="p">(</span>
-    <span class="bp">self</span><span class="p">:</span> <span class="s2">&quot;LLM&quot;</span><span class="p">,</span>
-    <span class="n">prompts</span><span class="p">:</span> <span class="s2">&quot;PromptType | c.Sequence[PromptType]&quot;</span><span class="p">,</span>
-    <span class="n">params</span><span class="p">:</span> <span class="s2">&quot;SamplingParams | c.Sequence[SamplingParams] | PoolingParams | c.Sequence[PoolingParams]&quot;</span><span class="p">,</span>  <span class="c1"># noqa: E501</span>
-    <span class="o">*</span><span class="p">,</span>
-    <span class="n">use_tqdm</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
-    <span class="n">lora_request</span><span class="p">:</span> <span class="s2">&quot;c.Sequence[LoRARequest] | LoRARequest | None&quot;</span><span class="p">,</span>
-    <span class="n">prompt_adapter_request</span><span class="p">:</span> <span class="s2">&quot;PromptAdapterRequest | None&quot;</span><span class="p">,</span>
-    <span class="n">tokenization_kwargs</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">t</span><span class="o">.</span><span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">guided_options</span><span class="p">:</span> <span class="s2">&quot;GuidedDecodingRequest | None&quot;</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">priority</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">prompts</span><span class="p">,</span> <span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)):</span>
-        <span class="c1"># Convert a single prompt to a list.</span>
-        <span class="n">prompts</span> <span class="o">=</span> <span class="p">[</span><span class="n">prompts</span><span class="p">]</span>
-
-    <span class="n">num_requests</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">prompts</span><span class="p">)</span>
-    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">params</span><span class="p">)</span> <span class="o">!=</span> <span class="n">num_requests</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;The lengths of prompts and params must be the same.&quot;</span><span class="p">)</span>
-    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">lora_request</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">lora_request</span><span class="p">)</span> <span class="o">!=</span> <span class="n">num_requests</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;The lengths of prompts and lora_request must be the same.&quot;</span><span class="p">)</span>
-
-    <span class="k">for</span> <span class="n">sp</span> <span class="ow">in</span> <span class="n">params</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span> <span class="k">else</span> <span class="p">(</span><span class="n">params</span><span class="p">,):</span>
-        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">sp</span><span class="p">,</span> <span class="n">SamplingParams</span><span class="p">):</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_add_guided_params</span><span class="p">(</span><span class="n">sp</span><span class="p">,</span> <span class="n">guided_options</span><span class="p">)</span>
-
-            <span class="c1"># We only care about the final output</span>
-            <span class="n">sp</span><span class="o">.</span><span class="n">output_kind</span> <span class="o">=</span> <span class="n">RequestOutputKind</span><span class="o">.</span><span class="n">FINAL_ONLY</span>
-
-    <span class="c1"># Add requests to the engine.</span>
-    <span class="n">it</span> <span class="o">=</span> <span class="n">prompts</span>
-    <span class="k">if</span> <span class="n">use_tqdm</span><span class="p">:</span>
-        <span class="n">it</span> <span class="o">=</span> <span class="n">tqdm</span><span class="p">(</span><span class="n">it</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s2">&quot;Adding requests&quot;</span><span class="p">,</span> <span class="n">leave</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-
-    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">prompt</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">it</span><span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_add_request</span><span class="p">(</span>
-            <span class="n">prompt</span><span class="p">,</span>
-            <span class="n">params</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="n">c</span><span class="o">.</span><span class="n">Sequence</span><span class="p">)</span> <span class="k">else</span> <span class="n">params</span><span class="p">,</span>
-            <span class="n">tokenization_kwargs</span><span class="o">=</span><span class="n">tokenization_kwargs</span><span class="p">,</span>
-            <span class="n">lora_request</span><span class="o">=</span><span class="n">lora_request</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
-            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">lora_request</span><span class="p">,</span> <span class="n">c</span><span class="o">.</span><span class="n">Sequence</span><span class="p">)</span>
-            <span class="k">else</span> <span class="n">lora_request</span><span class="p">,</span>
-            <span class="n">prompt_adapter_request</span><span class="o">=</span><span class="n">prompt_adapter_request</span><span class="p">,</span>
-            <span class="n">priority</span><span class="o">=</span><span class="n">priority</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">if</span> <span class="n">priority</span> <span class="k">else</span> <span class="mi">0</span><span class="p">,</span>
-        <span class="p">)</span>
-
-
-<span class="k">def</span><span class="w"> </span><span class="nf">clear_vllm</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span><div class="mkapi-source-link" id="euroeval.benchmark_modules.vllm.clear_vllm"><a href="../../../../api/euroeval/benchmark_modules/vllm/#euroeval.benchmark_modules.vllm.clear_vllm" title="Go to docs">docs</a></div>
+<span class="k">def</span><span class="w"> </span><span class="nf">clear_vllm</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span><div class="mkapi-source-link" id="euroeval.benchmark_modules.vllm.clear_vllm"><a href="../../../../api/euroeval/benchmark_modules/vllm/#euroeval.benchmark_modules.vllm.clear_vllm" title="Go to docs">[docs]</a></div>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Clear the GPU memory used by the vLLM model, enabling re-initialisation.&quot;&quot;&quot;</span>
     <span class="k">with</span> <span class="n">contextlib</span><span class="o">.</span><span class="n">suppress</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">):</span>
         <span class="n">destroy_model_parallel</span><span class="p">()</span>
@@ -3151,7 +2952,7 @@
     <span class="n">clear_memory</span><span class="p">()</span>
 
 
-<span class="k">def</span><span class="w"> </span><span class="nf">get_end_of_reasoning_token</span><span class="p">(</span><div class="mkapi-source-link" id="euroeval.benchmark_modules.vllm.get_end_of_reasoning_token"><a href="../../../../api/euroeval/benchmark_modules/vllm/#euroeval.benchmark_modules.vllm.get_end_of_reasoning_token" title="Go to docs">docs</a></div>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_end_of_reasoning_token</span><span class="p">(</span><div class="mkapi-source-link" id="euroeval.benchmark_modules.vllm.get_end_of_reasoning_token"><a href="../../../../api/euroeval/benchmark_modules/vllm/#euroeval.benchmark_modules.vllm.get_end_of_reasoning_token" title="Go to docs">[docs]</a></div>
     <span class="n">model</span><span class="p">:</span> <span class="s2">&quot;LLM&quot;</span><span class="p">,</span> <span class="n">tokenizer</span><span class="p">:</span> <span class="s2">&quot;PreTrainedTokenizer&quot;</span><span class="p">,</span> <span class="n">model_id</span><span class="p">:</span> <span class="nb">str</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the end-of-reasoning token for a generative model.</span>
@@ -3247,7 +3048,7 @@
     <span class="k">return</span> <span class="n">eor_token</span>
 
 
-<span class="k">def</span><span class="w"> </span><span class="nf">get_custom_stop_tokens</span><span class="p">(</span><div class="mkapi-source-link" id="euroeval.benchmark_modules.vllm.get_custom_stop_tokens"><a href="../../../../api/euroeval/benchmark_modules/vllm/#euroeval.benchmark_modules.vllm.get_custom_stop_tokens" title="Go to docs">docs</a></div>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_custom_stop_tokens</span><span class="p">(</span><div class="mkapi-source-link" id="euroeval.benchmark_modules.vllm.get_custom_stop_tokens"><a href="../../../../api/euroeval/benchmark_modules/vllm/#euroeval.benchmark_modules.vllm.get_custom_stop_tokens" title="Go to docs">[docs]</a></div>
     <span class="n">model</span><span class="p">:</span> <span class="s2">&quot;LLM&quot;</span><span class="p">,</span>
     <span class="n">tokenizer</span><span class="p">:</span> <span class="s2">&quot;PreTrainedTokenizer&quot;</span><span class="p">,</span>
     <span class="n">model_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
@@ -3308,6 +3109,22 @@
         <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Found no custom stop tokens for model </span><span class="si">{</span><span class="n">model_id</span><span class="si">!r}</span><span class="s2">.&quot;</span><span class="p">)</span>
 
     <span class="k">return</span> <span class="n">stop_tokens</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">get_pbar_without_leave</span><span class="p">(</span><span class="o">*</span><span class="n">tqdm_args</span><span class="p">,</span> <span class="o">**</span><span class="n">tqdm_kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">tqdm</span><span class="p">:</span><div class="mkapi-source-link" id="euroeval.benchmark_modules.vllm.get_pbar_without_leave"><a href="../../../../api/euroeval/benchmark_modules/vllm/#euroeval.benchmark_modules.vllm.get_pbar_without_leave" title="Go to docs">[docs]</a></div>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get a progress bar for vLLM which disappears after completion.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        *tqdm_args:</span>
+<span class="sd">            Positional arguments to pass to tqdm.</span>
+<span class="sd">        **tqdm_kwargs:</span>
+<span class="sd">            Additional keyword arguments to pass to tqdm.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        A tqdm progress bar.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">tqdm_kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;leave&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>  <span class="c1"># Remove the &#39;leave&#39; key if it exists</span>
+    <span class="k">return</span> <span class="n">tqdm</span><span class="p">(</span><span class="o">*</span><span class="n">tqdm_args</span><span class="p">,</span> <span class="n">leave</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">tqdm_kwargs</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
 
 
@@ -3316,6 +3133,9 @@
 
 
 
+
+  
+  
 
 
 
@@ -3366,10 +3186,10 @@
     
     
       
-      <script id="__config" type="application/json">{"base": "../../../..", "features": ["navigation.top", "navigation.path", "navigation.prune", "navigation.indexes", "navigation.tabs", "navigation.tabs.sticky", "navigation.instant", "navigation.instant.prefetch", "navigation.instant.progress", "navigation.tracking", "navigation.sections"], "search": "../../../../assets/javascripts/workers/search.f8cc74c7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"base": "../../../..", "features": ["navigation.top", "navigation.path", "navigation.prune", "navigation.indexes", "navigation.tabs", "navigation.tabs.sticky", "navigation.instant", "navigation.instant.prefetch", "navigation.instant.progress", "navigation.tracking", "navigation.sections"], "search": "../../../../assets/javascripts/workers/search.d50fe291.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../../../assets/javascripts/bundle.c8b220af.min.js"></script>
+      <script src="../../../../assets/javascripts/bundle.13a4f30d.min.js"></script>
       
         <script src="../../../../javascript/mkapi.js"></script>
       

@@ -12,7 +12,7 @@
       
       
       <link rel="icon" href="../../../gfx/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.11">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.14">
     
     
       
@@ -20,7 +20,7 @@
       
     
     
-      <link rel="stylesheet" href="../../../assets/stylesheets/main.4af4bdda.min.css">
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.342714a4.min.css">
       
         
         <link rel="stylesheet" href="../../../assets/stylesheets/palette.06af60db.min.css">
@@ -860,6 +860,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#euroeval.tokenization_utils.get_pad_token" class="md-nav__link">
+    <span class="md-ellipsis">
+      get_pad_token
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#euroeval.tokenization_utils.get_end_of_chat_token_ids" class="md-nav__link">
     <span class="md-ellipsis">
       get_end_of_chat_token_ids
@@ -897,7 +906,7 @@
 <span class="mkapi-object-link">
 
 
-<a href="../../../api/euroeval/tokenization_utils/#euroeval.tokenization_utils" title="Go to docs">docs</a>
+<a href="../../../api/euroeval/tokenization_utils/#euroeval.tokenization_utils" title="Go to docs">[docs]</a>
 <span class="mkapi-document-toggle" title="Toggle all docs">
 <i class="fa-regular fa-square-minus"></i>
 </span>
@@ -1307,7 +1316,101 @@
 <span class="normal">401</span>
 <span class="normal">402</span>
 <span class="normal">403</span>
-<span class="normal">404</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Utility functions related to tokenization.&quot;&quot;&quot;</span>
+<span class="normal">404</span>
+<span class="normal">405</span>
+<span class="normal">406</span>
+<span class="normal">407</span>
+<span class="normal">408</span>
+<span class="normal">409</span>
+<span class="normal">410</span>
+<span class="normal">411</span>
+<span class="normal">412</span>
+<span class="normal">413</span>
+<span class="normal">414</span>
+<span class="normal">415</span>
+<span class="normal">416</span>
+<span class="normal">417</span>
+<span class="normal">418</span>
+<span class="normal">419</span>
+<span class="normal">420</span>
+<span class="normal">421</span>
+<span class="normal">422</span>
+<span class="normal">423</span>
+<span class="normal">424</span>
+<span class="normal">425</span>
+<span class="normal">426</span>
+<span class="normal">427</span>
+<span class="normal">428</span>
+<span class="normal">429</span>
+<span class="normal">430</span>
+<span class="normal">431</span>
+<span class="normal">432</span>
+<span class="normal">433</span>
+<span class="normal">434</span>
+<span class="normal">435</span>
+<span class="normal">436</span>
+<span class="normal">437</span>
+<span class="normal">438</span>
+<span class="normal">439</span>
+<span class="normal">440</span>
+<span class="normal">441</span>
+<span class="normal">442</span>
+<span class="normal">443</span>
+<span class="normal">444</span>
+<span class="normal">445</span>
+<span class="normal">446</span>
+<span class="normal">447</span>
+<span class="normal">448</span>
+<span class="normal">449</span>
+<span class="normal">450</span>
+<span class="normal">451</span>
+<span class="normal">452</span>
+<span class="normal">453</span>
+<span class="normal">454</span>
+<span class="normal">455</span>
+<span class="normal">456</span>
+<span class="normal">457</span>
+<span class="normal">458</span>
+<span class="normal">459</span>
+<span class="normal">460</span>
+<span class="normal">461</span>
+<span class="normal">462</span>
+<span class="normal">463</span>
+<span class="normal">464</span>
+<span class="normal">465</span>
+<span class="normal">466</span>
+<span class="normal">467</span>
+<span class="normal">468</span>
+<span class="normal">469</span>
+<span class="normal">470</span>
+<span class="normal">471</span>
+<span class="normal">472</span>
+<span class="normal">473</span>
+<span class="normal">474</span>
+<span class="normal">475</span>
+<span class="normal">476</span>
+<span class="normal">477</span>
+<span class="normal">478</span>
+<span class="normal">479</span>
+<span class="normal">480</span>
+<span class="normal">481</span>
+<span class="normal">482</span>
+<span class="normal">483</span>
+<span class="normal">484</span>
+<span class="normal">485</span>
+<span class="normal">486</span>
+<span class="normal">487</span>
+<span class="normal">488</span>
+<span class="normal">489</span>
+<span class="normal">490</span>
+<span class="normal">491</span>
+<span class="normal">492</span>
+<span class="normal">493</span>
+<span class="normal">494</span>
+<span class="normal">495</span>
+<span class="normal">496</span>
+<span class="normal">497</span>
+<span class="normal">498</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Utility functions related to tokenization.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
@@ -1328,7 +1431,7 @@
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">&quot;euroeval&quot;</span><span class="p">)</span>
 
-<div class="mkapi-source-link" id="euroeval.tokenization_utils.get_special_token_metadata"><a href="../../../api/euroeval/tokenization_utils/#euroeval.tokenization_utils.get_special_token_metadata" title="Go to docs">docs</a></div>
+<div class="mkapi-source-link" id="euroeval.tokenization_utils.get_special_token_metadata"><a href="../../../api/euroeval/tokenization_utils/#euroeval.tokenization_utils.get_special_token_metadata" title="Go to docs">[docs]</a></div>
 <span class="k">def</span><span class="w"> </span><span class="nf">get_special_token_metadata</span><span class="p">(</span><span class="n">tokenizer</span><span class="p">:</span> <span class="s2">&quot;PreTrainedTokenizerBase&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the special token metadata for a tokenizer.</span>
 
@@ -1381,7 +1484,7 @@
     <span class="p">)</span>
 
 
-<span class="k">def</span><span class="w"> </span><span class="nf">should_prompts_be_stripped</span><span class="p">(</span><div class="mkapi-source-link" id="euroeval.tokenization_utils.should_prompts_be_stripped"><a href="../../../api/euroeval/tokenization_utils/#euroeval.tokenization_utils.should_prompts_be_stripped" title="Go to docs">docs</a></div>
+<span class="k">def</span><span class="w"> </span><span class="nf">should_prompts_be_stripped</span><span class="p">(</span><div class="mkapi-source-link" id="euroeval.tokenization_utils.should_prompts_be_stripped"><a href="../../../api/euroeval/tokenization_utils/#euroeval.tokenization_utils.should_prompts_be_stripped" title="Go to docs">[docs]</a></div>
     <span class="n">labels_to_be_generated</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">tokenizer</span><span class="p">:</span> <span class="s2">&quot;PreTrainedTokenizer&quot;</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Determine if we should strip the prompts for few-shot evaluation.</span>
@@ -1420,7 +1523,7 @@
     <span class="k">return</span> <span class="n">strip_prompts</span>
 
 
-<span class="k">def</span><span class="w"> </span><span class="nf">should_prefix_space_be_added_to_labels</span><span class="p">(</span><div class="mkapi-source-link" id="euroeval.tokenization_utils.should_prefix_space_be_added_to_labels"><a href="../../../api/euroeval/tokenization_utils/#euroeval.tokenization_utils.should_prefix_space_be_added_to_labels" title="Go to docs">docs</a></div>
+<span class="k">def</span><span class="w"> </span><span class="nf">should_prefix_space_be_added_to_labels</span><span class="p">(</span><div class="mkapi-source-link" id="euroeval.tokenization_utils.should_prefix_space_be_added_to_labels"><a href="../../../api/euroeval/tokenization_utils/#euroeval.tokenization_utils.should_prefix_space_be_added_to_labels" title="Go to docs">[docs]</a></div>
     <span class="n">labels_to_be_generated</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">tokenizer</span><span class="p">:</span> <span class="s2">&quot;PreTrainedTokenizer&quot;</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Determine if we should add a prefix space to the labels.</span>
@@ -1461,7 +1564,7 @@
     <span class="k">return</span> <span class="n">add_prefix_space</span>
 
 
-<span class="k">def</span><span class="w"> </span><span class="nf">get_bos_token</span><span class="p">(</span><div class="mkapi-source-link" id="euroeval.tokenization_utils.get_bos_token"><a href="../../../api/euroeval/tokenization_utils/#euroeval.tokenization_utils.get_bos_token" title="Go to docs">docs</a></div>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_bos_token</span><span class="p">(</span><div class="mkapi-source-link" id="euroeval.tokenization_utils.get_bos_token"><a href="../../../api/euroeval/tokenization_utils/#euroeval.tokenization_utils.get_bos_token" title="Go to docs">[docs]</a></div>
     <span class="n">tokenizer</span><span class="p">:</span> <span class="s2">&quot;PreTrainedTokenizer&quot;</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">]</span> <span class="o">|</span> <span class="nb">tuple</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the beginning-of-sequence token from a tokenizer.</span>
@@ -1494,10 +1597,15 @@
         <span class="p">)</span>
         <span class="k">return</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span>
 
+    <span class="n">log_once</span><span class="p">(</span>
+        <span class="sa">f</span><span class="s2">&quot;Beginning-of-sequence token was not set, but detected it as </span><span class="si">{</span><span class="n">bos_token</span><span class="si">!r}</span><span class="s2"> &quot;</span>
+        <span class="sa">f</span><span class="s2">&quot;with ID </span><span class="si">{</span><span class="n">bos_token_id</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">,</span>
+        <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
+    <span class="p">)</span>
     <span class="k">return</span> <span class="n">bos_token</span><span class="p">,</span> <span class="n">bos_token_id</span>
 
 
-<span class="k">def</span><span class="w"> </span><span class="nf">get_eos_token</span><span class="p">(</span><div class="mkapi-source-link" id="euroeval.tokenization_utils.get_eos_token"><a href="../../../api/euroeval/tokenization_utils/#euroeval.tokenization_utils.get_eos_token" title="Go to docs">docs</a></div>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_eos_token</span><span class="p">(</span><div class="mkapi-source-link" id="euroeval.tokenization_utils.get_eos_token"><a href="../../../api/euroeval/tokenization_utils/#euroeval.tokenization_utils.get_eos_token" title="Go to docs">[docs]</a></div>
     <span class="n">tokenizer</span><span class="p">:</span> <span class="s2">&quot;PreTrainedTokenizer&quot;</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">]</span> <span class="o">|</span> <span class="nb">tuple</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the end-of-sequence token from a tokenizer.</span>
@@ -1530,9 +1638,97 @@
         <span class="p">)</span>
         <span class="k">return</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span>
 
+    <span class="n">log_once</span><span class="p">(</span>
+        <span class="sa">f</span><span class="s2">&quot;End-of-sequence token was not set, but detected it as </span><span class="si">{</span><span class="n">eos_token</span><span class="si">!r}</span><span class="s2"> with &quot;</span>
+        <span class="sa">f</span><span class="s2">&quot;ID </span><span class="si">{</span><span class="n">eos_token_id</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">,</span>
+        <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
+    <span class="p">)</span>
     <span class="k">return</span> <span class="n">eos_token</span><span class="p">,</span> <span class="n">eos_token_id</span>
 
-<div class="mkapi-source-link" id="euroeval.tokenization_utils.get_end_of_chat_token_ids"><a href="../../../api/euroeval/tokenization_utils/#euroeval.tokenization_utils.get_end_of_chat_token_ids" title="Go to docs">docs</a></div>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">get_pad_token</span><span class="p">(</span><div class="mkapi-source-link" id="euroeval.tokenization_utils.get_pad_token"><a href="../../../api/euroeval/tokenization_utils/#euroeval.tokenization_utils.get_pad_token" title="Go to docs">[docs]</a></div>
+    <span class="n">tokenizer</span><span class="p">:</span> <span class="s2">&quot;PreTrainedTokenizer&quot;</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">]</span> <span class="o">|</span> <span class="nb">tuple</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the padding token from a tokenizer.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        tokenizer:</span>
+<span class="sd">            The tokenizer.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        A pair (token, token_id) representing the padding token and its token ID, or</span>
+<span class="sd">        (None, None) if no padding token is found.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># If the tokenizer already has a padding token, return it</span>
+    <span class="k">if</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">pad_token</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">pad_token_id</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">tokenizer</span><span class="o">.</span><span class="n">pad_token</span><span class="p">,</span> <span class="nb">str</span><span class="p">),</span> <span class="p">(</span>
+            <span class="s2">&quot;Expected tokenizer.pad_token to be a string, but got &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">tokenizer</span><span class="o">.</span><span class="n">pad_token</span><span class="p">)</span><span class="si">}</span><span class="s2">.&quot;</span>
+        <span class="p">)</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">tokenizer</span><span class="o">.</span><span class="n">pad_token_id</span><span class="p">,</span> <span class="nb">int</span><span class="p">),</span> <span class="p">(</span>
+            <span class="s2">&quot;Expected tokenizer.pad_token_id to be an integer, but got &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">tokenizer</span><span class="o">.</span><span class="n">pad_token_id</span><span class="p">)</span><span class="si">}</span><span class="s2">.&quot;</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="p">(</span><span class="n">tokenizer</span><span class="o">.</span><span class="n">pad_token</span><span class="p">,</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">pad_token_id</span><span class="p">)</span>
+
+    <span class="c1"># If the tokenizer has a BOS token, use it as the padding token</span>
+    <span class="k">if</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">bos_token</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">bos_token_id</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">tokenizer</span><span class="o">.</span><span class="n">bos_token</span><span class="p">,</span> <span class="nb">str</span><span class="p">),</span> <span class="p">(</span>
+            <span class="s2">&quot;Expected tokenizer.bos_token to be a string, but got &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">tokenizer</span><span class="o">.</span><span class="n">bos_token</span><span class="p">)</span><span class="si">}</span><span class="s2">.&quot;</span>
+        <span class="p">)</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">tokenizer</span><span class="o">.</span><span class="n">bos_token_id</span><span class="p">,</span> <span class="nb">int</span><span class="p">),</span> <span class="p">(</span>
+            <span class="s2">&quot;Expected tokenizer.bos_token_id to be an integer, but got &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">tokenizer</span><span class="o">.</span><span class="n">bos_token_id</span><span class="p">)</span><span class="si">}</span><span class="s2">.&quot;</span>
+        <span class="p">)</span>
+        <span class="n">pad_token</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">bos_token</span>
+        <span class="n">pad_token_id</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">bos_token_id</span>
+
+    <span class="c1"># If the tokenizer has an EOS token, use it as the padding token</span>
+    <span class="k">elif</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">eos_token</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">eos_token_id</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">tokenizer</span><span class="o">.</span><span class="n">eos_token</span><span class="p">,</span> <span class="nb">str</span><span class="p">),</span> <span class="p">(</span>
+            <span class="s2">&quot;Expected tokenizer.eos_token to be a string, but got &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">tokenizer</span><span class="o">.</span><span class="n">eos_token</span><span class="p">)</span><span class="si">}</span><span class="s2">.&quot;</span>
+        <span class="p">)</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">tokenizer</span><span class="o">.</span><span class="n">eos_token_id</span><span class="p">,</span> <span class="nb">int</span><span class="p">),</span> <span class="p">(</span>
+            <span class="s2">&quot;Expected tokenizer.eos_token_id to be an integer, but got &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">tokenizer</span><span class="o">.</span><span class="n">eos_token_id</span><span class="p">)</span><span class="si">}</span><span class="s2">.&quot;</span>
+        <span class="p">)</span>
+        <span class="n">pad_token</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">eos_token</span>
+        <span class="n">pad_token_id</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">eos_token_id</span>
+
+    <span class="c1"># Otherwise, try to find a candidate padding token in the vocabulary</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">pad_token_candidates</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="s2">&quot;&lt;pad&gt;&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;[pad]&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;&lt;|endoftext|&gt;&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;&lt;｜end▁of▁sentence｜&gt;&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;&lt;|im_end|&gt;&quot;</span><span class="p">,</span>
+        <span class="p">]</span>
+        <span class="n">pad_token_candidates</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span><span class="n">c</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">pad_token_candidates</span><span class="p">])</span>
+        <span class="k">for</span> <span class="n">candidate</span> <span class="ow">in</span> <span class="n">pad_token_candidates</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">candidate</span> <span class="ow">in</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">get_vocab</span><span class="p">():</span>
+                <span class="n">pad_token</span> <span class="o">=</span> <span class="n">candidate</span>
+                <span class="n">pad_token_id</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">get_vocab</span><span class="p">()[</span><span class="n">candidate</span><span class="p">]</span>
+                <span class="k">break</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">log_once</span><span class="p">(</span>
+                <span class="s2">&quot;Could not identify a padding token for the model. Please ensure that &quot;</span>
+                <span class="s2">&quot;this has been set in the tokenizer&#39;s configuration. Using no padding &quot;</span>
+                <span class="s2">&quot;token. This may lead to unexpected behavior in the model.&quot;</span><span class="p">,</span>
+                <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="k">return</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span>
+
+    <span class="n">log_once</span><span class="p">(</span>
+        <span class="sa">f</span><span class="s2">&quot;Padding token was not set, but detected it as </span><span class="si">{</span><span class="n">pad_token</span><span class="si">!r}</span><span class="s2"> with ID &quot;</span>
+        <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">pad_token_id</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">,</span>
+        <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">pad_token</span><span class="p">,</span> <span class="n">pad_token_id</span>
+
+<div class="mkapi-source-link" id="euroeval.tokenization_utils.get_end_of_chat_token_ids"><a href="../../../api/euroeval/tokenization_utils/#euroeval.tokenization_utils.get_end_of_chat_token_ids" title="Go to docs">[docs]</a></div>
 <span class="k">def</span><span class="w"> </span><span class="nf">get_end_of_chat_token_ids</span><span class="p">(</span><span class="n">tokenizer</span><span class="p">:</span> <span class="s2">&quot;PreTrainedTokenizer&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the end token ID for chat models.</span>
 
@@ -1572,7 +1768,7 @@
     <span class="k">return</span> <span class="n">end_of_chat_tokens</span>
 
 
-<span class="k">def</span><span class="w"> </span><span class="nf">get_first_label_token_mapping</span><span class="p">(</span><div class="mkapi-source-link" id="euroeval.tokenization_utils.get_first_label_token_mapping"><a href="../../../api/euroeval/tokenization_utils/#euroeval.tokenization_utils.get_first_label_token_mapping" title="Go to docs">docs</a></div>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_first_label_token_mapping</span><span class="p">(</span><div class="mkapi-source-link" id="euroeval.tokenization_utils.get_first_label_token_mapping"><a href="../../../api/euroeval/tokenization_utils/#euroeval.tokenization_utils.get_first_label_token_mapping" title="Go to docs">[docs]</a></div>
     <span class="n">dataset_config</span><span class="p">:</span> <span class="s2">&quot;DatasetConfig&quot;</span><span class="p">,</span>
     <span class="n">model_config</span><span class="p">:</span> <span class="s2">&quot;ModelConfig&quot;</span><span class="p">,</span>
     <span class="n">tokenizer</span><span class="p">:</span> <span class="s2">&quot;PreTrainedTokenizer | None&quot;</span><span class="p">,</span>
@@ -1609,14 +1805,14 @@
     <span class="k">if</span> <span class="n">tokenizer</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="k">if</span> <span class="n">output_scores</span><span class="p">:</span>
             <span class="n">log_once</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;The model </span><span class="si">{</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span><span class="si">!r}</span><span class="s2"> will output scores, since the &quot;</span>
-                <span class="s2">&quot;dataset supports it and no tokenizer is available.&quot;</span><span class="p">,</span>
+                <span class="sa">f</span><span class="s2">&quot;We will use logprobs with the model </span><span class="si">{</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span><span class="si">!r}</span><span class="s2"> &quot;</span>
+                <span class="s2">&quot;since the dataset supports it and no tokenizer is available.&quot;</span><span class="p">,</span>
                 <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
             <span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">log_once</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;The model </span><span class="si">{</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span><span class="si">!r}</span><span class="s2"> will not output scores, since &quot;</span>
-                <span class="s2">&quot;the dataset does not support it and no tokenizer is available.&quot;</span><span class="p">,</span>
+                <span class="sa">f</span><span class="s2">&quot;We will not use logprobs with the model </span><span class="si">{</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span><span class="si">!r}</span><span class="s2"> &quot;</span>
+                <span class="s2">&quot;since the dataset does not support it and no tokenizer is available.&quot;</span><span class="p">,</span>
                 <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
             <span class="p">)</span>
         <span class="k">return</span> <span class="n">output_scores</span>
@@ -1677,7 +1873,7 @@
             <span class="k">if</span> <span class="ow">not</span> <span class="n">matching_tokens</span><span class="p">:</span>
                 <span class="n">log_once</span><span class="p">(</span>
                     <span class="sa">f</span><span class="s2">&quot;No matching token found in token_list for label &#39;</span><span class="si">{</span><span class="n">label</span><span class="si">}</span><span class="s2">&#39;, so &quot;</span>
-                    <span class="s2">&quot;we will not output scores.&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;we will not use logprobs with the model.&quot;</span><span class="p">,</span>
                     <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
                 <span class="p">)</span>
                 <span class="k">return</span> <span class="kc">False</span>
@@ -1687,8 +1883,8 @@
         <span class="c1"># tokens are distinct</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">first_tokens</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">first_tokens</span><span class="p">)):</span>
             <span class="n">log_once</span><span class="p">(</span>
-                <span class="s2">&quot;The model will output scores, since the first tokens of the labels &quot;</span>
-                <span class="s2">&quot;are distinct.&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;We will use logprobs with the model since the first tokens of the &quot;</span>
+                <span class="s2">&quot;labels are distinct.&quot;</span><span class="p">,</span>
                 <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
             <span class="p">)</span>
             <span class="k">return</span> <span class="p">{</span>
@@ -1697,7 +1893,7 @@
             <span class="p">}</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">log_once</span><span class="p">(</span>
-                <span class="s2">&quot;The model will not output scores, since the first tokens of the &quot;</span>
+                <span class="s2">&quot;We will not use logprobs with the model since the first tokens of the &quot;</span>
                 <span class="s2">&quot;labels are not distinct. The first tokens for the labels &quot;</span>
                 <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">local_labels</span><span class="si">}</span><span class="s2"> are </span><span class="si">{</span><span class="n">first_tokens</span><span class="si">}</span><span class="s2">&quot;</span>
             <span class="p">)</span>
@@ -1707,7 +1903,8 @@
     <span class="c1"># evaluation errors. This will force the label extraction to rely on word edit</span>
     <span class="c1"># distance instead of logprobs.</span>
     <span class="n">log_once</span><span class="p">(</span>
-        <span class="s2">&quot;The model will not output scores, since the dataset does not have labels.&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;We will not use logprobs with the model, since the dataset does not have &quot;</span>
+        <span class="s2">&quot;labels.&quot;</span><span class="p">,</span>
         <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
     <span class="p">)</span>
     <span class="k">return</span> <span class="kc">False</span>
@@ -1719,6 +1916,9 @@
 
 
 
+
+  
+  
 
 
 
@@ -1769,10 +1969,10 @@
     
     
       
-      <script id="__config" type="application/json">{"base": "../../..", "features": ["navigation.top", "navigation.path", "navigation.prune", "navigation.indexes", "navigation.tabs", "navigation.tabs.sticky", "navigation.instant", "navigation.instant.prefetch", "navigation.instant.progress", "navigation.tracking", "navigation.sections"], "search": "../../../assets/javascripts/workers/search.f8cc74c7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"base": "../../..", "features": ["navigation.top", "navigation.path", "navigation.prune", "navigation.indexes", "navigation.tabs", "navigation.tabs.sticky", "navigation.instant", "navigation.instant.prefetch", "navigation.instant.progress", "navigation.tracking", "navigation.sections"], "search": "../../../assets/javascripts/workers/search.d50fe291.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../../assets/javascripts/bundle.c8b220af.min.js"></script>
+      <script src="../../../assets/javascripts/bundle.13a4f30d.min.js"></script>
       
         <script src="../../../javascript/mkapi.js"></script>
       

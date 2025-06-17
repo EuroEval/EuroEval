@@ -16,7 +16,7 @@
       
       
       <link rel="icon" href="../../../gfx/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.11">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.14">
     
     
       
@@ -24,7 +24,7 @@
       
     
     
-      <link rel="stylesheet" href="../../../assets/stylesheets/main.4af4bdda.min.css">
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.342714a4.min.css">
       
         
         <link rel="stylesheet" href="../../../assets/stylesheets/palette.06af60db.min.css">
@@ -1749,6 +1749,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#euroeval.tokenization_utils.get_pad_token" class="md-nav__link">
+    <span class="md-ellipsis">
+      get_pad_token
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#euroeval.tokenization_utils.get_end_of_chat_token_ids" class="md-nav__link">
     <span class="md-ellipsis">
       get_end_of_chat_token_ids
@@ -1908,6 +1917,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#euroeval.tokenization_utils.get_pad_token" class="md-nav__link">
+    <span class="md-ellipsis">
+      get_pad_token
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#euroeval.tokenization_utils.get_end_of_chat_token_ids" class="md-nav__link">
     <span class="md-ellipsis">
       get_end_of_chat_token_ids
@@ -1988,6 +2006,11 @@ Get the beginning-of-sequence token from a tokenizer.</p>
 <p><span class="mkapi-item-name"><a href="./#euroeval.tokenization_utils.get_eos_token" title="euroeval.tokenization_utils.get_eos_token">get_eos_token</a></span>
  <span class="mkapi-dash">&mdash;</span>
 Get the end-of-sequence token from a tokenizer.</p>
+</li>
+<li>
+<p><span class="mkapi-item-name"><a href="./#euroeval.tokenization_utils.get_pad_token" title="euroeval.tokenization_utils.get_pad_token">get_pad_token</a></span>
+ <span class="mkapi-dash">&mdash;</span>
+Get the padding token from a tokenizer.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name"><a href="./#euroeval.tokenization_utils.get_end_of_chat_token_ids" title="euroeval.tokenization_utils.get_end_of_chat_token_ids">get_end_of_chat_token_ids</a></span>
@@ -2256,6 +2279,54 @@ ID, or (None, None) if no EOS token is found.</p>
 </ul>
 </div>
 </div>
+<p class="mkapi-object mkapi-page-source" id="euroeval.tokenization_utils.get_pad_token">
+<span class="mkapi-object-link">
+
+
+<a href="../../../src/euroeval/tokenization_utils/#euroeval.tokenization_utils.get_pad_token" title="Go to source">source</a>
+<span class="mkapi-document-toggle" title="Toggle all docs">
+<i class="fa-regular fa-square-minus"></i>
+</span>
+</span>
+<span class="mkapi-object-name"><a href="./#euroeval.tokenization_utils.get_pad_token" title="euroeval.tokenization_utils.get_pad_token">get_pad_token</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">tokenizer</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="transformers.tokenization_utils.PreTrainedTokenizer">PreTrainedTokenizer</span></span><span class="mkapi-paren">)</span><span class="mkapi-arrow"> → </span><span class="mkapi-return">tuple[str, int] | tuple[None, None]</span></span>
+</p>
+<div class="mkapi-document">
+<p>Get the padding token from a tokenizer.</p>
+<p class="mkapi-section">
+<span class="mkapi-object-link">
+<span class="mkapi-section-toggle" title="Toggle parameters">
+<i class="fa-regular fa-square-minus"></i>
+</span>
+</span>
+<span class="mkapi-section-name">Parameters</span>
+</p>
+<div class="mkapi-section-content">
+<ul class="mkapi-item-list">
+<li>
+<p><span class="mkapi-item-name">tokenizer</span> : 
+<span class="mkapi-item-type"><span class="mkapi-tooltip" title="transformers.tokenization_utils.PreTrainedTokenizer">PreTrainedTokenizer</span></span> <span class="mkapi-dash">&mdash;</span>
+The tokenizer.</p>
+</li>
+</ul>
+</div>
+<p class="mkapi-section">
+<span class="mkapi-object-link">
+<span class="mkapi-section-toggle" title="Toggle returns">
+<i class="fa-regular fa-square-minus"></i>
+</span>
+</span>
+<span class="mkapi-section-name">Returns</span>
+</p>
+<div class="mkapi-section-content">
+<ul class="mkapi-item-list">
+<li>
+<p><span class="mkapi-item-type">tuple[str, int] | tuple[None, None]</span> <span class="mkapi-dash">&mdash;</span>
+A pair (token, token_id) representing the padding token and its token ID, or
+(None, None) if no padding token is found.</p>
+</li>
+</ul>
+</div>
+</div>
 <p class="mkapi-object mkapi-page-source" id="euroeval.tokenization_utils.get_end_of_chat_token_ids">
 <span class="mkapi-object-link">
 
@@ -2442,10 +2513,10 @@ is outputted then the model will always output scores).</p>
     
     
       
-      <script id="__config" type="application/json">{"base": "../../..", "features": ["navigation.top", "navigation.path", "navigation.prune", "navigation.indexes", "navigation.tabs", "navigation.tabs.sticky", "navigation.instant", "navigation.instant.prefetch", "navigation.instant.progress", "navigation.tracking", "navigation.sections"], "search": "../../../assets/javascripts/workers/search.f8cc74c7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"base": "../../..", "features": ["navigation.top", "navigation.path", "navigation.prune", "navigation.indexes", "navigation.tabs", "navigation.tabs.sticky", "navigation.instant", "navigation.instant.prefetch", "navigation.instant.progress", "navigation.tracking", "navigation.sections"], "search": "../../../assets/javascripts/workers/search.d50fe291.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../../assets/javascripts/bundle.c8b220af.min.js"></script>
+      <script src="../../../assets/javascripts/bundle.13a4f30d.min.js"></script>
       
         <script src="../../../javascript/mkapi.js"></script>
       

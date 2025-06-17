@@ -12,7 +12,7 @@
       
       
       <link rel="icon" href="../../../gfx/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.11">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.14">
     
     
       
@@ -20,7 +20,7 @@
       
     
     
-      <link rel="stylesheet" href="../../../assets/stylesheets/main.4af4bdda.min.css">
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.342714a4.min.css">
       
         
         <link rel="stylesheet" href="../../../assets/stylesheets/palette.06af60db.min.css">
@@ -941,9 +941,9 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#euroeval.utils.catch_coroutine_exception" class="md-nav__link">
+  <a href="#euroeval.utils.add_semaphore_and_catch_exception" class="md-nav__link">
     <span class="md-ellipsis">
-      catch_coroutine_exception
+      add_semaphore_and_catch_exception
     </span>
   </a>
   
@@ -969,7 +969,7 @@
 <span class="mkapi-object-link">
 
 
-<a href="../../../api/euroeval/utils/#euroeval.utils" title="Go to docs">docs</a>
+<a href="../../../api/euroeval/utils/#euroeval.utils" title="Go to docs">[docs]</a>
 <span class="mkapi-document-toggle" title="Toggle all docs">
 <i class="fa-regular fa-square-minus"></i>
 </span>
@@ -1345,7 +1345,12 @@
 <span class="normal">367</span>
 <span class="normal">368</span>
 <span class="normal">369</span>
-<span class="normal">370</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Utility functions to be used in other scripts.&quot;&quot;&quot;</span>
+<span class="normal">370</span>
+<span class="normal">371</span>
+<span class="normal">372</span>
+<span class="normal">373</span>
+<span class="normal">374</span>
+<span class="normal">375</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Utility functions to be used in other scripts.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">asyncio</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">gc</span>
@@ -1383,7 +1388,7 @@
 <span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">&quot;euroeval&quot;</span><span class="p">)</span>
 
 
-<span class="k">def</span><span class="w"> </span><span class="nf">create_model_cache_dir</span><span class="p">(</span><span class="n">cache_dir</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">model_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span><div class="mkapi-source-link" id="euroeval.utils.create_model_cache_dir"><a href="../../../api/euroeval/utils/#euroeval.utils.create_model_cache_dir" title="Go to docs">docs</a></div>
+<span class="k">def</span><span class="w"> </span><span class="nf">create_model_cache_dir</span><span class="p">(</span><span class="n">cache_dir</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">model_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span><div class="mkapi-source-link" id="euroeval.utils.create_model_cache_dir"><a href="../../../api/euroeval/utils/#euroeval.utils.create_model_cache_dir" title="Go to docs">[docs]</a></div>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Create cache directory for a model.</span>
 
 <span class="sd">    Args:</span>
@@ -1401,7 +1406,7 @@
     <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">cache_dir_path</span><span class="p">)</span>
 
 
-<span class="k">def</span><span class="w"> </span><span class="nf">clear_memory</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span><div class="mkapi-source-link" id="euroeval.utils.clear_memory"><a href="../../../api/euroeval/utils/#euroeval.utils.clear_memory" title="Go to docs">docs</a></div>
+<span class="k">def</span><span class="w"> </span><span class="nf">clear_memory</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span><div class="mkapi-source-link" id="euroeval.utils.clear_memory"><a href="../../../api/euroeval/utils/#euroeval.utils.clear_memory" title="Go to docs">[docs]</a></div>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Clears the memory of unused items.&quot;&quot;&quot;</span>
     <span class="k">for</span> <span class="n">gc_generation</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">):</span>
         <span class="n">gc</span><span class="o">.</span><span class="n">collect</span><span class="p">(</span><span class="n">generation</span><span class="o">=</span><span class="n">gc_generation</span><span class="p">)</span>
@@ -1411,7 +1416,7 @@
         <span class="n">torch</span><span class="o">.</span><span class="n">mps</span><span class="o">.</span><span class="n">empty_cache</span><span class="p">()</span>
 
 
-<span class="k">def</span><span class="w"> </span><span class="nf">enforce_reproducibility</span><span class="p">(</span><span class="n">seed</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">4242</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">Generator</span><span class="p">:</span><div class="mkapi-source-link" id="euroeval.utils.enforce_reproducibility"><a href="../../../api/euroeval/utils/#euroeval.utils.enforce_reproducibility" title="Go to docs">docs</a></div>
+<span class="k">def</span><span class="w"> </span><span class="nf">enforce_reproducibility</span><span class="p">(</span><span class="n">seed</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">4242</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">Generator</span><span class="p">:</span><div class="mkapi-source-link" id="euroeval.utils.enforce_reproducibility"><a href="../../../api/euroeval/utils/#euroeval.utils.enforce_reproducibility" title="Go to docs">[docs]</a></div>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Ensures reproducibility of experiments.</span>
 
 <span class="sd">    Args:</span>
@@ -1431,7 +1436,7 @@
     <span class="k">return</span> <span class="n">rng</span>
 
 
-<span class="k">def</span><span class="w"> </span><span class="nf">block_terminal_output</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span><div class="mkapi-source-link" id="euroeval.utils.block_terminal_output"><a href="../../../api/euroeval/utils/#euroeval.utils.block_terminal_output" title="Go to docs">docs</a></div>
+<span class="k">def</span><span class="w"> </span><span class="nf">block_terminal_output</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span><div class="mkapi-source-link" id="euroeval.utils.block_terminal_output"><a href="../../../api/euroeval/utils/#euroeval.utils.block_terminal_output" title="Go to docs">[docs]</a></div>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Blocks libraries from writing output to the terminal.</span>
 
 <span class="sd">    This filters warnings from some libraries, sets the logging level to ERROR for some</span>
@@ -1468,6 +1473,8 @@
     <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">&quot;matplotlib.font_manager&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">CRITICAL</span><span class="p">)</span>
     <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">&quot;accelerate&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">CRITICAL</span><span class="p">)</span>
     <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">&quot;LiteLLM&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">CRITICAL</span><span class="p">)</span>
+    <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">&quot;LiteLLM Router&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">CRITICAL</span><span class="p">)</span>
+    <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">&quot;LiteLLM Proxy&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">CRITICAL</span><span class="p">)</span>
     <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">&quot;huggingface_hub&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">CRITICAL</span><span class="p">)</span>
 
     <span class="c1"># This suppresses vLLM logging</span>
@@ -1488,7 +1495,7 @@
     <span class="c1"># Disable logging from `litellm`</span>
     <span class="n">litellm</span><span class="o">.</span><span class="n">suppress_debug_info</span> <span class="o">=</span> <span class="kc">True</span>
 
-<div class="mkapi-source-link" id="euroeval.utils.get_class_by_name"><a href="../../../api/euroeval/utils/#euroeval.utils.get_class_by_name" title="Go to docs">docs</a></div>
+<div class="mkapi-source-link" id="euroeval.utils.get_class_by_name"><a href="../../../api/euroeval/utils/#euroeval.utils.get_class_by_name" title="Go to docs">[docs]</a></div>
 <span class="k">def</span><span class="w"> </span><span class="nf">get_class_by_name</span><span class="p">(</span><span class="n">class_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">module_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Type</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Get a class by its name.</span>
 
@@ -1527,7 +1534,7 @@
     <span class="k">return</span> <span class="kc">None</span>
 
 
-<span class="k">def</span><span class="w"> </span><span class="nf">get_min_cuda_compute_capability</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span><div class="mkapi-source-link" id="euroeval.utils.get_min_cuda_compute_capability"><a href="../../../api/euroeval/utils/#euroeval.utils.get_min_cuda_compute_capability" title="Go to docs">docs</a></div>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_min_cuda_compute_capability</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span><div class="mkapi-source-link" id="euroeval.utils.get_min_cuda_compute_capability"><a href="../../../api/euroeval/utils/#euroeval.utils.get_min_cuda_compute_capability" title="Go to docs">[docs]</a></div>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Gets the lowest cuda capability.</span>
 
 <span class="sd">    Returns:</span>
@@ -1542,7 +1549,7 @@
     <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">major</span><span class="si">}</span><span class="s2">.</span><span class="si">{</span><span class="n">minor</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
 
-<span class="k">def</span><span class="w"> </span><span class="nf">internet_connection_available</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span><div class="mkapi-source-link" id="euroeval.utils.internet_connection_available"><a href="../../../api/euroeval/utils/#euroeval.utils.internet_connection_available" title="Go to docs">docs</a></div>
+<span class="k">def</span><span class="w"> </span><span class="nf">internet_connection_available</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span><div class="mkapi-source-link" id="euroeval.utils.internet_connection_available"><a href="../../../api/euroeval/utils/#euroeval.utils.internet_connection_available" title="Go to docs">[docs]</a></div>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Checks if internet connection is available by pinging google.com.</span>
 
 <span class="sd">    Returns:</span>
@@ -1555,7 +1562,7 @@
         <span class="k">return</span> <span class="kc">False</span>
 
 
-<span class="k">class</span><span class="w"> </span><span class="nc">HiddenPrints</span><span class="p">:</span><div class="mkapi-source-link" id="euroeval.utils.HiddenPrints"><a href="../../../api/euroeval/utils/#euroeval.utils.HiddenPrints" title="Go to docs">docs</a></div>
+<span class="k">class</span><span class="w"> </span><span class="nc">HiddenPrints</span><span class="p">:</span><div class="mkapi-source-link" id="euroeval.utils.HiddenPrints"><a href="../../../api/euroeval/utils/#euroeval.utils.HiddenPrints" title="Go to docs">[docs]</a></div>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Context manager which removes all terminal output.&quot;&quot;&quot;</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__enter__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
@@ -1577,7 +1584,7 @@
         <span class="n">sys</span><span class="o">.</span><span class="n">stdout</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_original_stdout</span>
         <span class="n">sys</span><span class="o">.</span><span class="n">stderr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_original_stderr</span>
 
-<div class="mkapi-source-link" id="euroeval.utils.raise_if_model_output_contains_nan_values"><a href="../../../api/euroeval/utils/#euroeval.utils.raise_if_model_output_contains_nan_values" title="Go to docs">docs</a></div>
+<div class="mkapi-source-link" id="euroeval.utils.raise_if_model_output_contains_nan_values"><a href="../../../api/euroeval/utils/#euroeval.utils.raise_if_model_output_contains_nan_values" title="Go to docs">[docs]</a></div>
 <span class="k">def</span><span class="w"> </span><span class="nf">raise_if_model_output_contains_nan_values</span><span class="p">(</span><span class="n">model_output</span><span class="p">:</span> <span class="s2">&quot;Predictions&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Raise an exception if the model output contains NaN values.</span>
 
@@ -1600,7 +1607,7 @@
                 <span class="k">raise</span> <span class="n">NaNValueInModelOutput</span><span class="p">()</span>
 
 
-<span class="k">def</span><span class="w"> </span><span class="nf">scramble</span><span class="p">(</span><span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span><div class="mkapi-source-link" id="euroeval.utils.scramble"><a href="../../../api/euroeval/utils/#euroeval.utils.scramble" title="Go to docs">docs</a></div>
+<span class="k">def</span><span class="w"> </span><span class="nf">scramble</span><span class="p">(</span><span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span><div class="mkapi-source-link" id="euroeval.utils.scramble"><a href="../../../api/euroeval/utils/#euroeval.utils.scramble" title="Go to docs">[docs]</a></div>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Scramble a string in a bijective manner.</span>
 
 <span class="sd">    Args:</span>
@@ -1616,7 +1623,7 @@
     <span class="k">return</span> <span class="n">scrambled</span>
 
 
-<span class="k">def</span><span class="w"> </span><span class="nf">unscramble</span><span class="p">(</span><span class="n">scrambled_text</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span><div class="mkapi-source-link" id="euroeval.utils.unscramble"><a href="../../../api/euroeval/utils/#euroeval.utils.unscramble" title="Go to docs">docs</a></div>
+<span class="k">def</span><span class="w"> </span><span class="nf">unscramble</span><span class="p">(</span><span class="n">scrambled_text</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span><div class="mkapi-source-link" id="euroeval.utils.unscramble"><a href="../../../api/euroeval/utils/#euroeval.utils.unscramble" title="Go to docs">[docs]</a></div>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Unscramble a string in a bijective manner.</span>
 
 <span class="sd">    Args:</span>
@@ -1634,7 +1641,7 @@
 
 
 <span class="nd">@cache</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">log_once</span><span class="p">(</span><span class="n">message</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">level</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span><div class="mkapi-source-link" id="euroeval.utils.log_once"><a href="../../../api/euroeval/utils/#euroeval.utils.log_once" title="Go to docs">docs</a></div>
+<span class="k">def</span><span class="w"> </span><span class="nf">log_once</span><span class="p">(</span><span class="n">message</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">level</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span><div class="mkapi-source-link" id="euroeval.utils.log_once"><a href="../../../api/euroeval/utils/#euroeval.utils.log_once" title="Go to docs">[docs]</a></div>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Log a message once.</span>
 
 <span class="sd">    This is ensured by caching the input/output pairs of this function, using the</span>
@@ -1661,7 +1668,7 @@
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Invalid logging level: </span><span class="si">{</span><span class="n">level</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
 
-<span class="k">def</span><span class="w"> </span><span class="nf">get_package_version</span><span class="p">(</span><span class="n">package_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span><div class="mkapi-source-link" id="euroeval.utils.get_package_version"><a href="../../../api/euroeval/utils/#euroeval.utils.get_package_version" title="Go to docs">docs</a></div>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_package_version</span><span class="p">(</span><span class="n">package_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span><div class="mkapi-source-link" id="euroeval.utils.get_package_version"><a href="../../../api/euroeval/utils/#euroeval.utils.get_package_version" title="Go to docs">[docs]</a></div>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the version of a package.</span>
 
 <span class="sd">    Args:</span>
@@ -1680,7 +1687,7 @@
 <span class="n">T</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">TypeVar</span><span class="p">(</span><span class="s2">&quot;T&quot;</span><span class="p">,</span> <span class="n">bound</span><span class="o">=</span><span class="nb">object</span><span class="p">)</span>
 
 
-<span class="k">def</span><span class="w"> </span><span class="nf">safe_run</span><span class="p">(</span><span class="n">coroutine</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Coroutine</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">Any</span><span class="p">,</span> <span class="n">t</span><span class="o">.</span><span class="n">Any</span><span class="p">,</span> <span class="n">T</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">T</span><span class="p">:</span><div class="mkapi-source-link" id="euroeval.utils.safe_run"><a href="../../../api/euroeval/utils/#euroeval.utils.safe_run" title="Go to docs">docs</a></div>
+<span class="k">def</span><span class="w"> </span><span class="nf">safe_run</span><span class="p">(</span><span class="n">coroutine</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Coroutine</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">Any</span><span class="p">,</span> <span class="n">t</span><span class="o">.</span><span class="n">Any</span><span class="p">,</span> <span class="n">T</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">T</span><span class="p">:</span><div class="mkapi-source-link" id="euroeval.utils.safe_run"><a href="../../../api/euroeval/utils/#euroeval.utils.safe_run" title="Go to docs">[docs]</a></div>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Run a coroutine, ensuring that the event loop is always closed when we&#39;re done.</span>
 
 <span class="sd">    Args:</span>
@@ -1699,22 +1706,25 @@
         <span class="n">asyncio</span><span class="o">.</span><span class="n">set_event_loop</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
 
 
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">catch_coroutine_exception</span><span class="p">(</span><div class="mkapi-source-link" id="euroeval.utils.catch_coroutine_exception"><a href="../../../api/euroeval/utils/#euroeval.utils.catch_coroutine_exception" title="Go to docs">docs</a></div>
-    <span class="n">coroutine</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Coroutine</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">Any</span><span class="p">,</span> <span class="n">t</span><span class="o">.</span><span class="n">Any</span><span class="p">,</span> <span class="n">T</span><span class="p">],</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">add_semaphore_and_catch_exception</span><span class="p">(</span><div class="mkapi-source-link" id="euroeval.utils.add_semaphore_and_catch_exception"><a href="../../../api/euroeval/utils/#euroeval.utils.add_semaphore_and_catch_exception" title="Go to docs">[docs]</a></div>
+    <span class="n">coroutine</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Coroutine</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">Any</span><span class="p">,</span> <span class="n">t</span><span class="o">.</span><span class="n">Any</span><span class="p">,</span> <span class="n">T</span><span class="p">],</span> <span class="n">semaphore</span><span class="p">:</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">Semaphore</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">T</span> <span class="o">|</span> <span class="ne">Exception</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Run a coroutine, catching any exceptions and returning them.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Run a coroutine with a semaphore.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        coroutine:</span>
 <span class="sd">            The coroutine to run.</span>
+<span class="sd">        semaphore:</span>
+<span class="sd">            The semaphore to use.</span>
 
 <span class="sd">    Returns:</span>
-<span class="sd">        The result of the coroutine, or the exception if it was raised.</span>
+<span class="sd">        The result of the coroutine.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">try</span><span class="p">:</span>
-        <span class="k">return</span> <span class="k">await</span> <span class="n">coroutine</span>
-    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
-        <span class="k">return</span> <span class="n">exc</span>
+    <span class="k">async</span> <span class="k">with</span> <span class="n">semaphore</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="k">await</span> <span class="n">coroutine</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">exc</span>
 </code></pre></div></td></tr></table></div>
 
 
@@ -1723,6 +1733,9 @@
 
 
 
+
+  
+  
 
 
 
@@ -1773,10 +1786,10 @@
     
     
       
-      <script id="__config" type="application/json">{"base": "../../..", "features": ["navigation.top", "navigation.path", "navigation.prune", "navigation.indexes", "navigation.tabs", "navigation.tabs.sticky", "navigation.instant", "navigation.instant.prefetch", "navigation.instant.progress", "navigation.tracking", "navigation.sections"], "search": "../../../assets/javascripts/workers/search.f8cc74c7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"base": "../../..", "features": ["navigation.top", "navigation.path", "navigation.prune", "navigation.indexes", "navigation.tabs", "navigation.tabs.sticky", "navigation.instant", "navigation.instant.prefetch", "navigation.instant.progress", "navigation.tracking", "navigation.sections"], "search": "../../../assets/javascripts/workers/search.d50fe291.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../../assets/javascripts/bundle.c8b220af.min.js"></script>
+      <script src="../../../assets/javascripts/bundle.13a4f30d.min.js"></script>
       
         <script src="../../../javascript/mkapi.js"></script>
       
