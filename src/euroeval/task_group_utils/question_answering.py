@@ -56,6 +56,7 @@ class QuestionAnsweringTrainer(Trainer):
             compute_metrics=compute_metrics,
             callbacks=callbacks,
             data_collator=data_collator,
+            **kwargs,
         )
 
         # Get the CLS token id for the tokenizer
