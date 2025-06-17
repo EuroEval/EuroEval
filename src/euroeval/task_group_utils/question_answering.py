@@ -251,6 +251,7 @@ def prepare_train_examples(
     Returns:
         The prepared examples.
     """
+    breakpoint()
     # Some of the questions have lots of whitespace on the left, which is not useful
     # and will make the truncation of the context fail (the tokenized question will
     # take a lots of space). So we remove that left whitespace
