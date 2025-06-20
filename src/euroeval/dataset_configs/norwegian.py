@@ -179,7 +179,7 @@ BELEBELE_NO_CONFIG = DatasetConfig(
 
 IDIOMS_NO_CONFIG = DatasetConfig(
     name="idioms-no",
-    pretty_name="the Norwegian idioms dataset phrased as a multiple choice questions",
+    pretty_name="the Norwegian Idioms dataset phrased as a multiple choice questions",
     huggingface_id="EuroEval/norwegian-idioms",
     task=MCRC,
     languages=[NB, NN, NO],
