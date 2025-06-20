@@ -1,6 +1,5 @@
 """Data models used in EuroEval."""
 
-import collections.abc as c
 import json
 import pathlib
 import re
@@ -11,46 +10,9 @@ import pydantic
 import torch
 
 from .enums import Device, InferenceBackend, ModelType, TaskGroup
+from .metrics import Metric
 from .types import ScoreDict
 from .utils import get_package_version
-
-
-@dataclass
-class MetricConfig:
-    """Configuration for a metric.
-
-    Attributes:
-        name:
-            The name of the metric.
-        pretty_name:
-            A longer prettier name for the metric, which allows cases and spaces. Used
-            for logging.
-        huggingface_id:
-            The Hugging Face ID of the metric.
-        results_key:
-            The name of the key used to extract the metric scores from the results
-            dictionary.
-        compute_kwargs:
-            Keyword arguments to pass to the metric's compute function. Defaults to
-            an empty dictionary.
-        postprocessing_fn:
-            A function to apply to the metric scores after they are computed, taking
-            the score to the postprocessed score along with its string representation.
-            Defaults to x -> (100 * x, f"{x:.2%}").
-    """
-
-    name: str
-    pretty_name: str
-    huggingface_id: str
-    results_key: str
-    compute_kwargs: dict[str, t.Any] = field(default_factory=dict)
-    postprocessing_fn: c.Callable[[float], tuple[float, str]] = field(
-        default_factory=lambda: lambda raw_score: (100 * raw_score, f"{raw_score:.2%}")
-    )
-
-    def __hash__(self) -> int:
-        """Return a hash of the metric configuration."""
-        return hash(self.name)
 
 
 @dataclass
@@ -147,7 +109,7 @@ class Task:
     name: str
     task_group: TaskGroup
     template_dict: dict["Language", "PromptConfig"]
-    metrics: list[MetricConfig]
+    metrics: list[Metric]
     default_num_few_shot_examples: int
     default_max_generated_tokens: int
     default_labels: list[str]

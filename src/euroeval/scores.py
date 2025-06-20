@@ -7,7 +7,7 @@ import warnings
 import numpy as np
 
 if t.TYPE_CHECKING:
-    from .data_models import MetricConfig
+    from .metrics import Metric
     from .types import ScoreDict
 
 logger = logging.getLogger("euroeval")
@@ -15,7 +15,7 @@ logger = logging.getLogger("euroeval")
 
 def log_scores(
     dataset_name: str,
-    metric_configs: list["MetricConfig"],
+    metrics: list["Metric"],
     scores: list[dict[str, float]],
     model_id: str,
     model_revision: str,
@@ -25,7 +25,7 @@ def log_scores(
     Args:
         dataset_name:
             Name of the dataset.
-        metric_configs:
+        metrics:
             List of metrics to log.
         scores:
             The scores that are to be logged. This is a list of dictionaries full of
@@ -46,19 +46,19 @@ def log_scores(
     logger.info(f"Finished evaluation of {model_id} on {dataset_name}.")
 
     total_dict: dict[str, float] = dict()
-    for metric_cfg in metric_configs:
-        test_score, test_se = aggregate_scores(scores=scores, metric_config=metric_cfg)
-        test_score, test_score_str = metric_cfg.postprocessing_fn(test_score)
-        test_se, test_se_str = metric_cfg.postprocessing_fn(test_se)
-        total_dict[f"test_{metric_cfg.name}"] = test_score
-        total_dict[f"test_{metric_cfg.name}_se"] = test_se
-        logger.info(f"{metric_cfg.pretty_name}: {test_score_str} ± {test_se_str}")
+    for metric in metrics:
+        test_score, test_se = aggregate_scores(scores=scores, metric=metric)
+        test_score, test_score_str = metric.postprocessing_fn(test_score)
+        test_se, test_se_str = metric.postprocessing_fn(test_se)
+        total_dict[f"test_{metric.name}"] = test_score
+        total_dict[f"test_{metric.name}_se"] = test_se
+        logger.info(f"{metric.pretty_name}: {test_score_str} ± {test_se_str}")
 
     return dict(raw=scores, total=total_dict)
 
 
 def aggregate_scores(
-    scores: list[dict[str, float]], metric_config: "MetricConfig"
+    scores: list[dict[str, float]], metric: "Metric"
 ) -> tuple[float, float]:
     """Helper function to compute the mean with confidence intervals.
 
@@ -66,9 +66,8 @@ def aggregate_scores(
         scores:
             Dictionary with the names of the metrics as keys, of the form
             "<split>_<metric_name>", such as "val_f1", and values the metric values.
-        metric_config:
-            The configuration of the metric, which is used to collect the correct
-            metric from `scores`.
+        metric:
+            The metric, which is used to collect the correct metric from `scores`.
 
     Returns:
         A pair of floats, containing the score and the radius of its 95% confidence
@@ -78,11 +77,7 @@ def aggregate_scores(
         warnings.simplefilter("ignore")
 
         test_scores = [
-            (
-                dct[metric_config.name]
-                if metric_config.name in dct
-                else dct[f"test_{metric_config.name}"]
-            )
+            dct[metric.name] if metric.name in dct else dct[f"test_{metric.name}"]
             for dct in scores
         ]
         test_score = np.mean(test_scores).item()

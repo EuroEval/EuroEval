@@ -8,7 +8,8 @@ from pathlib import Path
 import pytest
 
 from euroeval import __version__, data_models, enums
-from euroeval.data_models import BenchmarkResult, MetricConfig
+from euroeval.data_models import BenchmarkResult, Metric
+from euroeval.metrics import HuggingFaceMetric
 
 
 def test_all_classes_are_dataclasses_or_pydantic_models() -> None:
@@ -29,25 +30,25 @@ def test_all_classes_are_dataclasses_or_pydantic_models() -> None:
         )
 
 
-class TestMetricConfig:
-    """Unit tests for the `MetricConfig` class."""
+class TestMetric:
+    """Unit tests for the `Metric` class."""
 
-    def test_metric_config_is_object(self, metric_config: MetricConfig) -> None:
-        """Test that the metric config is a `MetricConfig` object."""
-        assert isinstance(metric_config, MetricConfig)
+    def test_metric_is_object(self, metric: HuggingFaceMetric) -> None:
+        """Test that the metric config is a `Metric` object."""
+        assert isinstance(metric, Metric)
 
     def test_attributes_correspond_to_arguments(
-        self, metric_config: MetricConfig
+        self, metric: HuggingFaceMetric
     ) -> None:
         """Test that the metric config attributes correspond to the arguments."""
-        assert metric_config.name == "metric_name"
-        assert metric_config.pretty_name == "Metric name"
-        assert metric_config.huggingface_id == "metric_id"
-        assert metric_config.results_key == "metric_key"
+        assert metric.name == "metric_name"
+        assert metric.pretty_name == "Metric name"
+        assert metric.huggingface_id == "metric_id"
+        assert metric.results_key == "metric_key"
 
-    def test_default_value_of_compute_kwargs(self, metric_config: MetricConfig) -> None:
+    def test_default_value_of_compute_kwargs(self, metric: HuggingFaceMetric) -> None:
         """Test that the default value of `compute_kwargs` is an empty dictionary."""
-        assert metric_config.compute_kwargs == dict()
+        assert metric.compute_kwargs == dict()
 
     @pytest.mark.parametrize(
         "inputs,expected",
@@ -62,10 +63,10 @@ class TestMetricConfig:
         ],
     )
     def test_default_value_of_postprocessing_fn(
-        self, metric_config: MetricConfig, inputs: float, expected: tuple[float, str]
+        self, metric: Metric, inputs: float, expected: tuple[float, str]
     ) -> None:
         """Test that the default value of `postprocessing_fn` is correct."""
-        assert metric_config.postprocessing_fn(inputs) == expected
+        assert metric.postprocessing_fn(inputs) == expected
 
 
 # TODO

@@ -6,12 +6,11 @@ import typing as t
 from copy import deepcopy
 
 import demjson3
-import evaluate
 import numpy as np
 from evaluate import EvaluationModule
 from transformers.tokenization_utils import PreTrainedTokenizer
 
-from ..data_models import BenchmarkConfig, DatasetConfig, GenerativeModelOutput
+from ..data_models import DatasetConfig, GenerativeModelOutput
 from ..exceptions import InvalidBenchmark
 from ..utils import raise_if_model_output_contains_nan_values
 
@@ -29,7 +28,6 @@ def compute_metrics(
     model_outputs_and_labels: "tuple[Predictions, Labels] | EvalPrediction",
     has_misc_tags: bool,
     dataset_config: "DatasetConfig",
-    benchmark_config: "BenchmarkConfig",
 ) -> dict[str, float]:
     """Compute the metrics needed for evaluation.
 
@@ -41,8 +39,6 @@ def compute_metrics(
             Whether the dataset has MISC tags.
         dataset_config:
             The configuration of the dataset.
-        benchmark_config:
-            The configuration of the benchmark.
 
     Returns:
         A dictionary with the names of the metrics as keys and the metric values as
@@ -54,17 +50,6 @@ def compute_metrics(
     # predictions
     if isinstance(model_outputs, tuple) and len(model_outputs) == 2:
         model_outputs = model_outputs[0]
-
-    metrics = {
-        metric_cfg.name: (
-            evaluate.load(
-                path=metric_cfg.huggingface_id, cache_dir=benchmark_config.cache_dir
-            )
-            if metric_cfg.huggingface_id != ""
-            else None
-        )
-        for metric_cfg in dataset_config.task.metrics
-    }
 
     predictions: list[list[str]]
     if not isinstance(model_outputs[0][0], str):
@@ -147,7 +132,11 @@ def compute_metrics(
     if predictions_all_zero and labels_all_zero:
         results = dict(overall_f1=1.0)
     else:
-        metric = metrics["micro_f1"]
+        metric = next(
+            metric
+            for metric in dataset_config.task.metrics
+            if metric.name == "micro_f1"
+        )
         assert isinstance(metric, EvaluationModule)
         results = metric.compute(predictions=predictions, references=labels)
 
@@ -165,7 +154,11 @@ def compute_metrics(
     if predictions_no_misc_all_zero and labels_no_misc_all_zero:
         results_no_misc = dict(overall_f1=1.0)
     else:
-        metric = metrics["micro_f1_no_misc"]
+        metric = next(
+            metric
+            for metric in dataset_config.task.metrics
+            if metric.name == "micro_f1_no_misc"
+        )
         assert isinstance(metric, EvaluationModule)
         results_no_misc = metric.compute(
             predictions=predictions_no_misc, references=labels_no_misc

@@ -342,7 +342,6 @@ class HumanEvaluator:
                 self.compute_metrics = partial(
                     sequence_classification.compute_metrics,
                     dataset_config=self.dataset_config,
-                    benchmark_config=benchmark_config,
                 )
                 self.extract_labels_from_generation = partial(
                     sequence_classification.extract_labels_from_generation,
@@ -362,7 +361,6 @@ class HumanEvaluator:
                     token_classification.compute_metrics,
                     has_misc_tags=self.has_misc_tags,
                     dataset_config=self.dataset_config,
-                    benchmark_config=benchmark_config,
                 )
                 self.extract_labels_from_generation = partial(
                     token_classification.extract_labels_from_generation,
@@ -372,7 +370,6 @@ class HumanEvaluator:
                 self.compute_metrics = partial(
                     question_answering.compute_metrics,
                     dataset_config=self.dataset_config,
-                    benchmark_config=benchmark_config,
                 )
                 self.extract_labels_from_generation = (
                     question_answering.extract_labels_from_generation
@@ -664,15 +661,15 @@ class HumanEvaluator:
 
         # Aggregate scores
         total_dict: dict[str, float] = dict()
-        for metric_cfg in self.dataset_config.task.metrics:
+        for metric in self.dataset_config.task.metrics:
             test_score, test_se = aggregate_scores(
                 scores=results["raw"],  # type: ignore[arg-type]
-                metric_config=metric_cfg,
+                metric=metric,
             )
-            test_score, _ = metric_cfg.postprocessing_fn(test_score)
-            test_se, _ = metric_cfg.postprocessing_fn(test_se)
-            total_dict[f"test_{metric_cfg.name}"] = test_score
-            total_dict[f"test_{metric_cfg.name}_se"] = test_se
+            test_score, _ = metric.postprocessing_fn(test_score)
+            test_se, _ = metric.postprocessing_fn(test_se)
+            total_dict[f"test_{metric.name}"] = test_score
+            total_dict[f"test_{metric.name}_se"] = test_se
         results["total"] = total_dict
 
         benchmark_result = BenchmarkResult(

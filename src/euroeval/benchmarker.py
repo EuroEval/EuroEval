@@ -767,7 +767,7 @@ class Benchmarker:
 
                 results = log_scores(
                     dataset_name=dataset_config.pretty_name,
-                    metric_configs=dataset_config.task.metrics,
+                    metrics=dataset_config.task.metrics,
                     scores=scores,
                     model_id=model_config.model_id,
                     model_revision=model_config.revision,

@@ -5,13 +5,12 @@ import logging
 import typing as t
 from collections import defaultdict
 
-import evaluate
 import numpy as np
 from evaluate import EvaluationModule
 from transformers.tokenization_utils_base import PreTrainedTokenizerBase
 from transformers.trainer import Trainer
 
-from ..data_models import BenchmarkConfig, DatasetConfig, GenerativeModelOutput
+from ..data_models import DatasetConfig, GenerativeModelOutput
 from ..exceptions import InvalidBenchmark
 from ..tokenization_utils import get_special_token_metadata
 from ..utils import raise_if_model_output_contains_nan_values
@@ -151,7 +150,6 @@ class QuestionAnsweringTrainer(Trainer):
 def compute_metrics(
     model_outputs_and_labels: "tuple[Predictions, Labels] | EvalPrediction",
     dataset_config: "DatasetConfig",
-    benchmark_config: "BenchmarkConfig",
 ) -> dict[str, float]:
     """Compute the metrics needed for evaluation.
 
@@ -161,8 +159,6 @@ def compute_metrics(
             contains the true labels.
         dataset_config:
             The configuration of the dataset.
-        benchmark_config:
-            The configuration of the benchmark.
 
     Returns:
         A dictionary with the names of the metrics as keys and the metric values as
@@ -178,17 +174,6 @@ def compute_metrics(
     assert not isinstance(model_outputs, tuple)
     raise_if_model_output_contains_nan_values(model_output=model_outputs)
 
-    metrics = {
-        metric_cfg.name: (
-            evaluate.load(
-                path=metric_cfg.huggingface_id, cache_dir=benchmark_config.cache_dir
-            )
-            if metric_cfg.huggingface_id != ""
-            else None
-        )
-        for metric_cfg in dataset_config.task.metrics
-    }
-
     model_output_dtype = np.asarray(model_outputs).dtype
     if model_output_dtype in [np.float16, np.float32, np.float64]:
         predictions = np.asarray(model_outputs).argmax(axis=-1)
@@ -196,20 +181,14 @@ def compute_metrics(
         predictions = model_outputs
 
     results: dict[str, float] = dict()
-    for cfg in dataset_config.task.metrics:
-        metric = metrics[cfg.name]
+    for metric in dataset_config.task.metrics:
         assert isinstance(metric, EvaluationModule)
-        score_dict: dict[str, float] | None = metric.compute(
-            predictions=predictions, references=labels, **cfg.compute_kwargs
-        )
+        score: float | None = metric(predictions=predictions, references=labels)
 
         # The metric returns None if we are running on multi-GPU and the current
         # process is not the main process
-        if score_dict is not None:
-            scores = score_dict[cfg.results_key]
-            if isinstance(scores, list):
-                scores = sum(scores) / len(scores)
-            results[cfg.name] = scores
+        if score is not None:
+            results[metric.name] = score
 
     return results
 

@@ -3,14 +3,14 @@
 import logging
 import typing as t
 
-import evaluate
 import numpy as np
-from evaluate import EvaluationModule
+
+from euroeval.metrics import HuggingFaceMetric
 
 from ..constants import METRIC_ATTRIBUTES_TAKING_UP_MEMORY
 from ..data_models import BenchmarkConfig, DatasetConfig, GenerativeModelOutput
 from ..exceptions import InvalidBenchmark
-from ..utils import HiddenPrints, raise_if_model_output_contains_nan_values
+from ..utils import raise_if_model_output_contains_nan_values
 
 if t.TYPE_CHECKING:
     from transformers.trainer_utils import EvalPrediction
@@ -51,17 +51,6 @@ def compute_metrics(
     assert not isinstance(model_outputs, tuple)
     raise_if_model_output_contains_nan_values(model_output=model_outputs)
 
-    metrics = {
-        metric_cfg.name: (
-            evaluate.load(
-                path=metric_cfg.huggingface_id, cache_dir=benchmark_config.cache_dir
-            )
-            if metric_cfg.huggingface_id != ""
-            else None
-        )
-        for metric_cfg in dataset_config.task.metrics
-    }
-
     model_output_dtype = np.asarray(model_outputs).dtype
     output_is_prob = model_output_dtype in [np.float16, np.float32, np.float64]
     if output_is_prob:
@@ -70,21 +59,18 @@ def compute_metrics(
         predictions = model_outputs
 
     results: dict[str, float] = dict()
-    for cfg in dataset_config.task.metrics:
-        metric = metrics[cfg.name]
-        assert isinstance(metric, EvaluationModule)
-
+    for metric in dataset_config.task.metrics:
         # Some metrics can be computed on hardware accelerators. In this case we
         # start by setting the device to the same device as the model
-        if cfg.compute_kwargs.get("device", None) == "auto":
-            cfg.compute_kwargs["device"] = benchmark_config.device.type
+        if (
+            isinstance(metric, HuggingFaceMetric)
+            and metric.compute_kwargs.get("device", None) == "auto"
+        ):
+            metric.compute_kwargs["device"] = benchmark_config.device.type
 
         while True:
             try:
-                with HiddenPrints():
-                    score_dict: dict[str, float] | None = metric.compute(
-                        predictions=predictions, references=labels, **cfg.compute_kwargs
-                    )
+                score: float | None = metric(predictions=predictions, references=labels)
                 break
             except Exception as e:
                 oom_error = [
@@ -95,11 +81,14 @@ def compute_metrics(
                 if not any(error in str(e) for error in oom_error):
                     raise InvalidBenchmark(str(e))
 
-                if cfg.compute_kwargs.get("device", "cpu") != "cpu":
-                    cfg.compute_kwargs["device"] = "cpu"
+                if (
+                    isinstance(metric, HuggingFaceMetric)
+                    and metric.compute_kwargs.get("device", "cpu") != "cpu"
+                ):
+                    metric.compute_kwargs["device"] = "cpu"
                     logger.debug(
                         "Out of memory error occurred during the computation of "
-                        f"the metric {cfg.pretty_name}. Moving the computation to "
+                        f"the metric {metric.pretty_name}. Moving the computation to "
                         "the CPU."
                     )
                 else:
@@ -109,17 +98,14 @@ def compute_metrics(
                     if hasattr(metric, attribute):
                         logger.debug(
                             f"Deleting the {attribute!r} attribute of the metric "
-                            f"{cfg.pretty_name} to free up memory."
+                            f"{metric.pretty_name} to free up memory."
                         )
                         delattr(metric, attribute)
 
         # The metric returns None if we are running on multi-GPU and the current
         # process is not the main process
-        if score_dict is not None:
-            scores = score_dict[cfg.results_key]
-            if isinstance(scores, list):
-                scores = sum(scores) / len(scores)
-            results[cfg.name] = scores
+        if score is not None:
+            results[metric.name] = score
 
     return results
 
