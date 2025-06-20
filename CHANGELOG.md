@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Added
+- Added the Norwegian idioms dataset, which is a multiple-choice question dataset,
+  where the alternative answers have been generated using GPT-4o.
+  This was contributed by [@oliverkinch](https://github.com/oliverkinch) ✨
 
 
 ## [v15.10.0] - 2025-06-17
