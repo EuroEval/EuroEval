@@ -155,6 +155,7 @@ def postprocess_predictions_and_labels(
         The postprocessed predictions and labels.
     """
     if predictions.ndim != 2 or predictions.shape[1] != 2:
+        breakpoint()
         raise InvalidBenchmark(
             "Predictions must be a 2D array with shape (num_examples, 2). Found "
             f"shape {predictions.shape}."
