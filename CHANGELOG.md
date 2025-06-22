@@ -14,6 +14,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   This was contributed by [@oliverkinch](https://github.com/oliverkinch) ✨
 
 
+## [v15.10.1] - 2025-06-20
+### Fixed
+- Fixed an issue when benchmarking encoder models on reading comprehension tasks, where
+  we sometimes would truncate the model outputs when they should not have been.
+
+
 ## [v15.10.0] - 2025-06-17
 ### Changed
 - Updated `vllm` to `>=0.9.1`.
