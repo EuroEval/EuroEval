@@ -258,7 +258,7 @@ def load_model_and_tokenizer(
     config = AutoConfig.from_pretrained(
         real_model_id,
         token=benchmark_config.api_key or os.getenv("HUGGINGFACE_API_KEY") or True,
-        num_labels=dataset_config.num_labels,
+        num_labels=len(id2label),
         id2label=id2label,
         label2id={label: id_ for id_, label in id2label.items()},
         cache_dir=model_config.model_cache_dir,
