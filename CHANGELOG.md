@@ -7,11 +7,14 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 
 ## [Unreleased]
-
+### Fixed
+- Evaluating freshly initialised encoder models on multiple-choice classification tasks
+  caused an error, as the id-to-label mapping was not set up correctly. This has been
+  fixed now.
 
 
 ## [v15.10.1] - 2025-06-20
-### Fixed
+### Fixed
 - Fixed an issue when benchmarking encoder models on reading comprehension tasks, where
   we sometimes would truncate the model outputs when they should not have been.
 

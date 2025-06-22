@@ -191,7 +191,6 @@ def finetune_single_iteration(
             benchmark_config=benchmark_config,
         )
 
-    breakpoint()
     trainer = model.trainer_class(
         model=model.get_pytorch_module(),
         processing_class=model.get_tokenizer(),
