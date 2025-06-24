@@ -925,7 +925,7 @@ $ euroeval --model <model-id> --dataset arc-no
 [This dataset](https://huggingface.co/datasets/Sprakbanken/Norwegian_idioms) consists of 3553 Norwegian idioms and phrases that appear more than 100 times in the online library of the National Library of Norway.
 
 We have reformulated the dataset as a multiple-choice question format with 4 options, where the alternative answers have been generated using GPT-4o.
-Based on 3,232 samples from the original dataset, we use a 928 / 256 / 2,048 split for training, validation and testing, respectively.
+Based on 3,232 samples (3,144 Bokmål, 88 Nynorsk) from the original dataset, we use a 928 / 256 / 2,048 split for training, validation and testing, respectively.
 
 Here are a few examples from the training split:
 
