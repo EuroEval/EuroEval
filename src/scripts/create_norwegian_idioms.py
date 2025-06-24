@@ -55,7 +55,6 @@ def main() -> None:
 
     # Download the dataset
     dataset = load_dataset(path=repo_id, split="test")
-    dataset = load_dataset(path="EuroEval/norwegian-idioms", split="train")
     assert isinstance(dataset, Dataset)
 
     dataset = drop_duplicate_idioms(dataset=dataset)
@@ -149,6 +148,7 @@ def build_dataset_with_llm(dataset: Dataset) -> pd.DataFrame:
 
     texts: list[str] = []
     correct_labels: list[str] = []
+    languages: list[str] = []
     df_len = len(df)
     for i, row in tqdm(df.iterrows(), total=df_len, desc="Computing LLM responses"):
         id_ = str(i)
@@ -243,8 +243,10 @@ def build_dataset_with_llm(dataset: Dataset) -> pd.DataFrame:
 
         texts.append(text)
         correct_labels.append(correct_label)
-
-    df_llm = pd.DataFrame({"text": texts, "label": correct_labels})
+        languages.append(row.language)
+    df_llm = pd.DataFrame(
+        {"text": texts, "label": correct_labels, "language": languages}
+    )
     return df_llm
 
 
