@@ -1,6 +1,6 @@
 [project]
 name = "EuroEval"
-version = "15.10.0.dev"
+version = "15.10.1.dev"
 description = "The robust European language model benchmark."
 readme = "README.md"
 authors = [
@@ -38,6 +38,7 @@ dependencies = [
     "demjson3>=3.0.6",
     "ollama>=0.5.1",
     "peft>=0.15.0",
+    "protobuf>=2.0.0",
 ]
 
 [project.optional-dependencies]
