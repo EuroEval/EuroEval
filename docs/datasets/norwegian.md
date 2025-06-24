@@ -937,14 +937,14 @@ Here are a few examples from the training split:
 ```
 ```json
 {
-  "text": "Complete the Nynorsk idiom:\narbeidet adlar _____\n\nSvarmöguleikar:\na. æra\nb. viljen\nc. mannen\nd. sjela",
-  "label": "c"
+  "text": "Complete the Bokmål idiom:\ndet er ikke bare , _____\n\nSvarmöguleikar:\na. moro\nb. bare\nc. lett\nd. enkelt",
+  "label": "b",
 }
 ```
 ```json
 {
-  "text": "Complete the Nynorsk idiom:\nbarnet er far til _____\n\nSvarmöguleikar:\na. tanken\nb. vinden\nc. fjellet\nd. mannen",
-  "label": "d"
+  "text": "Complete the Bokmål idiom:\ndet får stå sin _____\n\nSvarmöguleikar:\na. prøve\nb. vegg\nc. sak\nd. greie",
+  "label": "a"
 }
 ```
 
