@@ -492,7 +492,7 @@ $ euroeval --model <model-id> --dataset arc
 ```
 
 
-### Unofficial: Life-in-the-UK
+### Unofficial: Life in the UK
 
 [This dataset](https://huggingface.co/datasets/oliverkinch/life-in-the-uk-multiple-choice) was scraped from [lifeintheuktestweb.co.uk](https://lifeintheuktestweb.co.uk/test-1/) and contains multiple choice questions about UK history, culture, and citizenship requirements. The website was created to help people pass the Life in the UK Test for UK citizenship.
 
