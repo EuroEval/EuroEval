@@ -89,7 +89,7 @@ def main() -> None:
     )
 
     # Create dataset ID
-    dataset_id = "EuroEval/norwegian-idioms"
+    dataset_id = "EuroEval/idioms-no"
 
     # Remove the dataset from Hugging Face Hub if it already exists
     try:
