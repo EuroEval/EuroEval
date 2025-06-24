@@ -147,7 +147,8 @@ def postprocess_predictions_and_labels(
 
     Args:
         predictions:
-            The model predictions, of shape (num_examples, 2).
+            The model predictions, of shape (num_examples, 2), corresponding to the
+            False/True probabilities for each example.
         dataset:
             The dataset containing the examples.
 
