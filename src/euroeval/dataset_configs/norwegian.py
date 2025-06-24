@@ -181,7 +181,7 @@ IDIOMS_NO_CONFIG = DatasetConfig(
     name="idioms-no",
     pretty_name="the Norwegian Idioms dataset phrased as a multiple choice questions",
     huggingface_id="EuroEval/norwegian-idioms",
-    task=MCRC,
+    task=KNOW,
     languages=[NB, NN, NO],
     unofficial=True,
 )
