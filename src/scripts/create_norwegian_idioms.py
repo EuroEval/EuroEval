@@ -53,7 +53,7 @@ def main() -> None:
     # Define the base download URL
     repo_id = "Sprakbanken/Norwegian_idioms"
 
-    # Download the dataset
+    # Download the dataset (only the test split is available)
     dataset = load_dataset(path=repo_id, split="test")
     assert isinstance(dataset, Dataset)
 
