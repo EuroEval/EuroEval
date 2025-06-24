@@ -248,12 +248,19 @@ def load_model_and_tokenizer(
             )
     model_cls = model_cls_mapping[model_id]
 
+    # Special case where there is a mismatch between the labels during training and
+    # testing
+    if dataset_config.task.task_group == TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION:
+        id2label = {0: "0", 1: "1"}
+    else:
+        id2label = dataset_config.id2label
+
     config = AutoConfig.from_pretrained(
         real_model_id,
         token=benchmark_config.api_key or os.getenv("HUGGINGFACE_API_KEY") or True,
-        num_labels=dataset_config.num_labels,
-        id2label=dataset_config.id2label,
-        label2id=dataset_config.label2id,
+        num_labels=len(id2label),
+        id2label=id2label,
+        label2id={label: id_ for id_, label in id2label.items()},
         cache_dir=model_config.model_cache_dir,
         trust_remote_code=benchmark_config.trust_remote_code,
     )

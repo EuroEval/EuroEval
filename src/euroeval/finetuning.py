@@ -333,7 +333,7 @@ def remove_extra_tensors_from_logits(
     Returns:
         The processed logits.
     """
-    if isinstance(logits, tuple):
+    if isinstance(logits, tuple) and isinstance(logits[-1], tuple):
         logits = logits[:-1]
         if len(logits) == 1:
             logits = logits[0]
