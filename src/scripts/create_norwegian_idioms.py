@@ -220,7 +220,7 @@ def build_dataset_with_llm(dataset: Dataset) -> pd.DataFrame:
         language_display = "Bokmål" if row.language == "nob" else "Nynorsk"
         text = (
             f"Complete the {language_display} idiom:\n{row.idiom_start} _____\n\n"
-            f"Svarmöguleikar:\na. {options['a']}\nb. {options['b']}\n"
+            f"Svaralternativer:\na. {options['a']}\nb. {options['b']}\n"
             f"c. {options['c']}\nd. {options['d']}"
         )
 
