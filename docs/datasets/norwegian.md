@@ -931,19 +931,19 @@ Here are a few examples from the training split:
 
 ```json
 {
-  "text": "Complete the Nynorsk idiom:\nalle gode ting er _____\n\nSvarmöguleikar:\na. søte\nb. tre\nc. fire\nd. vennlege",
+  "text": "Complete the Nynorsk idiom:\nalle gode ting er _____\n\Svaralternativer::\na. søte\nb. tre\nc. fire\nd. vennlege",
   "label": "b"
 }
 ```
 ```json
 {
-  "text": "Complete the Bokmål idiom:\ndet er ikke bare , _____\n\nSvarmöguleikar:\na. moro\nb. bare\nc. lett\nd. enkelt",
+  "text": "Complete the Bokmål idiom:\ndet er ikke bare , _____\n\Svaralternativer::\na. moro\nb. bare\nc. lett\nd. enkelt",
   "label": "b",
 }
 ```
 ```json
 {
-  "text": "Complete the Bokmål idiom:\ndet får stå sin _____\n\nSvarmöguleikar:\na. prøve\nb. vegg\nc. sak\nd. greie",
+  "text": "Complete the Bokmål idiom:\ndet får stå sin _____\n\Svaralternativer::\na. prøve\nb. vegg\nc. sak\nd. greie",
   "label": "a"
 }
 ```
