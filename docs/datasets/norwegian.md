@@ -937,7 +937,7 @@ Here are a few examples from the training split:
 ```
 ```json
 {
-  "text": "Complete the Bokmål idiom:\ndet er ikke bare , _____\n\Svaralternativer::\na. moro\nb. bare\nc. lett\nd. enkelt",
+  "text": "Complete the Bokmål idiom:\ndet er ikke bare , _____\n\nSvaralternativer::\na. moro\nb. bare\nc. lett\nd. enkelt",
   "label": "b",
 }
 ```
