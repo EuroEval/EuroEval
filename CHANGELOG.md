@@ -17,6 +17,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   caused an error, as the id-to-label mapping was not set up correctly. This has been
   fixed now.
 
+### Added
+- Added the English knowledge dataset Life in the UK. This was contributed by
+  [@oliverkinch](https://github.com/oliverkinch) ✨
 
 ## [v15.10.1] - 2025-06-20
 ### Fixed

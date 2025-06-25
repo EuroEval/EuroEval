@@ -492,6 +492,70 @@ $ euroeval --model <model-id> --dataset arc
 ```
 
 
+### Unofficial: Life in the UK
+
+[This dataset](https://huggingface.co/datasets/oliverkinch/life-in-the-uk-multiple-choice) was scraped from [lifeintheuktestweb.co.uk](https://lifeintheuktestweb.co.uk/test-1/) and contains multiple choice questions about UK history, culture, and citizenship requirements. The website was created to help people pass the Life in the UK Test for UK citizenship.
+
+The original dataset consists of 1,450 samples. After processing (removing questions with overly short or long texts, repetitive content, and true/false questions), we have 1,206 samples remaining. From these, we use 438 / 256 / 512 samples for our training, validation and test splits, respectively.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "What is the capital of the United Kingdom?\nChoices:\na. London\nb. Manchester\nc. Birmingham\nd. Edinburgh",
+  "label": "a"
+}
+```
+```json
+{
+  "text": "What TWO houses were confronted during the Wars of the Roses?\nChoices:\na. The House of Lancaster\nb. The House of Leicester\nc. The House of Canterbury\nd. The House of York",
+  "label": "a"
+}
+```
+```json
+{
+  "text": "What is the name of the War Memorial located in Whitehall?\nChoices:\na. Dumfries\nb. Cenotaph\nc. Royal Crescent\nd. The White Tower",
+  "label": "b"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+  ```
+  The following are multiple choice questions (with answers).
+  ```
+- Base prompt template:
+  ```
+  Question: {text}
+  Options:
+  a. {option_a}
+  b. {option_b}
+  c. {option_c}
+  d. {option_d}
+  Answer: {label}
+  ```
+- Instruction-tuned prompt template:
+  ```
+  Question: {text}
+  Options:
+  a. {option_a}
+  b. {option_b}
+  c. {option_c}
+  d. {option_d}
+
+  Answer the above question by replying with 'a', 'b', 'c' or 'd', and nothing else.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+$ euroeval --model <model-id> --dataset life-in-the-uk
+```
+
+
 ## Common-sense Reasoning
 
 ### HellaSwag
