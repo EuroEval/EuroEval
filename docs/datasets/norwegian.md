@@ -943,7 +943,7 @@ Here are a few examples from the training split:
 ```
 ```json
 {
-  "text": "Complete the Bokmål idiom:\ndet får stå sin _____\n\Svaralternativer::\na. prøve\nb. vegg\nc. sak\nd. greie",
+  "text": "Complete the Bokmål idiom:\ndet får stå sin _____\n\nSvaralternativer::\na. prøve\nb. vegg\nc. sak\nd. greie",
   "label": "a"
 }
 ```
