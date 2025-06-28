@@ -31,6 +31,6 @@ The idea of EuroEval grew out of the development of Danish language model RøBÆ
 models. It started as a hobby project including Danish, Swedish and Norwegian, but has
 since grown to include 12+ European languages.
 
-EuroEval is maintained by [Dan Saattrup Nielsen](https://www.saattrupdan.com/) from the
+EuroEval is maintained by [Dan Saattrup Smart](https://www.saattrupdan.com/) from the
 [Alexandra Institute](https://alexandra.dk), and is funded by the EU project
 [TrustLLM](https://trustllm.eu/).

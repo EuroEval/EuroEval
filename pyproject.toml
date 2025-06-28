@@ -4,10 +4,10 @@ version = "15.10.1.dev"
 description = "The robust European language model benchmark."
 readme = "README.md"
 authors = [
-    {name = "Dan Saattrup Nielsen", email = "dan.nielsen@alexandra.dk"},
+    {name = "Dan Saattrup Smart", email = "dan.smart@alexandra.dk"},
 ]
 maintainers = [
-    {name = "Dan Saattrup Nielsen", email = "dan.nielsen@alexandra.dk"},
+    {name = "Dan Saattrup Smart", email = "dan.smart@alexandra.dk"},
 ]
 requires-python = ">=3.10,<4.0"
 dependencies = [

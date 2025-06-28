@@ -19,8 +19,7 @@ ______________________________________________________________________
 
 ## Maintainer
 
-- Dan Saattrup Nielsen ([@saattrupdan](https://github.com/saattrupdan),
-  dan.nielsen@alexandra.dk)
+- Dan Saattrup Smart ([@saattrupdan](https://github.com/saattrupdan), dan.smart@alexandra.dk)
 
 
 ## Installation
@@ -193,14 +192,14 @@ contributing new datasets, your help makes this project better for everyone.
 If you want to cite the framework then feel free to use this:
 
 ```
-@article{nielsen2024encoder,
+@article{smart2024encoder,
   title={Encoder vs Decoder: Comparative Analysis of Encoder and Decoder Language Models on Multilingual NLU Tasks},
-  author={Nielsen, Dan Saattrup and Enevoldsen, Kenneth and Schneider-Kamp, Peter},
+  author={Smart, Dan Saattrup and Enevoldsen, Kenneth and Schneider-Kamp, Peter},
   journal={arXiv preprint arXiv:2406.13469},
   year={2024}
 }
-@inproceedings{nielsen2023scandeval,
-  author = {Nielsen, Dan Saattrup},
+@inproceedings{smart2023scandeval,
+  author = {Smart, Dan Saattrup},
   booktitle = {Proceedings of the 24th Nordic Conference on Computational Linguistics (NoDaLiDa)},
   month = may,
   pages = {185--201},
