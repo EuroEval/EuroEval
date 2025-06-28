@@ -4,8 +4,8 @@ message: If you use this software, please cite it using the metadata from this f
 type: software
 authors:
   - given-names: Dan Saattrup
-    family-names: Nielsen
-    email: dan.nielsen@alexandra.dk
+    family-names: Smart
+    email: dan.smart@alexandra.dk
     affiliation: Alexandra Institute
     orcid: 'https://orcid.org/0000-0001-9227-1470'
 identifiers:
@@ -22,7 +22,7 @@ license: MIT
 preferred-citation:
   type: conference-paper
   authors:
-  - family-names: "Nielsen"
+  - family-names: "Smart"
     given-names: "Dan Saattrup"
     orcid: https://orcid.org/0000-0001-9227-1470
   collection-title: "Proceedings of the 24th Nordic Conference on Computational Linguistics (NoDaLiDa)"

@@ -8,10 +8,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 ### Added
-- Added the English knowledge dataset Life in the UK. This was contributed by
+- Added the English knowledge dataset Life in the UK, which has been added as an
+  official dataset, replacing the existing English knowledge dataset MMLU, which in turn
+  has been marked as unofficial now. This was contributed by
   [@oliverkinch](https://github.com/oliverkinch) ✨
-- Added the Idioms-no dataset, which is a multiple-choice question dataset, where the
-  alternative answers have been generated using GPT-4o. This was contributed by
+- Added the Norwegian knowledge dataset Idioms-no, which is a multiple-choice question
+  dataset where the alternative answers have been generated using GPT-4o. This has been
+  added as an official dataset, and was contributed by
   [@oliverkinch](https://github.com/oliverkinch) ✨
 
 ### Fixed
