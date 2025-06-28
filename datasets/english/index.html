@@ -916,6 +916,15 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#unofficial-life-in-the-uk" class="md-nav__link">
+    <span class="md-ellipsis">
+      Unofficial: Life in the UK
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1475,6 +1484,15 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#unofficial-life-in-the-uk" class="md-nav__link">
+    <span class="md-ellipsis">
+      Unofficial: Life in the UK
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1933,6 +1951,55 @@ Answer the above question by replying with &#39;a&#39;, &#39;b&#39;, &#39;c&#39;
 </ul>
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>arc
+</code></pre></div>
+<h3 id="unofficial-life-in-the-uk">Unofficial: Life in the UK</h3>
+<p><a href="https://huggingface.co/datasets/oliverkinch/life-in-the-uk-multiple-choice">This dataset</a> was scraped from <a href="https://lifeintheuktestweb.co.uk/test-1/">lifeintheuktestweb.co.uk</a> and contains multiple choice questions about UK history, culture, and citizenship requirements. The website was created to help people pass the Life in the UK Test for UK citizenship.</p>
+<p>The original dataset consists of 1,450 samples. After processing (removing questions with overly short or long texts, repetitive content, and true/false questions), we have 1,206 samples remaining. From these, we use 438 / 256 / 512 samples for our training, validation and test splits, respectively.</p>
+<p>Here are a few examples from the training split:</p>
+<p><div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;What is the capital of the United Kingdom?\nChoices:\na. London\nb. Manchester\nc. Birmingham\nd. Edinburgh&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;a&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;What TWO houses were confronted during the Wars of the Roses?\nChoices:\na. The House of Lancaster\nb. The House of Leicester\nc. The House of Canterbury\nd. The House of York&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;a&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;What is the name of the War Memorial located in Whitehall?\nChoices:\na. Dumfries\nb. Cenotaph\nc. Royal Crescent\nd. The White Tower&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;b&quot;</span>
+<span class="p">}</span>
+</code></pre></div></p>
+<p>When evaluating generative models, we use the following setup (see the
+<a href="/methodology">methodology</a> for more information on how these are used):</p>
+<ul>
+<li>Number of few-shot examples: 5</li>
+<li>Prefix prompt:
+  <div class="highlight"><pre><span></span><code>The following are multiple choice questions (with answers).
+</code></pre></div></li>
+<li>Base prompt template:
+  <div class="highlight"><pre><span></span><code>Question: {text}
+Options:
+a. {option_a}
+b. {option_b}
+c. {option_c}
+d. {option_d}
+Answer: {label}
+</code></pre></div></li>
+<li>Instruction-tuned prompt template:
+  <div class="highlight"><pre><span></span><code>Question: {text}
+Options:
+a. {option_a}
+b. {option_b}
+c. {option_c}
+d. {option_d}
+
+Answer the above question by replying with &#39;a&#39;, &#39;b&#39;, &#39;c&#39; or &#39;d&#39;, and nothing else.
+</code></pre></div></li>
+</ul>
+<p>You can evaluate this dataset directly as follows:</p>
+<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>life-in-the-uk
 </code></pre></div>
 <h2 id="common-sense-reasoning">Common-sense Reasoning</h2>
 <h3 id="hellaswag">HellaSwag</h3>

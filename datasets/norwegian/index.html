@@ -1131,6 +1131,15 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#unofficial-idioms-no" class="md-nav__link">
+    <span class="md-ellipsis">
+      Unofficial: Idioms-no
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1614,6 +1623,15 @@
   <a href="#unofficial-arc-no" class="md-nav__link">
     <span class="md-ellipsis">
       Unofficial: ARC-no
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#unofficial-idioms-no" class="md-nav__link">
+    <span class="md-ellipsis">
+      Unofficial: Idioms-no
     </span>
   </a>
   
@@ -2461,6 +2479,56 @@ Besvar følgende spørsmål med &#39;a&#39;, &#39;b&#39;, &#39;c&#39; eller &#39
 </ul>
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>arc-no
+</code></pre></div>
+<h3 id="unofficial-idioms-no">Unofficial: Idioms-no</h3>
+<p><a href="https://huggingface.co/datasets/Sprakbanken/Norwegian_idioms">This dataset</a> consists of 3553 Norwegian idioms and phrases that appear more than 100 times in the online library of the National Library of Norway.</p>
+<p>We have reformulated the dataset as a multiple-choice question format with 4 options, where the alternative answers have been generated using GPT-4o.
+Based on 3,232 samples (3,144 Bokmål, 88 Nynorsk) from the original dataset, we use a 928 (27 Nynorsk) / 256 (11 Nynorsk) / 2,048 (50 Nynorsk) split for training, validation and testing, respectively.</p>
+<p>Here are a few examples from the training split:</p>
+<p><div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Complete the Nynorsk idiom:\nalle gode ting er _____\n\nSvaralternativer::\na. søte\nb. tre\nc. fire\nd. vennlege&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;b&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Complete the Bokmål idiom:\ndet er ikke bare , _____\n\nSvaralternativer::\na. moro\nb. bare\nc. lett\nd. enkelt&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;b&quot;</span><span class="p">,</span>
+<span class="p">}</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Complete the Bokmål idiom:\ndet får stå sin _____\n\nSvaralternativer::\na. prøve\nb. vegg\nc. sak\nd. greie&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;a&quot;</span>
+<span class="p">}</span>
+</code></pre></div></p>
+<p>When evaluating generative models, we use the following setup (see the
+<a href="/methodology">methodology</a> for more information on how these are used):</p>
+<ul>
+<li>Number of few-shot examples: 5</li>
+<li>Prefix prompt:
+  <div class="highlight"><pre><span></span><code>Følgende er flervalgsspørsmål (med svar).
+</code></pre></div></li>
+<li>Base prompt template:
+  <div class="highlight"><pre><span></span><code>Spørsmål: {text}
+Svaralternativer:
+a. {option_a}
+b. {option_b}
+c. {option_c}
+d. {option_d}
+Svar: {label}
+</code></pre></div></li>
+<li>Instruction-tuned prompt template:
+  <div class="highlight"><pre><span></span><code>Spørsmål: {text}
+Svaralternativer:
+a. {option_a}
+b. {option_b}
+c. {option_c}
+d. {option_d}
+
+Besvar følgende spørsmål med &#39;a&#39;, &#39;b&#39;, &#39;c&#39; eller &#39;d&#39;, og ikke noe annet.
+</code></pre></div></li>
+</ul>
+<p>You can evaluate this dataset directly as follows:</p>
+<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>idioms-no
 </code></pre></div>
 <h2 id="common-sense-reasoning">Common-sense Reasoning</h2>
 <h3 id="norcommonsenseqa">NorCommonSenseQA</h3>
