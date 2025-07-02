@@ -11,10 +11,11 @@ information about what these constitute.
 
 This dataset was published in [this Github
 repository](https://github.com/TheophileBlard/french-sentiment-analysis-with-bert) and
-features reviews from the French movie review website [AlloCiné](https://www.allocine.fr/). The reviews range from
-0.5 to 5 (inclusive), with steps of 0.5. The negative samples are reviews with a rating
-of at most 2, and the positive ones are reviews with a rating of at least 4. The reviews
-in between were discarded.
+features reviews from the French movie review website
+[AlloCiné](https://www.allocine.fr/). The reviews range from 0.5 to 5 (inclusive), with
+steps of 0.5. The negative samples are reviews with a rating of at most 2, and the
+positive ones are reviews with a rating of at least 4. The reviews in between were
+discarded.
 
 The original full dataset consists of 160,000 / 20,000 / 20,000 samples for training,
 validation, and testing, respectively. We use 1,024 / 256 / 2,048 samples for training,
@@ -163,9 +164,9 @@ word from a sentence, or by swapping two neighbouring words in a sentence. To en
 that this does indeed break the grammaticality of the sentence, a set of rules were used
 on the part-of-speech tags of the words in the sentence.
 
-The original dataset consists of 16,342 samples, from which we use 1,024 / 256 / 2,048 samples for training,
-validation and testing, respectively (so 3,328 samples used in total). These splits are
-used as-is in the framework.
+The original dataset consists of 16,342 samples, from which we use 1,024 / 256 / 2,048
+samples for training, validation and testing, respectively (so 3,328 samples used in
+total). These splits are used as-is in the framework.
 
 Here are a few examples from the training split:
 
@@ -298,9 +299,12 @@ $ euroeval --model <model-id> --dataset fquad
 
 ### Unofficial: BeleBele-fr
 
-This dataset was published in [this paper](https://aclanthology.org/2024.acl-long.44/) and features multiple-choice reading comprehension questions across 122 languages.
+This dataset was published in [this paper](https://aclanthology.org/2024.acl-long.44/)
+and features multiple-choice reading comprehension questions across 122 languages.
 
-The original dataset contains 900 unique multiple-choice reading comprehension passages and questions. From these, we use a 256 / 64 / 580 split for training, validation and testing, respectively.
+The original dataset contains 900 unique multiple-choice reading comprehension passages
+and questions. From these, we use a 256 / 64 / 580 split for training, validation and
+testing, respectively.
 
 Here are a few examples from the training split:
 

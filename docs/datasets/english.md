@@ -297,9 +297,13 @@ $ euroeval --model <model-id> --dataset squad
 
 ### Unofficial: BeleBele-en
 
-This dataset was published in [this paper](https://aclanthology.org/2024.acl-long.44/) and features reading comprehension questions across 122 languages. The dataset was created by professional translators who translated 900 multiple-choice questions from English into other languages, with answers carefully validated by native speakers.
+This dataset was published in [this paper](https://aclanthology.org/2024.acl-long.44/)
+and features reading comprehension questions across 122 languages. The dataset was
+created by professional translators who translated 900 multiple-choice questions from
+English into other languages, with answers carefully validated by native speakers.
 
-The original dataset consists of 900 samples, and we use 256 / 64 / 580 samples for training, validation and testing, respectively.
+The original dataset consists of 900 samples, and we use 256 / 64 / 580 samples for
+training, validation and testing, respectively.
 
 Here are a few examples from the training split:
 
