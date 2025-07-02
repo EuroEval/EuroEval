@@ -1114,6 +1114,15 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#idioms-no" class="md-nav__link">
+    <span class="md-ellipsis">
+      Idioms-no
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#unofficial-mmlu-no" class="md-nav__link">
     <span class="md-ellipsis">
       Unofficial: MMLU-no
@@ -1126,15 +1135,6 @@
   <a href="#unofficial-arc-no" class="md-nav__link">
     <span class="md-ellipsis">
       Unofficial: ARC-no
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#unofficial-idioms-no" class="md-nav__link">
-    <span class="md-ellipsis">
-      Unofficial: Idioms-no
     </span>
   </a>
   
@@ -1611,6 +1611,15 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#idioms-no" class="md-nav__link">
+    <span class="md-ellipsis">
+      Idioms-no
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#unofficial-mmlu-no" class="md-nav__link">
     <span class="md-ellipsis">
       Unofficial: MMLU-no
@@ -1623,15 +1632,6 @@
   <a href="#unofficial-arc-no" class="md-nav__link">
     <span class="md-ellipsis">
       Unofficial: ARC-no
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#unofficial-idioms-no" class="md-nav__link">
-    <span class="md-ellipsis">
-      Unofficial: Idioms-no
     </span>
   </a>
   
@@ -1947,9 +1947,9 @@ create grammatically incorrect samples. The corruptions were done by either remo
 word from a sentence, or by swapping two neighbouring words in a sentence. To ensure
 that this does indeed break the grammaticality of the sentence, a set of rules were used
 on the part-of-speech tags of the words in the sentence.</p>
-<p>The original dataset consists of 20,044 samples, from which we use 1,024 / 256 / 2,048 samples for training,
-validation and testing, respectively (so 3,328 samples used in total). These splits are
-used as-is in the framework.</p>
+<p>The original dataset consists of 20,044 samples, from which we use 1,024 / 256 / 2,048
+samples for training, validation and testing, respectively (so 3,328 samples used in
+total). These splits are used as-is in the framework.</p>
 <p>Here are a few examples from the training split:</p>
 <p><div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;En vellykket gjennomføring av denne reformen vil bli en avgjørende prøve på Regjeringens handlekraft.&quot;</span><span class="p">,</span>
@@ -2000,9 +2000,9 @@ create grammatically incorrect samples. The corruptions were done by either remo
 word from a sentence, or by swapping two neighbouring words in a sentence. To ensure
 that this does indeed break the grammaticality of the sentence, a set of rules were used
 on the part-of-speech tags of the words in the sentence.</p>
-<p>The original dataset consists of 17,575 samples, from which we use 1,024 / 256 / 2,048 samples for training,
-validation and testing, respectively (so 3,328 samples used in total). These splits are
-used as-is in the framework.</p>
+<p>The original dataset consists of 17,575 samples, from which we use 1,024 / 256 / 2,048
+samples for training, validation and testing, respectively (so 3,328 samples used in
+total). These splits are used as-is in the framework.</p>
 <p>Here are a few examples from the training split:</p>
 <p><div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Dersom Noreg snart går forbi Danmark i folketal, slik framskrivingane tilseier, kan også dette langt på veg forklarast med naturressursar.&quot;</span><span class="p">,</span>
@@ -2097,7 +2097,8 @@ Bestem om setningen er grammatisk korrekt eller ikke. Svar med &#39;ja&#39; hvis
 <div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>no-cola-binary
 </code></pre></div>
 <h3 id="unofficial-jentoft">Unofficial: Jentoft</h3>
-<p>This dataset was published in <a href="https://www.duo.uio.no/handle/10852/103885">this Master's thesis</a> by Matias Jentoft.</p>
+<p>This dataset was published in <a href="https://www.duo.uio.no/handle/10852/103885">this Master's
+thesis</a> by Matias Jentoft.</p>
 <p>The original dataset consists of 85,771 / 10,827 / 10487 samples for training,
 validation and test, respectively. We use a split of 1,024 / 256 / 2,048 samples for
 training, validation and test, respectively. In each split, the distribution of
@@ -2265,8 +2266,11 @@ Spørsmål: {question}
 <div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>norglm-multi-qa
 </code></pre></div>
 <h3 id="unofficial-belebele-no">Unofficial: BeleBele-no</h3>
-<p>This dataset was published in <a href="https://aclanthology.org/2024.acl-long.44/">this paper</a> and features multiple-choice reading comprehension questions across 122 languages.</p>
-<p>The original dataset contains 900 unique multiple-choice reading comprehension passages and questions. From these, we use a 256 / 64 / 580 split for training, validation and testing, respectively.</p>
+<p>This dataset was published in <a href="https://aclanthology.org/2024.acl-long.44/">this paper</a>
+and features multiple-choice reading comprehension questions across 122 languages.</p>
+<p>The original dataset contains 900 unique multiple-choice reading comprehension passages
+and questions. From these, we use a 256 / 64 / 580 split for training, validation and
+testing, respectively.</p>
 <p>Here are a few examples from the training split:</p>
 <p><div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Tekst: Det kinesiske nyhetsbyrået Xinhua meldte tidligere fra om at et fly var kapret. Det ble senere rapportert at flyet fikk en bombetrussel og ble veiledet mot retur til Afghanistan med landing i Kandahar. Ifølge de første rapportene ble flyet dirigert tilbake til Afghanistan etter å ha blitt nektet nødlanding i Ürümqi.\nSpørsmål: Hva ble ikke sagt i den nyeste rapporten fra nyhetsbyrået Xinhua?\nSvaralternativer:\na. Flyet fikk en bombetrussel\nb. Flyet landet i Ürümqi\nc. Flyet ble dirigert til Afghanistan\nd. Flyet landet i Kandahar&quot;</span><span class="p">,</span>
@@ -2367,6 +2371,61 @@ Besvar følgende spørsmål med &#39;a&#39;, &#39;b&#39;, &#39;c&#39;, eller &#3
 </ul>
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>nrk-quiz-qa
+</code></pre></div>
+<h3 id="idioms-no">Idioms-no</h3>
+<p>This dataset was published <a href="https://doi.org/10.48550/arXiv.2504.07749">here</a> and
+consists of 3,553 Norwegian idioms and phrases that appear more than 100 times in the
+online library of the National Library of Norway.</p>
+<p>We have reformulated the dataset as a multiple-choice question format with 4 options,
+where the alternative answers have been generated using GPT-4o. Based on 3,232 samples
+(3,144 Bokmål, 88 Nynorsk) from the original dataset, we use a 928 (27 Nynorsk) / 256
+(11 Nynorsk) / 2,048 (50 Nynorsk) split for training, validation and testing,
+respectively.</p>
+<p>Here are a few examples from the training split:</p>
+<p><div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Complete the Nynorsk idiom:\nalle gode ting er _____\n\nSvaralternativer::\na. søte\nb. tre\nc. fire\nd. vennlege&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;b&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Complete the Bokmål idiom:\ndet er ikke bare , _____\n\nSvaralternativer::\na. moro\nb. bare\nc. lett\nd. enkelt&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;b&quot;</span><span class="p">,</span>
+<span class="p">}</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Complete the Bokmål idiom:\ndet får stå sin _____\n\nSvaralternativer::\na. prøve\nb. vegg\nc. sak\nd. greie&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;a&quot;</span>
+<span class="p">}</span>
+</code></pre></div></p>
+<p>When evaluating generative models, we use the following setup (see the
+<a href="/methodology">methodology</a> for more information on how these are used):</p>
+<ul>
+<li>Number of few-shot examples: 5</li>
+<li>Prefix prompt:
+  <div class="highlight"><pre><span></span><code>Følgende er flervalgsspørsmål (med svar).
+</code></pre></div></li>
+<li>Base prompt template:
+  <div class="highlight"><pre><span></span><code>Spørsmål: {text}
+Svaralternativer:
+a. {option_a}
+b. {option_b}
+c. {option_c}
+d. {option_d}
+Svar: {label}
+</code></pre></div></li>
+<li>Instruction-tuned prompt template:
+  <div class="highlight"><pre><span></span><code>Spørsmål: {text}
+Svaralternativer:
+a. {option_a}
+b. {option_b}
+c. {option_c}
+d. {option_d}
+
+Besvar følgende spørsmål med &#39;a&#39;, &#39;b&#39;, &#39;c&#39; eller &#39;d&#39;, og ikke noe annet.
+</code></pre></div></li>
+</ul>
+<p>You can evaluate this dataset directly as follows:</p>
+<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>idioms-no
 </code></pre></div>
 <h3 id="unofficial-mmlu-no">Unofficial: MMLU-no</h3>
 <p>This dataset is a machine translated version of the English <a href="https://openreview.net/forum?id=d7KBjmI3GmQ">MMLU
@@ -2479,56 +2538,6 @@ Besvar følgende spørsmål med &#39;a&#39;, &#39;b&#39;, &#39;c&#39; eller &#39
 </ul>
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>arc-no
-</code></pre></div>
-<h3 id="unofficial-idioms-no">Unofficial: Idioms-no</h3>
-<p><a href="https://huggingface.co/datasets/Sprakbanken/Norwegian_idioms">This dataset</a> consists of 3553 Norwegian idioms and phrases that appear more than 100 times in the online library of the National Library of Norway.</p>
-<p>We have reformulated the dataset as a multiple-choice question format with 4 options, where the alternative answers have been generated using GPT-4o.
-Based on 3,232 samples (3,144 Bokmål, 88 Nynorsk) from the original dataset, we use a 928 (27 Nynorsk) / 256 (11 Nynorsk) / 2,048 (50 Nynorsk) split for training, validation and testing, respectively.</p>
-<p>Here are a few examples from the training split:</p>
-<p><div class="highlight"><pre><span></span><code><span class="p">{</span>
-<span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Complete the Nynorsk idiom:\nalle gode ting er _____\n\nSvaralternativer::\na. søte\nb. tre\nc. fire\nd. vennlege&quot;</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;b&quot;</span>
-<span class="p">}</span>
-</code></pre></div>
-<div class="highlight"><pre><span></span><code><span class="p">{</span>
-<span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Complete the Bokmål idiom:\ndet er ikke bare , _____\n\nSvaralternativer::\na. moro\nb. bare\nc. lett\nd. enkelt&quot;</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;b&quot;</span><span class="p">,</span>
-<span class="p">}</span>
-</code></pre></div>
-<div class="highlight"><pre><span></span><code><span class="p">{</span>
-<span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Complete the Bokmål idiom:\ndet får stå sin _____\n\nSvaralternativer::\na. prøve\nb. vegg\nc. sak\nd. greie&quot;</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;a&quot;</span>
-<span class="p">}</span>
-</code></pre></div></p>
-<p>When evaluating generative models, we use the following setup (see the
-<a href="/methodology">methodology</a> for more information on how these are used):</p>
-<ul>
-<li>Number of few-shot examples: 5</li>
-<li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>Følgende er flervalgsspørsmål (med svar).
-</code></pre></div></li>
-<li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>Spørsmål: {text}
-Svaralternativer:
-a. {option_a}
-b. {option_b}
-c. {option_c}
-d. {option_d}
-Svar: {label}
-</code></pre></div></li>
-<li>Instruction-tuned prompt template:
-  <div class="highlight"><pre><span></span><code>Spørsmål: {text}
-Svaralternativer:
-a. {option_a}
-b. {option_b}
-c. {option_c}
-d. {option_d}
-
-Besvar følgende spørsmål med &#39;a&#39;, &#39;b&#39;, &#39;c&#39; eller &#39;d&#39;, og ikke noe annet.
-</code></pre></div></li>
-</ul>
-<p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>idioms-no
 </code></pre></div>
 <h2 id="common-sense-reasoning">Common-sense Reasoning</h2>
 <h3 id="norcommonsenseqa">NorCommonSenseQA</h3>
@@ -2771,8 +2780,13 @@ Skriv et sammendrag av den ovennevnte artikkelen.
 <div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>schibsted-no
 </code></pre></div>
 <h3 id="unofficial-personal-sum">Unofficial: Personal Sum</h3>
-<p>This dataset was released <a href="https://github.com/SmartmediaAI/PersonalSum">here</a> and contains human annotated summaries that reflect individual user preferences.</p>
-<p>The original dataset contains 1,099 summaries based on 441 unique articles. The dataset has been restructured into 441 samples, where each sample represents a unique article paired with all of its corresponding summaries (1 or more). The dataset has been split such that we have 121 / 64 / 256 samples for training, validation and testing, respectively.</p>
+<p>This dataset was released <a href="https://github.com/SmartmediaAI/PersonalSum">here</a> and
+contains human annotated summaries that reflect individual user preferences.</p>
+<p>The original dataset contains 1,099 summaries based on 441 unique articles. The dataset
+has been restructured into 441 samples, where each sample represents a unique article
+paired with all of its corresponding summaries (1 or more). The dataset has been split
+such that we have 121 / 64 / 256 samples for training, validation and testing,
+respectively.</p>
 <p>Here are a few examples from the training split:</p>
 <p><div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">    </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;I en ny bok forteller Abid Rajas søster Abida Raja (49) at hun over lengre tid levde i et voldelig forhold. I en pressemelding avviser eksmannen anklagene. – Min klient ønsker å påpeke at han nekter straffeskyld for partnervold og\nvoldtektsanklager. Han vedkjenner at ekteskapet har hatt sine utfordringer, og at de derfor skilte seg i 2015, skriver eksmannens advokat Javeed H. Shah i en pressemelding. I boken «Frihetens Øyeblikk», beskriver Raja at eksmannen hennes var voldelig, og at hun flere ganger forsøkte å unnslippe mannen. I boken skriver forfatter Håkon F. Høydal:«De siste tjue årene hadde vært en kamp mot seg selv: Hun ønsket å gå fra mannen. Men hun måtte bli. På grunn av barna, og på grunn av familien, på grunn av frykten for fattigdom og skam. Nå hadde hun verken barna, penger eller hus.»VG har tidligere vært i kontakt med Abida Rajas eksmann i forbindelse med bokutgivelsen, som tirsdag ikke hadde lest boken.– Jeg er i utlandet og har ikke lest boken, så kan ikke kommentere uten å lese det, skriver han i en SMS til VG.I boka skriver forfatteren at Abida etter stort press fra familien, skal ha møtt én av ektemannkandidatene, en 23 år gammel inngiftet onkel i Pakistan. Hun var 18 år og skulle gått i andre klasse på videregående hjemme i Norge.«Abida husker ikke om hun sa ja. Men hun sa heller ikke nei. Hun ville bare bort», heter det i boken.Onsdag svarer eksmannen via sin advokat, at han har levd i god tro om at Abida giftet seg av fri vilje slik hun selv uttrykte ovenfor han. – Derfor er opplysningene om tvangsekteskap noe han ble kjent med først i 2020. Boken kommer ett år etter at venstrepolitiker og tidligere statsråd Abid Raja kom med sin bok\xa0«Min skyld». Boken er skrevet av VG-journalist Håkon F. Høydal og ble lansert tirsdag morgen\xa0etter mye hemmelighold. VG har ikke hatt noe med utgivelsen å gjøre.&quot;</span><span class="p">,</span>

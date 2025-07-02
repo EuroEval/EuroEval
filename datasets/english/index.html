@@ -899,9 +899,18 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#mmlu" class="md-nav__link">
+  <a href="#life-in-the-uk" class="md-nav__link">
     <span class="md-ellipsis">
-      MMLU
+      Life in the UK
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#unofficial-mmlu" class="md-nav__link">
+    <span class="md-ellipsis">
+      Unofficial: MMLU
     </span>
   </a>
   
@@ -911,15 +920,6 @@
   <a href="#unofficial-arc" class="md-nav__link">
     <span class="md-ellipsis">
       Unofficial: ARC
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#unofficial-life-in-the-uk" class="md-nav__link">
-    <span class="md-ellipsis">
-      Unofficial: Life in the UK
     </span>
   </a>
   
@@ -1467,9 +1467,18 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#mmlu" class="md-nav__link">
+  <a href="#life-in-the-uk" class="md-nav__link">
     <span class="md-ellipsis">
-      MMLU
+      Life in the UK
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#unofficial-mmlu" class="md-nav__link">
+    <span class="md-ellipsis">
+      Unofficial: MMLU
     </span>
   </a>
   
@@ -1479,15 +1488,6 @@
   <a href="#unofficial-arc" class="md-nav__link">
     <span class="md-ellipsis">
       Unofficial: ARC
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#unofficial-life-in-the-uk" class="md-nav__link">
-    <span class="md-ellipsis">
-      Unofficial: Life in the UK
     </span>
   </a>
   
@@ -1802,8 +1802,12 @@ Question: {question}
 <div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>squad
 </code></pre></div>
 <h3 id="unofficial-belebele-en">Unofficial: BeleBele-en</h3>
-<p>This dataset was published in <a href="https://aclanthology.org/2024.acl-long.44/">this paper</a> and features reading comprehension questions across 122 languages. The dataset was created by professional translators who translated 900 multiple-choice questions from English into other languages, with answers carefully validated by native speakers.</p>
-<p>The original dataset consists of 900 samples, and we use 256 / 64 / 580 samples for training, validation and testing, respectively.</p>
+<p>This dataset was published in <a href="https://aclanthology.org/2024.acl-long.44/">this paper</a>
+and features reading comprehension questions across 122 languages. The dataset was
+created by professional translators who translated 900 multiple-choice questions from
+English into other languages, with answers carefully validated by native speakers.</p>
+<p>The original dataset consists of 900 samples, and we use 256 / 64 / 580 samples for
+training, validation and testing, respectively.</p>
 <p>Here are a few examples from the training split:</p>
 <p><div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="err">&#39;Tex</span><span class="kc">t</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;&quot;&quot;We will endeavour to cut carbon dioxide emissions per unit of GDP by a notable margin by 2020 from the 2005 level,&quot;&quot; Hu said. He did not set a figure for the cuts, saying they will be made based on China\&#39;s economic output. Hu encouraged developing countries &quot;&quot;to avoid the old path of polluting first and cleaning up later.&quot;&quot; He added that &quot;&quot;they should not, however, be asked to take on obligations that go beyond their development stage, responsibility and capabilities.&quot;&quot;&quot;</span><span class="err">\</span><span class="kc">n</span><span class="err">Ques</span><span class="kc">t</span><span class="err">io</span><span class="kc">n</span><span class="p">:</span><span class="w"> </span><span class="err">Wha</span><span class="kc">t</span><span class="w"> </span><span class="err">did</span><span class="w"> </span><span class="err">Hu</span><span class="w"> </span><span class="err">sugges</span><span class="kc">t</span><span class="w"> </span><span class="kc">t</span><span class="err">ha</span><span class="kc">t</span><span class="w"> </span><span class="err">developi</span><span class="kc">n</span><span class="err">g</span><span class="w"> </span><span class="err">cou</span><span class="kc">ntr</span><span class="err">ies</span><span class="w"> </span><span class="err">do?\</span><span class="kc">n</span><span class="err">Choices</span><span class="p">:</span><span class="err">\</span><span class="kc">na</span><span class="err">.</span><span class="w"> </span><span class="err">Take</span><span class="w"> </span><span class="err">o</span><span class="kc">n</span><span class="w"> </span><span class="err">obliga</span><span class="kc">t</span><span class="err">io</span><span class="kc">ns</span><span class="w"> </span><span class="kc">t</span><span class="err">ha</span><span class="kc">t</span><span class="w"> </span><span class="err">push</span><span class="w"> </span><span class="kc">t</span><span class="err">heir</span><span class="w"> </span><span class="err">developme</span><span class="kc">nt</span><span class="w"> </span><span class="err">s</span><span class="kc">ta</span><span class="err">ge\</span><span class="kc">n</span><span class="err">b.</span><span class="w"> </span><span class="err">Focus</span><span class="w"> </span><span class="err">o</span><span class="kc">n</span><span class="w"> </span><span class="err">eco</span><span class="kc">n</span><span class="err">omic</span><span class="w"> </span><span class="err">ou</span><span class="kc">t</span><span class="err">pu</span><span class="kc">t</span><span class="err">\</span><span class="kc">n</span><span class="err">c.</span><span class="w"> </span><span class="err">Go</span><span class="w"> </span><span class="err">beyo</span><span class="kc">n</span><span class="err">d</span><span class="w"> </span><span class="kc">t</span><span class="err">heir</span><span class="w"> </span><span class="err">curre</span><span class="kc">nt</span><span class="w"> </span><span class="err">respo</span><span class="kc">ns</span><span class="err">ibili</span><span class="kc">t</span><span class="err">ies\</span><span class="kc">n</span><span class="err">d.</span><span class="w"> </span><span class="err">Avoidi</span><span class="kc">n</span><span class="err">g</span><span class="w"> </span><span class="err">old</span><span class="w"> </span><span class="err">pa</span><span class="kc">t</span><span class="err">hs</span><span class="w"> </span><span class="err">o</span><span class="kc">f</span><span class="w"> </span><span class="err">pollu</span><span class="kc">t</span><span class="err">io</span><span class="kc">n</span><span class="err">&#39;</span><span class="p">,</span>
@@ -1844,7 +1848,64 @@ Question: {question}
 <div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>belebele-en
 </code></pre></div>
 <h2 id="knowledge">Knowledge</h2>
-<h3 id="mmlu">MMLU</h3>
+<h3 id="life-in-the-uk">Life in the UK</h3>
+<p>This dataset was published
+<a href="https://huggingface.co/datasets/oliverkinch/life-in-the-uk-multiple-choice">here</a> was
+scraped from <a href="https://lifeintheuktestweb.co.uk/test-1/">lifeintheuktestweb.co.uk</a> and
+contains multiple choice questions about UK history, culture, and citizenship
+requirements. The website was created to help people pass the Life in the UK Test for UK
+citizenship.</p>
+<p>The original dataset consists of 1,450 samples. After processing (removing questions
+with overly short or long texts, repetitive content, and true/false questions), we have
+1,206 samples remaining. From these, we use 438 / 256 / 512 samples for our training,
+validation and test splits, respectively.</p>
+<p>Here are a few examples from the training split:</p>
+<p><div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;What is the capital of the United Kingdom?\nChoices:\na. London\nb. Manchester\nc. Birmingham\nd. Edinburgh&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;a&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;What TWO houses were confronted during the Wars of the Roses?\nChoices:\na. The House of Lancaster\nb. The House of Leicester\nc. The House of Canterbury\nd. The House of York&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;a&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;What is the name of the War Memorial located in Whitehall?\nChoices:\na. Dumfries\nb. Cenotaph\nc. Royal Crescent\nd. The White Tower&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;b&quot;</span>
+<span class="p">}</span>
+</code></pre></div></p>
+<p>When evaluating generative models, we use the following setup (see the
+<a href="/methodology">methodology</a> for more information on how these are used):</p>
+<ul>
+<li>Number of few-shot examples: 5</li>
+<li>Prefix prompt:
+  <div class="highlight"><pre><span></span><code>The following are multiple choice questions (with answers).
+</code></pre></div></li>
+<li>Base prompt template:
+  <div class="highlight"><pre><span></span><code>Question: {text}
+Options:
+a. {option_a}
+b. {option_b}
+c. {option_c}
+d. {option_d}
+Answer: {label}
+</code></pre></div></li>
+<li>Instruction-tuned prompt template:
+  <div class="highlight"><pre><span></span><code>Question: {text}
+Options:
+a. {option_a}
+b. {option_b}
+c. {option_c}
+d. {option_d}
+
+Answer the above question by replying with &#39;a&#39;, &#39;b&#39;, &#39;c&#39; or &#39;d&#39;, and nothing else.
+</code></pre></div></li>
+</ul>
+<p>You can evaluate this dataset directly as follows:</p>
+<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>life-in-the-uk
+</code></pre></div>
+<h3 id="unofficial-mmlu">Unofficial: MMLU</h3>
 <p>This dataset was published <a href="https://doi.org/10.48550/arXiv.2009.03300">in this paper</a>
 and features questions within 57 different topics, such as elementary mathematics, US
 history and law.</p>
@@ -1951,55 +2012,6 @@ Answer the above question by replying with &#39;a&#39;, &#39;b&#39;, &#39;c&#39;
 </ul>
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>arc
-</code></pre></div>
-<h3 id="unofficial-life-in-the-uk">Unofficial: Life in the UK</h3>
-<p><a href="https://huggingface.co/datasets/oliverkinch/life-in-the-uk-multiple-choice">This dataset</a> was scraped from <a href="https://lifeintheuktestweb.co.uk/test-1/">lifeintheuktestweb.co.uk</a> and contains multiple choice questions about UK history, culture, and citizenship requirements. The website was created to help people pass the Life in the UK Test for UK citizenship.</p>
-<p>The original dataset consists of 1,450 samples. After processing (removing questions with overly short or long texts, repetitive content, and true/false questions), we have 1,206 samples remaining. From these, we use 438 / 256 / 512 samples for our training, validation and test splits, respectively.</p>
-<p>Here are a few examples from the training split:</p>
-<p><div class="highlight"><pre><span></span><code><span class="p">{</span>
-<span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;What is the capital of the United Kingdom?\nChoices:\na. London\nb. Manchester\nc. Birmingham\nd. Edinburgh&quot;</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;a&quot;</span>
-<span class="p">}</span>
-</code></pre></div>
-<div class="highlight"><pre><span></span><code><span class="p">{</span>
-<span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;What TWO houses were confronted during the Wars of the Roses?\nChoices:\na. The House of Lancaster\nb. The House of Leicester\nc. The House of Canterbury\nd. The House of York&quot;</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;a&quot;</span>
-<span class="p">}</span>
-</code></pre></div>
-<div class="highlight"><pre><span></span><code><span class="p">{</span>
-<span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;What is the name of the War Memorial located in Whitehall?\nChoices:\na. Dumfries\nb. Cenotaph\nc. Royal Crescent\nd. The White Tower&quot;</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;b&quot;</span>
-<span class="p">}</span>
-</code></pre></div></p>
-<p>When evaluating generative models, we use the following setup (see the
-<a href="/methodology">methodology</a> for more information on how these are used):</p>
-<ul>
-<li>Number of few-shot examples: 5</li>
-<li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>The following are multiple choice questions (with answers).
-</code></pre></div></li>
-<li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>Question: {text}
-Options:
-a. {option_a}
-b. {option_b}
-c. {option_c}
-d. {option_d}
-Answer: {label}
-</code></pre></div></li>
-<li>Instruction-tuned prompt template:
-  <div class="highlight"><pre><span></span><code>Question: {text}
-Options:
-a. {option_a}
-b. {option_b}
-c. {option_c}
-d. {option_d}
-
-Answer the above question by replying with &#39;a&#39;, &#39;b&#39;, &#39;c&#39; or &#39;d&#39;, and nothing else.
-</code></pre></div></li>
-</ul>
-<p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>life-in-the-uk
 </code></pre></div>
 <h2 id="common-sense-reasoning">Common-sense Reasoning</h2>
 <h3 id="hellaswag">HellaSwag</h3>

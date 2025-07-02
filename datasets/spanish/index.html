@@ -1553,8 +1553,12 @@ datasets are grouped by their task - see the <a href="/tasks">task overview</a> 
 information about what these constitute.</p>
 <h2 id="sentiment-classification">Sentiment Classification</h2>
 <h3 id="sentimentheadlines-es">SentimentHeadlines-es</h3>
-<p>This dataset was published in <a href="https://arxiv.org/abs/2208.13947">this paper</a> and features political news headlines.</p>
-<p>The original full dataset consists of 1,371 /  609 / 459 samples for training, validation, and testing, respectively. We use 861 /  256 / 1,024 samples for training, validation, and testing, respectively. All our splits are subsets of the original ones. The label distribution for the splits are as follows:</p>
+<p>This dataset was published in <a href="https://doi.org/10.48550/arXiv.2208.13947">this paper</a>
+and features political news headlines.</p>
+<p>The original full dataset consists of 1,371 /  609 / 459 samples for training,
+validation, and testing, respectively. We use 861 /  256 / 1,024 samples for training,
+validation, and testing, respectively. All our splits are subsets of the original ones.
+The label distribution for the splits are as follows:</p>
 <table>
 <thead>
 <tr>
@@ -1634,7 +1638,10 @@ Clasifica el sentimiento de la reseña. Responde con &#39;positivo&#39;, &#39;ne
 </code></pre></div>
 <h2 id="named-entity-recognition">Named Entity Recognition</h2>
 <h3 id="conll-es">CoNLL-es</h3>
-<p>This dataset was published in <a href="https://aclanthology.org/W02-2024/">this paper</a> and contains 8,324 / 1,916 / 1,518 samples for training, validation, and testing, respectively. We use 1,024 / 256 / 1,024 samples for training, validation, and testing, respectively. All the new splits are subsets of the original splits.</p>
+<p>This dataset was published in <a href="https://aclanthology.org/W02-2024/">this paper</a> and
+contains 8,324 / 1,916 / 1,518 samples for training, validation, and testing,
+respectively. We use 1,024 / 256 / 1,024 samples for training, validation, and testing,
+respectively. All the new splits are subsets of the original splits.</p>
 <p>Here are a few examples from the training split:</p>
 <p><div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">    </span><span class="nt">&quot;tokens&quot;</span><span class="p">:</span><span class="w"> </span><span class="err">array(</span><span class="p">[</span><span class="s2">&quot;Todo&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;estará&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;integrado&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;,&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;la&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;relación&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;entre&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;los&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;espacios&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;y&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;entre&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;los&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;músicos&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;y&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;la&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;audiencia&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;.&quot;</span><span class="p">],</span><span class="w"> </span><span class="err">d</span><span class="kc">t</span><span class="err">ype=objec</span><span class="kc">t</span><span class="err">)</span><span class="p">,</span>
@@ -1684,15 +1691,17 @@ Identifica las entidades nombradas en la oración. Debes producir esto como un d
 </code></pre></div>
 <h2 id="linguistic-acceptability">Linguistic Acceptability</h2>
 <h3 id="scala-es">ScaLA-es</h3>
-<p>This dataset was published in <a href="https://aclanthology.org/L08-1222/">this paper</a> and was automatically created from the <a href="https://github.com/UniversalDependencies/UD_Spanish-AnCora">Spanish Universal Dependencies</a> by
-assuming that the documents in the treebank are correct, and corrupting the samples to
-create grammatically incorrect samples. The corruptions were done by either removing a
-word from a sentence, or by swapping two neighbouring words in a sentence. To ensure
-that this does indeed break the grammaticality of the sentence, a set of rules were used
-on the part-of-speech tags of the words in the sentence.</p>
-<p>The original dataset consists of 17,662 samples, from which we use 1,024 / 256 / 2,048 samples for training,
-validation and testing, respectively (so 3,328 samples used in total). These splits are
-used as-is in the framework.</p>
+<p>This dataset was published in <a href="https://aclanthology.org/L08-1222/">this paper</a> and was
+automatically created from the <a href="https://github.com/UniversalDependencies/UD_Spanish-AnCora">Spanish Universal
+Dependencies</a> by assuming
+that the documents in the treebank are correct, and corrupting the samples to create
+grammatically incorrect samples. The corruptions were done by either removing a word
+from a sentence, or by swapping two neighbouring words in a sentence. To ensure that
+this does indeed break the grammaticality of the sentence, a set of rules were used on
+the part-of-speech tags of the words in the sentence.</p>
+<p>The original dataset consists of 17,662 samples, from which we use 1,024 / 256 / 2,048
+samples for training, validation and testing, respectively (so 3,328 samples used in
+total). These splits are used as-is in the framework.</p>
 <p>Here are a few examples from the training split:</p>
 <p><div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">    </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;El fuego obligó al a el desalojo preventivo de algunas casas y del de el observatorio del de el Roque de los Muchachos, del de el Instituto de Astrofísica de Canarias.&quot;</span><span class="p">,</span>
@@ -1736,7 +1745,11 @@ used as-is in the framework.</p>
 </code></pre></div>
 <h2 id="reading-comprehension">Reading Comprehension</h2>
 <h3 id="mlqa-es">MLQA-es</h3>
-<p>This dataset was published in <a href="https://arxiv.org/abs/1910.07475">this paper</a> and contains 0 / 500 / 5,253 samples for training, validation, and testing, respectively. We have made a 1,024 / 256 / 2,048 split, where we use the 500 validation samples + 524 test samples for training. Then we split the remaining test set into validation (256 samples) and test (2048 samples).</p>
+<p>This dataset was published in <a href="https://doi.org/10.48550/arXiv.1910.07475">this paper</a>
+and contains 0 / 500 / 5,253 samples for training, validation, and testing,
+respectively. We have made a 1,024 / 256 / 2,048 split, where we use the 500 validation
+samples + 524 test samples for training. Then we split the remaining test set into
+validation (256 samples) and test (2048 samples).</p>
 <p>Here are a few examples from the training split:</p>
 <p><div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">    </span><span class="nt">&quot;context&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;En 1978, el Banco Estatal de Vietnam introdujo los primeros billetes de 5 hao, 1, 5, 10, 20 y 50 đồng fechados en 1976. En 1980 se añadieron los billetes de 2 y 10 đồng, seguidos de los de 30 y 100 đồng en 1981.&quot;</span><span class="p">,</span>
@@ -1788,8 +1801,12 @@ Pregunta: {question}
 <div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>xquad-es
 </code></pre></div>
 <h3 id="unofficial-xquad-es">Unofficial: XQuAD-es</h3>
-<p>This dataset was published in <a href="https://aclanthology.org/2020.acl-main.421/">this paper</a> and contains 1190 question-answer pairs from <a href="https://rajpurkar.github.io/SQuAD-explorer/">SQuAD v1.1</a> translated into ten languages by professional translators.</p>
-<p>The dataset is split intro 550 / 128 / 512 question-answer pairs for training, validation, and testing, respectively.</p>
+<p>This dataset was published in <a href="https://aclanthology.org/2020.acl-main.421/">this paper</a>
+and contains 1190 question-answer pairs from <a href="https://rajpurkar.github.io/SQuAD-explorer/">SQuAD
+v1.1</a> translated into ten languages by
+professional translators.</p>
+<p>The dataset is split intro 550 / 128 / 512 question-answer pairs for training,
+validation, and testing, respectively.</p>
 <p>Here are a few examples from the training split:</p>
 <p><div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">    </span><span class="nt">&quot;context&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;El Mercado del Grainger reemplazó a un mercado anterior construido originalmente en 1808 llamado el Mercado del Carnicero. El Mercado del Grainger en sí mismo, se abrió en 1835 y fue el primer mercado interior de Newcastle. En el momento de su apertura en 1835 se dijo que era uno de los mercados más grandes y hermosos de Europa. La inauguración se celebró con una gran cena a la que asistieron 2000 invitados, y la Galería de Arte Laing tiene un cuadro de este evento. Con la excepción del techo de madera, que fue destruido por un incendio en 1901 y sustituido por arcos de celosía de acero, el mercado se encuentra en su mayor parte en su estado original. La arquitectura del Mercado del Grainger, como la mayoría de las de Grainger Town, que están clasificadas en el grado I o II, fue clasificada en el grado I en 1954 por Patrimonio Inglés.&quot;</span><span class="p">,</span>
@@ -1843,8 +1860,11 @@ Pregunta: {question}
 <div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>xquad-es
 </code></pre></div>
 <h3 id="unofficial-belebele-es">Unofficial: BeleBele-es</h3>
-<p>This dataset was published in <a href="https://aclanthology.org/2024.acl-long.44/">this paper</a> and features multiple-choice reading comprehension questions across 122 languages.</p>
-<p>The original dataset contains 900 unique multiple-choice reading comprehension passages and questions. From these, we use a 256 / 64 / 580 split for training, validation and testing, respectively.</p>
+<p>This dataset was published in <a href="https://aclanthology.org/2024.acl-long.44/">this paper</a>
+and features multiple-choice reading comprehension questions across 122 languages.</p>
+<p>The original dataset contains 900 unique multiple-choice reading comprehension passages
+and questions. From these, we use a 256 / 64 / 580 split for training, validation and
+testing, respectively.</p>
 <p>Here are a few examples from the training split:</p>
 <p><div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Texto: Beba alcohol con moderación. Este afecta a cada persona de manera diferente y conocer sus propios límites es sumamente importante. La ingesta excesiva de alcohol puede causar problemas de salud crónicos como daño hepático e incluso ceguera y muerte. El peligro potencial se incrementa con el consumo de alcohol elaborado de forma ilegal. En las bebidas alcohólicas ilegales puede haber varias impurezas amenazantes, como el metanol, capaz de provocar ceguera o incluso la muerte, aun cuando se ingiera poca cantidad.\nPregunta: Según el fragmento, ¿cuál de los siguientes sentidos puede verse afectado por el consumo excesivo de alcohol?\nOpciones:\na. Audición\nb. Vista\nc. Gusto\nd. Olfato&quot;</span><span class="p">,</span>
@@ -2006,8 +2026,11 @@ Responda la pregunta anterior usando solo &#39;a&#39;, &#39;b&#39;, &#39;c&#39; 
 </code></pre></div>
 <h2 id="summarization">Summarization</h2>
 <h3 id="mlsum-es">MLSum-es</h3>
-<p>The dataset was published in <a href="https://aclanthology.org/2020.emnlp-main.647/">this paper</a> and is obtained from online newspapers.</p>
-<p>The original full dataset consists of 266,367 / 10,358 / 13,920 samples for training, validation, and testing, respectively. We use 1,024 / 256 / 2,024 samples for training, validation, and testing, respectively. All our splits are subsets of the original ones.</p>
+<p>The dataset was published in <a href="https://aclanthology.org/2020.emnlp-main.647/">this paper</a>
+and is obtained from online newspapers.</p>
+<p>The original full dataset consists of 266,367 / 10,358 / 13,920 samples for training,
+validation, and testing, respectively. We use 1,024 / 256 / 2,024 samples for training,
+validation, and testing, respectively. All our splits are subsets of the original ones.</p>
 <p>Here are a few examples from the training split:</p>
 <p><div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">    </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;El todopoderoso secretario general de los populares bajo la presidencia de José María Aznar, Francisco Álvarez-Cascos, ha desencadenado en su partido una tormenta en un vaso de agua. Amparándose en una retórica de servicio a Asturias que apenas alcanza a disimular la frustración de sus ambiciones personales, Álvarez-Cascos ha anunciado su baja en el partido de Mariano Rajoy y ha insinuado la creación de una nueva fuerza política para concurrir como candidato a la presidencia de Asturias en las elecciones autonómicas de mayo. Nada tiene de extraño que quien fuera uno de los máximos adalides del &#39;todo vale&#39; desde la oposición y también desde el Gobierno, aplique ahora esta máxima a su propio partido. Álvarez-Cascos, durante sus años de protagonismo, tensó la vida política española hasta bordear los límites de la estabilidad institucional, arremetiendo contra sus adversarios con instrumentos que despreciaban normas elementales del juego democrático. Su intento de regresar a la política activa, rechazado por la dirección nacional de su partido, no responde al deseo de ofrecer un programa diferente a los asturianos, sino al de saciar su sed de poder tras años de obligada abstinencia. En la comparecencia para explicar las razones de su marcha dejó entrever ajustes de cuentas y venganzas, pero ni una sola idea sobre la que articular el proyecto político que defiende. Es cierto que la democracia interna que Álvarez-Cascos reclama ahora en el PP fue abolida mientras fue él quien tuvo las riendas. Pero no porque sea Álvarez-Cascos su repentino y paradójico abanderado deja de ser una reclamación justa: el PP ha recurrido a la cooptación para decidir la candidatura a la presidencia de Asturias, reafirmándose en un método que aplica a todos los niveles, tanto municipal como autonómico. E, incluso, nacional, como lo atestigua la presidencia de Mariano Rajoy por una decisión personal de su antecesor en el cargo. La aventura de Álvarez-Cascos no solo tendrá dificultades para prosperar por las mezquinas razones que la impulsan, sino por el momento elegido para emprenderla. Un partido que se ve en la antesala del poder cierra filas con su dirección y no destruye sus expectativas desangrándose en luchas internas. Si el PP se encuentra en esta tesitura es por la forma de entender la política de Álvarez-Cascos, pero también por la fragilidad del liderazgo de Rajoy. Dirigentes regionales como la presidenta de la Comunidad de Madrid no dudan en aprovechar cualquier circunstancia para desafiarlo. Álvarez-Cascos ha conseguido mostrar con un único movimiento cuál es la realidad interna de un partido que se considera en vísperas de alcanzar el Gobierno. El vaso de agua donde se desarrolla la ruidosa tormenta que ha desencadenado tiene el valor de un síntoma. Estas son las fuerzas que conviven en el PP y estas son las formas con las que los populares dirimen sus diferencias. * Este artículo apareció en la edición impresa del Martes, 4 de enero de 2011&quot;</span><span class="p">,</span>

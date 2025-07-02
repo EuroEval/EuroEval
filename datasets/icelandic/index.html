@@ -1760,9 +1760,9 @@ grammatically incorrect samples. The corruptions were done by either removing a 
 from a sentence, or by swapping two neighbouring words in a sentence. To ensure that
 this does indeed break the grammaticality of the sentence, a set of rules were used on
 the part-of-speech tags of the words in the sentence.</p>
-<p>The original dataset consists of 3,535 samples, from which we use 1,024 / 256 / 2,048 samples for training,
-validation and testing, respectively (so 3,328 samples used in total). These splits are
-used as-is in the framework.</p>
+<p>The original dataset consists of 3,535 samples, from which we use 1,024 / 256 / 2,048
+samples for training, validation and testing, respectively (so 3,328 samples used in
+total). These splits are used as-is in the framework.</p>
 <p>Here are a few examples from the training split:</p>
 <p><div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Utanrrh.: Ég hef Ég hefði óskað þess að hæstv. utanríkisráðherra hefði meiri áhrif á forsætisráðherra en raun ber vitni Gripið fram í. því að hann er sem betur fer ekki að tala niður þá atvinnugrein sem tengist sjávarútveginum eins og hæstv. forsætisráðherra gerir alla jafna.&quot;</span><span class="p">,</span>
@@ -2026,8 +2026,11 @@ Spurning: {question}
 <div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>icelandic-qa
 </code></pre></div>
 <h3 id="unofficial-belebele-is">Unofficial: BeleBele-is</h3>
-<p>This dataset was published in <a href="https://aclanthology.org/2024.acl-long.44/">this paper</a> and features multiple-choice reading comprehension questions across 122 languages.</p>
-<p>The original dataset contains 900 unique multiple-choice reading comprehension passages and questions. From these, we use a 256 / 64 / 580 split for training, validation and testing, respectively.</p>
+<p>This dataset was published in <a href="https://aclanthology.org/2024.acl-long.44/">this paper</a>
+and features multiple-choice reading comprehension questions across 122 languages.</p>
+<p>The original dataset contains 900 unique multiple-choice reading comprehension passages
+and questions. From these, we use a 256 / 64 / 580 split for training, validation and
+testing, respectively.</p>
 <p>Here are a few examples from the training split:</p>
 <p><div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Texti: Í Frelsisstríðinu mynduðu ríkin þrettán veikburða ríkisstjórn – með Þjóðþingið sem eina þátt þess – skv. fyrstu stjórnarskránni. Þingið var ekki með nægar valdheimildir til að leggja á skatta, og vegna þess að ekki var neinn alríkisstjóri eða dómsvald til staðar, treysti það á yfirvöld í hverju ríki fyrir sig, sem voru oft og tíðum ósamvinnuþýð, til að framfylgja lögum þess. Það hafði heldur engar valdheimildir til að fella niður skattalög og tolla á milli ríkja. Greinarnar gerðu kröfu um samhljóða samþykki allra ríkjanna áður en hægt var að breyta þeim og ríkin sýndu ríkisvaldinu svo mikla lítilsvirðingu að fulltrúar þeirra voru oft fjarverandi.\nSpurning: Samkvæmt því sem fram kemur í kaflanum, hvaða fullyrðing á nákvæmlega við um ástand ríkisvaldsins í frelsisstríðinu?\nSvarmöguleikar:\na. Skattar voru innheimtir af þinginu og ríkisstofnunum\nb. Breytingar á stjórnarskránni þurftu samþykki þingsins\nc. Fulltrúar ríkjanna voru oft fjarverandi\nd. Hin miðlæga ríkisstjórn var mynduð í kringum tvo meginþætti&quot;</span><span class="p">,</span>
@@ -2094,7 +2097,8 @@ using the following prompt for each <code>row</code> in the original dataset:</p
     <span class="n">model</span><span class="o">=</span><span class="s2">&quot;gpt-4o&quot;</span><span class="p">,</span> <span class="n">messages</span><span class="o">=</span><span class="n">messages</span><span class="p">,</span> <span class="n">response_format</span><span class="o">=</span><span class="n">CandidateAnswers</span>
 <span class="p">)</span>
 </code></pre></div>
-<p>where <code>CandidateAnswers</code> is a Pydantic model that is used to ensure <a href="https://platform.openai.com/docs/guides/structured-outputs">structured outputs</a>.</p>
+<p>where <code>CandidateAnswers</code> is a Pydantic model that is used to ensure <a href="https://platform.openai.com/docs/guides/structured-outputs">structured
+outputs</a>.</p>
 <p>The original dataset has 2,000 samples, but only 1,994 unique questions, and the total
 length of this dataset is therefore 1,994. The split is given by 842 / 128 / 1024 for
 train, val, and test, respectively.</p>

@@ -1668,9 +1668,9 @@ create grammatically incorrect samples. The corruptions were done by either remo
 word from a sentence, or by swapping two neighbouring words in a sentence. To ensure
 that this does indeed break the grammaticality of the sentence, a set of rules were used
 on the part-of-speech tags of the words in the sentence.</p>
-<p>The original dataset consists of 15,590 samples, from which we use 1,024 / 256 / 2,048 samples for training,
-validation and testing, respectively (so 3,328 samples used in total). These splits are
-used as-is in the framework.</p>
+<p>The original dataset consists of 15,590 samples, from which we use 1,024 / 256 / 2,048
+samples for training, validation and testing, respectively (so 3,328 samples used in
+total). These splits are used as-is in the framework.</p>
 <p>Here are a few examples from the training split:</p>
 <p><div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Im In dem Sommer draußen zu sitzen ist immer wieder eine \&quot;Wonne\&quot;, so man noch einen Platz bekommt&quot;</span><span class="p">,</span>
@@ -1773,8 +1773,11 @@ Frage: {question}
 <div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>germanquad
 </code></pre></div>
 <h3 id="unofficial-belebele-de">Unofficial: BeleBele-de</h3>
-<p>This dataset was published in <a href="https://aclanthology.org/2024.acl-long.44/">this paper</a> and features multiple-choice reading comprehension questions across 122 languages.</p>
-<p>The original dataset contains 900 unique multiple-choice reading comprehension passages and questions. From these, we use a 256 / 64 / 580 split for training, validation and testing, respectively.</p>
+<p>This dataset was published in <a href="https://aclanthology.org/2024.acl-long.44/">this paper</a>
+and features multiple-choice reading comprehension questions across 122 languages.</p>
+<p>The original dataset contains 900 unique multiple-choice reading comprehension passages
+and questions. From these, we use a 256 / 64 / 580 split for training, validation and
+testing, respectively.</p>
 <p>Here are a few examples from the training split:</p>
 <p><div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Text: Es gibt viele Dinge, die Sie vor und während einer Reise berücksichtigen müssen. Erwarten Sie nicht, dass die Dinge beim Reisen genau so sind wie „zuhause“. Umgangsformen, Gesetze, Essen, Verkehr, Unterkünfte, Standards, Spache und so weiter werden zu einem gewissen Grad anders sein als dort, wo Sie leben. Dies ist etwas, was man immer im Hinterkopf behalten sollte, um Enttäuschung oder gar Abneigung über lokale Vorgehensweisen zu vermeiden.\nFragen: Was kann Reisenden dem Abschnitt nach helfen, Enttäuschung beim Besuch neuer Orte zu vermeiden?\nAntwortmöglichkeiten:\na. Ähnliche Standards wie zuhause erwarten\nb. Essen probieren, das ungewohnt ist\nc. Die gleichen Gesetze wie zuhause einhalten\nd. Nicht vorher nach Unterkünften recherchieren&quot;</span><span class="p">,</span>
