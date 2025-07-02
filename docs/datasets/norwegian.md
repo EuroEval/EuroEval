@@ -779,6 +779,76 @@ $ euroeval --model <model-id> --dataset nrk-quiz-qa
 ```
 
 
+### Idioms-no
+
+This dataset was published [here](https://doi.org/10.48550/arXiv.2504.07749) and
+consists of 3,553 Norwegian idioms and phrases that appear more than 100 times in the
+online library of the National Library of Norway.
+
+We have reformulated the dataset as a multiple-choice question format with 4 options,
+where the alternative answers have been generated using GPT-4o. Based on 3,232 samples
+(3,144 Bokmål, 88 Nynorsk) from the original dataset, we use a 928 (27 Nynorsk) / 256
+(11 Nynorsk) / 2,048 (50 Nynorsk) split for training, validation and testing,
+respectively.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Complete the Nynorsk idiom:\nalle gode ting er _____\n\nSvaralternativer::\na. søte\nb. tre\nc. fire\nd. vennlege",
+  "label": "b"
+}
+```
+```json
+{
+  "text": "Complete the Bokmål idiom:\ndet er ikke bare , _____\n\nSvaralternativer::\na. moro\nb. bare\nc. lett\nd. enkelt",
+  "label": "b",
+}
+```
+```json
+{
+  "text": "Complete the Bokmål idiom:\ndet får stå sin _____\n\nSvaralternativer::\na. prøve\nb. vegg\nc. sak\nd. greie",
+  "label": "a"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+  ```
+  Følgende er flervalgsspørsmål (med svar).
+  ```
+- Base prompt template:
+  ```
+  Spørsmål: {text}
+  Svaralternativer:
+  a. {option_a}
+  b. {option_b}
+  c. {option_c}
+  d. {option_d}
+  Svar: {label}
+  ```
+- Instruction-tuned prompt template:
+  ```
+  Spørsmål: {text}
+  Svaralternativer:
+  a. {option_a}
+  b. {option_b}
+  c. {option_c}
+  d. {option_d}
+
+  Besvar følgende spørsmål med 'a', 'b', 'c' eller 'd', og ikke noe annet.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+$ euroeval --model <model-id> --dataset idioms-no
+```
+
+
 ### Unofficial: MMLU-no
 
 This dataset is a machine translated version of the English [MMLU
@@ -918,70 +988,6 @@ You can evaluate this dataset directly as follows:
 
 ```bash
 $ euroeval --model <model-id> --dataset arc-no
-```
-
-### Unofficial: Idioms-no
-
-[This dataset](https://huggingface.co/datasets/Sprakbanken/Norwegian_idioms) consists of 3553 Norwegian idioms and phrases that appear more than 100 times in the online library of the National Library of Norway.
-
-We have reformulated the dataset as a multiple-choice question format with 4 options, where the alternative answers have been generated using GPT-4o.
-Based on 3,232 samples (3,144 Bokmål, 88 Nynorsk) from the original dataset, we use a 928 (27 Nynorsk) / 256 (11 Nynorsk) / 2,048 (50 Nynorsk) split for training, validation and testing, respectively.
-
-Here are a few examples from the training split:
-
-```json
-{
-  "text": "Complete the Nynorsk idiom:\nalle gode ting er _____\n\nSvaralternativer::\na. søte\nb. tre\nc. fire\nd. vennlege",
-  "label": "b"
-}
-```
-```json
-{
-  "text": "Complete the Bokmål idiom:\ndet er ikke bare , _____\n\nSvaralternativer::\na. moro\nb. bare\nc. lett\nd. enkelt",
-  "label": "b",
-}
-```
-```json
-{
-  "text": "Complete the Bokmål idiom:\ndet får stå sin _____\n\nSvaralternativer::\na. prøve\nb. vegg\nc. sak\nd. greie",
-  "label": "a"
-}
-```
-
-When evaluating generative models, we use the following setup (see the
-[methodology](/methodology) for more information on how these are used):
-
-- Number of few-shot examples: 5
-- Prefix prompt:
-  ```
-  Følgende er flervalgsspørsmål (med svar).
-  ```
-- Base prompt template:
-  ```
-  Spørsmål: {text}
-  Svaralternativer:
-  a. {option_a}
-  b. {option_b}
-  c. {option_c}
-  d. {option_d}
-  Svar: {label}
-  ```
-- Instruction-tuned prompt template:
-  ```
-  Spørsmål: {text}
-  Svaralternativer:
-  a. {option_a}
-  b. {option_b}
-  c. {option_c}
-  d. {option_d}
-
-  Besvar følgende spørsmål med 'a', 'b', 'c' eller 'd', og ikke noe annet.
-  ```
-
-You can evaluate this dataset directly as follows:
-
-```bash
-$ euroeval --model <model-id> --dataset idioms-no
 ```
 
 
