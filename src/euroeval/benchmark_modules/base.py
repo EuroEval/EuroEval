@@ -200,7 +200,9 @@ class BenchmarkModule(ABC):
                 )
             case TaskGroup.TEXT_TO_TEXT:
                 return partial(
-                    text_to_text.compute_metrics, dataset_config=self.dataset_config
+                    text_to_text.compute_metrics,
+                    dataset_config=self.dataset_config,
+                    benchmark_config=self.benchmark_config,
                 )
             case TaskGroup.TOKEN_CLASSIFICATION:
                 return partial(
