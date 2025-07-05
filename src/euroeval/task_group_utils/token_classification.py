@@ -7,7 +7,6 @@ from copy import deepcopy
 
 import demjson3
 import numpy as np
-from evaluate import EvaluationModule
 from transformers.tokenization_utils import PreTrainedTokenizer
 
 from ..data_models import DatasetConfig, GenerativeModelOutput
@@ -130,15 +129,14 @@ def compute_metrics(
         all(ner_tag == "o" for ner_tag in label_list) for label_list in labels
     )
     if predictions_all_zero and labels_all_zero:
-        results = dict(overall_f1=1.0)
+        micro_f1_score: float | None = 1.0
     else:
         metric = next(
             metric
             for metric in dataset_config.task.metrics
             if metric.name == "micro_f1"
         )
-        assert isinstance(metric, EvaluationModule)
-        results = metric.compute(predictions=predictions, references=labels)
+        micro_f1_score = metric(predictions=predictions, references=list(labels))
 
     # Compute the metrics without MISC tags
     # We manually set the F1 metric to be 100% if both the labels and the models
@@ -152,25 +150,22 @@ def compute_metrics(
         all(ner_tag == "o" for ner_tag in label_list) for label_list in labels_no_misc
     )
     if predictions_no_misc_all_zero and labels_no_misc_all_zero:
-        results_no_misc = dict(overall_f1=1.0)
+        micro_f1_no_misc_score: float | None = 1.0
     else:
         metric = next(
             metric
             for metric in dataset_config.task.metrics
             if metric.name == "micro_f1_no_misc"
         )
-        assert isinstance(metric, EvaluationModule)
-        results_no_misc = metric.compute(
+        micro_f1_no_misc_score = metric(
             predictions=predictions_no_misc, references=labels_no_misc
         )
 
     # Raise error if the metrics are invalid
-    if results is None or results_no_misc is None:
+    if micro_f1_score is None or micro_f1_no_misc_score is None:
         raise InvalidBenchmark("The predictions and labels are not of the same length.")
 
-    return dict(
-        micro_f1_no_misc=results_no_misc["overall_f1"], micro_f1=results["overall_f1"]
-    )
+    return dict(micro_f1_no_misc=micro_f1_no_misc_score, micro_f1=micro_f1_score)
 
 
 def extract_labels_from_generation(

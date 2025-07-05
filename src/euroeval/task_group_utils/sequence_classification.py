@@ -6,7 +6,6 @@ import typing as t
 
 import Levenshtein
 import numpy as np
-from evaluate import EvaluationModule
 
 from ..data_models import GenerativeModelOutput
 from ..exceptions import InvalidBenchmark
@@ -75,7 +74,6 @@ def compute_metrics(
 
     results: dict[str, float] = dict()
     for metric in dataset_config.task.metrics:
-        assert isinstance(metric, EvaluationModule)
         score: float | None = metric(predictions=predictions, references=label_ids)
 
         # The metric returns None if we are running on multi-GPU and the current

@@ -6,7 +6,6 @@ import typing as t
 from collections import defaultdict
 
 import numpy as np
-from evaluate import EvaluationModule
 from transformers.tokenization_utils_base import PreTrainedTokenizerBase
 from transformers.trainer import Trainer
 
@@ -182,7 +181,6 @@ def compute_metrics(
 
     results: dict[str, float] = dict()
     for metric in dataset_config.task.metrics:
-        assert isinstance(metric, EvaluationModule)
         score: float | None = metric(predictions=predictions, references=labels)
 
         # The metric returns None if we are running on multi-GPU and the current
