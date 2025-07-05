@@ -413,7 +413,7 @@ class Fluency(BaseModel):
             The fluency rating, an integer between 1 and 5.
     """
 
-    fluency: t.Annotated[int, Field(gt=1, le=5)]
+    fluency: t.Annotated[int, Field(ge=1, le=5)]
 
 
 # Example LLM-as-a-judge metric, to measure the fluency of the LLM output
