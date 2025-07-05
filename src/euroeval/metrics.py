@@ -442,7 +442,7 @@ fluency_metric = LLMAsAJudgeMetric(
     "Text: {prediction!r}\n\n"
     "Output your rating as a JSON object with a single key 'fluency'.",
     response_format=Fluency,
-    scoring_fn=lambda output: output.fluency,
+    scoring_fn=lambda output: (output.fluency - 1) / 4.0,
 )
 
 speed_metric = SpeedMetric(name="speed", pretty_name="Tokens per second")
