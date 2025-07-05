@@ -24,7 +24,6 @@ from huggingface_hub.hf_api import ModelInfo as HfApiModelInfo
 from peft import PeftConfig
 from requests.exceptions import RequestException
 from torch import nn
-from transformers.configuration_utils import PretrainedConfig
 from transformers.data.data_collator import (
     DataCollatorForTokenClassification,
     DataCollatorWithPadding,
@@ -33,8 +32,6 @@ from transformers.modelcard import TASK_MAPPING
 from transformers.modeling_utils import PreTrainedModel
 from transformers.models.auto.configuration_auto import AutoConfig
 from transformers.models.auto.tokenization_auto import AutoTokenizer
-from transformers.tokenization_utils import PreTrainedTokenizer
-from transformers.tokenization_utils_base import BatchEncoding
 from transformers.trainer import Trainer
 from urllib3.exceptions import RequestError
 
@@ -45,7 +42,7 @@ from ..constants import (
     MAX_CONTEXT_LENGTH,
     MERGE_TAGS,
 )
-from ..data_models import BenchmarkConfig, DatasetConfig, HFModelInfo, ModelConfig, Task
+from ..data_models import HFModelInfo, ModelConfig
 from ..enums import (
     BatchingPreference,
     GenerativeType,
@@ -67,7 +64,6 @@ from ..task_group_utils import (
     token_classification,
 )
 from ..tokenization_utils import get_bos_token, get_eos_token
-from ..types import ExtractLabelsFunction
 from ..utils import (
     block_terminal_output,
     create_model_cache_dir,
@@ -76,6 +72,14 @@ from ..utils import (
     log_once,
 )
 from .base import BenchmarkModule
+
+if t.TYPE_CHECKING:
+    from transformers.configuration_utils import PretrainedConfig
+    from transformers.tokenization_utils import PreTrainedTokenizer
+    from transformers.tokenization_utils_base import BatchEncoding
+
+    from ..data_models import BenchmarkConfig, DatasetConfig, Task
+    from ..types import ExtractLabelsFunction
 
 logger = logging.getLogger("euroeval")
 
@@ -89,9 +93,9 @@ class HuggingFaceEncoderModel(BenchmarkModule):
 
     def __init__(
         self,
-        model_config: ModelConfig,
-        dataset_config: DatasetConfig,
-        benchmark_config: BenchmarkConfig,
+        model_config: "ModelConfig",
+        dataset_config: "DatasetConfig",
+        benchmark_config: "BenchmarkConfig",
     ) -> None:
         """Initialise the model.
 
@@ -108,8 +112,8 @@ class HuggingFaceEncoderModel(BenchmarkModule):
             dataset_config=dataset_config,
             benchmark_config=benchmark_config,
         )
-        self._model: PreTrainedModel = model
-        self._tokenizer: PreTrainedTokenizer = tokenizer
+        self._model: "PreTrainedModel" = model
+        self._tokenizer: "PreTrainedTokenizer" = tokenizer
 
         self._model, self._tokenizer = align_model_and_tokenizer(
             model=self._model,
@@ -291,7 +295,7 @@ class HuggingFaceEncoderModel(BenchmarkModule):
         return None
 
     @property
-    def extract_labels_from_generation(self) -> ExtractLabelsFunction:
+    def extract_labels_from_generation(self) -> "ExtractLabelsFunction":
         """The function used to extract the labels from the generated output.
 
         Returns:
@@ -328,7 +332,7 @@ class HuggingFaceEncoderModel(BenchmarkModule):
                 )
 
     def prepare_dataset(
-        self, dataset: DatasetDict, task: Task, itr_idx: int
+        self, dataset: DatasetDict, task: "Task", itr_idx: int
     ) -> DatasetDict:
         """Prepare the dataset for the model.
 
@@ -361,7 +365,7 @@ class HuggingFaceEncoderModel(BenchmarkModule):
                     )
             return examples
 
-        def tokenise(examples: dict) -> BatchEncoding:
+        def tokenise(examples: dict) -> "BatchEncoding":
             return self._tokenizer(text=examples["text"], truncation=True, padding=True)
 
         match task.task_group:
@@ -481,7 +485,7 @@ class HuggingFaceEncoderModel(BenchmarkModule):
 
     @classmethod
     def model_exists(
-        cls, model_id: str, benchmark_config: BenchmarkConfig
+        cls, model_id: str, benchmark_config: "BenchmarkConfig"
     ) -> bool | NeedsExtraInstalled | NeedsEnvironmentVariable:
         """Check if a model exists.
 
@@ -508,8 +512,8 @@ class HuggingFaceEncoderModel(BenchmarkModule):
 
     @classmethod
     def get_model_config(
-        cls, model_id: str, benchmark_config: BenchmarkConfig
-    ) -> ModelConfig:
+        cls, model_id: str, benchmark_config: "BenchmarkConfig"
+    ) -> "ModelConfig":
         """Fetch the model configuration.
 
         Args:
@@ -556,10 +560,10 @@ class HuggingFaceEncoderModel(BenchmarkModule):
 
 
 def load_model_and_tokenizer(
-    model_config: ModelConfig,
-    dataset_config: DatasetConfig,
-    benchmark_config: BenchmarkConfig,
-) -> tuple[PreTrainedModel, PreTrainedTokenizer]:
+    model_config: "ModelConfig",
+    dataset_config: "DatasetConfig",
+    benchmark_config: "BenchmarkConfig",
+) -> tuple["PreTrainedModel", "PreTrainedTokenizer"]:
     """Load the model and tokenizer.
 
     Args:
@@ -618,7 +622,7 @@ def load_model_and_tokenizer(
     # These are used when a timeout occurs
     attempts_left = 5
 
-    model: PreTrainedModel | None = None
+    model: "PreTrainedModel | None" = None
     while True:
         # Get the model class associated with the task group
         model_cls_or_none: t.Type["PreTrainedModel"] | None = get_class_by_name(
@@ -703,8 +707,8 @@ def load_model_and_tokenizer(
 
 
 def get_model_repo_info(
-    model_id: str, revision: str, benchmark_config: BenchmarkConfig
-) -> HFModelInfo | None:
+    model_id: str, revision: str, benchmark_config: "BenchmarkConfig"
+) -> "HFModelInfo | None":
     """Get the information about the model from the HF Hub or a local directory.
 
     Args:

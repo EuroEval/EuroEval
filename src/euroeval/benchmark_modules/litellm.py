@@ -11,7 +11,6 @@ from time import sleep
 
 import litellm
 import ollama
-from datasets import DatasetDict
 from huggingface_hub import HfApi
 from huggingface_hub.errors import (
     HFValidationError,
@@ -31,12 +30,11 @@ from litellm.exceptions import (
 )
 from litellm.llms.vertex_ai.common_utils import VertexAIError
 from litellm.router import Router
-from litellm.types.utils import ChoiceLogprobs, ModelResponse
+from litellm.types.utils import ChoiceLogprobs
 from pydantic import conlist, create_model
 from requests.exceptions import RequestException
 from tqdm.asyncio import tqdm as tqdm_async
 from tqdm.auto import tqdm
-from transformers.trainer import Trainer
 
 from ..constants import MAX_LOGPROBS, REASONING_MAX_TOKENS, TASKS_USING_JSON
 from ..data_models import (
@@ -77,6 +75,11 @@ from ..utils import (
 )
 from .base import BenchmarkModule
 from .hf import HuggingFaceEncoderModel, load_hf_model_config, load_tokenizer
+
+if t.TYPE_CHECKING:
+    from datasets import DatasetDict
+    from litellm.types.utils import ModelResponse
+    from transformers.trainer import Trainer
 
 logger = logging.getLogger("euroeval")
 
@@ -381,7 +384,7 @@ class LiteLLMModel(BenchmarkModule):
         # Drop generation kwargs that are not supported by the model
         litellm.drop_params = True
 
-        all_responses: dict[int, ModelResponse] = {}
+        all_responses: dict[int, "ModelResponse"] = {}
         conversations_to_run: list[tuple[int, list[litellm.AllMessageValues]]] = list(
             enumerate(conversations)
         )
@@ -581,7 +584,7 @@ class LiteLLMModel(BenchmarkModule):
         model_id: str,
         conversations: list[list[litellm.AllMessageValues]],
         **generation_kwargs,
-    ) -> tuple[list[tuple[int, ModelResponse]], list[tuple[int, Exception]]]:
+    ) -> tuple[list[tuple[int, "ModelResponse"]], list[tuple[int, Exception]]]:
         """Generate outputs from the model asynchronously.
 
         Args:
@@ -641,7 +644,7 @@ class LiteLLMModel(BenchmarkModule):
 
     @staticmethod
     def _create_model_output(
-        model_responses: list[ModelResponse], model_id: str
+        model_responses: list["ModelResponse"], model_id: str
     ) -> GenerativeModelOutput:
         """Create a GenerativeModelOutput object from a list of ModelResponse objects.
 
@@ -1123,8 +1126,8 @@ class LiteLLMModel(BenchmarkModule):
         )
 
     def prepare_dataset(
-        self, dataset: DatasetDict, task: Task, itr_idx: int
-    ) -> DatasetDict:
+        self, dataset: "DatasetDict", task: Task, itr_idx: int
+    ) -> "DatasetDict":
         """Prepare the dataset for the model.
 
         This includes things like tokenisation.

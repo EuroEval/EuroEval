@@ -1,12 +1,16 @@
 """Callbacks for the Hugging Face Trainer."""
 
 import sys
+import typing as t
 from collections.abc import Sized
 
-from torch.utils.data import DataLoader
 from tqdm.auto import tqdm
-from transformers.trainer_callback import ProgressCallback, TrainerControl, TrainerState
-from transformers.training_args import TrainingArguments
+from transformers.trainer_callback import ProgressCallback
+
+if t.TYPE_CHECKING:
+    from torch.utils.data import DataLoader
+    from transformers.trainer_callback import TrainerControl, TrainerState
+    from transformers.training_args import TrainingArguments
 
 
 class NeverLeaveProgressCallback(ProgressCallback):
@@ -20,9 +24,9 @@ class NeverLeaveProgressCallback(ProgressCallback):
 
     def on_train_begin(
         self,
-        args: TrainingArguments,
-        state: TrainerState,
-        control: TrainerControl,
+        args: "TrainingArguments",
+        state: "TrainerState",
+        control: "TrainerControl",
         **kwargs: str,
     ) -> None:
         """Callback actions when training begins."""
@@ -38,9 +42,9 @@ class NeverLeaveProgressCallback(ProgressCallback):
 
     def on_step_end(
         self,
-        args: TrainingArguments,
-        state: TrainerState,
-        control: TrainerControl,
+        args: "TrainingArguments",
+        state: "TrainerState",
+        control: "TrainerControl",
         **kwargs: str,
     ) -> None:
         """Callback actions when a training step ends."""
@@ -50,10 +54,10 @@ class NeverLeaveProgressCallback(ProgressCallback):
 
     def on_prediction_step(
         self,
-        args: TrainingArguments,
-        state: TrainerState,
-        control: TrainerControl,
-        eval_dataloader: DataLoader | None = None,
+        args: "TrainingArguments",
+        state: "TrainerState",
+        control: "TrainerControl",
+        eval_dataloader: "DataLoader | None" = None,
         **kwargs: str,
     ) -> None:
         """Callback actions when a prediction step ends."""

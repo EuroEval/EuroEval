@@ -1,11 +1,10 @@
 """Freshly initialised encoder models."""
 
 import os
+import typing as t
 from functools import cached_property
 from json import JSONDecodeError
 
-from transformers.configuration_utils import PretrainedConfig
-from transformers.modeling_utils import PreTrainedModel
 from transformers.models.auto.configuration_auto import AutoConfig
 from transformers.models.auto.tokenization_auto import AutoTokenizer
 from transformers.models.electra import (
@@ -18,9 +17,8 @@ from transformers.models.xlm_roberta import (
     XLMRobertaForSequenceClassification,
     XLMRobertaForTokenClassification,
 )
-from transformers.tokenization_utils import PreTrainedTokenizer
 
-from ..data_models import BenchmarkConfig, DatasetConfig, ModelConfig
+from ..data_models import ModelConfig
 from ..enums import InferenceBackend, ModelType, TaskGroup
 from ..exceptions import (
     InvalidBenchmark,
@@ -35,6 +33,13 @@ from .hf import (
     setup_model_for_question_answering,
 )
 
+if t.TYPE_CHECKING:
+    from transformers.configuration_utils import PretrainedConfig
+    from transformers.modeling_utils import PreTrainedModel
+    from transformers.tokenization_utils import PreTrainedTokenizer
+
+    from ..data_models import BenchmarkConfig, DatasetConfig
+
 
 class FreshEncoderModel(HuggingFaceEncoderModel):
     """A freshly initialised encoder model."""
@@ -43,9 +48,9 @@ class FreshEncoderModel(HuggingFaceEncoderModel):
 
     def __init__(
         self,
-        model_config: ModelConfig,
-        dataset_config: DatasetConfig,
-        benchmark_config: BenchmarkConfig,
+        model_config: "ModelConfig",
+        dataset_config: "DatasetConfig",
+        benchmark_config: "BenchmarkConfig",
     ) -> None:
         """Initialise the model.
 
@@ -67,8 +72,8 @@ class FreshEncoderModel(HuggingFaceEncoderModel):
             benchmark_config=benchmark_config,
             model_max_length=self.model_max_length,
         )
-        self._model: PreTrainedModel = model
-        self._tokenizer: PreTrainedTokenizer = tokenizer
+        self._model: "PreTrainedModel" = model
+        self._tokenizer: "PreTrainedTokenizer" = tokenizer
 
         self._model, self._tokenizer = align_model_and_tokenizer(
             model=self._model,
@@ -141,7 +146,7 @@ class FreshEncoderModel(HuggingFaceEncoderModel):
 
     @classmethod
     def model_exists(
-        cls, model_id: str, benchmark_config: BenchmarkConfig
+        cls, model_id: str, benchmark_config: "BenchmarkConfig"
     ) -> bool | NeedsExtraInstalled | NeedsEnvironmentVariable:
         """Check if a model exists.
 
@@ -160,8 +165,8 @@ class FreshEncoderModel(HuggingFaceEncoderModel):
 
     @classmethod
     def get_model_config(
-        cls, model_id: str, benchmark_config: BenchmarkConfig
-    ) -> ModelConfig:
+        cls, model_id: str, benchmark_config: "BenchmarkConfig"
+    ) -> "ModelConfig":
         """Fetch the model configuration.
 
         Args:
@@ -190,11 +195,11 @@ class FreshEncoderModel(HuggingFaceEncoderModel):
 
 
 def load_model_and_tokenizer(
-    model_config: ModelConfig,
-    dataset_config: DatasetConfig,
-    benchmark_config: BenchmarkConfig,
+    model_config: "ModelConfig",
+    dataset_config: "DatasetConfig",
+    benchmark_config: "BenchmarkConfig",
     model_max_length: int,
-) -> tuple[PreTrainedModel, PreTrainedTokenizer]:
+) -> "tuple[PreTrainedModel, PreTrainedTokenizer]":
     """Load the model and tokenizer.
 
     Args:

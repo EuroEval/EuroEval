@@ -5,7 +5,6 @@ import sys
 import typing as t
 
 import torch
-from datasets import DatasetDict
 from tqdm.auto import tqdm
 from transformers.trainer_callback import (
     EarlyStoppingCallback,
@@ -15,7 +14,6 @@ from transformers.trainer_callback import (
 from transformers.trainer_utils import IntervalStrategy
 from transformers.training_args import OptimizerNames, TrainingArguments
 
-from .benchmark_modules import BenchmarkModule
 from .callbacks import NeverLeaveProgressCallback
 from .enums import DataType
 from .exceptions import InvalidBenchmark, NaNValueInModelOutput
@@ -28,14 +26,17 @@ from .utils import (
 )
 
 if t.TYPE_CHECKING:
+    from datasets import DatasetDict
+
+    from .benchmark_modules import BenchmarkModule
     from .data_models import BenchmarkConfig, DatasetConfig, ModelConfig
 
 logger = logging.getLogger("euroeval")
 
 
 def finetune(
-    model: BenchmarkModule,
-    datasets: list[DatasetDict],
+    model: "BenchmarkModule",
+    datasets: list["DatasetDict"],
     model_config: "ModelConfig",
     dataset_config: "DatasetConfig",
     benchmark_config: "BenchmarkConfig",
@@ -155,9 +156,9 @@ def finetune(
 
 
 def finetune_single_iteration(
-    model: BenchmarkModule | None,
-    dataset: DatasetDict,
-    training_args: TrainingArguments,
+    model: "BenchmarkModule | None",
+    dataset: "DatasetDict",
+    training_args: "TrainingArguments",
     model_config: "ModelConfig",
     dataset_config: "DatasetConfig",
     benchmark_config: "BenchmarkConfig",
@@ -254,7 +255,7 @@ def get_training_args(
     iteration_idx: int,
     dtype: DataType,
     batch_size: int | None = None,
-) -> TrainingArguments:
+) -> "TrainingArguments":
     """Get the training arguments for the current iteration.
 
     Args:

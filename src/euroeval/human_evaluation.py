@@ -3,6 +3,7 @@
 import importlib.util
 import json
 import logging
+import typing as t
 from collections import defaultdict
 from functools import partial
 from pathlib import Path
@@ -24,12 +25,14 @@ from .task_group_utils import (
     token_classification,
 )
 from .tasks import NER
-from .types import ComputeMetricsFunction, ExtractLabelsFunction, ScoreDict
 from .utils import enforce_reproducibility
 
 if importlib.util.find_spec("gradio") is not None:
     import gradio as gr
     from gradio.components import HTML, Button, Dropdown, Markdown, Textbox
+
+if t.TYPE_CHECKING:
+    from .types import ComputeMetricsFunction, ExtractLabelsFunction, ScoreDict
 
 logger = logging.getLogger("euroeval")
 
@@ -86,8 +89,8 @@ class HumanEvaluator:
             }
         )
 
-        self.extract_labels_from_generation: ExtractLabelsFunction
-        self.compute_metrics: ComputeMetricsFunction
+        self.extract_labels_from_generation: "ExtractLabelsFunction"
+        self.compute_metrics: "ComputeMetricsFunction"
 
     def create_app(self) -> "gr.Blocks":
         """Create the Gradio app for human evaluation.
@@ -638,7 +641,7 @@ class HumanEvaluator:
         # only a single iteration, so the results from the current annotation should be
         # added to the previous results.
         results_path = Path.cwd() / "euroeval_benchmark_results.jsonl"
-        results: ScoreDict = defaultdict(list)
+        results: "ScoreDict" = defaultdict(list)
         if results_path.exists():
             all_results = [
                 json.loads(line.strip())

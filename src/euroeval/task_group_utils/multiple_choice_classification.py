@@ -7,14 +7,15 @@ import typing as t
 from collections import defaultdict
 
 import numpy as np
-from datasets import Dataset
-from transformers.tokenization_utils import PreTrainedTokenizer
-from transformers.tokenization_utils_base import BatchEncoding
 from transformers.trainer import Trainer
 
 from ..exceptions import InvalidBenchmark
 
 if t.TYPE_CHECKING:
+    from datasets import Dataset
+    from transformers.tokenization_utils import PreTrainedTokenizer
+    from transformers.tokenization_utils_base import BatchEncoding
+
     from ..types import Labels, Predictions
 
 logger = logging.getLogger("euroeval")

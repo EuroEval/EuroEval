@@ -10,17 +10,8 @@ from functools import cached_property, partial
 from datasets import DatasetDict
 from torch import nn
 from tqdm.auto import tqdm
-from transformers.tokenization_utils import PreTrainedTokenizer
-from transformers.trainer import Trainer
 
-from ..data_models import (
-    BenchmarkConfig,
-    DatasetConfig,
-    GenerativeModelOutput,
-    ModelConfig,
-    Task,
-)
-from ..enums import BatchingPreference, GenerativeType, TaskGroup
+from ..enums import TaskGroup
 from ..exceptions import NeedsEnvironmentVariable, NeedsExtraInstalled
 from ..task_group_utils import (
     question_answering,
@@ -28,8 +19,21 @@ from ..task_group_utils import (
     text_to_text,
     token_classification,
 )
-from ..types import ComputeMetricsFunction, ExtractLabelsFunction
 from ..utils import log_once
+
+if t.TYPE_CHECKING:
+    from transformers.tokenization_utils import PreTrainedTokenizer
+    from transformers.trainer import Trainer
+
+    from ..data_models import (
+        BenchmarkConfig,
+        DatasetConfig,
+        GenerativeModelOutput,
+        ModelConfig,
+        Task,
+    )
+    from ..enums import BatchingPreference, GenerativeType
+    from ..types import ComputeMetricsFunction, ExtractLabelsFunction
 
 logger = logging.getLogger("euroeval")
 
@@ -49,14 +53,14 @@ class BenchmarkModule(ABC):
     """
 
     fresh_model: bool
-    batching_preference: BatchingPreference
+    batching_preference: "BatchingPreference"
     high_priority: bool
 
     def __init__(
         self,
-        model_config: ModelConfig,
-        dataset_config: DatasetConfig,
-        benchmark_config: BenchmarkConfig,
+        model_config: "ModelConfig",
+        dataset_config: "DatasetConfig",
+        benchmark_config: "BenchmarkConfig",
     ) -> None:
         """Initialise the benchmark module.
 
@@ -138,7 +142,7 @@ class BenchmarkModule(ABC):
 
     @property
     @abstractmethod
-    def generative_type(self) -> GenerativeType | None:
+    def generative_type(self) -> "GenerativeType | None":
         """Get the generative type of the model.
 
         Returns:
@@ -177,7 +181,7 @@ class BenchmarkModule(ABC):
         ...
 
     @property
-    def compute_metrics(self) -> ComputeMetricsFunction:
+    def compute_metrics(self) -> "ComputeMetricsFunction":
         """The function used to compute the metrics.
 
         Returns:
@@ -216,7 +220,7 @@ class BenchmarkModule(ABC):
 
     @property
     @abstractmethod
-    def extract_labels_from_generation(self) -> ExtractLabelsFunction:
+    def extract_labels_from_generation(self) -> "ExtractLabelsFunction":
         """The function used to extract the labels from the generated output.
 
         Returns:
@@ -235,7 +239,7 @@ class BenchmarkModule(ABC):
         ...
 
     def prepare_datasets(
-        self, datasets: list[DatasetDict], task: Task
+        self, datasets: list[DatasetDict], task: "Task"
     ) -> list[DatasetDict]:
         """Prepare the datasets for the model.
 
@@ -277,7 +281,7 @@ class BenchmarkModule(ABC):
 
     @abstractmethod
     def prepare_dataset(
-        self, dataset: DatasetDict, task: Task, itr_idx: int
+        self, dataset: DatasetDict, task: "Task", itr_idx: int
     ) -> DatasetDict:
         """Prepare the dataset for the model.
 
@@ -296,7 +300,7 @@ class BenchmarkModule(ABC):
         """
         ...
 
-    def generate(self, inputs: dict) -> GenerativeModelOutput:
+    def generate(self, inputs: dict) -> "GenerativeModelOutput":
         """Generate outputs from the model.
 
         Args:
@@ -314,7 +318,7 @@ class BenchmarkModule(ABC):
     @classmethod
     @abstractmethod
     def model_exists(
-        cls, model_id: str, benchmark_config: BenchmarkConfig
+        cls, model_id: str, benchmark_config: "BenchmarkConfig"
     ) -> bool | NeedsExtraInstalled | NeedsEnvironmentVariable:
         """Check if a model exists.
 
@@ -333,8 +337,8 @@ class BenchmarkModule(ABC):
     @classmethod
     @abstractmethod
     def get_model_config(
-        cls, model_id: str, benchmark_config: BenchmarkConfig
-    ) -> ModelConfig:
+        cls, model_id: str, benchmark_config: "BenchmarkConfig"
+    ) -> "ModelConfig":
         """Fetch the model configuration.
 
         Args:

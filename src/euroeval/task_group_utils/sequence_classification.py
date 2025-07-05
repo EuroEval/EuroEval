@@ -7,14 +7,13 @@ import typing as t
 import Levenshtein
 import numpy as np
 
-from ..data_models import GenerativeModelOutput
 from ..exceptions import InvalidBenchmark
 from ..utils import log_once, raise_if_model_output_contains_nan_values
 
 if t.TYPE_CHECKING:
     from transformers.trainer_utils import EvalPrediction
 
-    from ..data_models import DatasetConfig
+    from ..data_models import DatasetConfig, GenerativeModelOutput
     from ..types import Labels, Predictions
 
 
@@ -86,7 +85,7 @@ def compute_metrics(
 
 def extract_labels_from_generation(
     input_batch: dict[str, list],
-    model_output: GenerativeModelOutput,
+    model_output: "GenerativeModelOutput",
     dataset_config: "DatasetConfig",
     first_label_token_mapping: dict[str, str] | bool,
 ) -> list[str]:

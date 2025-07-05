@@ -6,10 +6,8 @@ import typing as t
 from pathlib import Path
 
 import more_itertools as mit
-from datasets import Dataset, DatasetDict
 from tqdm.auto import tqdm
 
-from .benchmark_modules import BenchmarkModule
 from .enums import BatchingPreference, TaskGroup
 from .exceptions import InvalidBenchmark
 from .model_cache import (
@@ -20,6 +18,9 @@ from .model_cache import (
 from .utils import clear_memory
 
 if t.TYPE_CHECKING:
+    from datasets import Dataset, DatasetDict
+
+    from .benchmark_modules import BenchmarkModule
     from .data_models import (
         BenchmarkConfig,
         DatasetConfig,
@@ -32,7 +33,7 @@ logger = logging.getLogger("euroeval")
 
 def generate(
     model: "BenchmarkModule",
-    datasets: list[DatasetDict],
+    datasets: list["DatasetDict"],
     model_config: "ModelConfig",
     dataset_config: "DatasetConfig",
     benchmark_config: "BenchmarkConfig",
@@ -100,7 +101,7 @@ def generate(
 
 
 def generate_single_iteration(
-    dataset: Dataset,
+    dataset: "Dataset",
     model: "BenchmarkModule",
     dataset_config: "DatasetConfig",
     benchmark_config: "BenchmarkConfig",

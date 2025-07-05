@@ -9,7 +9,6 @@ import numpy as np
 from transformers.tokenization_utils_base import PreTrainedTokenizerBase
 from transformers.trainer import Trainer
 
-from ..data_models import DatasetConfig, GenerativeModelOutput
 from ..exceptions import InvalidBenchmark
 from ..tokenization_utils import get_special_token_metadata
 from ..utils import raise_if_model_output_contains_nan_values
@@ -24,6 +23,7 @@ if t.TYPE_CHECKING:
     from transformers.trainer_utils import EvalPrediction
     from transformers.training_args import TrainingArguments
 
+    from ..data_models import DatasetConfig, GenerativeModelOutput
     from ..types import Labels, Predictions
 
 logger = logging.getLogger("euroeval")

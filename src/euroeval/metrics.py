@@ -4,9 +4,11 @@ import abc
 import typing as t
 
 import evaluate
-from evaluate import EvaluationModule
 
 from .utils import HiddenPrints
+
+if t.TYPE_CHECKING:
+    from evaluate import EvaluationModule
 
 
 class Metric(abc.ABC):
@@ -113,7 +115,7 @@ class HuggingFaceMetric(Metric):
         self.compute_kwargs: dict[str, t.Any] = (
             dict() if compute_kwargs is None else compute_kwargs
         )
-        self.metric: EvaluationModule | None = None
+        self.metric: "EvaluationModule | None" = None
 
     def __call__(self, predictions: t.Sequence, references: t.Sequence) -> float | None:
         """Calculate the metric score.

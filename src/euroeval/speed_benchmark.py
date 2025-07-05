@@ -1,20 +1,19 @@
 """Benchmarking model inference speed."""
 
 import logging
+import typing as t
 
 import pyinfer
 from tqdm.auto import tqdm
 from transformers.models.auto.tokenization_auto import AutoTokenizer
 
-from .benchmark_modules import (
-    BenchmarkModule,
-    HuggingFaceEncoderModel,
-    LiteLLMModel,
-    VLLMModel,
-)
-from .data_models import BenchmarkConfig
+from .benchmark_modules import HuggingFaceEncoderModel, LiteLLMModel, VLLMModel
 from .exceptions import InvalidBenchmark
 from .utils import clear_memory
+
+if t.TYPE_CHECKING:
+    from .benchmark_modules import BenchmarkModule
+    from .data_models import BenchmarkConfig
 
 logger = logging.getLogger("euroeval")
 

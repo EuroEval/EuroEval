@@ -13,14 +13,11 @@ from pathlib import Path
 from time import sleep
 
 import torch
-from datasets import DatasetDict
 from huggingface_hub import snapshot_download
 from pydantic import conlist, create_model
 from tqdm.auto import tqdm
 from transformers.models.auto.configuration_auto import AutoConfig
 from transformers.models.auto.tokenization_auto import AutoTokenizer
-from transformers.tokenization_utils import PreTrainedTokenizer
-from transformers.trainer import Trainer
 from urllib3.exceptions import RequestError
 
 from ..constants import (
@@ -34,13 +31,7 @@ from ..constants import (
     TASKS_USING_JSON,
     VLLM_BF16_MIN_CUDA_COMPUTE_CAPABILITY,
 )
-from ..data_models import (
-    BenchmarkConfig,
-    DatasetConfig,
-    GenerativeModelOutput,
-    ModelConfig,
-    Task,
-)
+from ..data_models import GenerativeModelOutput, ModelConfig
 from ..enums import (
     BatchingPreference,
     GenerativeType,
@@ -94,6 +85,13 @@ if t.TYPE_CHECKING or importlib.util.find_spec("outlines") is not None:
 if t.TYPE_CHECKING or importlib.util.find_spec("ray") is not None:
     import ray
 
+if t.TYPE_CHECKING:
+    from datasets import DatasetDict
+    from transformers.tokenization_utils import PreTrainedTokenizer
+    from transformers.trainer import Trainer
+
+    from ..data_models import BenchmarkConfig, DatasetConfig, Task
+
 logger = logging.getLogger("euroeval")
 
 
@@ -106,9 +104,9 @@ class VLLMModel(HuggingFaceEncoderModel):
 
     def __init__(
         self,
-        model_config: ModelConfig,
-        dataset_config: DatasetConfig,
-        benchmark_config: BenchmarkConfig,
+        model_config: "ModelConfig",
+        dataset_config: "DatasetConfig",
+        benchmark_config: "BenchmarkConfig",
     ) -> None:
         """Initialise the vLLM model.
 
@@ -129,8 +127,8 @@ class VLLMModel(HuggingFaceEncoderModel):
         model, tokenizer = load_model_and_tokenizer(
             model_config=model_config, benchmark_config=benchmark_config
         )
-        self._model: LLM = model
-        self._tokenizer: PreTrainedTokenizer = tokenizer
+        self._model: "LLM" = model
+        self._tokenizer: "PreTrainedTokenizer" = tokenizer
         self.end_of_reasoning_token = get_end_of_reasoning_token(
             model=self._model, tokenizer=self._tokenizer, model_id=model_config.model_id
         )
@@ -230,8 +228,8 @@ class VLLMModel(HuggingFaceEncoderModel):
                 )
 
     def prepare_dataset(
-        self, dataset: DatasetDict, task: Task, itr_idx: int
-    ) -> DatasetDict:
+        self, dataset: "DatasetDict", task: "Task", itr_idx: int
+    ) -> "DatasetDict":
         """Prepare the dataset for the model.
 
         This includes things like tokenisation.
@@ -293,7 +291,7 @@ class VLLMModel(HuggingFaceEncoderModel):
 
         return dataset
 
-    def generate(self, inputs: dict) -> GenerativeModelOutput:
+    def generate(self, inputs: dict) -> "GenerativeModelOutput":
         """Generate outputs from the model.
 
         Args:
@@ -524,7 +522,7 @@ class VLLMModel(HuggingFaceEncoderModel):
 
     @classmethod
     def model_exists(
-        cls, model_id: str, benchmark_config: BenchmarkConfig
+        cls, model_id: str, benchmark_config: "BenchmarkConfig"
     ) -> bool | NeedsExtraInstalled | NeedsEnvironmentVariable:
         """Check if a model exists.
 
@@ -558,8 +556,8 @@ class VLLMModel(HuggingFaceEncoderModel):
 
     @classmethod
     def get_model_config(
-        cls, model_id: str, benchmark_config: BenchmarkConfig
-    ) -> ModelConfig:
+        cls, model_id: str, benchmark_config: "BenchmarkConfig"
+    ) -> "ModelConfig":
         """Fetch the model configuration.
 
         Args:
@@ -628,8 +626,8 @@ class VLLMModel(HuggingFaceEncoderModel):
 
 
 def load_model_and_tokenizer(
-    model_config: ModelConfig, benchmark_config: BenchmarkConfig
-) -> "tuple[LLM, PreTrainedTokenizer]":
+    model_config: "ModelConfig", benchmark_config: "BenchmarkConfig"
+) -> tuple["LLM", "PreTrainedTokenizer"]:
     """Load the model and tokenizer.
 
     Args:

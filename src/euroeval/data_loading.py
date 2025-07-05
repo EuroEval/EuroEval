@@ -3,23 +3,28 @@
 import logging
 import sys
 import time
+import typing as t
 
 import requests
-from datasets import Dataset, DatasetDict, load_dataset
+from datasets import DatasetDict, load_dataset
 from datasets.exceptions import DatasetsError
 from huggingface_hub.errors import HfHubHTTPError
 from numpy.random import Generator
 
-from .data_models import BenchmarkConfig, DatasetConfig
 from .exceptions import HuggingFaceHubDown, InvalidBenchmark
 from .utils import unscramble
+
+if t.TYPE_CHECKING:
+    from datasets import Dataset
+
+    from .data_models import BenchmarkConfig, DatasetConfig
 
 logger = logging.getLogger("euroeval")
 
 
 def load_data(
     rng: Generator, dataset_config: "DatasetConfig", benchmark_config: "BenchmarkConfig"
-) -> list[DatasetDict]:
+) -> list["DatasetDict"]:
     """Load the raw bootstrapped datasets.
 
     Args:
@@ -56,7 +61,7 @@ def load_data(
         dataset["test"] = dataset["test"].select(range(1))
 
     # Bootstrap the splits
-    bootstrapped_splits: dict[str, list[Dataset]] = dict()
+    bootstrapped_splits: dict[str, list["Dataset"]] = dict()
     for split in ["train", "val", "test"]:
         bootstrap_indices = rng.integers(
             0,
@@ -80,7 +85,7 @@ def load_data(
     return datasets
 
 
-def load_raw_data(dataset_config: "DatasetConfig", cache_dir: str) -> DatasetDict:
+def load_raw_data(dataset_config: "DatasetConfig", cache_dir: str) -> "DatasetDict":
     """Load the raw dataset.
 
     Args:

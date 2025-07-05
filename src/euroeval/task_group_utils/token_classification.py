@@ -7,16 +7,16 @@ from copy import deepcopy
 
 import demjson3
 import numpy as np
-from transformers.tokenization_utils import PreTrainedTokenizer
 
-from ..data_models import DatasetConfig, GenerativeModelOutput
 from ..exceptions import InvalidBenchmark
 from ..utils import raise_if_model_output_contains_nan_values
 
 if t.TYPE_CHECKING:
+    from transformers.tokenization_utils import PreTrainedTokenizer
     from transformers.tokenization_utils_base import BatchEncoding
     from transformers.trainer_utils import EvalPrediction
 
+    from ..data_models import DatasetConfig, GenerativeModelOutput
     from ..types import Labels, Predictions
 
 
