@@ -224,9 +224,19 @@ class LLMAsAJudgeMetric(Metric):
 
         Returns:
             The calculated metric score, or None if the score should be ignored.
+
+        Raises:
+            InvalidBenchmark:
+                If the number of predictions does not match the number of references,
+                or if the user prompt requires a condition but none is provided.
         """
         if not predictions or not references:
             return None
+        elif len(predictions) != len(references):
+            raise InvalidBenchmark(
+                f"The number of predictions ({len(predictions):,}) does not match the "
+                f"number of references ({len(references):,})."
+            )
 
         # Prepare the messages for the LLM
         conversations: list[list[dict[str, str]]] = [
