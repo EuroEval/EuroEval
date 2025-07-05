@@ -1,14 +1,22 @@
 """All the metrics used in EuroEval."""
 
 import abc
+import logging
 import typing as t
 
 import evaluate
+import litellm
+from litellm.types.utils import Choices, ModelResponse
+from pydantic import BaseModel, Field
+from tqdm.auto import tqdm
 
+from .exceptions import InvalidBenchmark
 from .utils import HiddenPrints
 
 if t.TYPE_CHECKING:
     from evaluate import EvaluationModule
+
+logger = logging.getLogger(__name__)
 
 
 class Metric(abc.ABC):
@@ -149,6 +157,164 @@ class HuggingFaceMetric(Metric):
         return score
 
 
+class LLMAsAJudgeMetric(Metric):
+    """Use an LLM to judge the quality of the predictions."""
+
+    def __init__(
+        self,
+        name: str,
+        pretty_name: str,
+        judge_id: str,
+        judge_kwargs: dict[str, t.Any],
+        user_prompt: str,
+        response_format: t.Type[BaseModel],
+        scoring_fn: t.Callable[[BaseModel], float],
+        condition_formatting_fn: t.Callable[[str], str] = lambda x: x,
+        system_prompt: str | None = None,
+    ) -> None:
+        """Initialise the LLM as a judge metric.
+
+        Args:
+            name:
+                The name of the metric in snake_case.
+            pretty_name:
+                The pretty name of the metric, used for display purposes.
+            judge_id:
+                The model ID of the LLM to use as a judge.
+            judge_kwargs:
+                Generation parameters for the judge model, such as temperature.
+            user_prompt:
+                The user prompt to use for the judge model. The prompt should be
+                formatted with the variables `prediction` and `condition`, to
+                include the model predictions and a description of what the prediction
+                should be judged on, respectively. If the condition is not needed,
+                it can be omitted from the prompt, but the `prediction` variable must
+                still be present.
+            response_format:
+                The response format to use for the judge model. This should be a
+                Pydantic model that defines the expected structure of the judge's
+                response.
+            scoring_fn:
+                A function that takes the judge's response and returns a score.
+            condition_formatting_fn (optional):
+                A function to format the condition string before it is included in the
+                user prompt. Defaults to a no-op function that returns the input
+                unchanged.
+            system_prompt (optional):
+                The system prompt to use for the judge model. If not provided, no system
+                prompt will be used.
+        """
+        super().__init__(name=name, pretty_name=pretty_name)
+        self.judge_id = judge_id
+        self.judge_kwargs = judge_kwargs
+        self.user_prompt = user_prompt
+        self.response_format = response_format
+        self.scoring_fn = scoring_fn
+        self.condition_formatting_fn = condition_formatting_fn
+        self.system_prompt = system_prompt
+
+    def __call__(self, predictions: t.Sequence, references: t.Sequence) -> float | None:
+        """Calculate the metric score using the judge model.
+
+        Args:
+            predictions:
+                The model predictions.
+            references:
+                The ground truth references.
+
+        Returns:
+            The calculated metric score, or None if the score should be ignored.
+        """
+        if not predictions or not references:
+            return None
+
+        # Prepare the messages for the LLM
+        conversations: list[list[dict[str, str]]] = [
+            [
+                dict(
+                    role="user",
+                    content=self._apply_user_prompt(
+                        prediction=prediction, condition=condition
+                    ),
+                )
+            ]
+            for prediction, condition in zip(predictions, references)
+        ]
+        if self.system_prompt:
+            conversations = [
+                [dict(role="system", content=self.system_prompt), *conversation]
+                for conversation in conversations
+            ]
+
+        # Get the judge generations
+        generations = [
+            litellm.completion(
+                model=self.judge_id,
+                messages=conversation,
+                response_format=self.response_format,
+                **self.judge_kwargs,
+            )
+            for conversation in tqdm(
+                iterable=conversations,
+                desc=f"Computing {self.pretty_name} scores",
+                unit="sample",
+            )
+        ]
+
+        # Extract the outputs from the generations
+        outputs: list[BaseModel] = list()
+        for generation in generations:
+            assert isinstance(generation, ModelResponse), (
+                f"The judge model did not return a valid response: {generation!r}"
+            )
+            choice = generation.choices[0]
+            assert isinstance(choice, Choices), (
+                f"The judge model did not return a valid choice: {choice!r}"
+            )
+            json_content = choice.message.content
+            assert json_content is not None, (
+                "The judge model returned a None content in the response message."
+            )
+            output = self.response_format.model_validate_json(json_data=json_content)
+            outputs.append(output)
+
+        # Calculate the scores using the scoring function
+        scores = [self.scoring_fn(output) for output in outputs]
+        if not scores:
+            logger.warning(f"No scores were calculated for {self.pretty_name}.")
+            return None
+        return sum(scores) / len(scores)
+
+    def _apply_user_prompt(self, prediction: str, condition: str | None = None) -> str:
+        """Apply the user prompt to the prediction and condition.
+
+        Args:
+            prediction:
+                The model prediction.
+            condition (optional):
+                A description of what the prediction should be judged on. If not
+                provided, it will be omitted from the prompt.
+
+        Returns:
+            The formatted user prompt with the prediction and reference.
+
+        Raises:
+            InvalidBenchmark:
+                If the user prompt requires a reference but none is provided.
+        """
+        condition_required = "{condition}" in self.user_prompt
+        if condition_required and condition is None:
+            raise InvalidBenchmark(
+                f"The user prompt for the {self.pretty_name!r} metric requires a "
+                "condition, but none was provided."
+            )
+        if condition is not None:
+            return self.user_prompt.format(
+                prediction=prediction, condition=self.condition_formatting_fn(condition)
+            )
+        return self.user_prompt.format(prediction=prediction)
+
+
 class SpeedMetric(Metric):
     """Speed metric."""
 
@@ -236,6 +402,37 @@ accuracy_metric = HuggingFaceMetric(
     pretty_name="Accuracy",
     huggingface_id="accuracy",
     results_key="accuracy",
+)
+
+
+class Fluency(BaseModel):
+    """Response format for the fluency metric.
+
+    Attributes:
+        fluency:
+            The fluency rating, an integer between 1 and 5.
+    """
+
+    fluency: t.Annotated[int, Field(gt=1, le=5)]
+
+
+# Example LLM-as-a-judge metric, to measure the fluency of the LLM output
+fluency_metric = LLMAsAJudgeMetric(
+    name="fluency",
+    pretty_name="Fluency",
+    judge_id="gpt-4o-mini",
+    judge_kwargs=dict(temperature=0.0),
+    user_prompt="Please rate the fluency of the following text on a scale from 1 to 5, "
+    "with the following definitions:\n"
+    "- 1: Very poor fluency, many grammatical errors\n"
+    "- 2: Poor fluency, several grammatical errors\n"
+    "- 3: Average fluency, some grammatical errors\n"
+    "- 4: Good fluency, few grammatical errors\n"
+    "- 5: Excellent fluency, no grammatical errors\n\n"
+    "Text: {prediction!r}\n\n"
+    "Output your rating as a JSON object with a single key 'fluency'.",
+    response_format=Fluency,
+    scoring_fn=lambda output: output.fluency,
 )
 
 speed_metric = SpeedMetric(name="speed", pretty_name="Tokens per second")

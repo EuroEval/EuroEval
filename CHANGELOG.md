@@ -16,6 +16,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   dataset where the alternative answers have been generated using GPT-4o. This has been
   added as an official dataset, and was contributed by
   [@oliverkinch](https://github.com/oliverkinch) ✨
+- Added new `LLMAsAJudgeMetric`, which allows evaluating the performance of a model with
+  another judge model. This is useful for evaluating models in a reference-free manner,
+  or if the metric is sufficiently complex. It is currently not used in any task, but
+  the functionality is there for future use.
 
 ### Fixed
 - Evaluating freshly initialised encoder models on multiple-choice classification tasks
