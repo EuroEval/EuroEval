@@ -8,13 +8,14 @@ import numpy as np
 from euroeval.metrics import HuggingFaceMetric
 
 from ..constants import METRIC_ATTRIBUTES_TAKING_UP_MEMORY
-from ..data_models import BenchmarkConfig, DatasetConfig, GenerativeModelOutput
+from ..data_models import DatasetConfig, GenerativeModelOutput
 from ..exceptions import InvalidBenchmark
 from ..utils import raise_if_model_output_contains_nan_values
 
 if t.TYPE_CHECKING:
     from transformers.trainer_utils import EvalPrediction
 
+    from ..data_models import BenchmarkConfig
     from ..types import Labels, Predictions
 
 
