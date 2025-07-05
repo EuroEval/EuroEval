@@ -89,6 +89,7 @@ os.environ["VLLM_WORKER_MULTIPROC_METHOD"] = "spawn"
 # Avoid the "Unclosed client session" error when evaluating Ollama models with LiteLLM.
 # The error comes from the `aiohttp` package, and this environment variable forces the
 # use of `httpx` instead.
+# Link: https://github.com/BerriAI/litellm/issues/11657#issuecomment-3038984975
 os.environ["DISABLE_AIOHTTP_TRANSPORT"] = "True"
 
 
