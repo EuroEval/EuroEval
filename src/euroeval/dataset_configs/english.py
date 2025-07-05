@@ -49,10 +49,10 @@ CNN_DAILYMAIL_CONFIG = DatasetConfig(
     languages=[EN],
 )
 
-MMLU_CONFIG = DatasetConfig(
-    name="mmlu",
-    pretty_name="the truncated version of the English knowledge dataset MMLU",
-    huggingface_id="EuroEval/mmlu-mini",
+LIFE_IN_THE_UK_CONFIG = DatasetConfig(
+    name="life-in-the-uk",
+    pretty_name="the English knowledge dataset Life in the UK",
+    huggingface_id="EuroEval/life-in-the-uk",
     task=KNOW,
     languages=[EN],
 )
@@ -83,6 +83,15 @@ BELEBELE_CONFIG = DatasetConfig(
     pretty_name="the English multiple choice reading comprehension dataset BeleBele",
     huggingface_id="EuroEval/belebele-mini",
     task=MCRC,
+    languages=[EN],
+    unofficial=True,
+)
+
+MMLU_CONFIG = DatasetConfig(
+    name="mmlu",
+    pretty_name="the truncated version of the English knowledge dataset MMLU",
+    huggingface_id="EuroEval/mmlu-mini",
+    task=KNOW,
     languages=[EN],
     unofficial=True,
 )

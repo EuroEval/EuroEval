@@ -8,9 +8,13 @@ information about what these constitute.
 ## Sentiment Classification
 
 ### SentimentHeadlines-es
-This dataset was published in [this paper](https://arxiv.org/abs/2208.13947) and features political news headlines.
+This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2208.13947)
+and features political news headlines.
 
-The original full dataset consists of 1,371 /  609 / 459 samples for training, validation, and testing, respectively. We use 861 /  256 / 1,024 samples for training, validation, and testing, respectively. All our splits are subsets of the original ones. The label distribution for the splits are as follows:
+The original full dataset consists of 1,371 /  609 / 459 samples for training,
+validation, and testing, respectively. We use 861 /  256 / 1,024 samples for training,
+validation, and testing, respectively. All our splits are subsets of the original ones.
+The label distribution for the splits are as follows:
 
 | Split | positive | negative | neutral | Total |
 |-------|----------|----------|---------|--------|
@@ -71,7 +75,10 @@ $ euroeval --model <model-id> --dataset sentiment-headlines-es
 
 ### CoNLL-es
 
-This dataset was published in [this paper](https://aclanthology.org/W02-2024/) and contains 8,324 / 1,916 / 1,518 samples for training, validation, and testing, respectively. We use 1,024 / 256 / 1,024 samples for training, validation, and testing, respectively. All the new splits are subsets of the original splits.
+This dataset was published in [this paper](https://aclanthology.org/W02-2024/) and
+contains 8,324 / 1,916 / 1,518 samples for training, validation, and testing,
+respectively. We use 1,024 / 256 / 1,024 samples for training, validation, and testing,
+respectively. All the new splits are subsets of the original splits.
 
 Here are a few examples from the training split:
 
@@ -133,16 +140,18 @@ $ euroeval --model <model-id> --dataset conll-es
 
 ### ScaLA-es
 
-This dataset was published in [this paper](https://aclanthology.org/L08-1222/) and was automatically created from the [Spanish Universal Dependencies](https://github.com/UniversalDependencies/UD_Spanish-AnCora) by
-assuming that the documents in the treebank are correct, and corrupting the samples to
-create grammatically incorrect samples. The corruptions were done by either removing a
-word from a sentence, or by swapping two neighbouring words in a sentence. To ensure
-that this does indeed break the grammaticality of the sentence, a set of rules were used
-on the part-of-speech tags of the words in the sentence.
+This dataset was published in [this paper](https://aclanthology.org/L08-1222/) and was
+automatically created from the [Spanish Universal
+Dependencies](https://github.com/UniversalDependencies/UD_Spanish-AnCora) by assuming
+that the documents in the treebank are correct, and corrupting the samples to create
+grammatically incorrect samples. The corruptions were done by either removing a word
+from a sentence, or by swapping two neighbouring words in a sentence. To ensure that
+this does indeed break the grammaticality of the sentence, a set of rules were used on
+the part-of-speech tags of the words in the sentence.
 
-The original dataset consists of 17,662 samples, from which we use 1,024 / 256 / 2,048 samples for training,
-validation and testing, respectively (so 3,328 samples used in total). These splits are
-used as-is in the framework.
+The original dataset consists of 17,662 samples, from which we use 1,024 / 256 / 2,048
+samples for training, validation and testing, respectively (so 3,328 samples used in
+total). These splits are used as-is in the framework.
 
 Here are a few examples from the training split:
 
@@ -198,7 +207,11 @@ $ euroeval --model <model-id> --dataset scala-es
 
 ### MLQA-es
 
-This dataset was published in [this paper](https://arxiv.org/abs/1910.07475) and contains 0 / 500 / 5,253 samples for training, validation, and testing, respectively. We have made a 1,024 / 256 / 2,048 split, where we use the 500 validation samples + 524 test samples for training. Then we split the remaining test set into validation (256 samples) and test (2048 samples).
+This dataset was published in [this paper](https://doi.org/10.48550/arXiv.1910.07475)
+and contains 0 / 500 / 5,253 samples for training, validation, and testing,
+respectively. We have made a 1,024 / 256 / 2,048 split, where we use the 500 validation
+samples + 524 test samples for training. Then we split the remaining test set into
+validation (256 samples) and test (2048 samples).
 
 Here are a few examples from the training split:
 
@@ -263,9 +276,13 @@ $ euroeval --model <model-id> --dataset xquad-es
 
 ### Unofficial: XQuAD-es
 
-This dataset was published in [this paper](https://aclanthology.org/2020.acl-main.421/) and contains 1190 question-answer pairs from [SQuAD v1.1](https://rajpurkar.github.io/SQuAD-explorer/) translated into ten languages by professional translators.
+This dataset was published in [this paper](https://aclanthology.org/2020.acl-main.421/)
+and contains 1190 question-answer pairs from [SQuAD
+v1.1](https://rajpurkar.github.io/SQuAD-explorer/) translated into ten languages by
+professional translators.
 
-The dataset is split intro 550 / 128 / 512 question-answer pairs for training, validation, and testing, respectively.
+The dataset is split intro 550 / 128 / 512 question-answer pairs for training,
+validation, and testing, respectively.
 
 Here are a few examples from the training split:
 
@@ -333,9 +350,12 @@ $ euroeval --model <model-id> --dataset xquad-es
 
 ### Unofficial: BeleBele-es
 
-This dataset was published in [this paper](https://aclanthology.org/2024.acl-long.44/) and features multiple-choice reading comprehension questions across 122 languages.
+This dataset was published in [this paper](https://aclanthology.org/2024.acl-long.44/)
+and features multiple-choice reading comprehension questions across 122 languages.
 
-The original dataset contains 900 unique multiple-choice reading comprehension passages and questions. From these, we use a 256 / 64 / 580 split for training, validation and testing, respectively.
+The original dataset contains 900 unique multiple-choice reading comprehension passages
+and questions. From these, we use a 256 / 64 / 580 split for training, validation and
+testing, respectively.
 
 Here are a few examples from the training split:
 
@@ -542,9 +562,12 @@ $ euroeval --model <model-id> --dataset hellaswag-es
 
 ### MLSum-es
 
-The dataset was published in [this paper](https://aclanthology.org/2020.emnlp-main.647/) and is obtained from online newspapers.
+The dataset was published in [this paper](https://aclanthology.org/2020.emnlp-main.647/)
+and is obtained from online newspapers.
 
-The original full dataset consists of 266,367 / 10,358 / 13,920 samples for training, validation, and testing, respectively. We use 1,024 / 256 / 2,024 samples for training, validation, and testing, respectively. All our splits are subsets of the original ones.
+The original full dataset consists of 266,367 / 10,358 / 13,920 samples for training,
+validation, and testing, respectively. We use 1,024 / 256 / 2,024 samples for training,
+validation, and testing, respectively. All our splits are subsets of the original ones.
 
 Here are a few examples from the training split:
 

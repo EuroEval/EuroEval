@@ -247,9 +247,9 @@ word from a sentence, or by swapping two neighbouring words in a sentence. To en
 that this does indeed break the grammaticality of the sentence, a set of rules were used
 on the part-of-speech tags of the words in the sentence.
 
-The original dataset consists of 20,044 samples, from which we use 1,024 / 256 / 2,048 samples for training,
-validation and testing, respectively (so 3,328 samples used in total). These splits are
-used as-is in the framework.
+The original dataset consists of 20,044 samples, from which we use 1,024 / 256 / 2,048
+samples for training, validation and testing, respectively (so 3,328 samples used in
+total). These splits are used as-is in the framework.
 
 Here are a few examples from the training split:
 
@@ -313,9 +313,9 @@ word from a sentence, or by swapping two neighbouring words in a sentence. To en
 that this does indeed break the grammaticality of the sentence, a set of rules were used
 on the part-of-speech tags of the words in the sentence.
 
-The original dataset consists of 17,575 samples, from which we use 1,024 / 256 / 2,048 samples for training,
-validation and testing, respectively (so 3,328 samples used in total). These splits are
-used as-is in the framework.
+The original dataset consists of 17,575 samples, from which we use 1,024 / 256 / 2,048
+samples for training, validation and testing, respectively (so 3,328 samples used in
+total). These splits are used as-is in the framework.
 
 Here are a few examples from the training split:
 
@@ -435,7 +435,8 @@ $ euroeval --model <model-id> --dataset no-cola-binary
 
 ### Unofficial: Jentoft
 
-This dataset was published in [this Master's thesis](https://www.duo.uio.no/handle/10852/103885) by Matias Jentoft.
+This dataset was published in [this Master's
+thesis](https://www.duo.uio.no/handle/10852/103885) by Matias Jentoft.
 
 The original dataset consists of 85,771 / 10,827 / 10487 samples for training,
 validation and test, respectively. We use a split of 1,024 / 256 / 2,048 samples for
@@ -646,9 +647,12 @@ $ euroeval --model <model-id> --dataset norglm-multi-qa
 
 ### Unofficial: BeleBele-no
 
-This dataset was published in [this paper](https://aclanthology.org/2024.acl-long.44/) and features multiple-choice reading comprehension questions across 122 languages.
+This dataset was published in [this paper](https://aclanthology.org/2024.acl-long.44/)
+and features multiple-choice reading comprehension questions across 122 languages.
 
-The original dataset contains 900 unique multiple-choice reading comprehension passages and questions. From these, we use a 256 / 64 / 580 split for training, validation and testing, respectively.
+The original dataset contains 900 unique multiple-choice reading comprehension passages
+and questions. From these, we use a 256 / 64 / 580 split for training, validation and
+testing, respectively.
 
 Here are a few examples from the training split:
 
@@ -776,6 +780,76 @@ You can evaluate this dataset directly as follows:
 
 ```bash
 $ euroeval --model <model-id> --dataset nrk-quiz-qa
+```
+
+
+### Idioms-no
+
+This dataset was published [here](https://doi.org/10.48550/arXiv.2504.07749) and
+consists of 3,553 Norwegian idioms and phrases that appear more than 100 times in the
+online library of the National Library of Norway.
+
+We have reformulated the dataset as a multiple-choice question format with 4 options,
+where the alternative answers have been generated using GPT-4o. Based on 3,232 samples
+(3,144 Bokmål, 88 Nynorsk) from the original dataset, we use a 928 (27 Nynorsk) / 256
+(11 Nynorsk) / 2,048 (50 Nynorsk) split for training, validation and testing,
+respectively.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Complete the Nynorsk idiom:\nalle gode ting er _____\n\nSvaralternativer::\na. søte\nb. tre\nc. fire\nd. vennlege",
+  "label": "b"
+}
+```
+```json
+{
+  "text": "Complete the Bokmål idiom:\ndet er ikke bare , _____\n\nSvaralternativer::\na. moro\nb. bare\nc. lett\nd. enkelt",
+  "label": "b",
+}
+```
+```json
+{
+  "text": "Complete the Bokmål idiom:\ndet får stå sin _____\n\nSvaralternativer::\na. prøve\nb. vegg\nc. sak\nd. greie",
+  "label": "a"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+  ```
+  Følgende er flervalgsspørsmål (med svar).
+  ```
+- Base prompt template:
+  ```
+  Spørsmål: {text}
+  Svaralternativer:
+  a. {option_a}
+  b. {option_b}
+  c. {option_c}
+  d. {option_d}
+  Svar: {label}
+  ```
+- Instruction-tuned prompt template:
+  ```
+  Spørsmål: {text}
+  Svaralternativer:
+  a. {option_a}
+  b. {option_b}
+  c. {option_c}
+  d. {option_d}
+
+  Besvar følgende spørsmål med 'a', 'b', 'c' eller 'd', og ikke noe annet.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+$ euroeval --model <model-id> --dataset idioms-no
 ```
 
 
@@ -1240,9 +1314,14 @@ $ euroeval --model <model-id> --dataset schibsted-no
 
 ### Unofficial: Personal Sum
 
-This dataset was released [here](https://github.com/SmartmediaAI/PersonalSum) and contains human annotated summaries that reflect individual user preferences.
+This dataset was released [here](https://github.com/SmartmediaAI/PersonalSum) and
+contains human annotated summaries that reflect individual user preferences.
 
-The original dataset contains 1,099 summaries based on 441 unique articles. The dataset has been restructured into 441 samples, where each sample represents a unique article paired with all of its corresponding summaries (1 or more). The dataset has been split such that we have 121 / 64 / 256 samples for training, validation and testing, respectively.
+The original dataset contains 1,099 summaries based on 441 unique articles. The dataset
+has been restructured into 441 samples, where each sample represents a unique article
+paired with all of its corresponding summaries (1 or more). The dataset has been split
+such that we have 121 / 64 / 256 samples for training, validation and testing,
+respectively.
 
 Here are a few examples from the training split:
 
