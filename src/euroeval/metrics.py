@@ -436,9 +436,9 @@ fluency_metric = LLMAsAJudgeMetric(
     "with the following definitions:\n"
     "- 1: Very poor fluency, many grammatical errors\n"
     "- 2: Poor fluency, several grammatical errors\n"
-    "- 3: Average fluency, some grammatical errors\n"
-    "- 4: Good fluency, few grammatical errors\n"
-    "- 5: Excellent fluency, no grammatical errors\n\n"
+    "- 3: Average fluency, a few grammatical errors\n"
+    "- 4: Good fluency, no grammatical errors but sounds a bit off\n"
+    "- 5: Excellent fluency, no grammatical errors and sounds natural\n\n"
     "Text: {prediction!r}\n\n"
     "Output your rating as a JSON object with a single key 'fluency'.",
     response_format=Fluency,
