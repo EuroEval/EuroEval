@@ -20,6 +20,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   another judge model. This is useful for evaluating models in a reference-free manner,
   or if the metric is sufficiently complex. It is currently not used in any task, but
   the functionality is there for future use.
+- Added the SST-2 from [Extraglue](https://arxiv.org/abs/2404.05333) dataset for sentiment classification as well as initial support for European Portuguese. This was contributed by [@duarteocarmo](https://github.com/duarteocarmo) ✨
+- Added the BoolQ dataset from [Extraglue](https://arxiv.org/abs/2404.05333) as an initial reading comprehension dataset. This was contributed by [@duarteocarmo](https://github.com/duarteocarmo) ✨
 
 ### Fixed
 - Evaluating freshly initialised encoder models on multiple-choice classification tasks

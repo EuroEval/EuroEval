@@ -36,7 +36,7 @@ NN = Language(
 )
 ES = Language(code="es", name="Spanish", _and_separator="y", _or_separator="o")
 SV = Language(code="sv", name="Swedish", _and_separator="och", _or_separator="eller")
-
+PT = Language(code="pt", name="Portuguese", _and_separator="e", _or_separator="ou")
 
 AB = Language(code="ab", name="Abkhazian")
 AA = Language(code="aa", name="Afar")
@@ -152,7 +152,6 @@ PI = Language(code="pi", name="Pali")
 PS = Language(code="ps", name="Pashto")
 FA = Language(code="fa", name="Persian")
 PL = Language(code="pl", name="Polish")
-PT = Language(code="pt", name="Portuguese")
 PA = Language(code="pa", name="Punjabi")
 QU = Language(code="qu", name="Quechua")
 RO = Language(code="ro", name="Romanian")

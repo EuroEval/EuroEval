@@ -13,6 +13,7 @@ from .german import *  # noqa: F403
 from .icelandic import *  # noqa: F403
 from .italian import *  # noqa: F403
 from .norwegian import *  # noqa: F403
+from .portuguese import *  # noqa: F403
 from .spanish import *  # noqa: F403
 from .swedish import *  # noqa: F403
 

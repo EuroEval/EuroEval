@@ -1,4 +1,4 @@
-# Reading Comprenhension
+# Reading Comprehension
 
 ## 📚 Overview
 
