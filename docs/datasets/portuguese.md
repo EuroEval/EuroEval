@@ -70,7 +70,7 @@ This dataset was published in [this paper](https://arxiv.org/abs/2404.05333) and
 
 The original dataset has a passage, question, and yes/no label. We adapt this dataset by taking the original passage, question, and yes/no options, and turning it into a Q/A style question where the model can answer yes or no.
 
-The original dataset contains 9,430 training, 3,270 validation, and 3,250 test samples. We use 1,024 / 256 / 2,048 samples for train / val / test respectively. We've observed some overlap in the splits, so decided to concatenate all splits into a single dataset, shuffling it, and extract splts.
+The original dataset contains 9,430 training, 3,270 validation, and 3,250 test samples. We use 1,024 / 256 / 2,048 samples for train / val / test respectively. We've observed some overlap in the splits, so decided to concatenate all splits into a single dataset, shuffling it, and extract splits.
 
 Here are a few examples from the training split:
 
