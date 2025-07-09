@@ -306,7 +306,7 @@ def debug_log(
     ):
         logger.info(
             f"Input: '{input_text}'\n"
-            f"Raw outout: '{raw_output}'\n"
+            f"Raw output: '{raw_output}'\n"
             f"Prediction: '{prediction}'\n"
             f"Label: '{label}'"
         )

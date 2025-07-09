@@ -2,7 +2,7 @@
 
 from ..data_models import DatasetConfig
 from ..languages import PT
-from ..tasks import MCRC, SENT
+from ..tasks import COMMON_SENSE, KNOW, MCRC, SENT
 
 ### Unofficial datasets ###
 
@@ -21,6 +21,26 @@ BOOLQ_PT_CONFIG = DatasetConfig(
     pretty_name="extraglue-boolq-pt dataset for portuguese (PT)",
     huggingface_id="EuroEval/extraglue-boolq-pt",
     task=MCRC,
+    languages=[PT],
+    unofficial=True,
+)
+
+
+MMLU_PT_CONFIG = DatasetConfig(
+    name="mmlu-pt",
+    pretty_name="Portuguese version of mmlu mini",
+    huggingface_id="EuroEval/mmlu-pt-mini",
+    task=KNOW,
+    languages=[PT],
+    unofficial=True,
+)
+
+
+HELLASWAG_PT_CONFIG = DatasetConfig(
+    name="hellaswag-pt",
+    pretty_name="Portuguese version of HellaSwag mini",
+    huggingface_id="EuroEval/hellaswag-pt-mini",
+    task=COMMON_SENSE,
     languages=[PT],
     unofficial=True,
 )
