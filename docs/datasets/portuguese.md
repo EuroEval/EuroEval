@@ -248,7 +248,7 @@ When evaluating generative models, we use the following setup (see the
 - Instruction-tuned prompt template:
 
   ```
-  ergunta: {text}
+  Pergunta: {text}
   Opções:
   a. {option_a}
   b. {option_b}
