@@ -22,6 +22,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   the functionality is there for future use.
 - Added the SST-2 from [Extraglue](https://arxiv.org/abs/2404.05333) dataset for sentiment classification as well as initial support for European Portuguese. This was contributed by [@duarteocarmo](https://github.com/duarteocarmo) ✨
 - Added the BoolQ dataset from [Extraglue](https://arxiv.org/abs/2404.05333) as an initial reading comprehension dataset. This was contributed by [@duarteocarmo](https://github.com/duarteocarmo) ✨
+- Added the MMLU-pt dataset, a Portuguese knowledge dataset that is a subset of MMLUx from openGPT-X/mmlux. This was contributed by [@duarteocarmo](https://github.com/duarteocarmo) ✨
+- Added the HellaSwag-pt dataset, a Portuguese common-sense reasoning dataset that is a subset of HellaswagX from openGPT-X/hellaswagx. This was contributed by [@duarteocarmo](https://github.com/duarteocarmo) ✨
 
 ### Fixed
 - Evaluating freshly initialised encoder models on multiple-choice classification tasks
