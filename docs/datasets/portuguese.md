@@ -237,7 +237,7 @@ When evaluating generative models, we use the following setup (see the
   ```
 - Base prompt template:
   ```
-  ergunta: {text}
+  Pergunta: {text}
   Opções:
   a. {option_a}
   b. {option_b}
