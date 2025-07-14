@@ -382,7 +382,7 @@ f1_metric = HuggingFaceMetric(
     pretty_name="F1-score",
     huggingface_id="squad_v2",
     results_key="f1",
-    postprocessing_fn=lambda x: (100 * x, f"{x:.2%}"),
+    postprocessing_fn=lambda x: (x, f"{x:.2f}%"),
 )
 
 em_metric = HuggingFaceMetric(
@@ -390,7 +390,7 @@ em_metric = HuggingFaceMetric(
     pretty_name="Exact Match",
     huggingface_id="squad_v2",
     results_key="exact",
-    postprocessing_fn=lambda x: (100 * x, f"{x:.2%}"),
+    postprocessing_fn=lambda x: (x, f"{x:.2f}%"),
 )
 
 bert_score_metric = HuggingFaceMetric(
