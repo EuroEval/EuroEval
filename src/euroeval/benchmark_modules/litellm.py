@@ -170,18 +170,6 @@ class LiteLLMModel(BenchmarkModule):
     batching_preference = BatchingPreference.ALL_AT_ONCE
     high_priority = False
 
-    _handleable_exceptions = (
-        BadRequestError,
-        RateLimitError,
-        APIError,
-        APIConnectionError,
-        Timeout,
-        ServiceUnavailableError,
-        InternalServerError,
-        SystemError,
-        AuthenticationError,
-    )
-
     def __init__(
         self,
         model_config: ModelConfig,
