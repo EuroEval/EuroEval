@@ -20,9 +20,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   another judge model. This is useful for evaluating models in a reference-free manner,
   or if the metric is sufficiently complex. It is currently not used in any task, but
   the functionality is there for future use.
-- Add `@no-thinking` option for Gemini-2.5 models, which disables the
-  reasoning mode for these models. This is useful for evaluating the base model without
-  reasoning, as the reasoning mode is enabled by default for these models.
+- Add `@no-thinking` option for Gemini-2.5-flash and `@thinking` for
+  Gemini-2.5-flash-lite, which allows disabling and enabling the reasoning mode for
+  these models, respectively. These are different as the Gemini-2.5-flash model has
+  thinking enabled by default, while the Gemini-2.5-flash-lite model has it disabled by
+  default (see the defaults in the [Gemini-2.5
+  docs](https://ai.google.dev/gemini-api/docs/thinking#set-budget)).
 
 ### Fixed
 - Evaluating freshly initialised encoder models on multiple-choice classification tasks
