@@ -10,7 +10,7 @@
 
 import re
 from collections import defaultdict
-from typing import Callable, Dict, List, Union
+from typing import Callable, Dict, List, Optional, Union
 
 import pandas as pd
 import requests
@@ -32,6 +32,29 @@ def load_dadt_pos() -> Dict[str, pd.DataFrame]:
     test_url = base_url.format("test")
 
     return load_ud_pos(train_url=train_url, val_url=val_url, test_url=test_url)
+
+
+def load_ptdt_pos() -> Dict[str, pd.DataFrame]:
+    """Load the part-of-speech part of the Portuguese Dependency Treebank.
+
+    Returns:
+        The dataframes, stored in the keys `train`, `val` and `test`.
+    """
+    # Define download URLs
+    base_url = (
+        "https://github.com/UniversalDependencies/UD_Portuguese-Bosque/raw/master/"
+        "pt_bosque-ud-{}.conllu"
+    )
+    train_url = base_url.format("train")
+    val_url = base_url.format("dev")
+    test_url = base_url.format("test")
+
+    return load_ud_pos(
+        train_url=train_url,
+        val_url=val_url,
+        test_url=test_url,
+        filter_source="CETEMPúblico",
+    )
 
 
 def load_fodt_pos() -> Dict[str, pd.DataFrame]:
@@ -284,6 +307,7 @@ def load_ud_pos(
     val_url: str,
     test_url: str,
     doc_process_fn: Callable[[str], str] = lambda x: x,
+    filter_source: Optional[str] = None,
 ) -> Dict[str, pd.DataFrame]:
     """Load the part-of-speech part of a Universal Dependencies treebank.
 
@@ -307,6 +331,9 @@ def load_ud_pos(
         test=requests.get(test_url).text.split("\n"),
     )
 
+    if filter_source is not None:
+        print(f"Warning: Keeping only Scala dataset with {filter_source=}")
+
     # Iterate over the data splits
     dfs = dict()
     for split, lines in data.items():
@@ -314,6 +341,7 @@ def load_ud_pos(
         records = list()
         data_dict: Dict[str, List[Union[int, str]]] = defaultdict(list)
         doc = ""
+        source = ""
 
         # Iterate over the data for the given split
         for line in lines:
@@ -324,6 +352,9 @@ def load_ud_pos(
                 # Process the document if needed
                 doc = doc_process_fn(doc)
 
+            elif line.startswith("# source = "):
+                source = line.removeprefix("# source = ").strip()
+
             # Otherwise, if the line is a comment then ignore it
             elif line.startswith("#"):
                 continue
@@ -332,11 +363,13 @@ def load_ud_pos(
             # list of records and reset the data dictionary and document
             elif line == "":
                 if len(data_dict["tokens"]) > 0:
-                    merged_data_dict: Dict[str, Union[str, List[Union[int, str]]]]
-                    merged_data_dict = {**data_dict, "doc": doc}
-                    records.append(merged_data_dict)
+                    if filter_source is None or filter_source in source:
+                        merged_data_dict: Dict[str, Union[str, List[Union[int, str]]]]
+                        merged_data_dict = {**data_dict, "doc": doc}
+                        records.append(merged_data_dict)
                 data_dict = defaultdict(list)
                 doc = ""
+                source = ""
 
             # Otherwise we are in the middle of an entry which is not a comment, so
             # we extract the data from the line and store it in the data dictionary

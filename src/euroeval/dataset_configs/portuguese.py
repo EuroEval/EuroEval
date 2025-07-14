@@ -2,7 +2,7 @@
 
 from ..data_models import DatasetConfig
 from ..languages import PT
-from ..tasks import COMMON_SENSE, KNOW, MCRC, SENT
+from ..tasks import COMMON_SENSE, KNOW, LA, MCRC, SENT
 
 ### Unofficial datasets ###
 
@@ -14,7 +14,7 @@ SST2_PT_CONFIG = DatasetConfig(
     huggingface_id=f"{PREFIX}/extraglue-sst2-pt",
     task=SENT,
     languages=[PT],
-    unofficial=True,
+    unofficial=False,
     _labels=["positive", "negative"],
 )
 
@@ -24,7 +24,7 @@ BOOLQ_PT_CONFIG = DatasetConfig(
     huggingface_id=f"{PREFIX}/extraglue-boolq-pt",
     task=MCRC,
     languages=[PT],
-    unofficial=True,
+    unofficial=False,
 )
 
 
@@ -34,7 +34,7 @@ MMLU_PT_CONFIG = DatasetConfig(
     huggingface_id=f"{PREFIX}/mmlu-pt-mini",
     task=KNOW,
     languages=[PT],
-    unofficial=True,
+    unofficial=False,
 )
 
 
@@ -44,5 +44,15 @@ HELLASWAG_PT_CONFIG = DatasetConfig(
     huggingface_id=f"{PREFIX}/hellaswag-pt-mini",
     task=COMMON_SENSE,
     languages=[PT],
-    unofficial=True,
+    unofficial=False,
+)
+
+
+SCALA_PT = DatasetConfig(
+    name="scala-pt",
+    pretty_name="the Portuguese part of the linguistic acceptability dataset ScaLA",
+    huggingface_id=f"{PREFIX}/scala-pt",
+    task=LA,
+    languages=[PT],
+    unofficial=False,
 )

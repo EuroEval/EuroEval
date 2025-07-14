@@ -1,7 +1,7 @@
 """Templates for the Linguistic Acceptability task."""
 
 from ..data_models import PromptConfig
-from ..languages import DA, DE, EN, ES, FI, FO, FR, IS, IT, NB, NL, NN, NO, SV
+from ..languages import DA, DE, EN, ES, FI, FO, FR, IS, IT, NB, NL, NN, NO, PT, SV
 
 LA_TEMPLATES = {
     DA: PromptConfig(
@@ -35,6 +35,14 @@ LA_TEMPLATES = {
         default_prompt_template="Texto: {text}\nGramaticalmente correcto: {label}",
         default_instruction_prompt="Texto: {text}\n\nDetermina si el texto es "
         "gramaticalmente correcto o no. Responde con {labels_str}, y nada más.",
+    ),
+    PT: PromptConfig(
+        default_prompt_label_mapping=dict(correct="sim", incorrect="não"),
+        default_prompt_prefix="Seguem-se abaixo textos e se são "
+        " gramaticalmente correctos",
+        default_prompt_template="Texto: {text}\nGramaticalmente correcto: {label}",
+        default_instruction_prompt="Texto: {text}\n\nDetermina se o texto é "
+        "gramaticalmente correcto ou não. Responde com {labels_str}, e nada mais.",
     ),
     FI: PromptConfig(
         default_prompt_label_mapping=dict(correct="kyllä", incorrect="ei"),
