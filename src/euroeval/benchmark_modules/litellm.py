@@ -485,6 +485,10 @@ class LiteLLMModel(BenchmarkModule):
         ]
         max_items_messages = ["'maxItems' is not permitted."]
         no_json_schema_messages = ["Property keys should match pattern"]
+        thinking_budget_pattern = re.compile(
+            r"The thinking budget [0-9]+ is invalid. Please choose a value between "
+            r"[0-9]+ and ([0-9]+)."
+        )
 
         if any(msg.lower() in error_msg for msg in stop_messages):
             log_once(
@@ -544,6 +548,24 @@ class LiteLLMModel(BenchmarkModule):
                 level=logging.DEBUG,
             )
             generation_kwargs["response_format"] = dict(type="json_object")
+            return
+        elif thinking_match := thinking_budget_pattern.search(string=error_msg):
+            thinking_budget = int(thinking_match.group(1))
+            if thinking_budget >= REASONING_MAX_TOKENS:
+                raise InvalidBenchmark(
+                    f"The model {model_id!r} requires has an upper thinking budget of "
+                    f"{thinking_budget:,} tokens, which is within the limit of "
+                    f"{REASONING_MAX_TOKENS:,} tokens. This should not happen. The "
+                    f"error message was: {error_msg}."
+                )
+            log_once(
+                f"The model {model_id!r} requires a higher thinking budget than "
+                f"{REASONING_MAX_TOKENS:,}, so setting it to {thinking_budget:,}.",
+                level=logging.DEBUG,
+            )
+            generation_kwargs["thinking"] = dict(
+                type="enabled", budget_tokens=thinking_budget - 1
+            )
             return
         elif isinstance(
             error, (Timeout, ServiceUnavailableError, InternalServerError, SystemError)
