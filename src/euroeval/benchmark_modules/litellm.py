@@ -487,8 +487,9 @@ class LiteLLMModel(BenchmarkModule):
         no_json_schema_messages = ["Property keys should match pattern"]
         thinking_budget_pattern = re.compile(
             r"The thinking budget [0-9]+ is invalid. Please choose a value between "
-            r"[0-9]+ and ([0-9]+)."
+            r"[0-9]+ and ([0-9]+)\."
         )
+        breakpoint()
 
         if any(msg.lower() in error_msg for msg in stop_messages):
             log_once(
