@@ -148,8 +148,8 @@ ALLOWED_PARAMS = {
     r"(anthropic/)?claude-3-7-sonnet.*": ["thinking"],
     r"(anthropic/)?claude-(sonnet|opus)-4.*": ["thinking"],
     # Gemini models
-    r"(gemini/)?gemini-2.5-flash-lite.*": ["thinking"],
-    r"(gemini/)?gemini-2.5-flash-[0-9].*": ["no-thinking"],
+    r"(gemini/)?gemini-2.5-flash-lite.*": ["no-thinking", "thinking"],
+    r"(gemini/)?gemini-2.5-flash-[0-9].*": ["no-thinking", "thinking"],
     # xAI models
     r"(xai/)?grok-3-mini(-fast)?(-beta)?": ["low", "high"],
 }
@@ -240,6 +240,8 @@ class LiteLLMModel(BenchmarkModule):
             )
         elif self.model_config.revision in {"thinking"}:
             type_ = GenerativeType.REASONING
+        elif self.model_config.revision in {"no-thinking"}:
+            type_ = GenerativeType.INSTRUCTION_TUNED
         elif re.fullmatch(
             pattern="|".join(REASONING_MODELS), string=self.model_config.model_id
         ):
