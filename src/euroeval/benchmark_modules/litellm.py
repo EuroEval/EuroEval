@@ -553,7 +553,7 @@ class LiteLLMModel(BenchmarkModule):
             thinking_budget = int(thinking_match.group(1))
             if thinking_budget >= REASONING_MAX_TOKENS:
                 raise InvalidBenchmark(
-                    f"The model {model_id!r} requires has an upper thinking budget of "
+                    f"The model {model_id!r} has an upper thinking budget of "
                     f"{thinking_budget:,} tokens, which is within the limit of "
                     f"{REASONING_MAX_TOKENS:,} tokens. This should not happen. The "
                     f"error message was: {error_msg}."
