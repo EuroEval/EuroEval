@@ -143,17 +143,13 @@ NUM_PARAMS_MAPPING = {
 
 ALLOWED_PARAMS = {
     # OpenAI models
-    r"gpt-4.*": [],
     r"o[1-9](-mini|-preview)?(-[0-9]{4}-[0-9]{2}-[0-9]{2})?": ["low", "high"],
     # Anthropic models
-    r"(anthropic/)?claude-3-(haiku|sonnet|opus).*": [],
-    r"(anthropic/)?claude-3-5-.*": [],
     r"(anthropic/)?claude-3-7-sonnet.*": ["thinking"],
+    r"(anthropic/)?claude-(sonnet|opus)-4.*": ["thinking"],
     # Gemini models
-    r"(gemini/)?gemini-.*": [],
+    r"(gemini/)?gemini-2.5.*": ["no-thinking"],
     # xAI models
-    r"(xai/)?grok-2.*": [],
-    r"(xai/)?grok-3(-fast)?(-beta)?": [],
     r"(xai/)?grok-3-mini(-fast)?(-beta)?": ["low", "high"],
 }
 
@@ -373,7 +369,13 @@ class LiteLLMModel(BenchmarkModule):
                 f"Enabling thinking mode for model {self.model_config.model_id!r}",
                 level=logging.DEBUG,
             )
-        elif self.model_config.revision in {"low", "high"}:
+        elif self.model_config.revision == "no-thinking":
+            generation_kwargs["thinking"] = dict(type="disabled", budget_tokens=0)
+            log_once(
+                f"Disabling thinking mode for model {self.model_config.model_id!r}",
+                level=logging.DEBUG,
+            )
+        elif self.model_config.revision in {"low", "medium", "high"}:
             generation_kwargs["reasoning_effort"] = self.model_config.revision
             log_once(
                 f"Enabling reasoning effort {self.model_config.revision!r} for model "

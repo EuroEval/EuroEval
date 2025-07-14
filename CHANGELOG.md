@@ -20,6 +20,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   another judge model. This is useful for evaluating models in a reference-free manner,
   or if the metric is sufficiently complex. It is currently not used in any task, but
   the functionality is there for future use.
+- Add `@no-thinking` option for Gemini-2.5 models, which disables the
+  reasoning mode for these models. This is useful for evaluating the base model without
+  reasoning, as the reasoning mode is enabled by default for these models.
 
 ### Fixed
 - Evaluating freshly initialised encoder models on multiple-choice classification tasks
