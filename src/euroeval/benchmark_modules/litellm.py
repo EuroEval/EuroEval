@@ -559,8 +559,10 @@ class LiteLLMModel(BenchmarkModule):
                     f"error message was: {error_msg}."
                 )
             log_once(
-                f"The model {model_id!r} requires a higher thinking budget than "
-                f"{REASONING_MAX_TOKENS:,}, so setting it to {thinking_budget:,}.",
+                f"The model {model_id!r} can at most use {thinking_budget:,} tokens "
+                "for reasoning, which is less than the default of "
+                f"{REASONING_MAX_TOKENS:,} tokens. Setting the thinking budget to "
+                f"{thinking_budget:,} tokens.",
                 level=logging.DEBUG,
             )
             generation_kwargs["thinking"] = dict(
