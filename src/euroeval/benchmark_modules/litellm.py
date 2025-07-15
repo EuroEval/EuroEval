@@ -143,15 +143,15 @@ NUM_PARAMS_MAPPING = {
 
 ALLOWED_PARAMS = {
     # OpenAI models
-    r"o[1-9](-mini|-preview)?(-[0-9]{4}-[0-9]{2}-[0-9]{2})?": ["low", "high"],
+    r"o[1-9](-mini|-preview)?(-[0-9]{4}-[0-9]{2}-[0-9]{2})?": ["low", "medium", "high"],
     # Anthropic models
-    r"(anthropic/)?claude-3-7-sonnet.*": ["thinking"],
-    r"(anthropic/)?claude-(sonnet|opus)-4.*": ["thinking"],
+    r"(anthropic/)?claude-3-7-sonnet.*": ["no-thinking", "thinking"],
+    r"(anthropic/)?claude-(sonnet|opus)-4.*": ["no-thinking", "thinking"],
     # Gemini models
     r"(gemini/)?gemini-2.5-flash-lite.*": ["no-thinking", "thinking"],
     r"(gemini/)?gemini-2.5-flash-[0-9].*": ["no-thinking", "thinking"],
     # xAI models
-    r"(xai/)?grok-3-mini(-fast)?(-beta)?": ["low", "high"],
+    r"(xai/)?grok-3-mini(-fast)?(-beta)?": ["low", "medium", "high"],
 }
 
 
