@@ -143,18 +143,15 @@ NUM_PARAMS_MAPPING = {
 
 ALLOWED_PARAMS = {
     # OpenAI models
-    r"gpt-4.*": [],
-    r"o[1-9](-mini|-preview)?(-[0-9]{4}-[0-9]{2}-[0-9]{2})?": ["low", "high"],
+    r"o[1-9](-mini|-preview)?(-[0-9]{4}-[0-9]{2}-[0-9]{2})?": ["low", "medium", "high"],
     # Anthropic models
-    r"(anthropic/)?claude-3-(haiku|sonnet|opus).*": [],
-    r"(anthropic/)?claude-3-5-.*": [],
-    r"(anthropic/)?claude-3-7-sonnet.*": ["thinking"],
+    r"(anthropic/)?claude-3-7-sonnet.*": ["no-thinking", "thinking"],
+    r"(anthropic/)?claude-(sonnet|opus)-4.*": ["no-thinking", "thinking"],
     # Gemini models
-    r"(gemini/)?gemini-.*": [],
+    r"(gemini/)?gemini-2.5-flash-lite.*": ["no-thinking", "thinking"],
+    r"(gemini/)?gemini-2.5-flash-[0-9].*": ["no-thinking", "thinking"],
     # xAI models
-    r"(xai/)?grok-2.*": [],
-    r"(xai/)?grok-3(-fast)?(-beta)?": [],
-    r"(xai/)?grok-3-mini(-fast)?(-beta)?": ["low", "high"],
+    r"(xai/)?grok-3-mini(-fast)?(-beta)?": ["low", "medium", "high"],
 }
 
 
@@ -172,18 +169,6 @@ class LiteLLMModel(BenchmarkModule):
     fresh_model = False
     batching_preference = BatchingPreference.ALL_AT_ONCE
     high_priority = False
-
-    _handleable_exceptions = (
-        BadRequestError,
-        RateLimitError,
-        APIError,
-        APIConnectionError,
-        Timeout,
-        ServiceUnavailableError,
-        InternalServerError,
-        SystemError,
-        AuthenticationError,
-    )
 
     def __init__(
         self,
@@ -243,6 +228,8 @@ class LiteLLMModel(BenchmarkModule):
             )
         elif self.model_config.revision in {"thinking"}:
             type_ = GenerativeType.REASONING
+        elif self.model_config.revision in {"no-thinking"}:
+            type_ = GenerativeType.INSTRUCTION_TUNED
         elif re.fullmatch(
             pattern="|".join(REASONING_MODELS), string=self.model_config.model_id
         ):
@@ -373,7 +360,13 @@ class LiteLLMModel(BenchmarkModule):
                 f"Enabling thinking mode for model {self.model_config.model_id!r}",
                 level=logging.DEBUG,
             )
-        elif self.model_config.revision in {"low", "high"}:
+        elif self.model_config.revision == "no-thinking":
+            generation_kwargs["thinking"] = dict(type="disabled", budget_tokens=0)
+            log_once(
+                f"Disabling thinking mode for model {self.model_config.model_id!r}",
+                level=logging.DEBUG,
+            )
+        elif self.model_config.revision in {"low", "medium", "high"}:
             generation_kwargs["reasoning_effort"] = self.model_config.revision
             log_once(
                 f"Enabling reasoning effort {self.model_config.revision!r} for model "
@@ -480,6 +473,10 @@ class LiteLLMModel(BenchmarkModule):
         ]
         max_items_messages = ["'maxItems' is not permitted."]
         no_json_schema_messages = ["Property keys should match pattern"]
+        thinking_budget_pattern = re.compile(
+            r"the thinking budget [0-9]+ is invalid. please choose a value between "
+            r"[0-9]+ and ([0-9]+)\."
+        )
 
         if any(msg.lower() in error_msg for msg in stop_messages):
             log_once(
@@ -539,6 +536,26 @@ class LiteLLMModel(BenchmarkModule):
                 level=logging.DEBUG,
             )
             generation_kwargs["response_format"] = dict(type="json_object")
+            return
+        elif thinking_match := thinking_budget_pattern.search(string=error_msg):
+            thinking_budget = int(thinking_match.group(1))
+            if thinking_budget >= REASONING_MAX_TOKENS:
+                raise InvalidBenchmark(
+                    f"The model {model_id!r} has an upper thinking budget of "
+                    f"{thinking_budget:,} tokens, which is within the limit of "
+                    f"{REASONING_MAX_TOKENS:,} tokens. This should not happen. The "
+                    f"error message was: {error_msg}."
+                )
+            log_once(
+                f"The model {model_id!r} can at most use {thinking_budget:,} tokens "
+                "for reasoning, which is less than the default of "
+                f"{REASONING_MAX_TOKENS:,} tokens. Setting the thinking budget to "
+                f"{thinking_budget:,} tokens.",
+                level=logging.DEBUG,
+            )
+            generation_kwargs["thinking"] = dict(
+                type="enabled", budget_tokens=thinking_budget - 1
+            )
             return
         elif isinstance(
             error, (Timeout, ServiceUnavailableError, InternalServerError, SystemError)

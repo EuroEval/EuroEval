@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 
 ## [Unreleased]
+- Added the SST-2 from [Extraglue](https://arxiv.org/abs/2404.05333) dataset for sentiment classification as well as initial support for European Portuguese. This was contributed by [@duarteocarmo](https://github.com/duarteocarmo) ✨
+- Added the BoolQ dataset from [Extraglue](https://arxiv.org/abs/2404.05333) as an initial reading comprehension dataset. This was contributed by [@duarteocarmo](https://github.com/duarteocarmo) ✨
+- Added the MMLU-pt dataset, a Portuguese knowledge dataset that is a subset of MMLUx from openGPT-X/mmlux. This was contributed by [@duarteocarmo](https://github.com/duarteocarmo) ✨
+- Added the HellaSwag-pt dataset, a Portuguese common-sense reasoning dataset that is a subset of HellaswagX from openGPT-X/hellaswagx. This was contributed by [@duarteocarmo](https://github.com/duarteocarmo) ✨
+- Added the Scala-pt dataset, a linguistic acceptability dataset for portuguese. This was contributed by [@duarteocarmo](https://github.com/duarteocarmo) ✨
+- Added the Harem-pt dataset, a named entitiy recognition dataset for portuguese. This was contributed by [@duarteocarmo](https://github.com/duarteocarmo) ✨
+
+
+## [v15.11.0] - 2025-07-15
 ### Added
 - Added the English knowledge dataset Life in the UK, which has been added as an
   official dataset, replacing the existing English knowledge dataset MMLU, which in turn
@@ -20,17 +29,18 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   another judge model. This is useful for evaluating models in a reference-free manner,
   or if the metric is sufficiently complex. It is currently not used in any task, but
   the functionality is there for future use.
-- Added the SST-2 from [Extraglue](https://arxiv.org/abs/2404.05333) dataset for sentiment classification as well as initial support for European Portuguese. This was contributed by [@duarteocarmo](https://github.com/duarteocarmo) ✨
-- Added the BoolQ dataset from [Extraglue](https://arxiv.org/abs/2404.05333) as an initial reading comprehension dataset. This was contributed by [@duarteocarmo](https://github.com/duarteocarmo) ✨
-- Added the MMLU-pt dataset, a Portuguese knowledge dataset that is a subset of MMLUx from openGPT-X/mmlux. This was contributed by [@duarteocarmo](https://github.com/duarteocarmo) ✨
-- Added the HellaSwag-pt dataset, a Portuguese common-sense reasoning dataset that is a subset of HellaswagX from openGPT-X/hellaswagx. This was contributed by [@duarteocarmo](https://github.com/duarteocarmo) ✨
-- Added the Scala-pt dataset, a linguistic acceptability dataset for portuguese. This was contributed by [@duarteocarmo](https://github.com/duarteocarmo) ✨
-- Added the Harem-pt dataset, a named entitiy recognition dataset for portuguese. This was contributed by [@duarteocarmo](https://github.com/duarteocarmo) ✨
+- Add `no-thinking` and `thinking` options for Gemini-2.5-flash and
+  Gemini-2.5-flash-lite, which allows disabling and enabling the reasoning mode for
+  these models, respectively. Note that the former model has reasoning enabled by
+  default and the latter has it disabled by default (see the defaults in the [Gemini-2.5
+  docs](https://ai.google.dev/gemini-api/docs/thinking#set-budget)).
 
 ### Fixed
 - Evaluating freshly initialised encoder models on multiple-choice classification tasks
   caused an error, as the id-to-label mapping was not set up correctly. This has been
   fixed now.
+- Now dynamically lowers the maximum amount of reasoning tokens for LiteLLM models if
+  they do not support the full 32,768 tokens.
 
 
 ## [v15.10.1] - 2025-06-20

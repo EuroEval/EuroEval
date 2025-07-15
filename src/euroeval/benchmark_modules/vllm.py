@@ -1015,7 +1015,6 @@ def get_custom_stop_tokens(
     """
     candidate_stop_tokens = CUSTOM_STOP_TOKENS
 
-    # Create a prompt to check if the model uses the reasoning tokens
     prompt = "Hello"
     if tokenizer.chat_template is not None:
         templated_prompt = tokenizer.apply_chat_template(
@@ -1026,7 +1025,6 @@ def get_custom_stop_tokens(
         assert isinstance(templated_prompt, str)
         prompt = templated_prompt
 
-    # Check that the beginning-of-reasoning token is actually used by the model
     max_tokens = REASONING_MAX_TOKENS if is_reasoning_model else 10
     completion = (
         model.generate(

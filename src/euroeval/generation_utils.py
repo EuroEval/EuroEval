@@ -323,6 +323,7 @@ def apply_prompt(
                     tokenize=False,
                     add_generation_prompt=True,
                     chat_template=chat_template,
+                    enable_thinking=True,
                 )
                 for messages in messages_list
             ]
