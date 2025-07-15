@@ -1357,17 +1357,8 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">datasets</span><span class="w"> </span><span class="kn">import</span> <span class="n">DatasetDict</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">torch</span><span class="w"> </span><span class="kn">import</span> <span class="n">nn</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">tqdm.auto</span><span class="w"> </span><span class="kn">import</span> <span class="n">tqdm</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">transformers.tokenization_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">PreTrainedTokenizer</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">transformers.trainer</span><span class="w"> </span><span class="kn">import</span> <span class="n">Trainer</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">..data_models</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-    <span class="n">BenchmarkConfig</span><span class="p">,</span>
-    <span class="n">DatasetConfig</span><span class="p">,</span>
-    <span class="n">GenerativeModelOutput</span><span class="p">,</span>
-    <span class="n">ModelConfig</span><span class="p">,</span>
-    <span class="n">Task</span><span class="p">,</span>
-<span class="p">)</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">..enums</span><span class="w"> </span><span class="kn">import</span> <span class="n">BatchingPreference</span><span class="p">,</span> <span class="n">GenerativeType</span><span class="p">,</span> <span class="n">TaskGroup</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..enums</span><span class="w"> </span><span class="kn">import</span> <span class="n">TaskGroup</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..exceptions</span><span class="w"> </span><span class="kn">import</span> <span class="n">NeedsEnvironmentVariable</span><span class="p">,</span> <span class="n">NeedsExtraInstalled</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..task_group_utils</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">question_answering</span><span class="p">,</span>
@@ -1375,8 +1366,21 @@
     <span class="n">text_to_text</span><span class="p">,</span>
     <span class="n">token_classification</span><span class="p">,</span>
 <span class="p">)</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">..types</span><span class="w"> </span><span class="kn">import</span> <span class="n">ComputeMetricsFunction</span><span class="p">,</span> <span class="n">ExtractLabelsFunction</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">log_once</span>
+
+<span class="k">if</span> <span class="n">t</span><span class="o">.</span><span class="n">TYPE_CHECKING</span><span class="p">:</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">transformers.tokenization_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">PreTrainedTokenizer</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">transformers.trainer</span><span class="w"> </span><span class="kn">import</span> <span class="n">Trainer</span>
+
+    <span class="kn">from</span><span class="w"> </span><span class="nn">..data_models</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+        <span class="n">BenchmarkConfig</span><span class="p">,</span>
+        <span class="n">DatasetConfig</span><span class="p">,</span>
+        <span class="n">GenerativeModelOutput</span><span class="p">,</span>
+        <span class="n">ModelConfig</span><span class="p">,</span>
+        <span class="n">Task</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">..enums</span><span class="w"> </span><span class="kn">import</span> <span class="n">BatchingPreference</span><span class="p">,</span> <span class="n">GenerativeType</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">..types</span><span class="w"> </span><span class="kn">import</span> <span class="n">ComputeMetricsFunction</span><span class="p">,</span> <span class="n">ExtractLabelsFunction</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">&quot;euroeval&quot;</span><span class="p">)</span>
 
@@ -1396,14 +1400,14 @@
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="n">fresh_model</span><span class="p">:</span> <span class="nb">bool</span>
-    <span class="n">batching_preference</span><span class="p">:</span> <span class="n">BatchingPreference</span>
+    <span class="n">batching_preference</span><span class="p">:</span> <span class="s2">&quot;BatchingPreference&quot;</span>
     <span class="n">high_priority</span><span class="p">:</span> <span class="nb">bool</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
-        <span class="n">model_config</span><span class="p">:</span> <span class="n">ModelConfig</span><span class="p">,</span>
-        <span class="n">dataset_config</span><span class="p">:</span> <span class="n">DatasetConfig</span><span class="p">,</span>
-        <span class="n">benchmark_config</span><span class="p">:</span> <span class="n">BenchmarkConfig</span><span class="p">,</span>
+        <span class="n">model_config</span><span class="p">:</span> <span class="s2">&quot;ModelConfig&quot;</span><span class="p">,</span>
+        <span class="n">dataset_config</span><span class="p">:</span> <span class="s2">&quot;DatasetConfig&quot;</span><span class="p">,</span>
+        <span class="n">benchmark_config</span><span class="p">:</span> <span class="s2">&quot;BenchmarkConfig&quot;</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialise the benchmark module.</span>
 
@@ -1485,7 +1489,7 @@
 
     <span class="nd">@property</span>
     <span class="nd">@abstractmethod</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">generative_type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">GenerativeType</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span><div class="mkapi-source-link" id="euroeval.benchmark_modules.base.BenchmarkModule.generative_type"><a href="../../../../api/euroeval/benchmark_modules/base/#euroeval.benchmark_modules.base.BenchmarkModule.generative_type" title="Go to docs">[docs]</a></div>
+    <span class="k">def</span><span class="w"> </span><span class="nf">generative_type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;GenerativeType | None&quot;</span><span class="p">:</span><div class="mkapi-source-link" id="euroeval.benchmark_modules.base.BenchmarkModule.generative_type"><a href="../../../../api/euroeval/benchmark_modules/base/#euroeval.benchmark_modules.base.BenchmarkModule.generative_type" title="Go to docs">[docs]</a></div>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the generative type of the model.</span>
 
 <span class="sd">        Returns:</span>
@@ -1524,7 +1528,7 @@
         <span class="o">...</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">compute_metrics</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ComputeMetricsFunction</span><span class="p">:</span><div class="mkapi-source-link" id="euroeval.benchmark_modules.base.BenchmarkModule.compute_metrics"><a href="../../../../api/euroeval/benchmark_modules/base/#euroeval.benchmark_modules.base.BenchmarkModule.compute_metrics" title="Go to docs">[docs]</a></div>
+    <span class="k">def</span><span class="w"> </span><span class="nf">compute_metrics</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;ComputeMetricsFunction&quot;</span><span class="p">:</span><div class="mkapi-source-link" id="euroeval.benchmark_modules.base.BenchmarkModule.compute_metrics"><a href="../../../../api/euroeval/benchmark_modules/base/#euroeval.benchmark_modules.base.BenchmarkModule.compute_metrics" title="Go to docs">[docs]</a></div>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;The function used to compute the metrics.</span>
 
 <span class="sd">        Returns:</span>
@@ -1535,13 +1539,11 @@
                 <span class="k">return</span> <span class="n">partial</span><span class="p">(</span>
                     <span class="n">sequence_classification</span><span class="o">.</span><span class="n">compute_metrics</span><span class="p">,</span>
                     <span class="n">dataset_config</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dataset_config</span><span class="p">,</span>
-                    <span class="n">benchmark_config</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">benchmark_config</span><span class="p">,</span>
                 <span class="p">)</span>
             <span class="k">case</span> <span class="n">TaskGroup</span><span class="o">.</span><span class="n">MULTIPLE_CHOICE_CLASSIFICATION</span><span class="p">:</span>
                 <span class="k">return</span> <span class="n">partial</span><span class="p">(</span>
                     <span class="n">sequence_classification</span><span class="o">.</span><span class="n">compute_metrics</span><span class="p">,</span>
                     <span class="n">dataset_config</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dataset_config</span><span class="p">,</span>
-                    <span class="n">benchmark_config</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">benchmark_config</span><span class="p">,</span>
                 <span class="p">)</span>
             <span class="k">case</span> <span class="n">TaskGroup</span><span class="o">.</span><span class="n">TEXT_TO_TEXT</span><span class="p">:</span>
                 <span class="k">return</span> <span class="n">partial</span><span class="p">(</span>
@@ -1554,13 +1556,11 @@
                     <span class="n">token_classification</span><span class="o">.</span><span class="n">compute_metrics</span><span class="p">,</span>
                     <span class="n">has_misc_tags</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">buffer</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;has_misc_tags&quot;</span><span class="p">,</span> <span class="kc">True</span><span class="p">),</span>
                     <span class="n">dataset_config</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dataset_config</span><span class="p">,</span>
-                    <span class="n">benchmark_config</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">benchmark_config</span><span class="p">,</span>
                 <span class="p">)</span>
             <span class="k">case</span> <span class="n">TaskGroup</span><span class="o">.</span><span class="n">QUESTION_ANSWERING</span><span class="p">:</span>
                 <span class="k">return</span> <span class="n">partial</span><span class="p">(</span>
                     <span class="n">question_answering</span><span class="o">.</span><span class="n">compute_metrics</span><span class="p">,</span>
                     <span class="n">dataset_config</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dataset_config</span><span class="p">,</span>
-                    <span class="n">benchmark_config</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">benchmark_config</span><span class="p">,</span>
                 <span class="p">)</span>
             <span class="k">case</span><span class="w"> </span><span class="k">_</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span>
@@ -1569,7 +1569,7 @@
 
     <span class="nd">@property</span>
     <span class="nd">@abstractmethod</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">extract_labels_from_generation</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ExtractLabelsFunction</span><span class="p">:</span><div class="mkapi-source-link" id="euroeval.benchmark_modules.base.BenchmarkModule.extract_labels_from_generation"><a href="../../../../api/euroeval/benchmark_modules/base/#euroeval.benchmark_modules.base.BenchmarkModule.extract_labels_from_generation" title="Go to docs">[docs]</a></div>
+    <span class="k">def</span><span class="w"> </span><span class="nf">extract_labels_from_generation</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;ExtractLabelsFunction&quot;</span><span class="p">:</span><div class="mkapi-source-link" id="euroeval.benchmark_modules.base.BenchmarkModule.extract_labels_from_generation"><a href="../../../../api/euroeval/benchmark_modules/base/#euroeval.benchmark_modules.base.BenchmarkModule.extract_labels_from_generation" title="Go to docs">[docs]</a></div>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;The function used to extract the labels from the generated output.</span>
 
 <span class="sd">        Returns:</span>
@@ -1588,7 +1588,7 @@
         <span class="o">...</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">prepare_datasets</span><span class="p">(</span><div class="mkapi-source-link" id="euroeval.benchmark_modules.base.BenchmarkModule.prepare_datasets"><a href="../../../../api/euroeval/benchmark_modules/base/#euroeval.benchmark_modules.base.BenchmarkModule.prepare_datasets" title="Go to docs">[docs]</a></div>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">datasets</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">DatasetDict</span><span class="p">],</span> <span class="n">task</span><span class="p">:</span> <span class="n">Task</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">datasets</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">DatasetDict</span><span class="p">],</span> <span class="n">task</span><span class="p">:</span> <span class="s2">&quot;Task&quot;</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">DatasetDict</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Prepare the datasets for the model.</span>
 
@@ -1630,7 +1630,7 @@
 
     <span class="nd">@abstractmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">prepare_dataset</span><span class="p">(</span><div class="mkapi-source-link" id="euroeval.benchmark_modules.base.BenchmarkModule.prepare_dataset"><a href="../../../../api/euroeval/benchmark_modules/base/#euroeval.benchmark_modules.base.BenchmarkModule.prepare_dataset" title="Go to docs">[docs]</a></div>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">dataset</span><span class="p">:</span> <span class="n">DatasetDict</span><span class="p">,</span> <span class="n">task</span><span class="p">:</span> <span class="n">Task</span><span class="p">,</span> <span class="n">itr_idx</span><span class="p">:</span> <span class="nb">int</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">dataset</span><span class="p">:</span> <span class="n">DatasetDict</span><span class="p">,</span> <span class="n">task</span><span class="p">:</span> <span class="s2">&quot;Task&quot;</span><span class="p">,</span> <span class="n">itr_idx</span><span class="p">:</span> <span class="nb">int</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DatasetDict</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Prepare the dataset for the model.</span>
 
@@ -1649,7 +1649,7 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="o">...</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="nf">generate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">inputs</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">GenerativeModelOutput</span><span class="p">:</span><div class="mkapi-source-link" id="euroeval.benchmark_modules.base.BenchmarkModule.generate"><a href="../../../../api/euroeval/benchmark_modules/base/#euroeval.benchmark_modules.base.BenchmarkModule.generate" title="Go to docs">[docs]</a></div>
+    <span class="k">def</span><span class="w"> </span><span class="nf">generate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">inputs</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;GenerativeModelOutput&quot;</span><span class="p">:</span><div class="mkapi-source-link" id="euroeval.benchmark_modules.base.BenchmarkModule.generate"><a href="../../../../api/euroeval/benchmark_modules/base/#euroeval.benchmark_modules.base.BenchmarkModule.generate" title="Go to docs">[docs]</a></div>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Generate outputs from the model.</span>
 
 <span class="sd">        Args:</span>
@@ -1667,7 +1667,7 @@
     <span class="nd">@classmethod</span>
     <span class="nd">@abstractmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">model_exists</span><span class="p">(</span><div class="mkapi-source-link" id="euroeval.benchmark_modules.base.BenchmarkModule.model_exists"><a href="../../../../api/euroeval/benchmark_modules/base/#euroeval.benchmark_modules.base.BenchmarkModule.model_exists" title="Go to docs">[docs]</a></div>
-        <span class="bp">cls</span><span class="p">,</span> <span class="n">model_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">benchmark_config</span><span class="p">:</span> <span class="n">BenchmarkConfig</span>
+        <span class="bp">cls</span><span class="p">,</span> <span class="n">model_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">benchmark_config</span><span class="p">:</span> <span class="s2">&quot;BenchmarkConfig&quot;</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span> <span class="o">|</span> <span class="n">NeedsExtraInstalled</span> <span class="o">|</span> <span class="n">NeedsEnvironmentVariable</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Check if a model exists.</span>
 
@@ -1686,8 +1686,8 @@
     <span class="nd">@classmethod</span>
     <span class="nd">@abstractmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">get_model_config</span><span class="p">(</span><div class="mkapi-source-link" id="euroeval.benchmark_modules.base.BenchmarkModule.get_model_config"><a href="../../../../api/euroeval/benchmark_modules/base/#euroeval.benchmark_modules.base.BenchmarkModule.get_model_config" title="Go to docs">[docs]</a></div>
-        <span class="bp">cls</span><span class="p">,</span> <span class="n">model_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">benchmark_config</span><span class="p">:</span> <span class="n">BenchmarkConfig</span>
-    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ModelConfig</span><span class="p">:</span>
+        <span class="bp">cls</span><span class="p">,</span> <span class="n">model_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">benchmark_config</span><span class="p">:</span> <span class="s2">&quot;BenchmarkConfig&quot;</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;ModelConfig&quot;</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Fetch the model configuration.</span>
 
 <span class="sd">        Args:</span>

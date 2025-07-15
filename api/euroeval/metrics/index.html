@@ -9,10 +9,10 @@
       
       
       
-        <link rel="prev" href="../tasks/">
+        <link rel="prev" href="../languages/">
       
       
-        <link rel="next" href="../types/">
+        <link rel="next" href="../model_cache/">
       
       
       <link rel="icon" href="../../../gfx/favicon.png">
@@ -20,7 +20,7 @@
     
     
       
-        <title>euroeval.tokenization_utils - EuroEval</title>
+        <title>euroeval.metrics - EuroEval</title>
       
     
     
@@ -78,7 +78,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#euroeval.tokenization_utils" class="md-skip">
+        <a href="#euroeval.metrics" class="md-skip">
           Skip to content
         </a>
       
@@ -114,7 +114,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              euroeval.tokenization_utils
+              euroeval.metrics
             
           </span>
         </div>
@@ -1515,10 +1515,32 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../metrics/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    euroeval.metrics
+    
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -1529,6 +1551,71 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#euroeval.metrics.Metric" class="md-nav__link">
+    <span class="md-ellipsis">
+      Metric
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#euroeval.metrics.HuggingFaceMetric" class="md-nav__link">
+    <span class="md-ellipsis">
+      HuggingFaceMetric
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#euroeval.metrics.LLMAsAJudgeMetric" class="md-nav__link">
+    <span class="md-ellipsis">
+      LLMAsAJudgeMetric
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#euroeval.metrics.SpeedMetric" class="md-nav__link">
+    <span class="md-ellipsis">
+      SpeedMetric
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#euroeval.metrics.Fluency" class="md-nav__link">
+    <span class="md-ellipsis">
+      Fluency
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -1676,32 +1763,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    euroeval.tokenization_utils
-    
-  </span>
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../tokenization_utils/" class="md-nav__link">
         
   
   
@@ -1712,98 +1777,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#euroeval.tokenization_utils.get_special_token_metadata" class="md-nav__link">
-    <span class="md-ellipsis">
-      get_special_token_metadata
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#euroeval.tokenization_utils.should_prompts_be_stripped" class="md-nav__link">
-    <span class="md-ellipsis">
-      should_prompts_be_stripped
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#euroeval.tokenization_utils.should_prefix_space_be_added_to_labels" class="md-nav__link">
-    <span class="md-ellipsis">
-      should_prefix_space_be_added_to_labels
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#euroeval.tokenization_utils.get_bos_token" class="md-nav__link">
-    <span class="md-ellipsis">
-      get_bos_token
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#euroeval.tokenization_utils.get_eos_token" class="md-nav__link">
-    <span class="md-ellipsis">
-      get_eos_token
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#euroeval.tokenization_utils.get_pad_token" class="md-nav__link">
-    <span class="md-ellipsis">
-      get_pad_token
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#euroeval.tokenization_utils.get_end_of_chat_token_ids" class="md-nav__link">
-    <span class="md-ellipsis">
-      get_end_of_chat_token_ids
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#euroeval.tokenization_utils.get_first_label_token_mapping" class="md-nav__link">
-    <span class="md-ellipsis">
-      get_first_label_token_mapping
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -1897,72 +1870,45 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#euroeval.tokenization_utils.get_special_token_metadata" class="md-nav__link">
+  <a href="#euroeval.metrics.Metric" class="md-nav__link">
     <span class="md-ellipsis">
-      get_special_token_metadata
+      Metric
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#euroeval.tokenization_utils.should_prompts_be_stripped" class="md-nav__link">
+  <a href="#euroeval.metrics.HuggingFaceMetric" class="md-nav__link">
     <span class="md-ellipsis">
-      should_prompts_be_stripped
+      HuggingFaceMetric
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#euroeval.tokenization_utils.should_prefix_space_be_added_to_labels" class="md-nav__link">
+  <a href="#euroeval.metrics.LLMAsAJudgeMetric" class="md-nav__link">
     <span class="md-ellipsis">
-      should_prefix_space_be_added_to_labels
+      LLMAsAJudgeMetric
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#euroeval.tokenization_utils.get_bos_token" class="md-nav__link">
+  <a href="#euroeval.metrics.SpeedMetric" class="md-nav__link">
     <span class="md-ellipsis">
-      get_bos_token
+      SpeedMetric
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#euroeval.tokenization_utils.get_eos_token" class="md-nav__link">
+  <a href="#euroeval.metrics.Fluency" class="md-nav__link">
     <span class="md-ellipsis">
-      get_eos_token
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#euroeval.tokenization_utils.get_pad_token" class="md-nav__link">
-    <span class="md-ellipsis">
-      get_pad_token
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#euroeval.tokenization_utils.get_end_of_chat_token_ids" class="md-nav__link">
-    <span class="md-ellipsis">
-      get_end_of_chat_token_ids
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#euroeval.tokenization_utils.get_first_label_token_mapping" class="md-nav__link">
-    <span class="md-ellipsis">
-      get_first_label_token_mapping
+      Fluency
     </span>
   </a>
   
@@ -1984,85 +1930,73 @@
 
 
 
-<h1 style="display: none;">euroeval.tokenization_utils</h1><p class="mkapi-object mkapi-page-source" id="euroeval.tokenization_utils">
+<h1 style="display: none;">euroeval.metrics</h1><p class="mkapi-object mkapi-page-source" id="euroeval.metrics">
 <span class="mkapi-object-link">
 
 
-<a href="../../../src/euroeval/tokenization_utils/#euroeval.tokenization_utils" title="Go to source">source</a>
+<a href="../../../src/euroeval/metrics/#euroeval.metrics" title="Go to source">source</a>
 <span class="mkapi-document-toggle" title="Toggle all docs">
 <i class="fa-regular fa-square-minus"></i>
 </span>
 </span><span class="mkapi-object-kind">module</span>
-<span class="mkapi-object-name"><a href="./#euroeval.tokenization_utils" title="euroeval.tokenization_utils">euroeval.tokenization_utils</a></span>
+<span class="mkapi-object-name"><a href="./#euroeval.metrics" title="euroeval.metrics">euroeval.metrics</a></span>
 </p>
 <div class="mkapi-document">
-<p>Utility functions related to tokenization.</p>
+<p>All the metrics used in EuroEval.</p>
 <p class="mkapi-section">
 <span class="mkapi-object-link">
-<span class="mkapi-section-toggle" title="Toggle functions">
+<span class="mkapi-section-toggle" title="Toggle classes">
 <i class="fa-regular fa-square-minus"></i>
 </span>
 </span>
-<span class="mkapi-section-name">Functions</span>
+<span class="mkapi-section-name">Classes</span>
 </p>
 <div class="mkapi-section-content">
 <ul class="mkapi-item-list">
 <li>
-<p><span class="mkapi-item-name"><a href="./#euroeval.tokenization_utils.get_special_token_metadata" title="euroeval.tokenization_utils.get_special_token_metadata">get_special_token_metadata</a></span>
+<p><span class="mkapi-item-name"><a href="./#euroeval.metrics.Metric" title="euroeval.metrics.Metric">Metric</a></span>
  <span class="mkapi-dash">&mdash;</span>
-Get the special token metadata for a tokenizer.</p>
+Abstract base class for all metrics.</p>
 </li>
 <li>
-<p><span class="mkapi-item-name"><a href="./#euroeval.tokenization_utils.should_prompts_be_stripped" title="euroeval.tokenization_utils.should_prompts_be_stripped">should_prompts_be_stripped</a></span>
+<p><span class="mkapi-item-name"><a href="./#euroeval.metrics.HuggingFaceMetric" title="euroeval.metrics.HuggingFaceMetric">HuggingFaceMetric</a></span>
  <span class="mkapi-dash">&mdash;</span>
-Determine if we should strip the prompts for few-shot evaluation.</p>
+A metric which is implemented in the <span class="mkapi-tooltip" title="evaluate"><code>evaluate</code></span> package.</p>
 </li>
 <li>
-<p><span class="mkapi-item-name"><a href="./#euroeval.tokenization_utils.should_prefix_space_be_added_to_labels" title="euroeval.tokenization_utils.should_prefix_space_be_added_to_labels">should_prefix_space_be_added_to_labels</a></span>
+<p><span class="mkapi-item-name"><a href="./#euroeval.metrics.LLMAsAJudgeMetric" title="euroeval.metrics.LLMAsAJudgeMetric">LLMAsAJudgeMetric</a></span>
  <span class="mkapi-dash">&mdash;</span>
-Determine if we should add a prefix space to the labels.</p>
+Use an LLM to judge the quality of the predictions.</p>
 </li>
 <li>
-<p><span class="mkapi-item-name"><a href="./#euroeval.tokenization_utils.get_bos_token" title="euroeval.tokenization_utils.get_bos_token">get_bos_token</a></span>
+<p><span class="mkapi-item-name"><a href="./#euroeval.metrics.SpeedMetric" title="euroeval.metrics.SpeedMetric">SpeedMetric</a></span>
  <span class="mkapi-dash">&mdash;</span>
-Get the beginning-of-sequence token from a tokenizer.</p>
+Speed metric.</p>
 </li>
 <li>
-<p><span class="mkapi-item-name"><a href="./#euroeval.tokenization_utils.get_eos_token" title="euroeval.tokenization_utils.get_eos_token">get_eos_token</a></span>
+<p><span class="mkapi-item-name"><a href="./#euroeval.metrics.Fluency" title="euroeval.metrics.Fluency">Fluency</a></span>
  <span class="mkapi-dash">&mdash;</span>
-Get the end-of-sequence token from a tokenizer.</p>
-</li>
-<li>
-<p><span class="mkapi-item-name"><a href="./#euroeval.tokenization_utils.get_pad_token" title="euroeval.tokenization_utils.get_pad_token">get_pad_token</a></span>
- <span class="mkapi-dash">&mdash;</span>
-Get the padding token from a tokenizer.</p>
-</li>
-<li>
-<p><span class="mkapi-item-name"><a href="./#euroeval.tokenization_utils.get_end_of_chat_token_ids" title="euroeval.tokenization_utils.get_end_of_chat_token_ids">get_end_of_chat_token_ids</a></span>
- <span class="mkapi-dash">&mdash;</span>
-Get the end token ID for chat models.</p>
-</li>
-<li>
-<p><span class="mkapi-item-name"><a href="./#euroeval.tokenization_utils.get_first_label_token_mapping" title="euroeval.tokenization_utils.get_first_label_token_mapping">get_first_label_token_mapping</a></span>
- <span class="mkapi-dash">&mdash;</span>
-Check if the model should output scores.</p>
+Response format for the fluency metric.</p>
 </li>
 </ul>
 </div>
 </div>
-<p class="mkapi-object mkapi-page-source" id="euroeval.tokenization_utils.get_special_token_metadata">
+<p class="mkapi-object mkapi-page-source" id="euroeval.metrics.Metric">
 <span class="mkapi-object-link">
 
 
-<a href="../../../src/euroeval/tokenization_utils/#euroeval.tokenization_utils.get_special_token_metadata" title="Go to source">source</a>
+<a href="../../../src/euroeval/metrics/#euroeval.metrics.Metric" title="Go to source">source</a>
 <span class="mkapi-document-toggle" title="Toggle all docs">
 <i class="fa-regular fa-square-minus"></i>
 </span>
-</span>
-<span class="mkapi-object-name"><a href="./#euroeval.tokenization_utils.get_special_token_metadata" title="euroeval.tokenization_utils.get_special_token_metadata">get_special_token_metadata</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">tokenizer</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="transformers.tokenization_utils_base.PreTrainedTokenizerBase">PreTrainedTokenizerBase</span></span><span class="mkapi-paren">)</span><span class="mkapi-arrow"> → </span><span class="mkapi-return">dict</span></span>
+</span><span class="mkapi-object-kind">class</span>
+<span class="mkapi-object-name"><a href="./#euroeval.metrics.Metric" title="euroeval.metrics.Metric">Metric</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">name</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str</span><span class="mkapi-comma">, </span><span class="mkapi-arg">pretty_name</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str</span><span class="mkapi-comma">, </span><span class="mkapi-arg">postprocessing_fn</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="typing">t</span>.<span class="mkapi-tooltip" title="typing.Callable">Callable</span>[[float], tuple[float, str]] | None</span><span class="mkapi-equal"> = </span><span class="mkapi-default">None</span><span class="mkapi-paren">)</span></span>
 </p>
 <div class="mkapi-document">
-<p>Get the special token metadata for a tokenizer.</p>
+<p class="mkapi-bases">Bases :
+<span class="mkapi-base"><span class="mkapi-tooltip" title="abc">abc</span>.<span class="mkapi-tooltip" title="abc.ABC">ABC</span></span></p>
+<p>Abstract base class for all metrics.</p>
+<p>Initialise the metric.</p>
 <p class="mkapi-section">
 <span class="mkapi-object-link">
 <span class="mkapi-section-toggle" title="Toggle parameters">
@@ -2074,363 +2008,80 @@ Check if the model should output scores.</p>
 <div class="mkapi-section-content">
 <ul class="mkapi-item-list">
 <li>
-<p><span class="mkapi-item-name">tokenizer</span> : 
-<span class="mkapi-item-type"><span class="mkapi-tooltip" title="transformers.tokenization_utils_base.PreTrainedTokenizerBase">PreTrainedTokenizerBase</span></span> <span class="mkapi-dash">&mdash;</span>
-The tokenizer.</p>
+<p><span class="mkapi-item-name">name</span> : 
+<span class="mkapi-item-type">str</span> <span class="mkapi-dash">&mdash;</span>
+The name of the metric in snake_case.</p>
 </li>
-</ul>
-</div>
-<p class="mkapi-section">
-<span class="mkapi-object-link">
-<span class="mkapi-section-toggle" title="Toggle returns">
-<i class="fa-regular fa-square-minus"></i>
-</span>
-</span>
-<span class="mkapi-section-name">Returns</span>
-</p>
-<div class="mkapi-section-content">
-<ul class="mkapi-item-list">
 <li>
-<p><span class="mkapi-item-type">dict</span> <span class="mkapi-dash">&mdash;</span>
-The special token metadata.</p>
+<p><span class="mkapi-item-name">pretty_name</span> : 
+<span class="mkapi-item-type">str</span> <span class="mkapi-dash">&mdash;</span>
+The pretty name of the metric, used for display purposes.</p>
+</li>
+<li>
+<p><span class="mkapi-item-name">postprocessing_fn</span> : 
+<span class="mkapi-item-type"><span class="mkapi-tooltip" title="typing">t</span>.<span class="mkapi-tooltip" title="typing.Callable">Callable</span>[[float], tuple[float, str]] | None</span> <span class="mkapi-dash">&mdash;</span>
+A function to apply to the metric scores after they are computed,
+taking the score to the postprocessed score along with its string
+representation. Defaults to x -&gt; (100 * x, f"{x:.2%}").</p>
 </li>
 </ul>
 </div>
 </div>
-<p class="mkapi-object mkapi-page-source" id="euroeval.tokenization_utils.should_prompts_be_stripped">
+<p class="mkapi-object mkapi-page-source" id="euroeval.metrics.HuggingFaceMetric">
 <span class="mkapi-object-link">
 
 
-<a href="../../../src/euroeval/tokenization_utils/#euroeval.tokenization_utils.should_prompts_be_stripped" title="Go to source">source</a>
+<a href="../../../src/euroeval/metrics/#euroeval.metrics.HuggingFaceMetric" title="Go to source">source</a>
 <span class="mkapi-document-toggle" title="Toggle all docs">
 <i class="fa-regular fa-square-minus"></i>
 </span>
-</span>
-<span class="mkapi-object-name"><a href="./#euroeval.tokenization_utils.should_prompts_be_stripped" title="euroeval.tokenization_utils.should_prompts_be_stripped">should_prompts_be_stripped</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">labels_to_be_generated</span><span class="mkapi-colon">: </span><span class="mkapi-ann">list[str]</span><span class="mkapi-comma">, </span><span class="mkapi-arg">tokenizer</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="transformers.tokenization_utils.PreTrainedTokenizer">PreTrainedTokenizer</span></span><span class="mkapi-paren">)</span><span class="mkapi-arrow"> → </span><span class="mkapi-return">bool</span></span>
+</span><span class="mkapi-object-kind">class</span>
+<span class="mkapi-object-name"><a href="./#euroeval.metrics.HuggingFaceMetric" title="euroeval.metrics.HuggingFaceMetric">HuggingFaceMetric</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">name</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str</span><span class="mkapi-comma">, </span><span class="mkapi-arg">pretty_name</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str</span><span class="mkapi-comma">, </span><span class="mkapi-arg">huggingface_id</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str</span><span class="mkapi-comma">, </span><span class="mkapi-arg">results_key</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str</span><span class="mkapi-comma">, </span><span class="mkapi-arg">compute_kwargs</span><span class="mkapi-colon">: </span><span class="mkapi-ann">dict[str, <span class="mkapi-tooltip" title="typing">t</span>.<span class="mkapi-tooltip" title="typing.Any">Any</span>] | None</span><span class="mkapi-equal"> = </span><span class="mkapi-default">None</span><span class="mkapi-comma">, </span><span class="mkapi-arg">postprocessing_fn</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="typing">t</span>.<span class="mkapi-tooltip" title="typing.Callable">Callable</span>[[float], tuple[float, str]] | None</span><span class="mkapi-equal"> = </span><span class="mkapi-default">None</span><span class="mkapi-paren">)</span></span>
 </p>
 <div class="mkapi-document">
-<p>Determine if we should strip the prompts for few-shot evaluation.</p>
-<p>This is the case if the tokenizer needs to include the space as part of the label
-token. The strategy is thus to tokenize a label with a preceeding colon (as in the
-prompts), i.e., ": positive", and check if the tokenization starts with the tokens
-of ": ". If this is the case, then we should not strip the prompts, since the
-tokenizer produces the whitespace token separately.</p>
+<p class="mkapi-bases">Bases :
+<span class="mkapi-base"><a href="./#euroeval.metrics.Metric" title="euroeval.metrics.Metric">Metric</a></span></p>
+<p>A metric which is implemented in the <span class="mkapi-tooltip" title="evaluate"><code>evaluate</code></span> package.</p>
+<p>Initialise the Hugging Face metric.</p>
 <p class="mkapi-section">
 <span class="mkapi-object-link">
-<span class="mkapi-section-toggle" title="Toggle parameters">
+<span class="mkapi-section-toggle" title="Toggle attributes">
 <i class="fa-regular fa-square-minus"></i>
 </span>
 </span>
-<span class="mkapi-section-name">Parameters</span>
+<span class="mkapi-section-name">Attributes</span>
 </p>
 <div class="mkapi-section-content">
 <ul class="mkapi-item-list">
 <li>
-<p><span class="mkapi-item-name">labels_to_be_generated</span> : 
-<span class="mkapi-item-type">list[str]</span> <span class="mkapi-dash">&mdash;</span>
-The labels that are to be generated.</p>
-</li>
-<li>
-<p><span class="mkapi-item-name">tokenizer</span> : 
-<span class="mkapi-item-type"><span class="mkapi-tooltip" title="transformers.tokenization_utils.PreTrainedTokenizer">PreTrainedTokenizer</span></span> <span class="mkapi-dash">&mdash;</span>
-The tokenizer used to tokenize the labels.</p>
-</li>
-</ul>
-</div>
-<p class="mkapi-section">
-<span class="mkapi-object-link">
-<span class="mkapi-section-toggle" title="Toggle returns">
-<i class="fa-regular fa-square-minus"></i>
-</span>
-</span>
-<span class="mkapi-section-name">Returns</span>
-</p>
-<div class="mkapi-section-content">
-<ul class="mkapi-item-list">
-<li>
-<p><span class="mkapi-item-type">bool</span> <span class="mkapi-dash">&mdash;</span>
-Whether we should strip the prompts.</p>
-</li>
-</ul>
-</div>
-</div>
-<p class="mkapi-object mkapi-page-source" id="euroeval.tokenization_utils.should_prefix_space_be_added_to_labels">
-<span class="mkapi-object-link">
-
-
-<a href="../../../src/euroeval/tokenization_utils/#euroeval.tokenization_utils.should_prefix_space_be_added_to_labels" title="Go to source">source</a>
-<span class="mkapi-document-toggle" title="Toggle all docs">
-<i class="fa-regular fa-square-minus"></i>
-</span>
-</span>
-<span class="mkapi-object-name"><a href="./#euroeval.tokenization_utils.should_prefix_space_be_added_to_labels" title="euroeval.tokenization_utils.should_prefix_space_be_added_to_labels">should_prefix_space_be_added_to_labels</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">labels_to_be_generated</span><span class="mkapi-colon">: </span><span class="mkapi-ann">list[str]</span><span class="mkapi-comma">, </span><span class="mkapi-arg">tokenizer</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="transformers.tokenization_utils.PreTrainedTokenizer">PreTrainedTokenizer</span></span><span class="mkapi-paren">)</span><span class="mkapi-arrow"> → </span><span class="mkapi-return">bool</span></span>
-</p>
-<div class="mkapi-document">
-<p>Determine if we should add a prefix space to the labels.</p>
-<p>This is the case if the prompts are stripped and the tokenizer doesn't
-automatically add prefix whitespaces to the labels.</p>
-<p class="mkapi-section">
-<span class="mkapi-object-link">
-<span class="mkapi-section-toggle" title="Toggle parameters">
-<i class="fa-regular fa-square-minus"></i>
-</span>
-</span>
-<span class="mkapi-section-name">Parameters</span>
-</p>
-<div class="mkapi-section-content">
-<ul class="mkapi-item-list">
-<li>
-<p><span class="mkapi-item-name">labels_to_be_generated</span> : 
-<span class="mkapi-item-type">list[str]</span> <span class="mkapi-dash">&mdash;</span>
-The labels that are to be generated.</p>
-</li>
-<li>
-<p><span class="mkapi-item-name">tokenizer</span> : 
-<span class="mkapi-item-type"><span class="mkapi-tooltip" title="transformers.tokenization_utils.PreTrainedTokenizer">PreTrainedTokenizer</span></span> <span class="mkapi-dash">&mdash;</span>
-The tokenizer used to tokenize the labels.</p>
-</li>
-</ul>
-</div>
-<p class="mkapi-section">
-<span class="mkapi-object-link">
-<span class="mkapi-section-toggle" title="Toggle returns">
-<i class="fa-regular fa-square-minus"></i>
-</span>
-</span>
-<span class="mkapi-section-name">Returns</span>
-</p>
-<div class="mkapi-section-content">
-<ul class="mkapi-item-list">
-<li>
-<p><span class="mkapi-item-type">bool</span> <span class="mkapi-dash">&mdash;</span>
-Whether we should add a prefix space to the labels.</p>
-</li>
-</ul>
-</div>
-</div>
-<p class="mkapi-object mkapi-page-source" id="euroeval.tokenization_utils.get_bos_token">
-<span class="mkapi-object-link">
-
-
-<a href="../../../src/euroeval/tokenization_utils/#euroeval.tokenization_utils.get_bos_token" title="Go to source">source</a>
-<span class="mkapi-document-toggle" title="Toggle all docs">
-<i class="fa-regular fa-square-minus"></i>
-</span>
-</span>
-<span class="mkapi-object-name"><a href="./#euroeval.tokenization_utils.get_bos_token" title="euroeval.tokenization_utils.get_bos_token">get_bos_token</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">tokenizer</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="transformers.tokenization_utils.PreTrainedTokenizer">PreTrainedTokenizer</span></span><span class="mkapi-paren">)</span><span class="mkapi-arrow"> → </span><span class="mkapi-return">tuple[str, int] | tuple[None, None]</span></span>
-</p>
-<div class="mkapi-document">
-<p>Get the beginning-of-sequence token from a tokenizer.</p>
-<p class="mkapi-section">
-<span class="mkapi-object-link">
-<span class="mkapi-section-toggle" title="Toggle parameters">
-<i class="fa-regular fa-square-minus"></i>
-</span>
-</span>
-<span class="mkapi-section-name">Parameters</span>
-</p>
-<div class="mkapi-section-content">
-<ul class="mkapi-item-list">
-<li>
-<p><span class="mkapi-item-name">tokenizer</span> : 
-<span class="mkapi-item-type"><span class="mkapi-tooltip" title="transformers.tokenization_utils.PreTrainedTokenizer">PreTrainedTokenizer</span></span> <span class="mkapi-dash">&mdash;</span>
-The tokenizer.</p>
-</li>
-</ul>
-</div>
-<p class="mkapi-section">
-<span class="mkapi-object-link">
-<span class="mkapi-section-toggle" title="Toggle returns">
-<i class="fa-regular fa-square-minus"></i>
-</span>
-</span>
-<span class="mkapi-section-name">Returns</span>
-</p>
-<div class="mkapi-section-content">
-<ul class="mkapi-item-list">
-<li>
-<p><span class="mkapi-item-type">tuple[str, int] | tuple[None, None]</span> <span class="mkapi-dash">&mdash;</span>
-A pair (token, token_id) representing the beginning-of-sequence token and its
-token ID, or (None, None) if no BOS token is found.</p>
-</li>
-</ul>
-</div>
-</div>
-<p class="mkapi-object mkapi-page-source" id="euroeval.tokenization_utils.get_eos_token">
-<span class="mkapi-object-link">
-
-
-<a href="../../../src/euroeval/tokenization_utils/#euroeval.tokenization_utils.get_eos_token" title="Go to source">source</a>
-<span class="mkapi-document-toggle" title="Toggle all docs">
-<i class="fa-regular fa-square-minus"></i>
-</span>
-</span>
-<span class="mkapi-object-name"><a href="./#euroeval.tokenization_utils.get_eos_token" title="euroeval.tokenization_utils.get_eos_token">get_eos_token</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">tokenizer</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="transformers.tokenization_utils.PreTrainedTokenizer">PreTrainedTokenizer</span></span><span class="mkapi-paren">)</span><span class="mkapi-arrow"> → </span><span class="mkapi-return">tuple[str, int] | tuple[None, None]</span></span>
-</p>
-<div class="mkapi-document">
-<p>Get the end-of-sequence token from a tokenizer.</p>
-<p class="mkapi-section">
-<span class="mkapi-object-link">
-<span class="mkapi-section-toggle" title="Toggle parameters">
-<i class="fa-regular fa-square-minus"></i>
-</span>
-</span>
-<span class="mkapi-section-name">Parameters</span>
-</p>
-<div class="mkapi-section-content">
-<ul class="mkapi-item-list">
-<li>
-<p><span class="mkapi-item-name">tokenizer</span> : 
-<span class="mkapi-item-type"><span class="mkapi-tooltip" title="transformers.tokenization_utils.PreTrainedTokenizer">PreTrainedTokenizer</span></span> <span class="mkapi-dash">&mdash;</span>
-The tokenizer.</p>
-</li>
-</ul>
-</div>
-<p class="mkapi-section">
-<span class="mkapi-object-link">
-<span class="mkapi-section-toggle" title="Toggle returns">
-<i class="fa-regular fa-square-minus"></i>
-</span>
-</span>
-<span class="mkapi-section-name">Returns</span>
-</p>
-<div class="mkapi-section-content">
-<ul class="mkapi-item-list">
-<li>
-<p><span class="mkapi-item-type">tuple[str, int] | tuple[None, None]</span> <span class="mkapi-dash">&mdash;</span>
-A pair (token, token_id) representing the end-of-sequence token and its token
-ID, or (None, None) if no EOS token is found.</p>
-</li>
-</ul>
-</div>
-</div>
-<p class="mkapi-object mkapi-page-source" id="euroeval.tokenization_utils.get_pad_token">
-<span class="mkapi-object-link">
-
-
-<a href="../../../src/euroeval/tokenization_utils/#euroeval.tokenization_utils.get_pad_token" title="Go to source">source</a>
-<span class="mkapi-document-toggle" title="Toggle all docs">
-<i class="fa-regular fa-square-minus"></i>
-</span>
-</span>
-<span class="mkapi-object-name"><a href="./#euroeval.tokenization_utils.get_pad_token" title="euroeval.tokenization_utils.get_pad_token">get_pad_token</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">tokenizer</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="transformers.tokenization_utils.PreTrainedTokenizer">PreTrainedTokenizer</span></span><span class="mkapi-paren">)</span><span class="mkapi-arrow"> → </span><span class="mkapi-return">tuple[str, int] | tuple[None, None]</span></span>
-</p>
-<div class="mkapi-document">
-<p>Get the padding token from a tokenizer.</p>
-<p class="mkapi-section">
-<span class="mkapi-object-link">
-<span class="mkapi-section-toggle" title="Toggle parameters">
-<i class="fa-regular fa-square-minus"></i>
-</span>
-</span>
-<span class="mkapi-section-name">Parameters</span>
-</p>
-<div class="mkapi-section-content">
-<ul class="mkapi-item-list">
-<li>
-<p><span class="mkapi-item-name">tokenizer</span> : 
-<span class="mkapi-item-type"><span class="mkapi-tooltip" title="transformers.tokenization_utils.PreTrainedTokenizer">PreTrainedTokenizer</span></span> <span class="mkapi-dash">&mdash;</span>
-The tokenizer.</p>
-</li>
-</ul>
-</div>
-<p class="mkapi-section">
-<span class="mkapi-object-link">
-<span class="mkapi-section-toggle" title="Toggle returns">
-<i class="fa-regular fa-square-minus"></i>
-</span>
-</span>
-<span class="mkapi-section-name">Returns</span>
-</p>
-<div class="mkapi-section-content">
-<ul class="mkapi-item-list">
-<li>
-<p><span class="mkapi-item-type">tuple[str, int] | tuple[None, None]</span> <span class="mkapi-dash">&mdash;</span>
-A pair (token, token_id) representing the padding token and its token ID, or
-(None, None) if no padding token is found.</p>
-</li>
-</ul>
-</div>
-</div>
-<p class="mkapi-object mkapi-page-source" id="euroeval.tokenization_utils.get_end_of_chat_token_ids">
-<span class="mkapi-object-link">
-
-
-<a href="../../../src/euroeval/tokenization_utils/#euroeval.tokenization_utils.get_end_of_chat_token_ids" title="Go to source">source</a>
-<span class="mkapi-document-toggle" title="Toggle all docs">
-<i class="fa-regular fa-square-minus"></i>
-</span>
-</span>
-<span class="mkapi-object-name"><a href="./#euroeval.tokenization_utils.get_end_of_chat_token_ids" title="euroeval.tokenization_utils.get_end_of_chat_token_ids">get_end_of_chat_token_ids</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">tokenizer</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="transformers.tokenization_utils.PreTrainedTokenizer">PreTrainedTokenizer</span></span><span class="mkapi-paren">)</span><span class="mkapi-arrow"> → </span><span class="mkapi-return">list[int] | None</span></span>
-</p>
-<div class="mkapi-document">
-<p>Get the end token ID for chat models.</p>
-<p>This is only relevant for tokenizers with a chat template.</p>
-<p class="mkapi-section">
-<span class="mkapi-object-link">
-<span class="mkapi-section-toggle" title="Toggle parameters">
-<i class="fa-regular fa-square-minus"></i>
-</span>
-</span>
-<span class="mkapi-section-name">Parameters</span>
-</p>
-<div class="mkapi-section-content">
-<ul class="mkapi-item-list">
-<li>
-<p><span class="mkapi-item-name">tokenizer</span> : 
-<span class="mkapi-item-type"><span class="mkapi-tooltip" title="transformers.tokenization_utils.PreTrainedTokenizer">PreTrainedTokenizer</span></span> <span class="mkapi-dash">&mdash;</span>
-The tokenizer.</p>
-</li>
-</ul>
-</div>
-<p class="mkapi-section">
-<span class="mkapi-object-link">
-<span class="mkapi-section-toggle" title="Toggle returns">
-<i class="fa-regular fa-square-minus"></i>
-</span>
-</span>
-<span class="mkapi-section-name">Returns</span>
-</p>
-<div class="mkapi-section-content">
-<ul class="mkapi-item-list">
-<li>
-<p><span class="mkapi-item-type">list[int] | None</span> <span class="mkapi-dash">&mdash;</span>
-The token IDs used to end chats, or None if the tokenizer does not have a chat
-template.</p>
-</li>
-</ul>
-</div>
-<p class="mkapi-section">
-<span class="mkapi-object-link">
-<span class="mkapi-section-toggle" title="Toggle raises">
-<i class="fa-regular fa-square-minus"></i>
-</span>
-</span>
-<span class="mkapi-section-name">Raises</span>
-</p>
-<div class="mkapi-section-content">
-<ul class="mkapi-item-list">
-<li>
-<p><span class="mkapi-item-name">ValueError</span>
+<p><span class="mkapi-item-name">name</span>
  <span class="mkapi-dash">&mdash;</span>
-If the end-of-chat token could not be located.</p>
+The name of the metric in snake_case.</p>
+</li>
+<li>
+<p><span class="mkapi-item-name">pretty_name</span>
+ <span class="mkapi-dash">&mdash;</span>
+The pretty name of the metric, used for display purposes.</p>
+</li>
+<li>
+<p><span class="mkapi-item-name">huggingface_id</span>
+ <span class="mkapi-dash">&mdash;</span>
+The Hugging Face ID of the metric.</p>
+</li>
+<li>
+<p><span class="mkapi-item-name">results_key</span>
+ <span class="mkapi-dash">&mdash;</span>
+The name of the key used to extract the metric scores from the results
+dictionary.</p>
+</li>
+<li>
+<p><span class="mkapi-item-name">compute_kwargs</span> : 
+<span class="mkapi-item-type">dict[str, <span class="mkapi-tooltip" title="typing">t</span>.<span class="mkapi-tooltip" title="typing.Any">Any</span>]</span> <span class="mkapi-dash">&mdash;</span>
+Keyword arguments to pass to the metric's compute function. Defaults to
+an empty dictionary.</p>
 </li>
 </ul>
 </div>
-</div>
-<p class="mkapi-object mkapi-page-source" id="euroeval.tokenization_utils.get_first_label_token_mapping">
-<span class="mkapi-object-link">
-
-
-<a href="../../../src/euroeval/tokenization_utils/#euroeval.tokenization_utils.get_first_label_token_mapping" title="Go to source">source</a>
-<span class="mkapi-document-toggle" title="Toggle all docs">
-<i class="fa-regular fa-square-minus"></i>
-</span>
-</span>
-<span class="mkapi-object-name"><a href="./#euroeval.tokenization_utils.get_first_label_token_mapping" title="euroeval.tokenization_utils.get_first_label_token_mapping">get_first_label_token_mapping</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">dataset_config</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><a href="../data_models/#euroeval.data_models.DatasetConfig" title="euroeval.data_models.DatasetConfig">DatasetConfig</a></span><span class="mkapi-comma">, </span><span class="mkapi-arg">model_config</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><a href="../data_models/#euroeval.data_models.ModelConfig" title="euroeval.data_models.ModelConfig">ModelConfig</a></span><span class="mkapi-comma">, </span><span class="mkapi-arg">tokenizer</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="transformers.tokenization_utils.PreTrainedTokenizer">PreTrainedTokenizer</span> | None</span><span class="mkapi-comma">, </span><span class="mkapi-arg">generative_type</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><a href="../enums/#euroeval.enums.GenerativeType" title="euroeval.enums.GenerativeType">GenerativeType</a> | None</span><span class="mkapi-paren">)</span><span class="mkapi-arrow"> → </span><span class="mkapi-return">dict[str, str] | bool</span></span>
-</p>
-<div class="mkapi-document">
-<p>Check if the model should output scores.</p>
 <p class="mkapi-section">
 <span class="mkapi-object-link">
 <span class="mkapi-section-toggle" title="Toggle parameters">
@@ -2442,42 +2093,213 @@ If the end-of-chat token could not be located.</p>
 <div class="mkapi-section-content">
 <ul class="mkapi-item-list">
 <li>
-<p><span class="mkapi-item-name">dataset_config</span> : 
-<span class="mkapi-item-type"><a href="../data_models/#euroeval.data_models.DatasetConfig" title="euroeval.data_models.DatasetConfig">DatasetConfig</a></span> <span class="mkapi-dash">&mdash;</span>
-The dataset configuration.</p>
+<p><span class="mkapi-item-name">name</span> : 
+<span class="mkapi-item-type">str</span> <span class="mkapi-dash">&mdash;</span>
+The name of the metric in snake_case.</p>
+</li>
+<li>
+<p><span class="mkapi-item-name">pretty_name</span> : 
+<span class="mkapi-item-type">str</span> <span class="mkapi-dash">&mdash;</span>
+The pretty name of the metric, used for display purposes.</p>
+</li>
+<li>
+<p><span class="mkapi-item-name">huggingface_id</span> : 
+<span class="mkapi-item-type">str</span> <span class="mkapi-dash">&mdash;</span>
+The Hugging Face ID of the metric.</p>
+</li>
+<li>
+<p><span class="mkapi-item-name">results_key</span> : 
+<span class="mkapi-item-type">str</span> <span class="mkapi-dash">&mdash;</span>
+The name of the key used to extract the metric scores from the results
+dictionary.</p>
+</li>
+<li>
+<p><span class="mkapi-item-name">compute_kwargs</span> : 
+<span class="mkapi-item-type">dict[str, <span class="mkapi-tooltip" title="typing">t</span>.<span class="mkapi-tooltip" title="typing.Any">Any</span>] | None</span> <span class="mkapi-dash">&mdash;</span>
+Keyword arguments to pass to the metric's compute function. Defaults to
+an empty dictionary.</p>
+</li>
+<li>
+<p><span class="mkapi-item-name">postprocessing_fn</span> : 
+<span class="mkapi-item-type"><span class="mkapi-tooltip" title="typing">t</span>.<span class="mkapi-tooltip" title="typing.Callable">Callable</span>[[float], tuple[float, str]] | None</span> <span class="mkapi-dash">&mdash;</span>
+A function to apply to the metric scores after they are computed, taking
+the score to the postprocessed score along with its string
+representation. Defaults to x -&gt; (100 * x, f"{x:.2%}").</p>
+</li>
+</ul>
+</div>
+</div>
+<p class="mkapi-object mkapi-page-source" id="euroeval.metrics.LLMAsAJudgeMetric">
+<span class="mkapi-object-link">
+
+
+<a href="../../../src/euroeval/metrics/#euroeval.metrics.LLMAsAJudgeMetric" title="Go to source">source</a>
+<span class="mkapi-document-toggle" title="Toggle all docs">
+<i class="fa-regular fa-square-minus"></i>
+</span>
+</span><span class="mkapi-object-kind">class</span>
+<span class="mkapi-object-name"><a href="./#euroeval.metrics.LLMAsAJudgeMetric" title="euroeval.metrics.LLMAsAJudgeMetric">LLMAsAJudgeMetric</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">name</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str</span><span class="mkapi-comma">, </span><span class="mkapi-arg">pretty_name</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str</span><span class="mkapi-comma">, </span><span class="mkapi-arg">judge_id</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str</span><span class="mkapi-comma">, </span><span class="mkapi-arg">judge_kwargs</span><span class="mkapi-colon">: </span><span class="mkapi-ann">dict[str, <span class="mkapi-tooltip" title="typing">t</span>.<span class="mkapi-tooltip" title="typing.Any">Any</span>]</span><span class="mkapi-comma">, </span><span class="mkapi-arg">user_prompt</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str</span><span class="mkapi-comma">, </span><span class="mkapi-arg">response_format</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="typing">t</span>.<span class="mkapi-tooltip" title="typing.Type">Type</span>[<span class="mkapi-tooltip" title="pydantic.main.BaseModel">BaseModel</span>]</span><span class="mkapi-comma">, </span><span class="mkapi-arg">scoring_fn</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="typing">t</span>.<span class="mkapi-tooltip" title="typing.Callable">Callable</span>[[<span class="mkapi-tooltip" title="pydantic.main.BaseModel">BaseModel</span>], float]</span><span class="mkapi-comma">, </span><span class="mkapi-arg">condition_formatting_fn</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="typing">t</span>.<span class="mkapi-tooltip" title="typing.Callable">Callable</span>[[str], str]</span><span class="mkapi-equal"> = </span><span class="mkapi-default">lambda x: x</span><span class="mkapi-comma">, </span><span class="mkapi-arg">system_prompt</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str | None</span><span class="mkapi-equal"> = </span><span class="mkapi-default">None</span><span class="mkapi-paren">)</span></span>
+</p>
+<div class="mkapi-document">
+<p class="mkapi-bases">Bases :
+<span class="mkapi-base"><a href="./#euroeval.metrics.Metric" title="euroeval.metrics.Metric">Metric</a></span></p>
+<p>Use an LLM to judge the quality of the predictions.</p>
+<p>Initialise the LLM as a judge metric.</p>
+<p class="mkapi-section">
+<span class="mkapi-object-link">
+<span class="mkapi-section-toggle" title="Toggle parameters">
+<i class="fa-regular fa-square-minus"></i>
+</span>
+</span>
+<span class="mkapi-section-name">Parameters</span>
+</p>
+<div class="mkapi-section-content">
+<ul class="mkapi-item-list">
+<li>
+<p><span class="mkapi-item-name">name</span> : 
+<span class="mkapi-item-type">str</span> <span class="mkapi-dash">&mdash;</span>
+The name of the metric in snake_case.</p>
+</li>
+<li>
+<p><span class="mkapi-item-name">pretty_name</span> : 
+<span class="mkapi-item-type">str</span> <span class="mkapi-dash">&mdash;</span>
+The pretty name of the metric, used for display purposes.</p>
+</li>
+<li>
+<p><span class="mkapi-item-name">judge_id</span> : 
+<span class="mkapi-item-type">str</span> <span class="mkapi-dash">&mdash;</span>
+The model ID of the LLM to use as a judge.</p>
+</li>
+<li>
+<p><span class="mkapi-item-name">judge_kwargs</span> : 
+<span class="mkapi-item-type">dict[str, <span class="mkapi-tooltip" title="typing">t</span>.<span class="mkapi-tooltip" title="typing.Any">Any</span>]</span> <span class="mkapi-dash">&mdash;</span>
+Generation parameters for the judge model, such as temperature.</p>
+</li>
+<li>
+<p><span class="mkapi-item-name">user_prompt</span> : 
+<span class="mkapi-item-type">str</span> <span class="mkapi-dash">&mdash;</span>
+The user prompt to use for the judge model. The prompt should be
+formatted with the variables <code>prediction</code> and <code>condition</code>, to
+include the model predictions and a description of what the prediction
+should be judged on, respectively. If the condition is not needed,
+it can be omitted from the prompt, but the <code>prediction</code> variable must
+still be present.</p>
+</li>
+<li>
+<p><span class="mkapi-item-name">response_format</span> : 
+<span class="mkapi-item-type"><span class="mkapi-tooltip" title="typing">t</span>.<span class="mkapi-tooltip" title="typing.Type">Type</span>[<span class="mkapi-tooltip" title="pydantic.main.BaseModel">BaseModel</span>]</span> <span class="mkapi-dash">&mdash;</span>
+The response format to use for the judge model. This should be a
+Pydantic model that defines the expected structure of the judge's
+response.</p>
+</li>
+<li>
+<p><span class="mkapi-item-name">scoring_fn</span> : 
+<span class="mkapi-item-type"><span class="mkapi-tooltip" title="typing">t</span>.<span class="mkapi-tooltip" title="typing.Callable">Callable</span>[[<span class="mkapi-tooltip" title="pydantic.main.BaseModel">BaseModel</span>], float]</span> <span class="mkapi-dash">&mdash;</span>
+A function that takes the judge's response and returns a score.</p>
+</li>
+<li>
+<p><span class="mkapi-item-name">condition_formatting_fn</span> : 
+<span class="mkapi-item-type">optional</span> <span class="mkapi-dash">&mdash;</span>
+A function to format the condition string before it is included in the
+user prompt. Defaults to a no-op function that returns the input
+unchanged.</p>
+</li>
+<li>
+<p><span class="mkapi-item-name">system_prompt</span> : 
+<span class="mkapi-item-type">optional</span> <span class="mkapi-dash">&mdash;</span>
+The system prompt to use for the judge model. If not provided, no system
+prompt will be used.</p>
+</li>
+</ul>
+</div>
+</div>
+<p class="mkapi-object mkapi-page-source" id="euroeval.metrics.SpeedMetric">
+<span class="mkapi-object-link">
+
+
+<a href="../../../src/euroeval/metrics/#euroeval.metrics.SpeedMetric" title="Go to source">source</a>
+<span class="mkapi-document-toggle" title="Toggle all docs">
+<i class="fa-regular fa-square-minus"></i>
+</span>
+</span><span class="mkapi-object-kind">class</span>
+<span class="mkapi-object-name"><a href="./#euroeval.metrics.SpeedMetric" title="euroeval.metrics.SpeedMetric">SpeedMetric</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">name</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str</span><span class="mkapi-comma">, </span><span class="mkapi-arg">pretty_name</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str</span><span class="mkapi-paren">)</span></span>
+</p>
+<div class="mkapi-document">
+<p class="mkapi-bases">Bases :
+<span class="mkapi-base"><a href="./#euroeval.metrics.Metric" title="euroeval.metrics.Metric">Metric</a></span></p>
+<p>Speed metric.</p>
+<p>Initialise the speed metric.</p>
+<p class="mkapi-section">
+<span class="mkapi-object-link">
+<span class="mkapi-section-toggle" title="Toggle parameters">
+<i class="fa-regular fa-square-minus"></i>
+</span>
+</span>
+<span class="mkapi-section-name">Parameters</span>
+</p>
+<div class="mkapi-section-content">
+<ul class="mkapi-item-list">
+<li>
+<p><span class="mkapi-item-name">name</span> : 
+<span class="mkapi-item-type">str</span> <span class="mkapi-dash">&mdash;</span>
+The name of the metric in snake_case.</p>
+</li>
+<li>
+<p><span class="mkapi-item-name">pretty_name</span> : 
+<span class="mkapi-item-type">str</span> <span class="mkapi-dash">&mdash;</span>
+The pretty name of the metric, used for display purposes.</p>
+</li>
+</ul>
+</div>
+</div>
+<p class="mkapi-object mkapi-page-source" id="euroeval.metrics.Fluency">
+<span class="mkapi-object-link">
+
+
+<a href="../../../src/euroeval/metrics/#euroeval.metrics.Fluency" title="Go to source">source</a>
+<span class="mkapi-document-toggle" title="Toggle all docs">
+<i class="fa-regular fa-square-minus"></i>
+</span>
+</span><span class="mkapi-object-kind">class</span>
+<span class="mkapi-object-name"><a href="./#euroeval.metrics.Fluency" title="euroeval.metrics.Fluency">Fluency</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-star">**</span><span class="mkapi-arg">data</span><span class="mkapi-colon">: </span><span class="mkapi-ann">Any</span><span class="mkapi-paren">)</span></span>
+</p>
+<div class="mkapi-document">
+<p class="mkapi-bases">Bases :
+<span class="mkapi-base"><span class="mkapi-tooltip" title="pydantic.main.BaseModel">BaseModel</span></span></p>
+<p>Response format for the fluency metric.</p>
+<p>Create a new model by parsing and validating input data from keyword arguments.</p>
+<p>Raises [<code>ValidationError</code>][pydantic_core.ValidationError] if the input data cannot be
+validated to form a valid model.</p>
+<p><code>self</code> is explicitly positional-only to allow <code>self</code> as a field name.</p>
+<p class="mkapi-section">
+<span class="mkapi-object-link">
+<span class="mkapi-section-toggle" title="Toggle attributes">
+<i class="fa-regular fa-square-minus"></i>
+</span>
+</span>
+<span class="mkapi-section-name">Attributes</span>
+</p>
+<div class="mkapi-section-content">
+<ul class="mkapi-item-list">
+<li>
+<p><span class="mkapi-item-name">fluency</span> : 
+<span class="mkapi-item-type"><span class="mkapi-tooltip" title="typing">t</span>.<span class="mkapi-tooltip" title="typing.Annotated">Annotated</span>[int, <span class="mkapi-tooltip" title="pydantic.fields.Field">Field</span>(ge=1, le=5)]</span> <span class="mkapi-dash">&mdash;</span>
+The fluency rating, an integer between 1 and 5.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">model_config</span> : 
-<span class="mkapi-item-type"><a href="../data_models/#euroeval.data_models.ModelConfig" title="euroeval.data_models.ModelConfig">ModelConfig</a></span> <span class="mkapi-dash">&mdash;</span>
-The model configuration.</p>
+<span class="mkapi-item-type">ClassVar[ConfigDict]</span> <span class="mkapi-dash">&mdash;</span>
+Configuration for the model, should be a dictionary conforming to [<code>ConfigDict</code>][pydantic.config.ConfigDict].</p>
 </li>
 <li>
-<p><span class="mkapi-item-name">tokenizer</span> : 
-<span class="mkapi-item-type"><span class="mkapi-tooltip" title="transformers.tokenization_utils.PreTrainedTokenizer">PreTrainedTokenizer</span> | None</span> <span class="mkapi-dash">&mdash;</span>
-The tokenizer, or None if not available.</p>
+<p><span class="mkapi-item-name">model_extra</span> : 
+<span class="mkapi-item-type"><span class="mkapi-tooltip" title="pydantic.main.BaseModel.dict">dict</span>[str, Any] | None</span> <span class="mkapi-dash">&mdash;</span>
+Get extra fields set during validation.</p>
 </li>
 <li>
-<p><span class="mkapi-item-name">generative_type</span> : 
-<span class="mkapi-item-type"><a href="../enums/#euroeval.enums.GenerativeType" title="euroeval.enums.GenerativeType">GenerativeType</a> | None</span> <span class="mkapi-dash">&mdash;</span>
-The generative type, or None if not available.</p>
-</li>
-</ul>
-</div>
-<p class="mkapi-section">
-<span class="mkapi-object-link">
-<span class="mkapi-section-toggle" title="Toggle returns">
-<i class="fa-regular fa-square-minus"></i>
-</span>
-</span>
-<span class="mkapi-section-name">Returns</span>
-</p>
-<div class="mkapi-section-content">
-<ul class="mkapi-item-list">
-<li>
-<p><span class="mkapi-item-type">dict[str, str] | bool</span> <span class="mkapi-dash">&mdash;</span>
-A mapping from labels to the first token in each label, or alternatively a
-Boolean value indicating whether the model should output scores (if the mapping
-is outputted then the model will always output scores).</p>
+<p><span class="mkapi-item-name">model_fields_set</span> : 
+<span class="mkapi-item-type">set[str]</span> <span class="mkapi-dash">&mdash;</span>
+Returns the set of fields that have been explicitly set on this model instance.</p>
 </li>
 </ul>
 </div>

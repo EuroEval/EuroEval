@@ -1329,19 +1329,7 @@
 <span class="normal">450</span>
 <span class="normal">451</span>
 <span class="normal">452</span>
-<span class="normal">453</span>
-<span class="normal">454</span>
-<span class="normal">455</span>
-<span class="normal">456</span>
-<span class="normal">457</span>
-<span class="normal">458</span>
-<span class="normal">459</span>
-<span class="normal">460</span>
-<span class="normal">461</span>
-<span class="normal">462</span>
-<span class="normal">463</span>
-<span class="normal">464</span>
-<span class="normal">465</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Utility functions related to the token-classification task group.&quot;&quot;&quot;</span>
+<span class="normal">453</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Utility functions related to the token-classification task group.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
@@ -1349,19 +1337,17 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">copy</span><span class="w"> </span><span class="kn">import</span> <span class="n">deepcopy</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">demjson3</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">evaluate</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">evaluate</span><span class="w"> </span><span class="kn">import</span> <span class="n">EvaluationModule</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">transformers.tokenization_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">PreTrainedTokenizer</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">..data_models</span><span class="w"> </span><span class="kn">import</span> <span class="n">BenchmarkConfig</span><span class="p">,</span> <span class="n">DatasetConfig</span><span class="p">,</span> <span class="n">GenerativeModelOutput</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..exceptions</span><span class="w"> </span><span class="kn">import</span> <span class="n">InvalidBenchmark</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">raise_if_model_output_contains_nan_values</span>
 
 <span class="k">if</span> <span class="n">t</span><span class="o">.</span><span class="n">TYPE_CHECKING</span><span class="p">:</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">transformers.tokenization_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">PreTrainedTokenizer</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">transformers.tokenization_utils_base</span><span class="w"> </span><span class="kn">import</span> <span class="n">BatchEncoding</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">transformers.trainer_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">EvalPrediction</span>
 
+    <span class="kn">from</span><span class="w"> </span><span class="nn">..data_models</span><span class="w"> </span><span class="kn">import</span> <span class="n">DatasetConfig</span><span class="p">,</span> <span class="n">GenerativeModelOutput</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">..types</span><span class="w"> </span><span class="kn">import</span> <span class="n">Labels</span><span class="p">,</span> <span class="n">Predictions</span>
 
 
@@ -1372,7 +1358,6 @@
     <span class="n">model_outputs_and_labels</span><span class="p">:</span> <span class="s2">&quot;tuple[Predictions, Labels] | EvalPrediction&quot;</span><span class="p">,</span>
     <span class="n">has_misc_tags</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
     <span class="n">dataset_config</span><span class="p">:</span> <span class="s2">&quot;DatasetConfig&quot;</span><span class="p">,</span>
-    <span class="n">benchmark_config</span><span class="p">:</span> <span class="s2">&quot;BenchmarkConfig&quot;</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Compute the metrics needed for evaluation.</span>
 
@@ -1384,8 +1369,6 @@
 <span class="sd">            Whether the dataset has MISC tags.</span>
 <span class="sd">        dataset_config:</span>
 <span class="sd">            The configuration of the dataset.</span>
-<span class="sd">        benchmark_config:</span>
-<span class="sd">            The configuration of the benchmark.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        A dictionary with the names of the metrics as keys and the metric values as</span>
@@ -1397,17 +1380,6 @@
     <span class="c1"># predictions</span>
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">model_outputs</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">model_outputs</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
         <span class="n">model_outputs</span> <span class="o">=</span> <span class="n">model_outputs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-
-    <span class="n">metrics</span> <span class="o">=</span> <span class="p">{</span>
-        <span class="n">metric_cfg</span><span class="o">.</span><span class="n">name</span><span class="p">:</span> <span class="p">(</span>
-            <span class="n">evaluate</span><span class="o">.</span><span class="n">load</span><span class="p">(</span>
-                <span class="n">path</span><span class="o">=</span><span class="n">metric_cfg</span><span class="o">.</span><span class="n">huggingface_id</span><span class="p">,</span> <span class="n">cache_dir</span><span class="o">=</span><span class="n">benchmark_config</span><span class="o">.</span><span class="n">cache_dir</span>
-            <span class="p">)</span>
-            <span class="k">if</span> <span class="n">metric_cfg</span><span class="o">.</span><span class="n">huggingface_id</span> <span class="o">!=</span> <span class="s2">&quot;&quot;</span>
-            <span class="k">else</span> <span class="kc">None</span>
-        <span class="p">)</span>
-        <span class="k">for</span> <span class="n">metric_cfg</span> <span class="ow">in</span> <span class="n">dataset_config</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">metrics</span>
-    <span class="p">}</span>
 
     <span class="n">predictions</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">model_outputs</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span> <span class="nb">str</span><span class="p">):</span>
@@ -1488,11 +1460,14 @@
         <span class="nb">all</span><span class="p">(</span><span class="n">ner_tag</span> <span class="o">==</span> <span class="s2">&quot;o&quot;</span> <span class="k">for</span> <span class="n">ner_tag</span> <span class="ow">in</span> <span class="n">label_list</span><span class="p">)</span> <span class="k">for</span> <span class="n">label_list</span> <span class="ow">in</span> <span class="n">labels</span>
     <span class="p">)</span>
     <span class="k">if</span> <span class="n">predictions_all_zero</span> <span class="ow">and</span> <span class="n">labels_all_zero</span><span class="p">:</span>
-        <span class="n">results</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">overall_f1</span><span class="o">=</span><span class="mf">1.0</span><span class="p">)</span>
+        <span class="n">micro_f1_score</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="mf">1.0</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="n">metric</span> <span class="o">=</span> <span class="n">metrics</span><span class="p">[</span><span class="s2">&quot;micro_f1&quot;</span><span class="p">]</span>
-        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">metric</span><span class="p">,</span> <span class="n">EvaluationModule</span><span class="p">)</span>
-        <span class="n">results</span> <span class="o">=</span> <span class="n">metric</span><span class="o">.</span><span class="n">compute</span><span class="p">(</span><span class="n">predictions</span><span class="o">=</span><span class="n">predictions</span><span class="p">,</span> <span class="n">references</span><span class="o">=</span><span class="n">labels</span><span class="p">)</span>
+        <span class="n">metric</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span>
+            <span class="n">metric</span>
+            <span class="k">for</span> <span class="n">metric</span> <span class="ow">in</span> <span class="n">dataset_config</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">metrics</span>
+            <span class="k">if</span> <span class="n">metric</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="s2">&quot;micro_f1&quot;</span>
+        <span class="p">)</span>
+        <span class="n">micro_f1_score</span> <span class="o">=</span> <span class="n">metric</span><span class="p">(</span><span class="n">predictions</span><span class="o">=</span><span class="n">predictions</span><span class="p">,</span> <span class="n">references</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="n">labels</span><span class="p">))</span>
 
     <span class="c1"># Compute the metrics without MISC tags</span>
     <span class="c1"># We manually set the F1 metric to be 100% if both the labels and the models</span>
@@ -1506,21 +1481,22 @@
         <span class="nb">all</span><span class="p">(</span><span class="n">ner_tag</span> <span class="o">==</span> <span class="s2">&quot;o&quot;</span> <span class="k">for</span> <span class="n">ner_tag</span> <span class="ow">in</span> <span class="n">label_list</span><span class="p">)</span> <span class="k">for</span> <span class="n">label_list</span> <span class="ow">in</span> <span class="n">labels_no_misc</span>
     <span class="p">)</span>
     <span class="k">if</span> <span class="n">predictions_no_misc_all_zero</span> <span class="ow">and</span> <span class="n">labels_no_misc_all_zero</span><span class="p">:</span>
-        <span class="n">results_no_misc</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">overall_f1</span><span class="o">=</span><span class="mf">1.0</span><span class="p">)</span>
+        <span class="n">micro_f1_no_misc_score</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="mf">1.0</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="n">metric</span> <span class="o">=</span> <span class="n">metrics</span><span class="p">[</span><span class="s2">&quot;micro_f1_no_misc&quot;</span><span class="p">]</span>
-        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">metric</span><span class="p">,</span> <span class="n">EvaluationModule</span><span class="p">)</span>
-        <span class="n">results_no_misc</span> <span class="o">=</span> <span class="n">metric</span><span class="o">.</span><span class="n">compute</span><span class="p">(</span>
+        <span class="n">metric</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span>
+            <span class="n">metric</span>
+            <span class="k">for</span> <span class="n">metric</span> <span class="ow">in</span> <span class="n">dataset_config</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">metrics</span>
+            <span class="k">if</span> <span class="n">metric</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="s2">&quot;micro_f1_no_misc&quot;</span>
+        <span class="p">)</span>
+        <span class="n">micro_f1_no_misc_score</span> <span class="o">=</span> <span class="n">metric</span><span class="p">(</span>
             <span class="n">predictions</span><span class="o">=</span><span class="n">predictions_no_misc</span><span class="p">,</span> <span class="n">references</span><span class="o">=</span><span class="n">labels_no_misc</span>
         <span class="p">)</span>
 
     <span class="c1"># Raise error if the metrics are invalid</span>
-    <span class="k">if</span> <span class="n">results</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">results_no_misc</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">micro_f1_score</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">micro_f1_no_misc_score</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="k">raise</span> <span class="n">InvalidBenchmark</span><span class="p">(</span><span class="s2">&quot;The predictions and labels are not of the same length.&quot;</span><span class="p">)</span>
 
-    <span class="k">return</span> <span class="nb">dict</span><span class="p">(</span>
-        <span class="n">micro_f1_no_misc</span><span class="o">=</span><span class="n">results_no_misc</span><span class="p">[</span><span class="s2">&quot;overall_f1&quot;</span><span class="p">],</span> <span class="n">micro_f1</span><span class="o">=</span><span class="n">results</span><span class="p">[</span><span class="s2">&quot;overall_f1&quot;</span><span class="p">]</span>
-    <span class="p">)</span>
+    <span class="k">return</span> <span class="nb">dict</span><span class="p">(</span><span class="n">micro_f1_no_misc</span><span class="o">=</span><span class="n">micro_f1_no_misc_score</span><span class="p">,</span> <span class="n">micro_f1</span><span class="o">=</span><span class="n">micro_f1_score</span><span class="p">)</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">extract_labels_from_generation</span><span class="p">(</span><div class="mkapi-source-link" id="euroeval.task_group_utils.token_classification.extract_labels_from_generation"><a href="../../../../api/euroeval/task_group_utils/token_classification/#euroeval.task_group_utils.token_classification.extract_labels_from_generation" title="Go to docs">[docs]</a></div>

@@ -949,12 +949,7 @@
 <span class="normal">88</span>
 <span class="normal">89</span>
 <span class="normal">90</span>
-<span class="normal">91</span>
-<span class="normal">92</span>
-<span class="normal">93</span>
-<span class="normal">94</span>
-<span class="normal">95</span>
-<span class="normal">96</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Aggregation of raw scores into the mean and a confidence interval.&quot;&quot;&quot;</span>
+<span class="normal">91</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Aggregation of raw scores into the mean and a confidence interval.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">t</span>
@@ -963,7 +958,7 @@
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 
 <span class="k">if</span> <span class="n">t</span><span class="o">.</span><span class="n">TYPE_CHECKING</span><span class="p">:</span>
-    <span class="kn">from</span><span class="w"> </span><span class="nn">.data_models</span><span class="w"> </span><span class="kn">import</span> <span class="n">MetricConfig</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">.metrics</span><span class="w"> </span><span class="kn">import</span> <span class="n">Metric</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">ScoreDict</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">&quot;euroeval&quot;</span><span class="p">)</span>
@@ -971,7 +966,7 @@
 
 <span class="k">def</span><span class="w"> </span><span class="nf">log_scores</span><span class="p">(</span><div class="mkapi-source-link" id="euroeval.scores.log_scores"><a href="../../../api/euroeval/scores/#euroeval.scores.log_scores" title="Go to docs">[docs]</a></div>
     <span class="n">dataset_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-    <span class="n">metric_configs</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="s2">&quot;MetricConfig&quot;</span><span class="p">],</span>
+    <span class="n">metrics</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="s2">&quot;Metric&quot;</span><span class="p">],</span>
     <span class="n">scores</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]],</span>
     <span class="n">model_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">model_revision</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
@@ -981,7 +976,7 @@
 <span class="sd">    Args:</span>
 <span class="sd">        dataset_name:</span>
 <span class="sd">            Name of the dataset.</span>
-<span class="sd">        metric_configs:</span>
+<span class="sd">        metrics:</span>
 <span class="sd">            List of metrics to log.</span>
 <span class="sd">        scores:</span>
 <span class="sd">            The scores that are to be logged. This is a list of dictionaries full of</span>
@@ -1002,19 +997,19 @@
     <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Finished evaluation of </span><span class="si">{</span><span class="n">model_id</span><span class="si">}</span><span class="s2"> on </span><span class="si">{</span><span class="n">dataset_name</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">)</span>
 
     <span class="n">total_dict</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
-    <span class="k">for</span> <span class="n">metric_cfg</span> <span class="ow">in</span> <span class="n">metric_configs</span><span class="p">:</span>
-        <span class="n">test_score</span><span class="p">,</span> <span class="n">test_se</span> <span class="o">=</span> <span class="n">aggregate_scores</span><span class="p">(</span><span class="n">scores</span><span class="o">=</span><span class="n">scores</span><span class="p">,</span> <span class="n">metric_config</span><span class="o">=</span><span class="n">metric_cfg</span><span class="p">)</span>
-        <span class="n">test_score</span><span class="p">,</span> <span class="n">test_score_str</span> <span class="o">=</span> <span class="n">metric_cfg</span><span class="o">.</span><span class="n">postprocessing_fn</span><span class="p">(</span><span class="n">test_score</span><span class="p">)</span>
-        <span class="n">test_se</span><span class="p">,</span> <span class="n">test_se_str</span> <span class="o">=</span> <span class="n">metric_cfg</span><span class="o">.</span><span class="n">postprocessing_fn</span><span class="p">(</span><span class="n">test_se</span><span class="p">)</span>
-        <span class="n">total_dict</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;test_</span><span class="si">{</span><span class="n">metric_cfg</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">test_score</span>
-        <span class="n">total_dict</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;test_</span><span class="si">{</span><span class="n">metric_cfg</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">_se&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">test_se</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">metric_cfg</span><span class="o">.</span><span class="n">pretty_name</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">test_score_str</span><span class="si">}</span><span class="s2"> ± </span><span class="si">{</span><span class="n">test_se_str</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">metric</span> <span class="ow">in</span> <span class="n">metrics</span><span class="p">:</span>
+        <span class="n">test_score</span><span class="p">,</span> <span class="n">test_se</span> <span class="o">=</span> <span class="n">aggregate_scores</span><span class="p">(</span><span class="n">scores</span><span class="o">=</span><span class="n">scores</span><span class="p">,</span> <span class="n">metric</span><span class="o">=</span><span class="n">metric</span><span class="p">)</span>
+        <span class="n">test_score</span><span class="p">,</span> <span class="n">test_score_str</span> <span class="o">=</span> <span class="n">metric</span><span class="o">.</span><span class="n">postprocessing_fn</span><span class="p">(</span><span class="n">test_score</span><span class="p">)</span>
+        <span class="n">test_se</span><span class="p">,</span> <span class="n">test_se_str</span> <span class="o">=</span> <span class="n">metric</span><span class="o">.</span><span class="n">postprocessing_fn</span><span class="p">(</span><span class="n">test_se</span><span class="p">)</span>
+        <span class="n">total_dict</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;test_</span><span class="si">{</span><span class="n">metric</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">test_score</span>
+        <span class="n">total_dict</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;test_</span><span class="si">{</span><span class="n">metric</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">_se&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">test_se</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">metric</span><span class="o">.</span><span class="n">pretty_name</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">test_score_str</span><span class="si">}</span><span class="s2"> ± </span><span class="si">{</span><span class="n">test_se_str</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
     <span class="k">return</span> <span class="nb">dict</span><span class="p">(</span><span class="n">raw</span><span class="o">=</span><span class="n">scores</span><span class="p">,</span> <span class="n">total</span><span class="o">=</span><span class="n">total_dict</span><span class="p">)</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">aggregate_scores</span><span class="p">(</span><div class="mkapi-source-link" id="euroeval.scores.aggregate_scores"><a href="../../../api/euroeval/scores/#euroeval.scores.aggregate_scores" title="Go to docs">[docs]</a></div>
-    <span class="n">scores</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]],</span> <span class="n">metric_config</span><span class="p">:</span> <span class="s2">&quot;MetricConfig&quot;</span>
+    <span class="n">scores</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]],</span> <span class="n">metric</span><span class="p">:</span> <span class="s2">&quot;Metric&quot;</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Helper function to compute the mean with confidence intervals.</span>
 
@@ -1022,9 +1017,8 @@
 <span class="sd">        scores:</span>
 <span class="sd">            Dictionary with the names of the metrics as keys, of the form</span>
 <span class="sd">            &quot;&lt;split&gt;_&lt;metric_name&gt;&quot;, such as &quot;val_f1&quot;, and values the metric values.</span>
-<span class="sd">        metric_config:</span>
-<span class="sd">            The configuration of the metric, which is used to collect the correct</span>
-<span class="sd">            metric from `scores`.</span>
+<span class="sd">        metric:</span>
+<span class="sd">            The metric, which is used to collect the correct metric from `scores`.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        A pair of floats, containing the score and the radius of its 95% confidence</span>
@@ -1034,11 +1028,7 @@
         <span class="n">warnings</span><span class="o">.</span><span class="n">simplefilter</span><span class="p">(</span><span class="s2">&quot;ignore&quot;</span><span class="p">)</span>
 
         <span class="n">test_scores</span> <span class="o">=</span> <span class="p">[</span>
-            <span class="p">(</span>
-                <span class="n">dct</span><span class="p">[</span><span class="n">metric_config</span><span class="o">.</span><span class="n">name</span><span class="p">]</span>
-                <span class="k">if</span> <span class="n">metric_config</span><span class="o">.</span><span class="n">name</span> <span class="ow">in</span> <span class="n">dct</span>
-                <span class="k">else</span> <span class="n">dct</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;test_</span><span class="si">{</span><span class="n">metric_config</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">]</span>
-            <span class="p">)</span>
+            <span class="n">dct</span><span class="p">[</span><span class="n">metric</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="k">if</span> <span class="n">metric</span><span class="o">.</span><span class="n">name</span> <span class="ow">in</span> <span class="n">dct</span> <span class="k">else</span> <span class="n">dct</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;test_</span><span class="si">{</span><span class="n">metric</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">]</span>
             <span class="k">for</span> <span class="n">dct</span> <span class="ow">in</span> <span class="n">scores</span>
         <span class="p">]</span>
         <span class="n">test_score</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">test_scores</span><span class="p">)</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>

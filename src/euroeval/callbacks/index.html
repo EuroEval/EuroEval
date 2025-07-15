@@ -954,15 +954,23 @@
 <span class="normal">69</span>
 <span class="normal">70</span>
 <span class="normal">71</span>
-<span class="normal">72</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Callbacks for the Hugging Face Trainer.&quot;&quot;&quot;</span>
+<span class="normal">72</span>
+<span class="normal">73</span>
+<span class="normal">74</span>
+<span class="normal">75</span>
+<span class="normal">76</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Callbacks for the Hugging Face Trainer.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">t</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Sized</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">torch.utils.data</span><span class="w"> </span><span class="kn">import</span> <span class="n">DataLoader</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">tqdm.auto</span><span class="w"> </span><span class="kn">import</span> <span class="n">tqdm</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">transformers.trainer_callback</span><span class="w"> </span><span class="kn">import</span> <span class="n">ProgressCallback</span><span class="p">,</span> <span class="n">TrainerControl</span><span class="p">,</span> <span class="n">TrainerState</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">transformers.training_args</span><span class="w"> </span><span class="kn">import</span> <span class="n">TrainingArguments</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">transformers.trainer_callback</span><span class="w"> </span><span class="kn">import</span> <span class="n">ProgressCallback</span>
+
+<span class="k">if</span> <span class="n">t</span><span class="o">.</span><span class="n">TYPE_CHECKING</span><span class="p">:</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">torch.utils.data</span><span class="w"> </span><span class="kn">import</span> <span class="n">DataLoader</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">transformers.trainer_callback</span><span class="w"> </span><span class="kn">import</span> <span class="n">TrainerControl</span><span class="p">,</span> <span class="n">TrainerState</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">transformers.training_args</span><span class="w"> </span><span class="kn">import</span> <span class="n">TrainingArguments</span>
 
 
 <span class="k">class</span><span class="w"> </span><span class="nc">NeverLeaveProgressCallback</span><span class="p">(</span><span class="n">ProgressCallback</span><span class="p">):</span><div class="mkapi-source-link" id="euroeval.callbacks.NeverLeaveProgressCallback"><a href="../../../api/euroeval/callbacks/#euroeval.callbacks.NeverLeaveProgressCallback" title="Go to docs">[docs]</a></div>
@@ -976,9 +984,9 @@
 
     <span class="k">def</span><span class="w"> </span><span class="nf">on_train_begin</span><span class="p">(</span><div class="mkapi-source-link" id="euroeval.callbacks.NeverLeaveProgressCallback.on_train_begin"><a href="../../../api/euroeval/callbacks/#euroeval.callbacks.NeverLeaveProgressCallback.on_train_begin" title="Go to docs">[docs]</a></div>
         <span class="bp">self</span><span class="p">,</span>
-        <span class="n">args</span><span class="p">:</span> <span class="n">TrainingArguments</span><span class="p">,</span>
-        <span class="n">state</span><span class="p">:</span> <span class="n">TrainerState</span><span class="p">,</span>
-        <span class="n">control</span><span class="p">:</span> <span class="n">TrainerControl</span><span class="p">,</span>
+        <span class="n">args</span><span class="p">:</span> <span class="s2">&quot;TrainingArguments&quot;</span><span class="p">,</span>
+        <span class="n">state</span><span class="p">:</span> <span class="s2">&quot;TrainerState&quot;</span><span class="p">,</span>
+        <span class="n">control</span><span class="p">:</span> <span class="s2">&quot;TrainerControl&quot;</span><span class="p">,</span>
         <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Callback actions when training begins.&quot;&quot;&quot;</span>
@@ -994,9 +1002,9 @@
 
     <span class="k">def</span><span class="w"> </span><span class="nf">on_step_end</span><span class="p">(</span><div class="mkapi-source-link" id="euroeval.callbacks.NeverLeaveProgressCallback.on_step_end"><a href="../../../api/euroeval/callbacks/#euroeval.callbacks.NeverLeaveProgressCallback.on_step_end" title="Go to docs">[docs]</a></div>
         <span class="bp">self</span><span class="p">,</span>
-        <span class="n">args</span><span class="p">:</span> <span class="n">TrainingArguments</span><span class="p">,</span>
-        <span class="n">state</span><span class="p">:</span> <span class="n">TrainerState</span><span class="p">,</span>
-        <span class="n">control</span><span class="p">:</span> <span class="n">TrainerControl</span><span class="p">,</span>
+        <span class="n">args</span><span class="p">:</span> <span class="s2">&quot;TrainingArguments&quot;</span><span class="p">,</span>
+        <span class="n">state</span><span class="p">:</span> <span class="s2">&quot;TrainerState&quot;</span><span class="p">,</span>
+        <span class="n">control</span><span class="p">:</span> <span class="s2">&quot;TrainerControl&quot;</span><span class="p">,</span>
         <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Callback actions when a training step ends.&quot;&quot;&quot;</span>
@@ -1006,10 +1014,10 @@
 
     <span class="k">def</span><span class="w"> </span><span class="nf">on_prediction_step</span><span class="p">(</span><div class="mkapi-source-link" id="euroeval.callbacks.NeverLeaveProgressCallback.on_prediction_step"><a href="../../../api/euroeval/callbacks/#euroeval.callbacks.NeverLeaveProgressCallback.on_prediction_step" title="Go to docs">[docs]</a></div>
         <span class="bp">self</span><span class="p">,</span>
-        <span class="n">args</span><span class="p">:</span> <span class="n">TrainingArguments</span><span class="p">,</span>
-        <span class="n">state</span><span class="p">:</span> <span class="n">TrainerState</span><span class="p">,</span>
-        <span class="n">control</span><span class="p">:</span> <span class="n">TrainerControl</span><span class="p">,</span>
-        <span class="n">eval_dataloader</span><span class="p">:</span> <span class="n">DataLoader</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">args</span><span class="p">:</span> <span class="s2">&quot;TrainingArguments&quot;</span><span class="p">,</span>
+        <span class="n">state</span><span class="p">:</span> <span class="s2">&quot;TrainerState&quot;</span><span class="p">,</span>
+        <span class="n">control</span><span class="p">:</span> <span class="s2">&quot;TrainerControl&quot;</span><span class="p">,</span>
+        <span class="n">eval_dataloader</span><span class="p">:</span> <span class="s2">&quot;DataLoader | None&quot;</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Callback actions when a prediction step ends.&quot;&quot;&quot;</span>
