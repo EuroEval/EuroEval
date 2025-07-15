@@ -77,8 +77,7 @@ def _download(url: str) -> str:
 
 
 def _parse_doc(doc: str) -> tuple[list[str], list[int]] | None:
-    """Parse a single HAREM document and return tokens and labels."""
-    # Skip documents with Portuguese origin (we want non-PT origin)
+    """Parse a single HAREM document and return tokens and labels (BIO format)."""
     origem_match = re.search(r"<ORIGEM>\s*(\w+)\s*</ORIGEM>", doc)
     if not origem_match or origem_match.group(1).upper() != "PT":
         return None
@@ -91,18 +90,26 @@ def _parse_doc(doc: str) -> tuple[list[str], list[int]] | None:
     tokens: list[str] = []
     labels: list[int] = []
     stack: list[str] = []
-    first = True
+    previous_entity_type: str | None = None
+    in_entity = False
 
     pos = 0
     for tag in TAG_RE.finditer(text):
         pre = text[pos : tag.start()]
         for tok in TOKEN_RE.findall(pre):
-            label = "O"
-            if stack:
-                prefix = "B-" if first else "I-"
-                label_type = TAG2LABEL.get(stack[-1], "MISC")
-                label = f"{prefix}{label_type}"
-                first = False
+            if not stack:
+                label = "O"
+                previous_entity_type = None
+                in_entity = False
+            else:
+                current_type = TAG2LABEL.get(stack[-1], "MISC")
+                if not in_entity or current_type != previous_entity_type:
+                    label = f"B-{current_type}"
+                    in_entity = True
+                else:
+                    label = f"I-{current_type}"
+                previous_entity_type = current_type
+
             tokens.append(tok)
             labels.append(LABEL2ID[label])
             SEEN_LABELS[label] += 1
@@ -117,19 +124,28 @@ def _parse_doc(doc: str) -> tuple[list[str], list[int]] | None:
         if closing:
             if stack and stack[-1] == name:
                 stack.pop()
-            first = False
+            # Reset entity tracking if closed
+            in_entity = False
+            previous_entity_type = None
         else:
             stack.append(name)
-            first = True
+            in_entity = False  # next token should be B-
 
     tail = text[pos:]
     for tok in TOKEN_RE.findall(tail):
-        label = "O"
-        if stack:
-            prefix = "B-" if first else "I-"
-            label_type = TAG2LABEL.get(stack[-1], "MISC")
-            label = f"{prefix}{label_type}"
-            first = False
+        if not stack:
+            label = "O"
+            previous_entity_type = None
+            in_entity = False
+        else:
+            current_type = TAG2LABEL.get(stack[-1], "MISC")
+            if not in_entity or current_type != previous_entity_type:
+                label = f"B-{current_type}"
+                in_entity = True
+            else:
+                label = f"I-{current_type}"
+            previous_entity_type = current_type
+
         tokens.append(tok)
         labels.append(LABEL2ID[label])
         SEEN_LABELS[label] += 1
@@ -160,24 +176,27 @@ def _reconstruct_text(tokens: list[str]) -> str:
 def _split_into_sentences(
     tokens: list[str], labels: list[int]
 ) -> list[tuple[list[str], list[int]]]:
-    """Split tokens and labels into sentences based on sentence-ending punctuation."""
     sentences = []
-    current_tokens = []
-    current_labels = []
+    i = 0
+    while i < len(tokens):
+        current_tokens = []
+        current_labels = []
 
-    for token, label in zip(tokens, labels):
-        current_tokens.append(token)
-        current_labels.append(label)
+        while i < len(tokens):
+            current_tokens.append(tokens[i])
+            current_labels.append(labels[i])
 
-        # Check if this token ends a sentence
-        if SENTENCE_RE.search(token):
-            if current_tokens:  # Only add non-empty sentences
-                sentences.append((current_tokens.copy(), current_labels.copy()))
-                current_tokens = []
-                current_labels = []
+            if SENTENCE_RE.search(tokens[i]):
+                i += 1
+                # absorb following I-XXX tokens
+                while i < len(tokens) and ID2LABEL[labels[i]].startswith("I-"):
+                    current_tokens.append(tokens[i])
+                    current_labels.append(labels[i])
+                    i += 1
+                break  # break inner loop
 
-    # Add remaining tokens as a sentence if any
-    if current_tokens:
+            i += 1
+
         sentences.append((current_tokens, current_labels))
 
     return sentences
@@ -289,7 +308,7 @@ def main() -> None:
     )
 
     # Create dataset ID
-    dataset_id = "EuroEval/harem-pt-mini"
+    dataset_id = "duarteocarmo/harem-pt-mini"
 
     # Remove the dataset from Hugging Face Hub if it already exists
     try:
