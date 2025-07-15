@@ -2,9 +2,9 @@
 
 from ..data_models import DatasetConfig
 from ..languages import PT
-from ..tasks import COMMON_SENSE, KNOW, LA, MCRC, SENT
+from ..tasks import COMMON_SENSE, KNOW, LA, MCRC, NER, SENT
 
-### Unofficial datasets ###
+### Official datasets ###
 
 PREFIX = "EuroEval"
 
@@ -53,6 +53,15 @@ SCALA_PT = DatasetConfig(
     pretty_name="the Portuguese part of the linguistic acceptability dataset ScaLA",
     huggingface_id=f"{PREFIX}/scala-pt",
     task=LA,
+    languages=[PT],
+    unofficial=False,
+)
+
+HAREM_PT_CONFIG = DatasetConfig(
+    name="harem-pt",
+    pretty_name="the harem dataset for NER in portuguese",
+    huggingface_id=f"{PREFIX}/harem-pt-mini",
+    task=NER,
     languages=[PT],
     unofficial=False,
 )

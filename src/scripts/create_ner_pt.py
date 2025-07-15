@@ -1,0 +1,308 @@
+# /// script
+# requires-python = ">=3.10,<4.0"
+# dependencies = [
+#     "datasets==3.5.0",
+#     "huggingface-hub==0.24.0",
+#     "pandas==2.2.0",
+#     "requests==2.32.3",
+# ]
+# ///
+
+"""Create the HAREM-PT-mini NER dataset and upload it to the HF Hub."""
+
+import re
+import urllib.request
+from collections import Counter
+
+import pandas as pd
+from datasets import Dataset, DatasetDict, Split
+from huggingface_hub import HfApi
+from requests import HTTPError
+
+# Constants for dataset sizes
+TRAIN_SIZE = 1024
+VAL_SIZE = 256
+TEST_SIZE = 1024
+RANDOM_STATE = 4242
+
+# URL for HAREM dataset
+URL = "https://raw.githubusercontent.com/davidsbatista/NER-datasets/master/Portuguese/HAREM/ColeccaoDouradaHAREM.txt"
+
+# Regular expressions for parsing
+TAG_RE = re.compile(r"<(/?)(\w+)(?:\s[^>]*)?>")
+TOKEN_RE = re.compile(r"\w+|[^\w\s]", re.UNICODE)
+SENTENCE_RE = re.compile(r"[.!?]+")
+
+# Tag mapping from HAREM to standard NER labels
+TAG2LABEL: dict[str, str] = {
+    "ORGANIZACAO": "ORG",
+    "PESSOA": "PER",
+    "LOCAL": "LOC",
+    "TEMPO": "MISC",
+    "ACONTECIMENTO": "MISC",
+    "ABSTRACCAO": "MISC",
+    "VALOR": "MISC",
+    "VARIADO": "MISC",
+    "OBRA": "MISC",
+    "OMITIDO": "MISC",
+    "COISA": "MISC",
+    "ALT": "MISC",
+}
+
+# Label to ID mapping
+LABEL2ID = {
+    "O": 0,
+    "B-PER": 1,
+    "I-PER": 2,
+    "B-ORG": 3,
+    "I-ORG": 4,
+    "B-LOC": 5,
+    "I-LOC": 6,
+    "B-MISC": 7,
+    "I-MISC": 8,
+}
+
+# ID to label mapping for conversion
+ID2LABEL = {v: k for k, v in LABEL2ID.items()}
+
+# Counters for tracking
+SEEN_TAGS: Counter = Counter()
+SEEN_LABELS: Counter = Counter()
+
+
+def _download(url: str) -> str:
+    """Download content from URL with proper encoding."""
+    with urllib.request.urlopen(url) as response:
+        return response.read().decode("iso-8859-1")
+
+
+def _parse_doc(doc: str) -> tuple[list[str], list[int]] | None:
+    """Parse a single HAREM document and return tokens and labels."""
+    # Skip documents with Portuguese origin (we want non-PT origin)
+    origem_match = re.search(r"<ORIGEM>\s*(\w+)\s*</ORIGEM>", doc)
+    if not origem_match or origem_match.group(1).upper() != "PT":
+        return None
+
+    text_match = re.search(r"<TEXTO>(.*?)</TEXTO>", doc, flags=re.S)
+    if not text_match:
+        return None
+    text = text_match.group(1)
+
+    tokens: list[str] = []
+    labels: list[int] = []
+    stack: list[str] = []
+    first = True
+
+    pos = 0
+    for tag in TAG_RE.finditer(text):
+        pre = text[pos : tag.start()]
+        for tok in TOKEN_RE.findall(pre):
+            label = "O"
+            if stack:
+                prefix = "B-" if first else "I-"
+                label_type = TAG2LABEL.get(stack[-1], "MISC")
+                label = f"{prefix}{label_type}"
+                first = False
+            tokens.append(tok)
+            labels.append(LABEL2ID[label])
+            SEEN_LABELS[label] += 1
+
+        pos = tag.end()
+        closing, name = tag.group(1), tag.group(2)
+        SEEN_TAGS[name] += 1
+
+        if name not in TAG2LABEL:
+            print(f"Warning: Unknown tag <{name}>")
+
+        if closing:
+            if stack and stack[-1] == name:
+                stack.pop()
+            first = False
+        else:
+            stack.append(name)
+            first = True
+
+    tail = text[pos:]
+    for tok in TOKEN_RE.findall(tail):
+        label = "O"
+        if stack:
+            prefix = "B-" if first else "I-"
+            label_type = TAG2LABEL.get(stack[-1], "MISC")
+            label = f"{prefix}{label_type}"
+            first = False
+        tokens.append(tok)
+        labels.append(LABEL2ID[label])
+        SEEN_LABELS[label] += 1
+
+    return tokens, labels
+
+
+def _reconstruct_text(tokens: list[str]) -> str:
+    """Reconstruct text from tokens, preserving original spacing."""
+    if not tokens:
+        return ""
+
+    result = []
+    for i, token in enumerate(tokens):
+        if i == 0:
+            # First token always gets added as-is
+            result.append(token)
+        elif re.match(r"[^\w\s]", token):
+            # Punctuation - attach to previous token without space
+            result.append(token)
+        else:
+            # Regular word - add space before
+            result.append(" " + token)
+
+    return "".join(result)
+
+
+def _split_into_sentences(
+    tokens: list[str], labels: list[int]
+) -> list[tuple[list[str], list[int]]]:
+    """Split tokens and labels into sentences based on sentence-ending punctuation."""
+    sentences = []
+    current_tokens = []
+    current_labels = []
+
+    for token, label in zip(tokens, labels):
+        current_tokens.append(token)
+        current_labels.append(label)
+
+        # Check if this token ends a sentence
+        if SENTENCE_RE.search(token):
+            if current_tokens:  # Only add non-empty sentences
+                sentences.append((current_tokens.copy(), current_labels.copy()))
+                current_tokens = []
+                current_labels = []
+
+    # Add remaining tokens as a sentence if any
+    if current_tokens:
+        sentences.append((current_tokens, current_labels))
+
+    return sentences
+
+
+def _process_harem_data(raw: str) -> list[dict]:
+    """Process raw HAREM data into structured format."""
+    docs = raw.split("<DOC>")
+    examples = []
+
+    for doc in docs:
+        parsed = _parse_doc(doc)
+        if parsed:
+            tokens, labels = parsed
+
+            # Split into sentences
+            sentences = _split_into_sentences(tokens, labels)
+
+            # Create examples for each sentence
+            for sent_tokens, sent_labels in sentences:
+                if len(sent_tokens) > 0:  # Only add non-empty sentences
+                    # Convert labels back to strings
+                    label_strings = [ID2LABEL[label] for label in sent_labels]
+
+                    examples.append(
+                        {
+                            "tokens": sent_tokens,
+                            "labels": label_strings,
+                            "text": _reconstruct_text(sent_tokens),
+                        }
+                    )
+
+    return examples
+
+
+def main() -> None:
+    """Create the HAREM-PT-mini NER dataset and upload it to the HF Hub."""
+    # Download the HAREM dataset
+    print("Downloading HAREM dataset...")
+    content = _download(URL)
+
+    # Process the data
+    print("Processing HAREM data...")
+    examples = _process_harem_data(content)
+
+    print(f"Total examples processed: {len(examples)}")
+    print("\nTag usage:")
+    for tag, count in SEEN_TAGS.most_common():
+        print(f"  {tag:15s}: {count}")
+
+    print("\nLabel frequencies:")
+    for label, count in SEEN_LABELS.most_common():
+        print(f"  {label:10s}: {count}")
+
+    # Convert to DataFrame
+    df = pd.DataFrame(examples)
+
+    # Shuffle the dataset
+    df = df.sample(frac=1, random_state=RANDOM_STATE).reset_index(drop=True)
+
+    # Ensure we have enough examples for the desired splits
+    total_needed = TRAIN_SIZE + VAL_SIZE + TEST_SIZE
+    if len(df) < total_needed:
+        print(f"Warning: Only {len(df)} examples available, but {total_needed} needed")
+        # Adjust sizes proportionally
+        ratio = len(df) / total_needed
+        train_size = int(TRAIN_SIZE * ratio)
+        val_size = int(VAL_SIZE * ratio)
+        test_size = len(df) - train_size - val_size
+    else:
+        train_size = TRAIN_SIZE
+        val_size = VAL_SIZE
+        test_size = TEST_SIZE
+
+    # Create splits
+    train_df = df[:train_size].reset_index(drop=True)
+    val_df = df[train_size : train_size + val_size].reset_index(drop=True)
+    test_df = df[train_size + val_size : train_size + val_size + test_size].reset_index(
+        drop=True
+    )
+
+    print("\nDataset splits:")
+    print(f"  Train: {len(train_df)} examples")
+    print(f"  Validation: {len(val_df)} examples")
+    print(f"  Test: {len(test_df)} examples")
+
+    # Convert labels from strings to IDs for consistency with Spanish script
+    def convert_labels_to_ids(labels: list[str]) -> list[int]:
+        return [LABEL2ID[label] for label in labels]
+
+    train_df["labels"] = train_df["labels"].apply(convert_labels_to_ids)
+    val_df["labels"] = val_df["labels"].apply(convert_labels_to_ids)
+    test_df["labels"] = test_df["labels"].apply(convert_labels_to_ids)
+
+    # Convert back to strings for final dataset (matching Spanish script format)
+    train_df["labels"] = train_df["labels"].apply(
+        lambda ids: [ID2LABEL[id] for id in ids]
+    )
+    val_df["labels"] = val_df["labels"].apply(lambda ids: [ID2LABEL[id] for id in ids])
+    test_df["labels"] = test_df["labels"].apply(
+        lambda ids: [ID2LABEL[id] for id in ids]
+    )
+
+    # Create dataset dictionary
+    dataset = DatasetDict(
+        train=Dataset.from_pandas(train_df, split=Split.TRAIN),
+        val=Dataset.from_pandas(val_df, split=Split.VALIDATION),
+        test=Dataset.from_pandas(test_df, split=Split.TEST),
+    )
+
+    # Create dataset ID
+    dataset_id = "EuroEval/harem-pt-mini"
+
+    # Remove the dataset from Hugging Face Hub if it already exists
+    try:
+        api = HfApi()
+        api.delete_repo(dataset_id, repo_type="dataset")
+    except HTTPError:
+        pass
+
+    # Push the dataset to the Hugging Face Hub
+    print(f"\nUploading dataset to {dataset_id}...")
+    dataset.push_to_hub(dataset_id, private=False)
+    print("Dataset uploaded successfully!")
+
+
+if __name__ == "__main__":
+    main()

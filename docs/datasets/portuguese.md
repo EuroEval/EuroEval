@@ -62,6 +62,163 @@ You can evaluate this dataset directly as follows:
 $ euroeval --model <model-id> --dataset sst2-pt
 ```
 
+## Named Entity Recognition
+
+## HAREM-pt
+
+This dataset is based on the [Primeiro HAREM](https://www.linguateca.pt/harem/) evaluation campaign for **Portuguese from Portugal**, using the manually annotated **Colecção Dourada**.
+
+We extract only documents where `<ORIGEM>` is `PT`, i.e., of **Portuguese origin**. The raw XML annotations are parsed and converted to token-level BIO labels. Tags are mapped to standard CoNLL categories:
+
+- `PER` (pessoa)
+- `LOC` (local)
+- `ORG` (organização)
+- `MISC` (diverso)
+
+Labels follow the standard CoNLL BIO scheme with numeric encoding:
+
+```python
+{
+  "O": 0,
+  "B-PER": 1,
+  "I-PER": 2,
+  "B-ORG": 3,
+  "I-ORG": 4,
+  "B-LOC": 5,
+  "I-LOC": 6,
+  "B-MISC": 7,
+  "I-MISC": 8
+}
+```
+
+In addition to tokenization and label alignment, each document is split into individual sentences, using punctuation-based heuristics. This makes the dataset better suited for sentence-level inference and generation.
+
+Due to the limited number of PT-origin documents (1,965 examples total), we couldn’t reach the target of 2,304 (1,024 + 256 + 1,024). The final split is:
+
+- Train: 873 examples
+- Validation: 218 examples
+- Test: 874 examples
+
+
+```json
+{
+  "tokens": array(["Na", "Covilhã", "ainda", "não", "havia", "liceu", "nessa", "altura", "."], dtype=object),
+  "labels": array([0, 5, 0, 0, 0, 0, 0, 0, 0], dtype=object)
+}
+```
+```json
+{
+ "tokens": array(["Por", "exemplo", ",", "em", "Filosofia", "está", "muito", "boa", "."], dtype=object),
+  "labels": array([0, 0, 0, 0, 7, 0, 0, 0, 0], dtype=object)
+}
+```
+```json
+{
+  "tokens": array(["Sabe", "qual", "a", "origem", "da", "sua", "família", "?"], dtype=object),
+  "labels": array([0, 0, 0, 0, 0, 0, 0, 0], dtype=object)
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 8
+- Prefix prompt:
+  ```
+  Seguem-se frases e dicionários JSON com as entidades mencionadas presentes na frase indicada.
+  ```
+- Base prompt template:
+  ```
+  Frase: {text}
+  Entidades mencionadas: {label}
+  ```
+- Instruction-tuned prompt template:
+  ```
+  Frase: {text}
+
+  Identifica as entidades mencionadas na frase. Deves devolver um dicionário JSON com as chaves 'pessoa', 'organização', 'local' e 'diverso' . Os valores devem ser listas contendo as entidades mencionadas desse tipo, tal como ocorrem na frase.
+  ```
+- Label mapping:
+    - `B-PER` ➡️ `pessoa`
+    - `I-PER` ➡️ `pessoa`
+    - `B-LOC` ➡️ `local`
+    - `I-LOC` ➡️ `local`
+    - `B-ORG` ➡️ `organização`
+    - `I-ORG` ➡️ `organização`
+    - `B-MISC` ➡️ `diverso`
+    - `I-MISC` ➡️ `diverso`
+
+You can evaluate this dataset directly as follows:
+
+```bash
+$ euroeval --model <model-id> --dataset harem-pt
+```
+
+## Linguistic Acceptability
+
+### ScaLA-pt
+
+This dataset is a Portuguese version of ScaLA, created by corrupting grammatically correct sentences from the [Universal Dependencies Portuguese-Bosque treebank](https://github.com/UniversalDependencies/UD_Portuguese-Bosque), filtered to only include samples from the European Portuguese source *CETEMPúblico*. The treebank is based on the Constraint Grammar conversion of the Bosque corpus, part of the Floresta Sintá(c)tica treebank.
+
+Corruptions were applied by either **removing a word** from the sentence or **swapping two neighbouring words**. Rules based on part-of-speech tags were used to ensure that these corruptions lead to grammatical errors.
+
+The final dataset contains:
+
+- **Training set**: 1,024 examples
+- **Validation set**: 256 examples
+- **Test set**: 2,048 examples
+
+These splits are used as-is in the framework.
+
+Here are a few examples from the training split:
+
+```json
+{
+    "text": "Nos Em os mercados orientais, Tóquio foi a excepção e, ao o meio da de a manhã, a bolsa tendia para uma alta marginal, com o índice Nikkei a marcar 12,07 pontos no em o fim da de a sessão da de a manhã.",
+    "label": "incorrect"
+}
+```
+```json
+{
+    "text": "A equipa está a mostrar progressos, mas ainda há muito para fazer.",
+    "label": "correct"
+}
+```
+```json
+{
+    "text": "Vários estudos têm mostrado que estes linfomas regridem depois de tratamentos dirigidos à a HP a, o que sugere uma relação entre os dois.",
+    "label": "incorrect"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 12
+- Prefix prompt:
+  ```
+  Seguem-se abaixo textos e se são gramaticalmente corretos.
+  ```
+- Base prompt template:
+  ```
+    Texto: {text}
+    Gramaticalmente correcto: {label}
+  ```
+- Instruction-tuned prompt template:
+  ```
+    Texto: {text}
+
+    Determina se o texto é gramaticalmente correcto ou não. Responde com 'sim' ou 'não', e nada mais.
+  ```
+- Label mapping:
+    - `correct` ➡️ `sim`
+    - `incorrect` ➡️ `não`
+
+You can evaluate this dataset directly as follows:
+
+```bash
+$ euroeval --model <model-id> --dataset scala-pt
+
 ## Reading Comprehension
 
 ### Unofficial: BoolQ-PT

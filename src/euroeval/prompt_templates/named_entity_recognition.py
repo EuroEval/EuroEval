@@ -1,7 +1,7 @@
 """Templates for the Named Entity Recognition task."""
 
 from ..data_models import PromptConfig
-from ..languages import DA, DE, EN, ES, FI, FO, FR, IS, IT, NB, NL, NN, NO, SV
+from ..languages import DA, DE, EN, ES, FI, FO, FR, IS, IT, NB, NL, NN, NO, PT, SV
 
 NER_TEMPLATES = {
     DA: PromptConfig(
@@ -79,6 +79,25 @@ NER_TEMPLATES = {
         "nombradas en la oración. Debes producir esto como un diccionario JSON con las "
         "claves {labels_str}. Los valores deben ser listas de las "
         "entidades nombradas de ese tipo, exactamente como aparecen en la oración.",
+    ),
+    PT: PromptConfig(
+        default_prompt_label_mapping={
+            "b-per": "pessoa",
+            "i-per": "pessoa",
+            "b-loc": "local",
+            "i-loc": "local",
+            "b-org": "organização",
+            "i-org": "organização",
+            "b-misc": "diverso",
+            "i-misc": "diverso",
+        },
+        default_prompt_prefix="Seguem-se frases e dicionários JSON com as entidades "
+        "mencionadas presentes na frase indicada.",
+        default_prompt_template="Frase: {text}\nEntidades mencionadas: {label}",
+        default_instruction_prompt="Frase: {text}\n\nIdentifica as entidades "
+        "mencionadas na frase. Deves devolver um dicionário JSON com as chaves "
+        "{labels_str}. Os valores devem ser listas contendo as entidades "
+        "mencionadas desse tipo, tal como ocorrem na frase.",
     ),
     FI: PromptConfig(
         default_prompt_label_mapping={
