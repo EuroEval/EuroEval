@@ -332,7 +332,9 @@ def load_ud_pos(
     )
 
     if filter_source is not None:
-        print(f"Warning: Keeping only Scala dataset with {filter_source=}")
+        print(
+            f"Warning: Filtering dataset to include only entries with {filter_source=}"
+        )
 
     # Iterate over the data splits
     dfs = dict()
