@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Added the HellaSwag-pt dataset, a Portuguese common-sense reasoning dataset that is a subset of HellaswagX from openGPT-X/hellaswagx. This was contributed by [@duarteocarmo](https://github.com/duarteocarmo) ✨
 - Added the Scala-pt dataset, a linguistic acceptability dataset for portuguese. This was contributed by [@duarteocarmo](https://github.com/duarteocarmo) ✨
 - Added the Harem-pt dataset, a named entitiy recognition dataset for portuguese. This was contributed by [@duarteocarmo](https://github.com/duarteocarmo) ✨
+- Added the Publico-pt dataset, a summarization dataset for portuguese. This was contributed by [@duarteocarmo](https://github.com/duarteocarmo) ✨
 
 
 ## [v15.11.0] - 2025-07-15

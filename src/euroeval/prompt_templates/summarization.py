@@ -1,7 +1,7 @@
 """Templates for the Summarization task."""
 
 from ..data_models import PromptConfig
-from ..languages import DA, DE, EN, ES, FI, FR, IS, IT, NB, NL, NN, NO, SV
+from ..languages import DA, DE, EN, ES, FI, FR, IS, IT, NB, NL, NN, NO, PT, SV
 
 # TODO: Missing Faroese
 SUMM_TEMPLATES = {
@@ -33,6 +33,13 @@ SUMM_TEMPLATES = {
         "adjuntos.",
         default_prompt_template="Documento: {text}\nResumen: {target_text}",
         default_instruction_prompt="Documento: {text}\n\nEscriba un resumen del "
+        "documento anterior.",
+        default_prompt_label_mapping=dict(),
+    ),
+    PT: PromptConfig(
+        default_prompt_prefix="Abaixo encontras documentos com resumos associados.",
+        default_prompt_template="Documento: {text}\nResumo: {target_text}",
+        default_instruction_prompt="Documento: {text}\n\nEscreve um resumo do "
         "documento anterior.",
         default_prompt_label_mapping=dict(),
     ),

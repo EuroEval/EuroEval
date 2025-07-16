@@ -2,11 +2,11 @@
 
 from ..data_models import DatasetConfig
 from ..languages import PT
-from ..tasks import COMMON_SENSE, KNOW, LA, MCRC, NER, SENT
+from ..tasks import COMMON_SENSE, KNOW, LA, MCRC, NER, SENT, SUMM
 
 ### Official datasets ###
 
-PREFIX = "EuroEval"
+PREFIX = "duarteocarmo"
 
 SST2_PT_CONFIG = DatasetConfig(
     name="sst2-pt",
@@ -64,4 +64,13 @@ HAREM_PT_CONFIG = DatasetConfig(
     task=NER,
     languages=[PT],
     unofficial=False,
+)
+
+PUBLICO_PT_CONFIG = DatasetConfig(
+    name="publico-pt",
+    pretty_name="a summarisation dataset for portuguese based on"
+    " articles from publico.pt",
+    huggingface_id=f"{PREFIX}/sum-pt-publico",
+    task=SUMM,
+    languages=[PT],
 )
