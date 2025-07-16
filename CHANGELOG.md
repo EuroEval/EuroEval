@@ -7,9 +7,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 
 ## [Unreleased]
-### Changed
-- Lowered the maximum amount of reasoning tokens to use, from 32k to 4k, as this
-  corresponds to the "high" reasoning effort.
+
 
 
 ## [v15.11.0] - 2025-07-15
