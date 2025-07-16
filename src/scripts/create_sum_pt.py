@@ -49,7 +49,7 @@ def main() -> None:
     val = Dataset.from_list(processed[1024 : 1024 + 256])
     test = Dataset.from_list(processed[1024 + 256 :])
 
-    dataset = DatasetDict({"train": train, "validation": val, "test": test})
+    dataset = DatasetDict({"train": train, "val": val, "test": test})
 
     dataset.push_to_hub("EuroEval/sum-pt-publico")
 

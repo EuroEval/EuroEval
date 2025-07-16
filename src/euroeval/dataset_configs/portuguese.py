@@ -6,7 +6,7 @@ from ..tasks import COMMON_SENSE, KNOW, LA, MCRC, NER, SENT, SUMM
 
 ### Official datasets ###
 
-PREFIX = "duarteocarmo"
+PREFIX = "EuroEval"
 
 SST2_PT_CONFIG = DatasetConfig(
     name="sst2-pt",
@@ -16,15 +16,6 @@ SST2_PT_CONFIG = DatasetConfig(
     languages=[PT],
     unofficial=False,
     _labels=["positive", "negative"],
-)
-
-BOOLQ_PT_CONFIG = DatasetConfig(
-    name="boolq-pt",
-    pretty_name="extraglue-boolq-pt dataset for portuguese (PT)",
-    huggingface_id=f"{PREFIX}/extraglue-boolq-pt",
-    task=MCRC,
-    languages=[PT],
-    unofficial=False,
 )
 
 
@@ -73,4 +64,17 @@ PUBLICO_PT_CONFIG = DatasetConfig(
     huggingface_id=f"{PREFIX}/sum-pt-publico",
     task=SUMM,
     languages=[PT],
+    unofficial=False,
+)
+
+
+### Unofficial datasets ###
+
+BOOLQ_PT_CONFIG = DatasetConfig(
+    name="boolq-pt",
+    pretty_name="extraglue-boolq-pt dataset for portuguese (PT)",
+    huggingface_id=f"{PREFIX}/extraglue-boolq-pt",
+    task=MCRC,
+    languages=[PT],
+    unofficial=True,
 )
