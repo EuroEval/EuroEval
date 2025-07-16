@@ -223,7 +223,7 @@ def generate_single_iteration(
         ]
     elif "target_text" in non_cached_dataset.column_names:
         non_cached_labels = non_cached_dataset["target_text"]
-        if not isinstance(non_cached_dataset, list):
+        if not isinstance(non_cached_labels, list):
             non_cached_labels = list(non_cached_labels)
         cached_labels = cached_dataset["target_text"]
         if not isinstance(cached_labels, list):
