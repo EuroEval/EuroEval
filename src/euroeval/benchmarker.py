@@ -78,6 +78,7 @@ class Benchmarker:
         num_iterations: int = 10,
         api_base: str | None = None,
         api_version: str | None = None,
+        gpu_memory_utilization: float = 0.9,
         debug: bool = False,
         run_with_cli: bool = False,
         only_allow_safetensors: bool = False,
@@ -145,6 +146,11 @@ class Benchmarker:
                 to a model on an inference API. Defaults to None.
             api_version:
                 The version of the API to use. Defaults to None.
+            gpu_memory_utilization:
+                The GPU memory utilization to use for vLLM. Only relevant if the model
+                is generative. A larger value will result in faster evaluation, but at
+                the risk of running out of GPU memory. Only reduce this if you are
+                running out of GPU memory. Defaults to 0.9.
             debug:
                 Whether to output debug information. Defaults to False.
             run_with_cli:
@@ -192,6 +198,7 @@ class Benchmarker:
             num_iterations=num_iterations,
             api_base=api_base,
             api_version=api_version,
+            gpu_memory_utilization=gpu_memory_utilization,
             debug=debug,
             run_with_cli=run_with_cli,
             only_allow_safetensors=only_allow_safetensors,

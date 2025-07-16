@@ -187,6 +187,14 @@ from .tasks import get_all_tasks
     "an inference API.",
 )
 @click.option(
+    "--gpu-memory-utilization",
+    default=0.9,
+    show_default=True,
+    help="The GPU memory utilization to use for vLLM. A larger value will result in "
+    "faster evaluation, but at the risk of running out of GPU memory. Only reduce this "
+    "if you are running out of GPU memory. Only relevant if the model is generative.",
+)
+@click.option(
     "--debug/--no-debug",
     default=False,
     show_default=True,
@@ -223,6 +231,7 @@ def benchmark(
     num_iterations: int,
     api_base: str | None,
     api_version: str | None,
+    gpu_memory_utilization: float,
     debug: bool,
     only_allow_safetensors: bool,
 ) -> None:
@@ -258,6 +267,7 @@ def benchmark(
         num_iterations=num_iterations,
         api_base=api_base,
         api_version=api_version,
+        gpu_memory_utilization=gpu_memory_utilization,
         debug=debug,
         run_with_cli=True,
         only_allow_safetensors=only_allow_safetensors,
