@@ -200,17 +200,35 @@ def generate_single_iteration(
         all_preds.extend(extracted_labels)
 
     if "label" in non_cached_dataset.column_names:
+        non_cached_labels = non_cached_dataset["label"]
+        if not isinstance(non_cached_labels, list):
+            non_cached_labels = list(non_cached_labels)
+        cached_labels = cached_dataset["label"]
+        if not isinstance(cached_labels, list):
+            cached_labels = list(cached_labels)
         ground_truth = [
             label.lower() if isinstance(label, str) else label
-            for label in non_cached_dataset["label"] + cached_dataset["label"]
+            for label in non_cached_labels + cached_labels
         ]
     elif "labels" in non_cached_dataset.column_names:
+        non_cached_labels = non_cached_dataset["labels"]
+        if not isinstance(non_cached_labels, list):
+            non_cached_labels = list(non_cached_labels)
+        cached_labels = cached_dataset["labels"]
+        if not isinstance(cached_labels, list):
+            cached_labels = list(cached_labels)
         ground_truth = [
             [label.lower() if isinstance(label, str) else label for label in label_list]
-            for label_list in non_cached_dataset["labels"] + cached_dataset["labels"]
+            for label_list in non_cached_labels + cached_labels
         ]
     elif "target_text" in non_cached_dataset.column_names:
-        ground_truth = non_cached_dataset["target_text"] + cached_dataset["target_text"]
+        non_cached_labels = non_cached_dataset["target_text"]
+        if not isinstance(non_cached_labels, list):
+            non_cached_labels = list(non_cached_labels)
+        cached_labels = cached_dataset["target_text"]
+        if not isinstance(cached_labels, list):
+            cached_labels = list(cached_labels)
+        ground_truth = non_cached_labels + cached_labels
     else:
         raise ValueError(
             "The dataset must have either a 'label', 'labels', or 'target_text' column"
