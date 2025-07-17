@@ -272,6 +272,7 @@ class HumanEvaluator:
             num_iterations=iteration + 1,
             api_base=None,
             api_version=None,
+            gpu_memory_utilization=0.9,
             debug=False,
             run_with_cli=True,
             only_allow_safetensors=False,
