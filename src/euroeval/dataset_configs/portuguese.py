@@ -9,7 +9,7 @@ from ..tasks import COMMON_SENSE, KNOW, LA, MCRC, NER, SENT, SUMM
 SST2_PT_CONFIG = DatasetConfig(
     name="sst2-pt",
     pretty_name="the truncated version of the Portuguese sentiment classification dataset SST2-pt, translated from the English SST2 dataset",
-    huggingface_id=f"EuroEval/sst2-pt-mini",
+    huggingface_id="EuroEval/sst2-pt-mini",
     task=SENT,
     languages=[PT],
     _labels=["positive", "negative"],
@@ -19,7 +19,7 @@ SST2_PT_CONFIG = DatasetConfig(
 MMLU_PT_CONFIG = DatasetConfig(
     name="mmlu-pt",
     pretty_name="the truncated version of the Portuguese knowledge dataset MMLU-pt, translated from the English MMLU dataset",
-    huggingface_id=f"EuroEval/mmlu-pt-mini",
+    huggingface_id="EuroEval/mmlu-pt-mini",
     task=KNOW,
     languages=[PT],
 )
@@ -28,7 +28,7 @@ MMLU_PT_CONFIG = DatasetConfig(
 GOLDENSWAG_PT_CONFIG = DatasetConfig(
     name="goldenswag-pt",
     pretty_name="the truncated version of the Portuguese common-sense reasoning dataset GoldenSwag-pt, translated from the English GoldenSwag dataset",
-    huggingface_id=f"EuroEval/goldenswag-pt-mini",
+    huggingface_id="EuroEval/goldenswag-pt-mini",
     task=COMMON_SENSE,
     languages=[PT],
 )
@@ -37,7 +37,7 @@ GOLDENSWAG_PT_CONFIG = DatasetConfig(
 SCALA_PT = DatasetConfig(
     name="scala-pt",
     pretty_name="the Portuguese part of the linguistic acceptability dataset ScaLA",
-    huggingface_id=f"EuroEval/scala-pt",
+    huggingface_id="EuroEval/scala-pt",
     task=LA,
     languages=[PT],
 )
@@ -45,7 +45,7 @@ SCALA_PT = DatasetConfig(
 HAREM_CONFIG = DatasetConfig(
     name="harem",
     pretty_name="the Portuguese named entity recognition dataset HAREM",
-    huggingface_id=f"EuroEval/harem-pt",
+    huggingface_id="EuroEval/harem",
     task=NER,
     languages=[PT],
 )
