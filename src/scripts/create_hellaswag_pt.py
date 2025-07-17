@@ -9,7 +9,7 @@
 # ]
 # ///
 
-"""Create the HellaSwag-mini datasets and upload them to the HF Hub."""
+"""Create the GoldenSwag-pt-mini dataset and upload it to the HF Hub."""
 
 from collections import Counter
 
@@ -95,7 +95,7 @@ def process_(dataset: Dataset) -> pd.DataFrame:
 
 
 def main() -> None:
-    """Create the HellaSwag-mini datasets and upload them to the HF Hub."""
+    """Create the GoldenSwag-pt dataset and upload it to the HF Hub."""
     # Define the base download URL
     repo_id = "LumiOpen/opengpt-x_goldenswagx"
 
@@ -129,7 +129,7 @@ def main() -> None:
         test=Dataset.from_pandas(test_df, split=Split.TEST),
     )
 
-    dataset_id = "EuroEval/hellaswag-pt-mini"
+    dataset_id = "EuroEval/goldenswag-pt-mini"
 
     # Remove the dataset from Hugging Face Hub if it already exists
     try:
@@ -139,7 +139,7 @@ def main() -> None:
         pass
 
     # Push the dataset to the Hugging Face Hub
-    dataset.push_to_hub(dataset_id, private=False)
+    dataset.push_to_hub(dataset_id, private=True)
 
 
 if __name__ == "__main__":

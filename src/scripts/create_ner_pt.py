@@ -8,7 +8,7 @@
 # ]
 # ///
 
-"""Create the HAREM-PT-mini NER dataset and upload it to the HF Hub."""
+"""Create the HAREM NER dataset and upload it to the HF Hub."""
 
 import re
 import urllib.request
@@ -233,7 +233,7 @@ def _process_harem_data(raw: str) -> list[dict]:
 
 
 def main() -> None:
-    """Create the HAREM-PT-mini NER dataset and upload it to the HF Hub."""
+    """Create the HAREM NER dataset and upload it to the HF Hub."""
     # Download the HAREM dataset
     print("Downloading HAREM dataset...")
     content = _download(URL)
@@ -308,7 +308,7 @@ def main() -> None:
     )
 
     # Create dataset ID
-    dataset_id = "duarteocarmo/harem-pt-mini"
+    dataset_id = "EuroEval/harem"
 
     # Remove the dataset from Hugging Face Hub if it already exists
     try:
@@ -319,7 +319,7 @@ def main() -> None:
 
     # Push the dataset to the Hugging Face Hub
     print(f"\nUploading dataset to {dataset_id}...")
-    dataset.push_to_hub(dataset_id, private=False)
+    dataset.push_to_hub(dataset_id, private=True)
     print("Dataset uploaded successfully!")
 
 

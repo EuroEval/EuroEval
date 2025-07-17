@@ -307,7 +307,7 @@ def load_ud_pos(
     val_url: str,
     test_url: str,
     doc_process_fn: Callable[[str], str] = lambda x: x,
-    filter_source: Optional[str] = None,
+    filter_source: str | None = None,
 ) -> Dict[str, pd.DataFrame]:
     """Load the part-of-speech part of a Universal Dependencies treebank.
 

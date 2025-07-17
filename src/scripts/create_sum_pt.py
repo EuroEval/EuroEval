@@ -4,15 +4,15 @@
 # ///
 
 
-"""Create the Publico-pt summarisation dataset."""
+"""Create the Público-mini summarisation dataset."""
 
 import random
 
 import nltk
 from datasets import Dataset, DatasetDict, load_dataset
+from nltk.tokenize import sent_tokenize  # noqa: E402
 
 nltk.download("punkt")
-from nltk.tokenize import sent_tokenize  # noqa: E402
 
 TOTAL = 1024 + 256 + 2048
 
@@ -32,11 +32,7 @@ def _extract_fields(example: dict) -> dict | None:
 
 
 def main() -> None:
-    """This script creates the Publico-pt dataset.
-
-    The dataset is created from the cc_news_publico dataset, which is a dataset of
-    news articles from the Publico newspaper.
-    """
+    """Create the Público-mini dataset."""
     raw = load_dataset("duarteocarmo/cc_news_publico", split="train")
     processed = [_extract_fields(x) for x in raw]
     processed = [x for x in processed if x]
@@ -51,7 +47,17 @@ def main() -> None:
 
     dataset = DatasetDict({"train": train, "val": val, "test": test})
 
-    dataset.push_to_hub("EuroEval/sum-pt-publico")
+        dataset_id = "EuroEval/publico-mini"
+    
+        # Remove the dataset from Hugging Face Hub if it already exists
+        try:
+            api = HfApi()
+            api.delete_repo(dataset_id, repo_type="dataset")
+        except HTTPError:
+            pass
+
+        # Push the dataset to the Hugging Face Hub
+        dataset.push_to_hub(dataset_id, private=True)
 
 
 if __name__ == "__main__":
