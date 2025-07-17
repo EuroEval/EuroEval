@@ -324,6 +324,8 @@ def load_ud_pos(
             The URL of the test data.
         doc_process_fn:
             A function to apply to each document before parsing it.
+        filter_source:
+            If not `None`, only include entries with this source in the dataset.
 
     Returns:
         The dataframes, stored in the keys `train`, `val` and `test`.
