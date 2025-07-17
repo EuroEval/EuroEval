@@ -9,7 +9,7 @@
 # ]
 # ///
 
-"""Create the extraglue-sst2-pt dataset and upload to HF Hub."""
+"""Create the SST2-pt dataset and upload to HF Hub."""
 
 import pandas as pandas
 from datasets import Dataset, DatasetDict, Split, load_dataset
@@ -20,28 +20,6 @@ RANDOM_STATE = 4242
 TRAIN_SIZE, VAL_SIZE, TEST_SIZE = 1024, 256, 2048
 ORIGINAL_REPO_ID = "PORTULAN/extraglue"
 FINAL_REPO_ID = "EuroEval/extraglue-sst2-pt"
-
-
-def cleanup(df: pandas.DataFrame, n: int | None = None) -> pandas.DataFrame:
-    """Clean up the dataset."""
-    df = df.rename(columns={"sentence": "text"})
-    df["label"] = df["label"].map({0: "negative", 1: "positive"})
-    df = df[["text", "label"]].drop_duplicates()
-    if n:
-        df = df.sample(n=min(n, len(df)), random_state=RANDOM_STATE)
-    return df.reset_index(drop=True)
-
-
-def stratified_sample(
-    df: pandas.DataFrame, n: int
-) -> tuple[pandas.DataFrame, pandas.DataFrame]:
-    """Return (sampled_subset, remainder) with perfectly balanced labels."""
-    per_class = n // 2
-    pos = df[df["label"] == "positive"].sample(n=per_class, random_state=RANDOM_STATE)  # noqa: E501
-    neg = df[df["label"] == "negative"].sample(n=per_class, random_state=RANDOM_STATE)  # noqa: E501
-    sample = pandas.concat([pos, neg])
-    rest = df.drop(sample.index)
-    return sample.reset_index(drop=True), rest.reset_index(drop=True)
 
 
 def main() -> None:
@@ -68,7 +46,45 @@ def main() -> None:
     except HTTPError:
         pass
 
-    dataset.push_to_hub(FINAL_REPO_ID, private=False)
+    dataset.push_to_hub(FINAL_REPO_ID, private=True)
+
+
+def cleanup(df: pandas.DataFrame, n: int | None = None) -> pandas.DataFrame:
+    """Clean up the dataset.
+
+    Args:
+        df: DataFrame with 'sentence' and 'label' columns.
+        n: Optional number of samples to return.
+
+    Returns:
+        Cleaned DataFrame with 'text' and 'label' columns.
+    """
+    df = df.rename(columns={"sentence": "text"})
+    df["label"] = df["label"].map({0: "negative", 1: "positive"})
+    df = df[["text", "label"]].drop_duplicates()
+    if n:
+        df = df.sample(n=min(n, len(df)), random_state=RANDOM_STATE)
+    return df.reset_index(drop=True)
+
+
+def stratified_sample(
+    df: pandas.DataFrame, n: int
+) -> tuple[pandas.DataFrame, pandas.DataFrame]:
+    """Return (sampled_subset, remainder) with perfectly balanced labels.
+
+    Args:
+        df: DataFrame with 'label' column containing 'positive' and 'negative'.
+        n: Total number of samples to select (must be even).
+
+    Returns:
+        Tuple of (sampled DataFrame, remainder DataFrame).
+    """
+    per_class = n // 2
+    pos = df[df["label"] == "positive"].sample(n=per_class, random_state=RANDOM_STATE)  # noqa: E501
+    neg = df[df["label"] == "negative"].sample(n=per_class, random_state=RANDOM_STATE)  # noqa: E501
+    sample = pandas.concat([pos, neg])
+    rest = df.drop(sample.index)
+    return sample.reset_index(drop=True), rest.reset_index(drop=True)
 
 
 if __name__ == "__main__":

@@ -21,29 +21,6 @@ ORIGINAL_REPO_ID = "PORTULAN/extraglue"
 FINAL_REPO_ID = "EuroEval/extraglue-boolq-pt"
 
 
-def transform_dataset(df: pandas.DataFrame) -> pandas.DataFrame:
-    """Transform dataset to multiple choice format."""
-    texts = []
-    labels = []
-
-    for _, row in df.iterrows():
-        text = (
-            f"Texto: {row['passage']}\n"
-            f"Pergunta: {row['question']}\n"
-            f"Opções:\n"
-            f"a. sim\n"
-            f"b. não"
-        )
-
-        # Label 1 (yes) -> "a", Label 0 (no) -> "b"
-        correct_label = "a" if row["label"] == 1 else "b"
-
-        texts.append(text)
-        labels.append(correct_label)
-
-    return pandas.DataFrame({"text": texts, "label": labels})
-
-
 def main() -> None:
     """Create the dataset and upload to HF Hub."""
     ds_raw = load_dataset(ORIGINAL_REPO_ID, name="boolq_pt-PT")
@@ -99,7 +76,37 @@ def main() -> None:
     except HTTPError:
         pass
 
-    dataset.push_to_hub(FINAL_REPO_ID, private=False)
+    dataset.push_to_hub(FINAL_REPO_ID, private=True)
+
+
+def transform_dataset(df: pandas.DataFrame) -> pandas.DataFrame:
+    """Transform dataset to multiple choice format.
+
+    Args:
+        df: DataFrame with columns 'passage', 'question', and 'label'.
+
+    Returns:
+        DataFrame with columns 'text' and 'label'.
+    """
+    texts = []
+    labels = []
+
+    for _, row in df.iterrows():
+        text = (
+            f"Texto: {row['passage']}\n"
+            f"Pergunta: {row['question']}\n"
+            f"Opções:\n"
+            f"a. sim\n"
+            f"b. não"
+        )
+
+        # Label 1 (yes) -> "a", Label 0 (no) -> "b"
+        correct_label = "a" if row["label"] == 1 else "b"
+
+        texts.append(text)
+        labels.append(correct_label)
+
+    return pandas.DataFrame({"text": texts, "label": labels})
 
 
 if __name__ == "__main__":
