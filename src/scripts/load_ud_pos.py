@@ -8,12 +8,16 @@
 
 """Load the part-of-speech part of a Universal Dependencies treebank."""
 
+import logging
 import re
 from collections import defaultdict
-from typing import Callable, Dict, List, Optional, Union
+from typing import Callable, Dict, List, Union
 
 import pandas as pd
 import requests
+
+logging.basicConfig(format="%(asctime)s ⋅ %(message)s", level=logging.INFO)
+logger = logging.getLogger("load_ud_pos")
 
 
 def load_dadt_pos() -> Dict[str, pd.DataFrame]:
@@ -332,7 +336,7 @@ def load_ud_pos(
     )
 
     if filter_source is not None:
-        print(
+        logger.warning(
             f"Warning: Filtering dataset to include only entries with {filter_source=}"
         )
 
