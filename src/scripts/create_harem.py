@@ -10,6 +10,7 @@
 
 """Create the HAREM NER dataset and upload it to the HF Hub."""
 
+import logging
 import re
 import urllib.request
 from collections import Counter
@@ -18,6 +19,9 @@ import pandas as pd
 from datasets import Dataset, DatasetDict, Split
 from huggingface_hub import HfApi
 from requests import HTTPError
+
+logging.basicConfig(format="%(asctime)s ⋅ %(message)s", level=logging.INFO)
+logger = logging.getLogger("create_harem")
 
 # Constants for dataset sizes
 TRAIN_SIZE = 1024
@@ -70,14 +74,121 @@ SEEN_TAGS: Counter = Counter()
 SEEN_LABELS: Counter = Counter()
 
 
+def main() -> None:
+    """Create the HAREM NER dataset and upload it to the HF Hub."""
+    # Download the HAREM dataset
+    logger.info("Downloading HAREM dataset...")
+    content = _download(URL)
+
+    # Process the data
+    logger.info("Processing HAREM data...")
+    examples = _process_harem_data(content)
+
+    logger.info(f"Total examples processed: {len(examples)}")
+    logger.info("\nTag usage:")
+    for tag, count in SEEN_TAGS.most_common():
+        logger.info(f"  {tag:15s}: {count}")
+
+    logger.info("\nLabel frequencies:")
+    for label, count in SEEN_LABELS.most_common():
+        logger.info(f"  {label:10s}: {count}")
+
+    # Convert to DataFrame
+    df = pd.DataFrame(examples)
+
+    # Shuffle the dataset
+    df = df.sample(frac=1, random_state=RANDOM_STATE).reset_index(drop=True)
+
+    # Ensure we have enough examples for the desired splits
+    total_needed = TRAIN_SIZE + VAL_SIZE + TEST_SIZE
+    if len(df) < total_needed:
+        logger.info(
+            f"Warning: Only {len(df)} examples available, but {total_needed} needed"
+        )
+        # Adjust sizes proportionally
+        ratio = len(df) / total_needed
+        train_size = int(TRAIN_SIZE * ratio)
+        val_size = int(VAL_SIZE * ratio)
+        test_size = len(df) - train_size - val_size
+    else:
+        train_size = TRAIN_SIZE
+        val_size = VAL_SIZE
+        test_size = TEST_SIZE
+
+    # Create splits
+    train_df = df[:train_size].reset_index(drop=True)
+    val_df = df[train_size : train_size + val_size].reset_index(drop=True)
+    test_df = df[train_size + val_size : train_size + val_size + test_size].reset_index(
+        drop=True
+    )
+
+    logger.info("\nDataset splits:")
+    logger.info(f"  Train: {len(train_df)} examples")
+    logger.info(f"  Validation: {len(val_df)} examples")
+    logger.info(f"  Test: {len(test_df)} examples")
+
+    # Convert labels from strings to IDs for consistency with Spanish script
+    def convert_labels_to_ids(labels: list[str]) -> list[int]:
+        return [LABEL2ID[label] for label in labels]
+
+    train_df["labels"] = train_df["labels"].apply(convert_labels_to_ids)
+    val_df["labels"] = val_df["labels"].apply(convert_labels_to_ids)
+    test_df["labels"] = test_df["labels"].apply(convert_labels_to_ids)
+
+    # Convert back to strings for final dataset (matching Spanish script format)
+    train_df["labels"] = train_df["labels"].apply(
+        lambda ids: [ID2LABEL[id] for id in ids]
+    )
+    val_df["labels"] = val_df["labels"].apply(lambda ids: [ID2LABEL[id] for id in ids])
+    test_df["labels"] = test_df["labels"].apply(
+        lambda ids: [ID2LABEL[id] for id in ids]
+    )
+
+    # Create dataset dictionary
+    dataset = DatasetDict(
+        train=Dataset.from_pandas(train_df, split=Split.TRAIN),
+        val=Dataset.from_pandas(val_df, split=Split.VALIDATION),
+        test=Dataset.from_pandas(test_df, split=Split.TEST),
+    )
+
+    # Create dataset ID
+    dataset_id = "EuroEval/harem"
+
+    # Remove the dataset from Hugging Face Hub if it already exists
+    try:
+        api = HfApi()
+        api.delete_repo(dataset_id, repo_type="dataset")
+    except HTTPError:
+        pass
+
+    # Push the dataset to the Hugging Face Hub
+    logger.info(f"\nUploading dataset to {dataset_id}...")
+    dataset.push_to_hub(dataset_id, private=True)
+    logger.info("Dataset uploaded successfully!")
+
+
 def _download(url: str) -> str:
-    """Download content from URL with proper encoding."""
+    """Download content from URL with proper encoding.
+
+    Args:
+        url: The URL to download from.
+
+    Returns:
+        The decoded content as a string.
+    """
     with urllib.request.urlopen(url) as response:
         return response.read().decode("iso-8859-1")
 
 
 def _parse_doc(doc: str) -> tuple[list[str], list[int]] | None:
-    """Parse a single HAREM document and return tokens and labels (BIO format)."""
+    """Parse a single HAREM document and return tokens and labels (BIO format).
+
+    Args:
+        doc: The document string to parse.
+
+    Returns:
+        A tuple of (tokens, labels) if the document is valid, otherwise None.
+    """
     origem_match = re.search(r"<ORIGEM>\s*(\w+)\s*</ORIGEM>", doc)
     if not origem_match or origem_match.group(1).upper() != "PT":
         return None
@@ -119,7 +230,7 @@ def _parse_doc(doc: str) -> tuple[list[str], list[int]] | None:
         SEEN_TAGS[name] += 1
 
         if name not in TAG2LABEL:
-            print(f"Warning: Unknown tag <{name}>")
+            logger.info(f"Warning: Unknown tag <{name}>")
 
         if closing:
             if stack and stack[-1] == name:
@@ -154,7 +265,14 @@ def _parse_doc(doc: str) -> tuple[list[str], list[int]] | None:
 
 
 def _reconstruct_text(tokens: list[str]) -> str:
-    """Reconstruct text from tokens, preserving original spacing."""
+    """Reconstruct text from tokens, preserving original spacing.
+
+    Args:
+        tokens: List of tokens.
+
+    Returns:
+        The reconstructed text as a string.
+    """
     if not tokens:
         return ""
 
@@ -176,6 +294,15 @@ def _reconstruct_text(tokens: list[str]) -> str:
 def _split_into_sentences(
     tokens: list[str], labels: list[int]
 ) -> list[tuple[list[str], list[int]]]:
+    """Split tokens and labels into sentences.
+
+    Args:
+        tokens: List of tokens.
+        labels: List of label IDs corresponding to tokens.
+
+    Returns:
+        List of (tokens, labels) tuples for each sentence.
+    """
     sentences = []
     i = 0
     while i < len(tokens):
@@ -203,7 +330,14 @@ def _split_into_sentences(
 
 
 def _process_harem_data(raw: str) -> list[dict]:
-    """Process raw HAREM data into structured format."""
+    """Process raw HAREM data into structured format.
+
+    Args:
+        raw: Raw string containing HAREM data.
+
+    Returns:
+        List of dicts, each with 'tokens', 'labels', and 'text' for a sentence.
+    """
     docs = raw.split("<DOC>")
     examples = []
 
@@ -230,97 +364,6 @@ def _process_harem_data(raw: str) -> list[dict]:
                     )
 
     return examples
-
-
-def main() -> None:
-    """Create the HAREM NER dataset and upload it to the HF Hub."""
-    # Download the HAREM dataset
-    print("Downloading HAREM dataset...")
-    content = _download(URL)
-
-    # Process the data
-    print("Processing HAREM data...")
-    examples = _process_harem_data(content)
-
-    print(f"Total examples processed: {len(examples)}")
-    print("\nTag usage:")
-    for tag, count in SEEN_TAGS.most_common():
-        print(f"  {tag:15s}: {count}")
-
-    print("\nLabel frequencies:")
-    for label, count in SEEN_LABELS.most_common():
-        print(f"  {label:10s}: {count}")
-
-    # Convert to DataFrame
-    df = pd.DataFrame(examples)
-
-    # Shuffle the dataset
-    df = df.sample(frac=1, random_state=RANDOM_STATE).reset_index(drop=True)
-
-    # Ensure we have enough examples for the desired splits
-    total_needed = TRAIN_SIZE + VAL_SIZE + TEST_SIZE
-    if len(df) < total_needed:
-        print(f"Warning: Only {len(df)} examples available, but {total_needed} needed")
-        # Adjust sizes proportionally
-        ratio = len(df) / total_needed
-        train_size = int(TRAIN_SIZE * ratio)
-        val_size = int(VAL_SIZE * ratio)
-        test_size = len(df) - train_size - val_size
-    else:
-        train_size = TRAIN_SIZE
-        val_size = VAL_SIZE
-        test_size = TEST_SIZE
-
-    # Create splits
-    train_df = df[:train_size].reset_index(drop=True)
-    val_df = df[train_size : train_size + val_size].reset_index(drop=True)
-    test_df = df[train_size + val_size : train_size + val_size + test_size].reset_index(
-        drop=True
-    )
-
-    print("\nDataset splits:")
-    print(f"  Train: {len(train_df)} examples")
-    print(f"  Validation: {len(val_df)} examples")
-    print(f"  Test: {len(test_df)} examples")
-
-    # Convert labels from strings to IDs for consistency with Spanish script
-    def convert_labels_to_ids(labels: list[str]) -> list[int]:
-        return [LABEL2ID[label] for label in labels]
-
-    train_df["labels"] = train_df["labels"].apply(convert_labels_to_ids)
-    val_df["labels"] = val_df["labels"].apply(convert_labels_to_ids)
-    test_df["labels"] = test_df["labels"].apply(convert_labels_to_ids)
-
-    # Convert back to strings for final dataset (matching Spanish script format)
-    train_df["labels"] = train_df["labels"].apply(
-        lambda ids: [ID2LABEL[id] for id in ids]
-    )
-    val_df["labels"] = val_df["labels"].apply(lambda ids: [ID2LABEL[id] for id in ids])
-    test_df["labels"] = test_df["labels"].apply(
-        lambda ids: [ID2LABEL[id] for id in ids]
-    )
-
-    # Create dataset dictionary
-    dataset = DatasetDict(
-        train=Dataset.from_pandas(train_df, split=Split.TRAIN),
-        val=Dataset.from_pandas(val_df, split=Split.VALIDATION),
-        test=Dataset.from_pandas(test_df, split=Split.TEST),
-    )
-
-    # Create dataset ID
-    dataset_id = "EuroEval/harem"
-
-    # Remove the dataset from Hugging Face Hub if it already exists
-    try:
-        api = HfApi()
-        api.delete_repo(dataset_id, repo_type="dataset")
-    except HTTPError:
-        pass
-
-    # Push the dataset to the Hugging Face Hub
-    print(f"\nUploading dataset to {dataset_id}...")
-    dataset.push_to_hub(dataset_id, private=True)
-    print("Dataset uploaded successfully!")
 
 
 if __name__ == "__main__":

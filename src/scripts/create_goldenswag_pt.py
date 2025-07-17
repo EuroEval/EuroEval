@@ -27,73 +27,6 @@ from requests import HTTPError
 from sklearn.model_selection import train_test_split
 
 
-def process_(dataset: Dataset) -> pd.DataFrame:
-    """Process the dataset."""
-    assert isinstance(dataset, Dataset)
-
-    # Convert the dataset to a dataframe
-    df = dataset.to_pandas()
-    assert isinstance(df, pd.DataFrame)
-
-    # Remove the samples with overly short or long texts
-    df = df[
-        (df.ctx.str.len() >= MIN_NUM_CHARS_IN_INSTRUCTION)
-        & (df.ctx.str.len() <= MAX_NUM_CHARS_IN_INSTRUCTION)
-        & df.endings.map(
-            lambda endings: min(len(ending) for ending in endings)
-            >= MIN_NUM_CHARS_IN_OPTION
-            and max(len(ending) for ending in endings) <= MAX_NUM_CHARS_IN_OPTION
-        )
-    ]
-
-    def is_repetitive(text: str) -> bool:
-        """Return True if the text is repetitive."""
-        max_repetitions = max(Counter(text.split()).values())
-        return max_repetitions > MAX_REPETITIONS
-
-    # Remove overly repetitive samples
-    df = df[
-        ~df.ctx.apply(is_repetitive)
-        & ~df.endings.map(
-            lambda endings: any(is_repetitive(ending) for ending in endings)
-        )
-    ]
-
-    # Make a `text` column with all the options in it
-    df["text"] = [
-        row.ctx.replace("\n", " ").strip() + "\n"
-        "Opções:\n"
-        "a. " + row.endings[0].replace("\n", " ").strip() + "\n"
-        "b. " + row.endings[1].replace("\n", " ").strip() + "\n"
-        "c. " + row.endings[2].replace("\n", " ").strip() + "\n"
-        "d. " + row.endings[3].replace("\n", " ").strip()
-        for _, row in df.iterrows()
-    ]
-
-    # Fix the label column
-    label_mapping = {"0": "a", "1": "b", "2": "c", "3": "d"}
-    df.label = df.label.map(label_mapping)
-
-    # Only keep the samples whose `activity_label` has at least 3 samples
-    acceptable_activity_labels = [
-        activity_label
-        for activity_label, count in df["activity_label"].value_counts().items()
-        if count >= 3
-    ]
-    df = df[df["activity_label"].isin(acceptable_activity_labels)]
-
-    # Remove duplicates
-    df.drop_duplicates(subset="text", inplace=True)
-    df.reset_index(drop=True, inplace=True)
-
-    # Make the `label` column case-consistent with the `text` column
-    df.label = df.label.str.lower()
-
-    # Only keep the columns `text`, `label` and `activity_label`
-    df = df[["text", "label", "activity_label"]]
-    return df
-
-
 def main() -> None:
     """Create the GoldenSwag-pt dataset and upload it to the HF Hub."""
     # Define the base download URL
@@ -140,6 +73,87 @@ def main() -> None:
 
     # Push the dataset to the Hugging Face Hub
     dataset.push_to_hub(dataset_id, private=True)
+
+
+def process_(dataset: Dataset) -> pd.DataFrame:
+    """Process the dataset.
+
+    Args:
+        dataset: HuggingFace Dataset to process.
+
+    Returns:
+        pandas.DataFrame with columns 'text', 'label', and 'activity_label'.
+    """
+    assert isinstance(dataset, Dataset)
+
+    # Convert the dataset to a dataframe
+    df = dataset.to_pandas()
+    assert isinstance(df, pd.DataFrame)
+
+    # Remove the samples with overly short or long texts
+    df = df[
+        (df.ctx.str.len() >= MIN_NUM_CHARS_IN_INSTRUCTION)
+        & (df.ctx.str.len() <= MAX_NUM_CHARS_IN_INSTRUCTION)
+        & df.endings.map(
+            lambda endings: min(len(ending) for ending in endings)
+            >= MIN_NUM_CHARS_IN_OPTION
+            and max(len(ending) for ending in endings) <= MAX_NUM_CHARS_IN_OPTION
+        )
+    ]
+
+    def is_repetitive(text: str) -> bool:
+        """Check if the text is repetitive.
+
+        Args:
+            text: input string to check for repetition
+
+        Returns:
+            True if the text is repetitive, False otherwise
+        """
+        max_repetitions = max(Counter(text.split()).values())
+        return max_repetitions > MAX_REPETITIONS
+
+    # Remove overly repetitive samples
+    df = df[
+        ~df.ctx.apply(is_repetitive)
+        & ~df.endings.map(
+            lambda endings: any(is_repetitive(ending) for ending in endings)
+        )
+    ]
+
+    # Make a `text` column with all the options in it
+    df["text"] = [
+        row.ctx.replace("\n", " ").strip() + "\n"
+        "Opções:\n"
+        "a. " + row.endings[0].replace("\n", " ").strip() + "\n"
+        "b. " + row.endings[1].replace("\n", " ").strip() + "\n"
+        "c. " + row.endings[2].replace("\n", " ").strip() + "\n"
+        "d. " + row.endings[3].replace("\n", " ").strip()
+        for _, row in df.iterrows()
+    ]
+
+    # Fix the label column
+    label_mapping = {"0": "a", "1": "b", "2": "c", "3": "d"}
+    df.label = df.label.map(label_mapping)
+
+    # Only keep the samples whose `activity_label` has at least 3 samples
+    acceptable_activity_labels = [
+        activity_label
+        for activity_label, count in df["activity_label"].value_counts().items()
+        if count >= 3
+    ]
+    df = df[df["activity_label"].isin(acceptable_activity_labels)]
+
+    # Remove duplicates
+    df.drop_duplicates(subset="text", inplace=True)
+    df.reset_index(drop=True, inplace=True)
+
+    # Make the `label` column case-consistent with the `text` column
+    df.label = df.label.str.lower()
+
+    # Only keep the columns `text`, `label` and `activity_label`
+    df = df[["text", "label", "activity_label"]]
+    return df
 
 
 if __name__ == "__main__":
