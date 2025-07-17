@@ -64,7 +64,7 @@ PUBLICO_CONFIG = DatasetConfig(
 BOOLQ_PT_CONFIG = DatasetConfig(
     name="boolq-pt",
     pretty_name="the Portuguese multiple choice reading comprehension dataset BoolQ-pt, translated from the English BoolQ dataset",
-    huggingface_id=f"{PREFIX}/extraglue-boolq-pt",
+    huggingface_id="EuroEval/boolq-pt",
     task=MCRC,
     languages=[PT],
 )
