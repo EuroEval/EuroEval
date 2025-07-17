@@ -6,9 +6,9 @@ information about what these constitute.
 
 ## Sentiment Classification
 
-### Unofficial: SST-2 PT
+### SST2-PT
 
-This dataset was published in [this paper](https://arxiv.org/abs/2404.05333) and is part of the extraglue dataset. It is created by taking the original SST-2 dataset and using machine translation (DeepL) to translate it.
+This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2404.05333) and is part of the ExtraGLUE dataset. It is created by taking the original SST-2 dataset and using machine translation (DeepL) to translate it.
 
 The original dataset contains 67,300 training, 872 validation, and 1,820 test samples. We use 1,024 / 256 / 2,048 samples for train / val / test respectively. Given that the original validation dataset only has 1,820 sample for testing, we derive that split from the training split, while ensuring no overlaps occur. This dataset only includes positive and negative labels, no neutrals.
 
@@ -62,11 +62,12 @@ You can evaluate this dataset directly as follows:
 $ euroeval --model <model-id> --dataset sst2-pt
 ```
 
+
 ## Named Entity Recognition
 
-## HAREM-pt
+### HAREM
 
-This dataset is based on the [Primeiro HAREM](https://www.linguateca.pt/harem/) evaluation campaign for **Portuguese from Portugal**, using the manually annotated **Colecção Dourada**.
+This dataset was published in [this paper](https://aclanthology.org/L06-1027/) and is based on the [Primeiro HAREM](https://www.linguateca.pt/harem/) evaluation campaign for **Portuguese from Portugal**, using the manually annotated **Colecção Dourada**. The text sources come from varied sources: web, news, fiction books, politics, email, speeches, technical, expository.
 
 We extract only documents where `<ORIGEM>` is `PT`, i.e., of **Portuguese origin**. The raw XML annotations are parsed and converted to token-level BIO labels. Tags are mapped to standard CoNLL categories:
 
@@ -151,14 +152,15 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ euroeval --model <model-id> --dataset harem-pt
+$ euroeval --model <model-id> --dataset harem
 ```
+
 
 ## Linguistic Acceptability
 
 ### ScaLA-pt
 
-This dataset is a Portuguese version of ScaLA, created by corrupting grammatically correct sentences from the [Universal Dependencies Portuguese-Bosque treebank](https://github.com/UniversalDependencies/UD_Portuguese-Bosque), filtered to only include samples from the European Portuguese source *CETEMPúblico*. The treebank is based on the Constraint Grammar conversion of the Bosque corpus, part of the Floresta Sintá(c)tica treebank.
+This dataset is a Portuguese version of ScaLA, which was originally published in [this paper](https://aclanthology.org/2023.nodalida-1.20/), created by corrupting grammatically correct sentences from the [Universal Dependencies Portuguese-Bosque treebank](https://github.com/UniversalDependencies/UD_Portuguese-Bosque), filtered to only include samples from the European Portuguese source *CETEMPúblico*. The treebank is based on the Constraint Grammar conversion of the Bosque corpus, part of the Floresta Sintá(c)tica treebank.
 
 Corruptions were applied by either **removing a word** from the sentence or **swapping two neighbouring words**. Rules based on part-of-speech tags were used to ensure that these corruptions lead to grammatical errors.
 
@@ -220,11 +222,12 @@ You can evaluate this dataset directly as follows:
 $ euroeval --model <model-id> --dataset scala-pt
 ```
 
+
 ## Reading Comprehension
 
 ### Unofficial: BoolQ-PT
 
-This dataset was published in [this paper](https://arxiv.org/abs/2404.05333) and is part of the extraglue dataset. It is created by taking the original BoolQ dataset and using machine translation (DeepL) to translate it.
+This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2404.05333) and is part of the ExtraGLUE dataset. It is created by taking the original BoolQ dataset and using machine translation (DeepL) to translate it.
 
 The original dataset has a passage, question, and yes/no label. We adapt this dataset by taking the original passage, question, and yes/no options, and turning it into a Q/A style question where the model can answer yes or no.
 
@@ -286,13 +289,17 @@ You can evaluate this dataset directly as follows:
 $ euroeval --model <model-id> --dataset boolq-pt
 ```
 
+
 ## Knowledge
 
 ### MMLU-pt
 
-This dataset is a subset of [MMLUx](https://huggingface.co/datasets/LumiOpen/opengpt-x_mmlux). Originally from openGPT-X/mmlux.
+This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2410.08928) and is a machine translated version of the English [MMLU
+dataset](https://openreview.net/forum?id=d7KBjmI3GmQ) and features questions within 57
+different topics, such as elementary mathematics, US history and law. The translation to
+Portuguese was done using DeepL.
 
-The original full dataset consists of 270 / 1,439 / 14,774 samples for training, validation, and testing, respectively. As this is not expected from EuroEval, we merged them, removed any duplicates, and then created new splits with 256 / 2048 / 1024 samples for validation, test, and training, respectively.
+The original full dataset consists of 270 / 1,439 / 14,774 samples for training, validation, and testing, respectively. These splits were merged, duplicates removed, and new splits were created with 1,024 / 256 / 2048 samples for training, validation, and testing, respectively.
 
 Here are a few examples from the training split:
 
@@ -354,13 +361,14 @@ You can evaluate this dataset directly as follows:
 $ euroeval --model <model-id> --dataset mmlu-pt
 ```
 
+
 ## Common-sense Reasoning
 
-### HellaSwag-pt
+### GoldenSwag-pt
 
-This dataset is a subset of [HellaswagX](https://huggingface.co/datasets/LumiOpen/opengpt-x_goldenswagx). Originally from openGPT-X/hellaswagx.
+This dataset is a filtered and machine translated version of the English [HellaSwag dataset](https://aclanthology.org/P19-1472/), featuring both video descriptions from ActivityNet as well as how-to articles from WikiHow. The machine translated version was published in [this paper](https://doi.org/10.48550/arXiv.2410.08928) and was done using DeepL, and the filtering was published in [this paper](https://doi.org/10.48550/arXiv.2504.07825), which resulted in higher quality samples.
 
-The original full dataset consists of 1530 / 1530 samples for training and validation, respectively. However, they are exactly equal. For EuroEval, we use a split of 660 / 256 / 2.05k samples for training, validation, and testing, respectively.
+The original full dataset consists of 1530 / 1530 samples for training and validation, respectively. However, they are exactly equal. We use a split of 660 / 256 / 2,048 samples for training, validation, and testing, respectively.
 
 Here are a few examples from the training split:
 
@@ -419,13 +427,15 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ euroeval --model <model-id> --dataset hellaswag-pt
+$ euroeval --model <model-id> --dataset goldenswag-pt
 ```
+
+
 ## Summarization
 
-### PublicoPT
+### Publico
 
-This dataset contains 3,304 news articles from the Portuguese newspaper *Público* paired with extractive-style summaries. It is derived from the [`duarteocarmo/cc_news_publico`](https://huggingface.co/datasets/duarteocarmo/cc_news_publico) dataset, which itself filters a [Common Crawl corpus](https://huggingface.co/datasets/stanford-oval/ccnews).
+This dataset contains 3,304 news articles from the Portuguese newspaper *Público* paired with extractive-style summaries. The samples all come from the [CCNews corpus](https://commoncrawl.org/blog/news-dataset-available).
 
 To create summary–document pairs, we extract the **first two sentences** of each article as the `target_text` (summary), and concatenate the **title and the remainder** of the article into `text`. This heuristic is grounded in the journalistic convention of placing concise leads at the beginning of articles.
 
@@ -479,5 +489,5 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ euroeval --model <model-id> --dataset publico-pt
+$ euroeval --model <model-id> --dataset publico
 ```

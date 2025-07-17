@@ -39,7 +39,7 @@ LA_TEMPLATES = {
     PT: PromptConfig(
         default_prompt_label_mapping=dict(correct="sim", incorrect="não"),
         default_prompt_prefix="Seguem-se abaixo textos e se são "
-        " gramaticalmente correctos",
+        "gramaticalmente correctos",
         default_prompt_template="Texto: {text}\nGramaticalmente correcto: {label}",
         default_instruction_prompt="Texto: {text}\n\nDetermina se o texto é "
         "gramaticalmente correcto ou não. Responde com {labels_str}, e nada mais.",

@@ -41,7 +41,7 @@ MULTIPLE_CHOICE_TEMPLATES = {
         "(com respostas).",
         default_prompt_template="Pergunta: {text}\nResposta: {label}",
         default_instruction_prompt="Pergunta: {text}\n\nResponde à pergunta "
-        " acima usando só {labels_str}, e nada mais.",
+        "acima usando só {labels_str}, e nada mais.",
         default_prompt_label_mapping="auto",
     ),
     FI: PromptConfig(

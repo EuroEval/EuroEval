@@ -8,7 +8,7 @@
 # ]
 # ///
 
-"""Create the extraglue-boolq-pt dataset and upload to HF Hub."""
+"""Create the BoolQ-pt dataset and upload to HF Hub."""
 
 import pandas as pandas
 from datasets import Dataset, DatasetDict, Split, load_dataset

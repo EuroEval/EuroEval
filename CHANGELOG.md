@@ -7,13 +7,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 
 ## [Unreleased]
-- Added the SST-2 from [Extraglue](https://arxiv.org/abs/2404.05333) dataset for sentiment classification as well as initial support for European Portuguese. This was contributed by [@duarteocarmo](https://github.com/duarteocarmo) ✨
-- Added the BoolQ dataset from [Extraglue](https://arxiv.org/abs/2404.05333) as an initial reading comprehension dataset. This was contributed by [@duarteocarmo](https://github.com/duarteocarmo) ✨
-- Added the MMLU-pt dataset, a Portuguese knowledge dataset that is a subset of MMLUx from openGPT-X/mmlux. This was contributed by [@duarteocarmo](https://github.com/duarteocarmo) ✨
-- Added the HellaSwag-pt dataset, a Portuguese common-sense reasoning dataset that is a subset of HellaswagX from openGPT-X/hellaswagx. This was contributed by [@duarteocarmo](https://github.com/duarteocarmo) ✨
-- Added the Scala-pt dataset, a linguistic acceptability dataset for portuguese. This was contributed by [@duarteocarmo](https://github.com/duarteocarmo) ✨
-- Added the Harem-pt dataset, a named entitiy recognition dataset for portuguese. This was contributed by [@duarteocarmo](https://github.com/duarteocarmo) ✨
-- Added the Publico-pt dataset, a summarization dataset for portuguese. This was contributed by [@duarteocarmo](https://github.com/duarteocarmo) ✨
+- Added support for European Portuguese 🇵🇹 It includes 3 gold standard datasets and 4 machine translated ones. The gold standard datasets include the named entity recognition dataset HAREM, the summarisation dataset Publico-pt, and the linguistic acceptability dataset ScaLA-pt. The machine translated ones include the sentiment classification dataset SST-2, the multiple choice reading comprehension dataset BoolQ, the knowledge dataset MMLU, and the common-sense reasoning dataset GoldenSwag. This was contributed by [@duarteocarmo](https://github.com/duarteocarmo) ✨
+
 ### Fixed
 - There was a breaking change in `datasets`, where feature indexing of datasets resulted
   in a `Column` instance, rather than a `list` as previously. We now detect this and

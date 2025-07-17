@@ -6,65 +6,56 @@ from ..tasks import COMMON_SENSE, KNOW, LA, MCRC, NER, SENT, SUMM
 
 ### Official datasets ###
 
-PREFIX = "EuroEval"
-
 SST2_PT_CONFIG = DatasetConfig(
     name="sst2-pt",
-    pretty_name="extraglue-sst2-pt dataset for portuguese (PT)",
-    huggingface_id=f"{PREFIX}/extraglue-sst2-pt",
+    pretty_name="the truncated version of the Portuguese sentiment classification dataset SST2-pt, translated from the English SST2 dataset",
+    huggingface_id=f"EuroEval/sst2-pt-mini",
     task=SENT,
     languages=[PT],
-    unofficial=False,
     _labels=["positive", "negative"],
 )
 
 
 MMLU_PT_CONFIG = DatasetConfig(
     name="mmlu-pt",
-    pretty_name="Portuguese version of mmlu mini",
-    huggingface_id=f"{PREFIX}/mmlu-pt-mini",
+    pretty_name="the truncated version of the Portuguese knowledge dataset MMLU-pt, translated from the English MMLU dataset",
+    huggingface_id=f"EuroEval/mmlu-pt-mini",
     task=KNOW,
     languages=[PT],
-    unofficial=False,
 )
 
 
-HELLASWAG_PT_CONFIG = DatasetConfig(
-    name="hellaswag-pt",
-    pretty_name="Portuguese version of HellaSwag mini",
-    huggingface_id=f"{PREFIX}/hellaswag-pt-mini",
+GOLDENSWAG_PT_CONFIG = DatasetConfig(
+    name="goldenswag-pt",
+    pretty_name="the truncated version of the Portuguese common-sense reasoning dataset GoldenSwag-pt, translated from the English GoldenSwag dataset",
+    huggingface_id=f"EuroEval/goldenswag-pt-mini",
     task=COMMON_SENSE,
     languages=[PT],
-    unofficial=False,
 )
 
 
 SCALA_PT = DatasetConfig(
     name="scala-pt",
     pretty_name="the Portuguese part of the linguistic acceptability dataset ScaLA",
-    huggingface_id=f"{PREFIX}/scala-pt",
+    huggingface_id=f"EuroEval/scala-pt",
     task=LA,
     languages=[PT],
-    unofficial=False,
 )
 
-HAREM_PT_CONFIG = DatasetConfig(
-    name="harem-pt",
-    pretty_name="the harem dataset for NER in portuguese",
-    huggingface_id=f"{PREFIX}/harem-pt-mini",
+HAREM_CONFIG = DatasetConfig(
+    name="harem",
+    pretty_name="the Portuguese named entity recognition dataset HAREM",
+    huggingface_id=f"EuroEval/harem-pt",
     task=NER,
     languages=[PT],
-    unofficial=False,
 )
 
-PUBLICO_PT_CONFIG = DatasetConfig(
-    name="publico-pt",
-    pretty_name="a summarisation dataset for portuguese based on"
-    " articles from publico.pt",
-    huggingface_id=f"{PREFIX}/sum-pt-publico",
+PUBLICO_CONFIG = DatasetConfig(
+    name="publico",
+    pretty_name="the truncated version of the Portuguese summarisation dataset Público.
+    huggingface_id=f"EuroEval/publico-mini",
     task=SUMM,
     languages=[PT],
-    unofficial=False,
 )
 
 
@@ -72,9 +63,8 @@ PUBLICO_PT_CONFIG = DatasetConfig(
 
 BOOLQ_PT_CONFIG = DatasetConfig(
     name="boolq-pt",
-    pretty_name="extraglue-boolq-pt dataset for portuguese (PT)",
+    pretty_name="the Portuguese multiple choice reading comprehension dataset BoolQ-pt, translated from the English BoolQ dataset",
     huggingface_id=f"{PREFIX}/extraglue-boolq-pt",
     task=MCRC,
     languages=[PT],
-    unofficial=True,
 )
