@@ -3,8 +3,7 @@
 from typing import Generator
 
 import pytest
-from click import INT, ParamType
-from click.types import BOOL, STRING, Choice
+from click.types import BOOL, FLOAT, INT, STRING, Choice, ParamType
 
 from euroeval.cli import benchmark
 
@@ -41,6 +40,7 @@ def test_cli_param_names(params: dict[str, ParamType]) -> None:
         "num_iterations",
         "api_base",
         "api_version",
+        "gpu_memory_utilization",
         "debug",
         "help",
         "only_allow_safetensors",
@@ -71,6 +71,7 @@ def test_cli_param_types(params: dict[str, ParamType]) -> None:
     assert params["num_iterations"] == INT
     assert params["api_base"] == STRING
     assert params["api_version"] == STRING
+    assert params["gpu_memory_utilization"] == FLOAT
     assert params["debug"] == BOOL
     assert params["help"] == BOOL
     assert params["only_allow_safetensors"] == BOOL

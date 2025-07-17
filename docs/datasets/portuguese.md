@@ -330,7 +330,7 @@ When evaluating generative models, we use the following setup (see the
 - Number of few-shot examples: 5
 - Prefix prompt:
   ```
-  Las siguientes son preguntas de opción múltiple (con respuestas).
+  As seguintes são perguntas de escolha múltipla (com respostas).
   ```
 - Base prompt template:
   ```
@@ -399,7 +399,7 @@ When evaluating generative models, we use the following setup (see the
 - Number of few-shot examples: 5
 - Prefix prompt:
   ```
-  Las siguientes son preguntas de opción múltiple (con respuestas).
+  As seguintes são perguntas de escolha múltipla (com respostas).
   ```
 - Base prompt template:
   ```

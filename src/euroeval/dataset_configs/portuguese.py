@@ -52,7 +52,7 @@ HAREM_CONFIG = DatasetConfig(
 
 PUBLICO_CONFIG = DatasetConfig(
     name="publico",
-    pretty_name="the truncated version of the Portuguese summarisation dataset Público.
+    pretty_name="the truncated version of the Portuguese summarisation dataset Público",
     huggingface_id=f"EuroEval/publico-mini",
     task=SUMM,
     languages=[PT],

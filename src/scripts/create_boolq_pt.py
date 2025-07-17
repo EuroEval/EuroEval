@@ -18,7 +18,7 @@ from requests import HTTPError
 RANDOM_STATE = 4242
 TRAIN_SIZE, VAL_SIZE, TEST_SIZE = 1024, 256, 2048
 ORIGINAL_REPO_ID = "PORTULAN/extraglue"
-FINAL_REPO_ID = "EuroEval/extraglue-boolq-pt"
+FINAL_REPO_ID = "EuroEval/boolq-pt"
 
 
 def main() -> None:

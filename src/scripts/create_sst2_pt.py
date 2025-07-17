@@ -9,7 +9,7 @@
 # ]
 # ///
 
-"""Create the SST2-pt dataset and upload to HF Hub."""
+"""Create the SST2-pt-mini dataset and upload to HF Hub."""
 
 import pandas as pandas
 from datasets import Dataset, DatasetDict, Split, load_dataset
@@ -19,7 +19,7 @@ from requests import HTTPError
 RANDOM_STATE = 4242
 TRAIN_SIZE, VAL_SIZE, TEST_SIZE = 1024, 256, 2048
 ORIGINAL_REPO_ID = "PORTULAN/extraglue"
-FINAL_REPO_ID = "EuroEval/extraglue-sst2-pt"
+FINAL_REPO_ID = "EuroEval/sst2-pt-mini"
 
 
 def main() -> None:
