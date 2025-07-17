@@ -757,7 +757,7 @@ def load_model_and_tokenizer(
         model = LLM(
             model=model_id,
             tokenizer=model_id,
-            gpu_memory_utilization=0.9,
+            gpu_memory_utilization=benchmark_config.gpu_memory_utilization,
             max_model_len=min(true_max_model_len, MAX_CONTEXT_LENGTH),
             download_dir=download_dir,
             trust_remote_code=benchmark_config.trust_remote_code,

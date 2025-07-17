@@ -42,6 +42,7 @@ def build_benchmark_config(
     num_iterations: int,
     api_base: str | None,
     api_version: str | None,
+    gpu_memory_utilization: float,
     debug: bool,
     run_with_cli: bool,
     only_allow_safetensors: bool,
@@ -102,6 +103,11 @@ def build_benchmark_config(
             model on an inference API.
         api_version:
             The version of the API to use for a given inference API.
+        gpu_memory_utilization:
+            The GPU memory utilization to use for vLLM. A larger value will result in
+            faster evaluation, but at the risk of running out of GPU memory. Only reduce
+            this if you are running out of GPU memory. Only relevant if the model is
+            generative.
         debug:
             Whether to run the benchmark in debug mode.
         run_with_cli:
@@ -154,6 +160,7 @@ def build_benchmark_config(
         num_iterations=num_iterations,
         api_base=api_base,
         api_version=api_version,
+        gpu_memory_utilization=gpu_memory_utilization,
         debug=debug,
         run_with_cli=run_with_cli,
         only_allow_safetensors=only_allow_safetensors,
