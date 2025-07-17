@@ -4,6 +4,7 @@
 #     "datasets==3.5.0",
 #     "huggingface-hub==0.24.0",
 #     "pandas==2.2.0",
+#     "polars==1.31.0",
 #     "requests==2.32.3",
 #     "scikit-learn<1.6.0",
 # ]
@@ -14,6 +15,7 @@
 from collections import Counter
 
 import pandas as pd
+import polars as pl
 from constants import (
     MAX_NUM_CHARS_IN_INSTRUCTION,
     MAX_NUM_CHARS_IN_OPTION,
@@ -44,6 +46,7 @@ def main() -> None:
         "fr": "Choix",
         "it": "Scelte",
         "es": "Opciones",
+        "pt": "Opções",
     }
 
     for language in choices_mapping.keys():
@@ -53,6 +56,8 @@ def main() -> None:
         except ValueError as e:
             if language == "no":
                 dataset = load_dataset(path=repo_id, name="nb", token=True)
+            elif language == "pt":
+                dataset = load_pt_dataset()
             else:
                 raise e
         assert isinstance(dataset, DatasetDict)
@@ -173,6 +178,60 @@ def main() -> None:
 
         # Push the dataset to the Hugging Face Hub
         dataset.push_to_hub(dataset_id, private=True)
+
+
+def load_pt_dataset() -> DatasetDict:
+    """Load and process PT-PT split from LumiOpen/opengpt-x_mmlux.
+
+    Returns:
+        DatasetDict: Hugging Face DatasetDict with train, val, and test splits.
+    """
+
+    def _process_split(split: str) -> pl.DataFrame:
+        """Process a single split of the Portuguese MMLU dataset.
+
+        Args:
+            split (str): The split name ("dev", "validation", or "test").
+
+        Returns:
+            polars.DataFrame: Processed DataFrame for the split.
+        """
+        return (
+            pl.read_ndjson(
+                f"hf://datasets/LumiOpen/opengpt-x_mmlux/*PT-PT*{split}.jsonl"
+            )
+            .with_columns(
+                pl.col("id").str.split("/").list.get(0).alias("category"),
+                (pl.col("id") + f"/{split}").alias("id"),
+            )
+            .rename({"question": "instruction"})
+            .with_columns(
+                [
+                    pl.col("choices").list.get(0).alias("option_a"),
+                    pl.col("choices").list.get(1).alias("option_b"),
+                    pl.col("choices").list.get(2).alias("option_c"),
+                    pl.col("choices").list.get(3).alias("option_d"),
+                ]
+            )
+            .with_columns(
+                pl.col("answer").map_elements(
+                    lambda x: {0: "a", 1: "b", 2: "c", 3: "d"}[x],
+                    return_dtype=pl.String,
+                )
+            )
+            .drop("choices")
+            .drop("category")
+        )
+
+    train_df = _process_split("dev")
+    val_df = _process_split("validation")
+    test_df = _process_split("test")
+
+    return DatasetDict(
+        train=Dataset.from_pandas(train_df, split=Split.TRAIN),
+        val=Dataset.from_pandas(val_df, split=Split.VALIDATION),
+        test=Dataset.from_pandas(test_df, split=Split.TEST),
+    )
 
 
 if __name__ == "__main__":
