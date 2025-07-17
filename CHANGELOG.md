@@ -12,7 +12,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   `Benchmarker` API), which can be lowered in case the user is experiencing OOM errors
   when evaluating models. The default is 0.9 (same as previously), which means that vLLM
   will reserve 90% of the GPU memory for itself, and leave 10% free for other processes.
-- Added support for European Portuguese 🇵🇹 It includes 3 gold standard datasets and 4 machine translated ones. The gold standard datasets include the named entity recognition dataset HAREM, the summarisation dataset Publico-pt, and the linguistic acceptability dataset ScaLA-pt. The machine translated ones include the sentiment classification dataset SST-2, the multiple choice reading comprehension dataset BoolQ, the knowledge dataset MMLU, and the common-sense reasoning dataset GoldenSwag. This was contributed by [@duarteocarmo](https://github.com/duarteocarmo) ✨
+- Added support for European Portuguese 🇵🇹 It includes 3 gold standard datasets and 4 machine translated ones. The gold standard datasets include the named entity recognition dataset HAREM, the summarisation dataset Publico, and the linguistic acceptability dataset ScaLA-pt. The machine translated ones include the sentiment classification dataset SST-2, the multiple choice reading comprehension dataset BoolQ, the knowledge dataset MMLU, and the common-sense reasoning dataset GoldenSwag. This was contributed by [@duarteocarmo](https://github.com/duarteocarmo) ✨
 
 ### Fixed
 - There was a breaking change in `datasets`, where feature indexing of datasets resulted
