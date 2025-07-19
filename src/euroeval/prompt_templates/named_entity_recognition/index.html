@@ -623,6 +623,8 @@
       
         
       
+        
+      
     
     
     
@@ -1108,10 +1110,29 @@
 <span class="normal">273</span>
 <span class="normal">274</span>
 <span class="normal">275</span>
-<span class="normal">276</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Templates for the Named Entity Recognition task.&quot;&quot;&quot;</span>
+<span class="normal">276</span>
+<span class="normal">277</span>
+<span class="normal">278</span>
+<span class="normal">279</span>
+<span class="normal">280</span>
+<span class="normal">281</span>
+<span class="normal">282</span>
+<span class="normal">283</span>
+<span class="normal">284</span>
+<span class="normal">285</span>
+<span class="normal">286</span>
+<span class="normal">287</span>
+<span class="normal">288</span>
+<span class="normal">289</span>
+<span class="normal">290</span>
+<span class="normal">291</span>
+<span class="normal">292</span>
+<span class="normal">293</span>
+<span class="normal">294</span>
+<span class="normal">295</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Templates for the Named Entity Recognition task.&quot;&quot;&quot;</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">..data_models</span><span class="w"> </span><span class="kn">import</span> <span class="n">PromptConfig</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">..languages</span><span class="w"> </span><span class="kn">import</span> <span class="n">DA</span><span class="p">,</span> <span class="n">DE</span><span class="p">,</span> <span class="n">EN</span><span class="p">,</span> <span class="n">ES</span><span class="p">,</span> <span class="n">FI</span><span class="p">,</span> <span class="n">FO</span><span class="p">,</span> <span class="n">FR</span><span class="p">,</span> <span class="n">IS</span><span class="p">,</span> <span class="n">IT</span><span class="p">,</span> <span class="n">NB</span><span class="p">,</span> <span class="n">NL</span><span class="p">,</span> <span class="n">NN</span><span class="p">,</span> <span class="n">NO</span><span class="p">,</span> <span class="n">SV</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..languages</span><span class="w"> </span><span class="kn">import</span> <span class="n">DA</span><span class="p">,</span> <span class="n">DE</span><span class="p">,</span> <span class="n">EN</span><span class="p">,</span> <span class="n">ES</span><span class="p">,</span> <span class="n">FI</span><span class="p">,</span> <span class="n">FO</span><span class="p">,</span> <span class="n">FR</span><span class="p">,</span> <span class="n">IS</span><span class="p">,</span> <span class="n">IT</span><span class="p">,</span> <span class="n">NB</span><span class="p">,</span> <span class="n">NL</span><span class="p">,</span> <span class="n">NN</span><span class="p">,</span> <span class="n">NO</span><span class="p">,</span> <span class="n">PT</span><span class="p">,</span> <span class="n">SV</span>
 
 <span class="n">NER_TEMPLATES</span> <span class="o">=</span> <span class="p">{</span>
     <span class="n">DA</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
@@ -1189,6 +1210,25 @@
         <span class="s2">&quot;nombradas en la oración. Debes producir esto como un diccionario JSON con las &quot;</span>
         <span class="s2">&quot;claves </span><span class="si">{labels_str}</span><span class="s2">. Los valores deben ser listas de las &quot;</span>
         <span class="s2">&quot;entidades nombradas de ese tipo, exactamente como aparecen en la oración.&quot;</span><span class="p">,</span>
+    <span class="p">),</span>
+    <span class="n">PT</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
+        <span class="n">default_prompt_label_mapping</span><span class="o">=</span><span class="p">{</span>
+            <span class="s2">&quot;b-per&quot;</span><span class="p">:</span> <span class="s2">&quot;pessoa&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;i-per&quot;</span><span class="p">:</span> <span class="s2">&quot;pessoa&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;b-loc&quot;</span><span class="p">:</span> <span class="s2">&quot;local&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;i-loc&quot;</span><span class="p">:</span> <span class="s2">&quot;local&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;b-org&quot;</span><span class="p">:</span> <span class="s2">&quot;organização&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;i-org&quot;</span><span class="p">:</span> <span class="s2">&quot;organização&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;b-misc&quot;</span><span class="p">:</span> <span class="s2">&quot;diverso&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;i-misc&quot;</span><span class="p">:</span> <span class="s2">&quot;diverso&quot;</span><span class="p">,</span>
+        <span class="p">},</span>
+        <span class="n">default_prompt_prefix</span><span class="o">=</span><span class="s2">&quot;Seguem-se frases e dicionários JSON com as entidades &quot;</span>
+        <span class="s2">&quot;mencionadas presentes na frase indicada.&quot;</span><span class="p">,</span>
+        <span class="n">default_prompt_template</span><span class="o">=</span><span class="s2">&quot;Frase: </span><span class="si">{text}</span><span class="se">\n</span><span class="s2">Entidades mencionadas: </span><span class="si">{label}</span><span class="s2">&quot;</span><span class="p">,</span>
+        <span class="n">default_instruction_prompt</span><span class="o">=</span><span class="s2">&quot;Frase: </span><span class="si">{text}</span><span class="se">\n\n</span><span class="s2">Identifica as entidades &quot;</span>
+        <span class="s2">&quot;mencionadas na frase. Deves devolver um dicionário JSON com as chaves &quot;</span>
+        <span class="s2">&quot;</span><span class="si">{labels_str}</span><span class="s2">. Os valores devem ser listas contendo as entidades &quot;</span>
+        <span class="s2">&quot;mencionadas desse tipo, tal como ocorrem na frase.&quot;</span><span class="p">,</span>
     <span class="p">),</span>
     <span class="n">FI</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
         <span class="n">default_prompt_label_mapping</span><span class="o">=</span><span class="p">{</span>

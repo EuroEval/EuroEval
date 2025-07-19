@@ -623,6 +623,8 @@
       
         
       
+        
+      
     
     
     
@@ -979,10 +981,20 @@
 <span class="normal">144</span>
 <span class="normal">145</span>
 <span class="normal">146</span>
-<span class="normal">147</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Templates for the Sentiment Analysis task.&quot;&quot;&quot;</span>
+<span class="normal">147</span>
+<span class="normal">148</span>
+<span class="normal">149</span>
+<span class="normal">150</span>
+<span class="normal">151</span>
+<span class="normal">152</span>
+<span class="normal">153</span>
+<span class="normal">154</span>
+<span class="normal">155</span>
+<span class="normal">156</span>
+<span class="normal">157</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Templates for the Sentiment Analysis task.&quot;&quot;&quot;</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">..data_models</span><span class="w"> </span><span class="kn">import</span> <span class="n">PromptConfig</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">..languages</span><span class="w"> </span><span class="kn">import</span> <span class="n">DA</span><span class="p">,</span> <span class="n">DE</span><span class="p">,</span> <span class="n">EN</span><span class="p">,</span> <span class="n">ES</span><span class="p">,</span> <span class="n">FI</span><span class="p">,</span> <span class="n">FO</span><span class="p">,</span> <span class="n">FR</span><span class="p">,</span> <span class="n">IS</span><span class="p">,</span> <span class="n">IT</span><span class="p">,</span> <span class="n">NB</span><span class="p">,</span> <span class="n">NL</span><span class="p">,</span> <span class="n">NN</span><span class="p">,</span> <span class="n">NO</span><span class="p">,</span> <span class="n">SV</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..languages</span><span class="w"> </span><span class="kn">import</span> <span class="n">DA</span><span class="p">,</span> <span class="n">DE</span><span class="p">,</span> <span class="n">EN</span><span class="p">,</span> <span class="n">ES</span><span class="p">,</span> <span class="n">FI</span><span class="p">,</span> <span class="n">FO</span><span class="p">,</span> <span class="n">FR</span><span class="p">,</span> <span class="n">IS</span><span class="p">,</span> <span class="n">IT</span><span class="p">,</span> <span class="n">NB</span><span class="p">,</span> <span class="n">NL</span><span class="p">,</span> <span class="n">NN</span><span class="p">,</span> <span class="n">NO</span><span class="p">,</span> <span class="n">PT</span><span class="p">,</span> <span class="n">SV</span>
 
 <span class="n">SENT_TEMPLATES</span> <span class="o">=</span> <span class="p">{</span>
     <span class="n">DA</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
@@ -1024,6 +1036,16 @@
         <span class="n">default_prompt_template</span><span class="o">=</span><span class="s2">&quot;Documento: </span><span class="si">{text}</span><span class="se">\n</span><span class="s2">Sentimiento: </span><span class="si">{label}</span><span class="s2">&quot;</span><span class="p">,</span>
         <span class="n">default_instruction_prompt</span><span class="o">=</span><span class="s2">&quot;Documento: </span><span class="si">{text}</span><span class="se">\n\n</span><span class="s2">Clasifica el sentimiento del &quot;</span>
         <span class="s2">&quot;documento. Responde con </span><span class="si">{labels_str}</span><span class="s2">, y nada más.&quot;</span><span class="p">,</span>
+    <span class="p">),</span>
+    <span class="n">PT</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
+        <span class="n">default_prompt_label_mapping</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span>
+            <span class="n">positive</span><span class="o">=</span><span class="s2">&quot;positivo&quot;</span><span class="p">,</span> <span class="n">neutral</span><span class="o">=</span><span class="s2">&quot;neutro&quot;</span><span class="p">,</span> <span class="n">negative</span><span class="o">=</span><span class="s2">&quot;negativo&quot;</span>
+        <span class="p">),</span>
+        <span class="n">default_prompt_prefix</span><span class="o">=</span><span class="s2">&quot;Abaixo encontras documentos e os seus &quot;</span>
+        <span class="s2">&quot;sentimentos correspondentes, que podem ser </span><span class="si">{labels_str}</span><span class="s2">.&quot;</span><span class="p">,</span>
+        <span class="n">default_prompt_template</span><span class="o">=</span><span class="s2">&quot;Documento: </span><span class="si">{text}</span><span class="se">\n</span><span class="s2">Sentimento: </span><span class="si">{label}</span><span class="s2">&quot;</span><span class="p">,</span>
+        <span class="n">default_instruction_prompt</span><span class="o">=</span><span class="s2">&quot;Documento: </span><span class="si">{text}</span><span class="se">\n\n</span><span class="s2">Classifica o &quot;</span>
+        <span class="s2">&quot;sentimento do documento. Responde apenas com </span><span class="si">{labels_str}</span><span class="s2">.&quot;</span><span class="p">,</span>
     <span class="p">),</span>
     <span class="n">FI</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
         <span class="n">default_prompt_label_mapping</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span>

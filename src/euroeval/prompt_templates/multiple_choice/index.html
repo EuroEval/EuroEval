@@ -623,6 +623,8 @@
       
         
       
+        
+      
     
     
     
@@ -936,10 +938,18 @@
 <span class="normal">101</span>
 <span class="normal">102</span>
 <span class="normal">103</span>
-<span class="normal">104</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Templates for all multiple choice tasks.&quot;&quot;&quot;</span>
+<span class="normal">104</span>
+<span class="normal">105</span>
+<span class="normal">106</span>
+<span class="normal">107</span>
+<span class="normal">108</span>
+<span class="normal">109</span>
+<span class="normal">110</span>
+<span class="normal">111</span>
+<span class="normal">112</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Templates for all multiple choice tasks.&quot;&quot;&quot;</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">..data_models</span><span class="w"> </span><span class="kn">import</span> <span class="n">PromptConfig</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">..languages</span><span class="w"> </span><span class="kn">import</span> <span class="n">DA</span><span class="p">,</span> <span class="n">DE</span><span class="p">,</span> <span class="n">EN</span><span class="p">,</span> <span class="n">ES</span><span class="p">,</span> <span class="n">FI</span><span class="p">,</span> <span class="n">FR</span><span class="p">,</span> <span class="n">IS</span><span class="p">,</span> <span class="n">IT</span><span class="p">,</span> <span class="n">NB</span><span class="p">,</span> <span class="n">NL</span><span class="p">,</span> <span class="n">NN</span><span class="p">,</span> <span class="n">NO</span><span class="p">,</span> <span class="n">SV</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..languages</span><span class="w"> </span><span class="kn">import</span> <span class="n">DA</span><span class="p">,</span> <span class="n">DE</span><span class="p">,</span> <span class="n">EN</span><span class="p">,</span> <span class="n">ES</span><span class="p">,</span> <span class="n">FI</span><span class="p">,</span> <span class="n">FR</span><span class="p">,</span> <span class="n">IS</span><span class="p">,</span> <span class="n">IT</span><span class="p">,</span> <span class="n">NB</span><span class="p">,</span> <span class="n">NL</span><span class="p">,</span> <span class="n">NN</span><span class="p">,</span> <span class="n">NO</span><span class="p">,</span> <span class="n">PT</span><span class="p">,</span> <span class="n">SV</span>
 
 <span class="c1"># TODO: Missing Faroese</span>
 <span class="n">MULTIPLE_CHOICE_TEMPLATES</span> <span class="o">=</span> <span class="p">{</span>
@@ -972,6 +982,14 @@
         <span class="n">default_prompt_template</span><span class="o">=</span><span class="s2">&quot;Pregunta: </span><span class="si">{text}</span><span class="se">\n</span><span class="s2">Respuesta: </span><span class="si">{label}</span><span class="s2">&quot;</span><span class="p">,</span>
         <span class="n">default_instruction_prompt</span><span class="o">=</span><span class="s2">&quot;Pregunta: </span><span class="si">{text}</span><span class="se">\n\n</span><span class="s2">Responda la pregunta anterior &quot;</span>
         <span class="s2">&quot;usando solo </span><span class="si">{labels_str}</span><span class="s2">, y nada más.&quot;</span><span class="p">,</span>
+        <span class="n">default_prompt_label_mapping</span><span class="o">=</span><span class="s2">&quot;auto&quot;</span><span class="p">,</span>
+    <span class="p">),</span>
+    <span class="n">PT</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
+        <span class="n">default_prompt_prefix</span><span class="o">=</span><span class="s2">&quot;As seguintes são perguntas de escolha múltipla &quot;</span>
+        <span class="s2">&quot;(com respostas).&quot;</span><span class="p">,</span>
+        <span class="n">default_prompt_template</span><span class="o">=</span><span class="s2">&quot;Pergunta: </span><span class="si">{text}</span><span class="se">\n</span><span class="s2">Resposta: </span><span class="si">{label}</span><span class="s2">&quot;</span><span class="p">,</span>
+        <span class="n">default_instruction_prompt</span><span class="o">=</span><span class="s2">&quot;Pergunta: </span><span class="si">{text}</span><span class="se">\n\n</span><span class="s2">Responde à pergunta &quot;</span>
+        <span class="s2">&quot;acima usando só </span><span class="si">{labels_str}</span><span class="s2">, e nada mais.&quot;</span><span class="p">,</span>
         <span class="n">default_prompt_label_mapping</span><span class="o">=</span><span class="s2">&quot;auto&quot;</span><span class="p">,</span>
     <span class="p">),</span>
     <span class="n">FI</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>

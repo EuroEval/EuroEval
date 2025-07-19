@@ -623,6 +623,8 @@
       
         
       
+        
+      
     
     
     
@@ -1179,7 +1181,25 @@
 <span class="normal">309</span>
 <span class="normal">310</span>
 <span class="normal">311</span>
-<span class="normal">312</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Functions related to text generation of models.&quot;&quot;&quot;</span>
+<span class="normal">312</span>
+<span class="normal">313</span>
+<span class="normal">314</span>
+<span class="normal">315</span>
+<span class="normal">316</span>
+<span class="normal">317</span>
+<span class="normal">318</span>
+<span class="normal">319</span>
+<span class="normal">320</span>
+<span class="normal">321</span>
+<span class="normal">322</span>
+<span class="normal">323</span>
+<span class="normal">324</span>
+<span class="normal">325</span>
+<span class="normal">326</span>
+<span class="normal">327</span>
+<span class="normal">328</span>
+<span class="normal">329</span>
+<span class="normal">330</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Functions related to text generation of models.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
@@ -1381,17 +1401,35 @@
         <span class="n">all_preds</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">extracted_labels</span><span class="p">)</span>
 
     <span class="k">if</span> <span class="s2">&quot;label&quot;</span> <span class="ow">in</span> <span class="n">non_cached_dataset</span><span class="o">.</span><span class="n">column_names</span><span class="p">:</span>
+        <span class="n">non_cached_labels</span> <span class="o">=</span> <span class="n">non_cached_dataset</span><span class="p">[</span><span class="s2">&quot;label&quot;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">non_cached_labels</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="n">non_cached_labels</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">non_cached_labels</span><span class="p">)</span>
+        <span class="n">cached_labels</span> <span class="o">=</span> <span class="n">cached_dataset</span><span class="p">[</span><span class="s2">&quot;label&quot;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">cached_labels</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="n">cached_labels</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">cached_labels</span><span class="p">)</span>
         <span class="n">ground_truth</span> <span class="o">=</span> <span class="p">[</span>
             <span class="n">label</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">label</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">else</span> <span class="n">label</span>
-            <span class="k">for</span> <span class="n">label</span> <span class="ow">in</span> <span class="n">non_cached_dataset</span><span class="p">[</span><span class="s2">&quot;label&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="n">cached_dataset</span><span class="p">[</span><span class="s2">&quot;label&quot;</span><span class="p">]</span>
+            <span class="k">for</span> <span class="n">label</span> <span class="ow">in</span> <span class="n">non_cached_labels</span> <span class="o">+</span> <span class="n">cached_labels</span>
         <span class="p">]</span>
     <span class="k">elif</span> <span class="s2">&quot;labels&quot;</span> <span class="ow">in</span> <span class="n">non_cached_dataset</span><span class="o">.</span><span class="n">column_names</span><span class="p">:</span>
+        <span class="n">non_cached_labels</span> <span class="o">=</span> <span class="n">non_cached_dataset</span><span class="p">[</span><span class="s2">&quot;labels&quot;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">non_cached_labels</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="n">non_cached_labels</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">non_cached_labels</span><span class="p">)</span>
+        <span class="n">cached_labels</span> <span class="o">=</span> <span class="n">cached_dataset</span><span class="p">[</span><span class="s2">&quot;labels&quot;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">cached_labels</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="n">cached_labels</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">cached_labels</span><span class="p">)</span>
         <span class="n">ground_truth</span> <span class="o">=</span> <span class="p">[</span>
             <span class="p">[</span><span class="n">label</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">label</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">else</span> <span class="n">label</span> <span class="k">for</span> <span class="n">label</span> <span class="ow">in</span> <span class="n">label_list</span><span class="p">]</span>
-            <span class="k">for</span> <span class="n">label_list</span> <span class="ow">in</span> <span class="n">non_cached_dataset</span><span class="p">[</span><span class="s2">&quot;labels&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="n">cached_dataset</span><span class="p">[</span><span class="s2">&quot;labels&quot;</span><span class="p">]</span>
+            <span class="k">for</span> <span class="n">label_list</span> <span class="ow">in</span> <span class="n">non_cached_labels</span> <span class="o">+</span> <span class="n">cached_labels</span>
         <span class="p">]</span>
     <span class="k">elif</span> <span class="s2">&quot;target_text&quot;</span> <span class="ow">in</span> <span class="n">non_cached_dataset</span><span class="o">.</span><span class="n">column_names</span><span class="p">:</span>
-        <span class="n">ground_truth</span> <span class="o">=</span> <span class="n">non_cached_dataset</span><span class="p">[</span><span class="s2">&quot;target_text&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="n">cached_dataset</span><span class="p">[</span><span class="s2">&quot;target_text&quot;</span><span class="p">]</span>
+        <span class="n">non_cached_labels</span> <span class="o">=</span> <span class="n">non_cached_dataset</span><span class="p">[</span><span class="s2">&quot;target_text&quot;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">non_cached_labels</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="n">non_cached_labels</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">non_cached_labels</span><span class="p">)</span>
+        <span class="n">cached_labels</span> <span class="o">=</span> <span class="n">cached_dataset</span><span class="p">[</span><span class="s2">&quot;target_text&quot;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">cached_labels</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="n">cached_labels</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">cached_labels</span><span class="p">)</span>
+        <span class="n">ground_truth</span> <span class="o">=</span> <span class="n">non_cached_labels</span> <span class="o">+</span> <span class="n">cached_labels</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
             <span class="s2">&quot;The dataset must have either a &#39;label&#39;, &#39;labels&#39;, or &#39;target_text&#39; column&quot;</span>
@@ -1487,7 +1525,7 @@
     <span class="p">):</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
             <span class="sa">f</span><span class="s2">&quot;Input: &#39;</span><span class="si">{</span><span class="n">input_text</span><span class="si">}</span><span class="s2">&#39;</span><span class="se">\n</span><span class="s2">&quot;</span>
-            <span class="sa">f</span><span class="s2">&quot;Raw outout: &#39;</span><span class="si">{</span><span class="n">raw_output</span><span class="si">}</span><span class="s2">&#39;</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;Raw output: &#39;</span><span class="si">{</span><span class="n">raw_output</span><span class="si">}</span><span class="s2">&#39;</span><span class="se">\n</span><span class="s2">&quot;</span>
             <span class="sa">f</span><span class="s2">&quot;Prediction: &#39;</span><span class="si">{</span><span class="n">prediction</span><span class="si">}</span><span class="s2">&#39;</span><span class="se">\n</span><span class="s2">&quot;</span>
             <span class="sa">f</span><span class="s2">&quot;Label: &#39;</span><span class="si">{</span><span class="n">label</span><span class="si">}</span><span class="s2">&#39;&quot;</span>
         <span class="p">)</span>

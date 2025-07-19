@@ -623,6 +623,8 @@
       
         
       
+        
+      
     
     
     
@@ -937,10 +939,17 @@
 <span class="normal">102</span>
 <span class="normal">103</span>
 <span class="normal">104</span>
-<span class="normal">105</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Templates for the Summarization task.&quot;&quot;&quot;</span>
+<span class="normal">105</span>
+<span class="normal">106</span>
+<span class="normal">107</span>
+<span class="normal">108</span>
+<span class="normal">109</span>
+<span class="normal">110</span>
+<span class="normal">111</span>
+<span class="normal">112</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Templates for the Summarization task.&quot;&quot;&quot;</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">..data_models</span><span class="w"> </span><span class="kn">import</span> <span class="n">PromptConfig</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">..languages</span><span class="w"> </span><span class="kn">import</span> <span class="n">DA</span><span class="p">,</span> <span class="n">DE</span><span class="p">,</span> <span class="n">EN</span><span class="p">,</span> <span class="n">ES</span><span class="p">,</span> <span class="n">FI</span><span class="p">,</span> <span class="n">FR</span><span class="p">,</span> <span class="n">IS</span><span class="p">,</span> <span class="n">IT</span><span class="p">,</span> <span class="n">NB</span><span class="p">,</span> <span class="n">NL</span><span class="p">,</span> <span class="n">NN</span><span class="p">,</span> <span class="n">NO</span><span class="p">,</span> <span class="n">SV</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..languages</span><span class="w"> </span><span class="kn">import</span> <span class="n">DA</span><span class="p">,</span> <span class="n">DE</span><span class="p">,</span> <span class="n">EN</span><span class="p">,</span> <span class="n">ES</span><span class="p">,</span> <span class="n">FI</span><span class="p">,</span> <span class="n">FR</span><span class="p">,</span> <span class="n">IS</span><span class="p">,</span> <span class="n">IT</span><span class="p">,</span> <span class="n">NB</span><span class="p">,</span> <span class="n">NL</span><span class="p">,</span> <span class="n">NN</span><span class="p">,</span> <span class="n">NO</span><span class="p">,</span> <span class="n">PT</span><span class="p">,</span> <span class="n">SV</span>
 
 <span class="c1"># TODO: Missing Faroese</span>
 <span class="n">SUMM_TEMPLATES</span> <span class="o">=</span> <span class="p">{</span>
@@ -972,6 +981,13 @@
         <span class="s2">&quot;adjuntos.&quot;</span><span class="p">,</span>
         <span class="n">default_prompt_template</span><span class="o">=</span><span class="s2">&quot;Documento: </span><span class="si">{text}</span><span class="se">\n</span><span class="s2">Resumen: </span><span class="si">{target_text}</span><span class="s2">&quot;</span><span class="p">,</span>
         <span class="n">default_instruction_prompt</span><span class="o">=</span><span class="s2">&quot;Documento: </span><span class="si">{text}</span><span class="se">\n\n</span><span class="s2">Escriba un resumen del &quot;</span>
+        <span class="s2">&quot;documento anterior.&quot;</span><span class="p">,</span>
+        <span class="n">default_prompt_label_mapping</span><span class="o">=</span><span class="nb">dict</span><span class="p">(),</span>
+    <span class="p">),</span>
+    <span class="n">PT</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
+        <span class="n">default_prompt_prefix</span><span class="o">=</span><span class="s2">&quot;Abaixo encontras documentos com resumos associados.&quot;</span><span class="p">,</span>
+        <span class="n">default_prompt_template</span><span class="o">=</span><span class="s2">&quot;Documento: </span><span class="si">{text}</span><span class="se">\n</span><span class="s2">Resumo: </span><span class="si">{target_text}</span><span class="s2">&quot;</span><span class="p">,</span>
+        <span class="n">default_instruction_prompt</span><span class="o">=</span><span class="s2">&quot;Documento: </span><span class="si">{text}</span><span class="se">\n\n</span><span class="s2">Escreve um resumo do &quot;</span>
         <span class="s2">&quot;documento anterior.&quot;</span><span class="p">,</span>
         <span class="n">default_prompt_label_mapping</span><span class="o">=</span><span class="nb">dict</span><span class="p">(),</span>
     <span class="p">),</span>

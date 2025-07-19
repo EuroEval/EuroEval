@@ -623,6 +623,8 @@
       
         
       
+        
+      
     
     
     
@@ -1120,7 +1122,17 @@
 <span class="normal">268</span>
 <span class="normal">269</span>
 <span class="normal">270</span>
-<span class="normal">271</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Command-line interface for benchmarking.&quot;&quot;&quot;</span>
+<span class="normal">271</span>
+<span class="normal">272</span>
+<span class="normal">273</span>
+<span class="normal">274</span>
+<span class="normal">275</span>
+<span class="normal">276</span>
+<span class="normal">277</span>
+<span class="normal">278</span>
+<span class="normal">279</span>
+<span class="normal">280</span>
+<span class="normal">281</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Command-line interface for benchmarking.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">click</span>
 
@@ -1309,6 +1321,14 @@
     <span class="s2">&quot;an inference API.&quot;</span><span class="p">,</span>
 <span class="p">)</span>
 <span class="nd">@click</span><span class="o">.</span><span class="n">option</span><span class="p">(</span>
+    <span class="s2">&quot;--gpu-memory-utilization&quot;</span><span class="p">,</span>
+    <span class="n">default</span><span class="o">=</span><span class="mf">0.9</span><span class="p">,</span>
+    <span class="n">show_default</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">help</span><span class="o">=</span><span class="s2">&quot;The GPU memory utilization to use for vLLM. A larger value will result in &quot;</span>
+    <span class="s2">&quot;faster evaluation, but at the risk of running out of GPU memory. Only reduce this &quot;</span>
+    <span class="s2">&quot;if you are running out of GPU memory. Only relevant if the model is generative.&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="nd">@click</span><span class="o">.</span><span class="n">option</span><span class="p">(</span>
     <span class="s2">&quot;--debug/--no-debug&quot;</span><span class="p">,</span>
     <span class="n">default</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
     <span class="n">show_default</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
@@ -1345,6 +1365,7 @@
     <span class="n">num_iterations</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
     <span class="n">api_base</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">api_version</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">gpu_memory_utilization</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
     <span class="n">debug</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
     <span class="n">only_allow_safetensors</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
@@ -1380,6 +1401,7 @@
         <span class="n">num_iterations</span><span class="o">=</span><span class="n">num_iterations</span><span class="p">,</span>
         <span class="n">api_base</span><span class="o">=</span><span class="n">api_base</span><span class="p">,</span>
         <span class="n">api_version</span><span class="o">=</span><span class="n">api_version</span><span class="p">,</span>
+        <span class="n">gpu_memory_utilization</span><span class="o">=</span><span class="n">gpu_memory_utilization</span><span class="p">,</span>
         <span class="n">debug</span><span class="o">=</span><span class="n">debug</span><span class="p">,</span>
         <span class="n">run_with_cli</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
         <span class="n">only_allow_safetensors</span><span class="o">=</span><span class="n">only_allow_safetensors</span><span class="p">,</span>
