@@ -356,6 +356,77 @@ $ euroeval --model <model-id> --dataset belebele-en
 ```
 
 
+### Unofficial: MultiWikiQA-en
+
+This dataset will be published in an upcoming paper, and contains English Wikipedia
+articles with generated questions and answers, using the LLM Gemini-1.5-pro.
+
+The original full dataset consists of 5,000 samples in a single split. We use a 1,024 /
+256 / 2,048 split for training, validation and testing, respectively, sampled randomly.
+
+Here are a few examples from the training split:
+
+```json
+{
+    'context': "Stagecoach in Norfolk (formerly Norfolk Green) was a bus operator based in King's Lynn in Norfolk, England. It operated public bus services in the counties of Norfolk, Cambridgeshire and Lincolnshire as well as numerous school and college services. It was a subsidiary of Stagecoach.\n\nIn April 2018, Stagecoach ceased operations in Norfolk. Services were taken over by First Norfolk & Suffolk, Lynx, Sanders Coaches, Stagecoach in Peterborough (the Interconnect 505) and West Norfolk Community Transport.\n\nHistory\n\nNorfolk Green was formed in 1996 with a fleet of four buses. In 1999 the Saham Toney depot was sold to Konectbus with four coaches.\n\nIn April 2011, Norfolk Green purchased the King's Lynn based services of First East England.\n\nOn 17 December 2013, Norfolk Green was sold to Stagecoach following the retirement of Ben Colson after ill health. Unusually, Stagecoach did not immediately apply its corporate brand, but retained the Norfolk Green trading name and livery, although the fleet received Stagecoach fleet numbers. All buses were rebranded between 2015 and late 2017.\n\nIn January 2018, Stagecoach announced it was reviewing its operations in Norfolk in response to the challenging economic environment, blaming a combination of rising operating costs and pressure on public sector budgets. The company said it met with trade union representatives to minimise the impact on staff and launched a consultation with employees over the potential closure of its King's Lynn depot. The company hoped to relocate the majority of its staff with other operators or elsewhere within the Stagecoach East area, which includes Bedford, Cambridge, Huntingdon and Peterborough.\n\nRoutes\nRoutes operated by Stagecoach Norfolk included the very popular  Coasthopper services between King's Lynn and Cromer, the Interconnect 505 between King's Lynn and Spalding, a town service network in King's Lynn, a city service in Ely and many rural and interurban bus services across Norfolk, Cambridgeshire and Lincolnshire.\n\nFleet\nAs at July 2013, the fleet consisted of 74 buses. Fleet livery is two tone green. Twelve Optare Solo Slimlines wear a dark blue, yellow and green livery for the Coasthopper group of services. A large proportion of buses are also named after local characters and personalities.\n\nUpon Stagecoach's purchase of Norfolk Green, in the summer of 2016 Stagecoach Norfolk went onto replace the fleet of Coasthopper Optare Solo's with Alexander Dennis Enviro200s. In addition, and later on, they purchased brand new Optare Solos. These new buses feature a new updated Coasthopper 'Flying Kite' livery, free Wi-Fi, USB charging points and leather seating.\n\nReferences\n\nExternal links\n\nCompany website\n\nStagecoach Group bus operators in England\nTransport companies established in 1966\nTransport companies disestablished in 2018\n1996 establishments in England\n2018 disestablishments in England\nBritish companies established in 1996\nBritish companies disestablished in 2018\nFormer bus operators in Norfolk\nFormer bus operators in Cambridgeshire\nFormer bus operators in Lincolnshire",
+    'question': 'What is the date of formation of Norfolk Green?',
+    'answers': {
+        'answer_start': array([543]),
+        'text': array(['1996'], dtype=object)
+    }
+}
+```
+```json
+{
+    'context': "Lara Stalder (born 15 May 1994) is a Swiss ice hockey forward and member of the Swiss national ice hockey team, currently playing with Brynäs IF Dam of the Swedish Women's Hockey League (SDHL). She played with the Minnesota Duluth Bulldogs women's ice hockey team from 2013 to 2017, and with Linköping HC from 2017 to 2019.\n\nPlaying career \nAcross four seasons with Minnesota-Duluth, Stalder put up 148 points in 134 games, leading the team in points in her final season, as well as being named WCHA Player of the Year and Student-Athlete of the Year, and being a top-three finalist for the Patty Kazmaier Award. In 2016, she was drafted 20th overall by the Boston Pride of the National Women's Hockey League (NWHL).\n\nAfter missing most of the 2018–19 season due to a shoulder injury, Stalder left Linköping to sign with Brynäs. In 2020, she was named SDHL Player of the Year after putting up 71 points in 36 games, being the first woman to win Guldhjälmen. The 42 goals she would score that year is the second highest single-season total in SDHL history, and her 71 points the third highest single-season total in SDHL history.\n\nInternational  \nStalder made her senior national team debut at the 2011 IIHF Women's World Championship. She has represented Switzerland at the Winter Olympics in 2014 and won the bronze medal after defeating Sweden in the bronze medal playoff. She would score 6 points in 6 games at the 2018 Winter Olympics, as Switzerland finished in 5th place.\n\nCareer statistics\n\nAwards and honors\n\nNCAA\nWCHA Offensive Player of the Week (Week of 17 January 2017)\nWCHA Offensive Player of the Week (Week of 24 January 2017)\nWCHA Offensive Player of the Week (Week of 31 January 2017)\nWCHA Offensive Player of the Month, January 2017\nWomen's Hockey Commissioners' Association National Division I Player of the Month, January 2017\nPatty Kazmaier Award Top-3 Finalist, 2016–17 season\n2016-17 AHCA-CCM Women's University Division I First-Team All-American\n\nSDHL \n\n Guldhjälmen (Golden Helmet), MVP of the SDHL as selected by players, 2019–20 season\n SDHL Forward of the Year, 2019–20 season\n\nReferences\n\nExternal links\n\nMinnesota Duluth bio\n\n1994 births\nLiving people\nSportspeople from Lucerne\nSwiss women's ice hockey forwards\nIce hockey players at the 2014 Winter Olympics\nIce hockey players at the 2018 Winter Olympics\nIce hockey players at the 2022 Winter Olympics\nOlympic bronze medalists for Switzerland\nOlympic ice hockey players for Switzerland\nOlympic medalists in ice hockey\nMedalists at the 2014 Winter Olympics\nBrynäs IF (women) players\nLinköping HC (women) players\nMinnesota Duluth Bulldogs women's ice hockey players\nSwiss expatriate ice hockey people\nSwiss expatriate sportspeople in Sweden\nSwiss expatriate sportspeople in the United States",
+    'question': 'Which SDHL award did Lara Stalder receive during the 2019-2020 season?',
+    'answers': {
+        'answer_start': array([945]),
+        'text': array(['Guldhjälmen'], dtype=object)
+    }
+}
+```
+```json
+{
+    'context': 'TCG Barbaros (F 244) is the lead ship of  of the Turkish Navy.\n\nDevelopment and design \n\nBarbaros-class frigates were designed in Germany and are part of the MEKO group of modular warships, in this case the MEKO 200 design. Two ships were built in Germany and two in Turkey with German assistance. They are larger than the previous s and are also faster due to using CODOG machinery rather than pure diesels.\n\nThe first two vessels (F 244 and F 245) are defined as the Barbaros class (MEKO 200 TN Track II-A) while the last two vessels (F 246 and F 247) are defined as the Salih Reis class (MEKO 200 TN Track II-B) by the Turkish Navy.\n\nSalih Reis subclass ships are built with 8-cell Mk. 41 VLS and longer than Barbaros class vessels to accommodate 16-cell Mk. 41 VLS upgrade in the future while Barbaros-class vessels built with  Mk.29 Sea Sparrow launchers that planned to be replaced by 8-cell Mk. 41 VLS.\n\nConstruction and career \nBarbaros was launched on 29 September 1993 by Blohm+Voss in Hamburg and commissioned on 23 May 1997.\n\nOn 9 March 2019, her crew saluted to the tomb of Barbaros Hayreddin while crossing Bosporus.\n\nOn 26 August 2020, TCG Barbaros and  sailed alongside  in Eastern Mediterranean Sea. Later that year on 3 October, she underwent alongside USS Roosevelt.\n\nReferences\n\nExternal links\n\n The First Upgraded MEKO 200 Frigate Of Turkish Navy\n BARBAROS CLASS ( MEKO 200 Track II) (Turkey)\n\n1993 ships\nShips built in Germany\nFrigates of the Turkish Navy\nBarbaros-class frigates of the Turkish Navy',
+    'question': 'Could you tell me about the MEKO group?',
+    'answers': {
+        'answer_start': array([172]),
+        'text': array(['modular warships'], dtype=object)
+    }
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 4
+- Prefix prompt:
+  ```
+  The following are texts with accompanying questions and answers.
+  ```
+- Base prompt template:
+  ```
+  Text: {text}
+  Question: {question}
+  Answer in max 3 words:
+  ```
+- Instruction-tuned prompt template:
+  ```
+  Text: {text}
+
+  Answer the following question about the above text in at most 3 words.
+
+  Question: {question}
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+$ euroeval --model <model-id> --dataset multi-wiki-qa-en
+```
+
+
 ## Knowledge
 
 ### Life in the UK

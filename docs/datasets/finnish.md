@@ -208,6 +208,7 @@ $ euroeval --model <model-id> --dataset scala-fi
 ## Reading Comprehension
 
 ### TydiQA-fi
+
 This question-answering dataset was published in [this
 paper](https://aclanthology.org/2020.tacl-1.30/). TydiQA is a multilingual dataset
 covering 11 typologically diverse languages with 204K question-answer pairs collected
@@ -234,7 +235,7 @@ Here are a few examples from the training split:
     "answer_start": [59]
   }
 }
-
+```
 ```json
 {
   "question": "Milloin Cristiano Ronaldo liittyi Juventukseen?",
@@ -350,6 +351,77 @@ You can evaluate this dataset directly as follows:
 
 ```bash
 $ euroeval --model <model-id> --dataset belebele-fi
+```
+
+
+### Unofficial: MultiWikiQA-fi
+
+This dataset will be published in an upcoming paper, and contains Finnish Wikipedia
+articles with generated questions and answers, using the LLM Gemini-1.5-pro.
+
+The original full dataset consists of 5,000 samples in a single split. We use a 1,024 /
+256 / 2,048 split for training, validation and testing, respectively, sampled randomly.
+
+Here are a few examples from the training split:
+
+```json
+{
+    'context': 'Aarne Silvio Heikinheimo (20. maaliskuuta 1894 Tornio – 24. tammikuuta 1938) oli suomalainen jääkärikenraalimajuri. Hänen vanhempansa olivat ylimetsänhoitaja Johan Henrik Heikel ja Sally Armida Thauvón. Hänet vihittiin avioliittoon vuonna 1919 Sylvi Amalia Jurveliuksen kanssa.\n\nOpinnot\nHeikinheimo kirjoitti ylioppilaaksi Oulun suomalaisesta yhteiskoulusta vuonna 1913 ja liittyi Pohjois-Pohjalaiseen Osakuntaan. Opintojaan hän jatkoi Teknillisen korkeakoulun koneinsinööriosastolla vuosina 1913–1914. Hän seurasi opetusta Sotakorkeakoulun komentajakurssilla vuonna 1925 ja kävi Sotakorkeakoulun yleisen osaston vuosina 1926–1927.\n\nJääkäriaika\nHän liittyi yhtenä ensimmäisten vapaaehtoisten joukkoon, jonka päämääränä oli Saksassa sotilaskoulutusta antava Pfadfinder-kurssi, joka järjestettiin Pohjois-Saksassa sijaitsevalla Lockstedter Lagerin harjoitusalueella. Leirille hän ilmoittautui 25. helmikuuta 1915. Hänet sijoitettiin joukon 1. komppaniaan. Myöhemmin hänet sijoitettiin Kuninkaallisen, Preussin Jääkäripataljoona 27:n 1. komppaniaan. Hän otti osaa taisteluihin ensimmäisessä maailmansodassa Saksan itärintamalla Misse-joella, Riianlahdella ja Aa-joella. Hän osallistui kesällä vuonna 1917 Libaussa järjestetyille moottoriveneenkuljettaja- ja konekivääriasemestarikursseille ja  elokuussa vuonna 1917 Schaulenissa järjestetylle autokurssille  sekä syksyllä Libaussa vuonna 1917 järjestetylle räjäytyskurssille.\n\nSuomen sisällissota\n\nKatso myös: Suomen sisällissota\nHän saapui Suomeen oberzugführer Friedel Jacobssonin komennuskunnan mukana 30. tammikuuta 1918 ja liittyi Perä-Pohjolan suojeluskuntajoukkoihin Tervolassa. Hänet komennettiin joukkueenjohtajaksi Tervolaa ja Torniota vastaan taisteleviin joukkoihin. Tervolan ja Tornion valtausten jälkeen hänet nimitettiin Kemin kaupungin komendantiksi 7. helmikuuta, kunnes 5. maaliskuuta hänet nimitettiin Perä-Pohjolan pataljoonan komentajaksi. Hän johdatti pataljoonansa taisteluihin Vilkkilässä, Haavistolla (Oriveden), Tervaniemessä, Lempäälässä, Vesilahdella, Karkussa ja Tyrväällä. Sisällissodan loppuvaiheissa hän sai tehtäväkseen muodostaa Lahdessa Itä-Uudenmaan rykmentin.\n\nSisällissodan jälkeinen aika\n\nSisällissodan jälkeen Heikinheimo määrättiin 1. heinäkuuta 1918 alkaen 1. Divisioonan adjutantiksi ja myöhemmin väliaikaiseksi esikuntapäälliköksi, josta hänet siirrettiin 15. elokuuta 1918 Suomen valkoisen kaartin I pataljoonan komentajaksi ja edelleen komentajaksi 11. syyskuuta 1918 Viipurin rykmentin II pataljoonaan. II Polkupyöräpataljoonan komentajaksi hänet siirrettiin 27. huhtikuuta 1921 ja Viipurin rykmentin komentajaksi 15. elokuuta 1924. Hän toimi 12. elokuuta 1926 alkaen komentajana Jääkäriprikaatissa, josta hänet siirrettiin komentajaksi 3. Divisioonaan 9. kesäkuuta 1928. Esikuntatehtäviin hänet siirrettiin 25. elokuuta 1934 ja sijoitettiin Yleisesikuntaan ja määrättiin jalkaväen tarkastajaksi. Hän menehtyi tapaturmaisesti koeammunnoissa Harakan saarella kranaatinheittimen putken räjähdettyä 24. tammikuuta 1938. Hänet on haudattu Ouluun Intiön hautausmaalle, aivan sankarihautojen viereen.\n\nLuottamustoimet\nHeikinheimo toimi 2. Divisioonan kunniatuomioistuimen puheenjohtajana vuonna 1920 ja  3. Divisioonan kunniatuomioistuimen puheenjohtajana vuosina 1921 ja 1925. Polkupyöräjoukkojen erikoiskysymyksiä käsitelleen komitean jäsenenä hän toimi vuonna 1922 ja polkupyöräjoukkojen ohjesääntökomitean puheenjohtajana vuonna 1924 sekä pikakiväärinkokeilukomitean jäsenenä vuosina 1924–1925. Talvivarustuskomitean jäsenenä hän toimi vuonna 1924 ja kenttävarustustoimikunnan puheenjohtajana vuosina 1931–1934 sekä ohjesääntökomitean puheenjohtajana vuonna 1934. Mikkelin kaupunkiseurakunnan lisätyn kirkkovaltuuston jäsenenä hän toimi vuosina 1933–1934.\n\nLähteet \n Puolustusministeriön Sotahistoriallisen toimiston julkaisuja IV, Suomen jääkärien elämäkerrasto, WSOY Porvoo 1938.\n Sotatieteen Laitoksen Julkaisuja XIV, Suomen jääkärien elämäkerrasto 1975, Vaasa 1975 ISBN 951-99046-8-9.\n\nViitteet \n\nJääkärikenraalit\nVuonna 1894 syntyneet\nVuonna 1938 kuolleet',
+    'question': 'Milloin Aarne Heikinheimo sai ylioppilastutkinnon suoritettua?',
+    'answers': {
+        'answer_start': array([365]),
+        'text': array(['1913'], dtype=object)
+    }
+}
+```
+```json
+{
+    'context': 'Peter Costa (s. 17. tammikuuta Kíti, Kypros) on englantilainen Las Vegasissa asuva pokeriammattilainen. Hänen vanhempansa ovat kyproksenkreikkalaisia. Perhe muutti Liverpooliin Peterin ollessa nuori. Perheen yritys myi "fish and chipsejä" ja yritys laajentui myöhemmin ketjuksi.\n\nBritteinsaarilla Costa tuli tunnetuksi voitettuaan Late Night Pokerin kuudennen tuotantokauden finaalin. Lopun kaksinpelissä Costa kukisti itävaltalaisen Jin Cai Linin ja ansaitsi 60\xa0000 puntaa.\n\nTammikuussa 2003 Costa voitti Aussie Millions -tapahtuman pääturnauksen ja ansaitsi ykköstilastaan 394\xa0870 Australian dollaria. Costalla on myös useita turnausvoittoja Yhdysvalloista: esimerkiksi kesäkuussa 2002 hän voitti kolme turnausta kolmessa viikossa – kaikissa näissä ykköspalkinto oli yli 110\xa0000 dollaria. \n\nWorld Series of Pokerissa Costa on parhaimmillaan ollut seitsemäs (kaksi kertaa). World Poker Tourilta hänellä on rahasijoja, mutta ei toistaiseksi finaalipöytäsijoituksia.\n\nVuosina 2002 ja 2003 Costa oli ehdolla Europaan parhaan pelaajan palkinnon saajaksi. Hän teki maailmanennätyksen voitettuaan kaikkien aikojen suurimman (1\xa0166 pelaajaa) limiitti-hold\'em -turnauksen Orleansin kasinolla heinäkuussa 2003.\n\nKesäkuussa 2007 Costan pokeriuran turnausansiot ylittivät 1,7 miljoonaa dollaria.\n\nLähteet\n\nAiheesta muualla \n\n \n WPT:n profiili\n PokerListings.com:n profiili \n\nBrittiläiset pokerinpelaajat',
+    'question': 'Mikä on Peter Costan asuinpaikka?',
+    'answers': {
+        'answer_start': array([63]),
+        'text': array(['Las Vegasissa'], dtype=object)
+    }
+}
+```
+```json
+{
+    'context': 'Sigrid Vaasa (1566–1633) oli Ruotsin kuninkaan Eerik XIV:n ja hänen puolisonsa Kaarina Maununtyttären tytär.\n\nSigrid Vaasa asui lapsuudessaan äitinsä Kaarina Maununtyttären kanssa Liuksialan kartanossa ja jäätyään kahdesti leskeksi palasi asumaan sinne kuolemaansa asti. Vuonna 1597 hän avioitui Henrik Klaunpoika Tottin kanssa. Sen jälkeen oli Kirkniemen ja Sjundbyn kartanoiden emäntä. Heidän lapsistaan merkittävin oli Åke Tott, joka sai mainetta kuningas Kustaa II Aadolfin johtamissa sodissa. Kaarle-herttuan ja Sigismundin valtataistelun aikana Henrik Tott asettui suomalaisten aatelismiesten ja sitä kautta myös Sigismundin puolelle, minkä vuoksi hän joutui pakenemaan maasta ja kuoli ilmeisesti noin vuonna 1603 maanpaossa. Sigrid solmi uuden avioliiton vuonna 1609 Natt och Dag -sukuun kuuluvan Nils Nilsinpojan kanssa, muutti Ruotsiin mutta jäi neljän vuoden kuluttua leskeksi. Leskeksi jäätyään hän palasi Suomeen ja kuoli Liuksialassa.\n\nLähteet\n\nRuotsin prinsessat\nVuonna 1566 syntyneet\nVuonna 1633 kuolleet',
+    'question': 'Millä kartanolla Sigrid Vaasa vietti lapsuusvuotensa?',
+    'answers': {
+        'answer_start': array([180]),
+        'text': array(['Liuksialan kartanossa'], dtype=object)
+    }
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 4
+- Prefix prompt:
+  ```
+  Seuraavassa on tekstejä ja niihin liittyviä kysymyksiä ja vastauksia.
+  ```
+- Base prompt template:
+  ```
+  Teksti: {text}
+  Kysymys: {question}
+  Vastaa enintään 3 sanalla: {label}
+  ```
+- Instruction-tuned prompt template:
+  ```
+  Teksti: {text}
+
+  Vastaa seuraavaan kysymykseen yllä olevasta tekstistä enintään 3 sanalla.
+
+  Kysymys: {question}
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+$ euroeval --model <model-id> --dataset multi-wiki-qa-fi
 ```
 
 

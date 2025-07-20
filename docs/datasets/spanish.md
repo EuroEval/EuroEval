@@ -347,7 +347,6 @@ You can evaluate this dataset directly as follows:
 $ euroeval --model <model-id> --dataset xquad-es
 ```
 
-
 ### Unofficial: BeleBele-es
 
 This dataset was published in [this paper](https://aclanthology.org/2024.acl-long.44/)
@@ -412,6 +411,76 @@ You can evaluate this dataset directly as follows:
 
 ```bash
 $ euroeval --model <model-id> --dataset belebele-es
+```
+
+### Unofficial: MultiWikiQA-es
+
+This dataset will be published in an upcoming paper, and contains Spanish Wikipedia
+articles with generated questions and answers, using the LLM Gemini-1.5-pro.
+
+The original full dataset consists of 5,000 samples in a single split. We use a 1,024 /
+256 / 2,048 split for training, validation and testing, respectively, sampled randomly.
+
+Here are a few examples from the training split:
+
+```json
+{
+    'context': 'El moretum es una especie de queso untable tradicional que se servía como acompañamiento de algunos de los platos de la Antigua Roma. Se trata de un tipo de aderezo o salsa cuyos ingredientes se machacan en un mortero, del cual toma el nombre.\n\nCitas \n\nEn el Appendix Vergiliana, obra que, como indica su nombre, se atribuye a Virgilio, se dice que los ingredientes del moretum son hierbas aromáticas, ajo, queso, vinagre, aceite de oliva y sal, y se describe su preparación como desayuno por un campesino. Con respecto a la combinación de los ingredientes, en la línea 103 se lee \n\nEl moretum también es nombrado por Columela en el libro XII de su obra De re rustica.\n\nVéase también \n\n Pesto\n Almodrote\n\nBibliografía \n\n Rodríguez-Pantoja Márquez, Miguel: El "Moretum", estudio lingüístico y literario. , n.º 8, 1977, pp. 117 - 148. Departamento de Prehistoria y Arqueología. Universidad de Sevilla. ISSN 0210-7694\n Texto en PDF.\n\nNotas y referencias\n\nEnlaces externos \n\nGastronomía de la Antigua Roma\nDesayunos\nAlimentos untables\nPlatos de queso\nSalsas de Italia',
+    'question': '¿Quién es considerado el autor del poema Moretum, que forma parte del Appendix Vergiliana?',
+    'answers': {
+        'answer_start': array([327]),
+        'text': array(['Virgilio'], dtype=object)
+    }
+}
+```
+```json
+{
+    'context': 'La culebra-viborera mexicana (Clelia scytalina) también conocida como zopilota de altura, es una especie de serpiente que pertenece a la familia Colubridae. Es nativo del sur de México, América Central y Colombia.\nComo las demás especies de musurana, se alimenta principalmente de otras serpientes, especialmente de serpientes venenosas del género Bothrops.\n\nDescripción \nLos adultos poseen una coloración negra grisácea iridiscente o negra azulada en el dorso. Los juveniles tienen un dorso rojo, cabeza negra y un collar nucal amarillo opaco que está rodeado de pigmento negro; el vientre es color crema inmaculado; escamas dorsales en 17 hileras.\n\nDistribución \nClelia scytalina se distribuye a bajas y moderadas elevaciones (hasta 1,200 ) de Veracruz en la vertiente del Atlántico y desde Jalisco en la vertiente del Pacífico hacia el sur a través de América Central hasta Colombia. Está especie es generalmente rara en México excepto en la Sierra de los Tuxtlas en el sur de Veracruz donde es considerada como relativamente común. Es conocida de localidades dispersas en la vertiente del Atlántico en el centro de Veracruz, Oaxaca, Chiapas, Tabasco, suroeste de Campeche y sur de Quintana roo, y en el vertiente del Pacífico\xa0 en Jalisco, Colima, Guerrero y Chiapas.\n\nHábitat \nEsta serpiente grande y activa habita el bosque caducifolio tropical, el bosque estacional perennifolio y el bosque lluvioso. Es principalmente terrestre y nocturna, pero también se puede encontrar activa durante el día. Por lo general, forrajea por la noche en bosques primarios o secundarios, a menudo a lo largo de arroyos. Se alimenta principalmente de serpientes, incluidas las nauyacas (Bothrops asper) y otras serpientes venenosas, que a veces pueden ser tan largas como ella. Ocasionalmente comen ranas, lagartijas y mamíferos. Clelia scytalina es ovípara.\n\nEstado de conservación \nSe encuentra catalogada dentro de la lista roja de la IUCN como una especie con preocupación menor (LC).\n\nReferencias\n\nEnlaces externos \n . Encyclopedia of Life.\n\nscytalina\nReptiles de América Central\nAnimales descritos en 1867\nTaxones descritos por Edward Drinker Cope',
+    'question': '¿Cuál es el límite altitudinal de la distribución de Clelia scytalina?',
+    'answers': {
+        'answer_start': array([735]),
+        'text': array(['1,200'], dtype=object)
+    }
+}
+```
+```json
+{
+    'context': 'Coslada Central es una estación de la línea 7 del Metro de Madrid, situada entre la calle de Pablo Neruda y el paseo de Francisco Javier Sauquillo, en el municipio madrileño de Coslada.\n\nOfrece una conexión con la estación de Coslada de las líneas C-2, C-7 y C-8 de Cercanías Madrid, formando ambas un intercambiador de transporte.\n\nHistoria y características \nLa estación fue inaugurada el 5 de mayo de 2007 y está decorada con grandes murales por los andenes y el vestíbulo, realizados por Raúl Díaz Reyes, los cuales, bajo el título de "De Madrid al cielo", reflejan diferentes imágenes de cielos de Madrid.\n\nLa estación ha sufrido varias obras de rehabilitación desde su inauguración para garantizar la seguridad y aliviar las grietas que se han formado encima de los túneles por los que discurre el tramo MetroEste. Véase Obras de rehabilitación en Línea 7 para más detalles.\n\nAccesos \nVestíbulo Coslada Central (Metro de Madrid)\n Doctor Fleming C/ Doctor Fleming, s/n (en el parque Doctor Fleming)\n  Ascensor C/ Doctor Fleming, s/n (en el parque Doctor Fleming)\n Renfe Abierto de 6:00 a 0:30 Correspondencia con Cercanías Renfe\nVestíbulo Renfe\n  Luis Braille C/ Luis Braille, s/n (Correspondencia con Cercanías Renfe)\n\nLíneas y conexiones\n\nMetro\n\nCercanías\n\nAutobuses\n\nReferencias\n\nVéase también \n Línea 7 (Metro de Madrid)\n MetroEste\n Estaciones del Metro de Madrid\n Coslada, ,\n\nEnlaces externos y referencias \n\n Ficha de la estación en metromadrid.es\n Página oficial del Metro de Madrid\n\nCoslada\nCoslada\nEstaciones de metro de España inauguradas en 2007',
+    'question': '¿Cómo se llaman las obras de arte que adornan esta estación de metro?',
+    'answers': {
+        'answer_start': array([539]),
+        'text': array(['"De Madrid al cielo"'], dtype=object)
+    }
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 4
+- Prefix prompt:
+  ```
+  A continuación se presentan textos con sus preguntas y respuestas correspondientes.
+  ```
+- Base prompt template:
+  ```
+  Texto: {text}
+  Pregunta: {question}
+  Respuesta en máximo 3 palabras: {label}
+  ```
+- Instruction-tuned prompt template:
+  ```
+  Texto: {text}
+
+  Responda la siguiente pregunta sobre el texto anterior en máximo 3 palabras.
+
+  Pregunta: {question}
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+$ euroeval --model <model-id> --dataset multi-wiki-qa-es
 ```
 
 

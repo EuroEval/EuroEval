@@ -712,6 +712,148 @@ $ euroeval --model <model-id> --dataset belebele-no
 ```
 
 
+### Unofficial: MultiWikiQA-nb
+
+This dataset will be published in an upcoming paper, and contains Norwegian Bokmål
+Wikipedia articles with generated questions and answers, using the LLM Gemini-1.5-pro.
+
+The original full dataset consists of 5,000 samples in a single split. We use a 1,024 /
+256 / 2,048 split for training, validation and testing, respectively, sampled randomly.
+
+Here are a few examples from the training split:
+
+```json
+{
+    'context': 'Cabaret Marzipan er et musikkalbum med Lumbago, innspilt i Nidaros Studios i Trondheim og utgitt i 1981 på Polydor Records. Produsent er Nils B. Kvam. Dette er bandets andre og siste album.\n\nSporliste\n «Tanta mi rapper i supermarkedet» (Thanasis Zlatanos/Morten Jørgensen)\n «Pene jenter» (Thanasis Zlatanos/Stein Gulbrandsen/Morten Jørgensen)\n «Bare deg jeg tenker på» (Stein Gulbrandsen/Trond Armand Larsen/Morten Jørgensen)\n «Natt» (Thanasis Zlatanos/Stein Gulbrandsen/Trond Armand Larsen/Morten Jørgensen)\n «En god dag idag» (Thanasis Zlatanos/Morten Jørgensen)\n «I gata der du bor» (Thanasis Zlatanos/Stein Gulbrandsen/Morten Jørgensen)\n «Sammen igjen» (Thanasis Zlatanos/Marilena Zlatanou/Stein Gulbrandsen/Morten Jørgensen)\n «Lumbagoid» (Thanasis Zlatanos/Stein Gulbrandsen/Trond Armand Larsen/Morten Jørgensen)\n «Eva» (Thanasis Zlatanos/Stein Gulbrandsen/Morten Jørgensen)\n «Totalklaustrofobi» (Thanasis Zlatanos/Stein Gulbrandsen/Morten Jørgensen)\n\nMedvirkende\n\nLumbago\n Morten Jørgensen - sang, flersang, orgel, flakse, casio vi-tone, låtskriver\n Thanasis Zlatanos - vokal på Sammen igjen, gitarer, synthesizer, kor, emt-bombe, låtskriver, fotograf, coverdesign\n Stein Gulbrandsen - bass, kontrabass, piano, synthesizer, kor, låtskriver\n Trond Armand Larsen - trommer, perkusjon, marimba, vibrafon, casio vi-tone, orgel, programmering, kor, låtskriver\n\nØvrige\n Trygve Mathiesen - flersang på Pene jenter og I gata der du bor, coverdesign \n Anne Sandborg, Carl Otto Platou, Eva Storevik Tveit, Hilde Norrgrèn, Ivar Eidem, Mona Eggehagen, Tom Trussel, Cecilie, Geir, Ida, Ina, Ivan, Joachim, K. Udzen, Katja, Maijana, Mala og Martin - bakgrunnvokal på I gata der du bor\n Marilena Zlatanou - gresk oversettelse på Sammen igjen\n Nils Bjarne Kvam - produsent, miksing\n Hans Petter Danielsen - tekniker\n Tore Tambs Lyche - tekniker \n Ivar Finsen - tekniker\n Rune Nordal - miksing \n Bitte Petersen - fotograf\n Gunnhild Bakke - fotograf\n Jan Walaker - fotograf\n Trond Davidsen - fotograf\n Ole Schøning - coverdesign\n\nEksterne lenker \n\nMusikkalbum fra 1981\nLumbago-album',
+    'question': 'Når kom Cabaret Marzipan ut?',
+    'answers': {
+        'answer_start': array([99]),
+        'text': array(['1981'], dtype=object)
+    }
+}
+```
+```json
+{
+    'context': 'Dagligvarehandelen er en frittstående ukeavis for dagligvarebransjen og distribueres til alle landets dagligvareforretninger og kjedekontorer samt kiosker og bensinstasjoner med dagligvarer i sortimentet.\n\nLesere er ledere og mellomledere hos leverandører, agenter og kjedekontorer i dagligvarebransjen, samt PR- og informasjonsrådgivere og reklame- og formidlingsbyråer. Nettutgaven er et verktøy for alle leverandører av produkter og tjenester til dagligvarebransjen. Målgruppen er alle som driver butikk, enten de er selvstendige, ansatte eller franchisetakere. Dagligvarehandelen er et av Nordens mest leste fagtidsskrifter.\n\nUtgiver er Medier og Ledelse AS, og ansvarlig redaktør er Are Knudsen. Daglig leder er Magne Lerø.\n\nPublikasjoner\n\nHvem er hvem gir en oversikt over hovedkontorer og kjeder i de sentrale grupperingene i dagligvare detalj i Norge og Norden, samt de viktigste aktørene i kiosk, – bensin og servicemarkedet. Her finner man adresser, telefonnummer etc. samt aktuelle kontaktpersoner i de ulike kjedene. Hvem er hvem benyttes som oppslagsverk i alle ledd i bransjen.\n\nTemanumre tar opp aktuelle saker i bransjen og varierer fra år til år. De distribueres sammen med Dagligvarehandelen til alle dagligvareforretninger, kjedekontorer samt kiosker og bensinstasjoner med dagligvarer i sortimentet.\n\nReferanser\n\nEksterne lenker\n Dagligvarehandelens hjemmeside\n\nNorske tidsskrifter\nDagligvarehandel',
+    'question': 'Hvem har den daglige ledelsen av Dagligvarehandelen?',
+    'answers': {
+        'answer_start': array([717]),
+        'text': array(['Magne Lerø'], dtype=object)
+    }
+}
+```
+```json
+{
+    'context': 'Timothy Evans (født 20. november 1924 i Merthyr Tydfil i South Wales, død 9. mars 1950 ved henging) var en waliser anklaget for mordet på sin kone og datter under et opphold i Notting Hill, London i november 1949. I januar 1950 ble Evans dømt for drapet på datteren sin, og han ble dømt til døden ved henging på grunn av dette. \n\nUnder rettssaken, hadde Evans anklaget naboen, John Christie, for å være ansvarlig for begge drapene. Tre år etter Evans sin rettssak og henging, ble det oppdaget at Christie var en seriemorder som hadde myrdet en rekke kvinner på hans egen eiendom, inkludert hans egen kone, og disse oppdagelsene kastet alvorlig tvil om dommen mot at Timothy Evans var riktig. En offisiell undersøkelse som ble foretatt seksten år etter at Evans ble hengt bekreftet at Evans sin datter var blitt myrdet av Christie, og Evans ble deretter gitt en posthumt benådning. Denne saken genererte mye kontrovers og ble senere anerkjent som et justismord. Dette spilte en stor rolle i avskaffelsen av endelig dødsstraff i Storbritannia. \n\nHans biologiske far forlot familien i 1924 kort tid før Evans ble født. Evans hadde en eldre søster Eileen og en yngre halvsøster Maureen, som ble født etter at Evans mor giftet seg for andre gang i 1929. Som barn, hadde Evans problemer med å lære å snakke og han slet på skolen. Etter en ulykke da han var åtte år, utviklet Evans en tuberkuløs verucca på hans høyre fot som aldri ble helt bra igjen, og som gjorde at han gikk glipp av betydelige mengder tid fra skolen på grunn av flere omfattende behandlinger. Derfor klarte han verken å lese eller skrive noe utover hans eget navn som voksen. Som barn, ble Evans ansett for å ha et dårlig temperament og han hadde flere raserianfall. \n\nDen 20. september 1947 giftet Evans seg med Beryl Susanna Thorley, som han hadde møtt gjennom en felles venn av dem. Timothy og Beryl fikk datteren Geraldine som ble født 10. oktober 1948. Deres ekteskap var preget av flere store krangler, forsterket av Beryl sitt dårlige renhold og manglende evne til å håndtere familiens økonomi. Timothy fikk etter hvert større og større problemer hans tunge drikking som forverret hans allerede korte temperament. \n\nPå slutten av 1949, ble Beryl ut at hun var gravid med deres andre barn. Siden familien allerede slet økonomisk, bestemte Beryl seg for at det eneste valget var å ta abort, og etter noe motvilje, godtok Evans denne beslutningen. Flere uker senere, 30. november 1949, informerte Evans politiet at han hadde drept sin kone. Hans første tilståelse var at han hadde ved et uhell hadde drept henne ved å gi henne noe i en flaske som en mann hadde gitt til ham for å avbryte graviditeten. Deretter skal han ha kastet liket i en kloakk i nærheten av hjemmet deres, men politiet fant ingenting på det angitte stedet i kloakk-systemet og forklaringen ble ikke godtatt som ekte. Til tross for flere svake indisier brukte juryen bare 40 minutter på å finne Evans skyldig i drapene på hans kone og barn.\n\nReferanser \n\nBriter dømt for forbrytelser\nWalisere\nPersoner som har blitt benådet\nPersoner dømt for drap\nPersoner utsatt for justismord\nHenrettede personer',
+    'question': "Hvem var den seriemorderen som bodde i Evans' nabolag?",
+    'answers': {
+        'answer_start': array([377]),
+        'text': array(['John Christie'], dtype=object)
+    }
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 2
+- Prefix prompt:
+  ```
+  Her følger tekster med tilhørende spørsmål og svar.
+  ```
+- Base prompt template:
+  ```
+  Tekst: {text}
+  Spørsmål: {question}
+  Svar på maks 3 ord: {label}
+  ```
+- Instruction-tuned prompt template:
+  ```
+  Tekst: {text}
+
+  Besvar følgende spørsmål om teksten ovenfor med maks 3 ord.
+
+  Spørsmål: {question}
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+$ euroeval --model <model-id> --dataset multi-wiki-qa-nb
+```
+
+
+### Unofficial: MultiWikiQA-nn
+
+This dataset will be published in an upcoming paper, and contains Norwegian Nynorsk
+Wikipedia articles with generated questions and answers, using the LLM Gemini-1.5-pro.
+
+The original full dataset consists of 5,000 samples in a single split. We use a 1,024 /
+256 / 2,048 split for training, validation and testing, respectively, sampled randomly.
+
+Here are a few examples from the training split:
+
+```json
+{
+    'context': "Peter Høeg () er ein dansk forfattar, som vart verdskjend med romanen Frøken Smillas fornemmelse for sne (1992).\n\nLiv og forfattarskap \nHøeg er oppvaksen i København, kor han i 1984 vart ferdigutdanna som mag. art. i litteraturvitskap. Etter ein omflakkande periode som m.a. globetrotter, idrettslærar og dansar debuterte Høeg i 1988 med Forestilling om det tyvende århundret på Rosinante forlag. Romanen, som er ein sterkt fabulerande slektskrønike, ber tydelege spor av søramerikansk magisk realisme og tiltrekte seg relativt stor merksemd allereie ved utgjevinga. I 1990 kom Fortællinger om natten ut, 9 noveller med tematisk samanheng, og med denne utgjevinga vart Høeg snart omtalt som eit forfattartalent med internasjonalt potensiale. Det endelege nybrottet lot ikkje venta på seg.\n\nI 1992 kom kriminalromanen Frøken Smillas fornemmelse for sne ut, eit portrett av den dansk-grønlandske glasiologen Smilla. Romanen sementerer Høegs føretrekte tema og understrekar sympatiane i forfattarskapen for det kvinnelege prinsippet, for barnet og dei marginaliserte, samtidig som han byr på ein god del kritikk av den vestlege sivilisasjon sin imperialisme og vitskapen sin maktmisbruk.\n\nHøeg vart rost til skyane for sin store fortellerevne, sin språklege evne og selde no uhøyrt mange bøker samanlikna med danske standardar, men særleg med utgjevinga av De måske egnede (1993) begynte kritikken å dukka opp. Omtalarar anklaga Høegs forfattarskap for politisk korrektheit, føreseieleg sivilisasjonskritikk og lettkjøpt frelstheit. Med nærskyld sivilisasjonskritisk tematikk kunne romanen Kvinnen og aben (1996) alt anna enn retta opp i dette, samtidig som stiftinga av fondet Lolwe til støtte for kvinner og born i Den tredje verda ikkje just fekk kritikken til å tagna. Etter Kvinnen og aben lot forfattaren ikkje høyra meir frå seg utanom eit enkelt, personleg dikt med tittelen Første og siste kapitel i antologien Trykt - og godt (1998) til Høegs forleggar og nære ven, Merethe Riis. I staden trekte Høeg seg heilt tilbake frå det offentlege rampelyset. I ei årrekke budde han ved Vekstsenteret i Nørre Snede, eit spirituelt treningssenter med undervisning i meditativ praksis og sjølvutvikling.\n\nTrass kritikken vert forfattarskapen hans endå stadig rekna for vesentleg, og noko tyder på at det møter fornya interesse. Såleis kom forfattarskapsportrett Apa si poetikk ut våren 2005, ein kronologisk litteraturvitskapleg kritikk av Høegs tekstar. Sjølv gav forfattaren, etter 10 års skjønnlitterær tagnad, ut romanen Den stille jenta i mai 2006.\n\nI 2010 gav Peter Høeg ut romanen Elefantpassernes børn.\n\nNærframtidsromanen Effekten av Susan (2014) trekker, med sin bruk av ei sterk kvinne med spesielle evnar som hovudfigur, linjer tilbake til 'Smilla'.\n\nPrisar \nPeter Høeg har teke i mot mange litterære prisar, mellom dei: \n Weekendavisens litteraturpris (1988)\n Kritikarprisen (1993)\n Herman Bangs Mindelegat (1993) \n De Gyldne Laurbær (1994).\n Glassnøkkelen for Smillas fornemmelse for sne\n\nFilmatisering \nI 1997 filmatiserte Bille August Frøken Smillas fornemmelse for sne. Filmen vart ein fiasko, både i omtalene og i salstala.\n\nBibliografi \n Forestilling om det tyvende århundre (1988)\n Fortellinger om natten (1990)\n Frøken Smillas fornemmelse for sne (1992)\n De måske egnede (1993)\n Kvinnen og apen (1996)\n Den stille piken (2006)\n Elefantpassernes børn (2010)\n Effekten af Susan (2014)\n Gennem dine øjne (2018)\n\nKjelder \n\nDanske romanforfattarar\nStatens Kunstfonds hædersydelse\nFolk frå København\nVinnarar av Glassnøkkelen",
+    'question': 'Kven laga filmen basert på Frøken Smillas kjensle for snø?',
+    'answers': {
+        'answer_start': array([3033]),
+        'text': array(['Bille August'], dtype=object)
+    }
+}
+```
+```json
+{
+    'context': 'For den tidlegare kyrkja i Eidsberg, sjå Hen kyrkje i Eidsberg\nHen kyrkje ligg sentralt i bygda Isfjorden i Rauma kommune.\n\nKyrkja vart bygd i 1831 av gråstein, tak-konstruksjonen og klokketårnet er av treverk.\n\nKyrkja er bygd på den same plassen der ei eldre kyrkje stod før. Denne var i så dårleg tilstand at ho måtte rivast. Ei gammal kyrkjeklokke frå 1200-talet er bevart og er i dag på Romsdalsmuseet på Molde.\n\nInteriøret\nPreikestolen som vert brukt i dag er frå 1930-åra.\n\nAltertavla vart laga til kyrkja i 1831. Ein eldre preikestol, som ikkje er i bruk, er plassert midt i altertavla. Då kyrkja vart restaurert i 1931, måla Halvard Hatlen eitt nytt bilde i altertavla. \n\nElles finst det eit rosemåla skap frå 1788. Halvard Hatlen har måla seks portrett av tidlegare prestar. Desse heng langs langveggane. Han har òg måla et måleri (1942), som heng i koret.\n\nKjelde\n Thaule, John Ove; Ubostad, Ingar; Pedersen, Bjørn. 1990. Kyrkjene våre i Ei bok om Rauma, Rauma Kommune. s 207-210\n\nBakgrunnsstoff\n \n\nKyrkjer i Rauma\nKyrkjer i Indre Romsdal prosti\nKulturminne i Rauma\nNorske kyrkjer frå 1831\nLangkyrkjer i Møre bispedømme',
+    'question': 'Når vart rosemålingane i Hen kyrkje laga?',
+    'answers': {
+        'answer_start': array([718]),
+        'text': array(['1788'], dtype=object)
+    }
+}
+```
+```json
+{
+    'context': 'Christophorus Clavius (fødd Christoph Klau 1537/38 i Bamberg i Tyskland, død 1612 i Roma) var ein tysk matematikar, astronom og jesuittpater på 1500-talet. I samtida vart han kalla «kongen av matematikken», og vart framført alt kjend for arbeidet sitt ved det vatikanske stjerneobservatoriet som førte til utviklinga av det nye kalendersystemet som vart kalla opp etter pave Gregor XIII, den gregorianske kalenderen. \n\nClavius tredde inn i jesuittordenen i 1555 og fekk utdanninga si i ordenen. Ved jesuittane sitt Collegio Romano i Roma studerte han teologi og underviste deretter matematikk der i ein lang periode. Clavius forfatta fleire matematikkbøker og medverka slik til utviklinga av matematikken. Ein vidt utbreidd kommentar til euklidsk geometri stammer frå han. Clavius medverka òg til teorien for prostaferese, ein reknemetode som var ein forløpar for logaritmane. Verka hans kom ut i 1612 i Mainz i fem band.\n\nMånekrateret Clavius er kalla opp etter han.\n\nKjelder\nDenne artikkelen bygger på «Christophorus Clavius» frå ,  den 1. november 2011.  \n \n\nFødde i 1530-åra\nDøde i 1612\nFolk frå Bamberg\nTyske katolske prestar\nTyske matematikarar\nTyske astronomar\nTyske jesuittar\nMatematikarar på 1500-talet\nMatematikarar på 1600-talet',
+    'question': 'Kva fødselsår hadde Clavius?',
+    'answers': {
+        'answer_start': array([43]),
+        'text': array(['1537/38'], dtype=object)
+    }
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 2
+- Prefix prompt:
+  ```
+  Her følger tekster med tilhørende spørsmål og svar.
+  ```
+- Base prompt template:
+  ```
+  Tekst: {text}
+  Spørsmål: {question}
+  Svar på maks 3 ord: {label}
+  ```
+- Instruction-tuned prompt template:
+  ```
+  Tekst: {text}
+
+  Besvar følgende spørsmål om teksten ovenfor med maks 3 ord.
+
+  Spørsmål: {question}
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+$ euroeval --model <model-id> --dataset multi-wiki-qa-nn
+```
+
+
 ## Knowledge
 
 ### NRK Quiz QA

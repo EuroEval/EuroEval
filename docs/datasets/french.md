@@ -364,6 +364,77 @@ $ euroeval --model <model-id> --dataset belebele-fr
 ```
 
 
+### Unofficial: MultiWikiQA-fr
+
+This dataset will be published in an upcoming paper, and contains French Wikipedia
+articles with generated questions and answers, using the LLM Gemini-1.5-pro.
+
+The original full dataset consists of 5,000 samples in a single split. We use a 1,024 /
+256 / 2,048 split for training, validation and testing, respectively, sampled randomly.
+
+Here are a few examples from the training split:
+
+```json
+{
+    'context': "L'advocaat est une liqueur onctueuse d'origine néerlandaise, faite de jaune d'œuf, de sucre et d'alcool. Il a un léger goût rappelant celui des amandes. Dans les pays anglophones, il contient généralement 15 % d'alcool, tandis qu'en Europe continentale ce taux varie selon les pays, souvent entre 14 et 20 %.\n\nOutre le jaune d'œuf, l'alcool et le sucre, l'advocaat peut contenir du miel, de la vanille, de l'eau-de-vie et parfois de la crème fraîche (ou du lait concentré non sucré). Parmi les fabricants, on trouve Warners, Bols, Verpoorten, de Korenaer, Élixir d'Anvers, Warninks, De Kuyper, Dalkowski et Zwarte Kip.\n\nTypes \n\nAux Pays-Bas et dans le Tyrol, on vend un advocaat épais, souvent consommé à la cuillère, tandis qu'une version plus liquide est réservée à l'exportation. Cet advocaat épais entre dans la composition de plusieurs desserts, notamment des glaces et des pâtisseries. Il est aussi servi en apéritif ou en digestif. Traditionnellement, on le sert avec de la crème fouettée saupoudrée de cacao.\n\nLa qualité d'exportation, plus liquide, est particulièrement bien adaptée à la fabrication de cocktails et de long drinks. Le cocktail le plus connu est le Snowball : un mélange d'advocaat, de limonade et parfois de jus de citron vert (facultatif). Une autre boisson courante à base d'advocaat est le bombardino, servi dans les stations de ski italiennes : c'est un mélange d'advocaat, de café noir et de whisky.\n\nHistoire \nL'advocaat original était une liqueur créée par les Néerlandais du Suriname et de Recife avec des avocats. De retour aux Pays-Bas, où ce fruit n'était pas disponible, ils reconstituèrent une texture identique avec du jaune d'œuf épaissi. Le nom du fruit en nahuatl, ahuacatl, avait été transformé en espagnol en aguacate, puis en anglais en avocado et en néerlandais en advocaatpeer ou advocaat (par analogie avec la profession). De là, il se répandit dans les autres pays d'Europe. Le rompope de Puebla, au Mexique, est une liqueur très similaire, à base de jaune d'œuf et de vanille.\n\nVoir aussi \n\n \n Gogli\n Lait de poule\n Ponche Crema\n Rompope\n Sabayon\n\nNotes et références\n\nBibliographie \n \n \n\nLiqueur\nBoisson à base d'œuf\nBoisson néerlandaise",
+    'question': "Nommez deux marques qui produisent de l'advocaat.",
+    'answers': {
+        'answer_start': array([516]),
+        'text': array(['Warners, Bols'], dtype=object)
+    }
+}
+```
+```json
+{
+    'context': "La Sabine de Gandon est un timbre-poste d'usage courant qui a servi en France de  au retrait de la vente des derniers timbres en . Ce type remplace la Marianne de Béquet et est remplacé en  par la Liberté de Gandon d'après Delacroix.\n\nDescription \n\nLa Sabine est dessinée et gravée par Pierre Gandon à partir de la tête de l'héroïne Hersilie, représentée au centre du tableau de Jacques Louis David Les Sabines, sur lequel elle s'interpose entre les Sabins et les Romains. Le modèle est Aurore de Bellegarde, une amie du peintre.\n\nLes timbres sont imprimés en taille-douce en feuille de cent exemplaires.\n\nDeux mentions de pays émetteurs ont figuré sur ces timbres. De 1977 à 1981, la mention est « FRANCE » comme sur les timbres commémoratifs depuis le début de l'année 1975, après le début de la présidence de Valéry Giscard d'Estaing. Après l'élection de François Mitterrand à la présidence de la République, « République française » revient sur les timbres, y compris les derniers émis au type Sabine, dans la deuxième partie de l'année 1981.\n\nCarrière \nLa première émission a lieu le  pour les 0,80 franc vert et 1 franc rouge, servant aux tarifs les plus fréquents de la lettre économique et prioritaire de moins de 20 grammes. Les valeurs de compléments et les autres valeurs d'usage sont émises le  et le .\n\nEnsuite, les nouvelles émissions suivent les changements de tarifs : , . Ce dernier changement de tarif est également à l'origine de l'émission de six timbres le .\n\nLes trois derniers timbres au type Sabine émis le sont le  pour correspondre aux tarifs des  août et  septembre précédents. Ils portent la mention « REPUBLIQUE FRANÇAISE ». Le , paraissent les timbres au type Liberté de Gandon d'après Delacroix.\n\nNotes et références\n\nVoir aussi\n\nBibliographie \n Catalogue de cotations de timbres de France, éd. Dallay, 2005-2006.\n\nArticle connexe \n Timbre de France d'usage courant\n\nLiens externes \n Bibliographie sur le type Sabine sur le site du Cercle des amis de Marianne.\n Liste des timbres au type Sabine sur le site Phil-Ouest.\n\nTimbre de France d'usage courant",
+    'question': 'Quel tableau de Jacques-Louis David a servi de modèle au timbre-poste La Sabine, dont le dessin et la gravure sont de Pierre Gandon\xa0?',
+    'answers': {
+        'answer_start': array([399]),
+        'text': array(['Les Sabines'], dtype=object)
+    }
+}
+```
+```json
+{
+    'context': "(parfois sous-titré Collectible Lennon) est le septième album de John Lennon, sorti en 1975. Il s'agit de la première compilation de son œuvre , et du dernier album qu'il ait publié avant sa retraite de cinq ans destinée à s'occuper de son fils Sean.\n\nParution \nL'album reprend onze chansons publiées par Lennon en single entre 1969 et 1974. Cinq des chansons, parmi les plus anciennes, n'avaient jusque-là jamais été publiées sur un 33 tours. Cet aspect a été particulièrement apprécié par la critique qui a généralement bien noté l'album. Celui-ci s'est bien vendu et a atteint le huitième rang des ventes au Royaume-Uni, et le douzième rang aux États-Unis, où il est devenu disque d'or.\n\nGive Peace a Chance est présenté ici sous forme d'un court extrait tandis qu'une portion de sa version live, enregistrée le  au Madison Square Garden à New York lors du concert de charité « One to One », est greffée au final de Happy Xmas (War Is Over). Cette version augmentée de la chanson de Noël est inédite à cette collection.\n\nLe nom du disque fait référence au katsuobushi, une méthode japonaise de préparation et de conservation du poisson.\n\nLe sous-titre varie selon les éditions : absent des premières éditions américaines, il est parfois indiqué Collectible Lennon sur une étiquette rouge, parfois Collectable Lennon imprimé au dos de la pochette, avant la liste des titres.\n\nPochette \nLe recto de la pochette est composé de douze dessins : onze pour les titres des chansons, plus un pour le titre de l'album qui est illustré d'un disque rouge sur fond blanc semblable au drapeau du Japon, crédité à « Lennon Plastic Ono Band ». La palette de couleurs, dans des tons pastel, est volontairement limitée : un bleu pâle prédomine, formant sur la plupart des vignettes un ciel agrémenté de nuages blancs ; la palette est complétée par des tons de rose et de couleur chair.\n\nLes illustrations pour Imagine, Mind Games, et Whatever Gets You Thru the Night rappellent les pochettes des albums dont les chansons sont tirées. L'illustration pour Give Peace a Chance est réalisée à partir d'une photo de presse du bed-in de John et Yoko à Amsterdam, avec, posée sur le lit, la pochette du second album expérimental du couple, Unfinished Music No.2: Life with the Lions. Pour Happy Xmas (War is Over), un bombardier B29 apparaît suspendu à la façon d'une maquette , une boule de Noël rouge étant à son tour suspendue à l'avion. La chanson Instant Karma! est représentée par un flacon de produit lyophilisé. Woman is the Nigger of the World est illustrée par une femme nue, à la tête couverte, sous une pluie de tubes de rouge à lèvres fusant à la façon de balles de fusil, en référence aux paroles  (). L'illustration pour Mother est directement inspirée du tableau La Mère de Whistler, la mère ayant ici les traits de Lennon, tandis que le cadre de gauche compte un second portrait de Lennon, en gros plan, laissant échapper des larmes. Power to the People est représenté par un texte déclarant Lennon admissible à une green card et commençant par , rappelant le manuscrit de la constitution des États-Unis. Des dessins de Lennon sont utilisés pour illustrer Cold Turkey et #9 Dream.\n\nLe dessin au verso représente un emballage, ouvert, de poisson séché selon la méthode japonaise de la compagnie fictive « Lennon Brand ». Une citation de Lennon, sous le pseudonyme Dr. Winston O'Boogie,  y est inscrite.\n\nLa pochette intérieure porte au recto un grand disque rouge sur fond blanc , et au verso les paroles des chansons en blanc sur fond rouge, avec quelques erreurs de transcription.\n\nLa direction artistique est confiée à Roy Kohara, le même qui créa les pochettes des deux précédents albums de Lennon, Mind Games et Rock 'n' Roll et celle de la compilation des Beatles Rock 'n' Roll Music l'année suivante. Les illustrations sont de Michael Bryant.\n\nListe des chansons \nLes titres sont crédités à John Lennon sauf indication contraire.\n\nClassement\n\nNotes et références\n\nNotes\n\nRéférences \n\nAlbum de John Lennon\nCompilation musicale sortie en 1975\nAlbum publié par Apple Records\nAlbum publié par EMI Group\nAlbum produit par Phil Spector",
+    'question': "Qui est l'illustrateur de la couverture de l'album Shaved Fish?",
+    'answers': {
+        'answer_start': array([3828]),
+        'text': array(['Michael Bryant'], dtype=object)
+    }
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 4
+- Prefix prompt:
+  ```
+  Les textes suivants sont accompagnés de questions et de réponses.
+  ```
+- Base prompt template:
+  ```
+  Texte: {text}
+  Question: {question}
+  Réponse en 3 mots maximum: {label}
+  ```
+- Instruction-tuned prompt template:
+  ```
+  Texte: {text}
+
+  Répondez à la question suivante sur le texte ci-dessus en 3 mots maximum.
+
+  Question: {question}
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+$ euroeval --model <model-id> --dataset multi-wiki-qa-fr
+```
+
+
 ## Knowledge
 
 ### MMLU-fr

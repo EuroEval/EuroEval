@@ -556,6 +556,77 @@ $ euroeval --model <model-id> --dataset belebele-is
 ```
 
 
+### Unofficial: MultiWikiQA-is
+
+This dataset will be published in an upcoming paper, and contains Icelandic Wikipedia
+articles with generated questions and answers, using the LLM Gemini-1.5-pro.
+
+The original full dataset consists of 5,000 samples in a single split. We use a 1,024 /
+256 / 2,048 split for training, validation and testing, respectively, sampled randomly.
+
+Here are a few examples from the training split:
+
+```json
+{
+    'context': 'Bergþór Pálsson (fæddur 22. október 1957) er íslenskur baritónsöngvari og skólastjóri Tónlistarskóla Ísafjarðar.\n\nHann fæddist í Reykjavík og foreldrar hans eru Hulda Baldursdóttir (1923-2013) ritari og Páll Bergþórsson (f. 1923) fyrrverandi veðurstofustjóri. Eiginmaður Bergþórs er Albert Eiríksson. Bergþór á einn son. \n\nBergþór lauk stúdentsprófi frá Menntaskólanum við Sund árið 1978 og BA gráðu í tónlist frá Indiana háskóla í Bandaríkjunum árið 1985, MA gráðu í tónlist frá sama skóla árið 1987 og útskrifaðist sem leikari frá Drama Studio í London árið 1997.\n\nHann var óperusöngvari við Óperuna í Kaiserslautern í Þýskalandi frá 1988-1991 og hefur sungið í fjölda verka sem Íslenska óperan hefur sett upp. Bergþór var ráðinn skólastjóri Tónlistarskóla Ísafjarðar árið 2020.\n\nBergþór var lengi orðaður við forsetaframboð í forsetakosningunum 2016 en í kjölfarið af því að Ólafur Ragnar Grímsson, sitjandi forseti, tilkynnti að hann myndi sækjast eftir endurkjöri ákvað Bergþór að bjóða sig ekki fram.\n\nTilvísanir\n\nÍslenskir tónlistarmenn\nÍslenskir söngvarar\n\nStúdentar úr Menntaskólanum við Sund\nÍslenskir leikarar',
+    'question': 'Í hvaða ári útskrifaðist Bergþór Pálsson úr menntaskóla?',
+    'answers': {
+        'answer_start': array([383]),
+        'text': array(['1978'], dtype=object)
+    }
+}
+```
+```json
+{
+    'context': 'Snillingur (á latínu: genius) er manneskja með óvenjulega andlega hæfileika og gáfur, svokallaða snilligáfu. Engin vísindaleg skilgreining er til á hugtakinu, sem á sér rætur aftur í fornöld, og deilt er um merkingu þess en eigi að síður er snillingshugtakið mikið notað í margháttuðu samhengi, ekki síst síðan á nítjándu öld.\n\nDæmi um snillinga\n\nBókmenntir \n Sófókles\n Evripídes\n Virgill\n William Shakespeare\n Johann Wolfgang von Goethe\n\nEðlis- og stærðfræði\n Arkímedes\n Isaac Newton\n Gottfried Leibniz\n Leonhard Euler\n Carl Friedrich Gauß\n Hendrik Antoon Lorentz\n Nikola Tesla\n Max Planck\n Marie Curie\n Albert Einstein\n Niels Bohr\n Erwin Schrödinger\n Werner Heisenberg\n Richard Feynman\n John Forbes Nash\n\nHeimspeki \n Platon\n Aristóteles\n David Hume\n Immanuel Kant\n John Stuart Mill\n Friedrich Nietzsche\n Ludwig Wittgenstein\n Saul Kripke\n\nLíffræði \n Charles Darwin\n\nMyndlist \n Leonardo da Vinci\n Michelangelo Buonarroti\n Rembrandt\n Vincent van Gogh\n\nSkák \n Bobby Fischer\n\nStjörnu- og heimsfræði \n Aristarkos\n Nikulás Kópernikus\n Stephen Hawking\n\nTónlist \n Johann Sebastian Bach\n Joseph Haydn\n Wolfgang Amadeus Mozart\n Ludwig van Beethoven\n\nHeimildir og ítarefni \n Clifford A. Pickover (1998). Strange Brains and Genius: The Secret Lives of Eccentric Scientists and Madmen. (Plenum Publishing Corporation). \n Eysenck, H.J. (1995). Genius: The Natural History of Creativity. (Cambridge: Cambridge University Press).\n Galton, F. (1869). Hereditary Genius: An Inquiry Into Its Laws and Consequences. (London: Macmillan).\n Gladwell, Malcolm. (2008). Outliers: The Story of Success. (New York: Little, Brown and Company).\n Harold Bloom (2002). Genius: A Mosaic of One Hundred Exemplary Creative Minds. (Warner Books). \n Murray, C. (2003). Human Accomplishment: The Pursuit of Excellence in the Arts and Sciences. 800 B.C. to 1950. (New York: HarperCollins).\n Simonton, Dean Keith (1999). Origins of genius: Darwinian Perspectives on Creativity. (Oxford: Oxford University Press).\n Simonton, Dean Keith (2004). Creativity in Science: Chance, Logic, Genius, and Zeitgeist. (Cambridge: Cambridge University Press).\n Simonton, Dean Keith (2009). Genius 101. (New York: Springer).\n\nGreind',
+    'question': 'Hvaða rit fjallar um dulin leyndarmál vísindamanna sem eru að hætta störfum og einstaklinga með geðræn vandamál?',
+    'answers': {
+        'answer_start': array([1194]),
+        'text': array(['Strange Brains and Genius: The Secret Lives of Eccentric Scientists and Madmen'], dtype=object)
+    }
+}
+```
+```json
+{
+    'context': 'Grasker er ávöxtur af ættkvíslinni Cucurbita og graskersætt af tegundunum Cucurbita pepo eða Cucurbita mixta. Grasker hafa vanalega þykkt appelsínugult eða gult hýði og eru ræktuð til matar og til skrauts og skemmtunar. Bökur úr graskerjum er hefðbundinn hluti af hinni bandarísku þakkargjörðarhátíð og útskorin grasker eru algengt skraut á hrekkjavöku.\n\nElstu menjar um graskersfræ fundust í Mexíkó og eru frá 7000 og 5500 fyrir Krist. Grasker vega um 450 kg en eru oft 4-8 kg. Grasker eru tvíkynja og eru kven- og karlblóm á sömu jurt.\n\nGrasker eru ræktuð víða bæði sem skepnufóður og til skrauts og sölu. Ræktun þeirra hefst í byrjun júlí og þarf jarðvegshiti þá á þriggja þumlunga dýpi (7.72 sm) að vera minnst 15.5°C og jarðvegur þarf að vera rakadrægur. Grasker eru  harðgerðar jurtir en uppskera getur þó brugðist vegna þurrka eða kulda eða vegna sandjarðvegs sem heldur illa raka. Stærstu grasker eru af tegundinni Cucurbita maxima. Skelin, fræ, lauf og blóm graskers eru æt.\n\nÞegar grasker hefur þroskast er hægt að sjóða, baka eða rista það. Fræin eru oft ristuð. Í Mið-Austurlöndum er grasker notað í sæta rétti, í sælgæti sem kallað er halawa yaqtin. Í Suður-Asíulöndum eins og Indlandi er grasker soðið með smjöri, sykri og kryddi í rétt sem kallast kadu ka halwa. Í Guangxi héraðinu í Kína eru laufblöð graskers soðin eins og grænmeti og notuð í súpur. Í Ástralíu og Nýja-Sjálandi er grasker oft ristað með öðru grænmeti. Graskersfræ eru oft notuð í staðinn fyrir sólblómafræ. Grasker má nota til að bragðbæta drykki. Graskersfræ eru talin holl. Niðursoðin grasker eru gefin köttum og hundum til að bæta meltingu.\n\nAlgengt er að skera út mynstur í grasker fyrir hrekkjavöku í Norður-Ameríku og nota þau sem luktir. Útskorin grasker voru fyrst tákn um uppskerutímann en urðu síðan tengd hrekkjavöku.\n\nRæktendur graskerja keppa oft um stærsta og þyngsta graskerið og haldnar eru hátíðir í kringum slík keppni. Grasker eru þekkt minni í ævintýrum og þjóðsögum, þau er oft tengt nornum í kringum hrekkjavöku. Í sögunni af Öskubusku breytir álfkona graskeri í vagn en á miðnætti verður hann aftur að graskeri.\n\nTenglar \n\n Squash Display at Missouri Botanical Garden — Myndir af 150 afbrigðum graskerja]\n Möndlugrasker eru stærstu ber í heimi (Bændablaðið=\n\nGraskersætt\n\ntl:Kalabasa',
+    'question': 'Hver er algengur þyngd graskerja?',
+    'answers': {
+        'answer_start': array([471]),
+        'text': array(['4-8 kg'], dtype=object)
+    }
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 4
+- Prefix prompt:
+  ```
+  Eftirfarandi eru textar með tilheyrandi spurningum og svörum.
+  ```
+- Base prompt template:
+  ```
+  Texti: {text}
+  Spurning: {question}
+  Svaraðu með að hámarki 3 orðum: {label}
+  ```
+- Instruction-tuned prompt template:
+  ```
+  Texti: {text}
+
+  Svaraðu eftirfarandi spurningu um textann að hámarki í 3 orðum.
+
+  Spurning: {question}
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+$ euroeval --model <model-id> --dataset multi-wiki-qa-is
+```
+
+
 ## Knowledge
 
 ### IcelandicKnowledge

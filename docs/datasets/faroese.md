@@ -351,3 +351,74 @@ You can evaluate this dataset directly as follows:
 ```bash
 $ euroeval --model <model-id> --dataset foqa
 ```
+
+
+### Unofficial: MultiWikiQA-fo
+
+This dataset will be published in an upcoming paper, and contains Faroese Wikipedia
+articles with generated questions and answers, using the LLM Gemini-1.5-pro.
+
+The original full dataset consists of 5,000 samples in a single split. We use a 1,024 /
+256 / 2,048 split for training, validation and testing, respectively, sampled randomly.
+
+Here are a few examples from the training split:
+
+```json
+{
+    'context': 'Ali Babba- og 49 aðrar blaðgreinir er eitt savn við fimmti greinum, ið Høgni Mohr hevur skrivað og latið prentað í Dimmalætting og Vinnuvitan frá desember 2004 til februar 2006.\n\nSøgugongd \nGreinasavnið snýr seg um fólk, sum búgva í Føroyum, og onnur, ið hava tilknýti til hetta landið, men búgva uttanlands. Tekstirnir hava sum innihald trý eyðkend sløg av menniskjum: tey ávísu ókendu, sum standa aftan fyri tey kendu; onnur, ið eru mitt í einum serliga spennandi starvi; og hini, ið virka fremst í vinnulívinum. Savnið er sostatt grundað á tríggjar greinarøðir, ið júst eru greiddar úr hondum eftir hesum trimum leistum.\n\nLes eisini \nMohr, Høgni (2010) Tá deyðin verður avdúkaður. Øgiliga egið forlag. ISBN 9789991880518Styrkin í bókini er tann beinrakna tekstin, tær hugtakandi, men knøppu orðingarnar, miðlingin av sterkum menniskjaligum kenslum, stúran, gleði, ótta og sorg, og so tann einfalda, positiva mennsikjafatanin \xa0- Erhard Jacobsen, ummælari.Mohr, Høgni (2017) Fractura nasi. Øgiliga egið forlag. ISBN 9789991880525. Kirsten Brix týtt til danskt 2019. Danskt heiti Rejse for livet. forlag Amanda Books. Seld til filmframleiðslu í 2018.Hon er í passandi flogferð, skrivingin. Floygd, sum eingin annar tekstur eg nýligani havi lisið. Síðst eg kendi meg so væl í felag við hin skrivandi var, tá eg læs Bommhjarta hjá Jóanesi Nielsen, sum kom í fjør. Ein smittandi respektleys søga, sum hemningsleys gongur sínar egnu leiðir. Men aftanfyri hómast ein leitan eftir egnum upphavi. Hví bleiv eg sum eg bleiv, er skuggaspurningur høvundans \xa0- Birgir Kruse, ummælari.Mohr, Høgni (2018) Slepp tær til heiti fani. Øgiliga egið forlag. ISBN 9789991880532. Tekningar: Astrid Andreasen.Tað smakkar bara so væl at lesa hasi orðini. Ikki tí eg havi nakað ímóti Gerhardi ella Javnaðarflokkinum í Avhaldslosjuni, men bara tí at eg síggi spælandi orðalagið, sum ikki er eitt stívrent kvæðaørindi at fáa bókstavarím til skúlabrúks, men beint fram brúksføroyskt loyst úr lagdi \xa0- Birgir Kruse, ummælari.Mohr, Høgni (2019) mær dámar ikki høgna hoydal. Øgiliga egið forlag. ISBN 9789991880549\n\nTýtt og ritstjórnað \n2006 - Askur og Embla (týtt), Bókadeild Føroya lærarafelags, 204 síður.\n\n2013 - Sannleikin um ástarævintýrið (týtt og ritstjórnað), Øgiliga egið forlag, 35 síður.\n\nKeldur',
+    'question': 'Hvør er útgávandi av bókini "Mær dámar ikki Høgna Hoydal?"',
+    'answers': {
+        'answer_start': array([684]),
+        'text': array(['Øgiliga egið forlag'], dtype=object)
+    }
+}
+```
+```json
+{
+    'context': 'Ævintýr eru sum skaldskaparslag munnbornar søgur um vanlig folk í einum yvirnatúrligum heimi. Heitið veður nýtt um fleiri sløg av søgum, ið als ikki øll hava sama yivrnatúrliga innihald. Antti Aarne og Stith Thompson hava gjørt eina skrá yvir heimsins ævintýr. Har eru tey skift sundur í 5 høvuðsbólkar ella týpur. Sum annar munnborin skaldskapur hava ævintýrini ongan kendan høvund ella upprunaligan form. Tey kennast aftur eftir greining av søgugongd og innihaldi, og á tann hátt hava Aarne og Thompson skift tey sundur í týpur hvørja við sínum nummari og stavunum AT frammanfyri. Hesar týpur og høvuðsbólkar eru: I Djóraævintýr (AT 1-299), II Eginlig ævintýr (AT 300-1199), III Skemtiævintýr (AT 1200-1999), IV Formilævintýr (AT 2000-2399) og V Ymisk ævintýr (AT 2400.2499). Hesin seinasti bólkurin umfatar tey ævintýr, ið høvundarnir ikki fingu at hóska til hinar bólkarnar. \n\nÍ øllum vanligum brúki verður oftast hugsað um søgurnar í bólki II, tá talan er um ævintýr. Serstakliga kanska undirbólk A, ið verður kallaður Gandaævintýr (AT 300-749). Í hesum bólki eru m.a. tær væl kendu søgurnar um ein fátækan drong, ið bjargar eini prinsessu, sum trøll við níggju høvdum ella onkur onnur yvirnatúrlig vera hevur tikið; í endanum giftist drongurin við prinsessuni og verður kongur. Ella eina fátæka gentu, ið bjargar einum prinsi, sum ofta er umskaptur til okkurt andskræmiligt, og síðani giftist við honum og gerst drotning. Øll liva síðani lukkuliga. \n\nHóast ævintýr sum skaldskaparslag upprunaliga eru munnbornar søgur, kenna vit tey nú í tíðini best og ivaleyst bert úr ritstjórnaðum, prentaðum útgávum. Charles Perrault (1628-1703) var hin fyrsti at geva út eitt savn við søgum, ið eru ritstjórnað ævintýr. Bókin kom í 1697 og nenvdist Søgur og frásagnir úr farnum tíðum við undirheitinum "Gásamóðir sigur frá" (Les Contes de ma Mère l’Oye). Millum søgurnar í hesum savni eru so víðagitnar søgur sum Reyðhetta, Tornarósa og Øskufía. Perrault óttaðist bókmentaliga og mentanarliga smakkin í tíðini, lagaði søgurnar til, sum honum tókti best og gav tær út í navninum á 10 ára gamla syni sínum. Bókin gjørdist ómetaliga væl umtókt og var sum frá leið týdd til flestøll fjølment evropeisk mál. Seinni fóru fólk aðrastaðni at savna og skriva upp ævintýr, og summpart við beinleiðis fyrimynd í søgunum hjá Perrault komu serliga í 19. øld fleiri kend søvn við ritstjórnaðum ævintýrum. Kendast eru ævintýrini hjá týskarunum Jacob og Wilhelm Grimm. Eisini í Norðurlondum vaks áhugin, og millum kendastu útgávur eru tær hjá Ewald Tang Christensen í Danmark, Asbjørnsen og Moe í Noregi, og Jóni Árnasyni í Íslandi. \n\nÍ Føroyum tók Jakob Jakobsen tráðin upp, og í árunum 1898-1901 gav hann út savn sítt við føroyskum sagnum og ævintýrum. Eisini hann ritstjórnaði søgurnar, sum hann savnaði, so vit kunnu siga, at soleiðis sum vit lesa tær hjá honum, hava tær ikki verið sagdar honum. Hansara ritstjórnan er mest av málsligum slag. Hann flytur munnliga frásøgn í skrift við teimum tillagingum, ið tá eru neyðugar, og hartil reinsar hann frásøgnina fyri útlendskan málburð. Mangt bendir á, at ævintýr valla eru gamal skaldskapur í Føroyum. Tað tykist, sum tey eru komin í munnliga frásøgn í Føroyum eftir fólksligum, einahelst donskum útgávum. Men sum væntandi er í munnligari søgulist, hava fólk lagað tey til so við og við, so tey ofta hava føroyskan dám í mongum lutum. Summi teirra eru tó ivaleyst gomul í Føroyum.\n\nKeldur \n\n Kirsten Brix: "Drongurin, ið burturtikin varð av sjótrøllakonginum", Varðanum bd. 59 1992, s. 188-219. \n Jakob Jakobsen: Færøske Folkesagn og Æventyr 1899-1901.\n\nÆvintýr\nFólkaminni',
+    'question': 'Hvat var heitið á bókini eftir Charles Perrault?',
+    'answers': {
+        'answer_start': array([1743]),
+        'text': array(['Søgur og frásagnir úr farnum tíðum við undirheitinum "Gásamóðir sigur frá" (Les Contes de ma Mère l’Oye)'], dtype=object)
+    }
+}
+```
+```json
+{
+    'context': 'Trøllakampar (frøðiheiti Asplenium) hoyra til tann bólkin av plantum, ið verður kallaður blómuleysar plantur. Tað finnast 20.000 sløg av trøllakampum í heiminum, og er hetta slagríkasta fylki, aftaná fylkið við blómuplantum, ið telur 250.000 sløg. Flestu sløgini av trøllakampum finnast í tropunum og trívast best har vátt er. Trøllakampar verða mettir at vera "primitivt" plantuslag, ið er nær í ætt við upprunaplanturnar. Teir hava ikki blómur og seta ikki fræ, men nørast við grókornum, ið hjá summum trøllakampum sita í gróhópum aftanfyri á blaðnum, vardir av einum skjøldri, sum opnar seg, tá grókornini eru búgvin, so at tey kunnu spjaðast. Hjá øðrum sita teir á blaðkantinum, sum er rullaður inneftir, so leingi grókornini ikki eru búgvin. \n\nSummi trøllakampasløg hava tvey sløg av bløðum, eitt slag ið er “sterilt” og eitt sum er “fertilt”. Tað “fertila” blaðið kann hjá summum sløgum vera heilt ymiskt frá tí “sterila”. Trøllakampur kann hava grókorn í milliónatali, men bert fáar nýggjar plantur koma burturúr. Bløðini hava ymiskt skap. Tey kunnu verða innskorin eina, tvær og fleiri ferðir ella als ikki innskorin. Við sínum sermerkta vakstrarlagi líkist trøllakampur, áður enn hann er fullvaksin, einum fiólhøvdi ella tí evsta á fiólini.\n\nÚtbreiðsla\n\nTrøllakampar vóru nógv vanligari í Føroyum, áðrenn fólk settu búgv her. Hetta prógva sákornskanningar. Vøksturin í Føroyum er sum heild ávirkaður av seyðabiti, og hevur hann verið tað, síðan fólk settu búgv her. Seyðurin legðist beinanvegin eftir tí fruktagóða gróðri, sum landið var avvaksið við. Hesin gróðurin hvarv eftir stuttari tíð og broyttist til tættbitna gróðurin, sum vit kenna í dag.  Sáðkornskanningar vísa, at trøllakampar sum heild fóru nógv aftur aftan á landnám. Teir eru av elstu plantusløgum á jørð og vuksu her fyri meira enn 300 mió árum síðan. Í koltíðini vuksu trøllakampur, javni og bjølluvísa sum stórir skógir.\n\nIkki allastaðni er seyður sloppin framat at bíta. Tí sæst enn tann mest upprunaligi gróðurin í gjáum og bakkum, har seyður ikki er sloppin framat. Her er gróðurin stórur og fjølbroyttur, og kanningar bera prógv um, at hann hevur verið støðugur í langa tíð av teirri orsøk, at seyður og fólk ikki sluppu framat. Av teimum trøllakampum, ið eru vanligir í Føroyum, eru fyrst og fremst tann stórvaksni trøllakalskampurin, tann heldur fínari mjúki kvennkampurin og dimmgrøni ekstur blóðkampurin. Hesir trøllkampar eru nógv vanligari í londunum sunnan fyri enn norðan fyri okkum.\n\nFleiri sløg av trøllakampum finnast í brattlendi. Lættast er at fáa eyga á tann stórvaksna trøllakallskampin og tann næstan líka stórvaksna mjúka kvennkampin. Sáðkornskanningar hava víst, at útbreiðslan av trøllakampum minkaði ógvuliga nógv, tá ið fólk settu búgv í Føroyum og høvdu húsdjór síni við sær.\n\nFimtan sløg av trøllakampum finnast í Føroyum. Flestu av teimum dámar best at vaksa í klettarivum, har vátt og skuggi er - men eisini í grýtutum lendi, brattlendi og gjáum. Ein tann mest vanligi trøllakampurin í Føroyum er fínur klettakampur, meðan svartur trøllakampur og strálhærdur trøllakampur eru sera sjáldsamir og bert finnast á einum stað. \n\nÍ 2007 varð nýtt trøllakampaslag funnið í brattlendi í Norðuroyggjum. Hetta er tungutrøllakampur (Asplenium scolopendrium). Hesin trøllakampur er eisini sjáldsamur í hinum Norðurlondunum.\n\nKelda\n Stamps.fo\n\nSí eisini\n Plantulívið í Føroyum\n\nPlantur í Føroyum\nPlantur',
+    'question': 'Hvussu mong trøllakamps sløg eru til í Føroyum?',
+    'answers': {
+        'answer_start': array([2782]),
+        'text': array(['Fimtan'], dtype=object)
+    }
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 4
+- Prefix prompt:
+  ```
+  Hetta eru tekstir saman við spurningum og svar.
+  ```
+- Base prompt template:
+  ```
+  Tekstur: {text}
+  Spurningur: {question}
+  Svara við í mesta lagi trimum orðum: {label}
+  ```
+- Instruction-tuned prompt template:
+  ```
+  Tekstur: {text}
+
+  Svara hesum spurninginum um tekstin uppiyvir við í mesta lagi trimum orðum.
+
+  Spurningur: {question}
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+$ euroeval --model <model-id> --dataset multi-wiki-qa-fo
+```

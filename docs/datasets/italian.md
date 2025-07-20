@@ -438,6 +438,77 @@ $ euroeval --model <model-id> --dataset belebele-it
 ```
 
 
+### Unofficial: MultiWikiQA-it
+
+This dataset will be published in an upcoming paper, and contains Italian Wikipedia
+articles with generated questions and answers, using the LLM Gemini-1.5-pro.
+
+The original full dataset consists of 5,000 samples in a single split. We use a 1,024 /
+256 / 2,048 split for training, validation and testing, respectively, sampled randomly.
+
+Here are a few examples from the training split:
+
+```json
+{
+    'context': 'I Campionati canadesi di sci alpino 2015 si sono svolti a Mont-Sainte-Anne e Nakiska dal 24 febbraio al 29 marzo. Il programma ha incluso gare di supergigante, slalom gigante, slalom speciale e combinata, tutte sia maschili sia femminili; tuttavia le gare di combinata sono state annullate.\n\nTrattandosi di competizioni valide anche ai fini del punteggio FIS, vi hanno partecipato anche sciatori di altre federazioni, senza che questo consentisse loro di concorrere al titolo nazionale canadese.\n\nRisultati\n\nUomini\n\nSupergigante \n\nData: 24 febbraio\nLocalità: Nakiska\nOre: 11.00 (UTC-5)\nPista: \nPartenza: 2\xa0255\xa0m\xa0s.l.m.\nArrivo: 1\xa0790\xa0m\xa0s.l.m.\nDislivello: 465\xa0m\nTracciatore: Richard Jagger\n\nSlalom gigante \n\nData: 26 marzo\nLocalità: Mont-Sainte-Anne\n1ª manche:\nOre: \nPista: \nPartenza: 615\xa0m\xa0s.l.m.\nArrivo: 265\xa0m\xa0s.l.m.\nDislivello: 350\xa0m\nTracciatore: John Kucera\n\n2ª manche:\nOre: \nPista: \nPartenza: 615\xa0m\xa0s.l.m.\nArrivo: 265\xa0m\xa0s.l.m.\nDislivello: 350\xa0m\nTracciatore: Mathieu Roy\n\nSlalom speciale \n\nData: 28 marzo\nLocalità: Mont-Sainte-Anne\n1ª manche:\nOre: \nPista: \nPartenza: 515\xa0m\xa0s.l.m.\nArrivo: 315\xa0m\xa0s.l.m.\nDislivello: 200\xa0m\nTracciatore: Johnny Crichton\n\n2ª manche:\nOre: \nPista: \nPartenza: 515\xa0m\xa0s.l.m.\nArrivo: 315\xa0m\xa0s.l.m.\nDislivello: 200\xa0m\nTracciatore: Duane Baird\n\nCombinata \nLa gara, originariamente in programma il 26 marzo a Mont-Sainte-Anne, è stata annullata.\n\nDonne\n\nSupergigante \n\nData: 24 febbraio\nLocalità: Nakiska\nOre: 9.30 (UTC-5)\nPista: \nPartenza: 2\xa0255\xa0m\xa0s.l.m.\nArrivo: 1\xa0790\xa0m\xa0s.l.m.\nDislivello: 465\xa0m\nTracciatore: Richard Jagger\n\nSlalom gigante \n\nData: 27 marzo\nLocalità: Mont-Sainte-Anne\n1ª manche:\nOre: \nPista: \nPartenza: 615\xa0m\xa0s.l.m.\nArrivo: 265\xa0m\xa0s.l.m.\nDislivello: 350\xa0m\nTracciatore: Peter Rybárik\n\n2ª manche:\nOre: \nPista: \nPartenza: 615\xa0m\xa0s.l.m.\nArrivo: 265\xa0m\xa0s.l.m.\nDislivello: 350\xa0m\nTracciatore: Martin Durocher\n\nSlalom speciale \n\nData: 28 marzo\nLocalità: Mont-Sainte-Anne\n1ª manche:\nOre: \nPista: \nPartenza: 515\xa0m\xa0s.l.m.\nArrivo: 315\xa0m\xa0s.l.m.\nDislivello: 200\xa0m\nTracciatore: Pierre-Luc Dumoulin\n\n2ª manche:\nOre: \nPista: \nPartenza: 515\xa0m\xa0s.l.m.\nArrivo: 315\xa0m\xa0s.l.m.\nDislivello: 200\xa0m\nTracciatore: Brett Zagazowski\n\nCombinata \nLa gara, originariamente in programma il 27 marzo a Mont-Sainte-Anne, è stata annullata.\n\nNote\n\nCollegamenti esterni \n \n \n\nCanadesi\n2015\nSport a Beaupré',
+    'question': "Qual è stato l'autore del tracciato della prima manche dello slalom speciale maschile a Mont-Sainte-Anne?",
+    'answers': {
+        'answer_start': array([1134]),
+        'text': array(['Johnny Crichton'], dtype=object)
+    }
+}
+```
+```json
+{
+    'context': "\n\nCarriera\nTra il 1991 ed il 1995 è tesserato del , club della prima divisione inglese: nelle prime 2 stagioni gioca nelle giovanili, mentre dal 1993 al 1995 è aggregato alla prima squadra, in cui comunque gioca solamente una partita ufficiale, il 14 agosto 1994, quando subentra dalla panchina al 64' nel Charity Shield perso per 2-0 contro il  a Wembley. Nell'arco di queste stagioni trascorre anche un breve periodo in prestito al , club di quarta divisione, con cui nella parte finale della stagione 1993-1994 gioca 11 partite di campionato. Nella seconda parte della stagione 1994-1995 viene ceduto a titolo definitivo allo , con cui realizza 9 reti in 20 partite di campionato, non riuscendo comunque ad evitare la retrocessione in terza divisione del club, con cui in compenso raggiunge le semifinali di Coppa di Lega, risultato a cui contribuisce realizzando 2 reti in altrettante presenze nella competizione. L'anno seguente con 10 reti in 26 presenze contribuisce all'immediato ritorno del club in seconda divisione, categoria nella quale nella stagione 1996-1997 mette a segno 8 reti in 31 presenze.\n\nNell'estate del 1997 passa allo , altro club di seconda divisione, con cui mette a segno 12 reti in 36 partite nel campionato 1997-1998, che si conclude con la retrocessione in terza divisione delle Potteries; l'anno seguente realizza 9 reti in 34 presenze in questa categoria, mentre nella stagione 1999-2000 oltre a vincere un Football League Trophy realizza 24 reti in 45 partite di campionato, a cui aggiunge 16 reti in 38 partite nel campionato successivo. Nella stagione 2000-2001 realizza invece 4 reti in 5 presenze per poi essere ceduto al , altro club di terza divisione, con cui nella rimanente parte della stagione mette a segno 8 reti in 26 presenze. Nella stagione 2002-2003 vince invece i play-off di terza divisione, dopo aver segnato 13 reti in 46 partite di campionato; nella stagione 2003-2004 torna quindi nuovamente a giocare in seconda divisione, categoria nella quale va a segno per 13 volte in 23 presenze. L'anno seguente, che è anche il suo ultimo nel Cardiff City, gioca con maggior regolarità e va nuovamente in doppia cifra di reti segnate: chiude infatti il campionato con 31 presenze e 12 reti. Tra il 2005 ed il 2007 gioca ancora in seconda divisione, con la maglia del , ma con un ruolo da comprimario: nell'arco di 2 stagioni segna infatti solamente una rete in complessive 36 partite di campionato. Al termine della stagione 2006-2007 scende di categoria e si accasa al , in quarta divisione: qui, nelle stagioni 2007-2008 e 2008-2009 gioca stabilmente da titolare e torna a segnare con regolarità (31 reti in 70 partite di campionato nell'arco del biennio), mentre nella stagione 2009-2010, la sua ultima in carriera, perde il posto in squadra e gioca in totale solamente 9 partite fra tutte le competizioni (7 in campionato e 2 nel Football League Trophy) senza mai segnare.\n\nIn carriera ha totalizzato complessivamente 495 presenze e 174 reti nei campionati professionistici inglesi (play-off inclusi), più 25 presenze e 2 reti in FA Cup, 27 presenze e 14 reti in Coppa di Lega, una presenza nel Community Shield e 13 presenze e 7 reti nel Football League Trophy, per un totale complessivo di 561 presenze e 197 reti in carriera in partite ufficiali.\n\nPalmarès\n\nClub\n\nCompetizioni nazionali\n\nStoke: 1999-2000\n\nNote\n\nCollegamenti esterni",
+    'question': "In quale torneo ha disputato l'unico incontro ufficiale il calciatore con il Manchester City?",
+    'answers': {
+        'answer_start': array([306]),
+        'text': array(['Charity Shield'], dtype=object)
+    }
+}
+```
+```json
+{
+    'context': "HD 56779 è una stella bianco-azzurra nella sequenza principale di magnitudine 5,01 situata nella costellazione della Poppa. Dista 959 anni luce dal sistema solare.\n\nOsservazione\nSi tratta di una stella situata nell'emisfero celeste australe. La sua posizione moderatamente australe fa sì che questa stella sia osservabile specialmente dall'emisfero sud, in cui si mostra alta nel cielo nella fascia temperata; dall'emisfero boreale la sua osservazione risulta invece più penalizzata, specialmente al di fuori della sua fascia tropicale. La sua magnitudine pari a 5 fa sì che possa essere scorta solo con un cielo sufficientemente libero dagli effetti dell'inquinamento luminoso.\n\nIl periodo migliore per la sua osservazione nel cielo serale ricade nei mesi compresi fra dicembre e maggio; nell'emisfero sud è visibile anche all'inizio dell'inverno, grazie alla declinazione australe della stella, mentre nell'emisfero nord può essere osservata limitatamente durante i mesi della tarda estate boreale.\n\nCaratteristiche fisiche\nLa stella è una bianco-azzurra nella sequenza principale; possiede una magnitudine assoluta di -2,33 e la sua velocità radiale positiva indica che la stella si sta allontanando dal sistema solare.\n\nVoci correlate\nStelle principali della costellazione della Poppa\n\nCollegamenti esterni\n\nStelle di classe spettrale B\nStelle bianco-azzurre di sequenza principale",
+    'question': 'Quanto è distante HD 56779 dal nostro sistema solare?',
+    'answers': {
+        'answer_start': array([130]),
+        'text': array(['959 anni luce'], dtype=object)
+    }
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 4
+- Prefix prompt:
+  ```
+  I testi che seguono sono accompagnati da domande e risposte.
+  ```
+- Base prompt template:
+  ```
+  Testo: {text}
+  Domanda: {question}
+  Rispondere in massimo 3 parole: {label}
+  ```
+- Instruction-tuned prompt template:
+  ```
+  Testo: {text}
+
+  Rispondi alla seguente domanda sul in un massimo di 3 parole.
+
+  Domanda: {question}
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+$ euroeval --model <model-id> --dataset multi-wiki-qa-it
+```
+
+
 ## Knowledge
 
 ### MMLU-it

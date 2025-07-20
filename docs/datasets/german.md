@@ -346,6 +346,76 @@ $ euroeval --model <model-id> --dataset belebele-de
 ```
 
 
+### Unofficial: MultiWikiQA-de
+
+This dataset will be published in an upcoming paper, and contains German Wikipedia
+articles with generated questions and answers, using the LLM Gemini-1.5-pro.
+
+The original full dataset consists of 5,000 samples in a single split. We use a 1,024 /
+256 / 2,048 split for training, validation and testing, respectively, sampled randomly.
+
+Here are a few examples from the training split:
+
+```json
+{
+    'context': 'Claire Patricia Grogan (* 17. März 1962 in Glasgow, Schottland) ist eine britische Schauspielerin, Popsängerin sowie Kinder- und Jugendbuchautorin.\n\nTrotz abweichender Schreibweise ist sie seit Beginn ihrer Karriere unter dem Namen Clare Grogan bekannt. Im Fernsehen trat sie später als C.P. Grogan auf, da es in der britischen Künstlergewerkschaft Equity eine andere Person gleichen Namens gab.\n\nLeben \nClare Grogan wurde vom schottischen Filmregisseur Bill Forsyth in Glasgow entdeckt, wo sie in einem Restaurant als Kellnerin arbeitete. Im Alter von 19 Jahren spielte sie die Rolle der Susan im Spielfilm Gregory’s Girl. Zu diesem Zeitpunkt feierte sie bereits als Sängerin der New-Wave-Band Altered Images erste Erfolge. Mit Titeln wie Happy Birthday und I Could Be Happy wurde die Band Anfang der 1980er-Jahre auch außerhalb Großbritanniens bekannt. Sie löste sich 1984 nach der Produktion des dritten Albums aufgrund nachlassenden Publikumszuspruchs auf.\n\n1987 startete Grogan den Versuch einer Solokarriere, hatte mit ihrer Single Love Bomb jedoch keinen Erfolg. Auch ihr Album Trash Mad wurde nie veröffentlicht. Musikalisch trat sie danach nur noch selten in Erscheinung. 1993 war sie an der Produktion des Musikvideos Young at Heart der Gruppe Bluebells beteiligt. Der Titel stand vier Wochen lang auf dem ersten Platz der britischen Singlecharts. 2000 steuerte sie den Gesang im Song Night Falls Like A Grand Piano aus dem Album Hyacinths and Thistles der Band The 6ths bei. Im zwei Jahre später veröffentlichten The Ultimate Celtic Album ist sie mit dem Stück Her Hooped Dream vertreten. Für das 2003 erschienene Album A Tribute to Frankie Miller nahm sie eine neue Version von Angels With Dirty Faces auf. Nach einer 18-jährigen Pause trat sie in den 2000er-Jahren mit wechselnden Musikern mehrmals bei der Here and Now Tour, beim Rewind Festival sowie ähnlichen Revival-Veranstaltungen in Großbritannien und Irland unter dem Namen Altered Images auf.\n\nIm Jahr 1985 setzte sie ihre zweite Karriere als Schauspielerin mit einer kleinen Rolle als Empfangsdame in der sechsteiligen BBC-Produktion Blott on the Landscape fort. In der Science-Fiction-Fernsehserie Red Dwarf spielte sie die Kristine Kochanski, wurde später aber durch die Schauspielerin Chloë Annett ersetzt. Weitere Auftritte in den Serien Father Ted und EastEnders sowie in den britischen Spielfilmen Bury It und The Penalty King folgten. Grogan war auch Moderatorin im Musiksender VH1 und Gastgeberin einer Talkshow. Zuweilen half sie als Sprecherin beim Radiosender BBC Radio 6 Music aus.\n\nAls Autorin debütierte Grogan im Oktober 2008 mit dem Kinderbuch Tallulah and the Teenstars. Es erzählt die Geschichte einer Schülerin, die eine Popband gründet und den aufkommenden Erfolg bewältigen muss. Ende 2011 erschien eine Fortsetzung mit dem Titel Tallulah on Tour.\n\n1994 heiratete Grogan den Produzenten Steve Lironi, früher selbst Gitarrist und Schlagzeuger der Altered Images. Das Paar adoptierte 2005 ein Mädchen und lebt im Londoner Stadtbezirk London Borough of Haringey.\n\nWerke\n\nKinofilme und Fernsehproduktionen \n 1980: Gregory’s Girl\n 1984: Comfort and Joy\n 1985: Blott on the Landscape (britische Fernsehserie)\n 1988: Red Dwarf (britische Fernsehserie), Episoden The End, Balance of Power und Stasis Leak\n 1993: Red Dwarf, Episode Psirens\n 1996: Father Ted (britische Fernsehserie), Episode Rock-a-Hula Ted\n 1997: Jilting Joe\n 1997: EastEnders (britische Fernsehserie), zwei Episoden\n 2002: Bury It\n 2006: The Penalty King\n 2007: Legit (britische Fernsehserie), Episoden Birthday, Manitoba und Night of the Lobster\n 2011: Skins – Hautnah, Episode Mini\n 2012: Waterloo Road (britische Fernsehserie), Episode Future Proof\n\nBücher \n 2008: Tallulah and the Teenstars\n 2011: Tallulah on Tour\n\nWeblinks\n\nEinzelnachweise \n\nFilmschauspieler\nAutor\nPopsänger\nLiteratur (21. Jahrhundert)\nLiteratur (Englisch)\nKinder- und Jugendliteratur\nMusiker (Vereinigtes Königreich)\nPerson (Glasgow)\nSchotte\nBrite\nGeboren 1962\nFrau',
+    'question': 'Was war Clare Grogans Tätigkeit, bevor sie von Bill Forsyth entdeckt wurde?',
+    'answers': {
+        'answer_start': array([519]),
+        'text': array(['Kellnerin'], dtype=object)
+    }
+}
+```
+```json
+{
+    'context': 'Claris International Inc. (bis August 2019 FileMaker, Inc.) ist eine hundertprozentige US-amerikanische Tochtergesellschaft des kalifornischen Computerherstellers Apple, die die Datenbanksoftware FileMaker entwickelt. Die Firma FileMaker entstand 1998 als Nachfolgerin von Claris, die ihrerseits 1987 als Ableger von Apple gegründet worden war.\n\nGeschichte \nClaris wurde Anfang 1998 aufgelöst. Das Programm FileMaker Pro wurde Grundlage des neu gegründeten Unternehmens FileMaker, Inc.\n\nProdukte von Claris waren:\n ClarisCAD, ein CAD-Programm\n Claris MacDraw, ein Zeichenprogramm\n Claris Em@iler, ein E-Mail-Programm\n FileMaker, später FileMaker Pro, das dominierende Datenbankprogramm auf der Macintosh-Plattform\n Claris Home Page, ein HTML-Editor\n Claris Impact, ein Präsentationsprogramm\n Claris MacWrite Pro, eine Textverarbeitung\n Claris Organizer, ein Personal Information Manager\n Claris Resolve, eine Tabellenkalkulation\n ClarisWorks, ein Büropaket, das später von Apple als AppleWorks weitergeführt wurde\n Claris MacPaint, ein Bildbearbeitungsprogramm\n\nVon 2008 bis 2013 wurde die persönliche Datenbankanwendung Bento verkauft.\n\nIm August 2019 gab das Unternehmen bekannt, zum alten Unternehmensnamen Claris zurückzukehren.\n\nEinzelnachweise \n\nApple\nSoftwarehersteller (Vereinigte Staaten)\nUnternehmen (Santa Clara, Kalifornien)\nGegründet 1998',
+    'question': 'Unter welchem Namen war FileMaker, Inc. früher bekannt, bevor es in Claris International Inc. umbenannt wurde?',
+    'answers': {
+        'answer_start': array([31]),
+        'text': array(['August 2019'], dtype=object)
+    }
+}
+```
+```json
+{
+    'context': "Augusta Marie Gertrude von Hanau (* 21. September 1829 in Niederdorfelden; † 18. September 1887 in Halle) war die unehelich geborene älteste Tochter des Kurfürsten Friedrich Wilhelm I. von Hessen-Kassel (1802–1875) und seiner erst späteren Ehefrau Gertrude, spätere Fürstin von Hanau und zu Hořowitz (1803–1882).\n\nKurprinz Friedrich Wilhelm lernte seine Frau kennen, als diese noch mit dem Leutnant Karl Michael Lehmann (1787–1882) verheiratet war, beging mit ihr Ehebruch, erreichte schließlich die Scheidung und heiratete sie 1831. Augusta Marie Gertrude wurde so zu einer Zeit geboren, als ihre Mutter noch eine verheiratete Lehmann war. Sie wurde deshalb zunächst vom damaligen Mann ihrer Mutter als ehelich anerkannt. Erst nach der Scheidung und der Heirat von Gertrude Lehmann mit dem Kurprinzen verzichtete Karl Michael Lehmann auf die Vaterschaftsrechte. Augusta Marie Gertrude Lehmann wurde nun von ihrem leiblichen Vater zur Gräfin Schaumburg und später zur Prinzessin von Hanau erhoben.\n\nAm 17. Juli 1849 heiratete sie den Grafen Ferdinand Maximilian zu Ysenburg-Büdingen (* 24. Oktober 1823; † 5. Mai 1903). Dieser war mental wohl etwas gestört. Nachdem eine Kasseler Zeitung 1853 seine Frau „Erlaucht“ statt „Durchlaucht“ betitelt hatte, griff er den Ersten Minister seines Schwiegervaters, Ludwig Hassenpflug, tätlich an und verletzte ihn mit Stockschlägen. Er kam darauf vorübergehend in eine Klinik. 1865 wurde er durch den Kurfürsten in den Fürstenstand erhoben und nannte sich nun Ferdinand-Maximillian I.\n\nFürstin Augusta Marie Gertrude hatte ein sehr enges Verhältnis zu ihrem Vater. Als er 1866 nach dem gegen Preußen verlorenen Krieg in Stettin als Kriegsgefangener einsaß, besuchte sie ihn.\n\nSie starb in Halle, wohin sie ihren Mann begleitet hatte, der sich dort einer Operation unterziehen musste.\n\nLiteratur \n Rüdiger Ham: Ludwig Hassenpflug: Staatsmann und Jurist zwischen Revolution und Reaktion. Eine politische Biographie = Studien zur Geschichtsforschung der Neuzeit 50. Hamburg 2007. ISBN 978-3-8300-2764-5\nMichel Huberty: L' Allemagne dynastique: Les 15 familles qui ont fait l'empire. Bd. 1: Hesse - Reuss - Saxe. Le Perreux-sur-Marne 1976. ISBN 2-901138-01-2\n Philipp Losch: Die Fürstin von Hanau und ihre Kinder. In: Hanauer Geschichtsblätter 13 (1939), S. 33.\n\nWeblinks\n\nEinzelnachweise \n\nFriedrich Wilhelm I. (Hessen-Kassel)\nTitularfürst (Isenburg)\nFamilienmitglied des Hauses Hanau-Hořovice\n⚭Augusta Marie Gertrude #Hanau\nDeutscher\nGeboren 1829\nGestorben 1887\nFrau",
+    'question': 'Wann wurde Ferdinand Maximilian von Ysenburg-Büdingen Fürst?',
+    'answers': {
+        'answer_start': array([1416]),
+        'text': array(['1865'], dtype=object)
+    }
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 4
+- Prefix prompt:
+  ```
+  Im Folgenden finden Sie Texte mit den dazugehörigen Fragen und Antworten.
+  ```
+- Base prompt template:
+  ```
+  Text: {text}
+  Fragen: {question}
+  Fragen Antwort in maximal 3 Wörtern: {label}
+  ```
+- Instruction-tuned prompt template:
+  ```
+  Text: {text}
+
+  Beantworten Sie die folgende Frage zum obigen Text in höchstens 3 Wörtern.
+
+  Frage: {question}
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+$ euroeval --model <model-id> --dataset multi-wiki-qa-de
+
+
 ## Knowledge
 
 ### MMLU-de
