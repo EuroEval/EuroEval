@@ -311,8 +311,6 @@ When evaluating generative models, we use the following setup (see the
 
   Beantwoord de volgende vraag over de bovenstaande tekst in maximaal 3 woorden.
 
-  Besvar følgende spørgsmål om teksten ovenfor med maks. 3 ord.
-
   Vraag: {question}
   ```
 
@@ -450,8 +448,6 @@ When evaluating generative models, we use the following setup (see the
   Tekst: {text}
 
   Beantwoord de volgende vraag over de bovenstaande tekst in maximaal 3 woorden.
-
-  Besvar følgende spørgsmål om teksten ovenfor med maks. 3 ord.
 
   Vraag: {question}
   ```
