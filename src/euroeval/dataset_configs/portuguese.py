@@ -77,4 +77,5 @@ BOOLQ_PT_CONFIG = DatasetConfig(
     huggingface_id="EuroEval/boolq-pt",
     task=MCRC,
     languages=[PT],
+    unofficial=True,
 )
