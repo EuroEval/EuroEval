@@ -36,7 +36,7 @@ MULTI_WIKI_QA_PT_CONFIG = DatasetConfig(
     name="multi-wiki-qa-pt",
     pretty_name="the truncated version of the Portuguese reading comprehension dataset "
     "MultiWikiQA-pt",
-    huggingface_id="EuroEval/multi-wiki-qa-pt-mini",
+    huggingface_id="EuroEval/multi-wiki-qa-pt-pt-mini",
     task=RC,
     languages=[PT],
 )
