@@ -120,9 +120,9 @@ RC_TEMPLATES = {
     PT: PromptConfig(
         default_prompt_prefix="Os textos que se seguem são acompanhados de perguntas "
         "e respostas.",
-        default_prompt_template="Texto: {texto}\nPergunta: {question}\nResposta com "
+        default_prompt_template="Texto: {text}\nPergunta: {question}\nResposta com "
         "um máximo de 3 palavras: {label}",
-        default_instruction_prompt="Texto: {texto}\n\nResponde à seguinte pergunta "
+        default_instruction_prompt="Texto: {text}\n\nResponde à seguinte pergunta "
         "sobre o texto acima num máximo de 3 palavras.\n\nPergunta: {question}",
         default_prompt_label_mapping=dict(),
     ),
