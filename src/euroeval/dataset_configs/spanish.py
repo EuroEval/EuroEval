@@ -87,3 +87,13 @@ BELEBELE_ES_CONFIG = DatasetConfig(
     languages=[ES],
     unofficial=True,
 )
+
+MULTI_WIKI_QA_ES_CONFIG = DatasetConfig(
+    name="multi-wiki-qa-es",
+    pretty_name="the truncated version of the Spanish reading comprehension dataset "
+    "MultiWikiQA-es",
+    huggingface_id="EuroEval/multi-wiki-qa-es-mini",
+    task=RC,
+    languages=[ES],
+    unofficial=True,
+)

@@ -110,3 +110,13 @@ BELEBELE_NL_CONFIG = DatasetConfig(
     languages=[NL],
     unofficial=True,
 )
+
+MULTI_WIKI_QA_NL_CONFIG = DatasetConfig(
+    name="multi-wiki-qa-nl",
+    pretty_name="the truncated version of the Dutch reading comprehension dataset "
+    "MultiWikiQA-nl",
+    huggingface_id="EuroEval/multi-wiki-qa-nl-mini",
+    task=RC,
+    languages=[NL],
+    unofficial=True,
+)

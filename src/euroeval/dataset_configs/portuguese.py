@@ -2,7 +2,7 @@
 
 from ..data_models import DatasetConfig
 from ..languages import PT
-from ..tasks import COMMON_SENSE, KNOW, LA, MCRC, NER, SENT, SUMM
+from ..tasks import COMMON_SENSE, KNOW, LA, MCRC, NER, RC, SENT, SUMM
 
 ### Official datasets ###
 
@@ -15,27 +15,6 @@ SST2_PT_CONFIG = DatasetConfig(
     languages=[PT],
     _labels=["positive", "negative"],
 )
-
-
-MMLU_PT_CONFIG = DatasetConfig(
-    name="mmlu-pt",
-    pretty_name="the truncated version of the Portuguese knowledge dataset MMLU-pt, "
-    "translated from the English MMLU dataset",
-    huggingface_id="EuroEval/mmlu-pt-mini",
-    task=KNOW,
-    languages=[PT],
-)
-
-
-GOLDENSWAG_PT_CONFIG = DatasetConfig(
-    name="goldenswag-pt",
-    pretty_name="the truncated version of the Portuguese common-sense reasoning "
-    "dataset GoldenSwag-pt, translated from the English GoldenSwag dataset",
-    huggingface_id="EuroEval/goldenswag-pt-mini",
-    task=COMMON_SENSE,
-    languages=[PT],
-)
-
 
 SCALA_PT = DatasetConfig(
     name="scala-pt",
@@ -53,11 +32,38 @@ HAREM_CONFIG = DatasetConfig(
     languages=[PT],
 )
 
+MULTI_WIKI_QA_PT_CONFIG = DatasetConfig(
+    name="multi-wiki-qa-pt",
+    pretty_name="the truncated version of the Portuguese reading comprehension dataset "
+    "MultiWikiQA-pt",
+    huggingface_id="EuroEval/multi-wiki-qa-pt-mini",
+    task=RC,
+    languages=[PT],
+)
+
 PUBLICO_CONFIG = DatasetConfig(
     name="publico",
     pretty_name="the truncated version of the Portuguese summarisation dataset Público",
     huggingface_id="EuroEval/publico-mini",
     task=SUMM,
+    languages=[PT],
+)
+
+MMLU_PT_CONFIG = DatasetConfig(
+    name="mmlu-pt",
+    pretty_name="the truncated version of the Portuguese knowledge dataset MMLU-pt, "
+    "translated from the English MMLU dataset",
+    huggingface_id="EuroEval/mmlu-pt-mini",
+    task=KNOW,
+    languages=[PT],
+)
+
+GOLDENSWAG_PT_CONFIG = DatasetConfig(
+    name="goldenswag-pt",
+    pretty_name="the truncated version of the Portuguese common-sense reasoning "
+    "dataset GoldenSwag-pt, translated from the English GoldenSwag dataset",
+    huggingface_id="EuroEval/goldenswag-pt-mini",
+    task=COMMON_SENSE,
     languages=[PT],
 )
 
