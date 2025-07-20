@@ -13,6 +13,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   Gemini-1.5-pro. It has been set as unofficial for all languages except Portuguese,
   which did not have an official reading comprehension dataset previously.
 
+### Fixed
+- Updated lower bound version of the `accelerate` dependency to `1.9.0`, as this is
+  required to evaluate some ModernBERT models.
+
 
 ## [v15.12.0] - 2025-07-19
 ### Added
