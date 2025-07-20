@@ -1,7 +1,7 @@
 """Templates for the Reading Comprehension task."""
 
 from ..data_models import PromptConfig
-from ..languages import DA, DE, EN, ES, FI, FO, FR, IS, IT, NB, NL, NN, NO, SV
+from ..languages import DA, DE, EN, ES, FI, FO, FR, IS, IT, NB, NL, NN, NO, PT, SV
 
 RC_TEMPLATES = {
     DA: PromptConfig(
@@ -115,6 +115,15 @@ RC_TEMPLATES = {
         "ord: {label}",
         default_instruction_prompt="Tekst: {text}\n\nBesvar følgende spørsmål om "
         "teksten ovenfor med maks 3 ord.\n\nSpørsmål: {question}",
+        default_prompt_label_mapping=dict(),
+    ),
+    PT: PromptConfig(
+        default_prompt_prefix="Os textos que se seguem são acompanhados de perguntas "
+        "e respostas.",
+        default_prompt_template="Texto: {texto}\nPergunta: {question}\nResposta com "
+        "um máximo de 3 palavras: {label}",
+        default_instruction_prompt="Texto: {texto}\n\nResponde à seguinte pergunta "
+        "sobre o texto acima num máximo de 3 palavras.\n\nPergunta: {question}",
         default_prompt_label_mapping=dict(),
     ),
     SV: PromptConfig(
