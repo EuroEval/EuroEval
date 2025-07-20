@@ -121,8 +121,8 @@ BELEBELE_DA_CONFIG = DatasetConfig(
 
 MULTI_WIKI_QA_DA_CONFIG = DatasetConfig(
     name="multi-wiki-qa-da",
-    pretty_name="the truncated version of the Danish reading comprehension dataset "
-    "MultiWikiQA-da",
+    pretty_name="the truncated version of the Danish part of the reading "
+    "comprehension dataset MultiWikiQA",
     huggingface_id="EuroEval/multi-wiki-qa-da-mini",
     task=RC,
     languages=[DA],

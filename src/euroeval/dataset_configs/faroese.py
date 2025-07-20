@@ -55,8 +55,8 @@ WIKIANN_FO_CONFIG = DatasetConfig(
 
 MULTI_WIKI_QA_FO_CONFIG = DatasetConfig(
     name="multi-wiki-qa-fo",
-    pretty_name="the truncated version of the Faroese reading comprehension dataset "
-    "MultiWikiQA-fo",
+    pretty_name="the truncated version of the Faroese part of the reading "
+    "comprehension dataset MultiWikiQA",
     huggingface_id="EuroEval/multi-wiki-qa-fo-mini",
     task=RC,
     languages=[FO],

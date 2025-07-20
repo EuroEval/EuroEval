@@ -84,8 +84,8 @@ BELEBELE_FR_CONFIG = DatasetConfig(
 
 MULTI_WIKI_QA_FR_CONFIG = DatasetConfig(
     name="multi-wiki-qa-fr",
-    pretty_name="the truncated version of the French reading comprehension dataset "
-    "MultiWikiQA-fr",
+    pretty_name="the truncated version of the French part of the reading "
+    "comprehension dataset MultiWikiQA",
     huggingface_id="EuroEval/multi-wiki-qa-fr-mini",
     task=RC,
     languages=[FR],

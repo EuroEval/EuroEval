@@ -98,8 +98,8 @@ MMLU_CONFIG = DatasetConfig(
 
 MULTI_WIKI_QA_EN_CONFIG = DatasetConfig(
     name="multi-wiki-qa-en",
-    pretty_name="the truncated version of the English reading comprehension dataset "
-    "MultiWikiQA-en",
+    pretty_name="the truncated version of the English part of the reading "
+    "comprehension dataset MultiWikiQA",
     huggingface_id="EuroEval/multi-wiki-qa-en-mini",
     task=RC,
     languages=[EN],

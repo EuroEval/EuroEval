@@ -34,8 +34,8 @@ HAREM_CONFIG = DatasetConfig(
 
 MULTI_WIKI_QA_PT_CONFIG = DatasetConfig(
     name="multi-wiki-qa-pt",
-    pretty_name="the truncated version of the Portuguese reading comprehension dataset "
-    "MultiWikiQA-pt",
+    pretty_name="the truncated version of the Portuguese part of the reading "
+    "comprehension dataset MultiWikiQA",
     huggingface_id="EuroEval/multi-wiki-qa-pt-pt-mini",
     task=RC,
     languages=[PT],

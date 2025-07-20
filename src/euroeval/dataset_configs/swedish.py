@@ -101,8 +101,8 @@ BELEBELE_SV_CONFIG = DatasetConfig(
 
 MULTI_WIKI_QA_SV_CONFIG = DatasetConfig(
     name="multi-wiki-qa-sv",
-    pretty_name="the truncated version of the Swedish reading comprehension dataset "
-    "MultiWikiQA-sv",
+    pretty_name="the truncated version of the Swedish part of the reading "
+    "comprehension dataset MultiWikiQA",
     huggingface_id="EuroEval/multi-wiki-qa-sv-mini",
     task=RC,
     languages=[SV],
