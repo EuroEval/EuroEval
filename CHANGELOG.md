@@ -7,7 +7,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 
 ## [Unreleased]
-
+### Fixed
+- Updated lower bound version of the `accelerate` dependency to `1.9.0`, as this is
+  required to evaluate some ModernBERT models.
 
 
 ## [v15.12.0] - 2025-07-19
