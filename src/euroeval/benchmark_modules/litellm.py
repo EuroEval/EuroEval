@@ -72,6 +72,7 @@ from ..utils import (
     create_model_cache_dir,
     log_once,
     safe_run,
+    split_model_id
 )
 from .base import BenchmarkModule
 from .hf import HuggingFaceEncoderModel, load_hf_model_config, load_tokenizer
@@ -219,24 +220,36 @@ class LiteLLMModel(BenchmarkModule):
         Returns:
             The generative type of the model, or None if it has not been set yet.
         """
+        param = ""
+
+        if self.model_config.parameter:
+            param = self.model_config.parameter
+        elif self.model_config.revision in ALLOWED_PARAMS.get(self.model_config.model_id, []):
+            import warnings
+            warnings.warn(
+        f"Using '@' for parameters (like '{self.model_config.revision}') is deprecated. "
+        f"Please use '#' instead (e.g., '{self.model_config.model_id}#{self.model_config.revision}').",
+        DeprecationWarning,
+        stacklevel=2
+    )
+            param = self.model_config.revision
         if self.is_ollama:
             reasoning_model = "thinking" in (self._ollama_show.capabilities or [])
             type_ = (
-                GenerativeType.REASONING
-                if reasoning_model
-                else GenerativeType.INSTRUCTION_TUNED
+            GenerativeType.REASONING
+            if reasoning_model
+            else GenerativeType.INSTRUCTION_TUNED
             )
-        elif self.model_config.revision in {"thinking"}:
+        elif param in {"thinking"}:
             type_ = GenerativeType.REASONING
-        elif self.model_config.revision in {"no-thinking"}:
+        elif param in {"no-thinking"}:
             type_ = GenerativeType.INSTRUCTION_TUNED
         elif re.fullmatch(
             pattern="|".join(REASONING_MODELS), string=self.model_config.model_id
-        ):
+            ):
             type_ = GenerativeType.REASONING
         else:
             type_ = GenerativeType.INSTRUCTION_TUNED
-
         log_once(
             f"Detected generative type {type_.name!r} for model "
             f"{self.model_config.model_id!r}",
@@ -352,24 +365,38 @@ class LiteLLMModel(BenchmarkModule):
         if self.buffer["first_label_token_mapping"]:
             generation_kwargs["logprobs"] = True
             generation_kwargs["top_logprobs"] = MAX_LOGPROBS
-        if self.model_config.revision == "thinking":
-            generation_kwargs["thinking"] = dict(
+
+        param = ""
+
+        if self.model_config.parameter:
+            param = self.model_config.parameter
+        elif self.model_config.revision in ALLOWED_PARAMS.get(self.model_config.model_id, []):
+            import warnings
+            warnings.warn(
+        f"Using '@' for parameters (like '{self.model_config.revision}') is deprecated. "
+        f"Please use '#' instead (e.g., '{self.model_config.model_id}#{self.model_config.revision}').",
+        DeprecationWarning,
+        stacklevel=2
+    )
+            param = self.model_config.revision
+        if param == "thinking":
+                generation_kwargs["thinking"] = dict(
                 type="enabled", budget_tokens=REASONING_MAX_TOKENS - 1
-            )
-            log_once(
+              )
+                log_once(
                 f"Enabling thinking mode for model {self.model_config.model_id!r}",
                 level=logging.DEBUG,
             )
-        elif self.model_config.revision == "no-thinking":
-            generation_kwargs["thinking"] = dict(type="disabled", budget_tokens=0)
-            log_once(
+        elif param == "no-thinking":
+                generation_kwargs["thinking"] = dict(type="disabled", budget_tokens=0)
+                log_once(
                 f"Disabling thinking mode for model {self.model_config.model_id!r}",
                 level=logging.DEBUG,
             )
-        elif self.model_config.revision in {"low", "medium", "high"}:
-            generation_kwargs["reasoning_effort"] = self.model_config.revision
-            log_once(
-                f"Enabling reasoning effort {self.model_config.revision!r} for model "
+        elif param in {"low", "medium", "high"}:
+                generation_kwargs["reasoning_effort"] = param
+                log_once(
+                f"Enabling reasoning effort {param!r} for model "
                 f"{self.model_config.model_id!r}",
                 level=logging.DEBUG,
             )
@@ -1038,7 +1065,7 @@ class LiteLLMModel(BenchmarkModule):
             Whether the model exists, or an error describing why we cannot check
             whether the model exists.
         """
-        model_id, _ = model_id.split("@") if "@" in model_id else (model_id, "main")
+        model_id, _, _ = split_model_id(model_id)
         if model_id in litellm.model_list:
             return True
 
@@ -1124,12 +1151,13 @@ class LiteLLMModel(BenchmarkModule):
                 The benchmark configuration.
 
         Returns:
-            The model configuration.
+            The model configuration. 
         """
-        model_id, revision = model_id.split("@") if "@" in model_id else (model_id, "")
+        model_id, revision, parameter = split_model_id(model_id)
         return ModelConfig(
             model_id=model_id,
-            revision=revision,
+            revision=revision, 
+            parameter=parameter,
             task="text-generation",
             languages=list(),
             merge=False,
@@ -1222,21 +1250,29 @@ def raise_if_wrong_params(
         InvalidModel:
             If the model configuration has invalid parameters.
     """
-    param = model_config.revision
-    if param == "":
-        return
-    for model_regex, allowed_params_list in allowed_params.items():
-        if re.fullmatch(pattern=model_regex, string=model_config.model_id):
-            if param not in allowed_params_list:
-                msg = (
-                    f"Invalid parameter {param!r} for model {model_config.model_id!r}."
+    if model_config.parameter and model_config.parameter != "":
+        for model_regex, allowed_params_list in allowed_params.items():
+            if re.fullmatch(pattern=model_regex, string=model_config.model_id):
+                if model_config.parameter not in allowed_params_list:
+                    msg = (
+                    f"Invalid parameter {model_config.parameter!r} for model {model_config.model_id!r}."
                 )
-                if allowed_params_list:
-                    msg += f" Allowed parameters are: {', '.join(allowed_params_list)}."
-                else:
-                    msg += " No parameters are allowed."
-                raise InvalidModel(msg)
-            return
+                    if allowed_params_list:
+                        msg += f" Allowed parameters are: {', '.join(allowed_params_list)}."
+                    else:
+                        msg += " No parameters are allowed."
+                    raise InvalidModel(msg)
+                return
+    if model_config.revision in ALLOWED_PARAMS.get(model_config.model_id, []):
+        import warnings
+        warnings.warn(
+            f"Using '@' for parameters (like '{model_config.revision}') is deprecated. "
+            f"Please use '#' instead (e.g., '{model_config.model_id}#{model_config.revision}').",
+            DeprecationWarning,
+            stacklevel=2
+        )
+        return 
+        
 
 
 def try_download_ollama_model(model_id: str) -> bool:

@@ -70,6 +70,7 @@ from ..utils import (
     get_class_by_name,
     internet_connection_available,
     log_once,
+    split_model_id
 )
 from .base import BenchmarkModule
 
@@ -499,11 +500,9 @@ class HuggingFaceEncoderModel(BenchmarkModule):
             Whether the model exists, or an error describing why we cannot check
             whether the model exists.
         """
-        model_id, revision = (
-            model_id.split("@") if "@" in model_id else (model_id, "main")
-        )
+        model_id, revision, parameter = split_model_id(model_id)
         model_info = get_model_repo_info(
-            model_id=model_id, revision=revision, benchmark_config=benchmark_config
+            model_id=model_id, revision=revision, parameter=parameter, benchmark_config=benchmark_config
         )
         return (
             model_info is not None
@@ -525,13 +524,11 @@ class HuggingFaceEncoderModel(BenchmarkModule):
         Returns:
             The model configuration.
         """
-        model_id, revision = (
-            model_id.split("@") if "@" in model_id else (model_id, "main")
-        )
+        model_id, revision, parameter = split_model_id(model_id) 
         model_info = get_model_repo_info(
-            model_id=model_id, revision=revision, benchmark_config=benchmark_config
+            model_id=model_id, revision=revision, parameter=parameter, benchmark_config=benchmark_config
         )
-        if model_info is None:
+        if model_info is None: 
             raise InvalidModel(f"The model {model_id!r} could not be found.")
 
         language_mapping = get_all_languages()
@@ -724,7 +721,7 @@ def get_model_repo_info(
     """
     token = benchmark_config.api_key or os.getenv("HUGGINGFACE_API_KEY") or True
     hf_api = HfApi(token=token)
-    model_id, revision = model_id.split("@") if "@" in model_id else (model_id, "main")
+    model_id, revision, parameter = split_model_id(model_id)
 
     # Get information on the model.
     # The first case is when the model is a local model, in which case we create a dummy

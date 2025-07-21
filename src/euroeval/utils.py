@@ -14,6 +14,7 @@ import warnings
 from functools import cache
 from pathlib import Path
 
+
 import litellm
 import numpy as np
 import requests
@@ -373,3 +374,30 @@ async def add_semaphore_and_catch_exception(
             return await coroutine
         except Exception as exc:
             return exc
+        
+def split_model_id(model_id: str) -> tuple[str, str, str]:
+    """Split a model ID into base ID, revision, and parameter.
+    
+    Args:
+        model_id:
+            The model ID, which may contain a revision (after @) or parameter 
+            (after #), but never both.
+            
+    Returns:
+        A tuple of (base_model_id, revision, parameter). Only one of revision or
+        parameter will be non-empty.
+    """
+    if '@' in model_id:
+        base_model_id, revision = model_id.split('@', 1)
+        parameter = ""
+    elif '#' in model_id:
+        base_model_id, parameter = model_id.split('#', 1)
+        revision = ""
+    else:
+        base_model_id = model_id
+        revision = ""
+        parameter = ""
+ 
+    return base_model_id, revision, parameter
+
+
