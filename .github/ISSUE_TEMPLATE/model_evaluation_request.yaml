@@ -18,7 +18,7 @@ body:
       What languages should this model be evaluated on? Tick all that apply. If the
       model is multilingual (e.g., Mistral, Llama), then tick all the languages.
     options:
-      - label: Romance languages (French, Italian, Spanish)
+      - label: Romance languages (French, Italian, Portuguese, Spanish)
       - label: Scandinavian languages (Danish, Faroese, Icelandic, Norwegian, Swedish)
       - label: West Germanic languages (Dutch, English, German)
       - label: Finnish
