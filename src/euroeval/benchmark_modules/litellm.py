@@ -361,7 +361,7 @@ class LiteLLMModel(BenchmarkModule):
                 level=logging.DEBUG,
             )
         elif self.model_config.revision == "no-thinking":
-            generation_kwargs["thinking"] = dict(type="disabled", budget_tokens=0)
+            generation_kwargs["thinking"] = dict(type="disabled")
             log_once(
                 f"Disabling thinking mode for model {self.model_config.model_id!r}",
                 level=logging.DEBUG,

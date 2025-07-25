@@ -7,7 +7,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 
 ## [Unreleased]
-
+### Fixed
+- Disabling thinking (with the `@no-thinking` suffix) did not work properly for
+  Anthropic models, as they don't support the `budget_tokens` parameter when thinking
+  is disabled. This has been fixed now, so that the `@no-thinking` suffix now works
+  properly for all models that support it.
 
 
 ## [v15.13.0] - 2025-07-21
