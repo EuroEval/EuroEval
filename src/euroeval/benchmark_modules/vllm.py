@@ -764,7 +764,7 @@ def load_model_and_tokenizer(
             revision=revision,
             seed=4242,
             distributed_executor_backend=(
-                "ray" if torch.cuda.device_count() > 1 else "mp"
+                "ray" if torch.cuda.device_count() > 1 and False else "mp"
             ),
             tensor_parallel_size=torch.cuda.device_count(),
             disable_custom_all_reduce=True,
