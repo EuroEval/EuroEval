@@ -171,9 +171,6 @@ class VLLMModel(HuggingFaceEncoderModel):
 
     def __del__(self) -> None:
         """Clean up the model and tokenizer."""
-        logger.debug("In __del__ method of VLLMModel.")
-        breakpoint()
-
         clear_vllm()
         if hasattr(self, "_model"):
             del self._model
@@ -754,9 +751,6 @@ def load_model_and_tokenizer(
         token=benchmark_config.api_key or os.getenv("HUGGINGFACE_API_KEY") or True,
     )
 
-    logger.debug("In load_model_and_tokenizer function.")
-    breakpoint()
-
     clear_vllm()
 
     try:
@@ -890,6 +884,7 @@ def load_tokenizer(
 
 def clear_vllm() -> None:
     """Clear the GPU memory used by the vLLM model, enabling re-initialisation."""
+    breakpoint()
     with contextlib.suppress(ValueError):
         destroy_model_parallel()
         destroy_distributed_environment()
