@@ -495,7 +495,6 @@ class Benchmarker:
                     f"{total_benchmarks} benchmarks."
                 )
 
-            breakpoint()
             del loaded_model
             if benchmark_config.clear_model_cache:
                 clear_model_cache_fn(cache_dir=benchmark_config.cache_dir)
