@@ -881,6 +881,7 @@ def load_tokenizer(
 
 def clear_vllm() -> None:
     """Clear the GPU memory used by the vLLM model, enabling re-initialisation."""
+    breakpoint()
     with contextlib.suppress(ValueError):
         # destroy_model_parallel()
         destroy_distributed_environment()
