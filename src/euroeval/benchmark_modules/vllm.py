@@ -1,7 +1,6 @@
 """Generative models using the vLLM inference framework."""
 
 import collections.abc as c
-import contextlib
 import importlib.util
 import json
 import logging
@@ -880,16 +879,15 @@ def load_tokenizer(
 
 def clear_vllm() -> None:
     """Clear the GPU memory used by the vLLM model, enabling re-initialisation."""
-    breakpoint()
     # with contextlib.suppress(ValueError):
     #     destroy_model_parallel()
     #     destroy_distributed_environment()
     if ray.is_initialized():
         ray.shutdown()
-    with contextlib.suppress(AssertionError):
-        torch.distributed.destroy_process_group()
-    if ray.is_initialized():
-        ray.shutdown()
+    # with contextlib.suppress(AssertionError):
+    #     torch.distributed.destroy_process_group()
+    # if ray.is_initialized():
+    #     ray.shutdown()
     clear_memory()
 
 
