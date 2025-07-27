@@ -72,10 +72,7 @@ from .hf import HuggingFaceEncoderModel, get_model_repo_info, load_hf_model_conf
 
 if t.TYPE_CHECKING or importlib.util.find_spec("vllm") is not None:
     from vllm import LLM, SamplingParams
-    from vllm.distributed.parallel_state import (
-        destroy_distributed_environment,
-        destroy_model_parallel,
-    )
+    from vllm.distributed.parallel_state import destroy_distributed_environment
     from vllm.lora.request import LoRARequest
 
 if t.TYPE_CHECKING or importlib.util.find_spec("outlines") is not None:
@@ -884,9 +881,8 @@ def load_tokenizer(
 
 def clear_vllm() -> None:
     """Clear the GPU memory used by the vLLM model, enabling re-initialisation."""
-    breakpoint()
     with contextlib.suppress(ValueError):
-        destroy_model_parallel()
+        # destroy_model_parallel()
         destroy_distributed_environment()
     if ray.is_initialized():
         ray.shutdown()
