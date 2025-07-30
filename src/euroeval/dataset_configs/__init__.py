@@ -3,20 +3,7 @@
 from ..data_models import DatasetConfig
 from ..languages import get_all_languages
 from ..tasks import SPEED
-from .danish import *  # noqa: F403
-from .dutch import *  # noqa: F403
-from .english import *  # noqa: F403
-from .faroese import *  # noqa: F403
-from .finnish import *  # noqa: F403
-from .french import *  # noqa: F403
-from .german import *  # noqa: F403
-from .icelandic import *  # noqa: F403
-from .italian import *  # noqa: F403
 from .multiwikiqa import *  # noqa: F403
-from .norwegian import *  # noqa: F403
-from .portuguese import *  # noqa: F403
-from .spanish import *  # noqa: F403
-from .swedish import *  # noqa: F403
 
 
 def get_all_dataset_configs() -> dict[str, DatasetConfig]:
