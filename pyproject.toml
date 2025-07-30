@@ -164,6 +164,9 @@ ignore = [
 "src/scripts/main.py" = [
     "I",
 ]
+"src/euroeval/prompt_templates/reading_comprehension.py" = [
+    "E501",
+]
 
 [tool.ruff.lint.isort]
 split-on-trailing-comma = false
