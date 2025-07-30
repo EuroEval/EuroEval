@@ -1,7 +1,7 @@
 """All Portuguese dataset configurations used in EuroEval."""
 
 from ..data_models import DatasetConfig
-from ..languages import PT
+from ..languages import PT, PT_PT
 from ..tasks import COMMON_SENSE, KNOW, LA, MCRC, NER, RC, SENT, SUMM
 
 ### Official datasets ###
@@ -12,7 +12,7 @@ SST2_PT_CONFIG = DatasetConfig(
     "dataset SST2-pt, translated from the English SST2 dataset",
     huggingface_id="EuroEval/sst2-pt-mini",
     task=SENT,
-    languages=[PT],
+    languages=[PT, PT_PT],
     _labels=["positive", "negative"],
 )
 
@@ -21,7 +21,7 @@ SCALA_PT = DatasetConfig(
     pretty_name="the Portuguese part of the linguistic acceptability dataset ScaLA",
     huggingface_id="EuroEval/scala-pt",
     task=LA,
-    languages=[PT],
+    languages=[PT, PT_PT],
 )
 
 HAREM_CONFIG = DatasetConfig(
@@ -29,7 +29,7 @@ HAREM_CONFIG = DatasetConfig(
     pretty_name="the Portuguese named entity recognition dataset HAREM",
     huggingface_id="EuroEval/harem",
     task=NER,
-    languages=[PT],
+    languages=[PT, PT_PT],
 )
 
 MULTI_WIKI_QA_PT_CONFIG = DatasetConfig(
@@ -38,7 +38,7 @@ MULTI_WIKI_QA_PT_CONFIG = DatasetConfig(
     "comprehension dataset MultiWikiQA",
     huggingface_id="EuroEval/multi-wiki-qa-pt-pt-mini",
     task=RC,
-    languages=[PT],
+    languages=[PT, PT_PT],
 )
 
 PUBLICO_CONFIG = DatasetConfig(
@@ -46,7 +46,7 @@ PUBLICO_CONFIG = DatasetConfig(
     pretty_name="the truncated version of the Portuguese summarisation dataset Público",
     huggingface_id="EuroEval/publico-mini",
     task=SUMM,
-    languages=[PT],
+    languages=[PT, PT_PT],
 )
 
 MMLU_PT_CONFIG = DatasetConfig(
@@ -55,7 +55,7 @@ MMLU_PT_CONFIG = DatasetConfig(
     "translated from the English MMLU dataset",
     huggingface_id="EuroEval/mmlu-pt-mini",
     task=KNOW,
-    languages=[PT],
+    languages=[PT, PT_PT],
 )
 
 GOLDENSWAG_PT_CONFIG = DatasetConfig(
@@ -64,7 +64,7 @@ GOLDENSWAG_PT_CONFIG = DatasetConfig(
     "dataset GoldenSwag-pt, translated from the English GoldenSwag dataset",
     huggingface_id="EuroEval/goldenswag-pt-mini",
     task=COMMON_SENSE,
-    languages=[PT],
+    languages=[PT, PT_PT],
 )
 
 
@@ -76,6 +76,6 @@ BOOLQ_PT_CONFIG = DatasetConfig(
     "BoolQ-pt, translated from the English BoolQ dataset",
     huggingface_id="EuroEval/boolq-pt",
     task=MCRC,
-    languages=[PT],
+    languages=[PT, PT_PT],
     unofficial=True,
 )
