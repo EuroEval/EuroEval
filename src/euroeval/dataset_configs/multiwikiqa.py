@@ -3,7 +3,6 @@
 import logging
 
 from huggingface_hub import HfApi
-from tqdm.auto import tqdm
 
 from .. import languages
 from ..data_models import DatasetConfig
@@ -77,12 +76,7 @@ LANGUAGES_NOT_SUPPORTED = [
 
 
 api = HfApi()
-for language, cfg in tqdm(
-    iterable=languages.get_all_languages().items(),
-    total=len(languages.get_all_languages()),
-    desc="Loading MultiWikiQA dataset configurations",
-    unit="language",
-):
+for language, cfg in languages.get_all_languages().items():
     # Skip if the language is not supported by MultiWikiQA
     if language in LANGUAGES_NOT_SUPPORTED:
         continue
