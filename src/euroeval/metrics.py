@@ -14,7 +14,7 @@ from .exceptions import InvalidBenchmark
 from .utils import HiddenPrints
 
 if t.TYPE_CHECKING:
-    from datasets import Dataset
+    from datasets.arrow_dataset import Dataset
     from evaluate import EvaluationModule
 
 logger = logging.getLogger(__name__)
