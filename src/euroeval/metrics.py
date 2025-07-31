@@ -14,6 +14,7 @@ from .exceptions import InvalidBenchmark
 from .utils import HiddenPrints
 
 if t.TYPE_CHECKING:
+    from datasets.arrow_dataset import Dataset
     from evaluate import EvaluationModule
 
 logger = logging.getLogger(__name__)
@@ -49,7 +50,9 @@ class Metric(abc.ABC):
         )
 
     @abc.abstractmethod
-    def __call__(self, predictions: t.Sequence, references: t.Sequence) -> float | None:
+    def __call__(
+        self, predictions: t.Sequence, references: t.Sequence, dataset: "Dataset"
+    ) -> float | None:
         """Calculate the metric score.
 
         Args:
@@ -57,6 +60,9 @@ class Metric(abc.ABC):
                 The model predictions.
             references:
                 The ground truth references.
+            dataset:
+                The dataset used for evaluation. This is only used in case any
+                additional metadata is used to compute the metrics.
 
         Returns:
             The calculated metric score, or None if the score should be ignored.
@@ -125,7 +131,9 @@ class HuggingFaceMetric(Metric):
         )
         self.metric: "EvaluationModule | None" = None
 
-    def __call__(self, predictions: t.Sequence, references: t.Sequence) -> float | None:
+    def __call__(
+        self, predictions: t.Sequence, references: t.Sequence, dataset: "Dataset"
+    ) -> float | None:
         """Calculate the metric score.
 
         Args:
@@ -133,6 +141,9 @@ class HuggingFaceMetric(Metric):
                 The model predictions.
             references:
                 The ground truth references.
+            dataset:
+                The dataset used for evaluation. This is only used in case any
+                additional metadata is used to compute the metrics.
 
         Returns:
             The calculated metric score, or None if the score should be ignored.
@@ -213,7 +224,9 @@ class LLMAsAJudgeMetric(Metric):
         self.condition_formatting_fn = condition_formatting_fn
         self.system_prompt = system_prompt
 
-    def __call__(self, predictions: t.Sequence, references: t.Sequence) -> float | None:
+    def __call__(
+        self, predictions: t.Sequence, references: t.Sequence, dataset: "Dataset"
+    ) -> float | None:
         """Calculate the metric score using the judge model.
 
         Args:
@@ -221,6 +234,9 @@ class LLMAsAJudgeMetric(Metric):
                 The model predictions.
             references:
                 The ground truth references.
+            dataset:
+                The dataset used for evaluation. This is only used in case any
+                additional metadata is used to compute the metrics.
 
         Returns:
             The calculated metric score, or None if the score should be ignored.
@@ -343,7 +359,7 @@ class SpeedMetric(Metric):
             postprocessing_fn=lambda raw_score: (raw_score, f"{raw_score:,.0f}"),
         )
 
-    def __call__(self, _: t.Sequence, __: t.Sequence) -> float | None:
+    def __call__(self, _: t.Sequence, __: t.Sequence, ___: "Dataset") -> float | None:
         """Not used with the speed metric, but required for consistency."""
         raise NotImplementedError
 

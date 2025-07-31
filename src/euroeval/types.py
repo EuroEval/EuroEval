@@ -5,6 +5,7 @@ import typing as t
 from transformers.trainer_utils import EvalPrediction
 
 if t.TYPE_CHECKING:
+    from datasets.arrow_dataset import Dataset
     from numpy.typing import NDArray
 
     from .data_models import GenerativeModelOutput
@@ -25,12 +26,16 @@ class ComputeMetricsFunction(t.Protocol):
             "NDArray | list[str] | list[list[str]]",
             "NDArray | list[str] | list[list[str]]",
         ],
+        dataset: "Dataset",
     ) -> dict[str, float]:
         """Compute the metrics.
 
         Args:
             model_outputs_and_labels:
                 The model outputs and labels.
+            dataset:
+                The dataset used for evaluation. This is only used in case any
+                additional metadata is used to compute the metrics.
 
         Returns:
             The computed metrics.

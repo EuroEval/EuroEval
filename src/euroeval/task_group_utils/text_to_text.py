@@ -11,6 +11,7 @@ from ..metrics import HuggingFaceMetric
 from ..utils import raise_if_model_output_contains_nan_values
 
 if t.TYPE_CHECKING:
+    from datasets.arrow_dataset import Dataset
     from transformers.trainer_utils import EvalPrediction
 
     from ..data_models import BenchmarkConfig, DatasetConfig, GenerativeModelOutput
@@ -24,6 +25,7 @@ def compute_metrics(
     model_outputs_and_labels: "tuple[Predictions, Labels] | EvalPrediction",
     dataset_config: "DatasetConfig",
     benchmark_config: "BenchmarkConfig",
+    dataset: "Dataset",
 ) -> dict[str, float]:
     """Compute the metrics needed for evaluation.
 
@@ -35,6 +37,9 @@ def compute_metrics(
             The configuration of the dataset.
         benchmark_config:
             The configuration of the benchmark.
+        dataset:
+            The dataset used for evaluation. This is only used in case any additional
+            metadata is used to compute the metrics.
 
     Returns:
         A dictionary with the names of the metrics as keys and the metric values as
@@ -69,7 +74,9 @@ def compute_metrics(
 
         while True:
             try:
-                score: float | None = metric(predictions=predictions, references=labels)
+                score: float | None = metric(
+                    predictions=predictions, references=labels, dataset=dataset
+                )
                 break
             except Exception as e:
                 oom_error = [
