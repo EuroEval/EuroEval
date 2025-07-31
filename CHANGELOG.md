@@ -7,7 +7,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 
 ## [Unreleased]
-
+### Changed
+- Now allows metadata to be included in metrics, allowing more flexibility when
+  implementing custom metrics. This is not used in any task yet.
 
 
 ## [v15.14.0] - 2025-07-30
