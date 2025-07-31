@@ -89,7 +89,7 @@ for language, cfg in languages.get_all_languages().items():
         huggingface_id=f"EuroEval/multi-wiki-qa-{language}-mini",
         task=RC,
         languages=[getattr(languages, language.upper().replace("-", "_"))],
-        _num_few_shot_examples=2,
+        _num_few_shot_examples=1,
     )
 
     # Add the config to the globals
