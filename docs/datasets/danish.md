@@ -839,21 +839,21 @@ Here are a few examples from the training split:
 
 ```json
 {
-  "text": "Sådan åbner du hårrødderne. Vælg en kvalitetsshampoo med naturlige ingredienser. Vælg en shampoo, der mest indeholder naturlige ingredienser som olivenolie, sheasmør, kokosolie, honning og aloe. Undgå shampooer med en lang liste af produkter, du ikke genkender.\nOpções:\na. Ekstra kemikalier kan irritere håret og føre til tilstoppede rødder. Hvis du jævnligt går til frisør, så bed om en anbefaling.\nb. En blandet shampoo er altid bedre for dig! Gør dit hår vådt. Brug en kam til at gøre håret vådt - fra rødderne og op, begynd nedefra.\nc. Vælg en shampoo, der er specielt designet til hår, der har tendens til at være fedtet. Hårshampoo, der købes i butikkerne, koster ofte mellem 65 og 89 dollars.\nd. Du bør også købe shampoo eller balsam, der indeholder fedtede ingredienser. Fedtet shampoo og balsam kan forurene og ændre din hårfarve.",
+  "text": "Sådan giver du dig selv en fransk manicure ved hjælp af tape. Gnid en vatpind med neglelakfjerner på alle dine negle. Det vil ikke kun fjerne afskallet lak eller rester af lak, men det vil også fjerne fugtighedscreme fra neglen. Hvis du har et fugtighedsbevarende middel, såsom lotion eller olie, på neglen, vil lakken ikke sidde ordentligt fast.\nSvarmuligheder:\na. Kom lakfjerneren i en lille skål. Du skal bruge den om et par minutter til at få denne opløsning på tæerne.\nb. Fordel et fugtgivende pulver over alle dine negle med cirkulære bevægelser, indtil du kommer i kontakt med huden. Polér altid neglene, inden du går i gang.\nc. Skum vattet i lakfjerneren. Brug en blød vaskeklud til at samle lakken op.\nd. Sørg for, at du har skabt et perfekt lærred til din franske manicure. Påfør din basisfarve på hele neglen.",
+  "label": "d"
+}
+```
+
+```json
+{
+  "text": "Sådan forbedrer du et lille barns tale. Kom ned på deres niveau. Sæt dig på hug eller på gulvet. Det vil få deres opmærksomhed.\nSvarmuligheder:\na. Du vil tale med dit barn i stedet for til det. Hun vil også kunne se din mund og få visuelle tegn på, hvordan man siger bestemte lyde.\nb. Løft om nødvendigt hænderne sammen til knytnæver. Hvis du strækker dine hænder til knytnæver og gør det, mens du taler, vil dit barn sandsynligvis gøre det samme.\nc. Prøv at være så stille som muligt, og tal kun til dem, når de er rolige. Hvis du taler længe nok, vil de til sidst høre din stemme.\nd. Lad dem bede dig om at rykke tættere på dem. Hvis det er muligt, så brug en siddepind i hovedhøjde.",
   "label": "a"
 }
 ```
 
 ```json
 {
-  "text": "Sådan underviser du i en søndagsskole. Lær børnene at kende. Brug et par minutter i begyndelsen af hver time på at lave navneskilte og lege en lille leg, hvor du peger på nogen, og de fortæller deres navn, alder og en hobby eller to. Hav din lektionsplan ved hånden.\nOpções:\na. Sørg for, at du har dine pensumnoter. En lommeregner fungerer godt, men en printet er bedst.\nb. Prøv at doodle, tegne, fløjte, synge osv. Der er mange gode måder at gøre børnene fortrolige med dagligdagen på.\nc. Gå frem i rækkefølge, men improviser, hvis det er nødvendigt. Følg med strømmen, og husk, at det kun er små børn, så alt kan ske.\nd. Du skal have et stikord til lektionen, noget som barnet kan gentage og derefter efterligne. Det kan være, at du lærer børnene ordet shuffle, som virkelig sætter tonen og opbygger stemningen.",
-  "label": "c"
-}
-```
-
-```json
-{
-  "text": "Sådan laver du en rå kage. Tilbered havregrynene. Havregryn er den mest basale, uraffinerede form for havre. Havregryn kaldes ofte friskplukket eller friskhøstet havre og gives oftest til husdyr som foder.\nOpções:\na. Så længe du kan fodre dine dyr med havren, vil du også snart kunne tilføje masser af havre til din have. Havregryn sælges nogle gange som kogt havre.\nb. Du kan bruge pakker med havregryn i sportsbutikker eller på nettet, eller du kan tilberede havren selv. Al rå havre skal være ca. 1¾ (980 ml) rå eller hel.\nc. Havre i denne form fordøjes meget langsomt og har en meget lav glykæmisk indeksværdi. Udblød og tør havregrynene.\nd. Tørrede havregryn kan normalt fås i gårdbutikker, på loppemarkeder og i supermarkeder. Sæt havregrynene på køl, før du tager dem med på markedet.",
+  "text": "Sådan bruger du en bodysuit. Vælg en bodysuit, der smigrer dine yndlingstræk. Med så mange muligheder og stilarter kan bodysuiten virkelig være universelt flatterende. For at finde en body, der ser godt ud på dig, skal du overveje, hvilken del af din krop du vil fremhæve.\nSvarmuligheder:\na. Det kan være underarmene, benene eller andre steder, der stikker ud. Måske har du for eksempel en flot læbespalte, som du gerne vil fremhæve.\nb. Find ud af, hvilken del af din krop du vil fremhæve, og skær så ned på det, der fremhæver denne del. Hvis du for eksempel ønsker, at overdelene skal fremhæve dine bryster mest muligt, kan bikinitrusserne også bæres omkring det område.\nc. Hvis du for eksempel er stolt af dine tonede arme, skal du vælge en body uden ærmer eller med halterneck. Start med en bodysuit i t-shirt-stil, hvis du er ved at varme op til trenden.\nd. Beslut dig for, hvor mange forskellige dele af dig, din body skal fremhæve. Hvis du for eksempel vil have et sporty look, skal din body også fremhæve en del af din krop i stedet for en særlig iøjnefaldende del.",
   "label": "c"
 }
 ```
