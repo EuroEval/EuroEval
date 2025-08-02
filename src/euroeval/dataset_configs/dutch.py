@@ -120,3 +120,13 @@ MULTI_WIKI_QA_NL_CONFIG = DatasetConfig(
     languages=[NL],
     unofficial=True,
 )
+
+GOLDENSWAG_NL_CONFIG = DatasetConfig(
+    name="goldenswag-nl",
+    pretty_name="the truncated version of the Dutch common-sense reasoning "
+    "dataset GoldenSwag-nl, translated from the English GoldenSwag dataset",
+    huggingface_id="EuroEval/goldenswag-nl-mini",
+    task=COMMON_SENSE,
+    languages=[NL],
+    unofficial=True,
+)

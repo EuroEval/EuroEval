@@ -97,3 +97,13 @@ MULTI_WIKI_QA_ES_CONFIG = DatasetConfig(
     languages=[ES],
     unofficial=True,
 )
+
+GOLDENSWAG_ES_CONFIG = DatasetConfig(
+    name="goldenswag-es",
+    pretty_name="the truncated version of the Spanish common-sense reasoning "
+    "dataset GoldenSwag-es, translated from the English GoldenSwag dataset",
+    huggingface_id="EuroEval/goldenswag-es-mini",
+    task=COMMON_SENSE,
+    languages=[ES],
+    unofficial=True,
+)

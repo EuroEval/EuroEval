@@ -128,3 +128,13 @@ MULTI_WIKI_QA_DA_CONFIG = DatasetConfig(
     languages=[DA],
     unofficial=True,
 )
+
+GOLDENSWAG_DA_CONFIG = DatasetConfig(
+    name="goldenswag-da",
+    pretty_name="the truncated version of the Danish common-sense reasoning "
+    "dataset GoldenSwag-da, translated from the English GoldenSwag dataset",
+    huggingface_id="EuroEval/goldenswag-da-mini",
+    task=COMMON_SENSE,
+    languages=[DA],
+    unofficial=True,
+)

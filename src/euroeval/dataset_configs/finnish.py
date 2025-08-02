@@ -78,3 +78,13 @@ MULTI_WIKI_QA_FI_CONFIG = DatasetConfig(
     languages=[FI],
     unofficial=True,
 )
+
+GOLDENSWAG_FI_CONFIG = DatasetConfig(
+    name="goldenswag-fi",
+    pretty_name="the truncated version of the Finnish common-sense reasoning "
+    "dataset GoldenSwag-fi, translated from the English GoldenSwag dataset",
+    huggingface_id="EuroEval/goldenswag-fi-mini",
+    task=COMMON_SENSE,
+    languages=[FI],
+    unofficial=True,
+)
