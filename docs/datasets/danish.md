@@ -829,6 +829,72 @@ $ euroeval --model <model-id> --dataset hellaswag-da
 ```
 
 
+### GoldenSwag-da
+
+This dataset is a filtered and machine translated version of the English [HellaSwag dataset](https://aclanthology.org/P19-1472/), featuring both video descriptions from ActivityNet as well as how-to articles from WikiHow. The machine translated version was published in [this paper](https://doi.org/10.48550/arXiv.2410.08928) and was done using DeepL, and the filtering was published in [this paper](https://doi.org/10.48550/arXiv.2504.07825), which resulted in higher quality samples.
+
+The original full dataset consists of 1530 / 1530 samples for training and validation, respectively. However, they are exactly equal. We use a split of 660 / 256 / 2,048 samples for training, validation, and testing, respectively.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Sådan åbner du hårrødderne. Vælg en kvalitetsshampoo med naturlige ingredienser. Vælg en shampoo, der mest indeholder naturlige ingredienser som olivenolie, sheasmør, kokosolie, honning og aloe. Undgå shampooer med en lang liste af produkter, du ikke genkender.\nOpções:\na. Ekstra kemikalier kan irritere håret og føre til tilstoppede rødder. Hvis du jævnligt går til frisør, så bed om en anbefaling.\nb. En blandet shampoo er altid bedre for dig! Gør dit hår vådt. Brug en kam til at gøre håret vådt - fra rødderne og op, begynd nedefra.\nc. Vælg en shampoo, der er specielt designet til hår, der har tendens til at være fedtet. Hårshampoo, der købes i butikkerne, koster ofte mellem 65 og 89 dollars.\nd. Du bør også købe shampoo eller balsam, der indeholder fedtede ingredienser. Fedtet shampoo og balsam kan forurene og ændre din hårfarve.",
+  "label": "a"
+}
+```
+
+```json
+{
+  "text": "Sådan underviser du i en søndagsskole. Lær børnene at kende. Brug et par minutter i begyndelsen af hver time på at lave navneskilte og lege en lille leg, hvor du peger på nogen, og de fortæller deres navn, alder og en hobby eller to. Hav din lektionsplan ved hånden.\nOpções:\na. Sørg for, at du har dine pensumnoter. En lommeregner fungerer godt, men en printet er bedst.\nb. Prøv at doodle, tegne, fløjte, synge osv. Der er mange gode måder at gøre børnene fortrolige med dagligdagen på.\nc. Gå frem i rækkefølge, men improviser, hvis det er nødvendigt. Følg med strømmen, og husk, at det kun er små børn, så alt kan ske.\nd. Du skal have et stikord til lektionen, noget som barnet kan gentage og derefter efterligne. Det kan være, at du lærer børnene ordet shuffle, som virkelig sætter tonen og opbygger stemningen.",
+  "label": "c"
+}
+```
+
+```json
+{
+  "text": "Sådan laver du en rå kage. Tilbered havregrynene. Havregryn er den mest basale, uraffinerede form for havre. Havregryn kaldes ofte friskplukket eller friskhøstet havre og gives oftest til husdyr som foder.\nOpções:\na. Så længe du kan fodre dine dyr med havren, vil du også snart kunne tilføje masser af havre til din have. Havregryn sælges nogle gange som kogt havre.\nb. Du kan bruge pakker med havregryn i sportsbutikker eller på nettet, eller du kan tilberede havren selv. Al rå havre skal være ca. 1¾ (980 ml) rå eller hel.\nc. Havre i denne form fordøjes meget langsomt og har en meget lav glykæmisk indeksværdi. Udblød og tør havregrynene.\nd. Tørrede havregryn kan normalt fås i gårdbutikker, på loppemarkeder og i supermarkeder. Sæt havregrynene på køl, før du tager dem med på markedet.",
+  "label": "c"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+  ```
+  Følgende er multiple choice spørgsmål (med svar).
+  ```
+- Base prompt template:
+  ```
+  Spørgsmål: {text}
+  Svarmuligheder:
+  a. {option_a}
+  b. {option_b}
+  c. {option_c}
+  d. {option_d}
+  Svar: {label}
+  ```
+- Instruction-tuned prompt template:
+  ```
+  Spørgsmål: {text}
+  Svarmuligheder:
+  a. {option_a}
+  b. {option_b}
+  c. {option_c}
+  d. {option_d}
+
+  Besvar ovenstående spørgsmål ved at svare med 'a', 'b', 'c' eller 'd', og intet andet.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+$ euroeval --model <model-id> --dataset goldenswag-da
+```
+
+
 ## Summarization
 
 ### Nordjylland News

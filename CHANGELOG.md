@@ -7,7 +7,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 
 ## [Unreleased]
-
+### Added
+- Added the common-sense reasoning dataset GoldenSwag for the following
+  languages: Danish, German, Spanish, Finnish, French, Italian, Dutch, Swedish.
+  The datasets are unofficial for now.
 
 
 ## [v15.14.0] - 2025-07-30
