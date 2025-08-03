@@ -69,7 +69,7 @@ MULTIPLE_CHOICE_TEMPLATES = {
     IT: PromptConfig(
         default_prompt_prefix="Le seguenti sono domande a scelta multipla "
         "(con relative risposte).",
-        default_prompt_template="Domanda: {text}\nRéponse: {label}",
+        default_prompt_template="Domanda: {text}\nRisposta: {label}",
         default_instruction_prompt="Domanda: {text}\n\nRispondete alla domanda "
         "precedente con {labels_str}, e nient'altro.",
         default_prompt_label_mapping="auto",
