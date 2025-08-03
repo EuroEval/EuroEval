@@ -829,7 +829,7 @@ $ euroeval --model <model-id> --dataset hellaswag-da
 ```
 
 
-### GoldenSwag-da
+### Unofficial: GoldenSwag-da
 
 This dataset is a filtered and machine translated version of the English [HellaSwag dataset](https://aclanthology.org/P19-1472/), featuring both video descriptions from ActivityNet as well as how-to articles from WikiHow. The machine translated version was published in [this paper](https://doi.org/10.48550/arXiv.2410.08928) and was done using DeepL, and the filtering was published in [this paper](https://doi.org/10.48550/arXiv.2504.07825), which resulted in higher quality samples.
 
