@@ -82,7 +82,7 @@ named entity recognition task, we require the output to be a JSON dictionary, wi
 being the translated named entity tags, and values being lists of named entities of that
 category. To ensure that we are not biasing the evaluation toward models knowing the
 JSON format, we employ structured generation using the
-[outlines](https://github.com/dottxt-ai/outlines) package, which modifies the logits
+[XGrammar](https://github.com/mlc-ai/xgrammar) package, which modifies the logits
 outputted by the model to ensure that the output is always a valid JSON dictionary in
 the aforementioned format.
 
