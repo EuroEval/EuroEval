@@ -220,8 +220,8 @@ class LiteLLMModel(BenchmarkModule):
         Returns:
             The generative type of the model, or None if it has not been set yet.
         """
+        # Extract the generation parameter to use with the model, if applicable
         param = ""
-
         if self.model_config.parameter:
             param = self.model_config.parameter
         elif self.model_config.revision in ALLOWED_PARAMS.get(self.model_config.model_id, []):
