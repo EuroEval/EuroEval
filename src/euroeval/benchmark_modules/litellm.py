@@ -233,6 +233,7 @@ class LiteLLMModel(BenchmarkModule):
         stacklevel=2
     )
             param = self.model_config.revision
+            
         if self.is_ollama:
             reasoning_model = "thinking" in (self._ollama_show.capabilities or [])
             type_ = (
