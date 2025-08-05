@@ -246,7 +246,7 @@ class LiteLLMModel(BenchmarkModule):
             type_ = GenerativeType.INSTRUCTION_TUNED
         elif re.fullmatch(
             pattern="|".join(REASONING_MODELS), string=self.model_config.model_id
-            ):
+        ):
             type_ = GenerativeType.REASONING
         else:
             type_ = GenerativeType.INSTRUCTION_TUNED
