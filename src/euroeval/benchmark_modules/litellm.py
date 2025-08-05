@@ -236,9 +236,9 @@ class LiteLLMModel(BenchmarkModule):
         if self.is_ollama:
             reasoning_model = "thinking" in (self._ollama_show.capabilities or [])
             type_ = (
-            GenerativeType.REASONING
-            if reasoning_model
-            else GenerativeType.INSTRUCTION_TUNED
+                GenerativeType.REASONING
+                if reasoning_model
+                else GenerativeType.INSTRUCTION_TUNED
             )
         elif param in {"thinking"}:
             type_ = GenerativeType.REASONING
