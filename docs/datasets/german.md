@@ -615,6 +615,67 @@ $ euroeval --model <model-id> --dataset hellaswag-de
 ```
 
 
+### Unofficial: GoldenSwag-de
+
+This dataset is a filtered and machine translated version of the English [HellaSwag dataset](https://aclanthology.org/P19-1472/), featuring both video descriptions from ActivityNet as well as how-to articles from WikiHow. The machine translated version was published in [this paper](https://doi.org/10.48550/arXiv.2410.08928) and was done using DeepL, and the filtering was published in [this paper](https://doi.org/10.48550/arXiv.2504.07825), which resulted in higher quality samples.
+
+The original full dataset consists of 1530 / 1530 samples for training and validation, respectively. However, they are exactly equal. We use a split of 660 / 256 / 2,048 samples for training, validation, and testing, respectively.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Wie man Rouge aufträgt. Verwenden Sie die richtige Art von Pinsel. Die Art des Pinsels hängt davon ab, wo Sie das Rouge auftragen wollen. Da Sie das Rouge nicht nur auf die Wangenäpfel auftragen werden, sollten Sie für kleinere Bereiche einen kleineren Pinsel verwenden.\nAntwortmöglichkeiten:\na. Für die Wangen können Sie einen normalen Rougepinsel verwenden. Manche empfehlen, für die kleineren Gesichtspartien einen Abdeckpinsel zu verwenden.\nb. Je kleiner der Pinsel ist, desto mehr Rouge müssen Sie auf Ihre Wangen auftragen. Überprüfen Sie auf der Verpackung die richtige Pinselgröße für diesen Bereich.\nc. Wählen Sie den Pinsel, der am besten zu Ihrem Haartyp passt. Bei lockigem Haar verwenden Sie einen größeren Pinsel für dünneres Haar und einen kleineren Pinsel für dünnes Haar.\nd. Für größere Flächen können Sie einen Tubenpinsel oder einen Pinsel in einer anderen Farbe verwenden, um ein Zusammenfallen zu vermeiden. Verwenden Sie einen Pinsel mit Borsten in der Farbe Ihrer Grundierung, damit die abgerundeten Borsten weniger auffallen.",
+  "label": "a"
+}
+```
+
+```json
+{
+  "text": "Wie Sie einen Redakteur auf sich aufmerksam machen können. Lesen und befolgen Sie die Einreichungsrichtlinien der Publikation. Publikationen erstellen Einreichungsrichtlinien, um es sowohl den Autoren als auch den Redakteuren leichter zu machen. Wenn Sie die Richtlinien lesen und befolgen, erstellen Sie einen Beitrag, der den Anforderungen der Publikation entspricht, was es für Sie als Autor einfacher macht, und zwar in einem Format, das die Redakteure leichter auf Eignung und Qualität prüfen können.\nAntwortmöglichkeiten:\na. Vermeiden Sie es, den Namen und die Veröffentlichungsseite der Publikation vollständig zu blockieren. Wenn die Publikation nicht sehr künstlerisch ist, wird sie vielleicht gar nicht veröffentlicht.\nb. Vergewissern Sie sich, dass Ihr Artikel diesen Richtlinien entspricht, wenn Sie sich um eine Stelle als Redakteur bewerben. Bei einigen Stellen müssen Sie eine bestimmte Menge an Arbeit leisten, um eine Redakteursstelle zu erhalten, während bei anderen ein Minimum von 30 Arbeitsstunden erforderlich ist.\nc. Die meisten Publikationen mit Internetpräsenz bieten ihre Richtlinien für die Einreichung von Beiträgen auf ihren Websites an. Wenn dies nicht der Fall ist, können Sie die Richtlinien erhalten, indem Sie an die angegebene Adresse der Publikation schreiben.\nd. Bitten Sie die Autoren am Ende der Veröffentlichung, Ihre Arbeit regelmäßig zu veröffentlichen. Heben Sie in Ihrem Beitrag wichtige Aspekte hervor, damit Sie nicht von der Publikation ausgeschlossen werden.",
+  "label": "c"
+}
+```
+
+```json
+{
+  "text": "Wie Sie Hundegeruch aus Ihrem Auto entfernen. Waschen Sie alle abnehmbaren Teile Ihres Autos. Alle Teile Ihres Autos, die Sie abnehmen können, sollten Sie in der Waschmaschine waschen. Dadurch wird der Hundegeruch entfernt und Ihr Auto riecht wieder frischer.\nAntwortmöglichkeiten:\na. Wenn Sie feststellen, dass Ihr Auto nach Ihnen riecht, wenn Sie es ausstecken, sollten Sie die Teile 5 Minuten in warmem Wasser und 20 Minuten in kaltem Wasser einweichen. Wenn Sie ein Straßenfest veranstalten, verwenden Sie einen Trichter, um Plastikteile in die Waschmaschine zu befördern, während die äußeren Teile weggeworfen werden.\nb. Gummimatten, Autositzbezüge und alle Decken, die Sie für Ihren Hund aufbewahren, können entfernt und gewaschen werden. Waschen Sie die Teile Ihres Autos sicherheitshalber bei einer kühlen Temperatur.\nc. Eine Schicht Antitranspirant hingegen entfernt nur das Produkt, und Ihr Auto riecht wahrscheinlich schon nach Urin. Wenn Ihr Auto mit Ledersitzen ausgestattet ist, wischen Sie das Produkt, das sich dort angesammelt hat, ab.\nd. Am sichersten ist es, alle abnehmbaren Teile Ihres Autos zu entfernen, einschließlich der "Fifflers". Diese Teile können bei heißem Wetter leicht stinken, aber sie können auch schwitzen und den Eigengeruch Ihres Hundes produzieren.",
+  "label": "b"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+  ```
+  Die folgenden Fragen sind Multiple-Choice-Fragen (mit Antworten).
+  ```
+- Base prompt template:
+  ```
+  Frage: {text}
+  Antwort: {label}
+  ```
+- Instruction-tuned prompt template:
+  ```
+  Frage: {text}
+  Antwortmöglichkeiten:
+  a. {option_a}
+  b. {option_b}
+  c. {option_c}
+  d. {option_d}
+
+  Beantworten Sie die obige Frage mit 'a', 'b', 'c' oder 'd', und nichts anderes.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+$ euroeval --model <model-id> --dataset goldenswag-de
+```
+
+
 ## Summarization
 
 ### MLSum-de

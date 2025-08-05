@@ -829,6 +829,72 @@ $ euroeval --model <model-id> --dataset hellaswag-da
 ```
 
 
+### Unofficial: GoldenSwag-da
+
+This dataset is a filtered and machine translated version of the English [HellaSwag dataset](https://aclanthology.org/P19-1472/), featuring both video descriptions from ActivityNet as well as how-to articles from WikiHow. The machine translated version was published in [this paper](https://doi.org/10.48550/arXiv.2410.08928) and was done using DeepL, and the filtering was published in [this paper](https://doi.org/10.48550/arXiv.2504.07825), which resulted in higher quality samples.
+
+The original full dataset consists of 1530 / 1530 samples for training and validation, respectively. However, they are exactly equal. We use a split of 660 / 256 / 2,048 samples for training, validation, and testing, respectively.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Sådan giver du dig selv en fransk manicure ved hjælp af tape. Gnid en vatpind med neglelakfjerner på alle dine negle. Det vil ikke kun fjerne afskallet lak eller rester af lak, men det vil også fjerne fugtighedscreme fra neglen. Hvis du har et fugtighedsbevarende middel, såsom lotion eller olie, på neglen, vil lakken ikke sidde ordentligt fast.\nSvarmuligheder:\na. Kom lakfjerneren i en lille skål. Du skal bruge den om et par minutter til at få denne opløsning på tæerne.\nb. Fordel et fugtgivende pulver over alle dine negle med cirkulære bevægelser, indtil du kommer i kontakt med huden. Polér altid neglene, inden du går i gang.\nc. Skum vattet i lakfjerneren. Brug en blød vaskeklud til at samle lakken op.\nd. Sørg for, at du har skabt et perfekt lærred til din franske manicure. Påfør din basisfarve på hele neglen.",
+  "label": "d"
+}
+```
+
+```json
+{
+  "text": "Sådan forbedrer du et lille barns tale. Kom ned på deres niveau. Sæt dig på hug eller på gulvet. Det vil få deres opmærksomhed.\nSvarmuligheder:\na. Du vil tale med dit barn i stedet for til det. Hun vil også kunne se din mund og få visuelle tegn på, hvordan man siger bestemte lyde.\nb. Løft om nødvendigt hænderne sammen til knytnæver. Hvis du strækker dine hænder til knytnæver og gør det, mens du taler, vil dit barn sandsynligvis gøre det samme.\nc. Prøv at være så stille som muligt, og tal kun til dem, når de er rolige. Hvis du taler længe nok, vil de til sidst høre din stemme.\nd. Lad dem bede dig om at rykke tættere på dem. Hvis det er muligt, så brug en siddepind i hovedhøjde.",
+  "label": "a"
+}
+```
+
+```json
+{
+  "text": "Sådan bruger du en bodysuit. Vælg en bodysuit, der smigrer dine yndlingstræk. Med så mange muligheder og stilarter kan bodysuiten virkelig være universelt flatterende. For at finde en body, der ser godt ud på dig, skal du overveje, hvilken del af din krop du vil fremhæve.\nSvarmuligheder:\na. Det kan være underarmene, benene eller andre steder, der stikker ud. Måske har du for eksempel en flot læbespalte, som du gerne vil fremhæve.\nb. Find ud af, hvilken del af din krop du vil fremhæve, og skær så ned på det, der fremhæver denne del. Hvis du for eksempel ønsker, at overdelene skal fremhæve dine bryster mest muligt, kan bikinitrusserne også bæres omkring det område.\nc. Hvis du for eksempel er stolt af dine tonede arme, skal du vælge en body uden ærmer eller med halterneck. Start med en bodysuit i t-shirt-stil, hvis du er ved at varme op til trenden.\nd. Beslut dig for, hvor mange forskellige dele af dig, din body skal fremhæve. Hvis du for eksempel vil have et sporty look, skal din body også fremhæve en del af din krop i stedet for en særlig iøjnefaldende del.",
+  "label": "c"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+  ```
+  Følgende er multiple choice spørgsmål (med svar).
+  ```
+- Base prompt template:
+  ```
+  Spørgsmål: {text}
+  Svarmuligheder:
+  a. {option_a}
+  b. {option_b}
+  c. {option_c}
+  d. {option_d}
+  Svar: {label}
+  ```
+- Instruction-tuned prompt template:
+  ```
+  Spørgsmål: {text}
+  Svarmuligheder:
+  a. {option_a}
+  b. {option_b}
+  c. {option_c}
+  d. {option_d}
+
+  Besvar ovenstående spørgsmål ved at svare med 'a', 'b', 'c' eller 'd', og intet andet.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+$ euroeval --model <model-id> --dataset goldenswag-da
+```
+
+
 ## Summarization
 
 ### Nordjylland News

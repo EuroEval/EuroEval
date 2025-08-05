@@ -640,6 +640,72 @@ $ euroeval --model <model-id> --dataset hellaswag-sv
 ```
 
 
+### Unofficial: GoldenSwag-sv
+
+This dataset is a filtered and machine translated version of the English [HellaSwag dataset](https://aclanthology.org/P19-1472/), featuring both video descriptions from ActivityNet as well as how-to articles from WikiHow. The machine translated version was published in [this paper](https://doi.org/10.48550/arXiv.2410.08928) and was done using DeepL, and the filtering was published in [this paper](https://doi.org/10.48550/arXiv.2504.07825), which resulted in higher quality samples.
+
+The original full dataset consists of 1530 / 1530 samples for training and validation, respectively. However, they are exactly equal. We use a split of 660 / 256 / 2,048 samples for training, validation, and testing, respectively.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Hur man staplar hö. Placera dina pallar på en tillgänglig plats. Det måste vara lätt att ta sig till staplarna, så välj en plats som du kan nå utan problem. Undvik att stapla balar direkt på marken.\nSvarsalternativ:\na. Håll balarna i detta område inom armlängds avstånd så att du inte skadar dig själv och andra i byggnaden. Tänk på att det bör finnas ca 6 balar så att varje person i rummet ska kunna komma åt en bal.\nb. Undvik att stapla balar på asfalterade ytor. Hitta en ojämn yta att stapla pallar på.\nc. Dina pallar måste vara lådliknande och hålla dina ben ut åt sidorna, samt stödja din fulla vikt. Använd betongblock om du har tillgång till sådana.\nd. Höet suger åt sig fukt och blir mögligt. För att förhindra detta, använd träpallar som grund.",
+  "label": "d"
+}
+```
+
+```json
+{
+  "text": "Hur du väljer vem som ska följa dig till altaret. Identifiera den viktigaste familjemedlemmen i ditt liv. Det kan vara bra att börja med att fundera på vem som är den viktigaste familjemedlemmen i ditt liv och sedan fundera på att be den personen att följa dig till altaret. Du kanske anser att din bror är den viktigaste personen i ditt liv.\nSvarsalternativ:\na. Eller så tänker du på din mamma, vars liv du älskade mest. Att identifiera din familjemedlem kan hjälpa dig att gå igenom några av de mer upplyftande stunderna, eftersom din familjemedlem sannolikt kan vara din make eller sambo.\nb. Kanske är din bror din pappas bästa vän och din mamma har varit din mammas bästa vän under en mycket lång tid. Att göra en lista över dessa personer kan hjälpa dig att förstå varför din mamma är viktig för dig och vad som motiverar henne att följa dig till altaret.\nc. Eller så kanske den första personen som dyker upp i ditt huvud är din ensamstående mamma som uppfostrade dig på egen hand. Du kan skriva ner några personer som är viktiga för dig i din familj på ett papper och sedan välja en från listan.\nd. Eller så kanske du väljer din mammas pappa som din hedersbrudtärna. En lista kan dyka upp framför dig när du organiserar dina kalendrar och möten, så det är viktigt att hitta några ord som tydligt hjälper dig.",
+  "label": "c"
+}
+```
+
+```json
+{
+  "text": "Hur man får gratis uppgraderingar på smekmånaden. Registrera dig för medlemskort för frequent flier miles. Om du har ett favoritflygbolag, registrera dig för dess bonusprogram så snart du kan, särskilt om du gör många affärsresor. Frekventa flygmil kan snabbt läggas ihop och leda till gratisbiljetter och uppgraderingar.\nSvarsalternativ:\na. Vissa flygbolag tillåter till och med att dina vänner och familj ger dig sina miles, så uppmuntra dem att också registrera sig.. Fråga ditt kreditkortsföretag om incitament.\nb. Välj en destination som du är villig att spendera pengar på. Det är en bra idé att prova några destinationer som du skulle älska att besöka, inklusive Japan, som öppnar upp ekonomiska möjligheter omedelbart.\nc. Skicka uppgifterna till det flygbolag du föredrar. Om du har för avsikt att använda bonuspoäng för affärsändamål ska du skicka uppgifterna till ditt favoritflygbolag på något av följande sätt.\nd. Besök webbplatsen för det flygbolag som arrangerar flygningar för dig, eller leta online för att hitta en resplan som specificerar miles. Förutom gratis resor kan du också använda back to back-bokningstjänster.",
+  "label": "a"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+  ```
+  Följande är flervalsfrågor (med svar).
+  ```
+- Base prompt template:
+  ```
+  Fråga: {text}
+  Svarsalternativ:
+  a. {option_a}
+  b. {option_b}
+  c. {option_c}
+  d. {option_d}
+  Svar: {label}
+  ```
+- Instruction-tuned prompt template:
+  ```
+  Fråga: {text}
+  Svarsalternativ:
+  a. {option_a}
+  b. {option_b}
+  c. {option_c}
+  d. {option_d}
+
+  Besvara följande fråga med 'a', 'b', 'c' eller 'd', och inget annat.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+$ euroeval --model <model-id> --dataset goldenswag-sv
+```
+
+
 ## Summarization
 
 ### SweDN

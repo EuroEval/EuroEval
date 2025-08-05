@@ -674,6 +674,72 @@ $ euroeval --model <model-id> --dataset hellaswag-nl
 ```
 
 
+### Unofficial: GoldenSwag-nl
+
+This dataset is a filtered and machine translated version of the English [HellaSwag dataset](https://aclanthology.org/P19-1472/), featuring both video descriptions from ActivityNet as well as how-to articles from WikiHow. The machine translated version was published in [this paper](https://doi.org/10.48550/arXiv.2410.08928) and was done using DeepL, and the filtering was published in [this paper](https://doi.org/10.48550/arXiv.2504.07825), which resulted in higher quality samples.
+
+The original full dataset consists of 1530 / 1530 samples for training and validation, respectively. However, they are exactly equal. We use a split of 660 / 256 / 2,048 samples for training, validation, and testing, respectively.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Hoe leer je je kind een potlood vasthouden? Koop het juiste potlood voor je kind. Het gebruik van korte potloden, zoals golfpotloden of gewone potloden die doormidden zijn gebroken, kan kinderen helpen om zelf de juiste greep te vinden. Korte potloden hebben minder ruimte voor overbodige vingers, dus je kind heeft weinig keus dan de juiste drievingerige greep te gebruiken.\nAntwoordopties:\na. Je kunt korte potloden kopen bij de meeste hobby- en kantoorboekhandels. Help je kind met een potloodgreep.\nb. Goede potloden om mee te beginnen zijn de "p" en "g" potloden. Begin in de onderste potloodhouder in het midden en let goed op hoe je kind het potlood op zijn plaats probeert te houden.\nc. Ga voor meer informatie over het hanteren van een potlood naar. Maak onderscheid tussen potloden die met de handen worden aangedreven en potloden die met beide handen worden gebruikt.\nd. Met een vinger met een langere potloodpunt kunnen kinderen potloden met veel meer controle vasthouden. Met een vinger met een lagere punt kun je proberen om zowat elke vingerpositie onder controle te houden.",
+  "label": "a"
+}
+```
+
+```json
+{
+  "text": "Hoe ontstop je een langzaam lopende afvoer van de badkamer gootsteen. Verzamel je materialen. In plaats van te vertrouwen op afvoerreinigingsproducten, die vaak bijtend zijn en allergische reacties en ademhalingsproblemen kunnen veroorzaken, kun je huishoudelijke artikelen gebruiken die je waarschijnlijk al in huis hebt. Je hebt nodig: Doekjes zuiveringszout azijn citroen kokend water. Meet je ingrediënten af.\nAntwoordopties:\na. Een afvoer met een diameter van ongeveer 0,64 centimeter. Was gootsteenontstoppingsproducten met de hand is een gebruikelijke methode, maar je kunt ze bij de meeste bouwmarkten kopen.\nb. Je hebt als basis bloem, zuiveringszout, witte azijn en water nodig. Je kunt een maatbeker gebruiken om ze af te meten, of zelfs een waterkoker.\nc. Neem ¼ kopje zuiveringszout, 1 kopje witte azijn en 1 grote pan water om te koken. Zorg dat je een vod of gootsteenstopper bij de hand hebt.\nd. Hoewel niet alle kleine gootstenen verstopt zijn, kan heet water helpen om de verstopte gaten te verwijderen. Het gebruik van een maatbeker om je ingrediënten af te meten is vooral belangrijk omdat kokend water ook vuil zoals lichaamsresten, klei en zelfs dierlijke uitwerpselen introduceert.",
+  "label": "c"
+}
+```
+
+```json
+{
+  "text": "Hoe doe je een dip powder manicure? Gebruik nagellakremover en een nagelriemduwer. Als je nagellak op je nagels hebt, verwijder deze dan met nagellakremover zonder aceton op een niet-pluizend wattenschijfje. Gebruik een nagelriemduwer om je nagelriemen voorzichtig een beetje naar achteren te duwen.\nAntwoordopties:\na. Gebruik alleen nagellakremover of een nagelriemduwer als je vieze handen hebt. Schrijf op je nagels met de nagelriemduwer.\nb. Duw ze niet krachtig terug zodat je geen pijn veroorzaakt aan je vingers of teennagels. Druk ze echter wel stevig aan met je vingers.\nc. Beweeg de drukker in een ronddraaiende beweging om de doorbloeding te stimuleren. Breng een leave-in conditioner aan nadat je je nagelriemen hebt ingesmeerd.\nd. Verwijder voorzichtig overtollige nagelriemen met een nagelriemtrimmer of schraper. Dit zorgt ervoor dat nieuwe nagelgroei zichtbaar wordt, zodat je manicure langer meegaat voordat je hem moet opvullen.",
+  "label": "d"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+  ```
+  Hieronder staan meerkeuzevragen (met antwoorden).
+  ```
+- Base prompt template:
+  ```
+  Vraag: {text}
+  Antwoordopties:
+  a. {option_a}
+  b. {option_b}
+  c. {option_c}
+  d. {option_d}
+  Antwoord: {label}
+  ```
+- Instruction-tuned prompt template:
+  ```
+  Vraag: {text}
+  Antwoordopties:
+  a. {option_a}
+  b. {option_b}
+  c. {option_c}
+  d. {option_d}
+
+  Beantwoord de bovenstaande vraag met 'a', 'b', 'c' of 'd', en niets anders.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+$ euroeval --model <model-id> --dataset goldenswag-nl
+```
+
+
 ## Summarization
 
 ### WikiLingua-nl

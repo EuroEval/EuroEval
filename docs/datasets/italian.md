@@ -562,7 +562,7 @@ When evaluating generative models, we use the following setup (see the
   b. {option_b}
   c. {option_c}
   d. {option_d}
-  Réponse: {label}
+  Risposta: {label}
   ```
 - Instruction-tuned prompt template:
   ```
@@ -633,7 +633,7 @@ When evaluating generative models, we use the following setup (see the
   b. {option_b}
   c. {option_c}
   d. {option_d}
-  Réponse: {label}
+  Risposta: {label}
   ```
 - Instruction-tuned prompt template:
   ```
@@ -651,6 +651,72 @@ You can evaluate this dataset directly as follows:
 
 ```bash
 $ euroeval --model <model-id> --dataset hellaswag-it
+```
+
+
+### Unofficial: GoldenSwag-it
+
+This dataset is a filtered and machine translated version of the English [HellaSwag dataset](https://aclanthology.org/P19-1472/), featuring both video descriptions from ActivityNet as well as how-to articles from WikiHow. The machine translated version was published in [this paper](https://doi.org/10.48550/arXiv.2410.08928) and was done using DeepL, and the filtering was published in [this paper](https://doi.org/10.48550/arXiv.2504.07825), which resulted in higher quality samples.
+
+The original full dataset consists of 1530 / 1530 samples for training and validation, respectively. However, they are exactly equal. We use a split of 660 / 256 / 2,048 samples for training, validation, and testing, respectively.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Come sapere cosa indossare. Identificate la vostra tonalità di pelle. Ci sono molti termini usati per descrivere la tonalità della pelle, da quella chiara o scura, a quella pallida o olivastra. Il modo più accurato per capire quali colori vi stanno bene è capire il sottotono della vostra pelle.\nScelte:\na. Questa è la chiave numero uno per identificare il colore della vostra pelle. Se avete un misto di pelle olivastra e sottotono caldo (come una pelle avorio), il vostro tono di pelle è probabilmente a metà tra il caldo e il freddo.\nb. Se avete una corporatura media o calda, in genere avete sottotoni evidenti. Ecco alcuni sottotoni comuni: la pelle calda e i sottotoni caldi comprendono tutti e tre i toni medi, tutti e tre i toni freddi, tutti e quattro i toni caldi e tutti e quattro i toni caldi.\nc. La vostra pelle sarà del colore delle vostre spalle, dal collo alle dita, alle unghie dei piedi. Il sottotono è un colore di base per il vostro aspetto generale, come espressione primaria della vostra carnagione.\nd. Ne esistono tre tipi: caldo, freddo e neutro. Poiché si cercano i sottotoni della pelle, non basta guardarsi allo specchio per averne conferma.",
+  "label": "d"
+}
+```
+
+```json
+{
+  "text": "Come fare la treccia. Spazzolare i capelli. Spazzolate i capelli in modo che siano leggeri e soffici. Dovete eliminare tutti i nodi in modo che la treccia sia liscia come la seta! Questa operazione facilita anche il processo di intreccio, quindi assicuratevi di farlo.\nScelte:\na. Prendete tre o quattro pollici (da 5 a 10 cm) di capelli dalla nuca, pettinateli e metteteli in un porta-treccia. Legateli e rimetteteli nel supporto.\nb. Se i capelli sono molto aggrovigliati, potrebbero gocciolare e potreste non riuscire a intrecciarli in modo così ordinato! Avvolgere i capelli. Con i capelli raccolti in rulli, arricciateli intorno al dito in modo che tutti i rulli siano infilati.\nc. Decidete dove fare la treccia. Sarà dietro la testa in una coda di cavallo? Sarà laterale o più bassa, vicino al collo? Decidete questo per determinare dove e come sarà più bella.\nd. Inumidite i capelli e scompigliateli delicatamente con le dita, in modo da ottenere un risultato bello e soffice. Probabilmente sarà facile separarli tirandoli un po', ma fate attenzione a non farlo.",
+  "label": "c"
+}
+```
+
+```json
+{
+  "text": "Come mettere la carta velina in un sacchetto regalo. Raccogliete i materiali. Avrete bisogno di carta velina, del regalo, di nastri o abbellimenti, di un sacchetto regalo e di un biglietto. Avrete bisogno di diversi colori di carta velina che si abbinino al colore del sacchetto regalo.\nScelte:\na. Acquistate o realizzate un sacchetto di carta velina bianco o crema in un negozio di artigianato. La carta velina vi darà un colore rosa pastello e si completerà con il colore del sacchetto regalo.\nb. La carta velina colorata rende il regalo più festoso! Assicuratevi che il vostro sacchetto regalo sia adatto all'occasione. Se avete intenzione di arricciare il nastro per aggiungerlo come decorazione, avrete bisogno di forbici per arricciare il nastro o di un nastro già arricciato.\nc. Potreste aver bisogno di andare in un negozio di antiquariato o in un negozio dell'usato per trovare tutti i colori che vi servono. Considerate la possibilità di utilizzare diversi colori per il biglietto, tra cui carta commestibile, carta da regalo o carta da costruzione.\nd. Potete utilizzare carta di scarto, carta in rotoli, carta riciclata o carta da costruzione. Prendete un pezzo di carta velina, di carta igienica o di qualsiasi altro foglio di carta colorata.",
+  "label": "b"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+  ```
+  Le seguenti sono domande a scelta multipla (con relative risposte).
+  ```
+- Base prompt template:
+  ```
+  Domanda: {text}
+  Scelte:
+  a. {option_a}
+  b. {option_b}
+  c. {option_c}
+  d. {option_d}
+  Risposta: {label}
+  ```
+- Instruction-tuned prompt template:
+  ```
+  Domanda: {text}
+  Scelte:
+  a. {option_a}
+  b. {option_b}
+  c. {option_c}
+  d. {option_d}
+
+  Rispondete alla domanda precedente con 'a', 'b', 'c' o 'd' e nient'altro.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+$ euroeval --model <model-id> --dataset goldenswag-it
 ```
 
 

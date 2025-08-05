@@ -9,7 +9,7 @@
 # ]
 # ///
 
-"""Create the GoldenSwag-pt-mini dataset and upload it to the HF Hub."""
+"""Create the GoldenSwag-mini datasets and upload them to the HF Hub."""
 
 from collections import Counter
 
@@ -26,56 +26,83 @@ from huggingface_hub import HfApi
 from requests import HTTPError
 from sklearn.model_selection import train_test_split
 
+OPTIONS_MAPPING = {
+    "da": "Svarmuligheder",
+    "de": "Antwortmöglichkeiten",
+    "es": "Opciones",
+    "fi": "Vastausvaihtoehdot",
+    "fr": "Choix",
+    "it": "Scelte",
+    "nl": "Antwoordopties",
+    "sv": "Svarsalternativ",
+    "pt": "Opções",
+}
+
 
 def main() -> None:
-    """Create the GoldenSwag-pt dataset and upload it to the HF Hub."""
+    """Create the GoldenSwag datasets and upload them to the HF Hub."""
     # Define the base download URL
     repo_id = "LumiOpen/opengpt-x_goldenswagx"
 
-    val_dataset = load_dataset(
-        path=repo_id, name="PT-PT", token=True, split="validation"
-    )
-    val_df = process_(val_dataset)
+    subset_language_code = {
+        "DA": "da",
+        "DE": "de",
+        "ES": "es",
+        "FI": "fi",
+        "FR": "fr",
+        "IT": "it",
+        "NL": "nl",
+        "SV": "sv",
+        "PT-PT": "pt",
+    }
 
-    train_dataset = load_dataset(path=repo_id, name="PT-PT", token=True, split="train")
-    train_df = process_(train_dataset)
+    for subset_name, language_code in subset_language_code.items():
+        val_dataset = load_dataset(
+            path=repo_id, name=subset_name, token=True, split="validation"
+        )
+        val_df = process_(dataset=val_dataset, language_code=language_code)
 
-    total_dataset = pd.concat([train_df, val_df])
+        train_dataset = load_dataset(
+            path=repo_id, name=subset_name, token=True, split="train"
+        )
+        train_df = process_(dataset=train_dataset, language_code=language_code)
 
-    val_size, test_size, _ = 256, 2048, 1024
+        total_dataset = pd.concat([train_df, val_df])
 
-    val_df, rest = train_test_split(
-        total_dataset,
-        train_size=val_size,
-        random_state=4242,
-        stratify=total_dataset.activity_label,
-    )
+        val_size, test_size, _ = 256, 2048, 1024
 
-    train_df, test_df = train_test_split(
-        rest, test_size=test_size, random_state=4242, stratify=rest.activity_label
-    )
+        val_df, rest = train_test_split(
+            total_dataset,
+            train_size=val_size,
+            random_state=4242,
+            stratify=total_dataset.activity_label,
+        )
 
-    # Collect datasets in a dataset dictionary
-    dataset = DatasetDict(
-        train=Dataset.from_pandas(train_df, split=Split.TRAIN),
-        val=Dataset.from_pandas(val_df, split=Split.VALIDATION),
-        test=Dataset.from_pandas(test_df, split=Split.TEST),
-    )
+        train_df, test_df = train_test_split(
+            rest, test_size=test_size, random_state=4242, stratify=rest.activity_label
+        )
 
-    dataset_id = "EuroEval/goldenswag-pt-mini"
+        # Collect datasets in a dataset dictionary
+        dataset = DatasetDict(
+            train=Dataset.from_pandas(train_df, split=Split.TRAIN),
+            val=Dataset.from_pandas(val_df, split=Split.VALIDATION),
+            test=Dataset.from_pandas(test_df, split=Split.TEST),
+        )
 
-    # Remove the dataset from Hugging Face Hub if it already exists
-    try:
-        api = HfApi()
-        api.delete_repo(dataset_id, repo_type="dataset")
-    except HTTPError:
-        pass
+        dataset_id = f"EuroEval/goldenswag-{language_code}-mini"
 
-    # Push the dataset to the Hugging Face Hub
-    dataset.push_to_hub(dataset_id, private=True)
+        # Remove the dataset from Hugging Face Hub if it already exists
+        try:
+            api = HfApi()
+            api.delete_repo(dataset_id, repo_type="dataset")
+        except HTTPError:
+            pass
+
+        # Push the dataset to the Hugging Face Hub
+        dataset.push_to_hub(dataset_id, private=True)
 
 
-def process_(dataset: Dataset) -> pd.DataFrame:
+def process_(dataset: Dataset, language_code: str) -> pd.DataFrame:
     """Process the dataset.
 
     Args:
@@ -124,7 +151,7 @@ def process_(dataset: Dataset) -> pd.DataFrame:
     # Make a `text` column with all the options in it
     df["text"] = [
         row.ctx.replace("\n", " ").strip() + "\n"
-        "Opções:\n"
+        f"{OPTIONS_MAPPING[language_code]}:\n"
         "a. " + row.endings[0].replace("\n", " ").strip() + "\n"
         "b. " + row.endings[1].replace("\n", " ").strip() + "\n"
         "c. " + row.endings[2].replace("\n", " ").strip() + "\n"
