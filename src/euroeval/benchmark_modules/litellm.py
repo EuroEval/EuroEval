@@ -222,6 +222,20 @@ class LiteLLMModel(BenchmarkModule):
         """
         if self.is_ollama:
             reasoning_model = "thinking" in (self._ollama_show.capabilities or [])
+
+            # TEMP: This is not supported yet, so we inform the user in case it supports
+            # reasoning but we cannot evaluate it with reasoning yet
+            if reasoning_model:
+                log_once(
+                    "This Ollama model supports reasoning, but our backend framework "
+                    "LiteLLM unfortunately does not support this yet, so we will "
+                    "evaluate it without reasoning. You can track the progress of this "
+                    "in the following LiteLLM issue:\n"
+                    "https://github.com/BerriAI/litellm/issues/11680",
+                    level=logging.WARNING,
+                )
+                reasoning_model = False
+
             type_ = (
                 GenerativeType.REASONING
                 if reasoning_model
