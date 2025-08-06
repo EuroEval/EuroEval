@@ -12,6 +12,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   languages: Danish, German, Spanish, Finnish, French, Italian, Dutch, Swedish.
   The datasets are unofficial for now. This was contributed by
   [@oliverkinch](https://github.com/oliverkinch) ✨
+  
+### Changed
+- Now allows metadata to be included in metrics, allowing more flexibility when
+  implementing custom metrics. This is not used in any task yet.
 
 ### Changed
 - Changed structured decoding backend from Outlines to XGrammar, as the latter was more
