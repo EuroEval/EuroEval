@@ -459,6 +459,7 @@ class LiteLLMModel(BenchmarkModule):
         model_output = self._create_model_output(
             model_responses=ordered_responses, model_id=self.model_config.model_id
         )
+        breakpoint()
 
         if len(conversations) != len(model_output.sequences):
             raise InvalidBenchmark(
