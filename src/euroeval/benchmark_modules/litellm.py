@@ -1076,7 +1076,6 @@ class LiteLLMModel(BenchmarkModule):
                 return ollama_model_exists
 
         num_attempts = 10
-        breakpoint()
         for _ in range(num_attempts):
             try:
                 litellm.completion(
