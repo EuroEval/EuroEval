@@ -988,7 +988,14 @@
 <span class="normal">101</span>
 <span class="normal">102</span>
 <span class="normal">103</span>
-<span class="normal">104</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;EuroEval - A benchmarking framework for language models.&quot;&quot;&quot;</span>
+<span class="normal">104</span>
+<span class="normal">105</span>
+<span class="normal">106</span>
+<span class="normal">107</span>
+<span class="normal">108</span>
+<span class="normal">109</span>
+<span class="normal">110</span>
+<span class="normal">111</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;EuroEval - A benchmarking framework for language models.&quot;&quot;&quot;</span>
 
 <span class="c1">### STAGE 1 ###</span>
 <span class="c1">### Block unwanted terminal output that happens on importing external modules ###</span>
@@ -1074,6 +1081,13 @@
 <span class="c1"># Avoid the &quot;Cannot re-initialize CUDA in forked subprocess&quot; error - see</span>
 <span class="c1"># https://github.com/vllm-project/vllm/issues/6152 for more</span>
 <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">&quot;VLLM_WORKER_MULTIPROC_METHOD&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;spawn&quot;</span>
+
+
+<span class="c1"># Allow long max model length in vLLM. This happens when vLLM registers that the model</span>
+<span class="c1"># has a shorter context length than the value we are inserting. But since we do a</span>
+<span class="c1"># thorough check of the model&#39;s config before setting the context length, we trust our</span>
+<span class="c1"># own checks and ignore the internal vLLM check.</span>
+<span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">&quot;VLLM_ALLOW_LONG_MAX_MODEL_LEN&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;1&quot;</span>
 
 
 <span class="c1"># Avoid the &quot;Unclosed client session&quot; error when evaluating Ollama models with LiteLLM.</span>

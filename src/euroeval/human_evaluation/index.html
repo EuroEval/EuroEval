@@ -1675,7 +1675,8 @@
 <span class="normal">734</span>
 <span class="normal">735</span>
 <span class="normal">736</span>
-<span class="normal">737</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Gradio app for conducting human evaluation of the tasks.&quot;&quot;&quot;</span>
+<span class="normal">737</span>
+<span class="normal">738</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Gradio app for conducting human evaluation of the tasks.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">importlib.util</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
@@ -2297,7 +2298,8 @@
         <span class="p">)</span>
         <span class="n">ground_truth</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">active_dataset</span><span class="p">[</span><span class="s2">&quot;label&quot;</span><span class="p">]</span>
         <span class="n">itr_scores</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">compute_metrics</span><span class="p">(</span>
-            <span class="n">model_outputs_and_labels</span><span class="o">=</span><span class="p">(</span><span class="n">all_preds</span><span class="p">,</span> <span class="n">ground_truth</span><span class="p">)</span>
+            <span class="n">model_outputs_and_labels</span><span class="o">=</span><span class="p">(</span><span class="n">all_preds</span><span class="p">,</span> <span class="n">ground_truth</span><span class="p">),</span>
+            <span class="n">dataset</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">active_dataset</span><span class="p">,</span>
         <span class="p">)</span>
 
         <span class="c1"># We reverse the order, as the Info messages are printed in reverse order</span>
