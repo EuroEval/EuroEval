@@ -55,7 +55,7 @@ body:
   attributes:
     label: EuroEval version
     description: What version of EuroEval are you using?
-    placeholder: Output of `pip list | grep EuroEval`
+    placeholder: Output of `pip list | grep euroeval`
   validations:
     required: true
 - type: input
