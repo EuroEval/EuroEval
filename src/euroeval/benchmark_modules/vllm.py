@@ -690,8 +690,17 @@ def load_model_and_tokenizer(
             )
             dtype = torch.float16
 
-    # If the model is a quantized model, we need to set the dtype to float16
-    if quantization is not None and hf_model_config.torch_dtype != torch.float16:
+    # If the model is a quantized model, we might need to change the dtype
+    if quantization == "mxfp4" and hf_model_config.torch_dtype is None:
+        if torch.cuda.is_bf16_supported():
+            dtype = torch.bfloat16
+        else:
+            dtype = torch.float16
+        logger.debug(
+            "You are loading a quantized model where `torch_dtype` has not been set. "
+            f"Setting dtype to {dtype!r}."
+        )
+    elif quantization is not None and hf_model_config.torch_dtype != torch.float16:
         logger.info(
             "You are loading a quantized model with dtype "
             f"{hf_model_config.torch_dtype}, which vLLM does not support. Setting "
