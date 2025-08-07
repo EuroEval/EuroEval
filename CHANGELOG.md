@@ -16,6 +16,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Since LiteLLM does not support the Ollama `think` parameter yet ([LiteLLM
   issue](https://github.com/BerriAI/litellm/issues/11680)), we now disable reasoning for
   the Ollama models that support reasoning, and inform the user appropriately.
+- Prevent multiple `Model <model-id> does not exist` logs when evaluating a model
+  that does not exist - now only logs this once.
+- Cleaner error message when attempting to benchmark a generative model without having a
+  GPU available.
 
 
 ## [v15.15.0] - 2025-08-06
