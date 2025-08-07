@@ -3,6 +3,7 @@
 import logging
 import sys
 import typing as t
+from functools import partial
 
 import torch
 from tqdm.auto import tqdm
@@ -198,7 +199,7 @@ def finetune_single_iteration(
         args=training_args,
         train_dataset=dataset["train"],
         eval_dataset=dataset["val"],
-        compute_metrics=model.compute_metrics,
+        compute_metrics=partial(model.compute_metrics, dataset=None),
         callbacks=[EarlyStoppingCallback(early_stopping_patience=2)],
         data_collator=model.data_collator,
         preprocess_logits_for_metrics=remove_extra_tensors_from_logits,

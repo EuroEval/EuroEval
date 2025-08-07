@@ -51,7 +51,7 @@ class Metric(abc.ABC):
 
     @abc.abstractmethod
     def __call__(
-        self, predictions: t.Sequence, references: t.Sequence, dataset: "Dataset"
+        self, predictions: t.Sequence, references: t.Sequence, dataset: "Dataset | None"
     ) -> float | None:
         """Calculate the metric score.
 
@@ -132,7 +132,7 @@ class HuggingFaceMetric(Metric):
         self.metric: "EvaluationModule | None" = None
 
     def __call__(
-        self, predictions: t.Sequence, references: t.Sequence, dataset: "Dataset"
+        self, predictions: t.Sequence, references: t.Sequence, dataset: "Dataset | None"
     ) -> float | None:
         """Calculate the metric score.
 
@@ -225,7 +225,7 @@ class LLMAsAJudgeMetric(Metric):
         self.system_prompt = system_prompt
 
     def __call__(
-        self, predictions: t.Sequence, references: t.Sequence, dataset: "Dataset"
+        self, predictions: t.Sequence, references: t.Sequence, dataset: "Dataset | None"
     ) -> float | None:
         """Calculate the metric score using the judge model.
 
@@ -359,7 +359,9 @@ class SpeedMetric(Metric):
             postprocessing_fn=lambda raw_score: (raw_score, f"{raw_score:,.0f}"),
         )
 
-    def __call__(self, _: t.Sequence, __: t.Sequence, ___: "Dataset") -> float | None:
+    def __call__(
+        self, _: t.Sequence, __: t.Sequence, ___: "Dataset | None"
+    ) -> float | None:
         """Not used with the speed metric, but required for consistency."""
         raise NotImplementedError
 
