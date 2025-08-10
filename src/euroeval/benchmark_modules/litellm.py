@@ -602,7 +602,8 @@ class LiteLLMModel(BenchmarkModule):
                 f"{error.param!r}. Here is the full traceback:\n{error!r}",
                 level=logging.DEBUG,
             )
-            raise InvalidBenchmark(
+            breakpoint()
+            raise InvalidModel(
                 f"The model {model_id!r} does not support the parameters "
                 f"{error.param!r}. Skipping this model."
             )
