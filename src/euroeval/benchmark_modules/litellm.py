@@ -381,17 +381,21 @@ class LiteLLMModel(BenchmarkModule):
             )
 
         # First attempt is a test run with a single conversation to handle errors
-        # quickly
+        # quickly. We repeat this multiple times to deal with different types of
+        # errors, and stop if we get a successful response.
         test_conversation = conversations[0]
-        _, failures = safe_run(
-            self._generate_async(
-                model_id=self.model_config.model_id,
-                conversations=[test_conversation],
-                **generation_kwargs,
+        for _ in range(5):
+            _, failures = safe_run(
+                self._generate_async(
+                    model_id=self.model_config.model_id,
+                    conversations=[test_conversation],
+                    **generation_kwargs,
+                )
             )
-        )
-        for _, error in failures:
-            self._handle_exception(error=error, generation_kwargs=generation_kwargs)
+            if not failures:
+                break
+            for _, error in failures:
+                self._handle_exception(error=error, generation_kwargs=generation_kwargs)
 
         all_responses: dict[int, "ModelResponse"] = {}
         conversations_to_run: list[tuple[int, list[litellm.AllMessageValues]]] = list(
