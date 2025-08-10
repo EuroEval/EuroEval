@@ -597,16 +597,18 @@ class LiteLLMModel(BenchmarkModule):
             sleep(5)
             return
         elif isinstance(error, UnsupportedParamsError):
-            log_once(
-                message=f"The model {model_id!r} does not support the parameters "
-                f"{error.param!r}. Here is the full traceback:\n{error!r}",
-                level=logging.DEBUG,
+            unsupported_param_match = re.search(
+                pattern=r"(?<=does not support parameters\: \[')([^ '])(?='\])",
+                string=error.message,
             )
-            breakpoint()
-            raise InvalidModel(
-                f"The model {model_id!r} does not support the parameters "
-                f"{error.param!r}. Skipping this model."
-            )
+            if unsupported_param_match is None:
+                raise InvalidModel(error.message)
+            else:
+                unsupported_param = unsupported_param_match.group(0)
+                raise InvalidModel(
+                    f"The model {model_id!r} does not support the parameters "
+                    f"{unsupported_param!r}. Skipping this model."
+                )
         elif isinstance(error, (APIConnectionError, OSError)):
             # If there are too many I/O connections, we increase the number of allowed
             # file descriptors
