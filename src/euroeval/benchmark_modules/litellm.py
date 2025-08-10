@@ -380,7 +380,7 @@ class LiteLLMModel(BenchmarkModule):
             )
 
         # Drop generation kwargs that are not supported by the model
-        litellm.drop_params = True
+        # litellm.drop_params = True
 
         # First attempt is a test run with a single conversation to handle errors
         # quickly
