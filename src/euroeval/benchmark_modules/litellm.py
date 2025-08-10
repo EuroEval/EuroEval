@@ -469,7 +469,6 @@ class LiteLLMModel(BenchmarkModule):
             generation_kwargs:
                 The generation kwargs to pass to the model.
         """
-        breakpoint()
         error_msg = str(error).lower()
         model_id = self.model_config.model_id
 
@@ -489,6 +488,7 @@ class LiteLLMModel(BenchmarkModule):
             "`temperature` may only be set to 1",
             "'temperature' does not support 0.0 with this model. Only the default "
             "(1) value is supported",
+            "Only temperature=1 is supported",
         ]
         max_items_messages = ["'maxItems' is not permitted."]
         no_json_schema_messages = ["Property keys should match pattern"]
