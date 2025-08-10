@@ -469,6 +469,7 @@ class LiteLLMModel(BenchmarkModule):
             generation_kwargs:
                 The generation kwargs to pass to the model.
         """
+        breakpoint()
         error_msg = str(error).lower()
         model_id = self.model_config.model_id
 
