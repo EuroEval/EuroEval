@@ -598,7 +598,7 @@ class LiteLLMModel(BenchmarkModule):
             return
         elif isinstance(error, UnsupportedParamsError):
             unsupported_param_match = re.search(
-                pattern=r"(?<=does not support parameters\: \[')([^ '])(?='\])",
+                pattern=r"(?<=does not support parameters\: \[')([^ ']+)(?='\])",
                 string=error.message,
             )
             if unsupported_param_match is None:
