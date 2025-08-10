@@ -606,8 +606,9 @@ class LiteLLMModel(BenchmarkModule):
             else:
                 unsupported_param = unsupported_param_match.group(0)
                 raise InvalidModel(
-                    f"The model {model_id!r} does not support the parameters "
-                    f"{unsupported_param!r}. Skipping this model."
+                    f"The model {model_id!r} does not support the parameter "
+                    f"{unsupported_param!r}. Try again without this parameter. "
+                    "Skipping this model."
                 )
         elif isinstance(error, (APIConnectionError, OSError)):
             # If there are too many I/O connections, we increase the number of allowed
