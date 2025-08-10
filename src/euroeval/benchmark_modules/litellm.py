@@ -27,6 +27,7 @@ from litellm.exceptions import (
     RateLimitError,
     ServiceUnavailableError,
     Timeout,
+    UnsupportedParamsError,
 )
 from litellm.llms.vertex_ai.common_utils import VertexAIError
 from litellm.router import Router
@@ -598,6 +599,16 @@ class LiteLLMModel(BenchmarkModule):
             )
             sleep(5)
             return
+        elif isinstance(error, UnsupportedParamsError):
+            log_once(
+                message=f"The model {model_id!r} does not support the parameters "
+                f"{error.param!r}. Here is the full traceback:\n{error!r}",
+                level=logging.DEBUG,
+            )
+            raise InvalidBenchmark(
+                f"The model {model_id!r} does not support the parameters "
+                f"{error.param!r}. Skipping this model."
+            )
         elif isinstance(error, (APIConnectionError, OSError)):
             # If there are too many I/O connections, we increase the number of allowed
             # file descriptors
