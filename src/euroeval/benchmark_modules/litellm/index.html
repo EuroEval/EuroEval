@@ -925,6 +925,15 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#euroeval.benchmark_modules.litellm.LiteLLMModel.get_generation_kwargs" class="md-nav__link">
+    <span class="md-ellipsis">
+      get_generation_kwargs
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -2338,7 +2347,57 @@
 <span class="normal">1361</span>
 <span class="normal">1362</span>
 <span class="normal">1363</span>
-<span class="normal">1364</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Generative models from an inference API, using the LiteLLM framework.&quot;&quot;&quot;</span>
+<span class="normal">1364</span>
+<span class="normal">1365</span>
+<span class="normal">1366</span>
+<span class="normal">1367</span>
+<span class="normal">1368</span>
+<span class="normal">1369</span>
+<span class="normal">1370</span>
+<span class="normal">1371</span>
+<span class="normal">1372</span>
+<span class="normal">1373</span>
+<span class="normal">1374</span>
+<span class="normal">1375</span>
+<span class="normal">1376</span>
+<span class="normal">1377</span>
+<span class="normal">1378</span>
+<span class="normal">1379</span>
+<span class="normal">1380</span>
+<span class="normal">1381</span>
+<span class="normal">1382</span>
+<span class="normal">1383</span>
+<span class="normal">1384</span>
+<span class="normal">1385</span>
+<span class="normal">1386</span>
+<span class="normal">1387</span>
+<span class="normal">1388</span>
+<span class="normal">1389</span>
+<span class="normal">1390</span>
+<span class="normal">1391</span>
+<span class="normal">1392</span>
+<span class="normal">1393</span>
+<span class="normal">1394</span>
+<span class="normal">1395</span>
+<span class="normal">1396</span>
+<span class="normal">1397</span>
+<span class="normal">1398</span>
+<span class="normal">1399</span>
+<span class="normal">1400</span>
+<span class="normal">1401</span>
+<span class="normal">1402</span>
+<span class="normal">1403</span>
+<span class="normal">1404</span>
+<span class="normal">1405</span>
+<span class="normal">1406</span>
+<span class="normal">1407</span>
+<span class="normal">1408</span>
+<span class="normal">1409</span>
+<span class="normal">1410</span>
+<span class="normal">1411</span>
+<span class="normal">1412</span>
+<span class="normal">1413</span>
+<span class="normal">1414</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Generative models from an inference API, using the LiteLLM framework.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">asyncio</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">c</span>
@@ -2346,7 +2405,7 @@
 <span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">t</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">functools</span><span class="w"> </span><span class="kn">import</span> <span class="n">cached_property</span><span class="p">,</span> <span class="n">partial</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">functools</span><span class="w"> </span><span class="kn">import</span> <span class="n">cache</span><span class="p">,</span> <span class="n">cached_property</span><span class="p">,</span> <span class="n">partial</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">time</span><span class="w"> </span><span class="kn">import</span> <span class="n">sleep</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">litellm</span>
@@ -2367,6 +2426,7 @@
     <span class="n">RateLimitError</span><span class="p">,</span>
     <span class="n">ServiceUnavailableError</span><span class="p">,</span>
     <span class="n">Timeout</span><span class="p">,</span>
+    <span class="n">UnsupportedParamsError</span><span class="p">,</span>
 <span class="p">)</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">litellm.llms.vertex_ai.common_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">VertexAIError</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">litellm.router</span><span class="w"> </span><span class="kn">import</span> <span class="n">Router</span>
@@ -2427,6 +2487,7 @@
 
 <span class="n">VOCAB_SIZE_MAPPING</span> <span class="o">=</span> <span class="p">{</span>
     <span class="c1"># OpenAI models</span>
+    <span class="sa">r</span><span class="s2">&quot;gpt-5-.*&quot;</span><span class="p">:</span> <span class="mi">100_256</span><span class="p">,</span>
     <span class="sa">r</span><span class="s2">&quot;gpt-4-(32k)?(-[0-9]</span><span class="si">{4}</span><span class="s2">)?&quot;</span><span class="p">:</span> <span class="mi">100_256</span><span class="p">,</span>
     <span class="sa">r</span><span class="s2">&quot;gpt-4-[0-9]</span><span class="si">{4}</span><span class="s2">-preview&quot;</span><span class="p">:</span> <span class="mi">100_256</span><span class="p">,</span>
     <span class="sa">r</span><span class="s2">&quot;gpt-4-turbo(-[0-9]</span><span class="si">{4}</span><span class="s2">-[0-9]</span><span class="si">{2}</span><span class="s2">-[0-9]</span><span class="si">{2}</span><span class="s2">)?&quot;</span><span class="p">:</span> <span class="mi">100_256</span><span class="p">,</span>
@@ -2445,6 +2506,7 @@
 
 <span class="n">MODEL_MAX_LENGTH_MAPPING</span> <span class="o">=</span> <span class="p">{</span>
     <span class="c1"># OpenAI models</span>
+    <span class="sa">r</span><span class="s2">&quot;gpt-5-.*&quot;</span><span class="p">:</span> <span class="mi">272_000</span><span class="p">,</span>
     <span class="sa">r</span><span class="s2">&quot;gpt-4(-[0-9]</span><span class="si">{4}</span><span class="s2">)?&quot;</span><span class="p">:</span> <span class="mi">8_191</span><span class="p">,</span>
     <span class="sa">r</span><span class="s2">&quot;gpt-4-32k(-[0-9]</span><span class="si">{4}</span><span class="s2">)?&quot;</span><span class="p">:</span> <span class="mi">32_767</span><span class="p">,</span>
     <span class="sa">r</span><span class="s2">&quot;gpt-4-[0-9]</span><span class="si">{4}</span><span class="s2">-preview&quot;</span><span class="p">:</span> <span class="mi">128_000</span><span class="p">,</span>
@@ -2469,6 +2531,7 @@
 
 <span class="n">NUM_PARAMS_MAPPING</span> <span class="o">=</span> <span class="p">{</span>
     <span class="c1"># OpenAI models</span>
+    <span class="sa">r</span><span class="s2">&quot;gpt-5-.*&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span>
     <span class="sa">r</span><span class="s2">&quot;gpt-4.*&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span>
     <span class="sa">r</span><span class="s2">&quot;o[1-9](-mini|-preview)?(-[0-9]</span><span class="si">{4}</span><span class="s2">-[0-9]</span><span class="si">{2}</span><span class="s2">-[0-9]</span><span class="si">{2}</span><span class="s2">)?&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span>
     <span class="c1"># Anthropic models</span>
@@ -2484,6 +2547,7 @@
 
 <span class="n">ALLOWED_PARAMS</span> <span class="o">=</span> <span class="p">{</span>
     <span class="c1"># OpenAI models</span>
+    <span class="sa">r</span><span class="s2">&quot;gpt-5-.*&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;minimal&quot;</span><span class="p">,</span> <span class="s2">&quot;low&quot;</span><span class="p">,</span> <span class="s2">&quot;medium&quot;</span><span class="p">,</span> <span class="s2">&quot;high&quot;</span><span class="p">],</span>
     <span class="sa">r</span><span class="s2">&quot;o[1-9](-mini|-preview)?(-[0-9]</span><span class="si">{4}</span><span class="s2">-[0-9]</span><span class="si">{2}</span><span class="s2">-[0-9]</span><span class="si">{2}</span><span class="s2">)?&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;low&quot;</span><span class="p">,</span> <span class="s2">&quot;medium&quot;</span><span class="p">,</span> <span class="s2">&quot;high&quot;</span><span class="p">],</span>
     <span class="c1"># Anthropic models</span>
     <span class="sa">r</span><span class="s2">&quot;(anthropic/)?claude-3-7-sonnet.*&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;no-thinking&quot;</span><span class="p">,</span> <span class="s2">&quot;thinking&quot;</span><span class="p">],</span>
@@ -2609,28 +2673,9 @@
             <span class="n">generative_type</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">generative_type</span><span class="p">,</span>
         <span class="p">)</span>
 
-        <span class="c1"># Set the core generation arguments</span>
-        <span class="n">generation_kwargs</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">t</span><span class="o">.</span><span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
-            <span class="n">model</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span><span class="p">,</span>
-            <span class="n">max_completion_tokens</span><span class="o">=</span><span class="p">(</span>
-                <span class="n">REASONING_MAX_TOKENS</span>
-                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">generative_type</span> <span class="o">==</span> <span class="n">GenerativeType</span><span class="o">.</span><span class="n">REASONING</span>
-                <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">dataset_config</span><span class="o">.</span><span class="n">max_generated_tokens</span>
-            <span class="p">),</span>
-            <span class="n">stop</span><span class="o">=</span><span class="p">[],</span>
-            <span class="n">temperature</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>
-            <span class="n">seed</span><span class="o">=</span><span class="mi">4242</span><span class="p">,</span>
-            <span class="n">api_key</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">benchmark_config</span><span class="o">.</span><span class="n">api_key</span><span class="p">,</span>
-            <span class="n">api_base</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">benchmark_config</span><span class="o">.</span><span class="n">api_base</span><span class="p">,</span>
-            <span class="n">api_version</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">benchmark_config</span><span class="o">.</span><span class="n">api_version</span><span class="p">,</span>
-            <span class="n">max_retries</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
-        <span class="p">)</span>
-
-        <span class="c1"># Set up the `response_format` generation argument if we are dealing with a task</span>
-        <span class="c1"># using structured generation</span>
+        <span class="c1"># Sanity check that &quot;JSON&quot; is included in the prompt, as some models require</span>
+        <span class="c1"># this</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">dataset_config</span><span class="o">.</span><span class="n">task</span> <span class="ow">in</span> <span class="n">TASKS_USING_JSON</span><span class="p">:</span>
-            <span class="c1"># Sanity check that &quot;JSON&quot; is included in the prompt, as some models require</span>
-            <span class="c1"># this</span>
             <span class="k">for</span> <span class="n">conversation</span> <span class="ow">in</span> <span class="n">conversations</span><span class="p">:</span>
                 <span class="k">if</span> <span class="ow">not</span> <span class="n">conversation</span><span class="p">:</span>
                     <span class="k">raise</span> <span class="n">InvalidBenchmark</span><span class="p">(</span>
@@ -2650,87 +2695,6 @@
                     <span class="s2">&quot;Prompt must contain &#39;json&#39; for JSON tasks.&quot;</span>
                 <span class="p">)</span>
 
-            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">generative_type</span> <span class="o">==</span> <span class="n">GenerativeType</span><span class="o">.</span><span class="n">REASONING</span><span class="p">:</span>
-                <span class="n">log_once</span><span class="p">(</span>
-                    <span class="sa">f</span><span class="s2">&quot;The model </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span><span class="si">!r}</span><span class="s2"> is a reasoning model &quot;</span>
-                    <span class="s2">&quot;and thus does not support structured generation, so we do not &quot;</span>
-                    <span class="s2">&quot;enable it.&quot;</span><span class="p">,</span>
-                    <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
-                <span class="p">)</span>
-            <span class="k">elif</span> <span class="n">supports_response_schema</span><span class="p">(</span><span class="n">model</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span><span class="p">):</span>
-                <span class="n">ner_tag_names</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dataset_config</span><span class="o">.</span><span class="n">prompt_label_mapping</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
-                <span class="n">keys_and_their_types</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">t</span><span class="o">.</span><span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
-                    <span class="n">tag_name</span><span class="p">:</span> <span class="p">(</span><span class="n">conlist</span><span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="n">max_length</span><span class="o">=</span><span class="mi">5</span><span class="p">),</span> <span class="o">...</span><span class="p">)</span>
-                    <span class="k">for</span> <span class="n">tag_name</span> <span class="ow">in</span> <span class="n">ner_tag_names</span>
-                <span class="p">}</span>
-                <span class="n">pydantic_class</span> <span class="o">=</span> <span class="n">create_model</span><span class="p">(</span><span class="s2">&quot;AnswerFormat&quot;</span><span class="p">,</span> <span class="o">**</span><span class="n">keys_and_their_types</span><span class="p">)</span>
-                <span class="n">generation_kwargs</span><span class="p">[</span><span class="s2">&quot;response_format&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">pydantic_class</span>
-                <span class="n">log_once</span><span class="p">(</span>
-                    <span class="s2">&quot;Enabling structured generation for model &quot;</span>
-                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span><span class="si">!r}</span><span class="s2"> with the JSON schema &quot;</span>
-                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">pydantic_class</span><span class="o">.</span><span class="n">model_json_schema</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
-                    <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
-                <span class="p">)</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="n">generation_kwargs</span><span class="p">[</span><span class="s2">&quot;response_format&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="nb">type</span><span class="o">=</span><span class="s2">&quot;json_object&quot;</span><span class="p">)</span>
-                <span class="n">log_once</span><span class="p">(</span>
-                    <span class="s2">&quot;Enabling structured JSON generation for model &quot;</span>
-                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span><span class="si">!r}</span><span class="s2"> with no custom JSON schema, as &quot;</span>
-                    <span class="s2">&quot;the model does not support schemas.&quot;</span><span class="p">,</span>
-                    <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
-                <span class="p">)</span>
-
-        <span class="c1"># If the model is an Ollama reasoning model, we ensure that thinking is enabled</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_ollama</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">generative_type</span> <span class="o">==</span> <span class="n">GenerativeType</span><span class="o">.</span><span class="n">REASONING</span><span class="p">:</span>
-            <span class="n">generation_kwargs</span><span class="p">[</span><span class="s2">&quot;think&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
-            <span class="n">log_once</span><span class="p">(</span>
-                <span class="s2">&quot;Enabling thinking mode for Ollama model &quot;</span>
-                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span><span class="si">!r}</span><span class="s2">&quot;</span><span class="p">,</span>
-                <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
-            <span class="p">)</span>
-
-        <span class="c1"># Handle manually set parameters</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">buffer</span><span class="p">[</span><span class="s2">&quot;first_label_token_mapping&quot;</span><span class="p">]:</span>
-            <span class="n">generation_kwargs</span><span class="p">[</span><span class="s2">&quot;logprobs&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
-            <span class="n">generation_kwargs</span><span class="p">[</span><span class="s2">&quot;top_logprobs&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">MAX_LOGPROBS</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">revision</span> <span class="o">==</span> <span class="s2">&quot;thinking&quot;</span><span class="p">:</span>
-            <span class="n">generation_kwargs</span><span class="p">[</span><span class="s2">&quot;thinking&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
-                <span class="nb">type</span><span class="o">=</span><span class="s2">&quot;enabled&quot;</span><span class="p">,</span> <span class="n">budget_tokens</span><span class="o">=</span><span class="n">REASONING_MAX_TOKENS</span> <span class="o">-</span> <span class="mi">1</span>
-            <span class="p">)</span>
-            <span class="n">log_once</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;Enabling thinking mode for model </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span><span class="si">!r}</span><span class="s2">&quot;</span><span class="p">,</span>
-                <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
-            <span class="p">)</span>
-        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">revision</span> <span class="o">==</span> <span class="s2">&quot;no-thinking&quot;</span><span class="p">:</span>
-            <span class="n">generation_kwargs</span><span class="p">[</span><span class="s2">&quot;thinking&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">budget_tokens</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
-            <span class="n">log_once</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;Disabling thinking mode for model </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span><span class="si">!r}</span><span class="s2">&quot;</span><span class="p">,</span>
-                <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
-            <span class="p">)</span>
-        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">revision</span> <span class="ow">in</span> <span class="p">{</span><span class="s2">&quot;low&quot;</span><span class="p">,</span> <span class="s2">&quot;medium&quot;</span><span class="p">,</span> <span class="s2">&quot;high&quot;</span><span class="p">}:</span>
-            <span class="n">generation_kwargs</span><span class="p">[</span><span class="s2">&quot;reasoning_effort&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">revision</span>
-            <span class="n">log_once</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;Enabling reasoning effort </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">revision</span><span class="si">!r}</span><span class="s2"> for model &quot;</span>
-                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span><span class="si">!r}</span><span class="s2">&quot;</span><span class="p">,</span>
-                <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
-            <span class="p">)</span>
-
-        <span class="c1"># Drop generation kwargs that are not supported by the model</span>
-        <span class="n">litellm</span><span class="o">.</span><span class="n">drop_params</span> <span class="o">=</span> <span class="kc">True</span>
-
-        <span class="c1"># First attempt is a test run with a single conversation to handle errors</span>
-        <span class="c1"># quickly</span>
-        <span class="n">test_conversation</span> <span class="o">=</span> <span class="n">conversations</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-        <span class="n">_</span><span class="p">,</span> <span class="n">failures</span> <span class="o">=</span> <span class="n">safe_run</span><span class="p">(</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_generate_async</span><span class="p">(</span>
-                <span class="n">model_id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span><span class="p">,</span>
-                <span class="n">conversations</span><span class="o">=</span><span class="p">[</span><span class="n">test_conversation</span><span class="p">],</span>
-                <span class="o">**</span><span class="n">generation_kwargs</span><span class="p">,</span>
-            <span class="p">)</span>
-        <span class="p">)</span>
-        <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">error</span> <span class="ow">in</span> <span class="n">failures</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_handle_exception</span><span class="p">(</span><span class="n">error</span><span class="o">=</span><span class="n">error</span><span class="p">,</span> <span class="n">generation_kwargs</span><span class="o">=</span><span class="n">generation_kwargs</span><span class="p">)</span>
-
         <span class="n">all_responses</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="s2">&quot;ModelResponse&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
         <span class="n">conversations_to_run</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="n">litellm</span><span class="o">.</span><span class="n">AllMessageValues</span><span class="p">]]]</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span>
             <span class="nb">enumerate</span><span class="p">(</span><span class="n">conversations</span><span class="p">)</span>
@@ -2744,7 +2708,7 @@
                 <span class="bp">self</span><span class="o">.</span><span class="n">_generate_async</span><span class="p">(</span>
                     <span class="n">model_id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span><span class="p">,</span>
                     <span class="n">conversations</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="n">batch_conversations</span><span class="p">),</span>
-                    <span class="o">**</span><span class="n">generation_kwargs</span><span class="p">,</span>
+                    <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">get_generation_kwargs</span><span class="p">(</span><span class="n">dataset_config</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dataset_config</span><span class="p">),</span>
                 <span class="p">)</span>
             <span class="p">)</span>
 
@@ -2771,7 +2735,12 @@
             <span class="c1"># Attempt to handle the exceptions, to improve the chance of getting</span>
             <span class="c1"># successful generations next time around</span>
             <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">error</span> <span class="ow">in</span> <span class="n">failures</span><span class="p">:</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">_handle_exception</span><span class="p">(</span><span class="n">error</span><span class="o">=</span><span class="n">error</span><span class="p">,</span> <span class="n">generation_kwargs</span><span class="o">=</span><span class="n">generation_kwargs</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_handle_exception</span><span class="p">(</span>
+                    <span class="n">error</span><span class="o">=</span><span class="n">error</span><span class="p">,</span>
+                    <span class="n">generation_kwargs</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">get_generation_kwargs</span><span class="p">(</span>
+                        <span class="n">dataset_config</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dataset_config</span>
+                    <span class="p">),</span>
+                <span class="p">)</span>
 
             <span class="c1"># Sleep for a second to avoid pinging the API server too quickly</span>
             <span class="n">sleep</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
@@ -2824,6 +2793,7 @@
             <span class="s2">&quot;`temperature` may only be set to 1&quot;</span><span class="p">,</span>
             <span class="s2">&quot;&#39;temperature&#39; does not support 0.0 with this model. Only the default &quot;</span>
             <span class="s2">&quot;(1) value is supported&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;Only temperature=1 is supported&quot;</span><span class="p">,</span>
         <span class="p">]</span>
         <span class="n">max_items_messages</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;&#39;maxItems&#39; is not permitted.&quot;</span><span class="p">]</span>
         <span class="n">no_json_schema_messages</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;Property keys should match pattern&quot;</span><span class="p">]</span>
@@ -2933,6 +2903,20 @@
             <span class="p">)</span>
             <span class="n">sleep</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span>
             <span class="k">return</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">error</span><span class="p">,</span> <span class="n">UnsupportedParamsError</span><span class="p">):</span>
+            <span class="n">unsupported_param_match</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span>
+                <span class="n">pattern</span><span class="o">=</span><span class="sa">r</span><span class="s2">&quot;(?&lt;=does not support parameters\: \[&#39;)([^ &#39;]+)(?=&#39;\])&quot;</span><span class="p">,</span>
+                <span class="n">string</span><span class="o">=</span><span class="n">error</span><span class="o">.</span><span class="n">message</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="k">if</span> <span class="n">unsupported_param_match</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">InvalidModel</span><span class="p">(</span><span class="n">error</span><span class="o">.</span><span class="n">message</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">unsupported_param</span> <span class="o">=</span> <span class="n">unsupported_param_match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+                <span class="k">raise</span> <span class="n">InvalidModel</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;The model </span><span class="si">{</span><span class="n">model_id</span><span class="si">!r}</span><span class="s2"> does not support the parameter &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">unsupported_param</span><span class="si">!r}</span><span class="s2">. Try again without this parameter. &quot;</span>
+                    <span class="s2">&quot;Skipping this model.&quot;</span>
+                <span class="p">)</span>
         <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">error</span><span class="p">,</span> <span class="p">(</span><span class="n">APIConnectionError</span><span class="p">,</span> <span class="ne">OSError</span><span class="p">)):</span>
             <span class="c1"># If there are too many I/O connections, we increase the number of allowed</span>
             <span class="c1"># file descriptors</span>
@@ -3573,6 +3557,126 @@
 
         <span class="k">return</span> <span class="n">dataset</span>
 
+    <span class="nd">@cache</span><div class="mkapi-source-link" id="euroeval.benchmark_modules.litellm.LiteLLMModel.get_generation_kwargs"><a href="../../../../api/euroeval/benchmark_modules/litellm/#euroeval.benchmark_modules.litellm.LiteLLMModel.get_generation_kwargs" title="Go to docs">[docs]</a></div>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_generation_kwargs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset_config</span><span class="p">:</span> <span class="n">DatasetConfig</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">t</span><span class="o">.</span><span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the generation arguments for the model.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            dataset_config:</span>
+<span class="sd">                The dataset configuration, which is used to determine the generative</span>
+<span class="sd">                type of the model. We use this as an argument here rather than using</span>
+<span class="sd">                `self.dataset_config` to ensure that that the cache is updated when the</span>
+<span class="sd">                dataset configuration changes.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            The generation arguments for the model.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Set the core generation arguments</span>
+        <span class="n">generation_kwargs</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">t</span><span class="o">.</span><span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
+            <span class="n">model</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span><span class="p">,</span>
+            <span class="n">max_completion_tokens</span><span class="o">=</span><span class="p">(</span>
+                <span class="n">REASONING_MAX_TOKENS</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">generative_type</span> <span class="o">==</span> <span class="n">GenerativeType</span><span class="o">.</span><span class="n">REASONING</span>
+                <span class="k">else</span> <span class="n">dataset_config</span><span class="o">.</span><span class="n">max_generated_tokens</span>
+            <span class="p">),</span>
+            <span class="n">stop</span><span class="o">=</span><span class="p">[],</span>
+            <span class="n">temperature</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>
+            <span class="n">seed</span><span class="o">=</span><span class="mi">4242</span><span class="p">,</span>
+            <span class="n">api_key</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">benchmark_config</span><span class="o">.</span><span class="n">api_key</span><span class="p">,</span>
+            <span class="n">api_base</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">benchmark_config</span><span class="o">.</span><span class="n">api_base</span><span class="p">,</span>
+            <span class="n">api_version</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">benchmark_config</span><span class="o">.</span><span class="n">api_version</span><span class="p">,</span>
+            <span class="n">max_retries</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="c1"># Set up the `response_format` generation argument if we are dealing with a task</span>
+        <span class="c1"># using structured generation</span>
+        <span class="k">if</span> <span class="n">dataset_config</span><span class="o">.</span><span class="n">task</span> <span class="ow">in</span> <span class="n">TASKS_USING_JSON</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">generative_type</span> <span class="o">==</span> <span class="n">GenerativeType</span><span class="o">.</span><span class="n">REASONING</span><span class="p">:</span>
+                <span class="n">log_once</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;The model </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span><span class="si">!r}</span><span class="s2"> is a reasoning model &quot;</span>
+                    <span class="s2">&quot;and thus does not support structured generation, so we do not &quot;</span>
+                    <span class="s2">&quot;enable it.&quot;</span><span class="p">,</span>
+                    <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
+                <span class="p">)</span>
+            <span class="k">elif</span> <span class="n">supports_response_schema</span><span class="p">(</span><span class="n">model</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span><span class="p">):</span>
+                <span class="n">ner_tag_names</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">dataset_config</span><span class="o">.</span><span class="n">prompt_label_mapping</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+                <span class="n">keys_and_their_types</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">t</span><span class="o">.</span><span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+                    <span class="n">tag_name</span><span class="p">:</span> <span class="p">(</span><span class="n">conlist</span><span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="n">max_length</span><span class="o">=</span><span class="mi">5</span><span class="p">),</span> <span class="o">...</span><span class="p">)</span>
+                    <span class="k">for</span> <span class="n">tag_name</span> <span class="ow">in</span> <span class="n">ner_tag_names</span>
+                <span class="p">}</span>
+                <span class="n">pydantic_class</span> <span class="o">=</span> <span class="n">create_model</span><span class="p">(</span><span class="s2">&quot;AnswerFormat&quot;</span><span class="p">,</span> <span class="o">**</span><span class="n">keys_and_their_types</span><span class="p">)</span>
+                <span class="n">generation_kwargs</span><span class="p">[</span><span class="s2">&quot;response_format&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">pydantic_class</span>
+                <span class="n">log_once</span><span class="p">(</span>
+                    <span class="s2">&quot;Enabling structured generation for model &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span><span class="si">!r}</span><span class="s2"> with the JSON schema &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">pydantic_class</span><span class="o">.</span><span class="n">model_json_schema</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                    <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
+                <span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">generation_kwargs</span><span class="p">[</span><span class="s2">&quot;response_format&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="nb">type</span><span class="o">=</span><span class="s2">&quot;json_object&quot;</span><span class="p">)</span>
+                <span class="n">log_once</span><span class="p">(</span>
+                    <span class="s2">&quot;Enabling structured JSON generation for model &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span><span class="si">!r}</span><span class="s2"> with no custom JSON schema, as &quot;</span>
+                    <span class="s2">&quot;the model does not support schemas.&quot;</span><span class="p">,</span>
+                    <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
+                <span class="p">)</span>
+
+        <span class="c1"># If the model is an Ollama reasoning model, we ensure that thinking is enabled</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_ollama</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">generative_type</span> <span class="o">==</span> <span class="n">GenerativeType</span><span class="o">.</span><span class="n">REASONING</span><span class="p">:</span>
+            <span class="n">generation_kwargs</span><span class="p">[</span><span class="s2">&quot;think&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="n">log_once</span><span class="p">(</span>
+                <span class="s2">&quot;Enabling thinking mode for Ollama model &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span><span class="si">!r}</span><span class="s2">&quot;</span><span class="p">,</span>
+                <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
+            <span class="p">)</span>
+
+        <span class="c1"># Handle manually set parameters</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">buffer</span><span class="p">[</span><span class="s2">&quot;first_label_token_mapping&quot;</span><span class="p">]:</span>
+            <span class="n">generation_kwargs</span><span class="p">[</span><span class="s2">&quot;logprobs&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="n">generation_kwargs</span><span class="p">[</span><span class="s2">&quot;top_logprobs&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">MAX_LOGPROBS</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">revision</span> <span class="o">==</span> <span class="s2">&quot;thinking&quot;</span><span class="p">:</span>
+            <span class="n">generation_kwargs</span><span class="p">[</span><span class="s2">&quot;thinking&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
+                <span class="nb">type</span><span class="o">=</span><span class="s2">&quot;enabled&quot;</span><span class="p">,</span> <span class="n">budget_tokens</span><span class="o">=</span><span class="n">REASONING_MAX_TOKENS</span> <span class="o">-</span> <span class="mi">1</span>
+            <span class="p">)</span>
+            <span class="n">log_once</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Enabling thinking mode for model </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span><span class="si">!r}</span><span class="s2">&quot;</span><span class="p">,</span>
+                <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">revision</span> <span class="o">==</span> <span class="s2">&quot;no-thinking&quot;</span><span class="p">:</span>
+            <span class="n">generation_kwargs</span><span class="p">[</span><span class="s2">&quot;thinking&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">budget_tokens</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+            <span class="n">log_once</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Disabling thinking mode for model </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span><span class="si">!r}</span><span class="s2">&quot;</span><span class="p">,</span>
+                <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">revision</span> <span class="ow">in</span> <span class="p">{</span><span class="s2">&quot;minimal&quot;</span><span class="p">,</span> <span class="s2">&quot;low&quot;</span><span class="p">,</span> <span class="s2">&quot;medium&quot;</span><span class="p">,</span> <span class="s2">&quot;high&quot;</span><span class="p">}:</span>
+            <span class="n">generation_kwargs</span><span class="p">[</span><span class="s2">&quot;reasoning_effort&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">revision</span>
+            <span class="n">log_once</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Enabling reasoning effort </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">revision</span><span class="si">!r}</span><span class="s2"> for model &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span><span class="si">!r}</span><span class="s2">&quot;</span><span class="p">,</span>
+                <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
+            <span class="p">)</span>
+
+        <span class="c1"># First attempt is a test run with a single conversation to handle errors</span>
+        <span class="c1"># quickly. We repeat this multiple times to deal with different types of</span>
+        <span class="c1"># errors, and stop if we get a successful response.</span>
+        <span class="n">test_conversation</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">litellm</span><span class="o">.</span><span class="n">ChatCompletionUserMessage</span><span class="p">(</span><span class="n">role</span><span class="o">=</span><span class="s2">&quot;user&quot;</span><span class="p">,</span> <span class="n">content</span><span class="o">=</span><span class="s2">&quot;Test message&quot;</span><span class="p">)</span>
+        <span class="p">]</span>
+        <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">5</span><span class="p">):</span>
+            <span class="n">_</span><span class="p">,</span> <span class="n">failures</span> <span class="o">=</span> <span class="n">safe_run</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_generate_async</span><span class="p">(</span>
+                    <span class="n">model_id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span><span class="p">,</span>
+                    <span class="n">conversations</span><span class="o">=</span><span class="p">[</span><span class="n">test_conversation</span><span class="p">],</span>
+                    <span class="o">**</span><span class="n">generation_kwargs</span><span class="p">,</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">failures</span><span class="p">:</span>
+                <span class="k">break</span>
+            <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">error</span> <span class="ow">in</span> <span class="n">failures</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_handle_exception</span><span class="p">(</span><span class="n">error</span><span class="o">=</span><span class="n">error</span><span class="p">,</span> <span class="n">generation_kwargs</span><span class="o">=</span><span class="n">generation_kwargs</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">generation_kwargs</span>
+
 
 <span class="k">def</span><span class="w"> </span><span class="nf">raise_if_wrong_params</span><span class="p">(</span><div class="mkapi-source-link" id="euroeval.benchmark_modules.litellm.raise_if_wrong_params"><a href="../../../../api/euroeval/benchmark_modules/litellm/#euroeval.benchmark_modules.litellm.raise_if_wrong_params" title="Go to docs">[docs]</a></div>
     <span class="n">model_config</span><span class="p">:</span> <span class="n">ModelConfig</span><span class="p">,</span> <span class="n">allowed_params</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span>
@@ -3604,6 +3708,11 @@
                     <span class="n">msg</span> <span class="o">+=</span> <span class="s2">&quot; No parameters are allowed.&quot;</span>
                 <span class="k">raise</span> <span class="n">InvalidModel</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
             <span class="k">return</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">InvalidModel</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;The parameter </span><span class="si">{</span><span class="n">param</span><span class="si">!r}</span><span class="s2"> is not supported for the model &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span><span class="si">!r}</span><span class="s2">.&quot;</span>
+        <span class="p">)</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">try_download_ollama_model</span><span class="p">(</span><span class="n">model_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span><div class="mkapi-source-link" id="euroeval.benchmark_modules.litellm.try_download_ollama_model"><a href="../../../../api/euroeval/benchmark_modules/litellm/#euroeval.benchmark_modules.litellm.try_download_ollama_model" title="Go to docs">[docs]</a></div>
