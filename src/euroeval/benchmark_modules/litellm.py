@@ -540,12 +540,6 @@ class LiteLLMModel(BenchmarkModule):
                 f"Encountered {type(error)} during generation: {error}."
             )
 
-        if isinstance(error, NotFoundError):
-            raise InvalidModel(
-                f"The model {model_id!r} was not found. Please check the model ID "
-                "and try again."
-            )
-
         if isinstance(error, RateLimitError):
             raise InvalidModel(
                 f"You have encountered your rate limit for model {model_id!r}. "
@@ -1006,8 +1000,6 @@ class LiteLLMModel(BenchmarkModule):
             whether the model exists.
         """
         model_id, _ = model_id.split("@") if "@" in model_id else (model_id, "main")
-        if model_id in litellm.model_list:
-            return True
 
         # Separate check for Ollama models
         if model_id.startswith("ollama/") or model_id.startswith("ollama_chat/"):
