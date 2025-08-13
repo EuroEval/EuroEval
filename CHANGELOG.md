@@ -7,7 +7,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 
 ## [Unreleased]
-
+### Fixed
+- Now disables the `seed` parameter if the API inference model does not support it,
+  which prevented evaluating some models.
 
 
 ## [v15.16.0] - 2025-08-12
