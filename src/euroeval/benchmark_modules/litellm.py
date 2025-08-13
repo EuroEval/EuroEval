@@ -540,6 +540,12 @@ class LiteLLMModel(BenchmarkModule):
                 f"Encountered {type(error)} during generation: {error}."
             )
 
+        if isinstance(error, NotFoundError):
+            raise InvalidModel(
+                f"The model {model_id!r} was not found. Please check the model ID "
+                "and try again."
+            )
+
         if isinstance(error, RateLimitError):
             raise InvalidModel(
                 f"You have encountered your rate limit for model {model_id!r}. "
@@ -1000,6 +1006,8 @@ class LiteLLMModel(BenchmarkModule):
             whether the model exists.
         """
         model_id, _ = model_id.split("@") if "@" in model_id else (model_id, "main")
+        if model_id in litellm.model_list:
+            return True
 
         # Separate check for Ollama models
         if model_id.startswith("ollama/") or model_id.startswith("ollama_chat/"):
@@ -1042,7 +1050,7 @@ class LiteLLMModel(BenchmarkModule):
                     "seconds..."
                 )
                 sleep(10)
-            except (BadRequestError, NotFoundError) as e:
+            except (BadRequestError, NotFoundError):
                 candidate_models = [
                     candidate_model_id
                     for candidate_model_id in litellm.model_list
@@ -1056,14 +1064,12 @@ class LiteLLMModel(BenchmarkModule):
                             f"Could not find the model ID {model_id!r}. Did you mean "
                             f"{candidate_models[0]!r}?"
                         )
-                        logger.debug(f"The error was {e}.")
                     case _:
                         candidate_models_str = "', '".join(candidate_models)
                         logger.warning(
                             f"Could not find the model ID {model_id!r}. Did you mean "
                             f"any of the following model IDs: '{candidate_models_str}'?"
                         )
-                        logger.debug(f"The error was {e}.")
                 return False
         else:
             logger.error(
