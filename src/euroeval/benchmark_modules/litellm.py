@@ -1042,7 +1042,7 @@ class LiteLLMModel(BenchmarkModule):
                     "seconds..."
                 )
                 sleep(10)
-            except (BadRequestError, NotFoundError):
+            except (BadRequestError, NotFoundError) as e:
                 candidate_models = [
                     candidate_model_id
                     for candidate_model_id in litellm.model_list
@@ -1056,12 +1056,14 @@ class LiteLLMModel(BenchmarkModule):
                             f"Could not find the model ID {model_id!r}. Did you mean "
                             f"{candidate_models[0]!r}?"
                         )
+                        logger.debug(f"The error was {e}.")
                     case _:
                         candidate_models_str = "', '".join(candidate_models)
                         logger.warning(
                             f"Could not find the model ID {model_id!r}. Did you mean "
                             f"any of the following model IDs: '{candidate_models_str}'?"
                         )
+                        logger.debug(f"The error was {e}.")
                 return False
         else:
             logger.error(
