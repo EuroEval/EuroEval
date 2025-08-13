@@ -540,6 +540,12 @@ class LiteLLMModel(BenchmarkModule):
                 f"Encountered {type(error)} during generation: {error}."
             )
 
+        if isinstance(error, NotFoundError):
+            raise InvalidModel(
+                f"The model {model_id!r} was not found. Please check the model ID "
+                "and try again."
+            )
+
         if isinstance(error, RateLimitError):
             raise InvalidModel(
                 f"You have encountered your rate limit for model {model_id!r}. "
