@@ -379,7 +379,16 @@ class Benchmarker:
 
         current_benchmark_results: list[BenchmarkResult] = list()
         for model_id in model_ids:
-            model_config: ModelConfig | None = None
+            # Load the model configuration, or skip the model if it is invalid
+            try:
+                model_config = get_model_config(
+                    model_id=model_id, benchmark_config=benchmark_config
+                )
+            except InvalidModel as e:
+                logger.info(e.message)
+                num_finished_benchmarks += len(dataset_configs)
+                continue
+
             loaded_model: BenchmarkModule | None = None
             for dataset_config in dataset_configs:
                 # Skip if we have already benchmarked this model on this dataset and
@@ -398,16 +407,6 @@ class Benchmarker:
                     )
                     num_finished_benchmarks += 1
                     continue
-
-                if model_config is None:
-                    try:
-                        model_config = get_model_config(
-                            model_id=model_id, benchmark_config=benchmark_config
-                        )
-                    except InvalidModel as e:
-                        logger.info(e.message)
-                        num_finished_benchmarks += len(dataset_configs)
-                        continue
 
                 # Skip if the model is an encoder model and the task is generative
                 task_is_generative = (

@@ -494,6 +494,72 @@ $ euroeval --model <model-id> --dataset hellaswag-fi
 ```
 
 
+### Unofficial: GoldenSwag-fi
+
+This dataset is a filtered and machine translated version of the English [HellaSwag dataset](https://aclanthology.org/P19-1472/), featuring both video descriptions from ActivityNet as well as how-to articles from WikiHow. The machine translated version was published in [this paper](https://doi.org/10.48550/arXiv.2410.08928) and was done using DeepL, and the filtering was published in [this paper](https://doi.org/10.48550/arXiv.2504.07825), which resulted in higher quality samples.
+
+The original full dataset consists of 1530 / 1530 samples for training and validation, respectively. However, they are exactly equal. We use a split of 660 / 256 / 2,048 samples for training, validation, and testing, respectively.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Miten auton ulkoinen pesu tehdään oikein. Ensimmäinen asia, joka sinun on tehtävä kunnolla, on pestä autosi tehokkaasti. Ei ole mitään järkeä yrittää tehdä auton ulkoista detaljointia, jos päädyt vain naarmuttamaan ducosi entistä enemmän, koska jätit autoosi likaa. Sinun on ensin huuhdeltava autosi letkulla kovalla paineella.\nVastausvaihtoehdot:\na. Tämä poistaa suurimman osan liasta moottoristasi ja pitää moottorin moitteettomana. Käytä autosi pesemiseen korkeapainepesukoneita.\nb. Sitten sinun on alettava imuroida likaa pois. Kun olet poistanut mahdollisimman paljon likaa, voit palata ajoneuvon luokse keräämään roskia.\nc. Vie letku kaasuttimesta moottorilohkon yläosaan, odota viisi minuuttia, sulje sitten vesi ja päästä ilma ulos jäähdyttimestä. Irrota vanhat tiivisteet ja aloita vedellä pesu moottorin kannesta alas.\nd. Älä käytä letkusta lasertyyppistä pesua, vaan mieluummin pientä suppiloa. Aloita aina ylhäältä ja etene alaspäin.",
+  "label": "d"
+}
+```
+
+```json
+{
+  "text": "Miten kylpeä merisuolalla. Varaa itsellesi riittävästi aikaa 15-20 minuutin kylpyyn. Kylpy ei ole kuin suihku, jossa usein kiirehditään. Sen sijaan niiden on tarkoitus kestää pidempään, jotta keho ja mieli voivat rentoutua.\nVastausvaihtoehdot:\na. Ennen kylpyä haluat, että kehosi rentoutuu, ota päivittäin noin minuutti rentoutumista. Kylvystä voi saada samoja hyötyjä: suolahoito on helpompaa, mikä voi vähentää stressiä.\nb. Jotta saisit kylvystäsi suurimman hyödyn, suunnittele, että vietät vedessä 15-20 minuuttia. Ota suolakylpy illalla, jos haluat hoitaa unettomuutta.\nc. Jos haluat nopean kylpyläkokemuksen, 15-20 minuutin kylpy voi olla hyvä valinta. Anna itsellesi muutama tunti aikaa tottua lämpimään, rentouttavaan veteen.\nd. Jos sinulla on kiire, saatat jännittyä niin paljon, että menetät ajantajusi. Jos väsyt, ota myös nopea 15-20 minuutin kylpy.",
+  "label": "b"
+}
+```
+
+```json
+{
+  "text": "Kuinka tehdä ylösnousemussämpylöitä. Kaada maito kulhoon. Jotta hiiva aktivoituu, sinun on sekoitettava se lämpimään nesteeseen. Lisää ½ kupillista (118 ml) lämmintä maitoa tehosekoittimen kulhoon.\nVastausvaihtoehdot:\na. Jos haluat pidemmän prosessin, voit juoksuttaa hiivan lavuaarissa ennen kuin jatkat.... Sekoita maito ja seos vähitellen vispilällä.\nb. Sekoita, kunnes maito on hyvin vaaleaa (noin 110 ml). Jos maito on liian pehmeää tähän reseptiin, lisää 1/2 kupillista (120 ml) smetanaa.\nc. Maidon lämpötilan tulisi olla 105 °f (41 °c). Voit käyttää 1- tai 2-prosenttista maitoa, mutta täysmaidosta saadaan yleensä parhaat sämpylät.\nd. Jos sinulla on sauvasekoitin, voit tehdä sämpylöiden taikinan itse. Tarvitset vain 2 kuppia (500 ml) maitoa.",
+  "label": "c"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+  ```
+  Seuraavat ovat monivalintakysymyksiä (vastauksineen).
+  ```
+- Base prompt template:
+  ```
+  Kysymys: {text}
+  Vastausvaihtoehdot:
+  a. {option_a}
+  b. {option_b}
+  c. {option_c}
+  d. {option_d}
+  Vastaus: {label}
+  ```
+- Instruction-tuned prompt template:
+  ```
+  Kysymys: {text}
+  Vastausvaihtoehdot:
+  a. {option_a}
+  b. {option_b}
+  c. {option_c}
+  d. {option_d}
+
+  Vastaa yllä olevaan kysymykseen käyttämällä 'a', 'b', 'c' tai 'd', äläkä mitään muuta.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+$ euroeval --model <model-id> --dataset goldenswag-fi
+```
+
+
 ## Summarization
 
 ### XLSum-fi

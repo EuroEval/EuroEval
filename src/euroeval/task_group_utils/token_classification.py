@@ -12,6 +12,7 @@ from ..exceptions import InvalidBenchmark
 from ..utils import raise_if_model_output_contains_nan_values
 
 if t.TYPE_CHECKING:
+    from datasets.arrow_dataset import Dataset
     from transformers.tokenization_utils import PreTrainedTokenizer
     from transformers.tokenization_utils_base import BatchEncoding
     from transformers.trainer_utils import EvalPrediction
@@ -27,6 +28,7 @@ def compute_metrics(
     model_outputs_and_labels: "tuple[Predictions, Labels] | EvalPrediction",
     has_misc_tags: bool,
     dataset_config: "DatasetConfig",
+    dataset: "Dataset",
 ) -> dict[str, float]:
     """Compute the metrics needed for evaluation.
 
@@ -38,6 +40,9 @@ def compute_metrics(
             Whether the dataset has MISC tags.
         dataset_config:
             The configuration of the dataset.
+        dataset:
+            The dataset used for evaluation. This is only used in case any additional
+            metadata is used to compute the metrics.
 
     Returns:
         A dictionary with the names of the metrics as keys and the metric values as
@@ -136,7 +141,9 @@ def compute_metrics(
             for metric in dataset_config.task.metrics
             if metric.name == "micro_f1"
         )
-        micro_f1_score = metric(predictions=predictions, references=list(labels))
+        micro_f1_score = metric(
+            predictions=predictions, references=list(labels), dataset=dataset
+        )
 
     # Compute the metrics without MISC tags
     # We manually set the F1 metric to be 100% if both the labels and the models
@@ -158,7 +165,7 @@ def compute_metrics(
             if metric.name == "micro_f1_no_misc"
         )
         micro_f1_no_misc_score = metric(
-            predictions=predictions_no_misc, references=labels_no_misc
+            predictions=predictions_no_misc, references=labels_no_misc, dataset=dataset
         )
 
     # Raise error if the metrics are invalid

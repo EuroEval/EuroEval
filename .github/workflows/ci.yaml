@@ -57,7 +57,7 @@ jobs:
         run: uv sync --no-dev --extra test
 
       - name: Start Ollama server
-        run: curl -fsSL https://ollama.com/install.sh | sh
+        run: curl -fsSL https://ollama.com/install.sh | sh && ollama serve &
 
       - name: Test with pytest
         run: uv run pytest
@@ -66,6 +66,8 @@ jobs:
           HF_TOKEN: ${{ secrets.HUGGINGFACE_API_KEY }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          XAI_API_KEY: ${{ secrets.XAI_API_KEY }}
 
       - name: Delete EuroEval cache
         run: rm -rf .euroeval_cache
@@ -88,7 +90,7 @@ jobs:
         run: uv sync --no-dev --extra test
 
       - name: Start Ollama server
-        run: curl -fsSL https://ollama.com/install.sh | sh
+        run: curl -fsSL https://ollama.com/install.sh | sh && ollama serve &
 
       - name: Test with pytest
         run: uv run pytest

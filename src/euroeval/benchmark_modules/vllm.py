@@ -77,10 +77,7 @@ if t.TYPE_CHECKING or importlib.util.find_spec("vllm") is not None:
         destroy_model_parallel,
     )
     from vllm.lora.request import LoRARequest
-
-if t.TYPE_CHECKING or importlib.util.find_spec("outlines") is not None:
-    from outlines.models.vllm import adapt_tokenizer
-    from outlines.processors.structured import JSONLogitsProcessor
+    from vllm.sampling_params import GuidedDecodingParams
 
 if t.TYPE_CHECKING or importlib.util.find_spec("ray") is not None:
     import ray
@@ -171,7 +168,8 @@ class VLLMModel(HuggingFaceEncoderModel):
 
     def __del__(self) -> None:
         """Clean up the model and tokenizer."""
-        clear_vllm()
+        if importlib.util.find_spec("vllm") is not None:
+            clear_vllm()
         if hasattr(self, "_model"):
             del self._model
         if hasattr(self, "_tokenizer"):
@@ -327,7 +325,7 @@ class VLLMModel(HuggingFaceEncoderModel):
             if end_of_chat_token:
                 stop_tokens.append(end_of_chat_token)
 
-        logits_processor = None
+        structured_generation_schema = None
         if self.dataset_config.task in TASKS_USING_JSON:
             if self.generative_type == GenerativeType.REASONING:
                 log_once(
@@ -342,15 +340,13 @@ class VLLMModel(HuggingFaceEncoderModel):
                     tag_name: (conlist(str, max_length=5), ...)
                     for tag_name in ner_tag_names
                 }
-                pydantic_class = create_model("AnswerFormat", **keys_and_their_types)
-                logits_processor = JSONLogitsProcessor(
-                    schema=pydantic_class,
-                    tokenizer=adapt_tokenizer(tokenizer=self._tokenizer),  # type: ignore
-                    whitespace_pattern=r" ?",
+                answer_format_class = create_model(
+                    "AnswerFormat", **keys_and_their_types
                 )
+                structured_generation_schema = answer_format_class.model_json_schema()
                 log_once(
                     "Using structured generation with the JSON schema "
-                    f"{pydantic_class.model_json_schema()}",
+                    f"{structured_generation_schema}",
                     level=logging.DEBUG,
                 )
 
@@ -374,7 +370,11 @@ class VLLMModel(HuggingFaceEncoderModel):
             logprobs=MAX_LOGPROBS if self.buffer["first_label_token_mapping"] else None,
             temperature=0.0,
             stop=[stop_token for stop_token in stop_tokens if stop_token],
-            logits_processors=[logits_processor] if logits_processor else None,
+            guided_decoding=(
+                GuidedDecodingParams(json=structured_generation_schema)
+                if structured_generation_schema
+                else None
+            ),
         )
 
         # If any of the prompts are empty then we need to replace them with a BOS token
@@ -691,8 +691,14 @@ def load_model_and_tokenizer(
             )
             dtype = torch.float16
 
-    # If the model is a quantized model, we need to set the dtype to float16
-    if quantization is not None and hf_model_config.torch_dtype != torch.float16:
+    # If the model is a quantized model, we might need to change the dtype
+    if quantization == "mxfp4" and hf_model_config.torch_dtype is None:
+        dtype = torch.bfloat16 if torch.cuda.is_bf16_supported() else torch.float16
+        logger.debug(
+            "You are loading a quantized model where `torch_dtype` has not been set. "
+            f"Setting dtype to {dtype!r}."
+        )
+    elif quantization is not None and hf_model_config.torch_dtype != torch.float16:
         logger.info(
             "You are loading a quantized model with dtype "
             f"{hf_model_config.torch_dtype}, which vLLM does not support. Setting "

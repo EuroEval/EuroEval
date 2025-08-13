@@ -10,6 +10,47 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 
 
+## [v15.16.0] - 2025-08-12
+### Added
+- Added metadata for GPT-5 models.
+
+### Changed
+- Updated `transformers` dependency to `>=4.55.0`.
+
+### Fixed
+- If the model uses 'mxfp4' quantisation then we allow the dtype to be bfloat16, rather
+  than forcing float16. This caused issues with the new GPT-OSS models.
+- Prevent multiple `Model <model-id> does not exist` logs when evaluating a model
+  that does not exist - now only logs this once.
+- Cleaner error message when attempting to benchmark a generative model without having a
+  GPU available.
+- Now raises error if an inference API is used with a parameter that is not supported.
+
+
+## [v15.15.0] - 2025-08-06
+### Added
+- Added the common-sense reasoning dataset GoldenSwag for the following
+  languages: Danish, German, Spanish, Finnish, French, Italian, Dutch, Swedish.
+  The datasets are unofficial for now. This was contributed by
+  @oliverkinch ✨
+
+### Changed
+- Now allows metadata to be included in metrics, allowing more flexibility when
+  implementing custom metrics. This is not used in any task yet.
+- Changed structured decoding backend from Outlines to XGrammar, as the latter was more
+  robust and now supports all the JSON features we need.
+- Updated vLLM to `>=0.10.0`, which includes the updated XGrammar version.
+- Now uses the V1 engine of vLLM, as we only used the V0 engine because XGrammar did not
+  support all the JSON features we needed.
+
+### Fixed
+- Now sets `VLLM_ALLOW_LONG_MAX_MODEL_LEN=1` to ignore the vLLM error that happens when
+  vLLM cannot determine the maximum context length of a model correctly, so that it
+  thinks that the model's maximum context length is smaller than the amount that we
+  allow it to generate. This is basically since we're doing a more thorough check
+  through the config than vLLM does, so we can safely ignore this error.
+
+
 ## [v15.14.0] - 2025-07-30
 ### Changed
 - Now runs a "test run" for API inference models with a single conversation to check for
@@ -47,7 +88,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   acceptability dataset ScaLA-pt. The machine translated ones include the sentiment
   classification dataset SST-2, the multiple choice reading comprehension dataset BoolQ,
   the knowledge dataset MMLU, and the common-sense reasoning dataset GoldenSwag. This
-  was contributed by [@duarteocarmo](https://github.com/duarteocarmo) ✨
+  was contributed by @duarteocarmo ✨
 - Added `--gpu-memory-utilization` argument (`gpu_memory_utilization` in the
   `Benchmarker` API), which can be lowered in case the user is experiencing OOM errors
   when evaluating models. The default is 0.9 (same as previously), which means that vLLM
@@ -67,11 +108,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Added the English knowledge dataset Life in the UK, which has been added as an
   official dataset, replacing the existing English knowledge dataset MMLU, which in turn
   has been marked as unofficial now. This was contributed by
-  [@oliverkinch](https://github.com/oliverkinch) ✨
+  @oliverkinch ✨
 - Added the Norwegian knowledge dataset Idioms-no, which is a multiple-choice question
   dataset where the alternative answers have been generated using GPT-4o. This has been
   added as an official dataset, and was contributed by
-  [@oliverkinch](https://github.com/oliverkinch) ✨
+  @oliverkinch ✨
 - Added new `LLMAsAJudgeMetric`, which allows evaluating the performance of a model with
   another judge model. This is useful for evaluating models in a reference-free manner,
   or if the metric is sufficiently complex. It is currently not used in any task, but
@@ -175,11 +216,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Added
 - Added the BeleBele datasets for Finnish, Italian and Spanish. They are listed as
   unofficial for now. This was contributed by
-  [@oliverkinch](https://github.com/oliverkinch) ✨
+  @oliverkinch ✨
 
 ### Changed
 - Now uses asyncronous requests when dealing with API models, speeding up the generation
-  immensely. This was contributed by [@mathiasesn](https://github.com/mathiasesn) ✨
+  immensely. This was contributed by @mathiasesn ✨
 
 ### Fixed
 - Add HellaSwag-fi back in, as the issue with the labels in the test split has been
@@ -231,7 +272,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   dataset [XL-Sum-fi](https://huggingface.co/datasets/TurkuNLP/xlsum-fi), and the
   common-sense reasoning dataset
   [HellaSwag-fi](https://huggingface.co/datasets/Finnish-NLP/hellaswag-fi-google-translate).
-  This was contributed by [@oliverkinch](https://github.com/oliverkinch) ✨
+  This was contributed by @oliverkinch ✨
 - Added metadata for GPT-4.1 and Grok-3 models.
 - Marked Gemini-2.5-flash and Grok-3-mini as reasoning models, giving them more tokens
   to think.
@@ -274,7 +315,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## [v15.6.1] - 2025-04-14
 ### Changed
 - Added more info about SQuAD-nl in the documentation. This was contributed by
-  [@Rijgersberg](https://github.com/Rijgersberg) ✨
+  @Rijgersberg ✨
 
 ### Fixed
 - The "E" option for the Norwegian NorCommonSenseQA dataset was not included in the
@@ -302,7 +343,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Uniformised the prompt templates used for each task, so that they are more
   consistent across tasks. Evaluation tests across different model types and sizes show
   no significant performance difference between the new and old templates. This was
-  contributed by [@viggo-gascou](https://github.com/viggo-gascou) ✨
+  contributed by @viggo-gascou ✨
 
 ### Fixed
 - Avoid duplicate error messages when a rate limit occurs.
@@ -331,7 +372,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Allows all vLLM versions from v0.8.0 again, as the issue with the generation output
   has been resolved.
 - Added overall progress indicator during evaluation. This was contributed by
-  [@mathiasesn](https://github.com/mathiasesn) ✨
+  @mathiasesn ✨
 
 ### Changed
 - Now does not use logprobs in text classification tasks with Google VertexAI models, as
@@ -370,9 +411,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Fixed
 - Now uses `fp16` instead of `bf16` when evaluating decoder models on GPUs with CUDA
   compatibility < 8.0. This was contributed by
-  [@marksverdhei](https://github.com/marksverdhei) ✨
+  @marksverdhei ✨
 - Corrected the name of the French sentiment dataset AlloCiné. This was contributed by
-  [@Alkarex](https://github.com/Alkarex) ✨
+  @Alkarex ✨
 - Evaluating a specific model revision did not work for adapter models, as there was a
   confusion between the revision of the adapter and the revision of the base model. We
   now use the revision for the adapter and use the latest revision for the base model.
@@ -398,7 +439,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   `HuggingFaceHubDown` exception.
 - Now uses `fp16` instead of `bf16` when evaluating decoder models on GPUs with CUDA
   compatibility < 8.0. This was contributed by
-  [@marksverdhei](https://github.com/marksverdhei) ✨
+  @marksverdhei ✨
 - Fixed docs for ScandiQA-da and ScandiQA-sv, where it was incorrectly stated that
   the splits were made by considering the original train/validation/test splits.
 
@@ -423,7 +464,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   [MMLU-es](https://hf.co/datasets/alexandrainst/m_mmlu), the common-sense reasoning
   dataset [HellaSwag-es](https://hf.co/datasets/alexandrainst/m_hellaswag), and the
   named entity recognition dataset [CoNLL-es](https://aclanthology.org/W02-2024/). This
-  was contributed by [@oliverkinch](https://github.com/oliverkinch) ✨
+  was contributed by @oliverkinch ✨
 - Now extracts number of parameters and context length for Ollama models, using the
   `ollama` package. Vocabulary size is currently not available available in the `ollama`
   package, so this is not extracted for Ollama models. For this reason, the `ollama`
@@ -476,7 +517,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   dataset [MMLU-it](https://hf.co/datasets/alexandrainst/m_mmlu), and the named entity
   recognition dataset [MultiNERD IT](https://hf.co/datasets/Babelscape/multinerd) (and
   unofficially [WikiNEuRal IT](https://hf.co/datasets/Babelscape/wikineural)). This was
-  contributed by [@viggo-gascou](https://github.com/viggo-gascou) ✨
+  contributed by @viggo-gascou ✨
 - Added the new Norwegian knowledge dataset NRK-Quiz-QA, consisting of quizzes on the
   Norwegian language and culture, in both Bokmål and Nynorsk. The dataset has been split
   into 635 / 256 / 2,048 samples for train, val, and test, respectively. This replaces
@@ -537,7 +578,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Added new `--only-allow-safetensors` flag, which disallows evaluating models from the
   Hugging Face Hub if they are not stored as safetensors. This ensures a high level of
   security on the system running the evaluations, if this is necessary. This was
-  contributed by [@Mikeriess](https://github.com/Mikeriess) ✨
+  contributed by @Mikeriess ✨
 
 
 ### Fixed
@@ -566,19 +607,19 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   [personal-sum](https://github.com/SmartmediaAI/PersonalSum). It has been split into
   121 / 64 / 256 samples for train / validation / test, respectively, and is set to
   `unofficial` for now. This was contributed by
-  [@oliverkinch](https://github.com/oliverkinch) ✨
+  @oliverkinch ✨
 - Added the Jentoft dataset - a linguistic acceptability dataset which was published in
   [this Master's thesis](https://www.duo.uio.no/handle/10852/103885) by Matias Jentoft.
   The original dataset consists of 85,771 / 10,827 / 10487 samples for training,
   validation and test, respectively. We use a split of 1,024 / 256 / 2,048 samples for
   training, validation and test, respectively. In each split, the distribution of
   `correct` and `incorrect` is 50/50. This dataset has been set to `unofficial` for now.
-  This was contributed by [@oliverkinch](https://github.com/oliverkinch) ✨
+  This was contributed by @oliverkinch ✨
 - Added the dataset icelandic-knowledge, which is derived from the IcelandicQA dataset,
   reformatted as a knowledge dataset with GPT-4o generated candidate answers. The split
   is given by 845 / 128 / 1024 for train, val, and test, respectively. It is marked as
   `unofficial` for now. This was contributed by
-  [@oliverkinch](https://github.com/oliverkinch) ✨
+  @oliverkinch ✨
 
 ### Changed
 - Changed the instruction prompts to all text classification tasks by specifying
@@ -616,8 +657,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   dataset [OrangeSum](https://hf.co/datasets/EdinburghNLP/orange_sum).
 - Added support for evaluating local models again, which supports models stored in the
   Hugging Face format with a Hugging Face model configuration file (`config.json`) in
-  the model directory. This was contributed by [@rlrs](https://github.com/rlrs) and
-  [@peter-sk](https://github.com/peter-sk) ✨
+  the model directory. This was contributed by @rlrs and
+  @peter-sk ✨
 
 ### Changed
 - Changed the Belebele splits, as there were too few training splits for evaluation on
@@ -837,7 +878,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   dataset NO-Multi-QA-Sum (norglm-multi-qa). This dataset is part of the NLEBench
   Norwegian benchmarks. The answers from the original dataset have been rephrased with
   gpt-4o to contain the answer from the context. It has been marked as `unofficial` for
-  now. This was contributed by [@viggo-gascou](https://github.com/viggo-gascou) ✨
+  now. This was contributed by @viggo-gascou ✨
 - Added the sentiment classification part of the Icelandic dataset Hotter and Colder,
   being a gold standard dataset. As no Icelandic sentiment classification dataset was
   included in the benchmark previously, this is now the official Icelandic sentiment
@@ -856,18 +897,18 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Added the summarisation part of the Norwegian NorGLM multi-task human annotated
   dataset NO-Multi-QA-Sum (`norglm-multi-sum`). This dataset is part of the NLEBench
   Norwegian benchmarks. It has been marked as `unofficial` for now. This was contributed
-  by [@viggo-gascou](https://github.com/viggo-gascou) ✨
+  by @viggo-gascou ✨
 - Added `ice-linguistic` a linguistic acceptability dataset which is a subset of the
   Icelandic Linguistic Benchmarks dataset. It is a small dataset with 94 train
   samples, 32 validation samples, and 256 test samples, and has been marked as
   `unofficial` for now. This was contributed by
-  [@oliverkinch](https://github.com/oliverkinch) ✨
+  @oliverkinch ✨
 - Added `icelandic-qa`, an Icelandic question answering dataset about Icelandic culture
   and history. The original dataset has 2000 samples, but only 375 of the samples have
   answers that are found in the context (exact match). An LLM has therefore been used to
   rephrase the answers and we now have 1683 samples where the answers are found in the
   context (531 train, 128 val, 1024 test). It has been set to `unofficial` for now. This
-  was contributed by [@oliverkinch](http://github.com/oliverkinch) ✨
+  was contributed by @oliverkinch ✨
 
 ### Fixed
 - Small typo in prefix prompt used for few-shot evaluation of the English sentiment
@@ -879,21 +920,21 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## [v13.1.0] - 2024-10-31
 - Added `ice-ec` (a subset of the dataset) and `ice-ec-full` (the full dataset), an
   Icelandic linguistic acceptability dataset. It has been set to `unofficial` for now.
-  This was contributed by [@oliverkinch](https://github.com/oliverkinch) ✨
+  This was contributed by @oliverkinch ✨
 - Added the Schibsted summarisation dataset, which contains summaries of published
   articles from Schibsted Media's Norwegian and Swedish newsrooms. The dataset has been
   split into two separate small datasets, `schibsted-sv` for Swedish and `schibsted-no`
   for Norwegian. Note that both of these datasets are really small (89 and 374 test
   samples in `schibsted-sv` and `schibsted-no`, respectively), and have been set to
   `unofficial` for now. This was contributed by
-  [@oliverkinch](https://github.com/oliverkinch) ✨
+  @oliverkinch ✨
 - Added the Icelandic summarisation dataset IceSum. IceSum is a collection of 1,000
   Icelandic news articles from mbl.is, which have been manually annotated with
   summaries. The dataset has been marked as unofficial, meaning that it will not be
   automatically included when benchmarking models, but can be included by specifying the
   dataset explicitly using the --dataset argument (or dataset argument if using the
   Benchmarker API). This was contributed by
-  [@viggo-gascou](https://github.com/viggo-gascou) ✨
+  @viggo-gascou ✨
 - Added the new Faroese reading comprehension dataset FoQA. This is now the default
   Faroese reading comprehension benchmark, as there was none previously.
 - Now supports evaluation of models with adapters. This requires that the model
@@ -1195,7 +1236,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Fixed
 - Move tensor to the correct device when benchmarking seq-to-seq models (#363). Thanks
-  to [@ThomasKluiters](https://github.com/ThomasKluiters) for this contribution! :tada:
+  to @ThomasKluiters for this contribution! :tada:
 - Deals with the case where an instruction tuned model does not use any special token
   at the end of the chat, such as `<|im_end|>`. This holds for, e.g., Qwen models.
 - Better auto-detection of pipeline tag for models on the Hugging Face Hub, in case the
@@ -1209,7 +1250,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   `AZURE_OPENAI_ENDPOINT` and `AZURE_OPENAI_API_VERSION` need to have been set, or
   alternatively through the `--azure-openai-api-key`, `--azure-openai-endpoint` and
   `--azure-openai-api-version` arguments. Thanks to
-  [@BramVanroy](https://github.com/BramVanroy) for all the help regarding the
+  @BramVanroy for all the help regarding the
   implementation of this :tada:
 - We now use the new JSON mode for newer OpenAI models for the NER task, to ensure
   better JSON generation.
@@ -1720,7 +1761,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - A `--use-flash-attention` flag has been added, which enables Flash Attention 2.0,
   which is required by some models, such as Mistral-based ones. If `flash-attn` has not
   been installed then an informative error message will be raised. Thanks to
-  [@peter-sk](https://github.com/peter-sk) for this contribution! :tada:
+  @peter-sk for this contribution! :tada:
 
 ### Changed
 - Now uses 8-bit AdamW whenever CUDA is available, as opposed to regular AdamW.
@@ -1740,7 +1781,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   OpenAI models. This currently happens automatically when specifying a generative
   model from the Hugging Face Hub, and with all OpenAI models.
 - Now stores model caches in separate directories, enabling parallel evaluations.
-  Thanks to [@KennethEnevoldsen](https://github.com/KennethEnevoldsen) for this
+  Thanks to @KennethEnevoldsen for this
   contribution! :tada:
 - Added `--device` argument to the CLI, which can be used to overwrite the automatic
   detection of device (CPU, CUDA GPU, MPS GPU, TPU) to use.
@@ -1809,7 +1850,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Now added support for benchmarking local models in the Hugging Face format (i.e.,
   saved with the `save_pretrained` method). This automatically detects the framework
   based on the file extension, but can also be set using the new `--model-framework`
-  argument. Thanks to [@peter-sk](https://github.com/peter-sk) for implementing this!
+  argument. Thanks to @peter-sk for implementing this!
   :tada:
 
 ### Fixed
@@ -2108,7 +2149,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Specific branches/commits/tags can now be benchmarked, using the `@`
   delimiter. For instance, `scandeval -m model_id@commit_hash` will benchmark
   the model with model ID `model_id`, stored at commit with hash `commit_hash`.
-  Thanks to [@versae](https://github.com/versae) for contributing! :tada:
+  Thanks to @versae for contributing! :tada:
 
 
 ## [v2.2.0] - 2022-01-18
@@ -2118,8 +2159,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [v2.1.0] - 2022-01-17
 ### Added
-- Added support for `flax` models. Thanks to
-  [@versae](https://github.com/versae) for contributing! :tada:
+- Added support for `flax` models. Thanks to @versae for contributing! :tada:
 
 
 ## [v2.0.0] - 2022-01-07

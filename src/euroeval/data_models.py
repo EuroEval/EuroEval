@@ -259,7 +259,7 @@ class BenchmarkResult(pydantic.BaseModel):
     transformers_version: str | None = get_package_version("transformers")
     torch_version: str | None = get_package_version("torch")
     vllm_version: str | None = get_package_version("vllm")
-    outlines_version: str | None = get_package_version("outlines")
+    xgrammar_version: str | None = get_package_version("xgrammar")
 
     @classmethod
     def from_dict(cls, config: dict) -> "BenchmarkResult":

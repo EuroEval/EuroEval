@@ -627,6 +627,73 @@ You can evaluate this dataset directly as follows:
 $ euroeval --model <model-id> --dataset hellaswag-es
 ```
 
+
+### Unofficial: GoldenSwag-es
+
+This dataset is a filtered and machine translated version of the English [HellaSwag dataset](https://aclanthology.org/P19-1472/), featuring both video descriptions from ActivityNet as well as how-to articles from WikiHow. The machine translated version was published in [this paper](https://doi.org/10.48550/arXiv.2410.08928) and was done using DeepL, and the filtering was published in [this paper](https://doi.org/10.48550/arXiv.2504.07825), which resulted in higher quality samples.
+
+The original full dataset consists of 1530 / 1530 samples for training and validation, respectively. However, they are exactly equal. We use a split of 660 / 256 / 2,048 samples for training, validation, and testing, respectively.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Cómo desmaquillarse. Empapa un disco de algodón con desmaquillante de ojos. Un desmaquillante de ojos bifásico sirve para la mayoría del maquillaje de ojos. Combina el poder disolvente de un desmaquillante a base de aceite con las cualidades suaves y calmantes del agua limpiadora.\nOpciones:\na. Es una buena opción para el maquillaje de ojos intenso; sólo asegúrate de agitar bien el envase antes de usarlo, ya que la fórmula tiende a separarse. Si utilizas máscara y delineador de ojos resistentes al agua o un maquillaje muy resistente, utiliza un limpiador a base de aceite.\nb. Normalmente, el objetivo es hacer que el proceso de limpieza específico sea una experiencia más agradable, en lugar de que sea completamente autocalmante. Como alternativa, puedes simplemente humedecer tu disco de algodón con una solución de agua fría y aplicarla desde el rabillo del ojo hacia las esquinas interiores.\nc. Compra un bote de este desmaquillante en una farmacia o por Internet. Cuanto más tiempo lo apliques, más oscura será la capa externa de maquillaje de los ojos.\nd. Aunque estos productos son menos caros que los limpiadores faciales normales, no siempre son infalibles. Utilizarlos en exceso afectará a la eficacia de tu maquillaje.",
+  "label": "a"
+}
+```
+
+```json
+{
+  "text": "Cómo hacer turrón. Forre el molde. Forre el fondo y los lados de un molde de 20 cm por 20 cm con papel pergamino. Resérvalo para utilizarlo más tarde.\nOpciones:\na. Si quieres enfriar el pan sin papel pergamino, vierte 2 cucharadas (45 ml) de azúcar en un bol y mételo en el congelador para que se enfríe. También puede refrigerar la mezcla durante al menos un día.\nb. Lleve el agua a ebullición. En el fuego, ponga el fuego a tope para que el agua hierva.\nc. Verterá el sirope de arce en el cazo después de cocer la miel y el azúcar.. Calienta el agua en el cazo.\nd. Como alternativa, puedes engrasar el fondo y los lados del molde con mantequilla, manteca o spray antiadherente para cocinar. El papel de pergamino facilitará la limpieza del molde.",
+  "label": "d"
+}
+```
+
+```json
+{
+  "text": "Cómo seguir amamantando después de volver al trabajo. Prepárate. Antes de volver al trabajo, tienes que planificarte y prepararte con tiempo. Esto significa hacer acopio de leche materna extraída (ebm) y establecer la infraestructura necesaria para extraer leche materna con éxito en el trabajo.\nOpciones:\na. Hacer acopio parece consolidar la síntesis eficaz de un ciclo de lactancia sano y constante. Sin embargo, tener un suministro fresco de ebm puede dificultar el mantenimiento de una relación sana y productiva con tu bebé.\nb. Determina la edad ideal de tu hija. Si tu hija sólo tiene seis meses, reserva un poco de tiempo para empezar a amamantarla.\nc. Si inviertes tiempo y esfuerzo en conseguirlo antes, será menos complicado una vez que vuelvas al trabajo. Haz acopio de ebm mientras estés de baja por maternidad.\nd. Escribe todo lo que quieras saber en una hoja aparte y guárdalo para más tarde o sustitúyelo por una nota escrita a mano. Si es posible, planifica tomarte un día libre en el trabajo.",
+  "label": "c"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+  ```
+  Las siguientes son preguntas de opción múltiple (con respuestas).
+  ```
+- Base prompt template:
+  ```
+  Pregunta: {text}
+  Opciones:
+  a. {option_a}
+  b. {option_b}
+  c. {option_c}
+  d. {option_d}
+  Respuesta: {label}
+  ```
+- Instruction-tuned prompt template:
+  ```
+  Pregunta: {text}
+  Opciones:
+  a. {option_a}
+  b. {option_b}
+  c. {option_c}
+  d. {option_d}
+
+  Responda la pregunta anterior usando solo 'a', 'b', 'c' o 'd', y nada más.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+$ euroeval --model <model-id> --dataset goldenswag-es
+```
+
+
 ## Summarization
 
 ### MLSum-es

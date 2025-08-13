@@ -86,6 +86,13 @@ os.environ["RAY_DISABLE_DOCKER_CPU_WARNING"] = "1"
 os.environ["VLLM_WORKER_MULTIPROC_METHOD"] = "spawn"
 
 
+# Allow long max model length in vLLM. This happens when vLLM registers that the model
+# has a shorter context length than the value we are inserting. But since we do a
+# thorough check of the model's config before setting the context length, we trust our
+# own checks and ignore the internal vLLM check.
+os.environ["VLLM_ALLOW_LONG_MAX_MODEL_LEN"] = "1"
+
+
 # Avoid the "Unclosed client session" error when evaluating Ollama models with LiteLLM.
 # The error comes from the `aiohttp` package, and this environment variable forces the
 # use of `httpx` instead.

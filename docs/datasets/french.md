@@ -580,6 +580,72 @@ $ euroeval --model <model-id> --dataset hellaswag-fr
 ```
 
 
+### Unofficial: GoldenSwag-fr
+
+This dataset is a filtered and machine translated version of the English [HellaSwag dataset](https://aclanthology.org/P19-1472/), featuring both video descriptions from ActivityNet as well as how-to articles from WikiHow. The machine translated version was published in [this paper](https://doi.org/10.48550/arXiv.2410.08928) and was done using DeepL, and the filtering was published in [this paper](https://doi.org/10.48550/arXiv.2504.07825), which resulted in higher quality samples.
+
+The original full dataset consists of 1530 / 1530 samples for training and validation, respectively. However, they are exactly equal. We use a split of 660 / 256 / 2,048 samples for training, validation, and testing, respectively.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Comment réparer des lunettes tordues. Prenez une paire de pinces à becs en plastique. Les pinces vous permettront d'effectuer des micro-ajustements sur les montures tordues de manière plus sûre qu'en essayant de les forcer à se mettre en forme à la main. Si possible, équipez-vous d'une paire de pinces dont les pointes sont recouvertes d'un revêtement en plastique souple.\nChoix:\na. Les pinces en métal ordinaires risquent de rayer, voire de casser, les montures en fil métallique fin. Si vous ne disposez pas d'une pince appropriée, une pince à main en plastique ou une paire de pinces peut également faire l'affaire.\nb. Sinon, vous pouvez simplement tenir la pince dans votre main et la laisser glisser. Soulevez la lentille avec les pointes de la pince.\nc. Les boîtiers métalliques sont parmi les matériaux les moins chers disponibles, mais ils rendent la tâche beaucoup plus difficile. Si vous ne trouvez pas de pince à bouts en plastique, votre dentiste optera probablement pour des étuis en verre.\nd. Le plastique souple peut être meilleur que le plastique dur. Le but du plastique est d'améliorer l'apparence des lentilles, tout en les rendant plus faciles à nettoyer et à remplacer.",
+  "label": "a"
+}
+```
+
+```json
+{
+  "text": "Comment être une meilleure personne à l'école. Développez votre sens du bien et du mal. Le monde d'aujourd'hui est rapide et impatient, mais pour devenir une meilleure personne, il faut prendre le temps de travailler sur ses valeurs. Décidez quelles sont les valeurs et les vertus les plus importantes pour vous.\nChoix:\na. Si vous pratiquez un sport, profitez-en pour vous entraîner. Si vous passez vos journées de gym à garder vos muscles immobiles, assurez-vous de prendre le temps de faire cet exercice.\nb. Efforcez-vous de voir toutes vos situations idéales en termes de bonne et de mauvaise situation afin d'avoir une meilleure attitude à l'égard de ces choses. Pensez à la façon dont vous aborderiez la situation dans laquelle vous avez l'intention de faire ce qu'il faut.\nc. Créez un système personnel de moralité en rejoignant des clubs et des organisations qui vous aideront à développer vos vertus, comme une équipe sportive, des clubs de service communautaire, une chorale ou un gouvernement étudiant. L'empathie, l'honnêteté, la patience, l'humour et la persévérance ne sont que quelques exemples de bonnes valeurs.\nd. La dernière chose que vous souhaitez, c'est de vous retrouver coincé dans un bar, de passer une mauvaise journée ou de vouloir faire du bénévolat pour votre cause. Pratiquez l'empathie et essayez de vivre votre vie sous un meilleur angle.",
+  "label": "c"
+}
+```
+
+```json
+{
+  "text": "Comment préparer une pommade antibactérienne à la maison. Choisissez vos huiles. L'huile de coco est naturellement antivirale, antibactérienne et antifongique. L'huile de coco devrait être le premier ingrédient, représentant environ la moitié de votre base d'huile (environ ½ tasse).\nChoix:\na. Vous ne devez pas en utiliser trop - 1-1 pour cent est une quantité excessive qui endommage facilement la peau du bébé et l'irrite. Vous n'avez pas besoin d'utiliser toutes vos huiles, mais essayez-en quelques-unes pour les peaux sensibles.\nb. Mais l'huile de coco peut aussi être rigide et difficile à travailler, vous devriez donc envisager d'utiliser ½ tasse d'une autre huile. D'excellents choix incluent l'huile d'olive, l'huile de jojoba ou l'huile d'amande.\nc. Utilisez 1 à 2 gouttes de votre huile essentielle préférée comme antibactérien. L'huile de coco est naturellement antibactérienne.\nd. L'huile peut être un ingrédient irritant pour la peau, provoquant irritation, sécheresse et inflammation. Appliquez de l'huile de coco sur la peau sèche comme remède topique ou à domicile.",
+  "label": "b"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+  ```
+  Les questions suivantes sont des questions à choix multiples (avec réponses).
+  ```
+- Base prompt template:
+  ```
+  Question: {text}
+  Choix:
+  a. {option_a}
+  b. {option_b}
+  c. {option_c}
+  d. {option_d}
+  Réponse: {label}
+  ```
+- Instruction-tuned prompt template:
+  ```
+  Question: {text}
+  Choix:
+  a. {option_a}
+  b. {option_b}
+  c. {option_c}
+  d. {option_d}
+
+  Répondez à la question ci-dessus par 'a', 'b', 'c' ou 'd', et rien d'autre.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+$ euroeval --model <model-id> --dataset goldenswag-fr
+```
+
+
 ## Summarization
 
 ### Orange Sum

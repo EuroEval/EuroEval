@@ -279,7 +279,7 @@ class TestBenchmarkResult:
                 transformers_version=benchmark_result.transformers_version,
                 torch_version=benchmark_result.torch_version,
                 vllm_version=benchmark_result.vllm_version,
-                outlines_version=benchmark_result.outlines_version,
+                xgrammar_version=benchmark_result.xgrammar_version,
             )
         )
         assert results_path.read_text() == f"\n{json_str}"
