@@ -41,6 +41,7 @@ from ..constants import (
     LOCAL_MODELS_REQUIRED_FILES,
     MAX_CONTEXT_LENGTH,
     MERGE_TAGS,
+    POTENTIAL_MAX_MODEL_LENGTH_CONFIG_NAMES,
 )
 from ..data_models import HFModelInfo, ModelConfig
 from ..enums import (
@@ -225,13 +226,7 @@ class HuggingFaceEncoderModel(BenchmarkModule):
             )
 
         # Add max length candidates from the model's configuration
-        candidate_config_max_lengths = [
-            "max_position_embeddings",
-            "max_sequence_length",
-            "model_max_length",
-            "n_positions",
-        ]
-        for candidate_config_max_length in candidate_config_max_lengths:
+        for candidate_config_max_length in POTENTIAL_MAX_MODEL_LENGTH_CONFIG_NAMES:
             if (
                 hasattr(self._model.config, candidate_config_max_length)
                 and (value := getattr(self._model.config, candidate_config_max_length))

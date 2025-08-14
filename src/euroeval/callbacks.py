@@ -1,76 +1,71 @@
-"""Callbacks for the Hugging Face Trainer."""
+"""Callbacks for use while training a model."""
 
-import sys
-import typing as t
-from collections.abc import Sized
+from transformers import PreTrainedModel, PreTrainedTokenizer
+from transformers.trainer_callback import TrainerCallback
+from transformers.training_args import TrainingArguments
 
-from tqdm.auto import tqdm
-from transformers.trainer_callback import ProgressCallback
-
-if t.TYPE_CHECKING:
-    from torch.utils.data import DataLoader
-    from transformers.trainer_callback import TrainerControl, TrainerState
-    from transformers.training_args import TrainingArguments
+from .benchmark_modules.custom import CustomGenerativeModel
+from .benchmarker import Benchmarker
+from .dataset_configs import get_all_dataset_configs
 
 
-class NeverLeaveProgressCallback(ProgressCallback):
-    """Progress callback which never leaves the progress bar."""
+class EuroEvalCallback(TrainerCallback):
+    """A callback that evaluates a model on the EuroEval benchmark during evaluation."""
 
-    def __init__(self, max_str_len: int = 100) -> None:
-        """Initialise the callback."""
-        super().__init__(max_str_len=max_str_len)
-        self.training_bar: tqdm | None = None
-        self.prediction_bar: tqdm | None = None
+    def __init__(self, datasets: list[str]) -> None:
+        """Initialise the EuroEvalCallback.
 
-    def on_train_begin(
-        self,
-        args: "TrainingArguments",
-        state: "TrainerState",
-        control: "TrainerControl",
-        **kwargs: str,
-    ) -> None:
-        """Callback actions when training begins."""
-        if state.is_local_process_zero:
-            desc = "Finetuning model"
-            self.training_bar = tqdm(
-                total=None,
-                leave=False,
-                desc=desc,
-                disable=hasattr(sys, "_called_from_test"),
+        Args:
+            datasets:
+                A list of EuroEval dataset names to evaluate the model on during
+                evaluation.
+
+        Raises:
+            ValueError:
+                If any of the datasets do not exist in EuroEval.
+        """
+        # Check that the datasets exist in EuroEval
+        all_datasets = get_all_dataset_configs()
+        non_existing_datasets = [
+            dataset for dataset in datasets if dataset not in all_datasets
+        ]
+        if non_existing_datasets:
+            raise ValueError(
+                "The following datasets do not exist: "
+                f"{', '.join(non_existing_datasets)}"
             )
-        self.current_step = 0
 
-    def on_step_end(
-        self,
-        args: "TrainingArguments",
-        state: "TrainerState",
-        control: "TrainerControl",
-        **kwargs: str,
-    ) -> None:
-        """Callback actions when a training step ends."""
-        if state.is_local_process_zero and self.training_bar is not None:
-            self.training_bar.update(state.global_step - self.current_step)
-            self.current_step = state.global_step
+        self.benchmarker = Benchmarker(
+            dataset=datasets, num_iterations=2, save_results=False
+        )
 
-    def on_prediction_step(
+    def on_evaluate(
         self,
-        args: "TrainingArguments",
-        state: "TrainerState",
-        control: "TrainerControl",
-        eval_dataloader: "DataLoader | None" = None,
-        **kwargs: str,
+        args: TrainingArguments,
+        model: PreTrainedModel,
+        tokenizer: PreTrainedTokenizer,
+        **kwargs,
     ) -> None:
-        """Callback actions when a prediction step ends."""
-        if eval_dataloader is None:
-            return
-        correct_dtype = isinstance(eval_dataloader.dataset, Sized)
-        if state.is_local_process_zero and correct_dtype:
-            if self.prediction_bar is None:
-                desc = "Evaluating model"
-                self.prediction_bar = tqdm(
-                    total=len(eval_dataloader),
-                    leave=False,
-                    desc=desc,
-                    disable=hasattr(sys, "_called_from_test"),
-                )
-            self.prediction_bar.update(1)
+        """Evaluate the model on the EuroEval benchmark during evaluation.
+
+        Args:
+            args:
+                The training arguments.
+            model:
+                The model being trained.
+            tokenizer:
+                The tokenizer used by the model.
+            **kwargs:
+                Additional keyword arguments.
+
+        Raises:
+            ValueError:
+                If the output directory is not specified in the training arguments.
+        """
+        if args.output_dir is None:
+            raise ValueError(
+                "Output directory must be specified in TrainingArguments for the "
+                "EuroEvalCallback to work."
+            )
+        benchmark_module = CustomGenerativeModel(model=model, tokenizer=tokenizer)
+        self.benchmarker.benchmark(model=benchmark_module)

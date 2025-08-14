@@ -77,3 +77,12 @@ REASONING_TOKENS = [
 # manually. We only use them as stop tokens if they actually appear in the model's
 # output
 CUSTOM_STOP_TOKENS = ["<sep>"]
+
+
+# These are attributes of tokenisers used to determine the maximum model length
+POTENTIAL_MAX_MODEL_LENGTH_CONFIG_NAMES = [
+    "max_position_embeddings",
+    "max_sequence_length",
+    "model_max_length",
+    "n_positions",
+]

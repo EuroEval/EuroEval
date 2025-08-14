@@ -46,6 +46,11 @@ def load_model(
             model_class = LiteLLMModel
         case (ModelType.ENCODER, InferenceBackend.TRANSFORMERS, True):
             model_class = FreshEncoderModel
+        case (ModelType.GENERATIVE, InferenceBackend.TRANSFORMERS, False):
+            raise InvalidModel(
+                "You are trying to load a model that has already been loaded - this "
+                "is an error in the code, please report it to the developers."
+            )
         case (_, _, True):
             raise InvalidModel(
                 "Cannot load a freshly initialised model with the model type "

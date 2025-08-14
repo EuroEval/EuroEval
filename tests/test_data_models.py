@@ -69,14 +69,6 @@ class TestMetric:
         assert metric.postprocessing_fn(inputs) == expected
 
 
-# TODO
-@pytest.mark.skip("Not implemented")
-class TestBenchmarkConfigParams:
-    """Unit tests for the `BenchmarkConfigParams` class."""
-
-    pass
-
-
 class TestBenchmarkResult:
     """Tests related to the `BenchmarkResult` class."""
 

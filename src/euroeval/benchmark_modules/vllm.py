@@ -26,6 +26,7 @@ from ..constants import (
     MAX_CONTEXT_LENGTH,
     MAX_LOGPROBS,
     MERGE_TAGS,
+    POTENTIAL_MAX_MODEL_LENGTH_CONFIG_NAMES,
     REASONING_MAX_TOKENS,
     REASONING_TOKENS,
     TASKS_USING_JSON,
@@ -729,14 +730,8 @@ def load_model_and_tokenizer(
     else:
         download_dir = str(model_config.model_cache_dir)
 
-    potential_max_model_length_config_names = [
-        "max_position_embeddings",
-        "max_sequence_length",
-        "model_max_length",
-        "n_positions",
-    ]
     true_max_model_len_candidates: list[int] = list()
-    for config_name in potential_max_model_length_config_names:
+    for config_name in POTENTIAL_MAX_MODEL_LENGTH_CONFIG_NAMES:
         if hasattr(hf_model_config, config_name):
             model_len = getattr(hf_model_config, config_name)
             if model_len is not None:

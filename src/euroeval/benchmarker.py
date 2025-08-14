@@ -15,6 +15,8 @@ from huggingface_hub.constants import HF_HUB_ENABLE_HF_TRANSFER
 from torch.distributed import destroy_process_group
 
 from .benchmark_config_factory import build_benchmark_config
+from .benchmark_modules import BenchmarkModule
+from .benchmark_modules.custom import CustomGenerativeModel
 from .constants import GENERATIVE_DATASET_TASK_GROUPS, GENERATIVE_PIPELINE_TAGS
 from .data_loading import load_data
 from .data_models import BenchmarkConfigParams, BenchmarkResult
@@ -31,7 +33,6 @@ from .tasks import SPEED
 from .utils import enforce_reproducibility, get_package_version
 
 if t.TYPE_CHECKING:
-    from .benchmark_modules import BenchmarkModule
     from .data_models import BenchmarkConfig, DatasetConfig, ModelConfig
 
 
@@ -229,7 +230,7 @@ class Benchmarker:
 
     def benchmark(
         self,
-        model: list[str] | str,
+        model: list[str] | str | CustomGenerativeModel,
         task: str | list[str] | None = None,
         dataset: list[str] | str | None = None,
         progress_bar: bool | None = None,
@@ -258,7 +259,9 @@ class Benchmarker:
                 The full Hugging Face Hub path(s) to the pretrained transformer model.
                 The specific model version to use can be added after the suffix '@':
                 "model@v1.0.0". It can be a branch name, a tag name, or a commit id,
-                and defaults to the latest version if not specified.
+                and defaults to the latest version if not specified. Can also be a
+                PreTrainedModel directly, in which case vLLM will not be used, resulting
+                in slower evaluation.
             task:
                 The tasks benchmark the model(s) on. Mutually exclusive with `dataset`.
                 If both `task` and `dataset` are None then all datasets will be
@@ -369,7 +372,11 @@ class Benchmarker:
         if benchmark_config.clear_model_cache:
             clear_model_cache_fn(cache_dir=benchmark_config.cache_dir)
 
-        model_ids = self._prepare_model_ids(model_id=model)
+        model_ids = (
+            [model.model_id]
+            if isinstance(model, CustomGenerativeModel)
+            else self._prepare_model_ids(model_id=model)
+        )
         dataset_configs = prepare_dataset_configs(
             dataset_names=benchmark_config.datasets
         )
@@ -389,7 +396,9 @@ class Benchmarker:
                 num_finished_benchmarks += len(dataset_configs)
                 continue
 
-            loaded_model: BenchmarkModule | None = None
+            loaded_model: BenchmarkModule | None = (
+                model if isinstance(model, BenchmarkModule) else None
+            )
             for dataset_config in dataset_configs:
                 # Skip if we have already benchmarked this model on this dataset and
                 # we are not forcing the benchmark

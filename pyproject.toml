@@ -39,6 +39,7 @@ dependencies = [
     "ollama>=0.5.1",
     "peft>=0.15.0",
     "protobuf>=2.0.0",
+    "xgrammar>=0.1.21",
 ]
 
 [project.optional-dependencies]

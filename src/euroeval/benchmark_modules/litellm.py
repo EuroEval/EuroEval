@@ -38,7 +38,12 @@ from requests.exceptions import RequestException
 from tqdm.asyncio import tqdm as tqdm_async
 from tqdm.auto import tqdm
 
-from ..constants import MAX_LOGPROBS, REASONING_MAX_TOKENS, TASKS_USING_JSON
+from ..constants import (
+    MAX_LOGPROBS,
+    POTENTIAL_MAX_MODEL_LENGTH_CONFIG_NAMES,
+    REASONING_MAX_TOKENS,
+    TASKS_USING_JSON,
+)
 from ..data_models import (
     BenchmarkConfig,
     DatasetConfig,
@@ -909,15 +914,9 @@ class LiteLLMModel(BenchmarkModule):
                     )
 
                 # Add max length candidates from the model's configuration
-                candidate_config_max_lengths = [
-                    "max_position_embeddings",
-                    "max_sequence_length",
-                    "model_max_length",
-                    "sliding_window",
-                    "sliding_window_size",
-                    "n_positions",
-                ]
-                for candidate_config_max_length in candidate_config_max_lengths:
+                for (
+                    candidate_config_max_length
+                ) in POTENTIAL_MAX_MODEL_LENGTH_CONFIG_NAMES:
                     if (
                         hasattr(hf_config, candidate_config_max_length)
                         and (value := getattr(hf_config, candidate_config_max_length))
