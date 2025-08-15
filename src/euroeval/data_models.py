@@ -179,6 +179,8 @@ class BenchmarkConfig:
             Whether the benchmark is being run with the CLI.
         only_allow_safetensors:
             Whether to only allow models that use the safetensors format.
+        download_only:
+            Whether to only download the model and datasets, without evaluating.
     """
 
     model_languages: list[Language]
@@ -205,6 +207,7 @@ class BenchmarkConfig:
     debug: bool
     run_with_cli: bool
     only_allow_safetensors: bool
+    download_only: bool
 
 
 class BenchmarkConfigParams(pydantic.BaseModel):
@@ -237,6 +240,7 @@ class BenchmarkConfigParams(pydantic.BaseModel):
     debug: bool
     run_with_cli: bool
     only_allow_safetensors: bool
+    download_only: bool
 
 
 class BenchmarkResult(pydantic.BaseModel):

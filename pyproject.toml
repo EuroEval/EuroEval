@@ -105,6 +105,7 @@ dev-dependencies = [
     "types-ujson>=5.10.0.20240515",
     "types-simplejson>=3.2.0.2025032",
     "debugpy>=1.8.13",
+    "pytest-socket>=0.7.0",
 ]
 
 [tool.ruff]
@@ -185,7 +186,7 @@ filterwarnings = [
     "ignore::ResourceWarning",
     "ignore::FutureWarning",
 ]
-log_cli_level = "info"
+log_cli_level = "INFO"
 testpaths = [
     "tests",
     "src/euroeval",

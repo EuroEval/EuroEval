@@ -3,9 +3,11 @@
 import abc
 import logging
 import typing as t
+from pathlib import Path
 
 import evaluate
 import litellm
+from datasets import DownloadConfig
 from litellm.types.utils import Choices, ModelResponse
 from pydantic import BaseModel, Field
 from tqdm.auto import tqdm
@@ -49,9 +51,25 @@ class Metric(abc.ABC):
             else lambda x: (100 * x, f"{x:.2%}")
         )
 
+    def download(self, cache_dir: str) -> "Metric":
+        """Initiates the download of the metric if needed.
+
+        Args:
+            cache_dir:
+                The directory where the metric will be downloaded to.
+
+        Returns:
+            The metric object itself.
+        """
+        return self
+
     @abc.abstractmethod
     def __call__(
-        self, predictions: t.Sequence, references: t.Sequence, dataset: "Dataset | None"
+        self,
+        predictions: t.Sequence,
+        references: t.Sequence,
+        dataset: "Dataset | None",
+        cache_dir: str,
     ) -> float | None:
         """Calculate the metric score.
 
@@ -131,8 +149,29 @@ class HuggingFaceMetric(Metric):
         )
         self.metric: "EvaluationModule | None" = None
 
+    def download(self, cache_dir: str) -> "HuggingFaceMetric":
+        """Initiates the download of the metric if needed.
+
+        Args:
+            cache_dir:
+                The directory where the metric will be downloaded to.
+
+        Returns:
+            The metric object itself.
+        """
+        # annoying but needed to make the metric download to a different cache dir
+        download_config = DownloadConfig(cache_dir=Path(cache_dir, "evaluate"))
+        self.metric = evaluate.load(
+            path=self.huggingface_id, download_config=download_config
+        )
+        return self
+
     def __call__(
-        self, predictions: t.Sequence, references: t.Sequence, dataset: "Dataset | None"
+        self,
+        predictions: t.Sequence,
+        references: t.Sequence,
+        dataset: "Dataset | None",
+        cache_dir: str,
     ) -> float | None:
         """Calculate the metric score.
 
@@ -149,8 +188,9 @@ class HuggingFaceMetric(Metric):
             The calculated metric score, or None if the score should be ignored.
         """
         if self.metric is None:
-            self.metric = evaluate.load(path=self.huggingface_id)
+            self.download(cache_dir=cache_dir)
 
+        assert self.metric is not None
         with HiddenPrints():
             results = self.metric.compute(
                 predictions=predictions, references=references, **self.compute_kwargs
@@ -225,7 +265,11 @@ class LLMAsAJudgeMetric(Metric):
         self.system_prompt = system_prompt
 
     def __call__(
-        self, predictions: t.Sequence, references: t.Sequence, dataset: "Dataset | None"
+        self,
+        predictions: t.Sequence,
+        references: t.Sequence,
+        dataset: "Dataset | None",
+        cache_dir: str | None,
     ) -> float | None:
         """Calculate the metric score using the judge model.
 
@@ -360,7 +404,7 @@ class SpeedMetric(Metric):
         )
 
     def __call__(
-        self, _: t.Sequence, __: t.Sequence, ___: "Dataset | None"
+        self, _: t.Sequence, __: t.Sequence, ___: "Dataset | None", ____: "str | None"
     ) -> float | None:
         """Not used with the speed metric, but required for consistency."""
         raise NotImplementedError

@@ -75,7 +75,10 @@ def compute_metrics(
         while True:
             try:
                 score: float | None = metric(
-                    predictions=predictions, references=labels, dataset=dataset
+                    predictions=predictions,
+                    references=labels,
+                    dataset=dataset,
+                    cache_dir=benchmark_config.cache_dir,
                 )
                 break
             except Exception as e:
