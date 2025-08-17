@@ -104,6 +104,9 @@ class Task:
             using few-shot evaluation.
         default_labels:
             The default labels for datasets using this task.
+        only_allow_zero_shot (optional):
+            Whether to only allow zero-shot evaluation for this task. If True, the
+            task will not be evaluated using few-shot examples.
     """
 
     name: str
@@ -113,6 +116,7 @@ class Task:
     default_num_few_shot_examples: int
     default_max_generated_tokens: int
     default_labels: list[str]
+    only_allow_zero_shot: bool = False
 
     def __hash__(self) -> int:
         """Return a hash of the task."""
@@ -356,6 +360,11 @@ class DatasetConfig:
             to a 1:1 mapping between the labels and themselves. If None then the mapping
             will be set to the default mapping for the task and language. Defaults to
             None.
+        splits (optional):
+            The names of the splits in the dataset. If not provided, defaults to
+            ["train", "val", "test"].
+        bootstrap_samples (optional):
+            Whether to bootstrap the dataset samples. Defaults to True.
         unofficial (optional):
             Whether the dataset is unofficial. Defaults to False.
     """
@@ -372,6 +381,8 @@ class DatasetConfig:
     _max_generated_tokens: int | None = None
     _labels: list[str] | None = None
     _prompt_label_mapping: dict[str, str] | t.Literal["auto"] | None = None
+    splits: list[str] = field(default_factory=lambda: ["train", "val", "test"])
+    bootstrap_samples: bool = True
     unofficial: bool = False
 
     @property

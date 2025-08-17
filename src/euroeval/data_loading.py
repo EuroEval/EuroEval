@@ -49,39 +49,56 @@ def load_data(
     )
 
     if not benchmark_config.evaluate_test_split:
-        dataset["test"] = dataset["val"]
+        if "val" in dataset:
+            dataset["test"] = dataset["val"]
+        elif benchmark_config.run_with_cli:
+            logger.debug(
+                "The --evaluate-test-split flag has not been set, but this dataset "
+                "does not have a validation split, so we will use the test split "
+                "anyway."
+            )
+        else:
+            logger.debug(
+                "The `evaluate_test_split` argument is set to False (the default), "
+                "but this dataset does not have a validation split, so we will use "
+                "the test split anyway."
+            )
 
     # Remove empty examples from the datasets
     for text_feature in ["tokens", "text"]:
-        if text_feature in dataset["train"].features:
-            dataset = dataset.filter(lambda x: len(x[text_feature]) > 0)
+        for split in dataset_config.splits:
+            if text_feature in dataset[split].features:
+                dataset = dataset.filter(lambda x: len(x[text_feature]) > 0)
 
     # If we are testing then truncate the test set
     if hasattr(sys, "_called_from_test"):
         dataset["test"] = dataset["test"].select(range(1))
 
-    # Bootstrap the splits
-    bootstrapped_splits: dict[str, list["Dataset"]] = dict()
-    for split in ["train", "val", "test"]:
-        bootstrap_indices = rng.integers(
-            0,
-            len(dataset[split]),
-            size=(benchmark_config.num_iterations, len(dataset[split])),
-        )
-        bootstrapped_splits[split] = [
-            dataset[split].select(bootstrap_indices[idx])
+    # Bootstrap the splits, if applicable
+    if dataset_config.bootstrap_samples:
+        bootstrapped_splits: dict[str, list["Dataset"]] = dict()
+        for split in dataset_config.splits:
+            bootstrap_indices = rng.integers(
+                0,
+                len(dataset[split]),
+                size=(benchmark_config.num_iterations, len(dataset[split])),
+            )
+            bootstrapped_splits[split] = [
+                dataset[split].select(bootstrap_indices[idx])
+                for idx in range(benchmark_config.num_iterations)
+            ]
+        datasets = [
+            DatasetDict(
+                {
+                    split: bootstrapped_splits[split][idx]
+                    for split in dataset_config.splits
+                }
+            )
             for idx in range(benchmark_config.num_iterations)
         ]
+    else:
+        datasets = [dataset]
 
-    datasets = [
-        DatasetDict(
-            {
-                split: bootstrapped_splits[split][idx]
-                for split in ["train", "val", "test"]
-            }
-        )
-        for idx in range(benchmark_config.num_iterations)
-    ]
     return datasets
 
 
@@ -126,11 +143,10 @@ def load_raw_data(dataset_config: "DatasetConfig", cache_dir: str) -> "DatasetDi
             f"{num_attempts} attempts."
         )
     assert isinstance(dataset, DatasetDict)  # type: ignore[used-before-def]
-    required_keys = ["train", "val", "test"]
-    missing_keys = [key for key in required_keys if key not in dataset]
+    missing_keys = [key for key in dataset_config.splits if key not in dataset]
     if missing_keys:
         raise InvalidBenchmark(
             "The dataset is missing the following required splits: "
             f"{', '.join(missing_keys)}"
         )
-    return DatasetDict({key: dataset[key] for key in required_keys})
+    return DatasetDict({key: dataset[key] for key in dataset_config.splits})

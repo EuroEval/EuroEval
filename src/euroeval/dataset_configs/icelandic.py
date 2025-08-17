@@ -2,7 +2,7 @@
 
 from ..data_models import DatasetConfig
 from ..languages import IS
-from ..tasks import COMMON_SENSE, KNOW, LA, MCRC, NER, RC, SENT, SUMM
+from ..tasks import COMMON_SENSE, EUROPEAN_VALUES, KNOW, LA, MCRC, NER, RC, SENT, SUMM
 
 ### Official datasets ###
 
@@ -154,5 +154,16 @@ MULTI_WIKI_QA_IS_CONFIG = DatasetConfig(
     huggingface_id="EuroEval/multi-wiki-qa-is-mini",
     task=RC,
     languages=[IS],
+    unofficial=True,
+)
+
+EUROPEAN_VALUES_IS_CONFIG = DatasetConfig(
+    name="european-values-is",
+    pretty_name="the Icelandic version of the European values evaluation dataset",
+    huggingface_id="EuroEval/european-values-is",
+    task=EUROPEAN_VALUES,
+    languages=[IS],
+    splits=["test"],
+    bootstrap_samples=False,
     unofficial=True,
 )

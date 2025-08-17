@@ -14,13 +14,16 @@ if t.TYPE_CHECKING:
     from datasets import DatasetDict
     from transformers.tokenization_utils import PreTrainedTokenizer
 
-    from .data_models import DatasetConfig, ModelConfig
+    from .data_models import BenchmarkConfig, DatasetConfig, ModelConfig
 
 logger = logging.getLogger("euroeval")
 
 
 def extract_few_shot_examples(
-    dataset: "DatasetDict", dataset_config: "DatasetConfig", itr_idx: int
+    dataset: "DatasetDict",
+    dataset_config: "DatasetConfig",
+    benchmark_config: "BenchmarkConfig",
+    itr_idx: int,
 ) -> list[dict[str, t.Any]]:
     """Extract few-shot examples from a dataset.
 
@@ -33,12 +36,30 @@ def extract_few_shot_examples(
             The dataset to extract the few-shot examples from.
         dataset_config:
             The dataset configuration.
+        benchmark_config:
+            The benchmark configuration.
         itr_idx:
             The index of the dataset in the iterator.
 
     Returns:
         The few-shot examples.
+
+    Raises:
+        InvalidBenchmark:
+            If the dataset does not allow few-shot evaluation or if there are not
+            enough short examples for few-shot learning.
     """
+    if dataset_config.task.only_allow_zero_shot:
+        msg = (
+            "This task only allows zero-shot evaluation. Please re-run the benchmark "
+            "with the "
+        )
+        if benchmark_config.run_with_cli:
+            msg += "--zero-shot flag."
+        else:
+            msg += "`zero_shot` argument in `Benchmarker` set to True."
+        raise InvalidBenchmark(msg)
+
     random_seed = 4242 + itr_idx
     num_few_shots = dataset_config.num_few_shot_examples
     few_shot_examples: list[dict[str, t.Any]] = list()

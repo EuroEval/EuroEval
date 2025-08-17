@@ -2,7 +2,7 @@
 
 from ..data_models import DatasetConfig
 from ..languages import FO
-from ..tasks import LA, NER, RC, SENT
+from ..tasks import EUROPEAN_VALUES, LA, NER, RC, SENT
 
 ### Official datasets ###
 
@@ -60,5 +60,16 @@ MULTI_WIKI_QA_FO_CONFIG = DatasetConfig(
     huggingface_id="EuroEval/multi-wiki-qa-fo-mini",
     task=RC,
     languages=[FO],
+    unofficial=True,
+)
+
+EUROPEAN_VALUES_FO_CONFIG = DatasetConfig(
+    name="european-values-fo",
+    pretty_name="the Faroese version of the European values evaluation dataset",
+    huggingface_id="EuroEval/european-values-fo",
+    task=EUROPEAN_VALUES,
+    languages=[FO],
+    splits=["test"],
+    bootstrap_samples=False,
     unofficial=True,
 )

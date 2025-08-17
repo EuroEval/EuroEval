@@ -120,6 +120,18 @@ COMMON_SENSE = Task(
 )
 
 
+EUROPEAN_VALUES = Task(
+    name="euroepan-values",
+    task_group=TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION,
+    template_dict=MULTIPLE_CHOICE_TEMPLATES,
+    metrics=[m.european_values_metric],
+    default_num_few_shot_examples=5,
+    default_max_generated_tokens=5,
+    default_labels=["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10"],
+    only_allow_zero_shot=True,
+)
+
+
 SPEED = Task(
     name="speed",
     task_group=TaskGroup.SPEED,

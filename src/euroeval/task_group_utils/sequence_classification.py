@@ -188,7 +188,7 @@ def get_closest_logprobs_labels(
         for logprob_list in sample:
             generated_labels = [
                 re.sub(
-                    pattern=r"^[^a-zæøåüöä]+|[^a-zæøåüöä]+$",
+                    pattern=r"^[^a-zæøåüöä0-9]+|[^a-zæøåüöä0-9]+$",
                     repl="",
                     string=label.lower(),
                 )
@@ -225,6 +225,18 @@ def get_closest_logprobs_labels(
                         candidate_label
                         for candidate_label in candidate_labels
                         if candidate_label.startswith(generated_label)
+                    }
+
+                # If the generated label is a numeral (e.g., "1", "2", "3") and there is
+                # a matching candidate label, we only keep the full match
+                if re.match(r"^\d+$", generated_label) and any(
+                    candidate_label == generated_label
+                    for candidate_label in candidate_output_labels
+                ):
+                    candidate_output_labels = {
+                        candidate_label
+                        for candidate_label in candidate_output_labels
+                        if candidate_label == generated_label
                     }
 
                 # If we can uniquely determine the output label, we break the loop.

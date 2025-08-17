@@ -2,7 +2,7 @@
 
 from ..data_models import DatasetConfig
 from ..languages import FR
-from ..tasks import COMMON_SENSE, KNOW, LA, MCRC, NER, RC, SENT, SUMM
+from ..tasks import COMMON_SENSE, EUROPEAN_VALUES, KNOW, LA, MCRC, NER, RC, SENT, SUMM
 
 ### Official datasets ###
 
@@ -99,5 +99,16 @@ GOLDENSWAG_FR_CONFIG = DatasetConfig(
     huggingface_id="EuroEval/goldenswag-fr-mini",
     task=COMMON_SENSE,
     languages=[FR],
+    unofficial=True,
+)
+
+EUROPEAN_VALUES_FR_CONFIG = DatasetConfig(
+    name="european-values-fr",
+    pretty_name="the French version of the European values evaluation dataset",
+    huggingface_id="EuroEval/european-values-fr",
+    task=EUROPEAN_VALUES,
+    languages=[FR],
+    splits=["test"],
+    bootstrap_samples=False,
     unofficial=True,
 )

@@ -1,10 +1,14 @@
 """All the metrics used in EuroEval."""
 
 import abc
+import collections.abc as c
 import logging
 import typing as t
+from pathlib import Path
 
+import cloudpickle
 import evaluate
+import huggingface_hub as hf_hub
 import litellm
 from litellm.types.utils import Choices, ModelResponse
 from pydantic import BaseModel, Field
@@ -16,8 +20,12 @@ from .utils import HiddenPrints
 if t.TYPE_CHECKING:
     from datasets.arrow_dataset import Dataset
     from evaluate import EvaluationModule
+    from sklearn.pipeline import Pipeline
 
 logger = logging.getLogger(__name__)
+
+
+T = t.TypeVar("T", bound=int | float | str | bool)
 
 
 class Metric(abc.ABC):
@@ -51,7 +59,7 @@ class Metric(abc.ABC):
 
     @abc.abstractmethod
     def __call__(
-        self, predictions: t.Sequence, references: t.Sequence, dataset: "Dataset | None"
+        self, predictions: c.Sequence, references: c.Sequence, dataset: "Dataset | None"
     ) -> float | None:
         """Calculate the metric score.
 
@@ -132,7 +140,7 @@ class HuggingFaceMetric(Metric):
         self.metric: "EvaluationModule | None" = None
 
     def __call__(
-        self, predictions: t.Sequence, references: t.Sequence, dataset: "Dataset | None"
+        self, predictions: c.Sequence, references: c.Sequence, dataset: "Dataset | None"
     ) -> float | None:
         """Calculate the metric score.
 
@@ -166,6 +174,104 @@ class HuggingFaceMetric(Metric):
             score = sum(score) / len(score)
 
         return score
+
+
+class PipelineMetric(Metric):
+    """Load a scikit-learn pipeline and use it to get scores from the predictions."""
+
+    def __init__(
+        self,
+        name: str,
+        pretty_name: str,
+        pipeline_repo: str,
+        pipeline_scoring_method: t.Literal["transform", "predict", "score"],
+        pipeline_file_name: str = "pipeline.pkl",
+        preprocessing_fn: c.Callable[[c.Sequence[T]], c.Sequence[T]] = lambda x: x,
+        postprocessing_fn: c.Callable[[float], tuple[float, str]] | None = None,
+    ) -> None:
+        """Initialise the pipeline transform metric.
+
+        Args:
+            name:
+                The name of the metric in snake_case.
+            pretty_name:
+                The pretty name of the metric, used for display purposes.
+            pipeline_repo:
+                The Hugging Face repository ID of the scikit-learn pipeline to load.
+            pipeline_scoring_method:
+                The method to use for scoring the predictions. This can be one of
+                "transform", "predict", or "score". The method should be compatible
+                with the pipeline being loaded.
+            pipeline_file_name (optional):
+                The name of the file to download from the Hugging Face repository.
+                Defaults to "pipeline.joblib".
+            preprocessing_fn (optional):
+                A function to apply to the predictions before they are passed to the
+                pipeline. This is useful for preprocessing the predictions to match
+                the expected input format of the pipeline. Defaults to a no-op function
+                that returns the input unchanged.
+            postprocessing_fn (optional):
+                A function to apply to the metric scores after they are computed,
+                taking the score to the postprocessed score along with its string
+                representation. Defaults to x -> (100 * x, f"{x:.2%}").
+        """
+        super().__init__(
+            name=name, pretty_name=pretty_name, postprocessing_fn=postprocessing_fn
+        )
+        self.pipeline_repo = pipeline_repo
+        self.pipeline_file_name = pipeline_file_name
+        self.pipeline_scoring_method: t.Literal["transform", "predict", "score"] = (
+            pipeline_scoring_method
+        )
+        self.pipeline: "Pipeline" = self._download_pipeline()
+        self.preprocessing_fn = preprocessing_fn
+
+    def __call__(
+        self, predictions: c.Sequence, references: c.Sequence, dataset: "Dataset | None"
+    ) -> float | None:
+        """Calculate the metric score using the scikit-learn pipeline.
+
+        Args:
+            predictions:
+                The model predictions.
+            references:
+                Not used, but required for consistency with the Metric interface.
+            dataset:
+                The dataset used for evaluation. This is only used in case any
+                additional metadata is used to compute the metrics.
+
+        Returns:
+            The calculated metric score, or None if the score should be ignored.
+        """
+        predictions = self.preprocessing_fn(predictions)
+        match self.pipeline_scoring_method:
+            case "transform":
+                score = self.pipeline.transform([predictions]).mean().item()
+            case "predict":
+                score = self.pipeline.predict([predictions]).mean().item()
+            case "score":
+                score = self.pipeline.score([predictions], [references]).item()
+        return score
+
+    def _download_pipeline(self) -> "Pipeline":
+        """Download the scikit-learn pipeline from the given URL.
+
+        Returns:
+            The downloaded scikit-learn pipeline.
+
+        Raises:
+            InvalidBenchmark:
+                If the download fails or the response is not a valid pipeline.
+        """
+        logger.debug(f"Loading pipeline from {self.pipeline_repo}...")
+        folder_path = hf_hub.HfApi().snapshot_download(
+            repo_id=self.pipeline_repo, repo_type="model"
+        )
+        model_path = Path(folder_path, self.pipeline_file_name)
+        with model_path.open(mode="rb") as f:
+            pipeline = cloudpickle.load(f)
+        logger.debug(f"Successfully loaded pipeline: {pipeline}")
+        return pipeline
 
 
 class LLMAsAJudgeMetric(Metric):
@@ -225,7 +331,7 @@ class LLMAsAJudgeMetric(Metric):
         self.system_prompt = system_prompt
 
     def __call__(
-        self, predictions: t.Sequence, references: t.Sequence, dataset: "Dataset | None"
+        self, predictions: c.Sequence, references: c.Sequence, dataset: "Dataset | None"
     ) -> float | None:
         """Calculate the metric score using the judge model.
 
@@ -360,7 +466,7 @@ class SpeedMetric(Metric):
         )
 
     def __call__(
-        self, _: t.Sequence, __: t.Sequence, ___: "Dataset | None"
+        self, _: c.Sequence, __: c.Sequence, ___: "Dataset | None"
     ) -> float | None:
         """Not used with the speed metric, but required for consistency."""
         raise NotImplementedError
@@ -430,6 +536,42 @@ accuracy_metric = HuggingFaceMetric(
     pretty_name="Accuracy",
     huggingface_id="accuracy",
     results_key="accuracy",
+)
+
+
+def european_values_preprocessing_fn(predictions: c.Sequence[int]) -> c.Sequence[int]:
+    """Preprocess the model predictions for the European Values metric."""
+    # Some of the questions are categorical and we're only interested in whether the
+    # model chooses a specific choice or not. This mapping takes the question index
+    # to the choice value that we're interested in.
+    question_choices = {
+        0: 1,
+        1: 5,
+        3: 3,
+        6: 1,
+        15: 4,
+        20: 2,
+        47: 8,
+        48: 7,
+        49: 4,
+        51: 4,
+        52: 4,
+    }
+
+    # Map the predictions to the choices we're interested in
+    predictions = list(predictions)
+    for question_idx, choice in question_choices.items():
+        predictions[question_idx] = 1 if predictions[question_idx] == choice else 0
+
+    return predictions
+
+
+european_values_metric = PipelineMetric(
+    name="european_values",
+    pretty_name="European Values",
+    pipeline_repo="EuroEval/european-values-pipeline",
+    pipeline_scoring_method="transform",
+    preprocessing_fn=european_values_preprocessing_fn,
 )
 
 

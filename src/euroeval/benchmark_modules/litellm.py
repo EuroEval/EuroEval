@@ -1151,7 +1151,10 @@ class LiteLLMModel(BenchmarkModule):
 
         if self.benchmark_config.few_shot:
             few_shot_examples = extract_few_shot_examples(
-                dataset=dataset, dataset_config=self.dataset_config, itr_idx=itr_idx
+                dataset=dataset,
+                dataset_config=self.dataset_config,
+                benchmark_config=self.benchmark_config,
+                itr_idx=itr_idx,
             )
         else:
             few_shot_examples = list()

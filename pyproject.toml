@@ -13,7 +13,7 @@ requires-python = ">=3.10,<4.0"
 dependencies = [
     "torch>=2.6.0",
     "pandas>=2.2.0",
-    "numpy>=1.23.0,<2.0.0",
+    "numpy>=2.2.6",
     "transformers>=4.55.0",
     "accelerate>=1.9.0",
     "evaluate>=0.4.1",
@@ -39,6 +39,7 @@ dependencies = [
     "ollama>=0.5.1",
     "peft>=0.15.0",
     "protobuf>=2.0.0",
+    "cloudpickle>=3.1.1",
 ]
 
 [project.optional-dependencies]

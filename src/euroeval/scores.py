@@ -52,7 +52,12 @@ def log_scores(
         test_se, test_se_str = metric.postprocessing_fn(test_se)
         total_dict[f"test_{metric.name}"] = test_score
         total_dict[f"test_{metric.name}_se"] = test_se
-        logger.info(f"{metric.pretty_name}: {test_score_str} ± {test_se_str}")
+        log_str = (
+            f"{metric.pretty_name}: {test_score_str} ± {test_se_str}"
+            if not np.isnan(test_se)
+            else f"{metric.pretty_name}: {test_score_str}"
+        )
+        logger.info(log_str)
 
     return dict(raw=scores, total=total_dict)
 
