@@ -271,10 +271,12 @@ def get_closest_logprobs_labels(
                     if candidate_output_labels_starting_with_generated_label:
                         log_once(
                             f"No candidate label found for the generated label "
-                            f"{generated_label!r}. This means that using logprobs to "
-                            "extract the labels is not reliable, and we will instead "
-                            "fall back to extracting the labels using word edit "
-                            "distance.",
+                            f"{generated_label!r}, but there are candidate labels "
+                            f"starting with it: "
+                            f"{candidate_output_labels_starting_with_generated_label}. "
+                            "This means that the first label token mapping is not "
+                            "reliable, and we will instead fall back to extracting "
+                            "the labels using word edit distance.",
                             level=logging.DEBUG,
                         )
                         breakpoint()
