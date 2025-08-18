@@ -86,3 +86,15 @@ MULTI_WIKI_QA_FO_CONFIG = DatasetConfig(
 #     bootstrap_samples=False,
 #     _instruction_prompt="{text}",
 # )
+#
+# EUROPEAN_VALUES_COMPLETIONS_FO_CONFIG = DatasetConfig(
+#     name="european-values-completions-fo",
+#     pretty_name="the Faroese version of the European values evaluation dataset, "
+#     "where the questions are phrased as sentence completions",
+#     huggingface_id="EuroEval/european-values-completions-fo",
+#     task=EUROPEAN_VALUES,
+#     languages=[FO],
+#     splits=["test"],
+#     bootstrap_samples=False,
+#     _instruction_prompt="{text}",
+# )

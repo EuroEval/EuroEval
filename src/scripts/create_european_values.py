@@ -90,6 +90,7 @@ def main() -> None:
     api = HfApi()
     vanilla_dataset_id = "EuropeanValuesProject/za7505"
     situational_dataset_id = "EuropeanValuesProject/za7505-situational"
+    completions_dataset_id = "EuropeanValuesProject/za7505-completions"
 
     choices_mapping = {
         "da": "Svarmuligheder",
@@ -133,12 +134,27 @@ def main() -> None:
         "pt": {"0": "Não", "1": "Sim"},
         "fi": {"0": "Ei", "1": "Kyllä"},
     }
+    sentence_completion_mapping = {
+        "da": "Færdiggør følgende sætning",
+        "no": "Fullfør følgende setning",
+        "sv": "Fyll i följande mening",
+        "is": "Ljúktu við eftirfarandi setningu",
+        "de": "Vervollständige den folgenden Satz",
+        "nl": "Voltooi de volgende zin",
+        "en": "Complete the following sentence",
+        "fr": "Complétez la phrase suivante",
+        "it": "Completa la seguente frase",
+        "es": "Completa la siguiente frase",
+        "pt": "Complete a seguinte frase",
+        "fi": "Täydennä seuraava lause",
+    }
 
     for dataset_id, new_dataset_id in zip(
-        [vanilla_dataset_id, situational_dataset_id],
+        [vanilla_dataset_id, situational_dataset_id, completions_dataset_id],
         [
             "EuroEval/european-values-{language}",
             "EuroEval/european-values-situational-{language}",
+            "EuroEval/european-values-completions-{language}",
         ],
     ):
         question_id: str | None = None
@@ -182,7 +198,12 @@ def main() -> None:
                 if not isinstance(question_data, pd.DataFrame):
                     question_data = pd.DataFrame([question_data])
                 for _, row in question_data.iterrows():
+                    # Special case for the completions dataset, where we add ellipses to
+                    # the question
                     question = row["question"]
+                    if dataset_id == completions_dataset_id:
+                        question += "..."
+
                     choices = {
                         key: value[0].upper() + value[1:]
                         for key, value in row.choices.items()
@@ -219,6 +240,16 @@ def main() -> None:
                             + f" {language_obj._or_separator} '{labels[-1]}'"
                         ),
                     )
+
+                    # Special case for the completions dataset, where we
+                    # remove the "Question: " prefix and instead put "Complete the
+                    # following sentence: " at the start
+                    if dataset_id == completions_dataset_id:
+                        prompt = (
+                            sentence_completion_mapping[language]
+                            + ": "
+                            + prompt.split(": ", 1)[-1].strip()
+                        )
 
                     data_dict["question_id"].append(question_id)
                     data_dict["choice"].append(choice)

@@ -179,3 +179,15 @@ EUROPEAN_VALUES_SITUATIONAL_IS_CONFIG = DatasetConfig(
     bootstrap_samples=False,
     _instruction_prompt="{text}",
 )
+
+EUROPEAN_VALUES_COMPLETIONS_IS_CONFIG = DatasetConfig(
+    name="european-values-completions-is",
+    pretty_name="the Icelandic version of the European values evaluation dataset, "
+    "where the questions are phrased as sentence completions",
+    huggingface_id="EuroEval/european-values-completions-is",
+    task=EUROPEAN_VALUES,
+    languages=[IS],
+    splits=["test"],
+    bootstrap_samples=False,
+    _instruction_prompt="{text}",
+)
