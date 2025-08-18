@@ -301,10 +301,13 @@ def debug_log(
         case (
             TaskGroup.SEQUENCE_CLASSIFICATION | TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION
         ):
-            labels = [
-                dataset_config.prompt_label_mapping.get(label, label).lower()
-                for label in batch["label"]
-            ]
+            if "label" in batch:
+                labels = [
+                    dataset_config.prompt_label_mapping.get(label, label).lower()
+                    for label in batch["label"]
+                ]
+            else:
+                labels = ["N/A"] * len(extracted_labels)
 
         case TaskGroup.QUESTION_ANSWERING:
             extracted_labels = [
