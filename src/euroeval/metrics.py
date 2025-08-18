@@ -603,7 +603,7 @@ european_values_metric = PipelineMetric(
     pretty_name="European Values",
     pipeline_repo="EuroEval/european-values-pipeline",
     pipeline_scoring_function=(
-        lambda pipeline, predictions: pipeline.transform(predictions)[0]
+        lambda pipeline, predictions: pipeline.transform([predictions])[0]
     ),
     preprocessing_fn=european_values_preprocessing_fn,
 )
