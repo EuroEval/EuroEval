@@ -94,6 +94,7 @@ def main() -> None:
         "it": "Scelte",
         "es": "Opciones",
         "pt": "Opções",
+        "fi": "Vastausvaihtoehdot",
     }
     subset_mapping = {
         "da": "da-dk",
@@ -107,6 +108,7 @@ def main() -> None:
         "it": "it-it",
         "es": "es-es",
         "pt": "pt-pt",
+        "fi": "fi-fi",
     }
     no_yes_mapping = {
         "da": {"0": "Nej", "1": "Ja"},
@@ -120,6 +122,7 @@ def main() -> None:
         "it": {"0": "No", "1": "Sì"},
         "es": {"0": "No", "1": "Sí"},
         "pt": {"0": "Não", "1": "Sim"},
+        "fi": {"0": "Ei", "1": "Kyllä"},
     }
 
     for language, choices_str in tqdm(
