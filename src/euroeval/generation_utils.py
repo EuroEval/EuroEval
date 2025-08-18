@@ -46,19 +46,19 @@ def extract_few_shot_examples(
 
     Raises:
         InvalidBenchmark:
-            If the dataset does not allow few-shot evaluation or if there are not
-            enough short examples for few-shot learning.
+            If there are not enough short examples for few-shot learning.
     """
-    if dataset_config.task.only_allow_zero_shot:
+    if dataset_config.task.only_allow_zero_shot and benchmark_config.few_shot:
         msg = (
-            "This task only allows zero-shot evaluation. Please re-run the benchmark "
-            "with the "
+            "This task only allows zero-shot evaluation, so even though you have "
+            "requested few-shot evaluation (through the default "
         )
         if benchmark_config.run_with_cli:
-            msg += "--zero-shot flag."
+            msg += "--zero-shot flag"
         else:
-            msg += "`zero_shot` argument in `Benchmarker` set to True."
-        raise InvalidBenchmark(msg)
+            msg += "`zero_shot=False` argument"
+        msg += "), we will run the evaluation in zero-shot mode."
+        log_once(msg, level=logging.DEBUG)
 
     random_seed = 4242 + itr_idx
     num_few_shots = dataset_config.num_few_shot_examples
