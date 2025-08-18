@@ -89,5 +89,4 @@ EUROPEAN_VALUES_PT_CONFIG = DatasetConfig(
     splits=["test"],
     bootstrap_samples=False,
     _instruction_prompt="{text}",
-    unofficial=True,
 )

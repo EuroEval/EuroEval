@@ -121,7 +121,7 @@ COMMON_SENSE = Task(
 
 
 EUROPEAN_VALUES = Task(
-    name="euroepan-values",
+    name="european-values",
     task_group=TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION,
     template_dict=MULTIPLE_CHOICE_TEMPLATES,
     metrics=[m.european_values_metric],

@@ -214,5 +214,4 @@ EUROPEAN_VALUES_NO_CONFIG = DatasetConfig(
     splits=["test"],
     bootstrap_samples=False,
     _instruction_prompt="{text}",
-    unofficial=True,
 )
