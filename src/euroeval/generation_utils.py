@@ -58,6 +58,7 @@ def extract_few_shot_examples(
         else:
             msg += "`zero_shot=False` argument"
         msg += "), we will run the evaluation in zero-shot mode."
+        benchmark_config.few_shot = False
         log_once(msg, level=logging.DEBUG)
 
     random_seed = 4242 + itr_idx
