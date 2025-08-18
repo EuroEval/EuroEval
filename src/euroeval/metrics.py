@@ -185,7 +185,7 @@ class PipelineMetric(Metric):
         name: str,
         pretty_name: str,
         pipeline_repo: str,
-        pipeline_scoring_method: t.Literal["transform", "predict", "score"],
+        pipeline_scoring_function: c.Callable[["Pipeline", c.Sequence], float],
         pipeline_file_name: str = "pipeline.pkl",
         preprocessing_fn: c.Callable[[c.Sequence[T]], c.Sequence[T]] = lambda x: x,
         postprocessing_fn: c.Callable[[float], tuple[float, str]] | None = None,
@@ -200,9 +200,8 @@ class PipelineMetric(Metric):
             pipeline_repo:
                 The Hugging Face repository ID of the scikit-learn pipeline to load.
             pipeline_scoring_method:
-                The method to use for scoring the predictions. This can be one of
-                "transform", "predict", or "score". The method should be compatible
-                with the pipeline being loaded.
+                The method to use for scoring the predictions with the pipeline. Takes
+                a 1D sequence of predictions and returns a float score.
             pipeline_file_name (optional):
                 The name of the file to download from the Hugging Face repository.
                 Defaults to "pipeline.joblib".
@@ -221,9 +220,7 @@ class PipelineMetric(Metric):
         )
         self.pipeline_repo = pipeline_repo
         self.pipeline_file_name = pipeline_file_name
-        self.pipeline_scoring_method: t.Literal["transform", "predict", "score"] = (
-            pipeline_scoring_method
-        )
+        self.pipeline_scoring_function = pipeline_scoring_function
         self.pipeline: "Pipeline" = self._download_pipeline()
         self.preprocessing_fn = preprocessing_fn
 
@@ -253,15 +250,7 @@ class PipelineMetric(Metric):
             "The dataset must be provided for the PipelineMetric."
         )
         predictions = self.preprocessing_fn(predictions)
-        match self.pipeline_scoring_method:
-            case "transform":
-                breakpoint()
-                score = self.pipeline.transform([predictions]).mean().item()
-            case "predict":
-                score = self.pipeline.predict([predictions]).mean().item()
-            case "score":
-                score = self.pipeline.score([predictions], [references]).item()
-        return score
+        return self.pipeline_scoring_function(self.pipeline, predictions)
 
     def _download_pipeline(self) -> "Pipeline":
         """Download the scikit-learn pipeline from the given URL.
@@ -613,7 +602,9 @@ european_values_metric = PipelineMetric(
     name="european_values",
     pretty_name="European Values",
     pipeline_repo="EuroEval/european-values-pipeline",
-    pipeline_scoring_method="transform",
+    pipeline_scoring_function=(
+        lambda pipeline, predictions: pipeline.transform(predictions)[0]
+    ),
     preprocessing_fn=european_values_preprocessing_fn,
 )
 
