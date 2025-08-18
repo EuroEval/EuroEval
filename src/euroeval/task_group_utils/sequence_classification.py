@@ -120,7 +120,6 @@ def extract_labels_from_generation(
                 "The model outputted logprobs, but the first label token mapping is "
                 "not provided, which is not supported."
             )
-        breakpoint()
         labels = get_closest_logprobs_labels(
             generation_logprobs=model_output.scores,
             dataset_config=dataset_config,

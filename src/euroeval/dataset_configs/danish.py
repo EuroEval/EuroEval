@@ -147,7 +147,6 @@ EUROPEAN_VALUES_DA_CONFIG = DatasetConfig(
     languages=[DA],
     splits=["test"],
     bootstrap_samples=False,
-    _instruction_prompt="{text}",
 )
 
 EUROPEAN_VALUES_SITUATIONAL_DA_CONFIG = DatasetConfig(
@@ -159,5 +158,4 @@ EUROPEAN_VALUES_SITUATIONAL_DA_CONFIG = DatasetConfig(
     languages=[DA],
     splits=["test"],
     bootstrap_samples=False,
-    _instruction_prompt="{text}",
 )

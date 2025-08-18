@@ -97,7 +97,6 @@ EUROPEAN_VALUES_FI_CONFIG = DatasetConfig(
     languages=[FI],
     splits=["test"],
     bootstrap_samples=False,
-    _instruction_prompt="{text}",
 )
 
 EUROPEAN_VALUES_SITUATIONAL_FI_CONFIG = DatasetConfig(
@@ -109,5 +108,4 @@ EUROPEAN_VALUES_SITUATIONAL_FI_CONFIG = DatasetConfig(
     languages=[FI],
     splits=["test"],
     bootstrap_samples=False,
-    _instruction_prompt="{text}",
 )

@@ -72,7 +72,6 @@ MULTI_WIKI_QA_FO_CONFIG = DatasetConfig(
 #     languages=[FO],
 #     splits=["test"],
 #     bootstrap_samples=False,
-#     _instruction_prompt="{text}",
 # )
 #
 # EUROPEAN_VALUES_SITUATIONAL_FO_CONFIG = DatasetConfig(
@@ -84,5 +83,4 @@ MULTI_WIKI_QA_FO_CONFIG = DatasetConfig(
 #     languages=[FO],
 #     splits=["test"],
 #     bootstrap_samples=False,
-#     _instruction_prompt="{text}",
 # )
