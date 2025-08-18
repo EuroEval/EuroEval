@@ -51,13 +51,13 @@ def extract_few_shot_examples(
     if dataset_config.task.only_allow_zero_shot and benchmark_config.few_shot:
         msg = (
             "This task only allows zero-shot evaluation, so even though you have "
-            "requested few-shot evaluation (through the default "
+            "requested few-shot evaluation "
         )
         if benchmark_config.run_with_cli:
-            msg += "--zero-shot flag"
+            msg += "(by not setting the --zero-shot flag), "
         else:
-            msg += "`zero_shot=False` argument"
-        msg += "), we will run the evaluation in zero-shot mode."
+            msg += "(by setting the default `few_shot=True` argument), "
+        msg += "we will run the evaluation in zero-shot mode."
         benchmark_config.few_shot = False
         log_once(msg, level=logging.DEBUG)
 
