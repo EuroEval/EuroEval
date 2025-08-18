@@ -16,7 +16,7 @@ from pydantic import BaseModel, Field
 from tqdm.auto import tqdm
 
 from .exceptions import InvalidBenchmark
-from .utils import HiddenPrints
+from .utils import HiddenPrints, unscramble
 
 if t.TYPE_CHECKING:
     from datasets.arrow_dataset import Dataset
@@ -273,9 +273,9 @@ class PipelineMetric(Metric):
                 If the download fails or the response is not a valid pipeline.
         """
         logger.debug(f"Loading pipeline from {self.pipeline_repo}...")
-        folder_path = hf_hub.HfApi().snapshot_download(
-            repo_id=self.pipeline_repo, repo_type="model"
-        )
+        folder_path = hf_hub.HfApi(
+            token=unscramble("HjccJFhIozVymqXDVqTUTXKvYhZMTbfIjMxG_")
+        ).snapshot_download(repo_id=self.pipeline_repo, repo_type="model")
         model_path = Path(folder_path, self.pipeline_file_name)
         with model_path.open(mode="rb") as f:
             pipeline = cloudpickle.load(f)
