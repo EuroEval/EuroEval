@@ -549,10 +549,11 @@ def european_values_preprocessing_fn(predictions: c.Sequence[int]) -> c.Sequence
     # do using majority voting.
     using_situational = len(predictions) == num_questions * num_phrasings_per_question
     if using_situational:
-        # Reshape the predictions to a 2D array with 5 rows (one for each phrasing)
-        # and 53 columns (one for each question). The five phrasings for each question
-        # appear right after each other, e.g., (0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 2, ...)
-        # Shape: (53, 5)
+        # Reshape the predictions to a 2D array with `num_phrasings_per_question` rows
+        # (one for each phrasing) and `num_questions` columns (one for each question).
+        # The five phrasings for each question appear right after each other, e.g.,
+        # (0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 2, ...)
+        # Shape: (num_questions, num_phrasings_per_question)
         arr = np.array(
             [
                 predictions[i : i + num_phrasings_per_question]
