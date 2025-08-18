@@ -2,7 +2,7 @@
 
 from ..data_models import DatasetConfig
 from ..languages import FO
-from ..tasks import EUROPEAN_VALUES, LA, NER, RC, SENT
+from ..tasks import LA, NER, RC, SENT
 
 ### Official datasets ###
 
@@ -63,13 +63,26 @@ MULTI_WIKI_QA_FO_CONFIG = DatasetConfig(
     unofficial=True,
 )
 
-EUROPEAN_VALUES_FO_CONFIG = DatasetConfig(
-    name="european-values-fo",
-    pretty_name="the Faroese version of the European values evaluation dataset",
-    huggingface_id="EuroEval/european-values-fo",
-    task=EUROPEAN_VALUES,
-    languages=[FO],
-    splits=["test"],
-    bootstrap_samples=False,
-    _instruction_prompt="{text}",
-)
+# TODO: No Faroese version of the European values dataset exists yet
+# EUROPEAN_VALUES_FO_CONFIG = DatasetConfig(
+#     name="european-values-fo",
+#     pretty_name="the Faroese version of the European values evaluation dataset",
+#     huggingface_id="EuroEval/european-values-fo",
+#     task=EUROPEAN_VALUES,
+#     languages=[FO],
+#     splits=["test"],
+#     bootstrap_samples=False,
+#     _instruction_prompt="{text}",
+# )
+#
+# EUROPEAN_VALUES_SITUATIONAL_FO_CONFIG = DatasetConfig(
+#     name="european-values-situational-fo",
+#     pretty_name="the Faroese version of the European values evaluation dataset, "
+#     "where the questions are phrased in a situational way",
+#     huggingface_id="EuroEval/european-values-situational-fo",
+#     task=EUROPEAN_VALUES,
+#     languages=[FO],
+#     splits=["test"],
+#     bootstrap_samples=False,
+#     _instruction_prompt="{text}",
+# )

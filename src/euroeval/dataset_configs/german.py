@@ -120,3 +120,15 @@ EUROPEAN_VALUES_DE_CONFIG = DatasetConfig(
     bootstrap_samples=False,
     _instruction_prompt="{text}",
 )
+
+EUROPEAN_VALUES_SITUATIONAL_DE_CONFIG = DatasetConfig(
+    name="european-values-situational-de",
+    pretty_name="the German version of the European values evaluation dataset, where "
+    "the questions are phrased in a situational way",
+    huggingface_id="EuroEval/european-values-situational-de",
+    task=EUROPEAN_VALUES,
+    languages=[DE],
+    splits=["test"],
+    bootstrap_samples=False,
+    _instruction_prompt="{text}",
+)

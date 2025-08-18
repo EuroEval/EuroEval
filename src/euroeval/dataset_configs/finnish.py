@@ -99,3 +99,15 @@ EUROPEAN_VALUES_FI_CONFIG = DatasetConfig(
     bootstrap_samples=False,
     _instruction_prompt="{text}",
 )
+
+EUROPEAN_VALUES_SITUATIONAL_FI_CONFIG = DatasetConfig(
+    name="european-values-situational-fi",
+    pretty_name="the Finnish version of the European values evaluation dataset, where "
+    "the questions are phrased in a situational way",
+    huggingface_id="EuroEval/european-values-situational-fi",
+    task=EUROPEAN_VALUES,
+    languages=[FI],
+    splits=["test"],
+    bootstrap_samples=False,
+    _instruction_prompt="{text}",
+)

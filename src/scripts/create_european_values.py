@@ -11,12 +11,16 @@
 
 """Create the European values dataset and upload it to the HF Hub."""
 
+import logging
 from collections import defaultdict
 
 import pandas as pd
 from datasets import Dataset, DatasetDict, Split, disable_progress_bars, load_dataset
 from huggingface_hub import HfApi
 from tqdm.auto import tqdm
+
+logging.basicConfig(format="%(asctime)s ⋅ %(message)s", level=logging.INFO)
+logger = logging.getLogger("create_european_values")
 
 QUESTIONS_TO_INCLUDE = [
     "F025:1",
@@ -80,7 +84,8 @@ def main() -> None:
     disable_progress_bars()
 
     api = HfApi()
-    dataset_id = "EuropeanValuesProject/za7505"
+    vanilla_dataset_id = "EuropeanValuesProject/za7505"
+    situational_dataset_id = "EuropeanValuesProject/za7505-situational"
 
     choices_mapping = {
         "da": "Svarmuligheder",
@@ -125,62 +130,94 @@ def main() -> None:
         "fi": {"0": "Ei", "1": "Kyllä"},
     }
 
-    for language, choices_str in tqdm(
-        choices_mapping.items(), desc="Generating datasets", total=len(choices_mapping)
+    for dataset_id, new_dataset_id in zip(
+        [situational_dataset_id, vanilla_dataset_id],
+        [
+            "EuroEval/european-values-situational-{language}",
+            "EuroEval/european-values-{language}",
+        ],
     ):
-        dataset = load_dataset(
-            path=dataset_id, name=subset_mapping[language], split="train"
-        )
-        assert isinstance(dataset, Dataset)
-        df = dataset.to_pandas()
-        assert isinstance(df, pd.DataFrame)
-        df.set_index("question_id", inplace=True)
-        del dataset
-
-        data_dict = defaultdict(list)
-        for question_id_with_choice in QUESTIONS_TO_INCLUDE:
-            question_id = question_id_with_choice.split(":")[0]
-            choice = (
-                question_id_with_choice.split(":", 1)[1]
-                if ":" in question_id_with_choice
-                else ""
+        question_id: str | None = None
+        for language, choices_str in tqdm(
+            choices_mapping.items(),
+            desc="Generating datasets",
+            total=len(choices_mapping),
+        ):
+            dataset = load_dataset(
+                path=dataset_id,
+                name=(
+                    subset_mapping[language]
+                    if dataset_id == vanilla_dataset_id
+                    else language
+                ),
+                split="train",
             )
-            if question_id not in df.index:
-                raise ValueError(f"Question ID {question_id} not found in the dataset.")
+            assert isinstance(dataset, Dataset)
+            df = dataset.to_pandas()
+            assert isinstance(df, pd.DataFrame)
+            df.set_index("question_id", inplace=True)
+            del dataset
 
-            # Extract the question and choices
-            question_data = df.loc[question_id]
-            question = question_data["question"]
-            choices = {
-                key: value[0].upper() + value[1:]
-                for key, value in question_data.choices.items()
-                if value is not None
-            }
+            data_dict = defaultdict(list)
+            for question_id_with_choice in QUESTIONS_TO_INCLUDE:
+                question_id = question_id_with_choice.split(":")[0]
+                choice = (
+                    question_id_with_choice.split(":", 1)[1]
+                    if ":" in question_id_with_choice
+                    else ""
+                )
+                if question_id not in df.index:
+                    logger.error(
+                        f"Question ID {question_id} not found for the language "
+                        f"{language}. Skipping this language."
+                    )
+                    break
 
-            # Binary choices are stated as "selected" and "not selected", which only
-            # makes sense when you're ticking off boxes, so we map them to (the language
-            # equivalent of) "yes" and "no"
-            if sorted(choices.keys()) == ["0", "1"]:
-                choices = no_yes_mapping[language]
+                # Extract the question and choices
+                question_data = df.loc[question_id]
+                if not isinstance(question_data, pd.DataFrame):
+                    question_data = pd.DataFrame([question_data])
+                for _, row in question_data.iterrows():
+                    question = row["question"]
+                    choices = {
+                        key: value[0].upper() + value[1:]
+                        for key, value in row.choices.items()
+                        if value is not None
+                    }
 
-            # Create the prompt string, joining the question and choices
-            prompt = f"{question}\n{choices_str}:\n" + "\n".join(
-                [f"{key}. {value}" for key, value in choices.items()]
+                    # Binary choices are stated as "selected" and "not selected", which
+                    # only makes sense when you're ticking off boxes, so we map them to
+                    # (the language equivalent of) "yes" and "no"
+                    if (
+                        sorted(choices.keys()) == ["0", "1"]
+                        and dataset_id == vanilla_dataset_id
+                    ):
+                        choices = no_yes_mapping[language]
+
+                    # Create the prompt string, joining the question and choices
+                    prompt = f"{question}\n{choices_str}:\n" + "\n".join(
+                        [f"{key}. {value}" for key, value in choices.items()]
+                    )
+
+                    data_dict["question_id"].append(question_id)
+                    data_dict["choice"].append(choice)
+                    data_dict["text"].append(prompt)
+
+            if question_id is not None and question_id not in df.index:
+                continue
+            new_df = pd.DataFrame(data_dict)
+
+            # Collect dataset in a dataset dictionary
+            dataset = DatasetDict(test=Dataset.from_pandas(new_df, split=Split.TEST))
+
+            # Push the dataset to the Hugging Face Hub, and replace the existing one, if
+            # it exists already
+            api.delete_repo(
+                new_dataset_id.format(language=language),
+                repo_type="dataset",
+                missing_ok=True,
             )
-
-            data_dict["question_id"].append(question_id)
-            data_dict["choice"].append(choice)
-            data_dict["text"].append(prompt)
-        new_df = pd.DataFrame(data_dict)
-
-        # Collect dataset in a dataset dictionary
-        dataset = DatasetDict(test=Dataset.from_pandas(new_df, split=Split.TEST))
-
-        # Push the dataset to the Hugging Face Hub, and replace the existing one, if it
-        # exists already
-        new_dataset_id = f"EuroEval/european-values-{language}"
-        api.delete_repo(new_dataset_id, repo_type="dataset", missing_ok=True)
-        dataset.push_to_hub(new_dataset_id, private=True)
+            dataset.push_to_hub(new_dataset_id.format(language=language), private=True)
 
 
 if __name__ == "__main__":

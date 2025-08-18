@@ -90,3 +90,15 @@ EUROPEAN_VALUES_PT_CONFIG = DatasetConfig(
     bootstrap_samples=False,
     _instruction_prompt="{text}",
 )
+
+EUROPEAN_VALUES_SITUATIONAL_PT_CONFIG = DatasetConfig(
+    name="european-values-situational-pt",
+    pretty_name="the Portuguese version of the European values evaluation dataset, "
+    "where the questions are phrased in a situational way",
+    huggingface_id="EuroEval/european-values-situational-pt",
+    task=EUROPEAN_VALUES,
+    languages=[PT],
+    splits=["test"],
+    bootstrap_samples=False,
+    _instruction_prompt="{text}",
+)

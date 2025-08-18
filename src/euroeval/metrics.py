@@ -10,6 +10,7 @@ import cloudpickle
 import evaluate
 import huggingface_hub as hf_hub
 import litellm
+import numpy as np
 from litellm.types.utils import Choices, ModelResponse
 from pydantic import BaseModel, Field
 from tqdm.auto import tqdm
@@ -549,6 +550,39 @@ accuracy_metric = HuggingFaceMetric(
 
 def european_values_preprocessing_fn(predictions: c.Sequence[int]) -> c.Sequence[int]:
     """Preprocess the model predictions for the European Values metric."""
+    num_questions = 53
+    num_phrasings_per_question = 5
+
+    # When we are using the situational version of the dataset, there are 5 phrasings
+    # for each question, so we need to aggregate the predictions by question, which we
+    # do using majority voting.
+    using_situational = len(predictions) == num_questions * num_phrasings_per_question
+    if using_situational:
+        # Reshape the predictions to a 2D array with 5 rows (one for each phrasing)
+        # and 53 columns (one for each question). The five phrasings for each question
+        # appear right after each other, e.g., (0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 2, ...)
+        # Shape: (53, 5)
+        arr = np.array(
+            [
+                predictions[i : i + num_phrasings_per_question]
+                for i in range(0, len(predictions), num_phrasings_per_question)
+            ]
+        )
+
+        # Double check that we reshaped the predictions correctly
+        for idx, pred in enumerate(predictions):
+            assert arr[idx // 5, idx % 5] == pred, (
+                f"Reshaped predictions do not match the original predictions at index "
+                f"{idx}: {arr[idx // 5, idx % 5]} != {pred}."
+            )
+
+        # Use majority voting to get the final prediction for each question
+        # Shape: (53,)
+        arr = np.apply_along_axis(lambda x: np.bincount(x).argmax(), axis=1, arr=arr)
+
+        # Convert the array to a list
+        predictions = arr.tolist()
+
     # Some of the questions are categorical and we're only interested in whether the
     # model chooses a specific choice or not. This mapping takes the question index
     # to the choice value that we're interested in.
