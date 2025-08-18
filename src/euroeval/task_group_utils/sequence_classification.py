@@ -293,7 +293,6 @@ def get_closest_logprobs_labels(
                     "extracting the labels using word edit distance.",
                     level=logging.DEBUG,
                 )
-                breakpoint()
                 return None
 
             if output_label is not None:
