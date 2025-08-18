@@ -82,7 +82,6 @@ def main() -> None:
     api = HfApi()
     dataset_id = "EuropeanValuesProject/za7505"
 
-    # Create a mapping with the word "Choices" in different languages
     choices_mapping = {
         "da": "Svarmuligheder",
         "no": "Svaralternativer",
@@ -96,51 +95,39 @@ def main() -> None:
         "es": "Opciones",
         "pt": "Opções",
     }
-
-    languages_available = [
-        cfg["config_name"].split(".")[-1]
-        for cfg in api.repo_info(
-            repo_id=dataset_id, repo_type="dataset"
-        ).card_data.configs
-    ]
+    subset_mapping = {
+        "da": "da-dk",
+        "no": "no-no",
+        "sv": "sv-se",
+        "is": "is-is",
+        "de": "de-de",
+        "nl": "nl-nl",
+        "en": "en-raw",
+        "fr": "fr-fr",
+        "it": "it-it",
+        "es": "es-es",
+        "pt": "pt-pt",
+    }
+    no_yes_mapping = {
+        "da": {"0": "Nej", "1": "Ja"},
+        "no": {"0": "Nei", "1": "Ja"},
+        "sv": {"0": "Nej", "1": "Ja"},
+        "is": {"0": "Nei", "1": "Já"},
+        "de": {"0": "Nein", "1": "Ja"},
+        "nl": {"0": "Nee", "1": "Ja"},
+        "en": {"0": "No", "1": "Yes"},
+        "fr": {"0": "Non", "1": "Oui"},
+        "it": {"0": "No", "1": "Sì"},
+        "es": {"0": "No", "1": "Sí"},
+        "pt": {"0": "Não", "1": "Sim"},
+    }
 
     for language, choices_str in tqdm(
         choices_mapping.items(), desc="Generating datasets", total=len(choices_mapping)
     ):
-        language_matches = [
-            lang for lang in languages_available if lang.startswith(language)
-        ]
-        match len(language_matches):
-            case 0:
-                raise RuntimeError(f"No matches found for the language {language!r}.")
-            case 1:
-                dataset_subset = language_matches[0]
-            case _:
-                # If there are multiple matches, first check if there is a unique match
-                # of the form "language-language" (e.g., "en-en", "fr-fr"), and use that
-                # if so.
-                unique_matches = [
-                    match
-                    for match in language_matches
-                    if match == f"{language}-{language}"
-                ]
-                if len(unique_matches) == 1:
-                    dataset_subset = unique_matches[0]
-                else:
-                    # Last attempt: if the multiple matches are of the form "-clean" and
-                    # "-raw", use the "-raw" one.
-                    if set(language_matches) == {
-                        f"{language}-clean",
-                        f"{language}-raw",
-                    }:
-                        dataset_subset = f"{language}-raw"
-                    else:
-                        raise RuntimeError(
-                            f"Too many matches found for the language {language!r}: "
-                            f"{language_matches}."
-                        )
-
-        dataset = load_dataset(dataset_id, name=dataset_subset, split="train")
+        dataset = load_dataset(
+            path=dataset_id, name=subset_mapping[language], split="train"
+        )
         assert isinstance(dataset, Dataset)
         df = dataset.to_pandas()
         assert isinstance(df, pd.DataFrame)
@@ -158,13 +145,22 @@ def main() -> None:
             if question_id not in df.index:
                 raise ValueError(f"Question ID {question_id} not found in the dataset.")
 
+            # Extract the question and choices
             question_data = df.loc[question_id]
             question = question_data["question"]
             choices = {
-                key: value
+                key: value[0].upper() + value[1:]
                 for key, value in question_data.choices.items()
                 if value is not None
             }
+
+            # Binary choices are stated as "selected" and "not selected", which only
+            # makes sense when you're ticking off boxes, so we map them to (the language
+            # equivalent of) "yes" and "no"
+            if sorted(choices.keys()) == ["0", "1"]:
+                choices = no_yes_mapping[language]
+
+            # Create the prompt string, joining the question and choices
             prompt = f"{question}\n{choices_str}:\n" + "\n".join(
                 [f"{key}. {value}" for key, value in choices.items()]
             )
