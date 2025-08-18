@@ -186,15 +186,13 @@ def get_closest_logprobs_labels(
     output_labels: list[str] = list()
     for sample in generation_logprobs:
         for logprob_list in sample:
+            breakpoint()
             generated_labels = [
-                re.sub(
-                    pattern=r"^[^a-zæøåüöä0-9]+|[^a-zæøåüöä0-9]+$",
-                    repl="",
-                    string=label.lower(),
-                )
+                re.sub(pattern=r"^[^a-zæøåüöä0-9]+$", repl="", string=label.lower())
                 for label, _ in logprob_list
             ]
             generated_labels = [label for label in generated_labels if label != ""]
+            breakpoint()
 
             # We want to use the first generated label which contains a unique candidate
             # label, as the output label
