@@ -268,7 +268,6 @@ def get_closest_logprobs_labels(
                         for candidate_label in candidate_labels
                         if candidate_label.startswith(generated_label)
                     ]
-                    breakpoint()
                     if candidate_output_labels_starting_with_generated_label:
                         log_once(
                             f"No candidate label found for the generated label "
@@ -278,6 +277,7 @@ def get_closest_logprobs_labels(
                             "distance.",
                             level=logging.DEBUG,
                         )
+                        breakpoint()
                         return None
 
             # If we did not find any candidate label for any of the generated labels, we
@@ -291,6 +291,7 @@ def get_closest_logprobs_labels(
                     "extracting the labels using word edit distance.",
                     level=logging.DEBUG,
                 )
+                breakpoint()
                 return None
 
             if output_label is not None:
