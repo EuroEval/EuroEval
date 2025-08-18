@@ -120,6 +120,7 @@ def extract_labels_from_generation(
                 "The model outputted logprobs, but the first label token mapping is "
                 "not provided, which is not supported."
             )
+        breakpoint()
         labels = get_closest_logprobs_labels(
             generation_logprobs=model_output.scores,
             dataset_config=dataset_config,
@@ -279,7 +280,6 @@ def get_closest_logprobs_labels(
                             "the labels using word edit distance.",
                             level=logging.DEBUG,
                         )
-                        breakpoint()
                         return None
 
             # If we did not find any candidate label for any of the generated labels, we
