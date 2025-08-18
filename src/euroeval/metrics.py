@@ -13,6 +13,7 @@ import litellm
 import numpy as np
 from litellm.types.utils import Choices, ModelResponse
 from pydantic import BaseModel, Field
+from scipy.special import expit as sigmoid
 from tqdm.auto import tqdm
 
 from .exceptions import InvalidBenchmark
@@ -598,13 +599,21 @@ def european_values_preprocessing_fn(predictions: c.Sequence[int]) -> c.Sequence
     return predictions
 
 
+def european_values_scoring_function(
+    pipeline: "Pipeline", predictions: c.Sequence[int]
+) -> float:
+    """Scoring function for the European Values metric."""
+    normalised_predictions = pipeline[0].transform([predictions])
+    log_likelihoods = pipeline[1].transform(normalised_predictions)
+    score = sigmoid(pipeline[2].alpha_ * (log_likelihoods - pipeline[2].center_))
+    return score
+
+
 european_values_metric = PipelineMetric(
     name="european_values",
     pretty_name="European Values",
     pipeline_repo="EuroEval/european-values-pipeline",
-    pipeline_scoring_function=(
-        lambda pipeline, predictions: pipeline.transform([predictions])[0]
-    ),
+    pipeline_scoring_function=european_values_scoring_function,
     preprocessing_fn=european_values_preprocessing_fn,
 )
 
