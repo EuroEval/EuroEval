@@ -139,5 +139,6 @@ EUROPEAN_VALUES_NL_CONFIG = DatasetConfig(
     languages=[NL],
     splits=["test"],
     bootstrap_samples=False,
+    _instruction_prompt="{text}",
     unofficial=True,
 )

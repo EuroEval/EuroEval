@@ -71,5 +71,6 @@ EUROPEAN_VALUES_FO_CONFIG = DatasetConfig(
     languages=[FO],
     splits=["test"],
     bootstrap_samples=False,
+    _instruction_prompt="{text}",
     unofficial=True,
 )

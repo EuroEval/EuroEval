@@ -114,5 +114,6 @@ EUROPEAN_VALUES_EN_CONFIG = DatasetConfig(
     languages=[EN],
     splits=["test"],
     bootstrap_samples=False,
+    _instruction_prompt="{text}",
     unofficial=True,
 )
