@@ -186,13 +186,11 @@ def get_closest_logprobs_labels(
     output_labels: list[str] = list()
     for sample in generation_logprobs:
         for logprob_list in sample:
-            breakpoint()
             generated_labels = [
                 re.sub(pattern=r"^[^a-zæøåüöä0-9]+$", repl="", string=label.lower())
                 for label, _ in logprob_list
             ]
             generated_labels = [label for label in generated_labels if label != ""]
-            breakpoint()
 
             # We want to use the first generated label which contains a unique candidate
             # label, as the output label
@@ -270,6 +268,7 @@ def get_closest_logprobs_labels(
                         for candidate_label in candidate_labels
                         if candidate_label.startswith(generated_label)
                     ]
+                    breakpoint()
                     if candidate_output_labels_starting_with_generated_label:
                         log_once(
                             f"No candidate label found for the generated label "
@@ -292,7 +291,6 @@ def get_closest_logprobs_labels(
                     "extracting the labels using word edit distance.",
                     level=logging.DEBUG,
                 )
-                breakpoint()
                 return None
 
             if output_label is not None:
