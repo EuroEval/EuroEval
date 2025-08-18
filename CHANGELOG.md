@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 
 ## [Unreleased]
+### Added
+- It is now possible to evaluate how much a model adhere to European values! 🇪🇺 This
+  probes 53 questions from the European values survey, which have been chosen based on
+  an optimisation procedure that maximises agreement across the EU. We then measure how
+  well the model's answers align with the distribution of answers across the EU, using a
+  tree-based kernel density estimation. This can only be used zero-shot, and only with
+  instruction-based decoder models (including reasoning models).
+
 ### Fixed
 - Now disables the `seed` parameter if the API inference model does not support it,
   which prevented evaluating some models.
