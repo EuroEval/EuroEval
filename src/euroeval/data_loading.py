@@ -97,7 +97,7 @@ def load_data(
             for idx in range(benchmark_config.num_iterations)
         ]
     else:
-        datasets = [dataset]
+        datasets = [dataset] * benchmark_config.num_iterations
 
     return datasets
 
