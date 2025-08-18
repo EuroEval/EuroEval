@@ -6,6 +6,7 @@
 #     "pandas==2.3.1",
 #     "requests==2.32.4",
 #     "tqdm==4.67.1",
+#     "euroeval==15.16.0",
 # ]
 # ///
 
@@ -18,6 +19,9 @@ import pandas as pd
 from datasets import Dataset, DatasetDict, Split, disable_progress_bars, load_dataset
 from huggingface_hub import HfApi
 from tqdm.auto import tqdm
+
+from euroeval.languages import get_all_languages
+from euroeval.prompt_templates.multiple_choice import MULTIPLE_CHOICE_TEMPLATES
 
 logging.basicConfig(format="%(asctime)s ⋅ %(message)s", level=logging.INFO)
 logger = logging.getLogger("create_european_values")
@@ -131,10 +135,10 @@ def main() -> None:
     }
 
     for dataset_id, new_dataset_id in zip(
-        [situational_dataset_id, vanilla_dataset_id],
+        [vanilla_dataset_id, situational_dataset_id],
         [
-            "EuroEval/european-values-situational-{language}",
             "EuroEval/european-values-{language}",
+            "EuroEval/european-values-situational-{language}",
         ],
     ):
         question_id: str | None = None
@@ -197,6 +201,23 @@ def main() -> None:
                     # Create the prompt string, joining the question and choices
                     prompt = f"{question}\n{choices_str}:\n" + "\n".join(
                         [f"{key}. {value}" for key, value in choices.items()]
+                    )
+
+                    # Add a statement at the end stating that the model has to choose
+                    # one of the choices
+                    labels = list(choices.keys())
+                    language_obj = get_all_languages()[language]
+                    assert language_obj._or_separator is not None, (
+                        f"Language {language} does not have an 'or' separator defined."
+                    )
+                    prompt = MULTIPLE_CHOICE_TEMPLATES[
+                        language_obj
+                    ].default_instruction_prompt.format(
+                        text=prompt,
+                        labels_str=(
+                            ", ".join([f"'{label}'" for label in labels[:-1]])
+                            + f" {language_obj._or_separator} '{labels[-1]}'"
+                        ),
                     )
 
                     data_dict["question_id"].append(question_id)
