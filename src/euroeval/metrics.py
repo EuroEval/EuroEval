@@ -255,6 +255,7 @@ class PipelineMetric(Metric):
         predictions = self.preprocessing_fn(predictions)
         match self.pipeline_scoring_method:
             case "transform":
+                breakpoint()
                 score = self.pipeline.transform([predictions]).mean().item()
             case "predict":
                 score = self.pipeline.predict([predictions]).mean().item()
