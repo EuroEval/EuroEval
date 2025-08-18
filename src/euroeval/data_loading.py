@@ -130,7 +130,7 @@ def load_raw_data(dataset_config: "DatasetConfig", cache_dir: str) -> "DatasetDi
             requests.ConnectionError,
             requests.ReadTimeout,
         ):
-            logger.warning(
+            logger.debug(
                 f"Failed to load dataset {dataset_config.huggingface_id!r}. Retrying..."
             )
             time.sleep(1)
