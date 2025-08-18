@@ -242,8 +242,23 @@ class PipelineMetric(Metric):
 
         Returns:
             The calculated metric score, or None if the score should be ignored.
+
+        Raises:
+            InvalidBenchmark:
+                If the model predictions contain values greater than 1.0, which is not
+                expected for the pipeline being used.
         """
         predictions = self.preprocessing_fn(predictions)
+
+        # Sanity check that the model did not pick any invalid values
+        normalised_predictions = self.pipeline[0].transform([predictions])[0]
+        if max(normalised_predictions) > 1.0:
+            raise InvalidBenchmark(
+                "The model predictions contain values greater than 1.0, which is not "
+                f"expected. The predictions were {predictions} and the normalised "
+                f"predictions were {normalised_predictions}."
+            )
+
         match self.pipeline_scoring_method:
             case "transform":
                 score = self.pipeline.transform([predictions]).mean().item()
