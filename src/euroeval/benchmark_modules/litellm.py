@@ -155,7 +155,7 @@ ALLOWED_PARAMS = {
     r"(anthropic/)?claude-(sonnet|opus)-4.*": ["no-thinking", "thinking"],
     # Gemini models
     r"(gemini/)?gemini-2.5-flash-lite.*": ["no-thinking", "thinking"],
-    r"(gemini/)?gemini-2.5-flash-[0-9].*": ["no-thinking", "thinking"],
+    r"(gemini/)?gemini-2.5-flash.*": ["no-thinking", "thinking"],
     # xAI models
     r"(xai/)?grok-3-mini(-fast)?(-beta)?": ["low", "medium", "high"],
 }
