@@ -391,6 +391,31 @@ class Benchmarker:
 
             loaded_model: BenchmarkModule | None = None
             for dataset_config in dataset_configs:
+                # Update the benchmark config if the dataset requires it
+                benchmark_config_params_to_be_set = dict()
+                if (
+                    "val" not in dataset_config.splits
+                    and not benchmark_config.evaluate_test_split
+                ):
+                    logger.debug(
+                        "The dataset does not have a validation split, so even though "
+                        "you requested evaluating the validation split (the default), "
+                        "we will evaluate on the test split."
+                    )
+                    benchmark_config_params_to_be_set["evaluate_test_split"] = False
+                    benchmark_config.evaluate_test_split = True
+                if (
+                    dataset_config.task.only_allow_zero_shot
+                    and benchmark_config.few_shot
+                ):
+                    logger.debug(
+                        "The task requires zero-shot evaluation, so even though you "
+                        "requested few-shot evaluation (the default), we will evaluate "
+                        "zero-shot."
+                    )
+                    benchmark_config_params_to_be_set["few_shot"] = True
+                    benchmark_config.few_shot = False
+
                 # Skip if we have already benchmarked this model on this dataset and
                 # we are not forcing the benchmark
                 if not benchmark_config.force and model_has_been_benchmarked(
@@ -487,6 +512,11 @@ class Benchmarker:
                     current_benchmark_results.append(record)
                     if benchmark_config.save_results:
                         record.append_to_results(results_path=self.results_path)
+
+                # Reset the dataset-specific settings in the benchmark config
+                for key, value in benchmark_config_params_to_be_set.items():
+                    logger.debug(f"Setting {key!r} back to {value!r}.")
+                    setattr(benchmark_config, key, value)
 
                 num_finished_benchmarks += 1
                 logger.info(

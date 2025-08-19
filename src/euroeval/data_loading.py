@@ -48,21 +48,8 @@ def load_data(
         dataset_config=dataset_config, cache_dir=benchmark_config.cache_dir
     )
 
-    if not benchmark_config.evaluate_test_split:
-        if "val" in dataset:
-            dataset["test"] = dataset["val"]
-        elif benchmark_config.run_with_cli:
-            logger.debug(
-                "The --evaluate-test-split flag has not been set, but this dataset "
-                "does not have a validation split, so we will use the test split "
-                "anyway."
-            )
-        else:
-            logger.debug(
-                "The `evaluate_test_split` argument is set to False (the default), "
-                "but this dataset does not have a validation split, so we will use "
-                "the test split anyway."
-            )
+    if not benchmark_config.evaluate_test_split and "val" in dataset:
+        dataset["test"] = dataset["val"]
 
     # Remove empty examples from the datasets
     for text_feature in ["tokens", "text"]:
