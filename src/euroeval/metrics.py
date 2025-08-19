@@ -605,9 +605,9 @@ def european_values_scoring_function(
 ) -> float:
     """Scoring function for the European Values metric."""
     normalised_predictions = pipeline[0].transform([predictions])
-    log_likelihoods = pipeline[1].transform(normalised_predictions)[0].item()
+    log_likelihoods = pipeline[1].transform(normalised_predictions)[0]
     score = sigmoid(pipeline[2].alpha_ * (log_likelihoods - pipeline[2].center_))
-    return score
+    return score.item()
 
 
 european_values_metric = PipelineMetric(
