@@ -89,7 +89,7 @@ def aggregate_scores(
 
         if len(test_scores) > 1:
             sample_std = np.std(test_scores, ddof=1)
-            test_se = sample_std / np.sqrt(len(test_scores))
+            test_se = (sample_std / np.sqrt(len(test_scores))).item()
         else:
             test_se = np.nan
 
