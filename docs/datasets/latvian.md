@@ -65,6 +65,73 @@ $ euroeval --model <model-id> --dataset latvian-twitter-sentiment-mini
 ```
 
 
+## Linguistic Acceptability
+
+### ScaLA-lv
+
+This dataset was published in [this paper](https://aclanthology.org/2023.nodalida-1.20/)
+and was automatically created from the [Latvian Universal Dependencies
+treebank](https://github.com/UniversalDependencies/UD_Latvian-LVTB) by assuming that the
+documents in the treebank are correct, and corrupting the samples to create
+grammatically incorrect samples. The corruptions were done by either removing a word
+from a sentence, or by swapping two neighbouring words in a sentence. To ensure that
+this does indeed break the grammaticality of the sentence, a set of rules were used on
+the part-of-speech tags of the words in the sentence.
+
+The original full dataset consists of 1,024 / 256 / 2,048 samples for training,
+validation and testing, respectively (so 3,328 samples used in total). These splits are
+used as-is in the framework.
+
+Here are a few examples from the training split:
+
+```json
+{
+    "text": "Gultā viņam nav jādara pilnīgi nekas, lai es nonāktu līdz orgasmam.",
+    "label": "correct"
+}
+```
+```json
+{
+    "text": "Ar savu puiku, kurš parasts.",
+    "label": "incorrect"
+}
+```
+```json
+{
+    "text": "1992. vēl gadā Latvijā atradās no 50 000 līdz 80 000 padomju militārpersonu.",
+    "label": "incorrect"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 12
+- Prefix prompt:
+  ```
+  Šie ir teikumi un to gramatiskie pareizumi.
+  ```
+- Base prompt template:
+  ```
+  Teikums: {text}
+  Gramatiski pareizs: {label}
+  ```
+- Instruction-tuned prompt template:
+  ```
+  Teikums: {text}
+
+  Noteiciet, vai teikums ir gramatiski pareizs vai nē. Atbildiet ar 'jā', ja teikums ir pareizs, un 'nē', ja tas nav.
+  ```
+- Label mapping:
+    - `correct` ➡️ `jā`
+    - `incorrect` ➡️ `nē`
+
+You can evaluate this dataset directly as follows:
+
+```bash
+$ euroeval --model <model-id> --dataset scala-lv
+```
+
 
 ## Reading Comprehension
 
