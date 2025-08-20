@@ -61,7 +61,79 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ euroeval --model <model-id> --dataset latvian-twitter-sentiment-mini
+$ euroeval --model <model-id> --dataset latvian-twitter-sentiment
+```
+
+
+## Named Entity Recognition
+
+### WikiAnn-lv
+
+This dataset was published in [this paper](https://aclanthology.org/P17-1178/) and is part of a cross-lingual named entity recognition framework for 282 languages from Wikipedia. It uses silver-standard annotations transferred from English through cross-lingual links and performs both name tagging and linking to an English Knowledge Base.
+
+The original full dataset consists of 10,000 / 10,000 / 10,000 samples for the training,
+validation and test splits, respectively. We use 1,024 / 256 / 2,048 samples for our
+training, validation and test splits, respectively. All the new splits are subsets of
+the original splits.
+
+Here are a few examples from the training split:
+
+```json
+{
+    "tokens": array(["Iezīmē", "robežu", "starp", "Greiema", "Zemi", "ziemeļos", "un",
+       "Pālmera", "Zemi", "Antarktīdas", "pussalas", "dienvidos", ",",
+       "kā", "arī", "starp", "Faljēra", "krastu", "ziemeļos", "un",
+       "Raimila", "krastu", "dienvidos", "."], dtype=object),
+       "labels": ["O", "O", "O", "B-LOC", "I-LOC", "O", "O", "B-LOC", "I-LOC", "B-LOC", "I-LOC", "O", "O", "O", "O", "O", "B-LOC", "I-LOC", "O", "O", "B-LOC", "I-LOC", "O", "O"]
+}
+```
+```json
+{
+    "tokens": array(["'", "''", "x-", "''", "Detroitas", "``", "Pistons", "''"],
+      dtype=object),
+      "labels": ["O", "O", "O", "O", "B-ORG", "I-ORG", "I-ORG", "I-ORG"]
+}
+```
+```json
+{
+    "tokens": array(["Kārlis", "Gustavs", "Jēkabs", "Jakobi"], dtype=object),
+    "labels": ["B-PER", "I-PER", "I-PER", "I-PER"]
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 8
+- Prefix prompt:
+  ```
+  Tālāk ir teikumi un JSON vārdnīcas ar nosauktajiem objektiem, kas parādās dotajā teikumā.
+  ```
+- Base prompt template:
+  ```
+  Teikums: {text}
+  Nosauktie objekti: {label}
+  ```
+- Instruction-tuned prompt template:
+  ```
+  Teikums: {text}
+
+  Identificējiet nosauktos objektus teikumā. Jums jāizvada šī informācija kā JSON vārdnīcu ar atslēgām 'persona', 'vieta', 'organizācija' un 'dažādi'. Vērtībām jābūt šī tipa nosaukto objektu sarakstiem, tieši tā, kā tie parādās teikumā.
+  ```
+- Label mapping:
+    - `B-PER` ➡️ `persona`
+    - `I-PER` ➡️ `persona`
+    - `B-LOC` ➡️ `vieta`
+    - `I-LOC` ➡️ `vieta`
+    - `B-ORG` ➡️ `organizācija`
+    - `I-ORG` ➡️ `organizācija`
+    - `B-MISC` ➡️ `dažādi`
+    - `I-MISC` ➡️ `dažādi`
+
+You can evaluate this dataset directly as follows:
+
+```bash
+$ euroeval --model <model-id> --dataset wikiann-lv
 ```
 
 
