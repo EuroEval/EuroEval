@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 
 ## [Unreleased]
+### Changed
+- Updated `vllm` dependency to `>=0.10.1`, which includes GPT-OSS support.
+- Updated `numpy` dependency to `>=2.0.0`, as the previous clash is not applicable
+  anymore.
+
 ### Fixed
 - Now disables the `seed` parameter if the API inference model does not support it,
   which prevented evaluating some models.
@@ -14,6 +19,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   see it as existing. We have an additional check during evaluation to ensure this now.
 - Catch an `ImportError` error that sometimes happens when finishing the evaluation of a
   vLLM model, during shutdown.
+- Now uses `litellm>=1.75.6`, which fixes an issue related to evaluation of GPT-5 models
+  using Ollama.
 
 
 ## [v15.16.0] - 2025-08-12
