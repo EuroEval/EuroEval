@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## [Unreleased]
 ### Added
 - Added support for Latvian 🇱🇻! This includes the Latvian part of the reading comprehension
-  dataset MultiWikiQA.
+  dataset MultiWikiQA, the sentiment classification dataset Latvian Twitter Sentiment.
 
 ### Fixed
 - Now disables the `seed` parameter if the API inference model does not support it,

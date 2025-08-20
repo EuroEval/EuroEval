@@ -5,6 +5,66 @@ datasets are grouped by their task - see the [task overview](/tasks) for more
 information about what these constitute.
 
 
+## Sentiment Classification
+
+### Latvian Twitter Sentiment
+
+This dataset was published in [this paper](https://arxiv.org/abs/2007.05194) and consists of sentiment-annotated Latvian tweets from the food and drinks domain, collected over an 8-year period.
+
+The original dataset contains 5,059 / 743 samples for the training and test splits, respectively. We use 1,024 / 256 / 2,048 samples for our training, validation and test splits, respectively. Our test split includes all 743 original test samples plus 1,305 additional samples drawn from the original training data to reach 2,048 total test samples. Both the validation split and final training split are sampled exclusively from the original training data.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "@ChiuljuPussala @nahimovs Tu ēd savus konservatīvos draugus?",
+  "label": "neutral"
+}
+```
+```json
+{
+  "text": "@komako66 @elitaveidemane Nē. Nav. Viņam ir ētisks pienākums ēst sardeli iepriekšējā ieslodzījuma vietnē, sauktā \"septītās Debesis\". Bez matrača. Ar plānu sedziņu.",
+  "label": "neutral"
+}
+```
+```json
+{
+  "text": "@selmuushh @GMeluskans Es kādu laiku gaļu ēdu ļoti reti, bet no šī gada sākuma pārstāju ēst pavisam. Labprāt pamēģinātu sojšliku.",
+  "label": "positive"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 12
+- Prefix prompt:
+  ```
+  Tālāk ir dokumenti un to noskaņojums, kas var būt 'pozitīvs', 'neitrāls' vai 'negatīvs'.
+  ```
+- Base prompt template:
+  ```
+  Dokuments: {text}
+  Noskaņojums: {label}
+  ```
+- Instruction-tuned prompt template:
+  ```
+  Dokuments: {text}
+
+  Klasificējiet noskaņojumu dokumentā. Atbildiet ar 'pozitīvs', 'neitrāls' vai 'negatīvs', un neko citu.
+  ```
+- Label mapping:
+    - `positive` ➡️ `pozitīvs`
+    - `neutral` ➡️ `neitrāls`
+    - `negative` ➡️ `negatīvs`
+
+You can evaluate this dataset directly as follows:
+
+```bash
+$ euroeval --model <model-id> --dataset latvian-twitter-sentiment-mini
+```
+
+
 
 ## Reading Comprehension
 
@@ -21,7 +81,7 @@ Here are a few examples from the training split:
 
 ```json
 {
-    "context": "Zvjaheļa (, līdz 2022. gadam — Novohrada-Volinska) ir pilsēta Ukrainas ziemeļrietumos, Žitomiras apgabala rietumos, Slučas upes krastā. Tā ir Zvjaheļas rajona administratīvais centrs. Attālums līdz apgabala centram Žitomirai ir .\n\nZvjaheļa ir ukraiņu tautas dzejnieces Lesjas Ukrainkas dzimtā pilsēta.\nŠeit ir dzimis Ukrainas armijas virspavēlnieks ģenerālis Valerijs Zalužnijs.\n\nVēsture \nVēstures avotos apdzīvotā vieta pirmoreiz minēta 1256. gadā Slučas labajā krastā kā Vozvjaheļa (Возвягель) Galīcijas-Volīnijas hronikā. Gadu vēlāk to par nepaklausību nodedzināja Galīcijas karalis Danila. Nākamo reizi apdzīvotā vieta minēta 1432. gadā jau Slučas kreisajā krastā kā Vzvjahoļas (Взвяголь) miests, bet 1499. gadā\xa0— Zvjahoļa (Звяголь). 1507. gadā miests ieguva tiesības būvēt pili un veidot pilsētu. Pēc Ļubļinas ūnijas 1569. gadā miests saukts par Zvjaheļu (Звягель, ).\n\n1793. gadā Zvjaheļa nonāca Krievijas Impērijas sastāvā. 1795. gadā miests ieguva Novohradas-Volinskas nosaukumu un pilsētas tiesības, un kļuva par jaunizveidotās Volīnijas guberņas centru (līdz 1804. gadam).\n\n2022. gada 16. jūnijā Novohradas-Volinskas domes deputāti nobalsoja par pilsētas pārdēvēšanu tās vēsturiskajā nosaukumā — Zvjaheļa. Vēlāk šo lēmumu apstiprināja Žitomiras apgabala dome. Ar Ukrainas Augstākās Radas dekrētu 2022. gada 16. novembrī pilsēta tika pārdēvēta par Zvjaheļu.\n\nAtsauces\n\nĀrējās saites",
+    "context": "Zvjaheļa (, līdz 2022. gadam — Novohrada-Volinska) ir pilsēta Ukrainas ziemeļrietumos, Žitomiras apgabala rietumos, Slučas upes krastā. Tā ir Zvjaheļas rajona administratīvais centrs. Attālums līdz apgabala centram Žitomirai ir .\n\nZvjaheļa ir ukraiņu tautas dzejnieces Lesjas Ukrainkas dzimtā pilsēta.\nŠeit ir dzimis Ukrainas armijas virspavēlnieks ģenerālis Valerijs Zalužnijs.\n\nVēsture \nVēstures avtos apdzīvotā vieta pirmoreiz minēta 1256. gadā Slučas labajā krastā kā Vozvjaheļa (Возвягель) Galīcijas-Volīnijas hronikā. Gadu vēlāk to par nepaklausību nodedzināja Galīcijas karalis Danila. Nākamo reizi apdzīvotā vieta minēta 1432. gadā jau Slučas kreisajā krastā kā Vzvjahoļas (Взвяголь) miests, bet 1499. gadā\xa0— Zvjahoļa (Звяголь). 1507. gadā miests ieguva tiesības būvēt pili un veidot pilsētu. Pēc Ļubļinas ūnijas 1569. gadā miests saukts par Zvjaheļu (Звягель, ).\n\n1793. gadā Zvjaheļa nonāca Krievijas Impērijas sastāvā. 1795. gadā miests ieguva Novohradas-Volinskas nosaukumu un pilsētas tiesības, un kļuva par jaunizveidotās Volīnijas guberņas centru (līdz 1804. gadam).\n\n2022. gada 16. jūnijā Novohradas-Volinskas domes deputāti nobalsoja par pilsētas pārdēvēšanu tās vēsturiskajā nosaukumā — Zvjaheļa. Vēlāk šo lēmumu apstiprināja Žitomiras apgabala dome. Ar Ukrainas Augstākās Radas dekrētu 2022. gada 16. novembrī pilsēta tika pārdēvēta par Zvjaheļu.\n\nAtsauces\n\nĀrējās saites",
     "question": "Kāds Ukrainas bruņoto spēku komandieris nāk no Zvjaheļas?",
     "answers": {
         "answer_start": array([349]),

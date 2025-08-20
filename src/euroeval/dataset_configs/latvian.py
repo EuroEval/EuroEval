@@ -2,10 +2,7 @@
 
 from ..data_models import DatasetConfig
 from ..languages import LV
-from ..tasks import RC
-
-### Unofficial datasets ###
-
+from ..tasks import RC, SENT
 
 MULTI_WIKI_QA_LV_CONFIG = DatasetConfig(
     name="multi-wiki-qa-lv",
@@ -14,5 +11,13 @@ MULTI_WIKI_QA_LV_CONFIG = DatasetConfig(
     huggingface_id="EuroEval/multi-wiki-qa-lv-mini",
     task=RC,
     languages=[LV],
-    unofficial=True,
+)
+
+
+LATVIAN_TWITTER_SENTIMENT_CONFIG = DatasetConfig(
+    name="latvian-twitter-sentiment",
+    pretty_name="the truncated version of the Latvian sentiment classification dataset",
+    huggingface_id="EuroEval/latvian-twitter-sentiment-mini",
+    task=SENT,
+    languages=[LV],
 )
