@@ -380,7 +380,7 @@ MYV = Language(code="myv", name="Erzya", _and_separator="ды", _or_separator="�
 MZN = Language(code="mzn", name="Mazanderani", _and_separator="و", _or_separator="یا")
 NAP = Language(code="nap", name="Neapolitan", _and_separator="e", _or_separator="o")
 NDS = Language(code="nds", name="Low German", _and_separator="un", _or_separator="oder")
-NEW = Language(code="new", name="Newari", _and_separator="و", _or_separator="या")
+NEW = Language(code="new", name="Newari", _and_separator="व", _or_separator="या")
 NIA = Language(code="nia", name="Nias", _and_separator="ba", _or_separator="mazi")
 NOV = Language(code="nov", name="Novial", _and_separator="e", _or_separator="o")
 NQO = Language(code="nqo", name="N'Ko", _and_separator="ߣߌ߫", _or_separator="ߥߟߊ߫")
