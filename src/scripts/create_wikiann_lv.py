@@ -60,6 +60,8 @@ def main() -> None:
         4: "I-ORG",
         5: "B-LOC",
         6: "I-LOC",
+        7: "B-MISC",
+        8: "I-MISC",
     }
 
     train_df["labels"] = train_df["labels"].map(
