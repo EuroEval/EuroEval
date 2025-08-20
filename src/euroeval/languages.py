@@ -43,6 +43,9 @@ CA = Language(code="ca", name="Catalan", _and_separator="i", _or_separator="o")
 CH = Language(code="ch", name="Chamorro", _and_separator="yan", _or_separator="pat")
 CE = Language(code="ce", name="Chechen", _and_separator="а", _or_separator="я")
 NY = Language(code="ny", name="Chichewa", _and_separator="ndi", _or_separator="kapena")
+ZH = Language(
+    code="zh", name="Simplified Chinese", _and_separator="和", _or_separator="或"
+)
 ZH_CN = Language(
     code="zh-cn", name="Simplified Chinese", _and_separator="和", _or_separator="或"
 )
