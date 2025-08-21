@@ -460,9 +460,9 @@ def get_first_label_token_mapping(
                     "we will not use logprobs with the model.",
                     level=logging.DEBUG,
                 )
+                breakpoint()
                 return False
             first_tokens.append(matching_tokens[0])
-        breakpoint()
 
         # Build a mapping from labels to the first token in each label if the first
         # tokens are distinct
