@@ -388,9 +388,6 @@ class VLLMModel(HuggingFaceEncoderModel):
         sampling_params = SamplingParams(
             max_tokens=max_tokens,
             logprobs=MAX_LOGPROBS if self.buffer["first_label_token_mapping"] else None,
-            prompt_logprobs=MAX_LOGPROBS
-            if self.buffer["first_label_token_mapping"]
-            else None,
             temperature=0.0,
             stop=[stop_token for stop_token in stop_tokens if stop_token],
             guided_decoding=(
@@ -436,7 +433,6 @@ class VLLMModel(HuggingFaceEncoderModel):
                     use_tqdm=False if input_is_a_test else get_pbar_without_leave,
                     lora_request=self.buffer.get("lora_request"),
                 )
-                breakpoint()
                 break
             except TypeError as e:
                 logger.debug(
