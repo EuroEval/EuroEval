@@ -114,6 +114,12 @@ def extract_labels_from_generation(
 
     Returns:
         The predicted labels.
+
+    Raises:
+        InvalidBenchmark:
+            If the task requires log probabilities, but the model did not output them,
+            or if the model outputted log probabilities but the first label token
+            mapping is not provided.
     """
     if model_output.scores is not None:
         if first_label_token_mapping is False:
@@ -128,6 +134,11 @@ def extract_labels_from_generation(
         )
         if labels is not None:
             return labels
+        elif dataset_config.task.require_logprobs:
+            raise InvalidBenchmark(
+                "This task requires the model to output logprobs, and this model does "
+                "not seem to be able to do that. Skipping the evaluation."
+            )
 
     # Get the candidate labels, which are the labels that the model can predict
     candidate_labels = [
@@ -321,16 +332,16 @@ def get_closest_logprobs_labels(
             if len(sample) == 0:
                 log_once(
                     "The model outputted an empty string, so no candidate labels could "
-                    f"be determined. Using {candidate_labels[0]!r} as the output "
-                    "label.",
-                    level=logging.DEBUG,
+                    f"be determined. Using the first label, {candidate_labels[0]!r}, "
+                    "as the output label.",
+                    level=logging.INFO,
                 )
             else:
                 log_once(
                     "Could not find a candidate label for any of the generated "
-                    f"labels in the sample {sample}. Using {candidate_labels[0]!r} "
-                    "as the output label.",
-                    level=logging.DEBUG,
+                    f"labels in the sample {sample}. Using the first label, "
+                    f"{candidate_labels[0]!r}, as the output label.",
+                    level=logging.INFO,
                 )
             output_labels.append(candidate_labels[0])
 
