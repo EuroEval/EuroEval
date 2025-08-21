@@ -38,7 +38,7 @@ from requests.exceptions import RequestException
 from tqdm.asyncio import tqdm as tqdm_async
 from tqdm.auto import tqdm
 
-from ..constants import MAX_LOGPROBS, REASONING_MAX_TOKENS, TASKS_USING_JSON
+from ..constants import MAX_LOGPROBS, REASONING_MAX_TOKENS
 from ..data_models import (
     BenchmarkConfig,
     DatasetConfig,
@@ -67,6 +67,7 @@ from ..task_group_utils import (
     text_to_text,
     token_classification,
 )
+from ..tasks import NER
 from ..tokenization_utils import get_first_label_token_mapping
 from ..types import ExtractLabelsFunction
 from ..utils import (
@@ -276,7 +277,7 @@ class LiteLLMModel(BenchmarkModule):
 
         # Sanity check that "JSON" is included in the prompt, as some models require
         # this
-        if self.dataset_config.task in TASKS_USING_JSON:
+        if self.dataset_config.task.requires_structured_output:
             for conversation in conversations:
                 if not conversation:
                     raise InvalidBenchmark(
@@ -1209,7 +1210,7 @@ class LiteLLMModel(BenchmarkModule):
 
         # Set up the `response_format` generation argument if we are dealing with a task
         # using structured generation
-        if dataset_config.task in TASKS_USING_JSON:
+        if dataset_config.task.requires_structured_output:
             if self.generative_type == GenerativeType.REASONING:
                 log_once(
                     f"The model {self.model_config.model_id!r} is a reasoning model "
@@ -1218,12 +1219,21 @@ class LiteLLMModel(BenchmarkModule):
                     level=logging.DEBUG,
                 )
             elif supports_response_schema(model=self.model_config.model_id):
-                ner_tag_names = list(dataset_config.prompt_label_mapping.values())
-                keys_and_their_types: dict[str, t.Any] = {
-                    tag_name: (conlist(str, max_length=5), ...)
-                    for tag_name in ner_tag_names
-                }
-                pydantic_class = create_model("AnswerFormat", **keys_and_their_types)
+                if dataset_config.task == NER:
+                    ner_tag_names = list(dataset_config.prompt_label_mapping.values())
+                    keys_and_their_types: dict[str, t.Any] = {
+                        tag_name: (conlist(str, max_length=5), ...)
+                        for tag_name in ner_tag_names
+                    }
+                    pydantic_class = create_model(
+                        "AnswerFormat", **keys_and_their_types
+                    )
+                else:
+                    raise InvalidBenchmark(
+                        "This task requires structured generation, but it has not "
+                        "been implemented for this task yet. Please open an issue "
+                        "at https://github.com/EuroEval/EuroEval/issues."
+                    )
                 generation_kwargs["response_format"] = pydantic_class
                 log_once(
                     "Enabling structured generation for model "

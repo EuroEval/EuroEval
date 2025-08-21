@@ -28,7 +28,6 @@ from ..constants import (
     MERGE_TAGS,
     REASONING_MAX_TOKENS,
     REASONING_TOKENS,
-    TASKS_USING_JSON,
     VLLM_BF16_MIN_CUDA_COMPUTE_CAPABILITY,
 )
 from ..data_models import GenerativeModelOutput, ModelConfig
@@ -332,7 +331,7 @@ class VLLMModel(HuggingFaceEncoderModel):
                 stop_tokens.append(end_of_chat_token)
 
         structured_generation_schema = None
-        if self.dataset_config.task in TASKS_USING_JSON:
+        if self.dataset_config.task.requires_structured_output:
             if self.generative_type == GenerativeType.REASONING:
                 log_once(
                     f"The model {self.model_config.model_id!r} is a reasoning model "

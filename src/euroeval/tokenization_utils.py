@@ -389,7 +389,10 @@ def get_first_label_token_mapping(
 
     # If we do not have any tokenizer, then we cannot check if the model should output
     # scores and we just assume it should if the dataset supports it
-    output_scores = dataset_config.task.task_group in TASK_GROUPS_USING_LOGPROBS
+    output_scores = (
+        dataset_config.task.task_group in TASK_GROUPS_USING_LOGPROBS
+        and not dataset_config.task.requires_structured_output
+    )
     if tokenizer is None:
         if output_scores:
             log_once(

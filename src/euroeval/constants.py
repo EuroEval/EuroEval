@@ -1,7 +1,6 @@
 """Constants used throughout the project."""
 
 from .enums import TaskGroup
-from .tasks import NER
 
 # This is used as input to generative models; it cannot be a special token
 DUMMY_FILL_VALUE = 100
@@ -35,10 +34,6 @@ GENERATIVE_DATASET_TASK_GROUPS = [TaskGroup.TEXT_TO_TEXT]
 
 # Local models are required to have these files in their directory
 LOCAL_MODELS_REQUIRED_FILES = ["config.json"]
-
-
-# Tasks where we use structured generation for generative models
-TASKS_USING_JSON = [NER]
 
 
 # Tasks where we use log probabilities for generative models, rather than the raw
