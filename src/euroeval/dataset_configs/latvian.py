@@ -2,7 +2,7 @@
 
 from ..data_models import DatasetConfig
 from ..languages import LV
-from ..tasks import LA, NER, RC, SENT
+from ..tasks import KNOW, LA, NER, RC, SENT
 
 MULTI_WIKI_QA_LV_CONFIG = DatasetConfig(
     name="multi-wiki-qa-lv",
@@ -47,6 +47,16 @@ WIKIANN_LV_CONFIG = DatasetConfig(
     "recognition dataset WikiANN",
     huggingface_id="EuroEval/wikiann-lv-mini",
     task=NER,
+    languages=[LV],
+    unofficial=True,
+)
+
+MMLU_LV_CONFIG = DatasetConfig(
+    name="mmlu-lv",
+    pretty_name="the truncated version of the Latvian knowledge dataset MMLU-lv, "
+    "translated from the English MMLU dataset",
+    huggingface_id="EuroEval/mmlu-lv-mini",
+    task=KNOW,
     languages=[LV],
     unofficial=True,
 )

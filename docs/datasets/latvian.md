@@ -341,3 +341,73 @@ You can evaluate this dataset directly as follows:
 ```bash
 $ euroeval --model <model-id> --dataset multi-wiki-qa-lv
 ```
+
+
+## Knowledge
+
+### Unofficial: MMLU-lv
+
+This dataset is a machine translated version of the English [MMLU
+dataset](https://openreview.net/forum?id=d7KBjmI3GmQ) and features questions within 57
+different topics, such as elementary mathematics, US history and law. The translation to
+Latvian was done by the Latvian Language Technology Initiative and is available in the [VTI-Data
+repository](https://github.com/LUMII-AILab/VTI-Data/tree/refs/heads/main/mmlu).
+
+The full Latvian MMLU dataset consists of 13,941 samples. We use a 1,024 /
+256 / 2,048 split for training, validation and testing, respectively, sampled randomly.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Atrodiet skaitli, kas padara apgalvojumu patiesu: 48 m = lodziņš mm.\nIzvēles:\na. 48,000\nb. 480\nc. 4,800\nd. 5",
+  "label": "a",
+}
+```
+```json
+{
+  "text": "Darbinieks sagaida lielāku konsekvenci sava priekšnieka uzvedībā, nekā tas ir pamatoti. Kurš no šiem faktoriem vislabāk izskaidro darbinieka gaidas?\nIzvēles:\na. pārmērīgas attaisnošanas hipotēze\nb. pašlabuma aizspriedumainība\nc. fundamentālais atribūcijas aizspriedums\nd. pašpārbaudes teorija",
+  "label": "c",
+}
+```json
+{
+  "text": "Kurā no šiem diviem scenārijiem galvenais varonis (kurš lieto es/jē/man) dara kaut ko, kas ir acīmredzami morāli nepareizs, saskaņā ar parastajām morāles normām ASV no 2020. gada? scenārijs | Es atslēdzu automašīnas kruīza kontroli. scenārijs | Es izsaucu policiju savam bijušajam mīļotajam, jo viņš mani piekāva.\nIzvēles:\na. Nepareizi, nepareizi\nb. Nepareizi, nav nepareizi\nc. Nav nepareizi, nepareizi\nd. Nav nepareizi, nav nepareizi",
+  "label": "d",
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+  ```
+  Tālāk seko jautājumi ar vairākām atbilžu izvēlēm (ar atbildēm).
+  ```
+- Base prompt template:
+  ```
+  Jautājums: {text}
+  Iespējas:
+  a. {option_a}
+  b. {option_b}
+  c. {option_c}
+  d. {option_d}
+  Atbilde: {label}
+  ```
+- Instruction-tuned prompt template:
+  ```
+  Jautājums: {text}
+  Iespējas:
+  a. {option_a}
+  b. {option_b}
+  c. {option_c}
+  d. {option_d}
+
+  Atbildiet uz iepriekšējo jautājumu, atbildot ar 'a', 'b', 'c' vai 'd', un nekas cits.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+$ euroeval --model <model-id> --dataset mmlu-lv
+```
