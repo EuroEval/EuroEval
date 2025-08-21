@@ -107,11 +107,14 @@ class Task:
         only_allow_zero_shot (optional):
             Whether to only allow zero-shot evaluation for this task. If True, the
             task will not be evaluated using few-shot examples.
-        require_structured_output (optional):
-            Whether the task requires structured output, if possible. Defaults to False.
-        require_logprobs (optional):
-            Whether the task requires log probabilities to be returned. Defaults to
-            False.
+        uses_structured_output (optional):
+            Whether the task uses structured output. If True, the task will return
+            structured output (e.g., BIO tags for NER). Defaults to False.
+        uses_logprobs (optional):
+            Whether the task uses log probabilities. If True, the task will return
+            log probabilities for the generated tokens. Defaults to False.
+        requires_logprobs (optional):
+            Whether the task requires log probabilities. Implies `uses_logprobs`.
     """
 
     name: str
@@ -122,8 +125,13 @@ class Task:
     default_max_generated_tokens: int
     default_labels: list[str]
     only_allow_zero_shot: bool = False
-    require_structured_output: bool = False
-    require_logprobs: bool = False
+    uses_structured_output: bool = False
+    uses_logprobs: bool = False
+    requires_logprobs: bool = False
+
+    def __post_init__(self) -> None:
+        """Post-initialisation checks."""
+        self.uses_logprobs = self.uses_logprobs or self.requires_logprobs
 
     def __hash__(self) -> int:
         """Return a hash of the task."""

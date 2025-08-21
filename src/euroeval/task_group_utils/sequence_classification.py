@@ -134,7 +134,7 @@ def extract_labels_from_generation(
         )
         if labels is not None:
             return labels
-        elif dataset_config.task.require_logprobs:
+        elif dataset_config.task.requires_logprobs:
             raise InvalidBenchmark(
                 "This task requires the model to output logprobs, and this model does "
                 "not seem to be able to do that. Skipping the evaluation."

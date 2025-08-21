@@ -387,7 +387,7 @@ def get_first_label_token_mapping(
         return False
 
     if tokenizer is None:
-        if dataset_config.task.require_logprobs:
+        if dataset_config.task.uses_logprobs:
             log_once(
                 f"We will use logprobs with the model {model_config.model_id!r} "
                 "since the dataset supports it and no tokenizer is available.",
@@ -399,11 +399,11 @@ def get_first_label_token_mapping(
                 "since the dataset does not support it and no tokenizer is available.",
                 level=logging.DEBUG,
             )
-        return dataset_config.task.require_logprobs
+        return dataset_config.task.uses_logprobs
 
     # If there are labels associated with the dataset, and that the first token of each
     # label is distinct, then we can safely use the logprobs
-    if dataset_config.task.require_logprobs and dataset_config.labels:
+    if dataset_config.task.uses_logprobs and dataset_config.labels:
         local_labels = [
             dataset_config.prompt_label_mapping[label].strip()
             for label in dataset_config.labels

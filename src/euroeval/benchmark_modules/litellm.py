@@ -277,7 +277,7 @@ class LiteLLMModel(BenchmarkModule):
 
         # Sanity check that "JSON" is included in the prompt, as some models require
         # this
-        if self.dataset_config.task.require_structured_output:
+        if self.dataset_config.task.uses_structured_output:
             for conversation in conversations:
                 if not conversation:
                     raise InvalidBenchmark(
@@ -1217,7 +1217,7 @@ class LiteLLMModel(BenchmarkModule):
 
         # Set up the `response_format` generation argument if we are dealing with a task
         # using structured generation
-        if dataset_config.task.require_structured_output:
+        if dataset_config.task.uses_structured_output:
             if self.generative_type == GenerativeType.REASONING:
                 log_once(
                     f"The model {self.model_config.model_id!r} is a reasoning model "

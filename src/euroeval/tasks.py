@@ -30,7 +30,7 @@ LA = Task(
     default_num_few_shot_examples=12,
     default_max_generated_tokens=5,
     default_labels=["correct", "incorrect"],
-    require_logprobs=True,
+    uses_logprobs=True,
 )
 
 
@@ -52,7 +52,7 @@ NER = Task(
         "b-misc",
         "i-misc",
     ],
-    require_structured_output=True,
+    uses_structured_output=True,
 )
 
 
@@ -75,7 +75,7 @@ SENT = Task(
     default_num_few_shot_examples=12,
     default_max_generated_tokens=5,
     default_labels=["positive", "neutral", "negative"],
-    require_logprobs=True,
+    uses_logprobs=True,
 )
 
 
@@ -98,7 +98,7 @@ KNOW = Task(
     default_num_few_shot_examples=5,
     default_max_generated_tokens=5,
     default_labels=["a", "b", "c", "d"],
-    require_logprobs=True,
+    uses_logprobs=True,
 )
 
 
@@ -110,7 +110,7 @@ MCRC = Task(
     default_num_few_shot_examples=5,
     default_max_generated_tokens=5,
     default_labels=["a", "b", "c", "d"],
-    require_logprobs=True,
+    uses_logprobs=True,
 )
 
 
@@ -122,7 +122,7 @@ COMMON_SENSE = Task(
     default_num_few_shot_examples=5,
     default_max_generated_tokens=5,
     default_labels=["a", "b", "c", "d"],
-    require_logprobs=True,
+    uses_logprobs=True,
 )
 
 
@@ -135,7 +135,7 @@ EUROPEAN_VALUES = Task(
     default_max_generated_tokens=5,
     default_labels=["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10"],
     only_allow_zero_shot=True,
-    require_logprobs=True,
+    requires_logprobs=True,
 )
 
 
