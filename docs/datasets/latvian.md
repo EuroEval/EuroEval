@@ -67,7 +67,7 @@ $ euroeval --model <model-id> --dataset latvian-twitter-sentiment
 
 ## Named Entity Recognition
 
-### WikiAnn-lv
+### Unofficial: WikiAnn-lv
 
 This dataset was published in [this paper](https://aclanthology.org/P17-1178/) and is part of a cross-lingual named entity recognition framework for 282 languages from Wikipedia. It uses silver-standard annotations transferred from English through cross-lingual links and performs both name tagging and linking to an English Knowledge Base.
 

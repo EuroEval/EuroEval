@@ -37,4 +37,5 @@ WIKIANN_LV_CONFIG = DatasetConfig(
     huggingface_id="EuroEval/wikiann-lv-mini",
     task=NER,
     languages=[LV],
+    unofficial=True,
 )
