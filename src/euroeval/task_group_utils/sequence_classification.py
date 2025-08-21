@@ -7,6 +7,7 @@ import typing as t
 import Levenshtein
 import numpy as np
 
+from ..enums import TaskGroup
 from ..exceptions import InvalidBenchmark
 from ..utils import log_once, raise_if_model_output_contains_nan_values
 
@@ -128,12 +129,31 @@ def extract_labels_from_generation(
         if labels is not None:
             return labels
 
+    # Get the candidate labels, which are the labels that the model can predict
     candidate_labels = [
         dataset_config.prompt_label_mapping[lbl]
         for lbl in dataset_config.id2label.values()
     ]
+
     new_predicted_labels: list[str] = list()
-    for predicted_label in model_output.sequences:
+    for idx, predicted_label in enumerate(model_output.sequences):
+        # Special case if we are doing multiple choice classification: we in this case
+        # dynamically change the candidate labels to the labels mentioned in the prompt
+        if dataset_config.task.task_group == TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION:
+            prompt = input_batch["text"][idx]
+            sample_candidate_labels = [
+                candidate_label
+                for candidate_label in candidate_labels
+                if re.search(
+                    pattern=rf"\b{candidate_label}. ",
+                    string=prompt,
+                    flags=re.IGNORECASE,
+                )
+                is not None
+            ]
+        else:
+            sample_candidate_labels = candidate_labels
+
         # If the prediction includes a boxed answer, use that instead of the full
         # generation
         if (m := re.search(r"boxed\{(.*?)\}", predicted_label)) is not None:
@@ -142,9 +162,9 @@ def extract_labels_from_generation(
         # Pick the label with the smallest word edit distance to the predicted label
         edit_distances = [
             Levenshtein.distance(s1=predicted_label.lower(), s2=candidate_label.lower())
-            for candidate_label in candidate_labels
+            for candidate_label in sample_candidate_labels
         ]
-        predicted_label = candidate_labels[np.argmin(edit_distances).item()]
+        predicted_label = sample_candidate_labels[np.argmin(edit_distances).item()]
         new_predicted_labels.append(predicted_label)
 
     return new_predicted_labels
