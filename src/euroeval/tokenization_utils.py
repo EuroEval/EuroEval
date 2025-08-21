@@ -439,7 +439,7 @@ def get_first_label_token_mapping(
         all_tokens = [
             [
                 re.sub(
-                    pattern=r"^[^a-zæøåüöä]+|[^a-zæøåüöä]+$",
+                    pattern=r"^[^a-zæøåüöä0-9]+|[^a-zæøåüöä0-9]+$",
                     repl="",
                     string=token.lower(),
                 )
