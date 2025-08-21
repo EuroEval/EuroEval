@@ -408,6 +408,7 @@ class VLLMModel(HuggingFaceEncoderModel):
             prompts = [prompt.strip() for prompt in prompts]
 
         # Generate sequences using vLLM
+        breakpoint()
         input_is_a_test = len(prompts) == 1 and len(set(prompts[0])) == 1
         num_attempts = 3
         for _ in range(num_attempts):
@@ -418,7 +419,6 @@ class VLLMModel(HuggingFaceEncoderModel):
                     use_tqdm=False if input_is_a_test else get_pbar_without_leave,
                     lora_request=self.buffer.get("lora_request"),
                 )
-                breakpoint()
                 break
             except TypeError as e:
                 logger.debug(
