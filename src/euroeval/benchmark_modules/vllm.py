@@ -418,6 +418,7 @@ class VLLMModel(HuggingFaceEncoderModel):
                     use_tqdm=False if input_is_a_test else get_pbar_without_leave,
                     lora_request=self.buffer.get("lora_request"),
                 )
+                breakpoint()
                 break
             except TypeError as e:
                 logger.debug(
