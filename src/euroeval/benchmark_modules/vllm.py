@@ -331,7 +331,7 @@ class VLLMModel(HuggingFaceEncoderModel):
                 stop_tokens.append(end_of_chat_token)
 
         structured_generation_schema = None
-        if self.dataset_config.task.requires_structured_output:
+        if self.dataset_config.task.require_structured_output:
             if self.generative_type == GenerativeType.REASONING:
                 log_once(
                     f"The model {self.model_config.model_id!r} is a reasoning model "
@@ -408,7 +408,6 @@ class VLLMModel(HuggingFaceEncoderModel):
             prompts = [prompt.strip() for prompt in prompts]
 
         # Generate sequences using vLLM
-        breakpoint()
         input_is_a_test = len(prompts) == 1 and len(set(prompts[0])) == 1
         num_attempts = 3
         for _ in range(num_attempts):

@@ -30,6 +30,7 @@ LA = Task(
     default_num_few_shot_examples=12,
     default_max_generated_tokens=5,
     default_labels=["correct", "incorrect"],
+    require_logprobs=True,
 )
 
 
@@ -51,7 +52,7 @@ NER = Task(
         "b-misc",
         "i-misc",
     ],
-    requires_structured_output=True,
+    require_structured_output=True,
 )
 
 
@@ -74,6 +75,7 @@ SENT = Task(
     default_num_few_shot_examples=12,
     default_max_generated_tokens=5,
     default_labels=["positive", "neutral", "negative"],
+    require_logprobs=True,
 )
 
 
@@ -96,6 +98,7 @@ KNOW = Task(
     default_num_few_shot_examples=5,
     default_max_generated_tokens=5,
     default_labels=["a", "b", "c", "d"],
+    require_logprobs=True,
 )
 
 
@@ -107,6 +110,7 @@ MCRC = Task(
     default_num_few_shot_examples=5,
     default_max_generated_tokens=5,
     default_labels=["a", "b", "c", "d"],
+    require_logprobs=True,
 )
 
 
@@ -118,6 +122,7 @@ COMMON_SENSE = Task(
     default_num_few_shot_examples=5,
     default_max_generated_tokens=5,
     default_labels=["a", "b", "c", "d"],
+    require_logprobs=True,
 )
 
 

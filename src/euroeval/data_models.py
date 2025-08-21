@@ -107,7 +107,7 @@ class Task:
         only_allow_zero_shot (optional):
             Whether to only allow zero-shot evaluation for this task. If True, the
             task will not be evaluated using few-shot examples.
-        requires_structured_output (optional):
+        require_structured_output (optional):
             Whether the task requires structured output, if possible. Defaults to False.
         require_logprobs (optional):
             Whether the task requires log probabilities to be returned. Defaults to
@@ -122,7 +122,7 @@ class Task:
     default_max_generated_tokens: int
     default_labels: list[str]
     only_allow_zero_shot: bool = False
-    requires_structured_output: bool = False
+    require_structured_output: bool = False
     require_logprobs: bool = False
 
     def __hash__(self) -> int:

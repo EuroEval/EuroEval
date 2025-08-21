@@ -6,7 +6,6 @@ import typing as t
 
 import torch
 
-from .constants import TASK_GROUPS_USING_LOGPROBS
 from .enums import GenerativeType
 from .utils import log_once
 
@@ -379,6 +378,7 @@ def get_first_label_token_mapping(
         Boolean value indicating whether the model should output scores (if the mapping
         is outputted then the model will always output scores).
     """
+    breakpoint()
     if generative_type == GenerativeType.REASONING:
         log_once(
             f"The model {model_config.model_id!r} is a reasoning model and "
@@ -387,14 +387,8 @@ def get_first_label_token_mapping(
         )
         return False
 
-    # If we do not have any tokenizer, then we cannot check if the model should output
-    # scores and we just assume it should if the dataset supports it
-    output_scores = (
-        dataset_config.task.task_group in TASK_GROUPS_USING_LOGPROBS
-        and not dataset_config.task.requires_structured_output
-    )
     if tokenizer is None:
-        if output_scores:
+        if dataset_config.task.require_logprobs:
             log_once(
                 f"We will use logprobs with the model {model_config.model_id!r} "
                 "since the dataset supports it and no tokenizer is available.",
@@ -406,11 +400,11 @@ def get_first_label_token_mapping(
                 "since the dataset does not support it and no tokenizer is available.",
                 level=logging.DEBUG,
             )
-        return output_scores
+        return dataset_config.task.require_logprobs
 
     # If there are labels associated with the dataset, and that the first token of each
     # label is distinct, then we can safely use the logprobs
-    if output_scores and dataset_config.labels:
+    if dataset_config.task.require_logprobs and dataset_config.labels:
         local_labels = [
             dataset_config.prompt_label_mapping[label].strip()
             for label in dataset_config.labels
