@@ -1,7 +1,7 @@
 """Templates for the Reading Comprehension task."""
 
 from ..data_models import PromptConfig
-from ..languages import DA, DE, EN, ES, FI, FO, FR, IS, IT, NB, NL, NN, NO, PT, SV
+from ..languages import DA, DE, EN, ES, FI, FO, FR, IS, IT, LV, NB, NL, NN, NO, PT, SV
 
 RC_TEMPLATES = {
     DA: PromptConfig(
@@ -82,6 +82,15 @@ RC_TEMPLATES = {
         "massimo 3 parole: {label}",
         default_instruction_prompt="Testo: {text}\n\nRispondi alla seguente domanda "
         "sul in un massimo di 3 parole.\n\nDomanda: {question}",
+        default_prompt_label_mapping=dict(),
+    ),
+    LV: PromptConfig(
+        default_prompt_prefix="Turpmāk seko teksti ar atbilstošiem jautājumiem un "
+        "atbildēm.",
+        default_prompt_template="Teksts: {text}\nJautājums: {question}\nAtbildēt ar "
+        "maksimāli 3 vārdiem: {label}",
+        default_instruction_prompt="Teksts: {text}\n\nAtbildiet uz šo jautājumu par "
+        "iepriekš minēto tekstu ar maksimāli 3 vārdiem.\n\nJautājums: {question}",
         default_prompt_label_mapping=dict(),
     ),
     NB: PromptConfig(

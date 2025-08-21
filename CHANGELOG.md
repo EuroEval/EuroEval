@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 
 ## [Unreleased]
+### Added
+- Added support for Latvian 🇱🇻! This includes the Latvian part of the reading comprehension
+  dataset MultiWikiQA, the sentiment classification dataset Latvian Twitter Sentiment,
+  the linguistic acceptability dataset ScaLA-lv, the NER dataset WikiAnn-lv, the
+  NER dataset FullStack-NER-lv, and the knowledge dataset MMLU-lv.
+
 ### Changed
 - Updated `vllm` dependency to `>=0.10.1`, which includes GPT-OSS support.
 - Updated `numpy` dependency to `>=2.0.0`, as the previous clash is not applicable
