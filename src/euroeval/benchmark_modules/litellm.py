@@ -387,6 +387,9 @@ class LiteLLMModel(BenchmarkModule):
             "logprobs is not supported",
             "logprobs is not enabled",
         ]
+        logprobs_pattern = re.compile(
+            r"does not support parameters: \[.*'top_logprobs'.*\]"
+        )
         temperature_messages = [
             "'temperature' is not supported with this model.",
             "temperature is not supported with this model",
@@ -404,7 +407,7 @@ class LiteLLMModel(BenchmarkModule):
             r"[0-9]+ and ([0-9]+)\."
         )
         requires_thinking_disabled_messages = ["thinking.type: Field required"]
-        seed_messages = ["does not support parameters: ['seed']"]
+        seed_pattern = re.compile(r"does not support parameters: \[.*'seed'.*\]")
 
         if any(msg.lower() in error_msg for msg in stop_messages):
             log_once(
@@ -416,6 +419,7 @@ class LiteLLMModel(BenchmarkModule):
             return
         elif (
             any(msg.lower() in error_msg for msg in logprobs_messages)
+            or logprobs_pattern.search(string=error_msg)
             # Special case for Vertex AI models, since they have strict rate
             # limits on using logprobs. They also have a cap of 5 logprobs, but
             # we ignore this since the rate limiting makes it unusable anyway.
@@ -444,7 +448,10 @@ class LiteLLMModel(BenchmarkModule):
             )
             generation_kwargs["temperature"] = 1.0
             return
-        elif any(msg.lower() in error_msg for msg in max_items_messages):
+        elif (
+            any(msg.lower() in error_msg for msg in max_items_messages)
+            and self.dataset_config.task == NER
+        ):
             log_once(
                 f"The model {model_id!r} does not support "
                 "maxItems in the JSON schema, so disabling it.",
@@ -497,7 +504,7 @@ class LiteLLMModel(BenchmarkModule):
             )
             generation_kwargs["thinking"] = dict(type="disabled")
             return
-        elif any(msg.lower() in error_msg for msg in seed_messages):
+        elif re.search(pattern=seed_pattern, string=error_msg):
             log_once(
                 f"The model {model_id!r} does not support the `seed` parameter, so "
                 "disabling it.",
