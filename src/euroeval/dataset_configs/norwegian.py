@@ -94,6 +94,41 @@ NOR_COMMON_SENSE_QA_CONFIG = DatasetConfig(
     _labels=["a", "b", "c", "d", "e"],
 )
 
+EUROPEAN_VALUES_NO_CONFIG = DatasetConfig(
+    name="european-values-no",
+    pretty_name="the Norwegian version of the European values evaluation dataset",
+    huggingface_id="EuroEval/european-values-no",
+    task=EUROPEAN_VALUES,
+    languages=[NB, NN, NO],
+    splits=["test"],
+    bootstrap_samples=False,
+    _instruction_prompt="{text}",
+)
+
+EUROPEAN_VALUES_SITUATIONAL_NO_CONFIG = DatasetConfig(
+    name="european-values-situational-no",
+    pretty_name="the Norwegian version of the European values evaluation dataset, "
+    "where the questions are phrased in a situational way",
+    huggingface_id="EuroEval/european-values-situational-no",
+    task=EUROPEAN_VALUES,
+    languages=[NB, NN, NO],
+    splits=["test"],
+    bootstrap_samples=False,
+    _instruction_prompt="{text}",
+)
+
+EUROPEAN_VALUES_COMPLETIONS_NO_CONFIG = DatasetConfig(
+    name="european-values-completions-no",
+    pretty_name="the Norwegian version of the European values evaluation dataset, "
+    "where the questions are phrased as sentence completions",
+    huggingface_id="EuroEval/european-values-completions-no",
+    task=EUROPEAN_VALUES,
+    languages=[NO],
+    splits=["test"],
+    bootstrap_samples=False,
+    _instruction_prompt="{text}",
+)
+
 
 ### Unofficial datasets ###
 
@@ -203,39 +238,4 @@ MULTI_WIKI_QA_NN_CONFIG = DatasetConfig(
     task=RC,
     languages=[NN],
     unofficial=True,
-)
-
-EUROPEAN_VALUES_NO_CONFIG = DatasetConfig(
-    name="european-values-no",
-    pretty_name="the Norwegian version of the European values evaluation dataset",
-    huggingface_id="EuroEval/european-values-no",
-    task=EUROPEAN_VALUES,
-    languages=[NB, NN, NO],
-    splits=["test"],
-    bootstrap_samples=False,
-    _instruction_prompt="{text}",
-)
-
-EUROPEAN_VALUES_SITUATIONAL_NO_CONFIG = DatasetConfig(
-    name="european-values-situational-no",
-    pretty_name="the Norwegian version of the European values evaluation dataset, "
-    "where the questions are phrased in a situational way",
-    huggingface_id="EuroEval/european-values-situational-no",
-    task=EUROPEAN_VALUES,
-    languages=[NB, NN, NO],
-    splits=["test"],
-    bootstrap_samples=False,
-    _instruction_prompt="{text}",
-)
-
-EUROPEAN_VALUES_COMPLETIONS_NO_CONFIG = DatasetConfig(
-    name="european-values-completions-no",
-    pretty_name="the Norwegian version of the European values evaluation dataset, "
-    "where the questions are phrased as sentence completions",
-    huggingface_id="EuroEval/european-values-completions-no",
-    task=EUROPEAN_VALUES,
-    languages=[NO],
-    splits=["test"],
-    bootstrap_samples=False,
-    _instruction_prompt="{text}",
 )

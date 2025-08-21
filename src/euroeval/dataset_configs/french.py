@@ -69,39 +69,6 @@ HELLASWAG_FR_CONFIG = DatasetConfig(
     languages=[FR],
 )
 
-
-### Unofficial datasets ###
-
-BELEBELE_FR_CONFIG = DatasetConfig(
-    name="belebele-fr",
-    pretty_name="the French multiple choice reading comprehension dataset BeleBele-fr, "
-    "translated from the English BeleBele dataset",
-    huggingface_id="EuroEval/belebele-fr-mini",
-    task=MCRC,
-    languages=[FR],
-    unofficial=True,
-)
-
-MULTI_WIKI_QA_FR_CONFIG = DatasetConfig(
-    name="multi-wiki-qa-fr",
-    pretty_name="the truncated version of the French part of the reading "
-    "comprehension dataset MultiWikiQA",
-    huggingface_id="EuroEval/multi-wiki-qa-fr-mini",
-    task=RC,
-    languages=[FR],
-    unofficial=True,
-)
-
-GOLDENSWAG_FR_CONFIG = DatasetConfig(
-    name="goldenswag-fr",
-    pretty_name="the truncated version of the French common-sense reasoning "
-    "dataset GoldenSwag-fr, translated from the English GoldenSwag dataset",
-    huggingface_id="EuroEval/goldenswag-fr-mini",
-    task=COMMON_SENSE,
-    languages=[FR],
-    unofficial=True,
-)
-
 EUROPEAN_VALUES_FR_CONFIG = DatasetConfig(
     name="european-values-fr",
     pretty_name="the French version of the European values evaluation dataset",
@@ -135,4 +102,37 @@ EUROPEAN_VALUES_COMPLETIONS_FR_CONFIG = DatasetConfig(
     splits=["test"],
     bootstrap_samples=False,
     _instruction_prompt="{text}",
+)
+
+
+### Unofficial datasets ###
+
+BELEBELE_FR_CONFIG = DatasetConfig(
+    name="belebele-fr",
+    pretty_name="the French multiple choice reading comprehension dataset BeleBele-fr, "
+    "translated from the English BeleBele dataset",
+    huggingface_id="EuroEval/belebele-fr-mini",
+    task=MCRC,
+    languages=[FR],
+    unofficial=True,
+)
+
+MULTI_WIKI_QA_FR_CONFIG = DatasetConfig(
+    name="multi-wiki-qa-fr",
+    pretty_name="the truncated version of the French part of the reading "
+    "comprehension dataset MultiWikiQA",
+    huggingface_id="EuroEval/multi-wiki-qa-fr-mini",
+    task=RC,
+    languages=[FR],
+    unofficial=True,
+)
+
+GOLDENSWAG_FR_CONFIG = DatasetConfig(
+    name="goldenswag-fr",
+    pretty_name="the truncated version of the French common-sense reasoning "
+    "dataset GoldenSwag-fr, translated from the English GoldenSwag dataset",
+    huggingface_id="EuroEval/goldenswag-fr-mini",
+    task=COMMON_SENSE,
+    languages=[FR],
+    unofficial=True,
 )

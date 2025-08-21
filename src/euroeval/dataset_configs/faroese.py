@@ -40,29 +40,6 @@ FOQA_CONFIG = DatasetConfig(
     languages=[FO],
 )
 
-
-### Unofficial datasets ###
-
-WIKIANN_FO_CONFIG = DatasetConfig(
-    name="wikiann-fo",
-    pretty_name="the truncated version of the Faroese part of the named entity "
-    "recognition dataset WikiANN",
-    huggingface_id="EuroEval/wikiann-fo-mini",
-    task=NER,
-    languages=[FO],
-    unofficial=True,
-)
-
-MULTI_WIKI_QA_FO_CONFIG = DatasetConfig(
-    name="multi-wiki-qa-fo",
-    pretty_name="the truncated version of the Faroese part of the reading "
-    "comprehension dataset MultiWikiQA",
-    huggingface_id="EuroEval/multi-wiki-qa-fo-mini",
-    task=RC,
-    languages=[FO],
-    unofficial=True,
-)
-
 # TODO: No Faroese version of the European values dataset exists yet
 # EUROPEAN_VALUES_FO_CONFIG = DatasetConfig(
 #     name="european-values-fo",
@@ -98,3 +75,26 @@ MULTI_WIKI_QA_FO_CONFIG = DatasetConfig(
 #     bootstrap_samples=False,
 #     _instruction_prompt="{text}",
 # )
+
+
+### Unofficial datasets ###
+
+WIKIANN_FO_CONFIG = DatasetConfig(
+    name="wikiann-fo",
+    pretty_name="the truncated version of the Faroese part of the named entity "
+    "recognition dataset WikiANN",
+    huggingface_id="EuroEval/wikiann-fo-mini",
+    task=NER,
+    languages=[FO],
+    unofficial=True,
+)
+
+MULTI_WIKI_QA_FO_CONFIG = DatasetConfig(
+    name="multi-wiki-qa-fo",
+    pretty_name="the truncated version of the Faroese part of the reading "
+    "comprehension dataset MultiWikiQA",
+    huggingface_id="EuroEval/multi-wiki-qa-fo-mini",
+    task=RC,
+    languages=[FO],
+    unofficial=True,
+)

@@ -67,6 +67,41 @@ HELLASWAG_DE_CONFIG = DatasetConfig(
     languages=[DE],
 )
 
+EUROPEAN_VALUES_DE_CONFIG = DatasetConfig(
+    name="european-values-de",
+    pretty_name="the German version of the European values evaluation dataset",
+    huggingface_id="EuroEval/european-values-de",
+    task=EUROPEAN_VALUES,
+    languages=[DE],
+    splits=["test"],
+    bootstrap_samples=False,
+    _instruction_prompt="{text}",
+)
+
+EUROPEAN_VALUES_SITUATIONAL_DE_CONFIG = DatasetConfig(
+    name="european-values-situational-de",
+    pretty_name="the German version of the European values evaluation dataset, where "
+    "the questions are phrased in a situational way",
+    huggingface_id="EuroEval/european-values-situational-de",
+    task=EUROPEAN_VALUES,
+    languages=[DE],
+    splits=["test"],
+    bootstrap_samples=False,
+    _instruction_prompt="{text}",
+)
+
+EUROPEAN_VALUES_COMPLETIONS_DE_CONFIG = DatasetConfig(
+    name="european-values-completions-de",
+    pretty_name="the German version of the European values evaluation dataset, where "
+    "the questions are phrased as sentence completions",
+    huggingface_id="EuroEval/european-values-completions-de",
+    task=EUROPEAN_VALUES,
+    languages=[DE],
+    splits=["test"],
+    bootstrap_samples=False,
+    _instruction_prompt="{text}",
+)
+
 
 ### Unofficial datasets ###
 
@@ -108,39 +143,4 @@ GOLDENSWAG_DE_CONFIG = DatasetConfig(
     task=COMMON_SENSE,
     languages=[DE],
     unofficial=True,
-)
-
-EUROPEAN_VALUES_DE_CONFIG = DatasetConfig(
-    name="european-values-de",
-    pretty_name="the German version of the European values evaluation dataset",
-    huggingface_id="EuroEval/european-values-de",
-    task=EUROPEAN_VALUES,
-    languages=[DE],
-    splits=["test"],
-    bootstrap_samples=False,
-    _instruction_prompt="{text}",
-)
-
-EUROPEAN_VALUES_SITUATIONAL_DE_CONFIG = DatasetConfig(
-    name="european-values-situational-de",
-    pretty_name="the German version of the European values evaluation dataset, where "
-    "the questions are phrased in a situational way",
-    huggingface_id="EuroEval/european-values-situational-de",
-    task=EUROPEAN_VALUES,
-    languages=[DE],
-    splits=["test"],
-    bootstrap_samples=False,
-    _instruction_prompt="{text}",
-)
-
-EUROPEAN_VALUES_COMPLETIONS_DE_CONFIG = DatasetConfig(
-    name="european-values-completions-de",
-    pretty_name="the German version of the European values evaluation dataset, where "
-    "the questions are phrased as sentence completions",
-    huggingface_id="EuroEval/european-values-completions-de",
-    task=EUROPEAN_VALUES,
-    languages=[DE],
-    splits=["test"],
-    bootstrap_samples=False,
-    _instruction_prompt="{text}",
 )

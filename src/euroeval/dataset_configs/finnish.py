@@ -57,38 +57,6 @@ SCALA_FI_CONFIG = DatasetConfig(
     languages=[FI],
 )
 
-### Unofficial datasets ###
-
-BELEBELE_FI_CONFIG = DatasetConfig(
-    name="belebele-fi",
-    pretty_name="the Finnish multiple choice reading comprehension dataset "
-    "BeleBele-fi, translated from the English BeleBele dataset",
-    huggingface_id="EuroEval/belebele-fi-mini",
-    task=MCRC,
-    languages=[FI],
-    unofficial=True,
-)
-
-MULTI_WIKI_QA_FI_CONFIG = DatasetConfig(
-    name="multi-wiki-qa-fi",
-    pretty_name="the truncated version of the Finnish part of the reading "
-    "comprehension dataset MultiWikiQA",
-    huggingface_id="EuroEval/multi-wiki-qa-fi-mini",
-    task=RC,
-    languages=[FI],
-    unofficial=True,
-)
-
-GOLDENSWAG_FI_CONFIG = DatasetConfig(
-    name="goldenswag-fi",
-    pretty_name="the truncated version of the Finnish common-sense reasoning "
-    "dataset GoldenSwag-fi, translated from the English GoldenSwag dataset",
-    huggingface_id="EuroEval/goldenswag-fi-mini",
-    task=COMMON_SENSE,
-    languages=[FI],
-    unofficial=True,
-)
-
 EUROPEAN_VALUES_FI_CONFIG = DatasetConfig(
     name="european-values-fi",
     pretty_name="the Finnish version of the European values evaluation dataset",
@@ -122,4 +90,36 @@ EUROPEAN_VALUES_COMPLETIONS_FI_CONFIG = DatasetConfig(
     splits=["test"],
     bootstrap_samples=False,
     _instruction_prompt="{text}",
+)
+
+### Unofficial datasets ###
+
+BELEBELE_FI_CONFIG = DatasetConfig(
+    name="belebele-fi",
+    pretty_name="the Finnish multiple choice reading comprehension dataset "
+    "BeleBele-fi, translated from the English BeleBele dataset",
+    huggingface_id="EuroEval/belebele-fi-mini",
+    task=MCRC,
+    languages=[FI],
+    unofficial=True,
+)
+
+MULTI_WIKI_QA_FI_CONFIG = DatasetConfig(
+    name="multi-wiki-qa-fi",
+    pretty_name="the truncated version of the Finnish part of the reading "
+    "comprehension dataset MultiWikiQA",
+    huggingface_id="EuroEval/multi-wiki-qa-fi-mini",
+    task=RC,
+    languages=[FI],
+    unofficial=True,
+)
+
+GOLDENSWAG_FI_CONFIG = DatasetConfig(
+    name="goldenswag-fi",
+    pretty_name="the truncated version of the Finnish common-sense reasoning "
+    "dataset GoldenSwag-fi, translated from the English GoldenSwag dataset",
+    huggingface_id="EuroEval/goldenswag-fi-mini",
+    task=COMMON_SENSE,
+    languages=[FI],
+    unofficial=True,
 )
