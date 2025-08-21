@@ -303,6 +303,11 @@ class VLLMModel(HuggingFaceEncoderModel):
 
         Returns:
             The generated model outputs.
+
+        Raises:
+            InvalidBenchmark:
+                If the dataset requires logprobs, but we could not get the first token
+                of each label in the dataset.
         """
         # Get stopping tokens
         stop_tokens: list[str] = self.custom_stop_tokens.copy()
@@ -363,6 +368,16 @@ class VLLMModel(HuggingFaceEncoderModel):
             tokenizer=self._tokenizer,
             generative_type=self.generative_type,
         )
+        if (
+            not self.buffer["first_label_token_mapping"]
+            and self.dataset_config.task.requires_logprobs
+        ):
+            raise InvalidBenchmark(
+                "The dataset requires logprobs, but we encountered an error when "
+                "trying to get the first token of each label in the dataset. You can "
+                "try running this benchmark with the --verbose flag to see what the "
+                "error was. Skipping this evaluation."
+            )
 
         # Define the parameters used for vLLM generation
         max_tokens: int = (
