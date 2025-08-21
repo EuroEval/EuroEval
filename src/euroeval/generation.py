@@ -235,7 +235,6 @@ def generate_single_iteration(
             cached_labels = list(cached_labels)
         ground_truth = non_cached_labels + cached_labels
     else:
-        breakpoint()
         log_once(
             "No labels found in the dataset. We assume that this is intentional, and "
             "will not supply any ground truth labels for evaluation.",
