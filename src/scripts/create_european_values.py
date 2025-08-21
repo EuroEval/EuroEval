@@ -221,7 +221,13 @@ def main() -> None:
 
                     # Create the prompt string, joining the question and choices
                     prompt = f"{question}\n{choices_str}:\n" + "\n".join(
-                        [f"{key}. {value}" for key, value in choices.items()]
+                        [
+                            f"{key}. {value}"
+                            for key, value in sorted(
+                                choices.items(),
+                                key=lambda x: int(x[0]) if x[0].isdigit() else x[0],
+                            )
+                        ]
                     )
 
                     # Add a statement at the end stating that the model has to choose
