@@ -13,7 +13,7 @@
 import glob
 import os
 from collections import defaultdict
-from typing import Dict, List
+from typing import Dict, List, Union
 
 import pandas as pd
 from datasets import Dataset, DatasetDict, Split
@@ -21,7 +21,7 @@ from huggingface_hub import HfApi
 from requests import HTTPError
 
 
-def parse_conllu_data(raw_data: str) -> List[Dict[str, List[str]]]:
+def parse_conllu_data(raw_data: str) -> List[Dict[str, Union[List[str], str]]]:
     """Parse CoNLL-U format data and return a list of sentence records."""
     records = []
     lines = raw_data.strip().split("\n")
@@ -75,7 +75,7 @@ def parse_conllu_data(raw_data: str) -> List[Dict[str, List[str]]]:
     return records  # type: ignore[return-value]
 
 
-def load_fullstack_data() -> List[Dict[str, List[str]]]:
+def load_fullstack_data() -> List[Dict[str, Union[List[str], str]]]:
     """Load and parse all FullStack NER data from the local directory."""
     # Path to the local data directory
     data_dir = "../FullStack/NamedEntities/data"
