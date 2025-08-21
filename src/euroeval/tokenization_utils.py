@@ -378,7 +378,6 @@ def get_first_label_token_mapping(
         Boolean value indicating whether the model should output scores (if the mapping
         is outputted then the model will always output scores).
     """
-    breakpoint()
     if generative_type == GenerativeType.REASONING:
         log_once(
             f"The model {model_config.model_id!r} is a reasoning model and "
@@ -463,6 +462,7 @@ def get_first_label_token_mapping(
                 )
                 return False
             first_tokens.append(matching_tokens[0])
+        breakpoint()
 
         # Build a mapping from labels to the first token in each label if the first
         # tokens are distinct
