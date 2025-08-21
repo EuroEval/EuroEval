@@ -130,7 +130,6 @@ EUROPEAN_VALUES = Task(
     default_max_generated_tokens=5,
     default_labels=["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10"],
     only_allow_zero_shot=True,
-    requires_structured_output=True,
 )
 
 
