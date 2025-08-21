@@ -30,6 +30,17 @@ SCALA_LV_CONFIG = DatasetConfig(
     languages=[LV],
 )
 
+FULLSTACK_NER_LV_CONFIG = DatasetConfig(
+    name="fullstack-ner-lv",
+    pretty_name="the truncated version of the FullStack NER dataset",
+    huggingface_id="EuroEval/fullstack-ner-lv-mini",
+    task=NER,
+    languages=[LV],
+)
+
+
+### Unofficial datasets ###
+
 WIKIANN_LV_CONFIG = DatasetConfig(
     name="wikiann-lv",
     pretty_name="the truncated version of the Latvian part of the named entity "
