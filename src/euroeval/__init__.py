@@ -100,11 +100,6 @@ os.environ["VLLM_ALLOW_LONG_MAX_MODEL_LEN"] = "1"
 os.environ["DISABLE_AIOHTTP_TRANSPORT"] = "True"
 
 
-# Use older version v0 of vLLM, as the newer one requires XGrammar as decoding backend,
-# but XGrammar does not support having a maximal amount of elements in lists
-os.environ["VLLM_USE_V1"] = "0"
-
-
 # Set the HF_TOKEN env var to copy the HUGGINGFACE_API_KEY env var, as vLLM uses the
 # former and LiteLLM uses the latter
 if os.getenv("HUGGINGFACE_API_KEY"):
