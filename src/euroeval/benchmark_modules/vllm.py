@@ -24,7 +24,7 @@ from ..constants import (
     CUSTOM_STOP_TOKENS,
     GENERATIVE_PIPELINE_TAGS,
     MAX_CONTEXT_LENGTH,
-    MAX_LOGPROBS,
+    MAX_VLLM_LOGPROBS,
     MERGE_TAGS,
     REASONING_MAX_TOKENS,
     REASONING_TOKENS,
@@ -387,7 +387,9 @@ class VLLMModel(HuggingFaceEncoderModel):
         )
         sampling_params = SamplingParams(
             max_tokens=max_tokens,
-            logprobs=MAX_LOGPROBS if self.buffer["first_label_token_mapping"] else None,
+            logprobs=MAX_VLLM_LOGPROBS
+            if self.buffer["first_label_token_mapping"]
+            else None,
             temperature=0.0,
             stop=[stop_token for stop_token in stop_tokens if stop_token],
             guided_decoding=(

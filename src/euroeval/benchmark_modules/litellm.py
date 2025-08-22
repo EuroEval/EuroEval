@@ -38,7 +38,7 @@ from requests.exceptions import RequestException
 from tqdm.asyncio import tqdm as tqdm_async
 from tqdm.auto import tqdm
 
-from ..constants import MAX_LOGPROBS, REASONING_MAX_TOKENS
+from ..constants import MAX_LITELLM_LOGPROBS, REASONING_MAX_TOKENS
 from ..data_models import (
     BenchmarkConfig,
     DatasetConfig,
@@ -1269,7 +1269,7 @@ class LiteLLMModel(BenchmarkModule):
         # Handle manually set parameters
         if self.buffer["first_label_token_mapping"]:
             generation_kwargs["logprobs"] = True
-            generation_kwargs["top_logprobs"] = MAX_LOGPROBS
+            generation_kwargs["top_logprobs"] = MAX_LITELLM_LOGPROBS
         if self.model_config.revision == "thinking":
             generation_kwargs["thinking"] = dict(
                 type="enabled", budget_tokens=REASONING_MAX_TOKENS - 1
