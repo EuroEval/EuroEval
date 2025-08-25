@@ -134,11 +134,12 @@ def extract_labels_from_generation(
         )
         if labels is not None:
             return labels
-        elif dataset_config.task.requires_logprobs:
-            raise InvalidBenchmark(
-                "This task requires the model to output logprobs, and this model does "
-                "not seem to be able to do that. Skipping the evaluation."
-            )
+        # TEMP
+        # elif dataset_config.task.requires_logprobs:
+        #     raise InvalidBenchmark(
+        #         "This task requires the model to output logprobs, and this model "
+        #         "does not seem to be able to do that. Skipping the evaluation."
+        #     )
 
     # Get the candidate labels, which are the labels that the model can predict
     candidate_labels = [
@@ -176,6 +177,7 @@ def extract_labels_from_generation(
             for candidate_label in sample_candidate_labels
         ]
         predicted_label = sample_candidate_labels[np.argmin(edit_distances).item()]
+        breakpoint()
         new_predicted_labels.append(predicted_label)
 
     return new_predicted_labels
