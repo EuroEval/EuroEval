@@ -379,6 +379,14 @@ class VLLMModel(HuggingFaceEncoderModel):
                 "error was. Skipping this evaluation."
             )
 
+        # Define the guided decoding that we will use for structured generation
+        if structured_generation_schema is not None:
+            guided_decoding = GuidedDecodingParams(json=structured_generation_schema)
+        elif self.dataset_config.labels:
+            guided_decoding = GuidedDecodingParams(choice=self.dataset_config.labels)
+        else:
+            guided_decoding = None
+
         # Define the parameters used for vLLM generation
         max_tokens: int = (
             REASONING_MAX_TOKENS
@@ -392,11 +400,7 @@ class VLLMModel(HuggingFaceEncoderModel):
             else None,
             temperature=0.0,
             stop=[stop_token for stop_token in stop_tokens if stop_token],
-            guided_decoding=(
-                GuidedDecodingParams(json=structured_generation_schema)
-                if structured_generation_schema
-                else None
-            ),
+            guided_decoding=guided_decoding,
         )
 
         # If any of the prompts are empty then we need to replace them with a BOS token
