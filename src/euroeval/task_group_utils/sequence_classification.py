@@ -171,9 +171,20 @@ def extract_labels_from_generation(
         if (m := re.search(r"boxed\{(.*?)\}", predicted_label)) is not None:
             predicted_label = m.group(1)
 
+        # We set the word edit distance weights such that we heavily penalise insertions
+        # and substitutions, so that we don't just insert the correct label, but that we
+        # want the model to have included the correct label in its output.
+        insertion_weight = 1000
+        deletion_weight = 1
+        substitution_weight = 1000
+
         # Pick the label with the smallest word edit distance to the predicted label
         edit_distances = [
-            Levenshtein.distance(s1=predicted_label.lower(), s2=candidate_label.lower())
+            Levenshtein.distance(
+                s1=predicted_label.lower(),
+                s2=candidate_label.lower(),
+                weights=(insertion_weight, deletion_weight, substitution_weight),
+            )
             for candidate_label in sample_candidate_labels
         ]
         best_candidate_label = sample_candidate_labels[np.argmin(edit_distances).item()]
