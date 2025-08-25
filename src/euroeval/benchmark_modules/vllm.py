@@ -28,7 +28,6 @@ from ..constants import (
     MERGE_TAGS,
     REASONING_MAX_TOKENS,
     REASONING_TOKENS,
-    TASK_GROUPS_USING_LOGPROBS,
     VLLM_BF16_MIN_CUDA_COMPUTE_CAPABILITY,
 )
 from ..data_models import GenerativeModelOutput, ModelConfig
@@ -383,10 +382,7 @@ class VLLMModel(HuggingFaceEncoderModel):
         # Define the guided decoding that we will use for structured generation
         if structured_generation_schema is not None:
             guided_decoding = GuidedDecodingParams(json=structured_generation_schema)
-        elif (
-            self.dataset_config.task.task_group in TASK_GROUPS_USING_LOGPROBS
-            and self.dataset_config.labels
-        ):
+        elif self.dataset_config.task.uses_logprobs and self.dataset_config.labels:
             guided_decoding = GuidedDecodingParams(choice=self.dataset_config.labels)
         else:
             guided_decoding = None

@@ -36,14 +36,6 @@ GENERATIVE_DATASET_TASK_GROUPS = [TaskGroup.TEXT_TO_TEXT]
 LOCAL_MODELS_REQUIRED_FILES = ["config.json"]
 
 
-# Tasks where we use log probabilities for generative models, rather than the raw
-# completion
-TASK_GROUPS_USING_LOGPROBS = [
-    TaskGroup.SEQUENCE_CLASSIFICATION,
-    TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION,
-]
-
-
 # The number of top log probabilities to return for generative models. For several APIs
 # this is the maximum number of log probabilities that can be returned
 MAX_VLLM_LOGPROBS = 20
