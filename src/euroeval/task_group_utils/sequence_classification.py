@@ -202,7 +202,6 @@ def extract_labels_from_generation(
         # Pick the label with the smallest word edit distance to the predicted label
         best_candidate_label = sample_candidate_labels[np.argmin(edit_distances).item()]
         new_predicted_labels.append(best_candidate_label)
-        breakpoint()
 
     return new_predicted_labels
 
