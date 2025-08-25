@@ -176,9 +176,9 @@ def extract_labels_from_generation(
             Levenshtein.distance(s1=predicted_label.lower(), s2=candidate_label.lower())
             for candidate_label in sample_candidate_labels
         ]
-        predicted_label = sample_candidate_labels[np.argmin(edit_distances).item()]
+        best_candidate_label = sample_candidate_labels[np.argmin(edit_distances).item()]
         breakpoint()
-        new_predicted_labels.append(predicted_label)
+        new_predicted_labels.append(best_candidate_label)
 
     return new_predicted_labels
 
