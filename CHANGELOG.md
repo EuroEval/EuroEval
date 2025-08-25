@@ -33,6 +33,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Now uses `litellm>=1.75.6`, which fixes an issue related to evaluation of GPT-5 models
   using Ollama.
 
+### Removed
+- Removed support for human evaluation, as it was not actively maintained and not used.
+
 
 ## [v15.16.0] - 2025-08-12
 ### Added

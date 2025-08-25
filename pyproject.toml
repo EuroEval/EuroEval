@@ -48,9 +48,6 @@ generative = [
     "vllm>=0.10.1; platform_system == 'Linux'",
     "fbgemm-gpu>=1.0.0; platform_system == 'Linux'",
 ]
-human_evaluation = [
-    "gradio>=4.26.0",
-]
 all = [
     "bitsandbytes>=0.43.1; platform_system == 'Linux'",
     "vllm>=0.10.1; platform_system == 'Linux'",
@@ -71,7 +68,6 @@ file = "LICENSE"
 [project.scripts]
 euroeval = "euroeval.cli:benchmark"
 scandeval = "euroeval.cli:benchmark"
-human_evaluate = "euroeval.human_evaluation:main"
 
 [tool.uv]
 dev-dependencies = [
