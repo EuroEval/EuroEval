@@ -203,7 +203,7 @@ from .tasks import get_all_tasks
     "relevant if the model is generative.",
 )
 @click.option(
-    "--only-allow-safetensors",
+    "--requires-safetensors",
     is_flag=True,
     help="Only allow loading models that have safetensors weights available",
     default=False,
@@ -233,7 +233,7 @@ def benchmark(
     api_version: str | None,
     gpu_memory_utilization: float,
     debug: bool,
-    only_allow_safetensors: bool,
+    requires_safetensors: bool,
 ) -> None:
     """Benchmark pretrained language models on language tasks."""
     models = list(model)
@@ -270,7 +270,7 @@ def benchmark(
         gpu_memory_utilization=gpu_memory_utilization,
         debug=debug,
         run_with_cli=True,
-        only_allow_safetensors=only_allow_safetensors,
+        requires_safetensors=requires_safetensors,
     )
 
     # Perform the benchmark evaluation

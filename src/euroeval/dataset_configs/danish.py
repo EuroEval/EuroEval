@@ -2,7 +2,7 @@
 
 from ..data_models import DatasetConfig
 from ..languages import DA
-from ..tasks import COMMON_SENSE, KNOW, LA, MCRC, NER, RC, SENT, SUMM
+from ..tasks import COMMON_SENSE, EUROPEAN_VALUES, KNOW, LA, MCRC, NER, RC, SENT, SUMM
 
 ### Official datasets ###
 
@@ -74,6 +74,41 @@ HELLASWAG_DA_CONFIG = DatasetConfig(
     huggingface_id="EuroEval/hellaswag-da-mini",
     task=COMMON_SENSE,
     languages=[DA],
+)
+
+EUROPEAN_VALUES_DA_CONFIG = DatasetConfig(
+    name="european-values-da",
+    pretty_name="the Danish version of the European values evaluation dataset",
+    huggingface_id="EuroEval/european-values-da",
+    task=EUROPEAN_VALUES,
+    languages=[DA],
+    splits=["test"],
+    bootstrap_samples=False,
+    _instruction_prompt="{text}",
+)
+
+EUROPEAN_VALUES_SITUATIONAL_DA_CONFIG = DatasetConfig(
+    name="european-values-situational-da",
+    pretty_name="the Danish version of the European values evaluation dataset, where "
+    "the questions are phrased in a situational way",
+    huggingface_id="EuroEval/european-values-situational-da",
+    task=EUROPEAN_VALUES,
+    languages=[DA],
+    splits=["test"],
+    bootstrap_samples=False,
+    _instruction_prompt="{text}",
+)
+
+EUROPEAN_VALUES_COMPLETIONS_DA_CONFIG = DatasetConfig(
+    name="european-values-completions-da",
+    pretty_name="the Danish version of the European values evaluation dataset, where "
+    "the questions are phrased as sentence completions",
+    huggingface_id="EuroEval/european-values-completions-da",
+    task=EUROPEAN_VALUES,
+    languages=[DA],
+    splits=["test"],
+    bootstrap_samples=False,
+    _instruction_prompt="{text}",
 )
 
 

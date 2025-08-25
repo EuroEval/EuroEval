@@ -7,6 +7,7 @@ import typing as t
 import Levenshtein
 import numpy as np
 
+from ..enums import TaskGroup
 from ..exceptions import InvalidBenchmark
 from ..utils import log_once, raise_if_model_output_contains_nan_values
 
@@ -113,6 +114,12 @@ def extract_labels_from_generation(
 
     Returns:
         The predicted labels.
+
+    Raises:
+        InvalidBenchmark:
+            If the task requires log probabilities, but the model did not output them,
+            or if the model outputted log probabilities but the first label token
+            mapping is not provided.
     """
     if model_output.scores is not None:
         if first_label_token_mapping is False:
@@ -127,25 +134,73 @@ def extract_labels_from_generation(
         )
         if labels is not None:
             return labels
+        elif dataset_config.task.requires_logprobs:
+            raise InvalidBenchmark(
+                "This task requires the model to output logprobs, and this model "
+                "does not seem to be able to do that. Skipping the evaluation."
+            )
 
+    # Get the candidate labels, which are the labels that the model can predict
     candidate_labels = [
         dataset_config.prompt_label_mapping[lbl]
         for lbl in dataset_config.id2label.values()
     ]
+
     new_predicted_labels: list[str] = list()
-    for predicted_label in model_output.sequences:
+    for idx, predicted_label in enumerate(model_output.sequences):
+        # Special case if we are doing multiple choice classification: we in this case
+        # dynamically change the candidate labels to the labels mentioned in the prompt
+        if dataset_config.task.task_group == TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION:
+            prompt = input_batch["text"][idx]
+            sample_candidate_labels = [
+                candidate_label
+                for candidate_label in candidate_labels
+                if re.search(
+                    pattern=rf"\b{candidate_label}. ",
+                    string=prompt,
+                    flags=re.IGNORECASE,
+                )
+                is not None
+            ]
+        else:
+            sample_candidate_labels = candidate_labels
+
         # If the prediction includes a boxed answer, use that instead of the full
         # generation
         if (m := re.search(r"boxed\{(.*?)\}", predicted_label)) is not None:
             predicted_label = m.group(1)
 
-        # Pick the label with the smallest word edit distance to the predicted label
+        # We set the word edit distance weights such that we heavily penalise insertions
+        # and substitutions, so that we don't just insert the correct label, but that we
+        # want the model to have included the correct label in its output.
+        insertion_weight = 1000
+        deletion_weight = 1
+        substitution_weight = 1000
+
+        # Compute the word edit distances between the predicted label and all candidate
+        # labels
         edit_distances = [
-            Levenshtein.distance(s1=predicted_label.lower(), s2=candidate_label.lower())
-            for candidate_label in candidate_labels
+            Levenshtein.distance(
+                s1=predicted_label.lower(),
+                s2=candidate_label.lower(),
+                weights=(insertion_weight, deletion_weight, substitution_weight),
+            )
+            for candidate_label in sample_candidate_labels
         ]
-        predicted_label = candidate_labels[np.argmin(edit_distances).item()]
-        new_predicted_labels.append(predicted_label)
+
+        # If no candidate labels were found, we assume that something is wrong with the
+        # model output, and we raise an error
+        if min(edit_distances) > 100:
+            raise InvalidBenchmark(
+                f"No candidate labels found for the predicted label "
+                f"{predicted_label!r}. This likely means that the model output is "
+                "completely off, and we cannot extract any labels from it. Please "
+                "check the model output and the candidate labels."
+            )
+
+        # Pick the label with the smallest word edit distance to the predicted label
+        best_candidate_label = sample_candidate_labels[np.argmin(edit_distances).item()]
+        new_predicted_labels.append(best_candidate_label)
 
     return new_predicted_labels
 
@@ -187,11 +242,7 @@ def get_closest_logprobs_labels(
     for sample in generation_logprobs:
         for logprob_list in sample:
             generated_labels = [
-                re.sub(
-                    pattern=r"^[^a-zæøåüöä]+|[^a-zæøåüöä]+$",
-                    repl="",
-                    string=label.lower(),
-                )
+                re.sub(pattern=r"^[^a-zæøåüöä0-9]+$", repl="", string=label.lower())
                 for label, _ in logprob_list
             ]
             generated_labels = [label for label in generated_labels if label != ""]
@@ -225,6 +276,18 @@ def get_closest_logprobs_labels(
                         candidate_label
                         for candidate_label in candidate_labels
                         if candidate_label.startswith(generated_label)
+                    }
+
+                # If the generated label is a numeral (e.g., "1", "2", "3") and there is
+                # a matching candidate label, we only keep the full match
+                if re.match(r"^\d+$", generated_label) and any(
+                    candidate_label == generated_label
+                    for candidate_label in candidate_output_labels
+                ):
+                    candidate_output_labels = {
+                        candidate_label
+                        for candidate_label in candidate_output_labels
+                        if candidate_label == generated_label
                     }
 
                 # If we can uniquely determine the output label, we break the loop.
@@ -263,10 +326,12 @@ def get_closest_logprobs_labels(
                     if candidate_output_labels_starting_with_generated_label:
                         log_once(
                             f"No candidate label found for the generated label "
-                            f"{generated_label!r}. This means that using logprobs to "
-                            "extract the labels is not reliable, and we will instead "
-                            "fall back to extracting the labels using word edit "
-                            "distance.",
+                            f"{generated_label!r}, but there are candidate labels "
+                            f"starting with it: "
+                            f"{candidate_output_labels_starting_with_generated_label}. "
+                            "This means that the first label token mapping is not "
+                            "reliable, and we will instead fall back to extracting "
+                            "the labels using word edit distance.",
                             level=logging.DEBUG,
                         )
                         return None
@@ -291,16 +356,16 @@ def get_closest_logprobs_labels(
             if len(sample) == 0:
                 log_once(
                     "The model outputted an empty string, so no candidate labels could "
-                    f"be determined. Using {candidate_labels[0]!r} as the output "
-                    "label.",
-                    level=logging.DEBUG,
+                    f"be determined. Using the first label, {candidate_labels[0]!r}, "
+                    "as the output label.",
+                    level=logging.INFO,
                 )
             else:
                 log_once(
                     "Could not find a candidate label for any of the generated "
-                    f"labels in the sample {sample}. Using {candidate_labels[0]!r} "
-                    "as the output label.",
-                    level=logging.DEBUG,
+                    f"labels in the sample {sample}. Using the first label, "
+                    f"{candidate_labels[0]!r}, as the output label.",
+                    level=logging.INFO,
                 )
             output_labels.append(candidate_labels[0])
 

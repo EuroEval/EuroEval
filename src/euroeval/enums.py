@@ -40,14 +40,11 @@ class InferenceBackend(AutoStrEnum):
             VLLM library.
         LITELLM:
             LiteLLM library.
-        NONE:
-            No inference backend used (e.g., for human evaluation).
     """
 
     TRANSFORMERS = auto()
     VLLM = auto()
     LITELLM = auto()
-    NONE = auto()
 
 
 class ModelType(AutoStrEnum):
@@ -58,13 +55,10 @@ class ModelType(AutoStrEnum):
             An encoder (i.e., BERT-style) model.
         GENERATIVE:
             A generative model. Can be either decoder or encoder-decoder (aka seq2seq).
-        HUMAN:
-            Human evaluator.
     """
 
     ENCODER = auto()
     GENERATIVE = auto()
-    HUMAN = auto()
 
 
 class GenerativeType(AutoStrEnum):

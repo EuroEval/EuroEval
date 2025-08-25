@@ -9,7 +9,7 @@ from dataclasses import dataclass, field
 import pydantic
 import torch
 
-from .enums import Device, InferenceBackend, ModelType, TaskGroup
+from .enums import Device, GenerativeType, InferenceBackend, ModelType, TaskGroup
 from .metrics import Metric
 from .types import ScoreDict
 from .utils import get_package_version
@@ -104,6 +104,24 @@ class Task:
             using few-shot evaluation.
         default_labels:
             The default labels for datasets using this task.
+        requires_zero_shot (optional):
+            Whether to only allow zero-shot evaluation for this task. If True, the
+            task will not be evaluated using few-shot examples.
+        uses_structured_output (optional):
+            Whether the task uses structured output. If True, the task will return
+            structured output (e.g., BIO tags for NER). Defaults to False.
+        uses_logprobs (optional):
+            Whether the task uses log probabilities. If True, the task will return
+            log probabilities for the generated tokens. Defaults to False.
+        requires_logprobs (optional):
+            Whether the task requires log probabilities. Implies `uses_logprobs`.
+        allowed_model_types (optional):
+            A list of model types that are allowed to be evaluated on this task.
+            Defaults to all model types being allowed.
+        allowed_generative_types (optional):
+            A list of generative model types that are allowed to be evaluated on this
+            task. If None, all generative model types are allowed. Only relevant if
+            `allowed_model_types` includes generative models.
     """
 
     name: str
@@ -113,6 +131,24 @@ class Task:
     default_num_few_shot_examples: int
     default_max_generated_tokens: int
     default_labels: list[str]
+    requires_zero_shot: bool = False
+    uses_structured_output: bool = False
+    uses_logprobs: bool = False
+    requires_logprobs: bool = False
+    allowed_model_types: list[ModelType] = field(
+        default_factory=lambda: [ModelType.ENCODER, ModelType.GENERATIVE]
+    )
+    allowed_generative_types: list[GenerativeType] = field(
+        default_factory=lambda: [
+            GenerativeType.BASE,
+            GenerativeType.INSTRUCTION_TUNED,
+            GenerativeType.REASONING,
+        ]
+    )
+
+    def __post_init__(self) -> None:
+        """Post-initialisation checks."""
+        self.uses_logprobs = self.uses_logprobs or self.requires_logprobs
 
     def __hash__(self) -> int:
         """Return a hash of the task."""
@@ -177,7 +213,7 @@ class BenchmarkConfig:
             Whether to run the benchmark in debug mode.
         run_with_cli:
             Whether the benchmark is being run with the CLI.
-        only_allow_safetensors:
+        requires_safetensors:
             Whether to only allow models that use the safetensors format.
     """
 
@@ -204,7 +240,7 @@ class BenchmarkConfig:
     gpu_memory_utilization: float
     debug: bool
     run_with_cli: bool
-    only_allow_safetensors: bool
+    requires_safetensors: bool
 
 
 class BenchmarkConfigParams(pydantic.BaseModel):
@@ -236,7 +272,7 @@ class BenchmarkConfigParams(pydantic.BaseModel):
     gpu_memory_utilization: float
     debug: bool
     run_with_cli: bool
-    only_allow_safetensors: bool
+    requires_safetensors: bool
 
 
 class BenchmarkResult(pydantic.BaseModel):
@@ -356,6 +392,11 @@ class DatasetConfig:
             to a 1:1 mapping between the labels and themselves. If None then the mapping
             will be set to the default mapping for the task and language. Defaults to
             None.
+        splits (optional):
+            The names of the splits in the dataset. If not provided, defaults to
+            ["train", "val", "test"].
+        bootstrap_samples (optional):
+            Whether to bootstrap the dataset samples. Defaults to True.
         unofficial (optional):
             Whether the dataset is unofficial. Defaults to False.
     """
@@ -372,6 +413,8 @@ class DatasetConfig:
     _max_generated_tokens: int | None = None
     _labels: list[str] | None = None
     _prompt_label_mapping: dict[str, str] | t.Literal["auto"] | None = None
+    splits: list[str] = field(default_factory=lambda: ["train", "val", "test"])
+    bootstrap_samples: bool = True
     unofficial: bool = False
 
     @property

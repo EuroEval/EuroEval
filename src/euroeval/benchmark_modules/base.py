@@ -7,12 +7,12 @@ import typing as t
 from abc import ABC, abstractmethod
 from functools import cached_property, partial
 
-from datasets import DatasetDict
+from datasets import Dataset, DatasetDict
 from torch import nn
 from tqdm.auto import tqdm
 
 from ..enums import TaskGroup
-from ..exceptions import NeedsEnvironmentVariable, NeedsExtraInstalled
+from ..exceptions import InvalidBenchmark, NeedsEnvironmentVariable, NeedsExtraInstalled
 from ..task_group_utils import (
     question_answering,
     sequence_classification,
@@ -255,6 +255,11 @@ class BenchmarkModule(ABC):
 
         Returns:
             The prepared datasets.
+
+        Raises:
+            InvalidBenchmark:
+                If the dataset does not have a 'train' split for token classification
+                tasks.
         """
         for idx, dataset in enumerate(
             tqdm(iterable=datasets, desc="Preparing datasets")
@@ -263,22 +268,24 @@ class BenchmarkModule(ABC):
                 dataset=dataset, task=task, itr_idx=idx
             )
             if self.dataset_config.task.task_group == TaskGroup.TOKEN_CLASSIFICATION:
+                if "train" not in dataset:
+                    raise InvalidBenchmark(
+                        "The dataset does not have a 'train' split, which is required "
+                        "for token classification tasks."
+                    )
                 labels_in_train: set[str] = {
                     tag for tag_list in dataset["train"]["labels"] for tag in tag_list
                 }
                 self.buffer["has_misc_tags"] = (
                     "B-MISC" in labels_in_train or "I-MISC" in labels_in_train
                 )
-            datasets[idx] = DatasetDict(
-                dict(
-                    train=prepared_dataset["train"],
-                    val=prepared_dataset["val"],
-                    test=prepared_dataset["test"],
-                    original_train=dataset["train"],
-                    original_val=dataset["val"],
-                    original_test=dataset["test"],
-                )
-            )
+
+            datasets_dict: dict[str, Dataset] = dict()
+            for split_name, split in prepared_dataset.items():
+                datasets_dict[split_name] = split
+            for split_name, split in dataset.items():
+                datasets_dict[f"original_{split_name}"] = split
+            datasets[idx] = DatasetDict(datasets_dict)
         return datasets
 
     @abstractmethod

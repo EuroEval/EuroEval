@@ -839,7 +839,7 @@ def get_model_repo_info(
         else:
             pipeline_tag = "fill-mask"
 
-    if benchmark_config.only_allow_safetensors:
+    if benchmark_config.requires_safetensors:
         repo_files = hf_api.list_repo_files(repo_id=model_id, revision=revision)
         has_safetensors = any(f.endswith(".safetensors") for f in repo_files)
         if not has_safetensors:
@@ -848,7 +848,7 @@ def get_model_repo_info(
                 msg += "Skipping since the `--only-allow-safetensors` flag is set."
             else:
                 msg += (
-                    "Skipping since the `only_allow_safetensors` argument is set "
+                    "Skipping since the `requires_safetensors` argument is set "
                     "to `True`."
                 )
             logger.warning(msg)
@@ -869,7 +869,7 @@ def get_model_repo_info(
                     msg += " Skipping since the `--only-allow-safetensors` flag is set."
                 else:
                     msg += (
-                        " Skipping since the `only_allow_safetensors` argument is set "
+                        " Skipping since the `requires_safetensors` argument is set "
                         "to `True`."
                     )
                 logging.warning(msg)

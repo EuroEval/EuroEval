@@ -45,8 +45,7 @@ def build_benchmark_config(
     gpu_memory_utilization: float,
     debug: bool,
     run_with_cli: bool,
-    only_allow_safetensors: bool,
-    first_time: bool = False,
+    requires_safetensors: bool,
 ) -> BenchmarkConfig:
     """Create a benchmark configuration.
 
@@ -112,11 +111,8 @@ def build_benchmark_config(
             Whether to run the benchmark in debug mode.
         run_with_cli:
             Whether the benchmark is being run with the CLI.
-        only_allow_safetensors:
+        requires_safetensors:
             Whether to only allow evaluations of models stored as safetensors.
-        first_time:
-            Whether this is the first time the benchmark configuration is being created.
-            Defaults to False.
 
     Returns:
         The benchmark configuration.
@@ -163,7 +159,7 @@ def build_benchmark_config(
         gpu_memory_utilization=gpu_memory_utilization,
         debug=debug,
         run_with_cli=run_with_cli,
-        only_allow_safetensors=only_allow_safetensors,
+        requires_safetensors=requires_safetensors,
     )
 
 

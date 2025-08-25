@@ -6,6 +6,7 @@ import typing as t
 from pathlib import Path
 
 import more_itertools as mit
+from datasets import Dataset
 from tqdm.auto import tqdm
 
 from .enums import BatchingPreference, TaskGroup
@@ -15,10 +16,10 @@ from .model_cache import (
     load_cached_model_outputs,
     split_dataset_into_cached_and_non_cached,
 )
-from .utils import clear_memory
+from .utils import clear_memory, log_once
 
 if t.TYPE_CHECKING:
-    from datasets import Dataset, DatasetDict
+    from datasets import DatasetDict
 
     from .benchmark_modules import BenchmarkModule
     from .data_models import (
@@ -78,7 +79,7 @@ def generate(
 
     scores: list[dict[str, float]] = list()
     for idx in tqdm(
-        iterable=range(benchmark_config.num_iterations),
+        iterable=range(len(datasets)),
         desc="Benchmarking",
         disable=not benchmark_config.progress_bar,
     ):
@@ -89,7 +90,6 @@ def generate(
             dataset_config=dataset_config,
             benchmark_config=benchmark_config,
         )
-
         logger.debug(f"Test scores for iteration {idx}: {test_scores}")
         scores.append(test_scores)
         clear_memory()
@@ -126,10 +126,15 @@ def generate_single_iteration(
     """
     cache.load()
 
-    # Split up the dataset into a cached and non-cached part
-    cached_dataset, non_cached_dataset = split_dataset_into_cached_and_non_cached(
-        dataset=dataset, cache=cache
-    )
+    # Split up the dataset into a cached and non-cached part, unless we are not
+    # bootstrapping the samples. In that case, we just use the dataset as is.
+    if dataset_config.bootstrap_samples:
+        cached_dataset, non_cached_dataset = split_dataset_into_cached_and_non_cached(
+            dataset=dataset, cache=cache
+        )
+    else:
+        cached_dataset = Dataset.from_dict({})
+        non_cached_dataset = dataset
 
     all_preds: list[str] = list()
 
@@ -230,9 +235,12 @@ def generate_single_iteration(
             cached_labels = list(cached_labels)
         ground_truth = non_cached_labels + cached_labels
     else:
-        raise ValueError(
-            "The dataset must have either a 'label', 'labels', or 'target_text' column"
+        log_once(
+            "No labels found in the dataset. We assume that this is intentional, and "
+            "will not supply any ground truth labels for evaluation.",
+            level=logging.DEBUG,
         )
+        ground_truth = []
 
     itr_scores: dict[str, float] = model.compute_metrics(
         model_outputs_and_labels=(all_preds, ground_truth), dataset=dataset
@@ -293,10 +301,13 @@ def debug_log(
         case (
             TaskGroup.SEQUENCE_CLASSIFICATION | TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION
         ):
-            labels = [
-                dataset_config.prompt_label_mapping.get(label, label).lower()
-                for label in batch["label"]
-            ]
+            if "label" in batch:
+                labels = [
+                    dataset_config.prompt_label_mapping.get(label, label).lower()
+                    for label in batch["label"]
+                ]
+            else:
+                labels = ["N/A"] * len(extracted_labels)
 
         case TaskGroup.QUESTION_ANSWERING:
             extracted_labels = [

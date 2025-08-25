@@ -46,7 +46,7 @@ def test_get_torch_dtype(
 
 
 @pytest.mark.parametrize(
-    argnames=["repo_files", "only_allow_safetensors", "model_exists"],
+    argnames=["repo_files", "requires_safetensors", "model_exists"],
     argvalues=[
         (["model.safetensors", "config.json"], True, True),
         (["pytorch_model.bin", "config.json"], True, False),
@@ -62,13 +62,13 @@ def test_get_torch_dtype(
 )
 def test_safetensors_check(
     repo_files: list[str],
-    only_allow_safetensors: bool,
+    requires_safetensors: bool,
     model_exists: bool,
     benchmark_config: BenchmarkConfig,
 ) -> None:
     """Test the safetensors availability check functionality."""
     cloned_benchmark_config = deepcopy(benchmark_config)
-    cloned_benchmark_config.only_allow_safetensors = only_allow_safetensors
+    cloned_benchmark_config.requires_safetensors = requires_safetensors
     with (
         patch.object(HfApi, "list_repo_files") as mock_list_files,
         patch.object(HfApi, "model_info") as mock_model_info,

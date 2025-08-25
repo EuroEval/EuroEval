@@ -2,7 +2,7 @@
 
 from ..data_models import DatasetConfig
 from ..languages import FI
-from ..tasks import COMMON_SENSE, LA, MCRC, NER, RC, SENT, SUMM
+from ..tasks import COMMON_SENSE, EUROPEAN_VALUES, LA, MCRC, NER, RC, SENT, SUMM
 
 ### Official datasets ###
 
@@ -55,6 +55,41 @@ SCALA_FI_CONFIG = DatasetConfig(
     huggingface_id="EuroEval/scala-fi",
     task=LA,
     languages=[FI],
+)
+
+EUROPEAN_VALUES_FI_CONFIG = DatasetConfig(
+    name="european-values-fi",
+    pretty_name="the Finnish version of the European values evaluation dataset",
+    huggingface_id="EuroEval/european-values-fi",
+    task=EUROPEAN_VALUES,
+    languages=[FI],
+    splits=["test"],
+    bootstrap_samples=False,
+    _instruction_prompt="{text}",
+)
+
+EUROPEAN_VALUES_SITUATIONAL_FI_CONFIG = DatasetConfig(
+    name="european-values-situational-fi",
+    pretty_name="the Finnish version of the European values evaluation dataset, where "
+    "the questions are phrased in a situational way",
+    huggingface_id="EuroEval/european-values-situational-fi",
+    task=EUROPEAN_VALUES,
+    languages=[FI],
+    splits=["test"],
+    bootstrap_samples=False,
+    _instruction_prompt="{text}",
+)
+
+EUROPEAN_VALUES_COMPLETIONS_FI_CONFIG = DatasetConfig(
+    name="european-values-completions-fi",
+    pretty_name="the Finnish version of the European values evaluation dataset, where "
+    "the questions are phrased as sentence completions",
+    huggingface_id="EuroEval/european-values-completions-fi",
+    task=EUROPEAN_VALUES,
+    languages=[FI],
+    splits=["test"],
+    bootstrap_samples=False,
+    _instruction_prompt="{text}",
 )
 
 ### Unofficial datasets ###
