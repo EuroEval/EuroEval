@@ -79,7 +79,7 @@ if t.TYPE_CHECKING or importlib.util.find_spec("vllm") is not None:
     from vllm.sampling_params import GuidedDecodingParams
 
 if t.TYPE_CHECKING or importlib.util.find_spec("ray") is not None:
-    pass
+    import ray
 
 if t.TYPE_CHECKING:
     from datasets import DatasetDict
@@ -915,15 +915,13 @@ def load_tokenizer(
 
 def clear_vllm() -> None:
     """Clear the GPU memory used by the vLLM model, enabling re-initialisation."""
+    if ray.is_initialized():
+        ray.shutdown()
     with contextlib.suppress(ValueError):
         destroy_model_parallel()
         destroy_distributed_environment()
-    # if ray.is_initialized():
-    #     ray.shutdown()
     with contextlib.suppress(AssertionError):
         torch.distributed.destroy_process_group()
-    # if ray.is_initialized():
-    #     ray.shutdown()
     clear_memory()
 
 
