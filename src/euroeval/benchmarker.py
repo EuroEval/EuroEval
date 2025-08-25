@@ -81,7 +81,7 @@ class Benchmarker:
         gpu_memory_utilization: float = 0.9,
         debug: bool = False,
         run_with_cli: bool = False,
-        only_allow_safetensors: bool = False,
+        requires_safetensors: bool = False,
     ) -> None:
         """Initialise the benchmarker.
 
@@ -156,7 +156,7 @@ class Benchmarker:
             run_with_cli:
                 Whether the benchmarker is being run from the command-line interface.
                 Defaults to False.
-            only_allow_safetensors:
+            requires_safetensors:
                 Whether to only allow models that use the safetensors format. Defaults
                 to False.
 
@@ -201,11 +201,11 @@ class Benchmarker:
             gpu_memory_utilization=gpu_memory_utilization,
             debug=debug,
             run_with_cli=run_with_cli,
-            only_allow_safetensors=only_allow_safetensors,
+            requires_safetensors=requires_safetensors,
         )
 
         self.benchmark_config = build_benchmark_config(
-            first_time=True, **self.benchmark_config_default_params.model_dump()
+            **self.benchmark_config_default_params.model_dump()
         )
 
         # Initialise variable storing model lists, so we only have to fetch it once
@@ -249,7 +249,7 @@ class Benchmarker:
         evaluate_test_split: bool | None = None,
         few_shot: bool | None = None,
         num_iterations: int | None = None,
-        only_allow_safetensors: bool | None = None,
+        requires_safetensors: bool | None = None,
     ) -> list[BenchmarkResult]:
         """Benchmarks models on datasets.
 
@@ -327,7 +327,7 @@ class Benchmarker:
                 to be used for power users, and scores will not be allowed on the
                 leaderboards if this is changed. Defaults to the value specified when
                 initialising the benchmarker.
-            only_allow_safetensors:
+            requires_safetensors:
                 Whether to only allow models that use the safetensors format. Defaults
                 to the value specified when initialising the benchmarker.
 
@@ -361,7 +361,7 @@ class Benchmarker:
             evaluate_test_split=evaluate_test_split,
             few_shot=few_shot,
             num_iterations=num_iterations,
-            only_allow_safetensors=only_allow_safetensors,
+            requires_safetensors=requires_safetensors,
         )
 
         adjust_logging_level(verbose=benchmark_config.verbose)
@@ -404,10 +404,7 @@ class Benchmarker:
                     )
                     benchmark_config_params_to_be_set["evaluate_test_split"] = False
                     benchmark_config.evaluate_test_split = True
-                if (
-                    dataset_config.task.only_allow_zero_shot
-                    and benchmark_config.few_shot
-                ):
+                if dataset_config.task.requires_zero_shot and benchmark_config.few_shot:
                     logger.debug(
                         "The task requires zero-shot evaluation, so even though you "
                         "requested few-shot evaluation (the default), we will evaluate "
@@ -565,7 +562,7 @@ class Benchmarker:
         api_version: str | None | None = None,
         debug: bool | None = None,
         run_with_cli: bool | None = None,
-        only_allow_safetensors: bool | None = None,
+        requires_safetensors: bool | None = None,
     ) -> "BenchmarkConfig":
         """Get an updated benchmark configuration.
 
@@ -639,7 +636,7 @@ class Benchmarker:
             run_with_cli:
                 Whether the benchmarker is being run from the command-line interface.
                 If None, then this value will not be updated.
-            only_allow_safetensors:
+            requires_safetensors:
                 Whether to only allow models that use the safetensors format. If None,
                 then this value will not be updated.
 
@@ -696,8 +693,8 @@ class Benchmarker:
             benchmark_config_params.debug = debug
         if run_with_cli is not None:
             benchmark_config_params.run_with_cli = run_with_cli
-        if only_allow_safetensors is not None:
-            benchmark_config_params.only_allow_safetensors = only_allow_safetensors
+        if requires_safetensors is not None:
+            benchmark_config_params.requires_safetensors = requires_safetensors
 
         return build_benchmark_config(**benchmark_config_params.model_dump())
 
@@ -887,7 +884,7 @@ class Benchmarker:
         evaluate_test_split: bool | None = None,
         few_shot: bool | None = None,
         num_iterations: int | None = None,
-        only_allow_safetensors: bool | None = None,
+        requires_safetensors: bool | None = None,
     ) -> list[BenchmarkResult]:
         """Benchmarks models on datasets.
 
@@ -965,7 +962,7 @@ class Benchmarker:
                 to be used for power users, and scores will not be allowed on the
                 leaderboards if this is changed. Defaults to the value specified when
                 initialising the benchmarker.
-            only_allow_safetensors:
+            requires_safetensors:
                 Whether to only allow models that use the safetensors format. Defaults
                 to the value specified when initialising the benchmarker.
 
@@ -1001,7 +998,7 @@ class Benchmarker:
             evaluate_test_split=evaluate_test_split,
             few_shot=few_shot,
             num_iterations=num_iterations,
-            only_allow_safetensors=only_allow_safetensors,
+            requires_safetensors=requires_safetensors,
         )
 
 

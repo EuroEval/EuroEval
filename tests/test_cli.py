@@ -43,7 +43,7 @@ def test_cli_param_names(params: dict[str, ParamType]) -> None:
         "gpu_memory_utilization",
         "debug",
         "help",
-        "only_allow_safetensors",
+        "requires_safetensors",
     }
 
 
@@ -74,4 +74,4 @@ def test_cli_param_types(params: dict[str, ParamType]) -> None:
     assert params["gpu_memory_utilization"] == FLOAT
     assert params["debug"] == BOOL
     assert params["help"] == BOOL
-    assert params["only_allow_safetensors"] == BOOL
+    assert params["requires_safetensors"] == BOOL

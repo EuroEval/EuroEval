@@ -104,7 +104,7 @@ class Task:
             using few-shot evaluation.
         default_labels:
             The default labels for datasets using this task.
-        only_allow_zero_shot (optional):
+        requires_zero_shot (optional):
             Whether to only allow zero-shot evaluation for this task. If True, the
             task will not be evaluated using few-shot examples.
         uses_structured_output (optional):
@@ -131,7 +131,7 @@ class Task:
     default_num_few_shot_examples: int
     default_max_generated_tokens: int
     default_labels: list[str]
-    only_allow_zero_shot: bool = False
+    requires_zero_shot: bool = False
     uses_structured_output: bool = False
     uses_logprobs: bool = False
     requires_logprobs: bool = False
@@ -213,7 +213,7 @@ class BenchmarkConfig:
             Whether to run the benchmark in debug mode.
         run_with_cli:
             Whether the benchmark is being run with the CLI.
-        only_allow_safetensors:
+        requires_safetensors:
             Whether to only allow models that use the safetensors format.
     """
 
@@ -240,7 +240,7 @@ class BenchmarkConfig:
     gpu_memory_utilization: float
     debug: bool
     run_with_cli: bool
-    only_allow_safetensors: bool
+    requires_safetensors: bool
 
 
 class BenchmarkConfigParams(pydantic.BaseModel):
@@ -272,7 +272,7 @@ class BenchmarkConfigParams(pydantic.BaseModel):
     gpu_memory_utilization: float
     debug: bool
     run_with_cli: bool
-    only_allow_safetensors: bool
+    requires_safetensors: bool
 
 
 class BenchmarkResult(pydantic.BaseModel):

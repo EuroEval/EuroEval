@@ -48,7 +48,7 @@ def extract_few_shot_examples(
         InvalidBenchmark:
             If there are not enough short examples for few-shot learning.
     """
-    if dataset_config.task.only_allow_zero_shot and benchmark_config.few_shot:
+    if dataset_config.task.requires_zero_shot and benchmark_config.few_shot:
         msg = (
             "This task only allows zero-shot evaluation, so even though you have "
             "requested few-shot evaluation "

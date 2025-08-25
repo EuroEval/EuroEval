@@ -140,7 +140,7 @@ EUROPEAN_VALUES = Task(
         GenerativeType.INSTRUCTION_TUNED,
         GenerativeType.REASONING,
     ],
-    only_allow_zero_shot=True,
+    requires_zero_shot=True,
     requires_logprobs=True,
 )
 
