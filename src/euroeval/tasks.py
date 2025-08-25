@@ -2,7 +2,7 @@
 
 from . import metrics as m
 from .data_models import Task
-from .enums import TaskGroup
+from .enums import GenerativeType, ModelType, TaskGroup
 from .prompt_templates import (
     LA_TEMPLATES,
     MULTIPLE_CHOICE_TEMPLATES,
@@ -87,6 +87,7 @@ SUMM = Task(
     default_num_few_shot_examples=1,
     default_max_generated_tokens=256,
     default_labels=[],
+    allowed_model_types=[ModelType.GENERATIVE],
 )
 
 
@@ -134,6 +135,11 @@ EUROPEAN_VALUES = Task(
     default_num_few_shot_examples=0,
     default_max_generated_tokens=2,
     default_labels=["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10"],
+    allowed_model_types=[ModelType.GENERATIVE],
+    allowed_generative_types=[
+        GenerativeType.INSTRUCTION_TUNED,
+        GenerativeType.REASONING,
+    ],
     only_allow_zero_shot=True,
     requires_logprobs=True,
 )

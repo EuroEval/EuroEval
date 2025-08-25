@@ -9,7 +9,7 @@ from dataclasses import dataclass, field
 import pydantic
 import torch
 
-from .enums import Device, InferenceBackend, ModelType, TaskGroup
+from .enums import Device, GenerativeType, InferenceBackend, ModelType, TaskGroup
 from .metrics import Metric
 from .types import ScoreDict
 from .utils import get_package_version
@@ -115,6 +115,13 @@ class Task:
             log probabilities for the generated tokens. Defaults to False.
         requires_logprobs (optional):
             Whether the task requires log probabilities. Implies `uses_logprobs`.
+        allowed_model_types (optional):
+            A list of model types that are allowed to be evaluated on this task.
+            Defaults to all model types being allowed.
+        allowed_generative_types (optional):
+            A list of generative model types that are allowed to be evaluated on this
+            task. If None, all generative model types are allowed. Only relevant if
+            `allowed_model_types` includes generative models.
     """
 
     name: str
@@ -128,6 +135,16 @@ class Task:
     uses_structured_output: bool = False
     uses_logprobs: bool = False
     requires_logprobs: bool = False
+    allowed_model_types: list[ModelType] = field(
+        default_factory=lambda: [ModelType.ENCODER, ModelType.GENERATIVE]
+    )
+    allowed_generative_types: list[GenerativeType] = field(
+        default_factory=lambda: [
+            GenerativeType.BASE,
+            GenerativeType.INSTRUCTION_TUNED,
+            GenerativeType.REASONING,
+        ]
+    )
 
     def __post_init__(self) -> None:
         """Post-initialisation checks."""
