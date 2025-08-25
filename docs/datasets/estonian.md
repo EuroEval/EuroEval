@@ -72,3 +72,64 @@ You can evaluate this dataset directly as follows:
 ```bash
 $ euroeval --model <model-id> --dataset estonian-valence
 ```
+
+## Common-sense Reasoning
+
+### WinoGrande-ET
+
+The dataset includes the [WinoGrande](https://doi.org/10.48550/arXiv.1907.10641) test set translated and culturally adapted by hand by a professional translator (citation TBA).
+The structure of the dataset is identical to the original. Since train and dev splits were not translated manually, we employ
+the GPT-4o model to translate the expected number of examples starting from the beginning of the respective splits.
+The final dataset size is 1,024 / 256 / 1,767 for the training, validation and test splits, respectively.
+
+Here are a few examples from the training split (note that unlike the test split these are machine translated):
+
+```json
+{
+  "text": "Ian vabatahtlikult sõi Dennise menudo pärast seda, kui oli juba kausi söönud, sest _ põlgas soolte söömist.\nVastusevariandid:\na. Ian\nb. Dennis",
+  "label": "b"
+}
+```
+```json
+{
+  "text": "Ian vabatahtlikult sõi Dennise menudo pärast seda, kui oli juba kausitäie söönud, sest _ nautis soolte söömist.\nVastusevariandid:\na. Ian\nb. Dennis", "label": "a"
+}
+```
+```json
+{
+  "text": "Ta ei tule kunagi minu koju, aga mina lähen alati tema majja, sest _ on väiksem.\nVastusevariandid:\na. kodu\nb. maja",
+  "label": "a"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+  ```
+  Sulle esitatakse lüngaga (_) tekstülesanne ja kaks vastusevarianti (a ja b).
+  ```
+- Base prompt template:
+  ```
+  Tekstülesanne: {text}
+  Vastusevariandid:
+  a. {option_a}
+  b. {option_b}
+  Vastus: {label}
+  ```
+- Instruction-tuned prompt template:
+  ```
+  Tekstülesanne: {text}
+  Vastusevariandid:
+  a. {option_a}
+  b. {option_b}
+
+  Sinu ülesanne on valida lünka sobiv vastusevariant. Vasta ainult 'a' või 'b'. Muud vastused ei ole lubatud.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+$ euroeval --model <model-id> --dataset winogrande-et
+```
