@@ -44,6 +44,7 @@ def test_cli_param_names(params: dict[str, ParamType]) -> None:
         "debug",
         "help",
         "only_allow_safetensors",
+        "download_only",
     }
 
 
@@ -75,3 +76,4 @@ def test_cli_param_types(params: dict[str, ParamType]) -> None:
     assert params["debug"] == BOOL
     assert params["help"] == BOOL
     assert params["only_allow_safetensors"] == BOOL
+    assert params["download_only"] == BOOL

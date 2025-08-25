@@ -16,7 +16,7 @@ from torch.distributed import destroy_process_group
 
 from .benchmark_config_factory import build_benchmark_config
 from .constants import GENERATIVE_DATASET_TASK_GROUPS, GENERATIVE_PIPELINE_TAGS
-from .data_loading import load_data
+from .data_loading import load_data, load_raw_data
 from .data_models import BenchmarkConfigParams, BenchmarkResult
 from .dataset_configs import get_all_dataset_configs
 from .enums import Device, ModelType
@@ -28,7 +28,7 @@ from .model_loading import load_model
 from .scores import log_scores
 from .speed_benchmark import benchmark_speed
 from .tasks import SPEED
-from .utils import enforce_reproducibility, get_package_version
+from .utils import enforce_reproducibility, get_package_version, log_once
 
 if t.TYPE_CHECKING:
     from .benchmark_modules import BenchmarkModule
@@ -82,6 +82,7 @@ class Benchmarker:
         debug: bool = False,
         run_with_cli: bool = False,
         only_allow_safetensors: bool = False,
+        download_only: bool = False,
     ) -> None:
         """Initialise the benchmarker.
 
@@ -159,6 +160,9 @@ class Benchmarker:
             only_allow_safetensors:
                 Whether to only allow models that use the safetensors format. Defaults
                 to False.
+            download_only:
+                Whether to only download models and datasets without performing any
+                benchmarking. Defaults to False.
 
         Raises:
             ValueError:
@@ -202,6 +206,7 @@ class Benchmarker:
             debug=debug,
             run_with_cli=run_with_cli,
             only_allow_safetensors=only_allow_safetensors,
+            download_only=download_only,
         )
 
         self.benchmark_config = build_benchmark_config(
@@ -227,6 +232,34 @@ class Benchmarker:
         else:
             return list()
 
+    def _download(
+        self,
+        dataset_config: "DatasetConfig",
+        model_config: "ModelConfig",
+        benchmark_config: "BenchmarkConfig",
+    ) -> None:
+        """Download data, metrics, and model for the given dataset, and model."""
+        log_once(f"Loading data for {dataset_config.name}", level=logging.INFO)
+        dataset = load_raw_data(
+            dataset_config=dataset_config, cache_dir=benchmark_config.cache_dir
+        )
+        del dataset
+        log_once(f"Loading model {model_config.model_id}", level=logging.INFO)
+        model = load_model(
+            model_config=model_config,
+            dataset_config=dataset_config,
+            benchmark_config=benchmark_config,
+        )
+        del model
+        log_once(
+            f"Loading metrics for the '{dataset_config.task.name}' task",
+            level=logging.INFO,
+        )
+        for metric_name in dataset_config.task.metrics:
+            log_once(f"Loading metric {metric_name.name}", level=logging.INFO)
+            metric = metric_name.download(cache_dir=benchmark_config.cache_dir)
+            del metric
+
     def benchmark(
         self,
         model: list[str] | str,
@@ -250,6 +283,7 @@ class Benchmarker:
         few_shot: bool | None = None,
         num_iterations: int | None = None,
         only_allow_safetensors: bool | None = None,
+        download_only: bool | None = None,
     ) -> list[BenchmarkResult]:
         """Benchmarks models on datasets.
 
@@ -330,6 +364,9 @@ class Benchmarker:
             only_allow_safetensors:
                 Whether to only allow models that use the safetensors format. Defaults
                 to the value specified when initialising the benchmarker.
+            download_only:
+                Whether to only download the models without evaluating them. Defaults
+                to the value specified when initialising the benchmarker.
 
         Returns:
             A list of benchmark results.
@@ -362,6 +399,7 @@ class Benchmarker:
             few_shot=few_shot,
             num_iterations=num_iterations,
             only_allow_safetensors=only_allow_safetensors,
+            download_only=download_only,
         )
 
         adjust_logging_level(verbose=benchmark_config.verbose)
@@ -391,6 +429,26 @@ class Benchmarker:
 
             loaded_model: BenchmarkModule | None = None
             for dataset_config in dataset_configs:
+                # Skip if the model is an encoder model and the task is generative
+                task_is_generative = (
+                    dataset_config.task.task_group in GENERATIVE_DATASET_TASK_GROUPS
+                )
+                if model_config.model_type == ModelType.ENCODER and task_is_generative:
+                    logger.debug(
+                        f"Skipping benchmarking {model_id} on "
+                        f"{dataset_config.pretty_name}, as it is an encoder model and "
+                        "the task is generative."
+                    )
+                    continue
+
+                if benchmark_config.download_only:
+                    self._download(
+                        model_config=model_config,
+                        dataset_config=dataset_config,
+                        benchmark_config=benchmark_config,
+                    )
+                    continue
+
                 # Skip if we have already benchmarked this model on this dataset and
                 # we are not forcing the benchmark
                 if not benchmark_config.force and model_has_been_benchmarked(
@@ -406,18 +464,6 @@ class Benchmarker:
                         "benchmarked."
                     )
                     num_finished_benchmarks += 1
-                    continue
-
-                # Skip if the model is an encoder model and the task is generative
-                task_is_generative = (
-                    dataset_config.task.task_group in GENERATIVE_DATASET_TASK_GROUPS
-                )
-                if model_config.model_type == ModelType.ENCODER and task_is_generative:
-                    logger.debug(
-                        f"Skipping benchmarking {model_id} on "
-                        f"{dataset_config.pretty_name}, as it is an encoder model and "
-                        "the task is generative."
-                    )
                     continue
 
                 # We do not re-initialise generative models as their architecture is not
@@ -536,6 +582,7 @@ class Benchmarker:
         debug: bool | None = None,
         run_with_cli: bool | None = None,
         only_allow_safetensors: bool | None = None,
+        download_only: bool | None = None,
     ) -> "BenchmarkConfig":
         """Get an updated benchmark configuration.
 
@@ -612,6 +659,9 @@ class Benchmarker:
             only_allow_safetensors:
                 Whether to only allow models that use the safetensors format. If None,
                 then this value will not be updated.
+            download_only:
+                Whether to only download the models without evaluating them. If None,
+                then this value will not be updated.
 
         Returns:
             The updated benchmark configuration.
@@ -668,6 +718,8 @@ class Benchmarker:
             benchmark_config_params.run_with_cli = run_with_cli
         if only_allow_safetensors is not None:
             benchmark_config_params.only_allow_safetensors = only_allow_safetensors
+        if download_only is not None:
+            benchmark_config_params.download_only = download_only
 
         return build_benchmark_config(**benchmark_config_params.model_dump())
 

@@ -8,6 +8,7 @@ from pathlib import Path
 
 import pytest
 import torch
+from pytest_socket import disable_socket
 from requests.exceptions import RequestException
 
 from euroeval.benchmarker import (
@@ -453,3 +454,63 @@ def test_prepare_dataset_configs(
 ) -> None:
     """Test that the `prepare_dataset_configs` function works as expected."""
     assert prepare_dataset_configs(dataset_names=dataset_names) == dataset_configs
+
+
+class TestNoInternetBenchmark:
+    """Tests for benchmarking models without internet."""
+
+    @pytest.fixture(autouse=True)
+    def download_assets(
+        self,
+        request: pytest.FixtureRequest,
+        benchmarker: Benchmarker,
+        task: Task,
+        language: Language,
+        encoder_model_id: str,
+        generative_model_id: str,
+    ) -> None:
+        """Download appropriate models, datasets and metrics before running a test."""
+        if "encoder" in request.node.name:
+            benchmarker.benchmark(
+                model=encoder_model_id,
+                task=task.name,
+                language=language.code,
+                download_only=True,
+            )
+        elif "generative" in request.node.name:
+            benchmarker.benchmark(
+                model=generative_model_id,
+                task=task.name,
+                language=language.code,
+                download_only=True,
+            )
+
+    def test_benchmark_encoder_no_internet(
+        self,
+        benchmarker: Benchmarker,
+        task: Task,
+        language: Language,
+        encoder_model_id: str,
+    ) -> None:
+        """Test that encoder models can be benchmarked without internet."""
+        disable_socket()
+        benchmark_result = benchmarker.benchmark(
+            model=encoder_model_id, task=task.name, language=language.code
+        )
+        assert isinstance(benchmark_result, list)
+        assert all(isinstance(result, BenchmarkResult) for result in benchmark_result)
+
+    def test_benchmark_generative_no_internet(
+        self,
+        benchmarker: Benchmarker,
+        task: Task,
+        language: Language,
+        generative_model_id: str,
+    ) -> None:
+        """Test that generative models can be benchmarked without internet."""
+        disable_socket()
+        benchmark_result = benchmarker.benchmark(
+            model=generative_model_id, task=task.name, language=language.code
+        )
+        assert isinstance(benchmark_result, list)
+        assert all(isinstance(result, BenchmarkResult) for result in benchmark_result)

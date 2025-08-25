@@ -17,7 +17,7 @@ if t.TYPE_CHECKING:
     from transformers.tokenization_utils_base import BatchEncoding
     from transformers.trainer_utils import EvalPrediction
 
-    from ..data_models import DatasetConfig, GenerativeModelOutput
+    from ..data_models import BenchmarkConfig, DatasetConfig, GenerativeModelOutput
     from ..types import Labels, Predictions
 
 
@@ -28,6 +28,7 @@ def compute_metrics(
     model_outputs_and_labels: "tuple[Predictions, Labels] | EvalPrediction",
     has_misc_tags: bool,
     dataset_config: "DatasetConfig",
+    benchmark_config: "BenchmarkConfig",
     dataset: "Dataset",
 ) -> dict[str, float]:
     """Compute the metrics needed for evaluation.
@@ -40,6 +41,8 @@ def compute_metrics(
             Whether the dataset has MISC tags.
         dataset_config:
             The configuration of the dataset.
+        benchmark_config:
+            The configuration of the benchmark.
         dataset:
             The dataset used for evaluation. This is only used in case any additional
             metadata is used to compute the metrics.
@@ -142,7 +145,10 @@ def compute_metrics(
             if metric.name == "micro_f1"
         )
         micro_f1_score = metric(
-            predictions=predictions, references=list(labels), dataset=dataset
+            predictions=predictions,
+            references=list(labels),
+            dataset=dataset,
+            cache_dir=benchmark_config.cache_dir,
         )
 
     # Compute the metrics without MISC tags
@@ -165,7 +171,10 @@ def compute_metrics(
             if metric.name == "micro_f1_no_misc"
         )
         micro_f1_no_misc_score = metric(
-            predictions=predictions_no_misc, references=labels_no_misc, dataset=dataset
+            predictions=predictions_no_misc,
+            references=labels_no_misc,
+            dataset=dataset,
+            cache_dir=benchmark_config.cache_dir,
         )
 
     # Raise error if the metrics are invalid
