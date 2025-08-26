@@ -14,15 +14,15 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   well the model's answers align with the distribution of answers across the EU, using a
   tree-based kernel density estimation. This can only be used zero-shot, and only with
   instruction-based decoder models (including reasoning models).
+- Added support for Estonian 🇪🇪 It currently includes the gold-standard sentiment
+  classification dataset Estonian Valence and the machine translated and localised
+  common-sense reasoning dataset Winogrande-et. This was contributed by @slowwavesleep
+  ✨
 
 ### Changed
 - Updated `vllm` dependency to `>=0.10.1`, which includes GPT-OSS support.
 - Updated `numpy` dependency to `>=2.0.0`, as the previous clash is not applicable
   anymore.
-- Added support for Estonian 🇪🇪 It currently includes the gold-standard
-   sentiment classification dataset Estonian Valence and the machine
-   translated and localised common-sense reasoning dataset Winogrande-et.
-   This was contributed by @slowwavesleep ✨
 
 ### Fixed
 - Now disables the `seed` parameter if the API inference model does not support it,
