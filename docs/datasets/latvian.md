@@ -274,8 +274,7 @@ $ euroeval --model <model-id> --dataset scala-lv
 ### MultiWikiQA-lv
 
 This dataset will be published in an upcoming paper, and contains Latvian Wikipedia
-articles with generated questions and answers, using the LLM Gemini-1.5-pro.
-
+articles with generated questions and answers, using the LLM [Gemini-1.5-pro](https://ai.google.dev/gemini-api/docs/models#gemini-1.5-pro).
 The original full dataset consists of 5,000 samples in a single split. We use a 1,024 /
 256 / 2,048 split for training, validation and testing, respectively, sampled randomly.
 
