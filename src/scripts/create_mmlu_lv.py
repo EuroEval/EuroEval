@@ -245,7 +245,14 @@ def process_mmlu_data(data: List[Dict[str, Any]]) -> pd.DataFrame:
 
 
 def is_repetitive(text: str) -> bool:
-    """Return True if the text is repetitive."""
+    """Return True if the text is repetitive.
+
+    Args:
+        text (str): The text to check.
+
+    Returns:
+        bool: True if the text is repetitive, False otherwise.
+    """
     if not isinstance(text, str):
         return False
     max_repetitions = max(Counter(text.split()).values()) if text.split() else 0
