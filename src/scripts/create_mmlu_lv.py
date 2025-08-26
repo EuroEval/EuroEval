@@ -29,110 +29,6 @@ from requests import HTTPError
 from sklearn.model_selection import train_test_split
 
 
-def get_mmlu_subjects_from_github() -> List[Dict[str, str]]:
-    """Get all MMLU subject files from the VTI-Data repository.
-
-    Returns:
-        List of dictionaries with subject names and download URLs.
-    """
-    api_url = "https://api.github.com/repos/LUMII-AILab/VTI-Data/contents/mmlu"
-
-    response = requests.get(api_url)
-    response.raise_for_status()
-    contents = response.json()
-
-    # Extract JSON files and their download URLs
-    json_files = [
-        {
-            "name": item["name"][:-5],  # Remove .json extension
-            "download_url": item["download_url"],
-        }
-        for item in contents
-        if item["type"] == "file"
-        and item["name"].endswith(".json")
-        and item["name"] != "LICENSE"  # Skip license file
-    ]
-
-    # Filter out the regular sociology subject, keeping only sociology_postedited
-    json_files = [f for f in json_files if f["name"] != "sociology"]
-
-    return sorted(json_files, key=lambda x: x["name"])
-
-
-def download_subject_data(subject_info: Dict[str, str]) -> List[Dict[str, Any]]:
-    """Download and parse data for a specific MMLU subject.
-
-    Args:
-        subject_info: Dictionary with subject name and download URL
-
-    Returns:
-        List of question dictionaries
-    """
-    response = requests.get(subject_info["download_url"])
-    response.raise_for_status()
-    data = response.json()
-
-    # Add subject category to each question
-    for item in data:
-        item["category"] = subject_info["name"]
-
-    return data
-
-
-def process_mmlu_data(data: List[Dict[str, Any]]) -> pd.DataFrame:
-    """Process raw MMLU data into the expected format.
-
-    Args:
-        data: List of raw question dictionaries
-
-    Returns:
-        Processed DataFrame with columns: instruction, option_a,
-            option_b, option_c, option_d, label, category
-    """
-    processed_data = []
-
-    for item in data:
-        # Handle different possible data structures
-        question = item.get("question", item.get("instruction", ""))
-        choices = item.get("choices", item.get("options", []))
-        answer = item.get("answer", item.get("correct_answer", ""))
-        category = item.get("category", "unknown")
-
-        # Ensure we have exactly 4 choices
-        if len(choices) != 4:
-            continue
-
-        # Convert answer to lowercase letter format if it's numeric
-        if isinstance(answer, int):
-            answer = ["a", "b", "c", "d"][answer]
-        elif isinstance(answer, str) and answer.isdigit():
-            answer = ["a", "b", "c", "d"][int(answer)]
-        elif isinstance(answer, str):
-            answer = answer.lower().strip()
-
-        processed_item = {
-            "instruction": question,
-            "option_a": choices[0],
-            "option_b": choices[1],
-            "option_c": choices[2],
-            "option_d": choices[3],
-            "label": answer,
-            "category": category,
-        }
-
-        processed_data.append(processed_item)
-
-    return pd.DataFrame(processed_data)
-
-
-def is_repetitive(text: str) -> bool:
-    """Return True if the text is repetitive."""
-    if not isinstance(text, str):
-        return False
-    max_repetitions = max(Counter(text.split()).values()) if text.split() else 0
-    return max_repetitions > MAX_REPETITIONS
-
-
 def main() -> None:
     """Create the MMLU-LV dataset and upload to HF Hub."""
     # Get all subject files
@@ -250,6 +146,110 @@ def main() -> None:
 
     # Push the dataset to the Hugging Face Hub
     dataset.push_to_hub(dataset_id, private=True)
+
+
+def get_mmlu_subjects_from_github() -> List[Dict[str, str]]:
+    """Get all MMLU subject files from the VTI-Data repository.
+
+    Returns:
+        List of dictionaries with subject names and download URLs.
+    """
+    api_url = "https://api.github.com/repos/LUMII-AILab/VTI-Data/contents/mmlu"
+
+    response = requests.get(api_url)
+    response.raise_for_status()
+    contents = response.json()
+
+    # Extract JSON files and their download URLs
+    json_files = [
+        {
+            "name": item["name"][:-5],  # Remove .json extension
+            "download_url": item["download_url"],
+        }
+        for item in contents
+        if item["type"] == "file"
+        and item["name"].endswith(".json")
+        and item["name"] != "LICENSE"  # Skip license file
+    ]
+
+    # Filter out the regular sociology subject, keeping only sociology_postedited
+    json_files = [f for f in json_files if f["name"] != "sociology"]
+
+    return sorted(json_files, key=lambda x: x["name"])
+
+
+def download_subject_data(subject_info: Dict[str, str]) -> List[Dict[str, Any]]:
+    """Download and parse data for a specific MMLU subject.
+
+    Args:
+        subject_info: Dictionary with subject name and download URL
+
+    Returns:
+        List of question dictionaries
+    """
+    response = requests.get(subject_info["download_url"])
+    response.raise_for_status()
+    data = response.json()
+
+    # Add subject category to each question
+    for item in data:
+        item["category"] = subject_info["name"]
+
+    return data
+
+
+def process_mmlu_data(data: List[Dict[str, Any]]) -> pd.DataFrame:
+    """Process raw MMLU data into the expected format.
+
+    Args:
+        data: List of raw question dictionaries
+
+    Returns:
+        Processed DataFrame with columns: instruction, option_a,
+            option_b, option_c, option_d, label, category
+    """
+    processed_data = []
+
+    for item in data:
+        # Handle different possible data structures
+        question = item.get("question", item.get("instruction", ""))
+        choices = item.get("choices", item.get("options", []))
+        answer = item.get("answer", item.get("correct_answer", ""))
+        category = item.get("category", "unknown")
+
+        # Ensure we have exactly 4 choices
+        if len(choices) != 4:
+            continue
+
+        # Convert answer to lowercase letter format if it's numeric
+        if isinstance(answer, int):
+            answer = ["a", "b", "c", "d"][answer]
+        elif isinstance(answer, str) and answer.isdigit():
+            answer = ["a", "b", "c", "d"][int(answer)]
+        elif isinstance(answer, str):
+            answer = answer.lower().strip()
+
+        processed_item = {
+            "instruction": question,
+            "option_a": choices[0],
+            "option_b": choices[1],
+            "option_c": choices[2],
+            "option_d": choices[3],
+            "label": answer,
+            "category": category,
+        }
+
+        processed_data.append(processed_item)
+
+    return pd.DataFrame(processed_data)
+
+
+def is_repetitive(text: str) -> bool:
+    """Return True if the text is repetitive."""
+    if not isinstance(text, str):
+        return False
+    max_repetitions = max(Counter(text.split()).values()) if text.split() else 0
+    return max_repetitions > MAX_REPETITIONS
 
 
 if __name__ == "__main__":
