@@ -6,6 +6,7 @@ from ..tasks import SPEED
 from .danish import *  # noqa: F403
 from .dutch import *  # noqa: F403
 from .english import *  # noqa: F403
+from .estonian import *  # noqa: F403
 from .faroese import *  # noqa: F403
 from .finnish import *  # noqa: F403
 from .french import *  # noqa: F403

@@ -24,11 +24,10 @@ from ..constants import (
     CUSTOM_STOP_TOKENS,
     GENERATIVE_PIPELINE_TAGS,
     MAX_CONTEXT_LENGTH,
-    MAX_LOGPROBS,
+    MAX_VLLM_LOGPROBS,
     MERGE_TAGS,
     REASONING_MAX_TOKENS,
     REASONING_TOKENS,
-    TASKS_USING_JSON,
     VLLM_BF16_MIN_CUDA_COMPUTE_CAPABILITY,
 )
 from ..data_models import GenerativeModelOutput, ModelConfig
@@ -270,7 +269,10 @@ class VLLMModel(HuggingFaceEncoderModel):
 
         if self.benchmark_config.few_shot:
             few_shot_examples = extract_few_shot_examples(
-                dataset=dataset, dataset_config=self.dataset_config, itr_idx=itr_idx
+                dataset=dataset,
+                dataset_config=self.dataset_config,
+                benchmark_config=self.benchmark_config,
+                itr_idx=itr_idx,
             )
         else:
             few_shot_examples = list()
@@ -301,6 +303,11 @@ class VLLMModel(HuggingFaceEncoderModel):
 
         Returns:
             The generated model outputs.
+
+        Raises:
+            InvalidBenchmark:
+                If the dataset requires logprobs, but we could not get the first token
+                of each label in the dataset.
         """
         # Get stopping tokens
         stop_tokens: list[str] = self.custom_stop_tokens.copy()
@@ -329,7 +336,7 @@ class VLLMModel(HuggingFaceEncoderModel):
                 stop_tokens.append(end_of_chat_token)
 
         structured_generation_schema = None
-        if self.dataset_config.task in TASKS_USING_JSON:
+        if self.dataset_config.task.uses_structured_output:
             if self.generative_type == GenerativeType.REASONING:
                 log_once(
                     f"The model {self.model_config.model_id!r} is a reasoning model "
@@ -361,6 +368,24 @@ class VLLMModel(HuggingFaceEncoderModel):
             tokenizer=self._tokenizer,
             generative_type=self.generative_type,
         )
+        if (
+            not self.buffer["first_label_token_mapping"]
+            and self.dataset_config.task.requires_logprobs
+        ):
+            raise InvalidBenchmark(
+                "The dataset requires logprobs, but we encountered an error when "
+                "trying to get the first token of each label in the dataset. You can "
+                "try running this benchmark with the --verbose flag to see what the "
+                "error was. Skipping this evaluation."
+            )
+
+        # Define the guided decoding that we will use for structured generation
+        if structured_generation_schema is not None:
+            guided_decoding = GuidedDecodingParams(json=structured_generation_schema)
+        elif self.dataset_config.task.uses_logprobs and self.dataset_config.labels:
+            guided_decoding = GuidedDecodingParams(choice=self.dataset_config.labels)
+        else:
+            guided_decoding = None
 
         # Define the parameters used for vLLM generation
         max_tokens: int = (
@@ -370,14 +395,12 @@ class VLLMModel(HuggingFaceEncoderModel):
         )
         sampling_params = SamplingParams(
             max_tokens=max_tokens,
-            logprobs=MAX_LOGPROBS if self.buffer["first_label_token_mapping"] else None,
+            logprobs=MAX_VLLM_LOGPROBS
+            if self.buffer["first_label_token_mapping"]
+            else None,
             temperature=0.0,
             stop=[stop_token for stop_token in stop_tokens if stop_token],
-            guided_decoding=(
-                GuidedDecodingParams(json=structured_generation_schema)
-                if structured_generation_schema
-                else None
-            ),
+            guided_decoding=guided_decoding,
         )
 
         # If any of the prompts are empty then we need to replace them with a BOS token

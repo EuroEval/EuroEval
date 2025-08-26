@@ -17,11 +17,14 @@ repos:
           - --fix
           - --unsafe-fixes
           - --exit-non-zero-on-fix
+          - --no-cache
         types_or:
           - python
           - pyi
           - jupyter
       - id: ruff-format
+        args:
+          - --no-cache
         types_or:
           - python
           - pyi

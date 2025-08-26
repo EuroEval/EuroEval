@@ -12,6 +12,16 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   dataset MultiWikiQA, the sentiment classification dataset Latvian Twitter Sentiment,
   the linguistic acceptability dataset ScaLA-lv, the NER dataset WikiANN-lv, the
   NER dataset FullStack-NER-lv, and the knowledge dataset MMLU-lv.
+- It is now possible to evaluate how much a model adhere to European values! 🇪🇺 This
+  probes 53 questions from the European values survey, which have been chosen based on
+  an optimisation procedure that maximises agreement across the EU. We then measure how
+  well the model's answers align with the distribution of answers across the EU, using a
+  tree-based kernel density estimation. This can only be used zero-shot, and only with
+  instruction-based decoder models (including reasoning models).
+- Added support for Estonian 🇪🇪 It currently includes the gold-standard sentiment
+  classification dataset Estonian Valence and the machine translated and localised
+  common-sense reasoning dataset Winogrande-et. This was contributed by @slowwavesleep
+  ✨
 
 ### Changed
 - Updated `vllm` dependency to `>=0.10.1`, which includes GPT-OSS support.
@@ -27,6 +37,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   vLLM model, during shutdown.
 - Now uses `litellm>=1.75.6`, which fixes an issue related to evaluation of GPT-5 models
   using Ollama.
+
+### Removed
+- Removed support for human evaluation, as it was not actively maintained and not used.
 
 
 ## [v15.16.0] - 2025-08-12

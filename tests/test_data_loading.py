@@ -89,7 +89,10 @@ def test_examples_in_official_datasets_are_not_too_long(
 
     for itr_idx in range(10):
         few_shot_examples = extract_few_shot_examples(
-            dataset=dataset, dataset_config=dataset_config, itr_idx=itr_idx
+            dataset=dataset,
+            dataset_config=dataset_config,
+            benchmark_config=benchmark_config,
+            itr_idx=itr_idx,
         )
         for instruction_model in [True, False]:
             prepared_test = dataset["test"].map(

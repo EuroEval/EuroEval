@@ -2,7 +2,7 @@
 
 from . import metrics as m
 from .data_models import Task
-from .enums import TaskGroup
+from .enums import GenerativeType, ModelType, TaskGroup
 from .prompt_templates import (
     LA_TEMPLATES,
     MULTIPLE_CHOICE_TEMPLATES,
@@ -30,6 +30,7 @@ LA = Task(
     default_num_few_shot_examples=12,
     default_max_generated_tokens=5,
     default_labels=["correct", "incorrect"],
+    uses_logprobs=True,
 )
 
 
@@ -51,6 +52,7 @@ NER = Task(
         "b-misc",
         "i-misc",
     ],
+    uses_structured_output=True,
 )
 
 
@@ -73,6 +75,7 @@ SENT = Task(
     default_num_few_shot_examples=12,
     default_max_generated_tokens=5,
     default_labels=["positive", "neutral", "negative"],
+    uses_logprobs=True,
 )
 
 
@@ -84,6 +87,7 @@ SUMM = Task(
     default_num_few_shot_examples=1,
     default_max_generated_tokens=256,
     default_labels=[],
+    allowed_model_types=[ModelType.GENERATIVE],
 )
 
 
@@ -95,6 +99,7 @@ KNOW = Task(
     default_num_few_shot_examples=5,
     default_max_generated_tokens=5,
     default_labels=["a", "b", "c", "d"],
+    uses_logprobs=True,
 )
 
 
@@ -106,6 +111,7 @@ MCRC = Task(
     default_num_few_shot_examples=5,
     default_max_generated_tokens=5,
     default_labels=["a", "b", "c", "d"],
+    uses_logprobs=True,
 )
 
 
@@ -117,6 +123,25 @@ COMMON_SENSE = Task(
     default_num_few_shot_examples=5,
     default_max_generated_tokens=5,
     default_labels=["a", "b", "c", "d"],
+    uses_logprobs=True,
+)
+
+
+EUROPEAN_VALUES = Task(
+    name="european-values",
+    task_group=TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION,
+    template_dict=MULTIPLE_CHOICE_TEMPLATES,
+    metrics=[m.european_values_metric],
+    default_num_few_shot_examples=0,
+    default_max_generated_tokens=2,
+    default_labels=["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10"],
+    allowed_model_types=[ModelType.GENERATIVE],
+    allowed_generative_types=[
+        GenerativeType.INSTRUCTION_TUNED,
+        GenerativeType.REASONING,
+    ],
+    requires_zero_shot=True,
+    uses_logprobs=True,
 )
 
 

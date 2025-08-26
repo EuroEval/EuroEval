@@ -52,7 +52,12 @@ def log_scores(
         test_se, test_se_str = metric.postprocessing_fn(test_se)
         total_dict[f"test_{metric.name}"] = test_score
         total_dict[f"test_{metric.name}_se"] = test_se
-        logger.info(f"{metric.pretty_name}: {test_score_str} ± {test_se_str}")
+        log_str = (
+            f"{metric.pretty_name}: {test_score_str} ± {test_se_str}"
+            if not np.isnan(test_se)
+            else f"{metric.pretty_name}: {test_score_str}"
+        )
+        logger.info(log_str)
 
     return dict(raw=scores, total=total_dict)
 
@@ -84,7 +89,7 @@ def aggregate_scores(
 
         if len(test_scores) > 1:
             sample_std = np.std(test_scores, ddof=1)
-            test_se = sample_std / np.sqrt(len(test_scores))
+            test_se = (sample_std / np.sqrt(len(test_scores))).item()
         else:
             test_se = np.nan
 
