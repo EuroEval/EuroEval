@@ -8,9 +8,10 @@
 # ///
 
 """Create the Estonian Winogrande dataset and upload to HF Hub."""
+
 from typing import MutableMapping
 
-from datasets import load_dataset, DatasetDict
+from datasets import DatasetDict, load_dataset
 from huggingface_hub import HfApi
 from requests import HTTPError
 
@@ -58,6 +59,15 @@ def main() -> None:
 
 
 def add_options_and_label(row: MutableMapping) -> MutableMapping:
+    """Add options to the text and transform labels to letters.
+
+    Args:
+        row:
+            A row from the dataset.
+
+    Returns:
+        A dictionary with the modified text and label.
+    """
     letter_mapping = {"1": "a", "2": "b"}
 
     original_text = row["sentence"]

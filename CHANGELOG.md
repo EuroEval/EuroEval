@@ -19,9 +19,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Updated `vllm` dependency to `>=0.10.1`, which includes GPT-OSS support.
 - Updated `numpy` dependency to `>=2.0.0`, as the previous clash is not applicable
   anymore.
-- Added support for Estonian 🇪🇪 It currently includes the gold-standard 
-   sentiment classification dataset Estonian Valence and the machine 
-   translated and localised common-sense reasoning dataset Winogrande-et. 
+- Added support for Estonian 🇪🇪 It currently includes the gold-standard
+   sentiment classification dataset Estonian Valence and the machine
+   translated and localised common-sense reasoning dataset Winogrande-et.
    This was contributed by @slowwavesleep ✨
 
 ### Fixed

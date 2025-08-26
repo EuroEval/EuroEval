@@ -2,7 +2,7 @@
 
 from ..data_models import DatasetConfig
 from ..languages import ET
-from ..tasks import SENT, COMMON_SENSE
+from ..tasks import COMMON_SENSE, SENT
 
 ### Official datasets ###
 
