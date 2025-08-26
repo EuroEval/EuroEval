@@ -343,7 +343,7 @@ $ euroeval --model <model-id> --dataset multi-wiki-qa-lv
 
 ## Knowledge
 
-### Unofficial: MMLU-lv
+### MMLU-lv
 
 This dataset is a machine translated version of the English [MMLU
 dataset](https://openreview.net/forum?id=d7KBjmI3GmQ) and features questions within 57

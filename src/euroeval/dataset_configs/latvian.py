@@ -58,5 +58,4 @@ MMLU_LV_CONFIG = DatasetConfig(
     huggingface_id="EuroEval/mmlu-lv-mini",
     task=KNOW,
     languages=[LV],
-    unofficial=True,
 )
