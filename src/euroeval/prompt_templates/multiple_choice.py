@@ -37,9 +37,11 @@ MULTIPLE_CHOICE_TEMPLATES = {
         default_prompt_label_mapping="auto",
     ),
     ET: PromptConfig(
-        default_prompt_prefix="Järgnevad on vastusevariantidega küsimused (koos vastustega).",
+        default_prompt_prefix="Järgnevad on vastusevariantidega küsimused (koos "
+        "vastustega).",
         default_prompt_template="Küsimus: {text}\nVastus: {label}",
-        default_instruction_prompt="Küsimus: {text}\n\nVõimalikud vastused: {labels_str}."
+        default_instruction_prompt="Küsimus: {text}\n\nVõimalikud vastused: "
+        "{labels_str}."
         "Muud vastused ei ole lubatud.",
         default_prompt_label_mapping="auto",
     ),
