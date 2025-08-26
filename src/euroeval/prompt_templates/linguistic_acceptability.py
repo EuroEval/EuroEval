@@ -1,7 +1,7 @@
 """Templates for the Linguistic Acceptability task."""
 
 from ..data_models import PromptConfig
-from ..languages import DA, DE, EN, ES, FI, FO, FR, IS, IT, LV, NL, NN, NO, PT, SV
+from ..languages import DA, DE, EN, ES, FI, FO, FR, IS, IT, LV, NB, NL, NN, NO, PT, SV
 
 LA_TEMPLATES = {
     DA: PromptConfig(
@@ -91,6 +91,14 @@ LA_TEMPLATES = {
         default_prompt_template="Teikums: {text}\nGramatiski pareizs: {label}",
         default_instruction_prompt="Teikums: {text}\n\nNoteiciet, vai teikums ir "
         "gramatiski pareizs vai nē. Atbildiet ar {labels_str}, un neko citu.",
+    ),
+    NB: PromptConfig(
+        default_prompt_label_mapping=dict(correct="ja", incorrect="nei"),
+        default_prompt_prefix="Følgende er setninger og hvorvidt de er grammatisk "
+        "korrekte.",
+        default_prompt_template="Setning: {text}\nGrammatisk korrekt: {label}",
+        default_instruction_prompt="Setning: {text}\n\nBestem om setningen er "
+        "grammatisk korrekt eller ikke. Svar med {labels_str}, og ikke noe annet.",
     ),
     NL: PromptConfig(
         default_prompt_label_mapping=dict(correct="ja", incorrect="nee"),
