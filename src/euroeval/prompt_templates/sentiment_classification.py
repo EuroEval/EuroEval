@@ -1,7 +1,7 @@
 """Templates for the Sentiment Analysis task."""
 
 from ..data_models import PromptConfig
-from ..languages import DA, DE, EN, ES, FI, FO, FR, IS, IT, LA, NB, NL, NN, NO, PT, SV
+from ..languages import DA, DE, EN, ES, FI, FO, FR, IS, IT, LV, NB, NL, NN, NO, PT, SV
 
 SENT_TEMPLATES = {
     DA: PromptConfig(
@@ -104,7 +104,7 @@ SENT_TEMPLATES = {
         default_instruction_prompt="Documento: {text}\n\nClassificare il sentiment del "
         "documento. Rispondere con {labels_str}, e nient'altro.",
     ),
-    LA: PromptConfig(
+    LV: PromptConfig(
         default_prompt_label_mapping=dict(
             positive="pozitīvs", neutral="neitrāls", negative="negatīvs"
         ),
