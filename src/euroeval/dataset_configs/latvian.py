@@ -4,6 +4,16 @@ from ..data_models import DatasetConfig
 from ..languages import LV
 from ..tasks import KNOW, LA, NER, RC, SENT
 
+### Official datasets ###
+
+SCALA_LV_CONFIG = DatasetConfig(
+    name="scala-lv",
+    pretty_name="the Latvian part of the linguistic acceptability dataset ScaLA",
+    huggingface_id="EuroEval/scala-lv",
+    task=LA,
+    languages=[LV],
+)
+
 MULTI_WIKI_QA_LV_CONFIG = DatasetConfig(
     name="multi-wiki-qa-lv",
     pretty_name="the truncated version of the Latvian part of the reading "
@@ -18,14 +28,6 @@ LATVIAN_TWITTER_SENTIMENT_CONFIG = DatasetConfig(
     pretty_name="the truncated version of the Latvian sentiment classification dataset",
     huggingface_id="EuroEval/latvian-twitter-sentiment-mini",
     task=SENT,
-    languages=[LV],
-)
-
-SCALA_LV_CONFIG = DatasetConfig(
-    name="scala-lv",
-    pretty_name="the Latvian part of the linguistic acceptability dataset ScaLA",
-    huggingface_id="EuroEval/scala-lv",
-    task=LA,
     languages=[LV],
 )
 
