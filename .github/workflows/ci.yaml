@@ -30,10 +30,10 @@ jobs:
           python-version: "3.11"
       - run: python -m pip install pre-commit
         shell: bash
-      - run: ruff clean
-        shell: bash
       - run: pre-commit run --show-diff-on-failure --color=always --all-files
         shell: bash
+      - name: Clear ruff cache
+        run: ruff clean
 
   pytest-linux:
     if: github.event.pull_request.draft == false
