@@ -83,7 +83,11 @@ def parse_conllu_data(raw_data: str) -> List[Dict[str, Union[List[str], str]]]:
 
 
 def load_fullstack_data() -> List[Dict[str, Union[List[str], str]]]:
-    """Load and parse all FullStack NER data from the local directory."""
+    """Load and parse all FullStack NER data from the local directory.
+
+    Returns:
+        List[Dict[str, Union[List[str], str]]]: A list of sentence records.
+    """
     # Path to the local data directory
     data_dir = "../FullStack/NamedEntities/data"
     if not os.path.exists(data_dir):
