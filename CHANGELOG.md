@@ -11,9 +11,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Updated `vllm` dependency to `>=0.10.1`, which includes GPT-OSS support.
 - Updated `numpy` dependency to `>=2.0.0`, as the previous clash is not applicable
   anymore.
-- Added support for Estonian 🇪🇪 It currently includes the gold-standard Estonian Valence
-  sentiment classification dataset. The split is given by 1,024 / 256 / 2,048 samples
-  for train / val / test, respectively. This was contributed by @slowwavesleep ✨
+- Added support for Estonian 🇪🇪 It currently includes the gold-standard 
+   sentiment classification dataset Estonian Valence and the machine 
+   translated and localised common-sense reasoning dataset Winogrande-et. 
+   This was contributed by @slowwavesleep ✨
 
 ### Fixed
 - Now disables the `seed` parameter if the API inference model does not support it,

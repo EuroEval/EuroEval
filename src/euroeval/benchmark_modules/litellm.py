@@ -403,7 +403,7 @@ class LiteLLMModel(BenchmarkModule):
             r"[0-9]+ and ([0-9]+)\."
         )
         requires_thinking_disabled_messages = ["thinking.type: Field required"]
-        seed_messages = ["does not support parameters: ['seed']"]
+        seed_pattern = re.compile(r"does not support parameter.*'seed'")
 
         if any(msg.lower() in error_msg for msg in stop_messages):
             log_once(
@@ -496,7 +496,7 @@ class LiteLLMModel(BenchmarkModule):
             )
             generation_kwargs["thinking"] = dict(type="disabled")
             return
-        elif any(msg.lower() in error_msg for msg in seed_messages):
+        elif re.search(pattern=seed_pattern, string=error_msg):
             log_once(
                 f"The model {model_id!r} does not support the `seed` parameter, so "
                 "disabling it.",
