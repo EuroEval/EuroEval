@@ -22,7 +22,14 @@ from requests import HTTPError
 
 
 def parse_conllu_data(raw_data: str) -> List[Dict[str, Union[List[str], str]]]:
-    """Parse CoNLL-U format data and return a list of sentence records."""
+    """Parse CoNLL-U format data and return a list of sentence records.
+
+    Args:
+        raw_data (str): The raw data in CoNLL-U format.
+
+    Returns:
+        List[Dict[str, Union[List[str], str]]]: A list of sentence records.
+    """
     records = []
     lines = raw_data.strip().split("\n")
 
