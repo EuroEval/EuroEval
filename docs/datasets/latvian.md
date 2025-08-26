@@ -69,7 +69,7 @@ $ euroeval --model <model-id> --dataset latvian-twitter-sentiment
 
 ### FullStack-NER-lv
 
-This dataset was published in [this paper](https://aclanthology.org/L18-1714/) and is part of a multilayered syntactically and semantically annotated text corpus for Latvian.
+This dataset was published in [this paper](https://aclanthology.org/L18-1714/) and is part of a multilayered syntactically and semantically annotated text corpus for Latvian. The corpus text sources include approximately 60% news, 20% fiction, 10% legal texts, 5% spoken language transcripts, and 5% miscellaneous content from a balanced 10-million-word corpus.
 
 The original full dataset consists of 11,425 samples. We use 1,024 / 256 / 2,048 samples for our
 training, validation and test splits, respectively.
