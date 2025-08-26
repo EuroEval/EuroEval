@@ -37,6 +37,15 @@ FULLSTACK_NER_LV_CONFIG = DatasetConfig(
     languages=[LV],
 )
 
+MMLU_LV_CONFIG = DatasetConfig(
+    name="mmlu-lv",
+    pretty_name="the truncated version of the Latvian knowledge dataset MMLU-lv, "
+    "translated from the English MMLU dataset",
+    huggingface_id="EuroEval/mmlu-lv-mini",
+    task=KNOW,
+    languages=[LV],
+)
+
 
 ### Unofficial datasets ###
 
@@ -48,13 +57,4 @@ WIKIANN_LV_CONFIG = DatasetConfig(
     task=NER,
     languages=[LV],
     unofficial=True,
-)
-
-MMLU_LV_CONFIG = DatasetConfig(
-    name="mmlu-lv",
-    pretty_name="the truncated version of the Latvian knowledge dataset MMLU-lv, "
-    "translated from the English MMLU dataset",
-    huggingface_id="EuroEval/mmlu-lv-mini",
-    task=KNOW,
-    languages=[LV],
 )
