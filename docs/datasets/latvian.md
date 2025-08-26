@@ -271,7 +271,6 @@ $ euroeval --model <model-id> --dataset scala-lv
 
 ## Reading Comprehension
 
-
 ### Unofficial: MultiWikiQA-lv
 
 This dataset will be published in an upcoming paper, and contains Latvian Wikipedia
