@@ -13,7 +13,6 @@ MULTI_WIKI_QA_LV_CONFIG = DatasetConfig(
     languages=[LV],
 )
 
-
 LATVIAN_TWITTER_SENTIMENT_CONFIG = DatasetConfig(
     name="latvian-twitter-sentiment",
     pretty_name="the truncated version of the Latvian sentiment classification dataset",
