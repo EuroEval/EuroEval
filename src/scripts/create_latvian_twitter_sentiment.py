@@ -45,7 +45,14 @@ def main() -> None:
     test_df["label"] = test_df["label"].map(label_mapping)
 
     def filter_by_length(df: pd.DataFrame) -> pd.DataFrame:
-        """Filter dataframe by text length."""
+        """Filter dataframe by text length.
+
+        Args:
+            df (pd.DataFrame): The dataframe to filter.
+
+        Returns:
+            pd.DataFrame: The filtered dataframe.
+        """
         new_df = df.copy()
         new_df["text_len"] = new_df.text.str.len()
         return new_df.query("text_len >= @MIN_NUM_CHARS_IN_DOCUMENT").query(
