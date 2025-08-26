@@ -403,7 +403,7 @@ class LiteLLMModel(BenchmarkModule):
             r"[0-9]+ and ([0-9]+)\."
         )
         requires_thinking_disabled_messages = ["thinking.type: Field required"]
-        seed_pattern = re.compile(r"does not support parameter.*'seed'")
+        seed_pattern = re.compile(r"does not support parameters: \[.*'seed'.*\]")
 
         if any(msg.lower() in error_msg for msg in stop_messages):
             log_once(
