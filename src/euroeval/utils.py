@@ -101,47 +101,54 @@ def block_terminal_output() -> None:
         "scalars; will instead unsqueeze and return a vector.",
     )
     warnings.filterwarnings("ignore", module="seqeval*")
-
-    # Up the logging level, to disable outputs
-    logging.getLogger("filelock").setLevel(logging.CRITICAL)
     logging.getLogger("absl").setLevel(logging.CRITICAL)
-    logging.getLogger("datasets").setLevel(logging.CRITICAL)
-    logging.getLogger("openai").setLevel(logging.CRITICAL)
+
+    # Disable matplotlib logging
+    logging.getLogger("matplotlib.font_manager").setLevel(logging.CRITICAL)
+
+    # Disable PyTorch logging
     logging.getLogger("torch.distributed.distributed_c10d").setLevel(logging.CRITICAL)
     logging.getLogger("torch.nn.parallel.distributed").setLevel(logging.CRITICAL)
+
+    # Disable huggingface_hub logging
+    logging.getLogger("huggingface_hub").setLevel(logging.CRITICAL)
+
+    # Disable LiteLLM logging
+    logging.getLogger("LiteLLM").setLevel(logging.CRITICAL)
+    logging.getLogger("LiteLLM Router").setLevel(logging.CRITICAL)
+    logging.getLogger("LiteLLM Proxy").setLevel(logging.CRITICAL)
+    logging.getLogger("openai").setLevel(logging.CRITICAL)
+    logging.getLogger("httpx").setLevel(logging.CRITICAL)
+    litellm.suppress_debug_info = True
+
+    # Disable vLLM logging
     logging.getLogger("vllm").setLevel(logging.CRITICAL)
     logging.getLogger("vllm.engine.llm_engine").setLevel(logging.CRITICAL)
     logging.getLogger("vllm.transformers_utils.tokenizer").setLevel(logging.CRITICAL)
     logging.getLogger("vllm.core.scheduler").setLevel(logging.CRITICAL)
     logging.getLogger("vllm.model_executor.weight_utils").setLevel(logging.CRITICAL)
     logging.getLogger("vllm.platforms").setLevel(logging.CRITICAL)
-    logging.getLogger("httpx").setLevel(logging.CRITICAL)
-    logging.getLogger("ray._private.worker").setLevel(logging.CRITICAL)
-    logging.getLogger("ray._private.services").setLevel(logging.CRITICAL)
-    logging.getLogger("matplotlib.font_manager").setLevel(logging.CRITICAL)
-    logging.getLogger("accelerate").setLevel(logging.CRITICAL)
-    logging.getLogger("LiteLLM").setLevel(logging.CRITICAL)
-    logging.getLogger("LiteLLM Router").setLevel(logging.CRITICAL)
-    logging.getLogger("LiteLLM Proxy").setLevel(logging.CRITICAL)
-    logging.getLogger("huggingface_hub").setLevel(logging.CRITICAL)
-
-    # This suppresses vLLM logging
     os.environ["LOG_LEVEL"] = "CRITICAL"
     os.environ["VLLM_CONFIGURE_LOGGING"] = "0"
 
+    # Disable ray logging
+    logging.getLogger("ray._private.worker").setLevel(logging.CRITICAL)
+    logging.getLogger("ray._private.services").setLevel(logging.CRITICAL)
+    logging.getLogger("ray.dag.compiled_dag_node").setLevel(logging.CRITICAL)
+    logging.getLogger("logging.cc").setLevel(logging.CRITICAL)
     if importlib.util.find_spec("ray") is not None:
         ray._private.worker._worker_logs_enabled = False
 
-    # Disable the tokeniser progress bars
+    # Disable datasets logging
+    logging.getLogger("datasets").setLevel(logging.CRITICAL)
+    logging.getLogger("filelock").setLevel(logging.CRITICAL)
     disable_progress_bar()
 
     # Disable most of the `transformers` logging
     tf_logging._default_log_level = logging.CRITICAL
     tf_logging.set_verbosity(logging.CRITICAL)
     logging.getLogger("transformers.trainer").setLevel(logging.CRITICAL)
-
-    # Disable logging from `litellm`
-    litellm.suppress_debug_info = True
+    logging.getLogger("accelerate").setLevel(logging.CRITICAL)
 
 
 def get_class_by_name(class_name: str | list[str], module_name: str) -> t.Type | None:

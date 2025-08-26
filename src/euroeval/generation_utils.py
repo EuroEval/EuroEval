@@ -63,12 +63,19 @@ def extract_few_shot_examples(
 
             shuffled_train = train_with_short_examples.shuffle(seed=random_seed)
             labels = it.cycle(dataset_config.labels)
+            labels_with_no_samples: set[str] = set()
             while len(few_shot_examples) < num_few_shots and len(shuffled_train) > 0:
+                if len(labels_with_no_samples) == len(dataset_config.labels):
+                    raise InvalidBenchmark(
+                        "Could not find enough examples for few-shot learning. "
+                        "Please check the dataset and the labels."
+                    )
                 label = next(labels)
                 possible_examples = shuffled_train.filter(
                     lambda x: x["label"].lower() == label.lower()
                 )
                 if len(possible_examples) == 0:
+                    labels_with_no_samples.add(label)
                     continue
                 example = possible_examples.select(range(1))[0]
                 few_shot_examples.append(example)

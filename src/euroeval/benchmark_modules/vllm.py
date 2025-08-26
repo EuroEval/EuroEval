@@ -168,8 +168,11 @@ class VLLMModel(HuggingFaceEncoderModel):
 
     def __del__(self) -> None:
         """Clean up the model and tokenizer."""
-        if importlib.util.find_spec("vllm") is not None:
-            clear_vllm()
+        try:
+            if importlib.util.find_spec("vllm") is not None:
+                clear_vllm()
+        except ImportError:
+            pass
         if hasattr(self, "_model"):
             del self._model
         if hasattr(self, "_tokenizer"):

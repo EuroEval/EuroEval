@@ -13,7 +13,7 @@ requires-python = ">=3.10,<4.0"
 dependencies = [
     "torch>=2.6.0",
     "pandas>=2.2.0",
-    "numpy>=1.23.0,<2.0.0",
+    "numpy>=2.0.0",
     "transformers>=4.55.0",
     "accelerate>=1.9.0",
     "evaluate>=0.4.1",
@@ -29,7 +29,7 @@ dependencies = [
     "sacremoses>=0.1.1",
     "more-itertools>=10.5.0",
     "tenacity>=9.0.0",
-    "litellm>=1.72.2",
+    "litellm>=1.75.6",
     "rouge-score>=0.1.2",
     "bert-score>=0.3.13",
     "levenshtein>=0.24.0",
@@ -44,7 +44,7 @@ dependencies = [
 [project.optional-dependencies]
 generative = [
     "bitsandbytes>=0.43.1; platform_system == 'Linux'",
-    "vllm>=0.10.0; platform_system == 'Linux'",
+    "vllm>=0.10.1; platform_system == 'Linux'",
     "fbgemm-gpu>=1.0.0; platform_system == 'Linux'",
 ]
 human_evaluation = [
@@ -52,7 +52,7 @@ human_evaluation = [
 ]
 all = [
     "bitsandbytes>=0.43.1; platform_system == 'Linux'",
-    "vllm>=0.10.0; platform_system == 'Linux'",
+    "vllm>=0.10.1; platform_system == 'Linux'",
     "fbgemm-gpu>=1.0.0; platform_system == 'Linux'",
     "gradio>=4.26.0",
 ]

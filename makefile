@@ -73,7 +73,7 @@ publish-docs:  ## Publish documentation to GitHub Pages
 	@echo "Updated documentation website: https://euroeval.com/"
 
 test:  ## Run tests
-	@uv run pytest && uv run readme-cov
+	@uv run pytest && uv run readme-cov && rm .coverage*
 
 tree:  ## Print directory tree
 	@tree -a --gitignore -I .git .

@@ -403,6 +403,7 @@ class LiteLLMModel(BenchmarkModule):
             r"[0-9]+ and ([0-9]+)\."
         )
         requires_thinking_disabled_messages = ["thinking.type: Field required"]
+        seed_messages = ["does not support parameters: ['seed']"]
 
         if any(msg.lower() in error_msg for msg in stop_messages):
             log_once(
@@ -495,6 +496,14 @@ class LiteLLMModel(BenchmarkModule):
             )
             generation_kwargs["thinking"] = dict(type="disabled")
             return
+        elif any(msg.lower() in error_msg for msg in seed_messages):
+            log_once(
+                f"The model {model_id!r} does not support the `seed` parameter, so "
+                "disabling it.",
+                level=logging.DEBUG,
+            )
+            generation_kwargs.pop("seed", None)
+            return
         elif isinstance(
             error, (Timeout, ServiceUnavailableError, InternalServerError, SystemError)
         ):
@@ -529,6 +538,12 @@ class LiteLLMModel(BenchmarkModule):
                 )
             raise InvalidBenchmark(
                 f"Encountered {type(error)} during generation: {error}."
+            )
+
+        if isinstance(error, NotFoundError):
+            raise InvalidModel(
+                f"The model {model_id!r} was not found. Please check the model ID "
+                "and try again."
             )
 
         if isinstance(error, RateLimitError):

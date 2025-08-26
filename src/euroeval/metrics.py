@@ -448,8 +448,8 @@ class Fluency(BaseModel):
 fluency_metric = LLMAsAJudgeMetric(
     name="fluency",
     pretty_name="Fluency",
-    judge_id="gpt-4o-mini",
-    judge_kwargs=dict(temperature=0.0),
+    judge_id="gpt-5-2025-08-07",
+    judge_kwargs=dict(temperature=1.0),
     user_prompt="Please rate the fluency of the following text on a scale from 1 to 5, "
     "with the following definitions:\n"
     "- 1: Very poor fluency, many grammatical errors\n"
