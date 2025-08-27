@@ -543,9 +543,30 @@ accuracy_metric = HuggingFaceMetric(
 
 
 def european_values_preprocessing_fn(predictions: c.Sequence[int]) -> c.Sequence[int]:
-    """Preprocess the model predictions for the European Values metric."""
+    """Preprocess the model predictions for the European Values metric.
+
+    Args:
+        predictions:
+            The model predictions, a sequence of integers representing the predicted
+            choices for each question.
+
+    Returns:
+        The preprocessed model predictions, a sequence of integers representing the
+        final predicted choices for each question after any necessary aggregation and
+        mapping.
+
+    Raises:
+        AssertionError:
+            If the number of predictions is not a multiple of 53, which is required
+            for the European Values metric.
+    """
     num_questions = 53
     num_phrasings_per_question = 5
+
+    assert len(predictions) % num_questions == 0, (
+        f"The number of predictions ({len(predictions)}) is not a multiple of "
+        f"{num_questions}, which is required for the European Values metric."
+    )
 
     # When we are using the situational version of the dataset, there are 5 phrasings
     # for each question, so we need to aggregate the predictions by question, which we
