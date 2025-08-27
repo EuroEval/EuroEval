@@ -660,7 +660,15 @@ class LiteLLMModel(BenchmarkModule):
                 generation_dct = json.loads(generation_output)
                 assert isinstance(generation_dct, dict)
                 if len(generation_dct) == 1:
-                    generation_output = next(iter(generation_dct.values()))
+                    first_value = next(iter(generation_dct.values()))
+                    if not isinstance(first_value, str):
+                        raise InvalidBenchmark(
+                            "The model output a JSON dictionary with a single key, but "
+                            "the value is not a string. This is not supported. Please "
+                            "report this issue on "
+                            "https://github.com/EuroEval/EuroEval/issues. Here is "
+                            f"the full dictionary that was generated: {generation_dct}"
+                        )
                 else:
                     raise InvalidBenchmark(
                         "The model output a JSON dictionary with multiple keys, which "
@@ -694,6 +702,7 @@ class LiteLLMModel(BenchmarkModule):
                             for lst in logprobs_list
                             if (
                                 lst
+                                and lst[0]
                                 and (token := lst[0][0].strip(JSON_STRIP_CHARACTERS))
                                 and not key_name.startswith(token)
                             )
