@@ -113,7 +113,7 @@ def prepare_examples(
     choice_idxs = [
         idx
         for idx, section in enumerate(sections)
-        if re.match(pattern=r"^[a-e]\. ", string=section) is not None
+        if re.match(pattern=r"^[a-z0-9]+\. ", string=section) is not None
     ]
     choices = [sections[idx] for idx in choice_idxs]
 

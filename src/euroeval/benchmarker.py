@@ -15,7 +15,7 @@ from huggingface_hub.constants import HF_HUB_ENABLE_HF_TRANSFER
 from torch.distributed import destroy_process_group
 
 from .benchmark_config_factory import build_benchmark_config
-from .constants import GENERATIVE_DATASET_TASK_GROUPS, GENERATIVE_PIPELINE_TAGS
+from .constants import GENERATIVE_PIPELINE_TAGS
 from .data_loading import load_data
 from .data_models import BenchmarkConfigParams, BenchmarkResult
 from .dataset_configs import get_all_dataset_configs
@@ -430,15 +430,14 @@ class Benchmarker:
                     num_finished_benchmarks += 1
                     continue
 
-                # Skip if the model is an encoder model and the task is generative
-                task_is_generative = (
-                    dataset_config.task.task_group in GENERATIVE_DATASET_TASK_GROUPS
-                )
-                if model_config.model_type == ModelType.ENCODER and task_is_generative:
+                # Skip if the model type should not be benchmarked on this dataset
+                model_type = model_config.model_type
+                allowed_model_types = dataset_config.task.allowed_model_types
+                if model_type not in allowed_model_types:
                     logger.debug(
                         f"Skipping benchmarking {model_id} on "
-                        f"{dataset_config.pretty_name}, as it is an encoder model and "
-                        "the task is generative."
+                        f"{dataset_config.pretty_name}, as it is of type {model_type}, "
+                        f"and the only allowed model types are {allowed_model_types}."
                     )
                     continue
 

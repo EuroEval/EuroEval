@@ -376,39 +376,20 @@ class HuggingFaceEncoderModel(BenchmarkModule):
 
             case TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION:
                 dataset = DatasetDict(
-                    train=dataset["train"].map(
-                        partial(
-                            multiple_choice_classification.prepare_examples,
-                            tokenizer=self._tokenizer,
-                        ),
-                        batched=True,
-                        batch_size=10,
-                        remove_columns=dataset["train"].column_names,
-                        load_from_cache_file=False,
-                        keep_in_memory=True,
-                    ),
-                    val=dataset["val"].map(
-                        partial(
-                            multiple_choice_classification.prepare_examples,
-                            tokenizer=self._tokenizer,
-                        ),
-                        batched=True,
-                        batch_size=10,
-                        remove_columns=dataset["val"].column_names,
-                        load_from_cache_file=False,
-                        keep_in_memory=True,
-                    ),
-                    test=dataset["test"].map(
-                        partial(
-                            multiple_choice_classification.prepare_examples,
-                            tokenizer=self._tokenizer,
-                        ),
-                        batched=True,
-                        batch_size=10,
-                        remove_columns=dataset["test"].column_names,
-                        load_from_cache_file=False,
-                        keep_in_memory=True,
-                    ),
+                    {
+                        split_name: split.map(
+                            partial(
+                                multiple_choice_classification.prepare_examples,
+                                tokenizer=self._tokenizer,
+                            ),
+                            batched=True,
+                            batch_size=10,
+                            remove_columns=split.column_names,
+                            load_from_cache_file=False,
+                            keep_in_memory=True,
+                        )
+                        for split_name, split in dataset.items()
+                    }
                 )
 
             case TaskGroup.TEXT_TO_TEXT:
@@ -432,43 +413,44 @@ class HuggingFaceEncoderModel(BenchmarkModule):
                 )
 
             case TaskGroup.QUESTION_ANSWERING:
-                dataset = DatasetDict(
-                    dict(
-                        train=dataset["train"].map(
-                            partial(
-                                question_answering.prepare_train_examples,
-                                tokenizer=self._tokenizer,
-                            ),
-                            batched=True,
-                            batch_size=10,
-                            remove_columns=dataset["test"].column_names,
-                            load_from_cache_file=False,
-                            keep_in_memory=True,
+                data_dict = dict()
+                if "train" in dataset:
+                    data_dict["train"] = dataset["train"].map(
+                        partial(
+                            question_answering.prepare_train_examples,
+                            tokenizer=self._tokenizer,
                         ),
-                        val=dataset["val"].map(
-                            partial(
-                                question_answering.prepare_train_examples,
-                                tokenizer=self._tokenizer,
-                            ),
-                            batched=True,
-                            batch_size=10,
-                            remove_columns=dataset["test"].column_names,
-                            load_from_cache_file=False,
-                            keep_in_memory=True,
-                        ),
-                        test=dataset["test"].map(
-                            partial(
-                                question_answering.prepare_test_examples,
-                                tokenizer=self._tokenizer,
-                            ),
-                            batched=True,
-                            batch_size=10,
-                            remove_columns=dataset["test"].column_names,
-                            load_from_cache_file=False,
-                            keep_in_memory=True,
-                        ),
+                        batched=True,
+                        batch_size=10,
+                        remove_columns=dataset["test"].column_names,
+                        load_from_cache_file=False,
+                        keep_in_memory=True,
                     )
-                )
+                if "val" in dataset:
+                    data_dict["val"] = dataset["val"].map(
+                        partial(
+                            question_answering.prepare_train_examples,
+                            tokenizer=self._tokenizer,
+                        ),
+                        batched=True,
+                        batch_size=10,
+                        remove_columns=dataset["test"].column_names,
+                        load_from_cache_file=False,
+                        keep_in_memory=True,
+                    )
+                if "test" in dataset:
+                    data_dict["test"] = dataset["test"].map(
+                        partial(
+                            question_answering.prepare_test_examples,
+                            tokenizer=self._tokenizer,
+                        ),
+                        batched=True,
+                        batch_size=10,
+                        remove_columns=dataset["test"].column_names,
+                        load_from_cache_file=False,
+                        keep_in_memory=True,
+                    )
+                dataset = DatasetDict(data_dict)
 
                 # The Trainer hides the columns that are not used by the model (here
                 # `id` and `offset_mapping` which we will need for our post-processing),
