@@ -71,3 +71,7 @@ CUSTOM_STOP_TOKENS = ["<sep>"]
 # single key and the values being restricted to the allowed labels. This is the key we
 # use
 LITELLM_CLASSIFICATION_OUTPUT_KEY = "label"
+
+
+# These characters are stripped from JSON output when trying to identify the label
+JSON_STRIP_CHARACTERS = ' {}\n\r":'

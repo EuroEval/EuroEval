@@ -40,6 +40,7 @@ from tqdm.asyncio import tqdm as tqdm_async
 from tqdm.auto import tqdm
 
 from ..constants import (
+    JSON_STRIP_CHARACTERS,
     LITELLM_CLASSIFICATION_OUTPUT_KEY,
     MAX_LITELLM_LOGPROBS,
     REASONING_MAX_TOKENS,
@@ -693,7 +694,7 @@ class LiteLLMModel(BenchmarkModule):
                             for lst in logprobs_list
                             if (
                                 lst
-                                and (token := lst[0][0].strip(' {}\n\r":'))
+                                and (token := lst[0][0].strip(JSON_STRIP_CHARACTERS))
                                 and not key_name.startswith(token)
                             )
                         ]
