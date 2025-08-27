@@ -22,18 +22,15 @@ jobs:
       pull-requests: write
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           persist-credentials: false
+          ref: main
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - run: python -m pip install pre-commit
-        shell: bash
-      - run: pre-commit run --show-diff-on-failure --color=always --all-files
-        shell: bash
-      - name: Clear ruff cache
-        run: ruff clean
+      - name: Run pre-commit hooks
+        uses: pre-commit/action@v3.0.1
 
   pytest-linux:
     if: github.event.pull_request.draft == false
@@ -42,15 +39,16 @@ jobs:
       pull-requests: write
     strategy:
         matrix:
-            python-version: ["3.10", "3.11", "3.12"]
+            python-version: ["3.11", "3.12", "3.13"]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           persist-credentials: false
+          ref: main
 
       - name: Install uv and set up Python
-        uses: astral-sh/setup-uv@v5
+        uses: astral-sh/setup-uv@v6
         with:
           enable-cache: false
           python-version: ${{ matrix.python-version }}
@@ -81,10 +79,13 @@ jobs:
       pull-requests: write
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+          ref: main
 
       - name: Install uv and set up Python
-        uses: astral-sh/setup-uv@v4
+        uses: astral-sh/setup-uv@v6
         with:
           python-version: ${{ matrix.python-version }}
 

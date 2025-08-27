@@ -2,6 +2,7 @@
 
 import asyncio
 import collections.abc as c
+import json
 import logging
 import os
 import re
@@ -38,7 +39,12 @@ from requests.exceptions import RequestException
 from tqdm.asyncio import tqdm as tqdm_async
 from tqdm.auto import tqdm
 
-from ..constants import MAX_LITELLM_LOGPROBS, REASONING_MAX_TOKENS
+from ..constants import (
+    JSON_STRIP_CHARACTERS,
+    LITELLM_CLASSIFICATION_OUTPUT_KEY,
+    MAX_LITELLM_LOGPROBS,
+    REASONING_MAX_TOKENS,
+)
 from ..data_models import (
     BenchmarkConfig,
     DatasetConfig,
@@ -275,28 +281,6 @@ class LiteLLMModel(BenchmarkModule):
             generative_type=self.generative_type,
         )
 
-        # Sanity check that "JSON" is included in the prompt, as some models require
-        # this
-        if self.dataset_config.task.uses_structured_output:
-            for conversation in conversations:
-                if not conversation:
-                    raise InvalidBenchmark(
-                        "Encountered an empty conversation in 'messages'."
-                    )
-                last_message = conversation[-1]
-                assert isinstance(last_message, dict), (
-                    f"Expected dict message, got {type(last_message)}"
-                )
-                assert "content" in last_message, (
-                    "Expected 'content' key in the last message of the conversation."
-                )
-                assert isinstance(last_message["content"], str), (
-                    "Expected 'content' to be a string."
-                )
-                assert "json" in last_message["content"].lower(), (
-                    "Prompt must contain 'json' for JSON tasks."
-                )
-
         all_responses: dict[int, "ModelResponse"] = {}
         conversations_to_run: list[tuple[int, list[litellm.AllMessageValues]]] = list(
             enumerate(conversations)
@@ -512,6 +496,14 @@ class LiteLLMModel(BenchmarkModule):
             )
             generation_kwargs.pop("seed", None)
             return
+        # If there are too many I/O connections, we increase the number of allowed file
+        # descriptors
+        if "too many open files" in error_msg:
+            raise InvalidBenchmark(
+                "There are too many file descriptors running. See the current "
+                "value by running `ulimit -n`. Try increasing it by running "
+                "`ulimit -n <new-value>` and try again."
+            )
         elif isinstance(
             error, (Timeout, ServiceUnavailableError, InternalServerError, SystemError)
         ):
@@ -536,14 +528,6 @@ class LiteLLMModel(BenchmarkModule):
                     "Skipping this model."
                 )
         elif isinstance(error, (APIConnectionError, OSError)):
-            # If there are too many I/O connections, we increase the number of allowed
-            # file descriptors
-            if "too many open files" in error_msg:
-                raise InvalidBenchmark(
-                    "There are too many file descriptors running. See the current "
-                    "value by running `ulimit -n`. Try increasing it by running "
-                    "`ulimit -n <new-value>` and try again."
-                )
             raise InvalidBenchmark(
                 f"Encountered {type(error)} during generation: {error}."
             )
@@ -668,6 +652,33 @@ class LiteLLMModel(BenchmarkModule):
             generation_output = generated_message.content or ""
             generation_output = generation_output.strip()
 
+            # In the case where we're dealing with a classification task, the model is
+            # outputting a JSON dictionary, so we will extract the generated text from
+            # within the dictionary
+            generation_dct: dict[str, t.Any] | None = None
+            try:
+                generation_dct = json.loads(generation_output)
+                assert isinstance(generation_dct, dict)
+                if len(generation_dct) == 1:
+                    first_value = next(iter(generation_dct.values()))
+                    if not isinstance(first_value, str):
+                        raise InvalidBenchmark(
+                            "The model output a JSON dictionary with a single key, but "
+                            "the value is not a string. This is not supported. Please "
+                            "report this issue on "
+                            "https://github.com/EuroEval/EuroEval/issues. Here is "
+                            f"the full dictionary that was generated: {generation_dct}"
+                        )
+                else:
+                    raise InvalidBenchmark(
+                        "The model output a JSON dictionary with multiple keys, which "
+                        "is not supported. Please report this issue on "
+                        "https://github.com/EuroEval/EuroEval/issues. Here is the "
+                        f"full dictionary that was generated: {generation_dct}"
+                    )
+            except json.JSONDecodeError:
+                pass
+
             # Structure the model output as a GenerativeModelOutput object
             sequences.append(generation_output)
             if hasattr(model_response_choices, "logprobs"):
@@ -680,6 +691,23 @@ class LiteLLMModel(BenchmarkModule):
                         ]
                         for content in model_response_choices.logprobs.content or list()
                     ]
+
+                    # If the model outputted a JSON dictionary, we need to find the
+                    # token index of the value within the dictionary, rather than the
+                    # first token of the entire output
+                    if generation_dct:
+                        key_name = next(iter(generation_dct.keys()))
+                        logprobs_list = [
+                            lst
+                            for lst in logprobs_list
+                            if (
+                                lst
+                                and lst[0]
+                                and (token := lst[0][0].strip(JSON_STRIP_CHARACTERS))
+                                and not key_name.startswith(token)
+                            )
+                        ]
+
                     scores.append(logprobs_list)
                 else:
                     log_once(
@@ -1256,6 +1284,15 @@ class LiteLLMModel(BenchmarkModule):
                     "the model does not support schemas.",
                     level=logging.DEBUG,
                 )
+        elif self.dataset_config.task.uses_logprobs and self.dataset_config.labels:
+            keys_and_their_types = {
+                LITELLM_CLASSIFICATION_OUTPUT_KEY: (
+                    t.Literal[*self.dataset_config.labels],
+                    ...,
+                )
+            }
+            pydantic_class = create_model("AnswerFormat", **keys_and_their_types)
+            generation_kwargs["response_format"] = pydantic_class
 
         # If the model is an Ollama reasoning model, we ensure that thinking is enabled
         if self.is_ollama and self.generative_type == GenerativeType.REASONING:
