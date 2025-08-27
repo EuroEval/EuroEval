@@ -65,3 +65,9 @@ REASONING_TOKENS = [
 # manually. We only use them as stop tokens if they actually appear in the model's
 # output
 CUSTOM_STOP_TOKENS = ["<sep>"]
+
+
+# For classification tasks we force LiteLLM models to output a JSON dictionary with a
+# single key and the values being restricted to the allowed labels. This is the key we
+# use
+LITELLM_CLASSIFICATION_OUTPUT_KEY = "label"

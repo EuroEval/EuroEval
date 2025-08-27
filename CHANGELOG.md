@@ -20,9 +20,15 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   ✨
 
 ### Changed
+- When evaluating classification tasks, we now force the model to output one of the
+  labels. This is done directly with open models, and done via a JSON schema for API
+  models. This won't change the results for existing tasks, as logprobs are used, but
+  this was required to measure the European values.
 - Updated `vllm` dependency to `>=0.10.1`, which includes GPT-OSS support.
 - Updated `numpy` dependency to `>=2.0.0`, as the previous clash is not applicable
   anymore.
+- Now requires Python >3.11, as Python 3.10 does not support structured generation with
+  a dynamic set of choices (Literal[*list_of_choices] is not supported)
 
 ### Fixed
 - Now disables the `seed` parameter if the API inference model does not support it,
