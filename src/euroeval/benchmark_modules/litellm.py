@@ -496,6 +496,14 @@ class LiteLLMModel(BenchmarkModule):
             )
             generation_kwargs.pop("seed", None)
             return
+        # If there are too many I/O connections, we increase the number of allowed file
+        # descriptors
+        if "too many open files" in error_msg:
+            raise InvalidBenchmark(
+                "There are too many file descriptors running. See the current "
+                "value by running `ulimit -n`. Try increasing it by running "
+                "`ulimit -n <new-value>` and try again."
+            )
         elif isinstance(
             error, (Timeout, ServiceUnavailableError, InternalServerError, SystemError)
         ):
@@ -520,14 +528,6 @@ class LiteLLMModel(BenchmarkModule):
                     "Skipping this model."
                 )
         elif isinstance(error, (APIConnectionError, OSError)):
-            # If there are too many I/O connections, we increase the number of allowed
-            # file descriptors
-            if "too many open files" in error_msg:
-                raise InvalidBenchmark(
-                    "There are too many file descriptors running. See the current "
-                    "value by running `ulimit -n`. Try increasing it by running "
-                    "`ulimit -n <new-value>` and try again."
-                )
             raise InvalidBenchmark(
                 f"Encountered {type(error)} during generation: {error}."
             )
