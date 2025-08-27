@@ -42,7 +42,7 @@ def main() -> None:
         if subject_data:
             all_data.extend(subject_data)
 
-    assert len(all_data) == 13941, "Expected 13941 questions, got {len(all_data)}"
+    assert len(all_data) == 13941, f"Expected 13941 questions, got {len(all_data)}"
 
     # Process the data
     df = process_mmlu_data(all_data)
