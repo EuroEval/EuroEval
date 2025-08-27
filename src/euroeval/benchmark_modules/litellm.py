@@ -663,10 +663,10 @@ class LiteLLMModel(BenchmarkModule):
                     generation_output = next(iter(generation_dct.values()))
                 else:
                     raise InvalidBenchmark(
-                        "The model output a JSON dictionary with multiple keys, so "
-                        "we will use the full dictionary as the generated output."
-                        "Here is the full dictionary that was generated: "
-                        f"{generation_dct}"
+                        "The model output a JSON dictionary with multiple keys, which "
+                        "is not supported. Please report this issue on "
+                        "https://github.com/EuroEval/EuroEval/issues. Here is the "
+                        f"full dictionary that was generated: {generation_dct}"
                     )
             except json.JSONDecodeError:
                 pass
