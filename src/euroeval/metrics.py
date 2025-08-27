@@ -171,9 +171,12 @@ class HuggingFaceMetric(Metric):
         if results is None:
             return None
 
+        # Convert the results to a float score
         score = results[self.results_key]
         if isinstance(score, list):
             score = sum(score) / len(score)
+        if isinstance(score, np.floating):
+            score = float(score)
 
         return score
 
