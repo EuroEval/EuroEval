@@ -25,6 +25,7 @@ jobs:
       - uses: actions/checkout@v5
         with:
           persist-credentials: false
+          ref: main
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
@@ -48,6 +49,7 @@ jobs:
       - uses: actions/checkout@v5
         with:
           persist-credentials: false
+          ref: main
 
       - name: Install uv and set up Python
         uses: astral-sh/setup-uv@v6
@@ -81,7 +83,10 @@ jobs:
       pull-requests: write
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+          ref: main
 
       - name: Install uv and set up Python
         uses: astral-sh/setup-uv@v6
