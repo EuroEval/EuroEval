@@ -656,28 +656,18 @@ class LiteLLMModel(BenchmarkModule):
             # outputting a JSON dictionary, so we will extract the generated text from
             # within the dictionary
             generation_dct: dict[str, t.Any] | None = None
-            try:
-                generation_dct = json.loads(generation_output)
-                assert isinstance(generation_dct, dict)
-                if len(generation_dct) == 1:
-                    first_value = next(iter(generation_dct.values()))
-                    if not isinstance(first_value, str):
-                        raise InvalidBenchmark(
-                            "The model output a JSON dictionary with a single key, but "
-                            "the value is not a string. This is not supported. Please "
-                            "report this issue on "
-                            "https://github.com/EuroEval/EuroEval/issues. Here is "
-                            f"the full dictionary that was generated: {generation_dct}"
-                        )
-                else:
-                    raise InvalidBenchmark(
-                        "The model output a JSON dictionary with multiple keys, which "
-                        "is not supported. Please report this issue on "
-                        "https://github.com/EuroEval/EuroEval/issues. Here is the "
-                        f"full dictionary that was generated: {generation_dct}"
-                    )
-            except json.JSONDecodeError:
-                pass
+            if LITELLM_CLASSIFICATION_OUTPUT_KEY in generation_output:
+                try:
+                    generation_dct = json.loads(generation_output)
+                    assert isinstance(generation_dct, dict)
+                    if set(generation_dct.keys()) == {
+                        LITELLM_CLASSIFICATION_OUTPUT_KEY
+                    }:
+                        generation_output = str(
+                            generation_dct[LITELLM_CLASSIFICATION_OUTPUT_KEY]
+                        ).strip()
+                except json.JSONDecodeError:
+                    pass
 
             # Structure the model output as a GenerativeModelOutput object
             sequences.append(generation_output)
