@@ -498,7 +498,7 @@ class LiteLLMModel(BenchmarkModule):
             return
         # If there are too many I/O connections, we increase the number of allowed file
         # descriptors
-        if "too many open files" in error_msg:
+        elif "too many open files" in error_msg:
             raise InvalidBenchmark(
                 "There are too many file descriptors running. See the current "
                 "value by running `ulimit -n`. Try increasing it by running "
@@ -509,9 +509,9 @@ class LiteLLMModel(BenchmarkModule):
         ):
             logger.debug(
                 f"Service temporarily unavailable. The error message was: {error}. "
-                f"Retrying in 5 seconds..."
+                "Retrying in 10 seconds..."
             )
-            sleep(5)
+            sleep(10)
             return
         elif isinstance(error, UnsupportedParamsError):
             unsupported_param_match = re.search(
@@ -1067,7 +1067,7 @@ class LiteLLMModel(BenchmarkModule):
                     f"Service temporarily unavailable. The error message was: {e}. "
                     "Retrying in 10 seconds..."
                 )
-                sleep(5)
+                sleep(10)
             except APIError as e:
                 if "'503 Service Unavailable" not in str(e):
                     raise e
