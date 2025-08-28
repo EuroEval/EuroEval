@@ -159,8 +159,8 @@ SPEED = Task(
 
 ### Danish legal benchmark tasks ###
 
-CONTRACT_COMPLETENESS = Task(
-    name="contract-completeness",
+STAY_ON_TOPIC = Task(
+    name="stay-on-topic",
     task_group=TaskGroup.TEXT_TO_TEXT,
     template_dict=LLM_AS_A_JUDGE_TEMPLATES,
     metrics=[m.correctness_metric],
