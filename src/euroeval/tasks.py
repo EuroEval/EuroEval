@@ -5,6 +5,7 @@ from .data_models import Task
 from .enums import GenerativeType, ModelType, TaskGroup
 from .prompt_templates import (
     LA_TEMPLATES,
+    LLM_AS_A_JUDGE_TEMPLATES,
     MULTIPLE_CHOICE_TEMPLATES,
     NER_TEMPLATES,
     RC_TEMPLATES,
@@ -152,5 +153,18 @@ SPEED = Task(
     metrics=[m.speed_metric, m.speed_short_metric],
     default_num_few_shot_examples=0,
     default_max_generated_tokens=5,
+    default_labels=[],
+)
+
+
+### Danish legal benchmark tasks ###
+
+CONTRACT_COMPLETENESS = Task(
+    name="contract-completeness",
+    task_group=TaskGroup.TEXT_TO_TEXT,
+    template_dict=LLM_AS_A_JUDGE_TEMPLATES,
+    metrics=[m.correctness_metric],
+    default_num_few_shot_examples=1,
+    default_max_generated_tokens=128,
     default_labels=[],
 )
