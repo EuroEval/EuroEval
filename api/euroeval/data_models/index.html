@@ -16,7 +16,7 @@
       
       
       <link rel="icon" href="../../../gfx/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.16">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.17">
     
     
       
@@ -633,6 +633,8 @@
       
         
       
+        
+      
     
     
     
@@ -863,8 +865,6 @@
       
         
       
-        
-      
     
     
     
@@ -991,6 +991,8 @@
       
         
           
+        
+      
         
       
         
@@ -1753,29 +1755,6 @@
   
   <span class="md-ellipsis">
     euroeval.generation_utils
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../human_evaluation/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    euroeval.human_evaluation
     
   </span>
   
@@ -2589,7 +2568,7 @@ If <a href="./#euroeval.data_models.Language.or_separator" title="euroeval.data_
 <i class="fa-regular fa-square-minus"></i>
 </span>
 </span><span class="mkapi-object-kind">dataclass</span>
-<span class="mkapi-object-name"><a href="./#euroeval.data_models.Task" title="euroeval.data_models.Task">Task</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">name</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str</span><span class="mkapi-comma">, </span><span class="mkapi-arg">task_group</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><a href="../enums/#euroeval.enums.TaskGroup" title="euroeval.enums.TaskGroup">TaskGroup</a></span><span class="mkapi-comma">, </span><span class="mkapi-arg">template_dict</span><span class="mkapi-colon">: </span><span class="mkapi-ann">dict['Language', 'PromptConfig']</span><span class="mkapi-comma">, </span><span class="mkapi-arg">metrics</span><span class="mkapi-colon">: </span><span class="mkapi-ann">list[<a href="../metrics/#euroeval.metrics.Metric" title="euroeval.metrics.Metric">Metric</a>]</span><span class="mkapi-comma">, </span><span class="mkapi-arg">default_num_few_shot_examples</span><span class="mkapi-colon">: </span><span class="mkapi-ann">int</span><span class="mkapi-comma">, </span><span class="mkapi-arg">default_max_generated_tokens</span><span class="mkapi-colon">: </span><span class="mkapi-ann">int</span><span class="mkapi-comma">, </span><span class="mkapi-arg">default_labels</span><span class="mkapi-colon">: </span><span class="mkapi-ann">list[str]</span><span class="mkapi-paren">)</span></span>
+<span class="mkapi-object-name"><a href="./#euroeval.data_models.Task" title="euroeval.data_models.Task">Task</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">name</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str</span><span class="mkapi-comma">, </span><span class="mkapi-arg">task_group</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><a href="../enums/#euroeval.enums.TaskGroup" title="euroeval.enums.TaskGroup">TaskGroup</a></span><span class="mkapi-comma">, </span><span class="mkapi-arg">template_dict</span><span class="mkapi-colon">: </span><span class="mkapi-ann">dict['Language', 'PromptConfig']</span><span class="mkapi-comma">, </span><span class="mkapi-arg">metrics</span><span class="mkapi-colon">: </span><span class="mkapi-ann">list[<a href="../metrics/#euroeval.metrics.Metric" title="euroeval.metrics.Metric">Metric</a>]</span><span class="mkapi-comma">, </span><span class="mkapi-arg">default_num_few_shot_examples</span><span class="mkapi-colon">: </span><span class="mkapi-ann">int</span><span class="mkapi-comma">, </span><span class="mkapi-arg">default_max_generated_tokens</span><span class="mkapi-colon">: </span><span class="mkapi-ann">int</span><span class="mkapi-comma">, </span><span class="mkapi-arg">default_labels</span><span class="mkapi-colon">: </span><span class="mkapi-ann">list[str]</span><span class="mkapi-comma">, </span><span class="mkapi-arg">requires_zero_shot</span><span class="mkapi-colon">: </span><span class="mkapi-ann">bool</span><span class="mkapi-equal"> = </span><span class="mkapi-default">False</span><span class="mkapi-comma">, </span><span class="mkapi-arg">uses_structured_output</span><span class="mkapi-colon">: </span><span class="mkapi-ann">bool</span><span class="mkapi-equal"> = </span><span class="mkapi-default">False</span><span class="mkapi-comma">, </span><span class="mkapi-arg">uses_logprobs</span><span class="mkapi-colon">: </span><span class="mkapi-ann">bool</span><span class="mkapi-equal"> = </span><span class="mkapi-default">False</span><span class="mkapi-comma">, </span><span class="mkapi-arg">requires_logprobs</span><span class="mkapi-colon">: </span><span class="mkapi-ann">bool</span><span class="mkapi-equal"> = </span><span class="mkapi-default">False</span><span class="mkapi-comma">, </span><span class="mkapi-arg">allowed_model_types</span><span class="mkapi-colon">: </span><span class="mkapi-ann">list[<a href="../enums/#euroeval.enums.ModelType" title="euroeval.enums.ModelType">ModelType</a>]</span><span class="mkapi-equal"> = </span><span class="mkapi-default"><span class="mkapi-tooltip" title="dataclasses.field">field</span>(default_factory=lambda: [<a href="../enums/#euroeval.enums.ModelType" title="euroeval.enums.ModelType">ModelType</a>.<span class="mkapi-tooltip" title="euroeval.enums.ModelType.ENCODER">ENCODER</span>, <a href="../enums/#euroeval.enums.ModelType" title="euroeval.enums.ModelType">ModelType</a>.<span class="mkapi-tooltip" title="euroeval.enums.ModelType.GENERATIVE">GENERATIVE</span>])</span><span class="mkapi-comma">, </span><span class="mkapi-arg">allowed_generative_types</span><span class="mkapi-colon">: </span><span class="mkapi-ann">list[<a href="../enums/#euroeval.enums.GenerativeType" title="euroeval.enums.GenerativeType">GenerativeType</a>]</span><span class="mkapi-equal"> = </span><span class="mkapi-default"><span class="mkapi-tooltip" title="dataclasses.field">field</span>(default_factory=lambda: [<a href="../enums/#euroeval.enums.GenerativeType" title="euroeval.enums.GenerativeType">GenerativeType</a>.<span class="mkapi-tooltip" title="euroeval.enums.GenerativeType.BASE">BASE</span>, <a href="../enums/#euroeval.enums.GenerativeType" title="euroeval.enums.GenerativeType">GenerativeType</a>.<span class="mkapi-tooltip" title="euroeval.enums.GenerativeType.INSTRUCTION_TUNED">INSTRUCTION_TUNED</span>, <a href="../enums/#euroeval.enums.GenerativeType" title="euroeval.enums.GenerativeType">GenerativeType</a>.<span class="mkapi-tooltip" title="euroeval.enums.GenerativeType.REASONING">REASONING</span>])</span><span class="mkapi-paren">)</span></span>
 </p>
 <div class="mkapi-document">
 <p>A dataset task.</p>
@@ -2641,6 +2620,42 @@ using few-shot evaluation.</p>
 <span class="mkapi-item-type">list[str]</span> <span class="mkapi-dash">&mdash;</span>
 The default labels for datasets using this task.</p>
 </li>
+<li>
+<p><span class="mkapi-item-name">requires_zero_shot</span> : 
+<span class="mkapi-item-type">optional</span> <span class="mkapi-dash">&mdash;</span>
+Whether to only allow zero-shot evaluation for this task. If True, the
+task will not be evaluated using few-shot examples.</p>
+</li>
+<li>
+<p><span class="mkapi-item-name">uses_structured_output</span> : 
+<span class="mkapi-item-type">optional</span> <span class="mkapi-dash">&mdash;</span>
+Whether the task uses structured output. If True, the task will return
+structured output (e.g., BIO tags for NER). Defaults to False.</p>
+</li>
+<li>
+<p><span class="mkapi-item-name">uses_logprobs</span> : 
+<span class="mkapi-item-type">optional</span> <span class="mkapi-dash">&mdash;</span>
+Whether the task uses log probabilities. If True, the task will return
+log probabilities for the generated tokens. Defaults to False.</p>
+</li>
+<li>
+<p><span class="mkapi-item-name">requires_logprobs</span> : 
+<span class="mkapi-item-type">optional</span> <span class="mkapi-dash">&mdash;</span>
+Whether the task requires log probabilities. Implies <span class="mkapi-tooltip" title="euroeval.data_models.Task.uses_logprobs"><code>uses_logprobs</code></span>.</p>
+</li>
+<li>
+<p><span class="mkapi-item-name">allowed_model_types</span> : 
+<span class="mkapi-item-type">optional</span> <span class="mkapi-dash">&mdash;</span>
+A list of model types that are allowed to be evaluated on this task.
+Defaults to all model types being allowed.</p>
+</li>
+<li>
+<p><span class="mkapi-item-name">allowed_generative_types</span> : 
+<span class="mkapi-item-type">optional</span> <span class="mkapi-dash">&mdash;</span>
+A list of generative model types that are allowed to be evaluated on this
+task. If None, all generative model types are allowed. Only relevant if
+<span class="mkapi-tooltip" title="euroeval.data_models.Task.allowed_model_types"><code>allowed_model_types</code></span> includes generative models.</p>
+</li>
 </ul>
 </div>
 </div>
@@ -2653,7 +2668,7 @@ The default labels for datasets using this task.</p>
 <i class="fa-regular fa-square-minus"></i>
 </span>
 </span><span class="mkapi-object-kind">dataclass</span>
-<span class="mkapi-object-name"><a href="./#euroeval.data_models.BenchmarkConfig" title="euroeval.data_models.BenchmarkConfig">BenchmarkConfig</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">model_languages</span><span class="mkapi-colon">: </span><span class="mkapi-ann">list[<a href="./#euroeval.data_models.Language" title="euroeval.data_models.Language">Language</a>]</span><span class="mkapi-comma">, </span><span class="mkapi-arg">dataset_languages</span><span class="mkapi-colon">: </span><span class="mkapi-ann">list[<a href="./#euroeval.data_models.Language" title="euroeval.data_models.Language">Language</a>]</span><span class="mkapi-comma">, </span><span class="mkapi-arg">tasks</span><span class="mkapi-colon">: </span><span class="mkapi-ann">list[<a href="./#euroeval.data_models.Task" title="euroeval.data_models.Task">Task</a>]</span><span class="mkapi-comma">, </span><span class="mkapi-arg">datasets</span><span class="mkapi-colon">: </span><span class="mkapi-ann">list[str]</span><span class="mkapi-comma">, </span><span class="mkapi-arg">batch_size</span><span class="mkapi-colon">: </span><span class="mkapi-ann">int</span><span class="mkapi-comma">, </span><span class="mkapi-arg">raise_errors</span><span class="mkapi-colon">: </span><span class="mkapi-ann">bool</span><span class="mkapi-comma">, </span><span class="mkapi-arg">cache_dir</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str</span><span class="mkapi-comma">, </span><span class="mkapi-arg">api_key</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str | None</span><span class="mkapi-comma">, </span><span class="mkapi-arg">force</span><span class="mkapi-colon">: </span><span class="mkapi-ann">bool</span><span class="mkapi-comma">, </span><span class="mkapi-arg">progress_bar</span><span class="mkapi-colon">: </span><span class="mkapi-ann">bool</span><span class="mkapi-comma">, </span><span class="mkapi-arg">save_results</span><span class="mkapi-colon">: </span><span class="mkapi-ann">bool</span><span class="mkapi-comma">, </span><span class="mkapi-arg">device</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="torch">torch</span>.<span class="mkapi-tooltip" title="torch.device">device</span></span><span class="mkapi-comma">, </span><span class="mkapi-arg">verbose</span><span class="mkapi-colon">: </span><span class="mkapi-ann">bool</span><span class="mkapi-comma">, </span><span class="mkapi-arg">trust_remote_code</span><span class="mkapi-colon">: </span><span class="mkapi-ann">bool</span><span class="mkapi-comma">, </span><span class="mkapi-arg">clear_model_cache</span><span class="mkapi-colon">: </span><span class="mkapi-ann">bool</span><span class="mkapi-comma">, </span><span class="mkapi-arg">evaluate_test_split</span><span class="mkapi-colon">: </span><span class="mkapi-ann">bool</span><span class="mkapi-comma">, </span><span class="mkapi-arg">few_shot</span><span class="mkapi-colon">: </span><span class="mkapi-ann">bool</span><span class="mkapi-comma">, </span><span class="mkapi-arg">num_iterations</span><span class="mkapi-colon">: </span><span class="mkapi-ann">int</span><span class="mkapi-comma">, </span><span class="mkapi-arg">api_base</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str | None</span><span class="mkapi-comma">, </span><span class="mkapi-arg">api_version</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str | None</span><span class="mkapi-comma">, </span><span class="mkapi-arg">gpu_memory_utilization</span><span class="mkapi-colon">: </span><span class="mkapi-ann">float</span><span class="mkapi-comma">, </span><span class="mkapi-arg">debug</span><span class="mkapi-colon">: </span><span class="mkapi-ann">bool</span><span class="mkapi-comma">, </span><span class="mkapi-arg">run_with_cli</span><span class="mkapi-colon">: </span><span class="mkapi-ann">bool</span><span class="mkapi-comma">, </span><span class="mkapi-arg">only_allow_safetensors</span><span class="mkapi-colon">: </span><span class="mkapi-ann">bool</span><span class="mkapi-paren">)</span></span>
+<span class="mkapi-object-name"><a href="./#euroeval.data_models.BenchmarkConfig" title="euroeval.data_models.BenchmarkConfig">BenchmarkConfig</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">model_languages</span><span class="mkapi-colon">: </span><span class="mkapi-ann">list[<a href="./#euroeval.data_models.Language" title="euroeval.data_models.Language">Language</a>]</span><span class="mkapi-comma">, </span><span class="mkapi-arg">dataset_languages</span><span class="mkapi-colon">: </span><span class="mkapi-ann">list[<a href="./#euroeval.data_models.Language" title="euroeval.data_models.Language">Language</a>]</span><span class="mkapi-comma">, </span><span class="mkapi-arg">tasks</span><span class="mkapi-colon">: </span><span class="mkapi-ann">list[<a href="./#euroeval.data_models.Task" title="euroeval.data_models.Task">Task</a>]</span><span class="mkapi-comma">, </span><span class="mkapi-arg">datasets</span><span class="mkapi-colon">: </span><span class="mkapi-ann">list[str]</span><span class="mkapi-comma">, </span><span class="mkapi-arg">batch_size</span><span class="mkapi-colon">: </span><span class="mkapi-ann">int</span><span class="mkapi-comma">, </span><span class="mkapi-arg">raise_errors</span><span class="mkapi-colon">: </span><span class="mkapi-ann">bool</span><span class="mkapi-comma">, </span><span class="mkapi-arg">cache_dir</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str</span><span class="mkapi-comma">, </span><span class="mkapi-arg">api_key</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str | None</span><span class="mkapi-comma">, </span><span class="mkapi-arg">force</span><span class="mkapi-colon">: </span><span class="mkapi-ann">bool</span><span class="mkapi-comma">, </span><span class="mkapi-arg">progress_bar</span><span class="mkapi-colon">: </span><span class="mkapi-ann">bool</span><span class="mkapi-comma">, </span><span class="mkapi-arg">save_results</span><span class="mkapi-colon">: </span><span class="mkapi-ann">bool</span><span class="mkapi-comma">, </span><span class="mkapi-arg">device</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="torch">torch</span>.<span class="mkapi-tooltip" title="torch.device">device</span></span><span class="mkapi-comma">, </span><span class="mkapi-arg">verbose</span><span class="mkapi-colon">: </span><span class="mkapi-ann">bool</span><span class="mkapi-comma">, </span><span class="mkapi-arg">trust_remote_code</span><span class="mkapi-colon">: </span><span class="mkapi-ann">bool</span><span class="mkapi-comma">, </span><span class="mkapi-arg">clear_model_cache</span><span class="mkapi-colon">: </span><span class="mkapi-ann">bool</span><span class="mkapi-comma">, </span><span class="mkapi-arg">evaluate_test_split</span><span class="mkapi-colon">: </span><span class="mkapi-ann">bool</span><span class="mkapi-comma">, </span><span class="mkapi-arg">few_shot</span><span class="mkapi-colon">: </span><span class="mkapi-ann">bool</span><span class="mkapi-comma">, </span><span class="mkapi-arg">num_iterations</span><span class="mkapi-colon">: </span><span class="mkapi-ann">int</span><span class="mkapi-comma">, </span><span class="mkapi-arg">api_base</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str | None</span><span class="mkapi-comma">, </span><span class="mkapi-arg">api_version</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str | None</span><span class="mkapi-comma">, </span><span class="mkapi-arg">gpu_memory_utilization</span><span class="mkapi-colon">: </span><span class="mkapi-ann">float</span><span class="mkapi-comma">, </span><span class="mkapi-arg">debug</span><span class="mkapi-colon">: </span><span class="mkapi-ann">bool</span><span class="mkapi-comma">, </span><span class="mkapi-arg">run_with_cli</span><span class="mkapi-colon">: </span><span class="mkapi-ann">bool</span><span class="mkapi-comma">, </span><span class="mkapi-arg">requires_safetensors</span><span class="mkapi-colon">: </span><span class="mkapi-ann">bool</span><span class="mkapi-paren">)</span></span>
 </p>
 <div class="mkapi-document">
 <p>General benchmarking configuration, across datasets and models.</p>
@@ -2790,7 +2805,7 @@ Whether to run the benchmark in debug mode.</p>
 Whether the benchmark is being run with the CLI.</p>
 </li>
 <li>
-<p><span class="mkapi-item-name">only_allow_safetensors</span> : 
+<p><span class="mkapi-item-name">requires_safetensors</span> : 
 <span class="mkapi-item-type">bool</span> <span class="mkapi-dash">&mdash;</span>
 Whether to only allow models that use the safetensors format.</p>
 </li>
@@ -3001,7 +3016,7 @@ The path to the results file.</p>
 <i class="fa-regular fa-square-minus"></i>
 </span>
 </span><span class="mkapi-object-kind">dataclass</span>
-<span class="mkapi-object-name"><a href="./#euroeval.data_models.DatasetConfig" title="euroeval.data_models.DatasetConfig">DatasetConfig</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">name</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str</span><span class="mkapi-comma">, </span><span class="mkapi-arg">pretty_name</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str</span><span class="mkapi-comma">, </span><span class="mkapi-arg">huggingface_id</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str</span><span class="mkapi-comma">, </span><span class="mkapi-arg">task</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><a href="./#euroeval.data_models.Task" title="euroeval.data_models.Task">Task</a></span><span class="mkapi-comma">, </span><span class="mkapi-arg">languages</span><span class="mkapi-colon">: </span><span class="mkapi-ann">list[<a href="./#euroeval.data_models.Language" title="euroeval.data_models.Language">Language</a>]</span><span class="mkapi-comma">, </span><span class="mkapi-arg">_prompt_prefix</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str | None</span><span class="mkapi-equal"> = </span><span class="mkapi-default">None</span><span class="mkapi-comma">, </span><span class="mkapi-arg">_prompt_template</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str | None</span><span class="mkapi-equal"> = </span><span class="mkapi-default">None</span><span class="mkapi-comma">, </span><span class="mkapi-arg">_instruction_prompt</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str | None</span><span class="mkapi-equal"> = </span><span class="mkapi-default">None</span><span class="mkapi-comma">, </span><span class="mkapi-arg">_num_few_shot_examples</span><span class="mkapi-colon">: </span><span class="mkapi-ann">int | None</span><span class="mkapi-equal"> = </span><span class="mkapi-default">None</span><span class="mkapi-comma">, </span><span class="mkapi-arg">_max_generated_tokens</span><span class="mkapi-colon">: </span><span class="mkapi-ann">int | None</span><span class="mkapi-equal"> = </span><span class="mkapi-default">None</span><span class="mkapi-comma">, </span><span class="mkapi-arg">_labels</span><span class="mkapi-colon">: </span><span class="mkapi-ann">list[str] | None</span><span class="mkapi-equal"> = </span><span class="mkapi-default">None</span><span class="mkapi-comma">, </span><span class="mkapi-arg">_prompt_label_mapping</span><span class="mkapi-colon">: </span><span class="mkapi-ann">dict[str, str] | <span class="mkapi-tooltip" title="typing">t</span>.<span class="mkapi-tooltip" title="typing.Literal">Literal</span>['auto'] | None</span><span class="mkapi-equal"> = </span><span class="mkapi-default">None</span><span class="mkapi-comma">, </span><span class="mkapi-arg">unofficial</span><span class="mkapi-colon">: </span><span class="mkapi-ann">bool</span><span class="mkapi-equal"> = </span><span class="mkapi-default">False</span><span class="mkapi-paren">)</span></span>
+<span class="mkapi-object-name"><a href="./#euroeval.data_models.DatasetConfig" title="euroeval.data_models.DatasetConfig">DatasetConfig</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">name</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str</span><span class="mkapi-comma">, </span><span class="mkapi-arg">pretty_name</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str</span><span class="mkapi-comma">, </span><span class="mkapi-arg">huggingface_id</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str</span><span class="mkapi-comma">, </span><span class="mkapi-arg">task</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><a href="./#euroeval.data_models.Task" title="euroeval.data_models.Task">Task</a></span><span class="mkapi-comma">, </span><span class="mkapi-arg">languages</span><span class="mkapi-colon">: </span><span class="mkapi-ann">list[<a href="./#euroeval.data_models.Language" title="euroeval.data_models.Language">Language</a>]</span><span class="mkapi-comma">, </span><span class="mkapi-arg">_prompt_prefix</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str | None</span><span class="mkapi-equal"> = </span><span class="mkapi-default">None</span><span class="mkapi-comma">, </span><span class="mkapi-arg">_prompt_template</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str | None</span><span class="mkapi-equal"> = </span><span class="mkapi-default">None</span><span class="mkapi-comma">, </span><span class="mkapi-arg">_instruction_prompt</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str | None</span><span class="mkapi-equal"> = </span><span class="mkapi-default">None</span><span class="mkapi-comma">, </span><span class="mkapi-arg">_num_few_shot_examples</span><span class="mkapi-colon">: </span><span class="mkapi-ann">int | None</span><span class="mkapi-equal"> = </span><span class="mkapi-default">None</span><span class="mkapi-comma">, </span><span class="mkapi-arg">_max_generated_tokens</span><span class="mkapi-colon">: </span><span class="mkapi-ann">int | None</span><span class="mkapi-equal"> = </span><span class="mkapi-default">None</span><span class="mkapi-comma">, </span><span class="mkapi-arg">_labels</span><span class="mkapi-colon">: </span><span class="mkapi-ann">list[str] | None</span><span class="mkapi-equal"> = </span><span class="mkapi-default">None</span><span class="mkapi-comma">, </span><span class="mkapi-arg">_prompt_label_mapping</span><span class="mkapi-colon">: </span><span class="mkapi-ann">dict[str, str] | <span class="mkapi-tooltip" title="typing">t</span>.<span class="mkapi-tooltip" title="typing.Literal">Literal</span>['auto'] | None</span><span class="mkapi-equal"> = </span><span class="mkapi-default">None</span><span class="mkapi-comma">, </span><span class="mkapi-arg">splits</span><span class="mkapi-colon">: </span><span class="mkapi-ann">list[str]</span><span class="mkapi-equal"> = </span><span class="mkapi-default"><span class="mkapi-tooltip" title="dataclasses.field">field</span>(default_factory=lambda: ['train', 'val', 'test'])</span><span class="mkapi-comma">, </span><span class="mkapi-arg">bootstrap_samples</span><span class="mkapi-colon">: </span><span class="mkapi-ann">bool</span><span class="mkapi-equal"> = </span><span class="mkapi-default">True</span><span class="mkapi-comma">, </span><span class="mkapi-arg">unofficial</span><span class="mkapi-colon">: </span><span class="mkapi-ann">bool</span><span class="mkapi-equal"> = </span><span class="mkapi-default">False</span><span class="mkapi-paren">)</span></span>
 </p>
 <div class="mkapi-document">
 <p>Configuration for a dataset.</p>
@@ -3102,6 +3117,17 @@ for the label in few-shot evaluation. If "auto" then the mapping will be set
 to a 1:1 mapping between the labels and themselves. If None then the mapping
 will be set to the default mapping for the task and language. Defaults to
 None.</p>
+</li>
+<li>
+<p><span class="mkapi-item-name">splits</span> : 
+<span class="mkapi-item-type">optional</span> <span class="mkapi-dash">&mdash;</span>
+The names of the splits in the dataset. If not provided, defaults to
+["train", "val", "test"].</p>
+</li>
+<li>
+<p><span class="mkapi-item-name">bootstrap_samples</span> : 
+<span class="mkapi-item-type">optional</span> <span class="mkapi-dash">&mdash;</span>
+Whether to bootstrap the dataset samples. Defaults to True.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">unofficial</span> : 
@@ -3662,10 +3688,10 @@ mapping will be set to a 1:1 mapping between the labels and themselves.</p>
     
     
       
-      <script id="__config" type="application/json">{"base": "../../..", "features": ["navigation.top", "navigation.path", "navigation.prune", "navigation.indexes", "navigation.tabs", "navigation.tabs.sticky", "navigation.instant", "navigation.instant.prefetch", "navigation.instant.progress", "navigation.tracking", "navigation.sections"], "search": "../../../assets/javascripts/workers/search.d50fe291.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"base": "../../..", "features": ["navigation.top", "navigation.path", "navigation.prune", "navigation.indexes", "navigation.tabs", "navigation.tabs.sticky", "navigation.instant", "navigation.instant.prefetch", "navigation.instant.progress", "navigation.tracking", "navigation.sections"], "search": "../../../assets/javascripts/workers/search.973d3a69.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../../assets/javascripts/bundle.50899def.min.js"></script>
+      <script src="../../../assets/javascripts/bundle.92b07e13.min.js"></script>
       
         <script src="../../../javascript/mkapi.js"></script>
       

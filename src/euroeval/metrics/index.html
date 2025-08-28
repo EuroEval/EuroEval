@@ -12,7 +12,7 @@
       
       
       <link rel="icon" href="../../../gfx/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.16">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.17">
     
     
       
@@ -625,6 +625,8 @@
       
         
       
+        
+      
     
     
     
@@ -835,6 +837,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#euroeval.metrics.PipelineMetric" class="md-nav__link">
+    <span class="md-ellipsis">
+      PipelineMetric
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#euroeval.metrics.LLMAsAJudgeMetric" class="md-nav__link">
     <span class="md-ellipsis">
       LLMAsAJudgeMetric
@@ -847,6 +858,24 @@
   <a href="#euroeval.metrics.SpeedMetric" class="md-nav__link">
     <span class="md-ellipsis">
       SpeedMetric
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#euroeval.metrics.european_values_preprocessing_fn" class="md-nav__link">
+    <span class="md-ellipsis">
+      european_values_preprocessing_fn
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#euroeval.metrics.european_values_scoring_function" class="md-nav__link">
+    <span class="md-ellipsis">
+      european_values_scoring_function
     </span>
   </a>
   
@@ -1357,26 +1386,246 @@
 <span class="normal">467</span>
 <span class="normal">468</span>
 <span class="normal">469</span>
-<span class="normal">470</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;All the metrics used in EuroEval.&quot;&quot;&quot;</span>
+<span class="normal">470</span>
+<span class="normal">471</span>
+<span class="normal">472</span>
+<span class="normal">473</span>
+<span class="normal">474</span>
+<span class="normal">475</span>
+<span class="normal">476</span>
+<span class="normal">477</span>
+<span class="normal">478</span>
+<span class="normal">479</span>
+<span class="normal">480</span>
+<span class="normal">481</span>
+<span class="normal">482</span>
+<span class="normal">483</span>
+<span class="normal">484</span>
+<span class="normal">485</span>
+<span class="normal">486</span>
+<span class="normal">487</span>
+<span class="normal">488</span>
+<span class="normal">489</span>
+<span class="normal">490</span>
+<span class="normal">491</span>
+<span class="normal">492</span>
+<span class="normal">493</span>
+<span class="normal">494</span>
+<span class="normal">495</span>
+<span class="normal">496</span>
+<span class="normal">497</span>
+<span class="normal">498</span>
+<span class="normal">499</span>
+<span class="normal">500</span>
+<span class="normal">501</span>
+<span class="normal">502</span>
+<span class="normal">503</span>
+<span class="normal">504</span>
+<span class="normal">505</span>
+<span class="normal">506</span>
+<span class="normal">507</span>
+<span class="normal">508</span>
+<span class="normal">509</span>
+<span class="normal">510</span>
+<span class="normal">511</span>
+<span class="normal">512</span>
+<span class="normal">513</span>
+<span class="normal">514</span>
+<span class="normal">515</span>
+<span class="normal">516</span>
+<span class="normal">517</span>
+<span class="normal">518</span>
+<span class="normal">519</span>
+<span class="normal">520</span>
+<span class="normal">521</span>
+<span class="normal">522</span>
+<span class="normal">523</span>
+<span class="normal">524</span>
+<span class="normal">525</span>
+<span class="normal">526</span>
+<span class="normal">527</span>
+<span class="normal">528</span>
+<span class="normal">529</span>
+<span class="normal">530</span>
+<span class="normal">531</span>
+<span class="normal">532</span>
+<span class="normal">533</span>
+<span class="normal">534</span>
+<span class="normal">535</span>
+<span class="normal">536</span>
+<span class="normal">537</span>
+<span class="normal">538</span>
+<span class="normal">539</span>
+<span class="normal">540</span>
+<span class="normal">541</span>
+<span class="normal">542</span>
+<span class="normal">543</span>
+<span class="normal">544</span>
+<span class="normal">545</span>
+<span class="normal">546</span>
+<span class="normal">547</span>
+<span class="normal">548</span>
+<span class="normal">549</span>
+<span class="normal">550</span>
+<span class="normal">551</span>
+<span class="normal">552</span>
+<span class="normal">553</span>
+<span class="normal">554</span>
+<span class="normal">555</span>
+<span class="normal">556</span>
+<span class="normal">557</span>
+<span class="normal">558</span>
+<span class="normal">559</span>
+<span class="normal">560</span>
+<span class="normal">561</span>
+<span class="normal">562</span>
+<span class="normal">563</span>
+<span class="normal">564</span>
+<span class="normal">565</span>
+<span class="normal">566</span>
+<span class="normal">567</span>
+<span class="normal">568</span>
+<span class="normal">569</span>
+<span class="normal">570</span>
+<span class="normal">571</span>
+<span class="normal">572</span>
+<span class="normal">573</span>
+<span class="normal">574</span>
+<span class="normal">575</span>
+<span class="normal">576</span>
+<span class="normal">577</span>
+<span class="normal">578</span>
+<span class="normal">579</span>
+<span class="normal">580</span>
+<span class="normal">581</span>
+<span class="normal">582</span>
+<span class="normal">583</span>
+<span class="normal">584</span>
+<span class="normal">585</span>
+<span class="normal">586</span>
+<span class="normal">587</span>
+<span class="normal">588</span>
+<span class="normal">589</span>
+<span class="normal">590</span>
+<span class="normal">591</span>
+<span class="normal">592</span>
+<span class="normal">593</span>
+<span class="normal">594</span>
+<span class="normal">595</span>
+<span class="normal">596</span>
+<span class="normal">597</span>
+<span class="normal">598</span>
+<span class="normal">599</span>
+<span class="normal">600</span>
+<span class="normal">601</span>
+<span class="normal">602</span>
+<span class="normal">603</span>
+<span class="normal">604</span>
+<span class="normal">605</span>
+<span class="normal">606</span>
+<span class="normal">607</span>
+<span class="normal">608</span>
+<span class="normal">609</span>
+<span class="normal">610</span>
+<span class="normal">611</span>
+<span class="normal">612</span>
+<span class="normal">613</span>
+<span class="normal">614</span>
+<span class="normal">615</span>
+<span class="normal">616</span>
+<span class="normal">617</span>
+<span class="normal">618</span>
+<span class="normal">619</span>
+<span class="normal">620</span>
+<span class="normal">621</span>
+<span class="normal">622</span>
+<span class="normal">623</span>
+<span class="normal">624</span>
+<span class="normal">625</span>
+<span class="normal">626</span>
+<span class="normal">627</span>
+<span class="normal">628</span>
+<span class="normal">629</span>
+<span class="normal">630</span>
+<span class="normal">631</span>
+<span class="normal">632</span>
+<span class="normal">633</span>
+<span class="normal">634</span>
+<span class="normal">635</span>
+<span class="normal">636</span>
+<span class="normal">637</span>
+<span class="normal">638</span>
+<span class="normal">639</span>
+<span class="normal">640</span>
+<span class="normal">641</span>
+<span class="normal">642</span>
+<span class="normal">643</span>
+<span class="normal">644</span>
+<span class="normal">645</span>
+<span class="normal">646</span>
+<span class="normal">647</span>
+<span class="normal">648</span>
+<span class="normal">649</span>
+<span class="normal">650</span>
+<span class="normal">651</span>
+<span class="normal">652</span>
+<span class="normal">653</span>
+<span class="normal">654</span>
+<span class="normal">655</span>
+<span class="normal">656</span>
+<span class="normal">657</span>
+<span class="normal">658</span>
+<span class="normal">659</span>
+<span class="normal">660</span>
+<span class="normal">661</span>
+<span class="normal">662</span>
+<span class="normal">663</span>
+<span class="normal">664</span>
+<span class="normal">665</span>
+<span class="normal">666</span>
+<span class="normal">667</span>
+<span class="normal">668</span>
+<span class="normal">669</span>
+<span class="normal">670</span>
+<span class="normal">671</span>
+<span class="normal">672</span>
+<span class="normal">673</span>
+<span class="normal">674</span>
+<span class="normal">675</span>
+<span class="normal">676</span>
+<span class="normal">677</span>
+<span class="normal">678</span>
+<span class="normal">679</span>
+<span class="normal">680</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;All the metrics used in EuroEval.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">abc</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">c</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">t</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
 
+<span class="kn">import</span><span class="w"> </span><span class="nn">cloudpickle</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">evaluate</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">huggingface_hub</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">hf_hub</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">litellm</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">litellm.types.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">Choices</span><span class="p">,</span> <span class="n">ModelResponse</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">pydantic</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseModel</span><span class="p">,</span> <span class="n">Field</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">scipy.special</span><span class="w"> </span><span class="kn">import</span> <span class="n">expit</span> <span class="k">as</span> <span class="n">sigmoid</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">tqdm.auto</span><span class="w"> </span><span class="kn">import</span> <span class="n">tqdm</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">.exceptions</span><span class="w"> </span><span class="kn">import</span> <span class="n">InvalidBenchmark</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">HiddenPrints</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">HiddenPrints</span><span class="p">,</span> <span class="n">unscramble</span>
 
 <span class="k">if</span> <span class="n">t</span><span class="o">.</span><span class="n">TYPE_CHECKING</span><span class="p">:</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">datasets.arrow_dataset</span><span class="w"> </span><span class="kn">import</span> <span class="n">Dataset</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">evaluate</span><span class="w"> </span><span class="kn">import</span> <span class="n">EvaluationModule</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.pipeline</span><span class="w"> </span><span class="kn">import</span> <span class="n">Pipeline</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+
+<span class="n">T</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">TypeVar</span><span class="p">(</span><span class="s2">&quot;T&quot;</span><span class="p">,</span> <span class="n">bound</span><span class="o">=</span><span class="nb">int</span> <span class="o">|</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">bool</span><span class="p">)</span>
 
 
 <span class="k">class</span><span class="w"> </span><span class="nc">Metric</span><span class="p">(</span><span class="n">abc</span><span class="o">.</span><span class="n">ABC</span><span class="p">):</span><div class="mkapi-source-link" id="euroeval.metrics.Metric"><a href="../../../api/euroeval/metrics/#euroeval.metrics.Metric" title="Go to docs">[docs]</a></div>
@@ -1410,7 +1659,7 @@
 
     <span class="nd">@abc</span><span class="o">.</span><span class="n">abstractmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">predictions</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Sequence</span><span class="p">,</span> <span class="n">references</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Sequence</span><span class="p">,</span> <span class="n">dataset</span><span class="p">:</span> <span class="s2">&quot;Dataset | None&quot;</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">predictions</span><span class="p">:</span> <span class="n">c</span><span class="o">.</span><span class="n">Sequence</span><span class="p">,</span> <span class="n">references</span><span class="p">:</span> <span class="n">c</span><span class="o">.</span><span class="n">Sequence</span><span class="p">,</span> <span class="n">dataset</span><span class="p">:</span> <span class="s2">&quot;Dataset | None&quot;</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Calculate the metric score.</span>
 
@@ -1491,7 +1740,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">metric</span><span class="p">:</span> <span class="s2">&quot;EvaluationModule | None&quot;</span> <span class="o">=</span> <span class="kc">None</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">predictions</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Sequence</span><span class="p">,</span> <span class="n">references</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Sequence</span><span class="p">,</span> <span class="n">dataset</span><span class="p">:</span> <span class="s2">&quot;Dataset | None&quot;</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">predictions</span><span class="p">:</span> <span class="n">c</span><span class="o">.</span><span class="n">Sequence</span><span class="p">,</span> <span class="n">references</span><span class="p">:</span> <span class="n">c</span><span class="o">.</span><span class="n">Sequence</span><span class="p">,</span> <span class="n">dataset</span><span class="p">:</span> <span class="s2">&quot;Dataset | None&quot;</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Calculate the metric score.</span>
 
@@ -1520,11 +1769,110 @@
         <span class="k">if</span> <span class="n">results</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">return</span> <span class="kc">None</span>
 
+        <span class="c1"># Convert the results to a float score</span>
         <span class="n">score</span> <span class="o">=</span> <span class="n">results</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">results_key</span><span class="p">]</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">score</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
             <span class="n">score</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">score</span><span class="p">)</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">score</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">score</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">floating</span><span class="p">):</span>
+            <span class="n">score</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">score</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="n">score</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">PipelineMetric</span><span class="p">(</span><span class="n">Metric</span><span class="p">):</span><div class="mkapi-source-link" id="euroeval.metrics.PipelineMetric"><a href="../../../api/euroeval/metrics/#euroeval.metrics.PipelineMetric" title="Go to docs">[docs]</a></div>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Load a scikit-learn pipeline and use it to get scores from the predictions.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">pretty_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">pipeline_repo</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">pipeline_scoring_function</span><span class="p">:</span> <span class="n">c</span><span class="o">.</span><span class="n">Callable</span><span class="p">[[</span><span class="s2">&quot;Pipeline&quot;</span><span class="p">,</span> <span class="n">c</span><span class="o">.</span><span class="n">Sequence</span><span class="p">],</span> <span class="nb">float</span><span class="p">],</span>
+        <span class="n">pipeline_file_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;pipeline.pkl&quot;</span><span class="p">,</span>
+        <span class="n">preprocessing_fn</span><span class="p">:</span> <span class="n">c</span><span class="o">.</span><span class="n">Callable</span><span class="p">[[</span><span class="n">c</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="n">T</span><span class="p">]],</span> <span class="n">c</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="n">T</span><span class="p">]]</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="p">,</span>
+        <span class="n">postprocessing_fn</span><span class="p">:</span> <span class="n">c</span><span class="o">.</span><span class="n">Callable</span><span class="p">[[</span><span class="nb">float</span><span class="p">],</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialise the pipeline transform metric.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            name:</span>
+<span class="sd">                The name of the metric in snake_case.</span>
+<span class="sd">            pretty_name:</span>
+<span class="sd">                The pretty name of the metric, used for display purposes.</span>
+<span class="sd">            pipeline_repo:</span>
+<span class="sd">                The Hugging Face repository ID of the scikit-learn pipeline to load.</span>
+<span class="sd">            pipeline_scoring_method:</span>
+<span class="sd">                The method to use for scoring the predictions with the pipeline. Takes</span>
+<span class="sd">                a 1D sequence of predictions and returns a float score.</span>
+<span class="sd">            pipeline_file_name (optional):</span>
+<span class="sd">                The name of the file to download from the Hugging Face repository.</span>
+<span class="sd">                Defaults to &quot;pipeline.joblib&quot;.</span>
+<span class="sd">            preprocessing_fn (optional):</span>
+<span class="sd">                A function to apply to the predictions before they are passed to the</span>
+<span class="sd">                pipeline. This is useful for preprocessing the predictions to match</span>
+<span class="sd">                the expected input format of the pipeline. Defaults to a no-op function</span>
+<span class="sd">                that returns the input unchanged.</span>
+<span class="sd">            postprocessing_fn (optional):</span>
+<span class="sd">                A function to apply to the metric scores after they are computed,</span>
+<span class="sd">                taking the score to the postprocessed score along with its string</span>
+<span class="sd">                representation. Defaults to x -&gt; (100 * x, f&quot;{x:.2%}&quot;).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="n">pretty_name</span><span class="o">=</span><span class="n">pretty_name</span><span class="p">,</span> <span class="n">postprocessing_fn</span><span class="o">=</span><span class="n">postprocessing_fn</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pipeline_repo</span> <span class="o">=</span> <span class="n">pipeline_repo</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pipeline_file_name</span> <span class="o">=</span> <span class="n">pipeline_file_name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pipeline_scoring_function</span> <span class="o">=</span> <span class="n">pipeline_scoring_function</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pipeline</span><span class="p">:</span> <span class="s2">&quot;Pipeline&quot;</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_download_pipeline</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">preprocessing_fn</span> <span class="o">=</span> <span class="n">preprocessing_fn</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">predictions</span><span class="p">:</span> <span class="n">c</span><span class="o">.</span><span class="n">Sequence</span><span class="p">,</span> <span class="n">references</span><span class="p">:</span> <span class="n">c</span><span class="o">.</span><span class="n">Sequence</span><span class="p">,</span> <span class="n">dataset</span><span class="p">:</span> <span class="s2">&quot;Dataset | None&quot;</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Calculate the metric score using the scikit-learn pipeline.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            predictions:</span>
+<span class="sd">                The model predictions.</span>
+<span class="sd">            references:</span>
+<span class="sd">                Not used, but required for consistency with the Metric interface.</span>
+<span class="sd">            dataset:</span>
+<span class="sd">                The dataset used for evaluation. This is only used in case any</span>
+<span class="sd">                additional metadata is used to compute the metrics.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            The calculated metric score, or None if the score should be ignored.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            InvalidBenchmark:</span>
+<span class="sd">                If the model predictions contain values greater than 1.0, which is not</span>
+<span class="sd">                expected for the pipeline being used.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">assert</span> <span class="n">dataset</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span> <span class="p">(</span>
+            <span class="s2">&quot;The dataset must be provided for the PipelineMetric.&quot;</span>
+        <span class="p">)</span>
+        <span class="n">predictions</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">preprocessing_fn</span><span class="p">(</span><span class="n">predictions</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">pipeline_scoring_function</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pipeline</span><span class="p">,</span> <span class="n">predictions</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_download_pipeline</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Pipeline&quot;</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Download the scikit-learn pipeline from the given URL.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            The downloaded scikit-learn pipeline.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            InvalidBenchmark:</span>
+<span class="sd">                If the download fails or the response is not a valid pipeline.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Loading pipeline from </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">pipeline_repo</span><span class="si">}</span><span class="s2">...&quot;</span><span class="p">)</span>
+        <span class="n">folder_path</span> <span class="o">=</span> <span class="n">hf_hub</span><span class="o">.</span><span class="n">HfApi</span><span class="p">(</span>
+            <span class="n">token</span><span class="o">=</span><span class="n">unscramble</span><span class="p">(</span><span class="s2">&quot;HjccJFhIozVymqXDVqTUTXKvYhZMTbfIjMxG_&quot;</span><span class="p">)</span>
+        <span class="p">)</span><span class="o">.</span><span class="n">snapshot_download</span><span class="p">(</span><span class="n">repo_id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">pipeline_repo</span><span class="p">,</span> <span class="n">repo_type</span><span class="o">=</span><span class="s2">&quot;model&quot;</span><span class="p">)</span>
+        <span class="n">model_path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">folder_path</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">pipeline_file_name</span><span class="p">)</span>
+        <span class="k">with</span> <span class="n">model_path</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s2">&quot;rb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="n">pipeline</span> <span class="o">=</span> <span class="n">cloudpickle</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Successfully loaded pipeline: </span><span class="si">{</span><span class="n">pipeline</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">pipeline</span>
 
 
 <span class="k">class</span><span class="w"> </span><span class="nc">LLMAsAJudgeMetric</span><span class="p">(</span><span class="n">Metric</span><span class="p">):</span><div class="mkapi-source-link" id="euroeval.metrics.LLMAsAJudgeMetric"><a href="../../../api/euroeval/metrics/#euroeval.metrics.LLMAsAJudgeMetric" title="Go to docs">[docs]</a></div>
@@ -1584,7 +1932,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">system_prompt</span> <span class="o">=</span> <span class="n">system_prompt</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">predictions</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Sequence</span><span class="p">,</span> <span class="n">references</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Sequence</span><span class="p">,</span> <span class="n">dataset</span><span class="p">:</span> <span class="s2">&quot;Dataset | None&quot;</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">predictions</span><span class="p">:</span> <span class="n">c</span><span class="o">.</span><span class="n">Sequence</span><span class="p">,</span> <span class="n">references</span><span class="p">:</span> <span class="n">c</span><span class="o">.</span><span class="n">Sequence</span><span class="p">,</span> <span class="n">dataset</span><span class="p">:</span> <span class="s2">&quot;Dataset | None&quot;</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Calculate the metric score using the judge model.</span>
 
@@ -1719,7 +2067,7 @@
         <span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">_</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Sequence</span><span class="p">,</span> <span class="n">__</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Sequence</span><span class="p">,</span> <span class="n">___</span><span class="p">:</span> <span class="s2">&quot;Dataset | None&quot;</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">_</span><span class="p">:</span> <span class="n">c</span><span class="o">.</span><span class="n">Sequence</span><span class="p">,</span> <span class="n">__</span><span class="p">:</span> <span class="n">c</span><span class="o">.</span><span class="n">Sequence</span><span class="p">,</span> <span class="n">___</span><span class="p">:</span> <span class="s2">&quot;Dataset | None&quot;</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Not used with the speed metric, but required for consistency.&quot;&quot;&quot;</span>
         <span class="k">raise</span> <span class="ne">NotImplementedError</span>
@@ -1791,6 +2139,107 @@
     <span class="n">results_key</span><span class="o">=</span><span class="s2">&quot;accuracy&quot;</span><span class="p">,</span>
 <span class="p">)</span>
 
+<div class="mkapi-source-link" id="euroeval.metrics.european_values_preprocessing_fn"><a href="../../../api/euroeval/metrics/#euroeval.metrics.european_values_preprocessing_fn" title="Go to docs">[docs]</a></div>
+<span class="k">def</span><span class="w"> </span><span class="nf">european_values_preprocessing_fn</span><span class="p">(</span><span class="n">predictions</span><span class="p">:</span> <span class="n">c</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">c</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Preprocess the model predictions for the European Values metric.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        predictions:</span>
+<span class="sd">            The model predictions, a sequence of integers representing the predicted</span>
+<span class="sd">            choices for each question.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        The preprocessed model predictions, a sequence of integers representing the</span>
+<span class="sd">        final predicted choices for each question after any necessary aggregation and</span>
+<span class="sd">        mapping.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        AssertionError:</span>
+<span class="sd">            If the number of predictions is not a multiple of 53, which is required</span>
+<span class="sd">            for the European Values metric.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">num_questions</span> <span class="o">=</span> <span class="mi">53</span>
+    <span class="n">num_phrasings_per_question</span> <span class="o">=</span> <span class="mi">5</span>
+
+    <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">predictions</span><span class="p">)</span> <span class="o">%</span> <span class="n">num_questions</span> <span class="o">==</span> <span class="mi">0</span><span class="p">,</span> <span class="p">(</span>
+        <span class="sa">f</span><span class="s2">&quot;The number of predictions (</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">predictions</span><span class="p">)</span><span class="si">}</span><span class="s2">) is not a multiple of &quot;</span>
+        <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">num_questions</span><span class="si">}</span><span class="s2">, which is required for the European Values metric.&quot;</span>
+    <span class="p">)</span>
+
+    <span class="c1"># When we are using the situational version of the dataset, there are 5 phrasings</span>
+    <span class="c1"># for each question, so we need to aggregate the predictions by question, which we</span>
+    <span class="c1"># do using majority voting.</span>
+    <span class="n">using_situational</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">predictions</span><span class="p">)</span> <span class="o">==</span> <span class="n">num_questions</span> <span class="o">*</span> <span class="n">num_phrasings_per_question</span>
+    <span class="k">if</span> <span class="n">using_situational</span><span class="p">:</span>
+        <span class="c1"># Reshape the predictions to a 2D array with `num_phrasings_per_question` rows</span>
+        <span class="c1"># (one for each phrasing) and `num_questions` columns (one for each question).</span>
+        <span class="c1"># The five phrasings for each question appear right after each other, e.g.,</span>
+        <span class="c1"># (0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 2, ...)</span>
+        <span class="c1"># Shape: (num_questions, num_phrasings_per_question)</span>
+        <span class="n">arr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span>
+            <span class="p">[</span>
+                <span class="n">predictions</span><span class="p">[</span><span class="n">i</span> <span class="p">:</span> <span class="n">i</span> <span class="o">+</span> <span class="n">num_phrasings_per_question</span><span class="p">]</span>
+                <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">predictions</span><span class="p">),</span> <span class="n">num_phrasings_per_question</span><span class="p">)</span>
+            <span class="p">]</span>
+        <span class="p">)</span>
+
+        <span class="c1"># Double check that we reshaped the predictions correctly</span>
+        <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">pred</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">predictions</span><span class="p">):</span>
+            <span class="k">assert</span> <span class="n">arr</span><span class="p">[</span><span class="n">idx</span> <span class="o">//</span> <span class="mi">5</span><span class="p">,</span> <span class="n">idx</span> <span class="o">%</span> <span class="mi">5</span><span class="p">]</span> <span class="o">==</span> <span class="n">pred</span><span class="p">,</span> <span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Reshaped predictions do not match the original predictions at index &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">idx</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">arr</span><span class="p">[</span><span class="n">idx</span><span class="w"> </span><span class="o">//</span><span class="w"> </span><span class="mi">5</span><span class="p">,</span><span class="w"> </span><span class="n">idx</span><span class="w"> </span><span class="o">%</span><span class="w"> </span><span class="mi">5</span><span class="p">]</span><span class="si">}</span><span class="s2"> != </span><span class="si">{</span><span class="n">pred</span><span class="si">}</span><span class="s2">.&quot;</span>
+            <span class="p">)</span>
+
+        <span class="c1"># Use majority voting to get the final prediction for each question</span>
+        <span class="c1"># Shape: (53,)</span>
+        <span class="n">arr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">apply_along_axis</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">bincount</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="o">.</span><span class="n">argmax</span><span class="p">(),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">arr</span><span class="o">=</span><span class="n">arr</span><span class="p">)</span>
+
+        <span class="c1"># Convert the array to a list</span>
+        <span class="n">predictions</span> <span class="o">=</span> <span class="n">arr</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+
+    <span class="c1"># Some of the questions are categorical and we&#39;re only interested in whether the</span>
+    <span class="c1"># model chooses a specific choice or not. This mapping takes the question index</span>
+    <span class="c1"># to the choice value that we&#39;re interested in.</span>
+    <span class="n">question_choices</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="mi">0</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="mi">1</span><span class="p">:</span> <span class="mi">5</span><span class="p">,</span>
+        <span class="mi">3</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span>
+        <span class="mi">6</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="mi">15</span><span class="p">:</span> <span class="mi">4</span><span class="p">,</span>
+        <span class="mi">20</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>
+        <span class="mi">47</span><span class="p">:</span> <span class="mi">8</span><span class="p">,</span>
+        <span class="mi">48</span><span class="p">:</span> <span class="mi">7</span><span class="p">,</span>
+        <span class="mi">49</span><span class="p">:</span> <span class="mi">4</span><span class="p">,</span>
+        <span class="mi">51</span><span class="p">:</span> <span class="mi">4</span><span class="p">,</span>
+        <span class="mi">52</span><span class="p">:</span> <span class="mi">4</span><span class="p">,</span>
+    <span class="p">}</span>
+
+    <span class="c1"># Map the predictions to the choices we&#39;re interested in</span>
+    <span class="n">predictions</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">predictions</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">question_idx</span><span class="p">,</span> <span class="n">choice</span> <span class="ow">in</span> <span class="n">question_choices</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="n">predictions</span><span class="p">[</span><span class="n">question_idx</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span> <span class="k">if</span> <span class="n">predictions</span><span class="p">[</span><span class="n">question_idx</span><span class="p">]</span> <span class="o">==</span> <span class="n">choice</span> <span class="k">else</span> <span class="mi">0</span>
+
+    <span class="k">return</span> <span class="n">predictions</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">european_values_scoring_function</span><span class="p">(</span><div class="mkapi-source-link" id="euroeval.metrics.european_values_scoring_function"><a href="../../../api/euroeval/metrics/#euroeval.metrics.european_values_scoring_function" title="Go to docs">[docs]</a></div>
+    <span class="n">pipeline</span><span class="p">:</span> <span class="s2">&quot;Pipeline&quot;</span><span class="p">,</span> <span class="n">predictions</span><span class="p">:</span> <span class="n">c</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Scoring function for the European Values metric.&quot;&quot;&quot;</span>
+    <span class="n">normalised_predictions</span> <span class="o">=</span> <span class="n">pipeline</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">transform</span><span class="p">([</span><span class="n">predictions</span><span class="p">])</span>
+    <span class="n">log_likelihoods</span> <span class="o">=</span> <span class="n">pipeline</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">normalised_predictions</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">score</span> <span class="o">=</span> <span class="n">sigmoid</span><span class="p">(</span><span class="n">pipeline</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">alpha_</span> <span class="o">*</span> <span class="p">(</span><span class="n">log_likelihoods</span> <span class="o">-</span> <span class="n">pipeline</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">center_</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">score</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
+
+
+<span class="n">european_values_metric</span> <span class="o">=</span> <span class="n">PipelineMetric</span><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;european_values&quot;</span><span class="p">,</span>
+    <span class="n">pretty_name</span><span class="o">=</span><span class="s2">&quot;European Values&quot;</span><span class="p">,</span>
+    <span class="n">pipeline_repo</span><span class="o">=</span><span class="s2">&quot;EuroEval/european-values-pipeline&quot;</span><span class="p">,</span>
+    <span class="n">pipeline_scoring_function</span><span class="o">=</span><span class="n">european_values_scoring_function</span><span class="p">,</span>
+    <span class="n">preprocessing_fn</span><span class="o">=</span><span class="n">european_values_preprocessing_fn</span><span class="p">,</span>
+<span class="p">)</span>
+
 
 <span class="k">class</span><span class="w"> </span><span class="nc">Fluency</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span><div class="mkapi-source-link" id="euroeval.metrics.Fluency"><a href="../../../api/euroeval/metrics/#euroeval.metrics.Fluency" title="Go to docs">[docs]</a></div>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Response format for the fluency metric.</span>
@@ -1807,8 +2256,8 @@
 <span class="n">fluency_metric</span> <span class="o">=</span> <span class="n">LLMAsAJudgeMetric</span><span class="p">(</span>
     <span class="n">name</span><span class="o">=</span><span class="s2">&quot;fluency&quot;</span><span class="p">,</span>
     <span class="n">pretty_name</span><span class="o">=</span><span class="s2">&quot;Fluency&quot;</span><span class="p">,</span>
-    <span class="n">judge_id</span><span class="o">=</span><span class="s2">&quot;gpt-4o-mini&quot;</span><span class="p">,</span>
-    <span class="n">judge_kwargs</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">temperature</span><span class="o">=</span><span class="mf">0.0</span><span class="p">),</span>
+    <span class="n">judge_id</span><span class="o">=</span><span class="s2">&quot;gpt-5-2025-08-07&quot;</span><span class="p">,</span>
+    <span class="n">judge_kwargs</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">temperature</span><span class="o">=</span><span class="mf">1.0</span><span class="p">),</span>
     <span class="n">user_prompt</span><span class="o">=</span><span class="s2">&quot;Please rate the fluency of the following text on a scale from 1 to 5, &quot;</span>
     <span class="s2">&quot;with the following definitions:</span><span class="se">\n</span><span class="s2">&quot;</span>
     <span class="s2">&quot;- 1: Very poor fluency, many grammatical errors</span><span class="se">\n</span><span class="s2">&quot;</span>
@@ -1888,10 +2337,10 @@
     
     
       
-      <script id="__config" type="application/json">{"base": "../../..", "features": ["navigation.top", "navigation.path", "navigation.prune", "navigation.indexes", "navigation.tabs", "navigation.tabs.sticky", "navigation.instant", "navigation.instant.prefetch", "navigation.instant.progress", "navigation.tracking", "navigation.sections"], "search": "../../../assets/javascripts/workers/search.d50fe291.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"base": "../../..", "features": ["navigation.top", "navigation.path", "navigation.prune", "navigation.indexes", "navigation.tabs", "navigation.tabs.sticky", "navigation.instant", "navigation.instant.prefetch", "navigation.instant.progress", "navigation.tracking", "navigation.sections"], "search": "../../../assets/javascripts/workers/search.973d3a69.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../../assets/javascripts/bundle.50899def.min.js"></script>
+      <script src="../../../assets/javascripts/bundle.92b07e13.min.js"></script>
       
         <script src="../../../javascript/mkapi.js"></script>
       

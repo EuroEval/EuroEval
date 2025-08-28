@@ -12,7 +12,7 @@
       
       
       <link rel="icon" href="../../../gfx/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.16">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.17">
     
     
       
@@ -625,6 +625,8 @@
       
         
       
+        
+      
     
     
     
@@ -911,12 +913,9 @@
 <span class="normal">74</span>
 <span class="normal">75</span>
 <span class="normal">76</span>
-<span class="normal">77</span>
-<span class="normal">78</span>
-<span class="normal">79</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Constants used throughout the project.&quot;&quot;&quot;</span>
+<span class="normal">77</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Constants used throughout the project.&quot;&quot;&quot;</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">.enums</span><span class="w"> </span><span class="kn">import</span> <span class="n">TaskGroup</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">.tasks</span><span class="w"> </span><span class="kn">import</span> <span class="n">NER</span>
 
 <span class="c1"># This is used as input to generative models; it cannot be a special token</span>
 <span class="n">DUMMY_FILL_VALUE</span> <span class="o">=</span> <span class="mi">100</span>
@@ -952,21 +951,10 @@
 <span class="n">LOCAL_MODELS_REQUIRED_FILES</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;config.json&quot;</span><span class="p">]</span>
 
 
-<span class="c1"># Tasks where we use structured generation for generative models</span>
-<span class="n">TASKS_USING_JSON</span> <span class="o">=</span> <span class="p">[</span><span class="n">NER</span><span class="p">]</span>
-
-
-<span class="c1"># Tasks where we use log probabilities for generative models, rather than the raw</span>
-<span class="c1"># completion</span>
-<span class="n">TASK_GROUPS_USING_LOGPROBS</span> <span class="o">=</span> <span class="p">[</span>
-    <span class="n">TaskGroup</span><span class="o">.</span><span class="n">SEQUENCE_CLASSIFICATION</span><span class="p">,</span>
-    <span class="n">TaskGroup</span><span class="o">.</span><span class="n">MULTIPLE_CHOICE_CLASSIFICATION</span><span class="p">,</span>
-<span class="p">]</span>
-
-
 <span class="c1"># The number of top log probabilities to return for generative models. For several APIs</span>
 <span class="c1"># this is the maximum number of log probabilities that can be returned</span>
-<span class="n">MAX_LOGPROBS</span> <span class="o">=</span> <span class="mi">8</span>
+<span class="n">MAX_VLLM_LOGPROBS</span> <span class="o">=</span> <span class="mi">20</span>
+<span class="n">MAX_LITELLM_LOGPROBS</span> <span class="o">=</span> <span class="mi">8</span>
 
 
 <span class="c1"># We make sure to remove these metric attributes after each iteration, to avoid memory</span>
@@ -992,6 +980,16 @@
 <span class="c1"># manually. We only use them as stop tokens if they actually appear in the model&#39;s</span>
 <span class="c1"># output</span>
 <span class="n">CUSTOM_STOP_TOKENS</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;&lt;sep&gt;&quot;</span><span class="p">]</span>
+
+
+<span class="c1"># For classification tasks we force LiteLLM models to output a JSON dictionary with a</span>
+<span class="c1"># single key and the values being restricted to the allowed labels. This is the key we</span>
+<span class="c1"># use</span>
+<span class="n">LITELLM_CLASSIFICATION_OUTPUT_KEY</span> <span class="o">=</span> <span class="s2">&quot;label&quot;</span>
+
+
+<span class="c1"># These characters are stripped from JSON output when trying to identify the label</span>
+<span class="n">JSON_STRIP_CHARACTERS</span> <span class="o">=</span> <span class="s1">&#39; </span><span class="si">{}</span><span class="se">\n\r</span><span class="s1">&quot;:&#39;</span>
 </code></pre></div></td></tr></table></div>
 
 
@@ -1052,10 +1050,10 @@
     
     
       
-      <script id="__config" type="application/json">{"base": "../../..", "features": ["navigation.top", "navigation.path", "navigation.prune", "navigation.indexes", "navigation.tabs", "navigation.tabs.sticky", "navigation.instant", "navigation.instant.prefetch", "navigation.instant.progress", "navigation.tracking", "navigation.sections"], "search": "../../../assets/javascripts/workers/search.d50fe291.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"base": "../../..", "features": ["navigation.top", "navigation.path", "navigation.prune", "navigation.indexes", "navigation.tabs", "navigation.tabs.sticky", "navigation.instant", "navigation.instant.prefetch", "navigation.instant.progress", "navigation.tracking", "navigation.sections"], "search": "../../../assets/javascripts/workers/search.973d3a69.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../../assets/javascripts/bundle.50899def.min.js"></script>
+      <script src="../../../assets/javascripts/bundle.92b07e13.min.js"></script>
       
         <script src="../../../javascript/mkapi.js"></script>
       

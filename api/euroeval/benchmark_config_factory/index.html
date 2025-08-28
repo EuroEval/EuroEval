@@ -16,7 +16,7 @@
       
       
       <link rel="icon" href="../../../gfx/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.16">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.17">
     
     
       
@@ -633,6 +633,8 @@
       
         
       
+        
+      
     
     
     
@@ -863,8 +865,6 @@
       
         
       
-        
-      
     
     
     
@@ -991,6 +991,8 @@
       
         
           
+        
+      
         
       
         
@@ -1563,29 +1565,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../human_evaluation/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    euroeval.human_evaluation
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../languages/" class="md-nav__link">
         
   
@@ -1994,7 +1973,7 @@ Prepare device for benchmarking.</p>
 <i class="fa-regular fa-square-minus"></i>
 </span>
 </span>
-<span class="mkapi-object-name"><a href="./#euroeval.benchmark_config_factory.build_benchmark_config" title="euroeval.benchmark_config_factory.build_benchmark_config">build_benchmark_config</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">progress_bar</span><span class="mkapi-colon">: </span><span class="mkapi-ann">bool</span><span class="mkapi-comma">, </span><span class="mkapi-arg">save_results</span><span class="mkapi-colon">: </span><span class="mkapi-ann">bool</span><span class="mkapi-comma">, </span><span class="mkapi-arg">task</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str | list[str] | None</span><span class="mkapi-comma">, </span><span class="mkapi-arg">dataset</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str | list[str] | None</span><span class="mkapi-comma">, </span><span class="mkapi-arg">language</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str | list[str]</span><span class="mkapi-comma">, </span><span class="mkapi-arg">model_language</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str | list[str] | None</span><span class="mkapi-comma">, </span><span class="mkapi-arg">dataset_language</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str | list[str] | None</span><span class="mkapi-comma">, </span><span class="mkapi-arg">device</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><a href="../enums/#euroeval.enums.Device" title="euroeval.enums.Device">Device</a> | None</span><span class="mkapi-comma">, </span><span class="mkapi-arg">batch_size</span><span class="mkapi-colon">: </span><span class="mkapi-ann">int</span><span class="mkapi-comma">, </span><span class="mkapi-arg">raise_errors</span><span class="mkapi-colon">: </span><span class="mkapi-ann">bool</span><span class="mkapi-comma">, </span><span class="mkapi-arg">cache_dir</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str</span><span class="mkapi-comma">, </span><span class="mkapi-arg">api_key</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str | None</span><span class="mkapi-comma">, </span><span class="mkapi-arg">force</span><span class="mkapi-colon">: </span><span class="mkapi-ann">bool</span><span class="mkapi-comma">, </span><span class="mkapi-arg">verbose</span><span class="mkapi-colon">: </span><span class="mkapi-ann">bool</span><span class="mkapi-comma">, </span><span class="mkapi-arg">trust_remote_code</span><span class="mkapi-colon">: </span><span class="mkapi-ann">bool</span><span class="mkapi-comma">, </span><span class="mkapi-arg">clear_model_cache</span><span class="mkapi-colon">: </span><span class="mkapi-ann">bool</span><span class="mkapi-comma">, </span><span class="mkapi-arg">evaluate_test_split</span><span class="mkapi-colon">: </span><span class="mkapi-ann">bool</span><span class="mkapi-comma">, </span><span class="mkapi-arg">few_shot</span><span class="mkapi-colon">: </span><span class="mkapi-ann">bool</span><span class="mkapi-comma">, </span><span class="mkapi-arg">num_iterations</span><span class="mkapi-colon">: </span><span class="mkapi-ann">int</span><span class="mkapi-comma">, </span><span class="mkapi-arg">api_base</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str | None</span><span class="mkapi-comma">, </span><span class="mkapi-arg">api_version</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str | None</span><span class="mkapi-comma">, </span><span class="mkapi-arg">gpu_memory_utilization</span><span class="mkapi-colon">: </span><span class="mkapi-ann">float</span><span class="mkapi-comma">, </span><span class="mkapi-arg">debug</span><span class="mkapi-colon">: </span><span class="mkapi-ann">bool</span><span class="mkapi-comma">, </span><span class="mkapi-arg">run_with_cli</span><span class="mkapi-colon">: </span><span class="mkapi-ann">bool</span><span class="mkapi-comma">, </span><span class="mkapi-arg">only_allow_safetensors</span><span class="mkapi-colon">: </span><span class="mkapi-ann">bool</span><span class="mkapi-comma">, </span><span class="mkapi-arg">first_time</span><span class="mkapi-colon">: </span><span class="mkapi-ann">bool</span><span class="mkapi-equal"> = </span><span class="mkapi-default">False</span><span class="mkapi-paren">)</span><span class="mkapi-arrow"> → </span><span class="mkapi-return"><a href="../data_models/#euroeval.data_models.BenchmarkConfig" title="euroeval.data_models.BenchmarkConfig">BenchmarkConfig</a></span></span>
+<span class="mkapi-object-name"><a href="./#euroeval.benchmark_config_factory.build_benchmark_config" title="euroeval.benchmark_config_factory.build_benchmark_config">build_benchmark_config</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">progress_bar</span><span class="mkapi-colon">: </span><span class="mkapi-ann">bool</span><span class="mkapi-comma">, </span><span class="mkapi-arg">save_results</span><span class="mkapi-colon">: </span><span class="mkapi-ann">bool</span><span class="mkapi-comma">, </span><span class="mkapi-arg">task</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str | list[str] | None</span><span class="mkapi-comma">, </span><span class="mkapi-arg">dataset</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str | list[str] | None</span><span class="mkapi-comma">, </span><span class="mkapi-arg">language</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str | list[str]</span><span class="mkapi-comma">, </span><span class="mkapi-arg">model_language</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str | list[str] | None</span><span class="mkapi-comma">, </span><span class="mkapi-arg">dataset_language</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str | list[str] | None</span><span class="mkapi-comma">, </span><span class="mkapi-arg">device</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><a href="../enums/#euroeval.enums.Device" title="euroeval.enums.Device">Device</a> | None</span><span class="mkapi-comma">, </span><span class="mkapi-arg">batch_size</span><span class="mkapi-colon">: </span><span class="mkapi-ann">int</span><span class="mkapi-comma">, </span><span class="mkapi-arg">raise_errors</span><span class="mkapi-colon">: </span><span class="mkapi-ann">bool</span><span class="mkapi-comma">, </span><span class="mkapi-arg">cache_dir</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str</span><span class="mkapi-comma">, </span><span class="mkapi-arg">api_key</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str | None</span><span class="mkapi-comma">, </span><span class="mkapi-arg">force</span><span class="mkapi-colon">: </span><span class="mkapi-ann">bool</span><span class="mkapi-comma">, </span><span class="mkapi-arg">verbose</span><span class="mkapi-colon">: </span><span class="mkapi-ann">bool</span><span class="mkapi-comma">, </span><span class="mkapi-arg">trust_remote_code</span><span class="mkapi-colon">: </span><span class="mkapi-ann">bool</span><span class="mkapi-comma">, </span><span class="mkapi-arg">clear_model_cache</span><span class="mkapi-colon">: </span><span class="mkapi-ann">bool</span><span class="mkapi-comma">, </span><span class="mkapi-arg">evaluate_test_split</span><span class="mkapi-colon">: </span><span class="mkapi-ann">bool</span><span class="mkapi-comma">, </span><span class="mkapi-arg">few_shot</span><span class="mkapi-colon">: </span><span class="mkapi-ann">bool</span><span class="mkapi-comma">, </span><span class="mkapi-arg">num_iterations</span><span class="mkapi-colon">: </span><span class="mkapi-ann">int</span><span class="mkapi-comma">, </span><span class="mkapi-arg">api_base</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str | None</span><span class="mkapi-comma">, </span><span class="mkapi-arg">api_version</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str | None</span><span class="mkapi-comma">, </span><span class="mkapi-arg">gpu_memory_utilization</span><span class="mkapi-colon">: </span><span class="mkapi-ann">float</span><span class="mkapi-comma">, </span><span class="mkapi-arg">debug</span><span class="mkapi-colon">: </span><span class="mkapi-ann">bool</span><span class="mkapi-comma">, </span><span class="mkapi-arg">run_with_cli</span><span class="mkapi-colon">: </span><span class="mkapi-ann">bool</span><span class="mkapi-comma">, </span><span class="mkapi-arg">requires_safetensors</span><span class="mkapi-colon">: </span><span class="mkapi-ann">bool</span><span class="mkapi-paren">)</span><span class="mkapi-arrow"> → </span><span class="mkapi-return"><a href="../data_models/#euroeval.data_models.BenchmarkConfig" title="euroeval.data_models.BenchmarkConfig">BenchmarkConfig</a></span></span>
 </p>
 <div class="mkapi-document">
 <p>Create a benchmark configuration.</p>
@@ -2142,15 +2121,9 @@ Whether to run the benchmark in debug mode.</p>
 Whether the benchmark is being run with the CLI.</p>
 </li>
 <li>
-<p><span class="mkapi-item-name">only_allow_safetensors</span> : 
+<p><span class="mkapi-item-name">requires_safetensors</span> : 
 <span class="mkapi-item-type">bool</span> <span class="mkapi-dash">&mdash;</span>
 Whether to only allow evaluations of models stored as safetensors.</p>
-</li>
-<li>
-<p><span class="mkapi-item-name">first_time</span> : 
-<span class="mkapi-item-type">bool</span> <span class="mkapi-dash">&mdash;</span>
-Whether this is the first time the benchmark configuration is being created.
-Defaults to False.</p>
 </li>
 </ul>
 </div>
@@ -2454,10 +2427,10 @@ The prepared device.</p>
     
     
       
-      <script id="__config" type="application/json">{"base": "../../..", "features": ["navigation.top", "navigation.path", "navigation.prune", "navigation.indexes", "navigation.tabs", "navigation.tabs.sticky", "navigation.instant", "navigation.instant.prefetch", "navigation.instant.progress", "navigation.tracking", "navigation.sections"], "search": "../../../assets/javascripts/workers/search.d50fe291.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"base": "../../..", "features": ["navigation.top", "navigation.path", "navigation.prune", "navigation.indexes", "navigation.tabs", "navigation.tabs.sticky", "navigation.instant", "navigation.instant.prefetch", "navigation.instant.progress", "navigation.tracking", "navigation.sections"], "search": "../../../assets/javascripts/workers/search.973d3a69.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../../assets/javascripts/bundle.50899def.min.js"></script>
+      <script src="../../../assets/javascripts/bundle.92b07e13.min.js"></script>
       
         <script src="../../../javascript/mkapi.js"></script>
       

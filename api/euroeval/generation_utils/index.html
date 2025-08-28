@@ -12,11 +12,11 @@
         <link rel="prev" href="../generation/">
       
       
-        <link rel="next" href="../human_evaluation/">
+        <link rel="next" href="../languages/">
       
       
       <link rel="icon" href="../../../gfx/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.16">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.17">
     
     
       
@@ -633,6 +633,8 @@
       
         
       
+        
+      
     
     
     
@@ -863,8 +865,6 @@
       
         
       
-        
-      
     
     
     
@@ -991,6 +991,8 @@
       
         
           
+        
+      
         
       
         
@@ -1536,29 +1538,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../human_evaluation/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    euroeval.human_evaluation
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../languages/" class="md-nav__link">
         
   
@@ -1925,7 +1904,7 @@ Apply prompt template to an example, potentially with few-shot examples.</p>
 <i class="fa-regular fa-square-minus"></i>
 </span>
 </span>
-<span class="mkapi-object-name"><a href="./#euroeval.generation_utils.extract_few_shot_examples" title="euroeval.generation_utils.extract_few_shot_examples">extract_few_shot_examples</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">dataset</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="datasets.dataset_dict.DatasetDict">DatasetDict</span></span><span class="mkapi-comma">, </span><span class="mkapi-arg">dataset_config</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><a href="../data_models/#euroeval.data_models.DatasetConfig" title="euroeval.data_models.DatasetConfig">DatasetConfig</a></span><span class="mkapi-comma">, </span><span class="mkapi-arg">itr_idx</span><span class="mkapi-colon">: </span><span class="mkapi-ann">int</span><span class="mkapi-paren">)</span><span class="mkapi-arrow"> → </span><span class="mkapi-return">list[dict[str, <span class="mkapi-tooltip" title="typing">t</span>.<span class="mkapi-tooltip" title="typing.Any">Any</span>]]</span></span>
+<span class="mkapi-object-name"><a href="./#euroeval.generation_utils.extract_few_shot_examples" title="euroeval.generation_utils.extract_few_shot_examples">extract_few_shot_examples</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">dataset</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="datasets.dataset_dict.DatasetDict">DatasetDict</span></span><span class="mkapi-comma">, </span><span class="mkapi-arg">dataset_config</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><a href="../data_models/#euroeval.data_models.DatasetConfig" title="euroeval.data_models.DatasetConfig">DatasetConfig</a></span><span class="mkapi-comma">, </span><span class="mkapi-arg">benchmark_config</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><a href="../data_models/#euroeval.data_models.BenchmarkConfig" title="euroeval.data_models.BenchmarkConfig">BenchmarkConfig</a></span><span class="mkapi-comma">, </span><span class="mkapi-arg">itr_idx</span><span class="mkapi-colon">: </span><span class="mkapi-ann">int</span><span class="mkapi-paren">)</span><span class="mkapi-arrow"> → </span><span class="mkapi-return">list[dict[str, <span class="mkapi-tooltip" title="typing">t</span>.<span class="mkapi-tooltip" title="typing.Any">Any</span>]]</span></span>
 </p>
 <div class="mkapi-document">
 <p>Extract few-shot examples from a dataset.</p>
@@ -1950,6 +1929,11 @@ The dataset to extract the few-shot examples from.</p>
 <p><span class="mkapi-item-name">dataset_config</span> : 
 <span class="mkapi-item-type"><a href="../data_models/#euroeval.data_models.DatasetConfig" title="euroeval.data_models.DatasetConfig">DatasetConfig</a></span> <span class="mkapi-dash">&mdash;</span>
 The dataset configuration.</p>
+</li>
+<li>
+<p><span class="mkapi-item-name">benchmark_config</span> : 
+<span class="mkapi-item-type"><a href="../data_models/#euroeval.data_models.BenchmarkConfig" title="euroeval.data_models.BenchmarkConfig">BenchmarkConfig</a></span> <span class="mkapi-dash">&mdash;</span>
+The benchmark configuration.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">itr_idx</span> : 
@@ -1985,10 +1969,12 @@ The few-shot examples.</p>
 <div class="mkapi-section-content">
 <ul class="mkapi-item-list">
 <li>
-<p><span class="mkapi-item-type">NotImplementedError</span></p>
+<p><span class="mkapi-item-name">InvalidBenchmark</span>
+ <span class="mkapi-dash">&mdash;</span>
+If there are not enough short examples for few-shot learning.</p>
 </li>
 <li>
-<p><span class="mkapi-item-type"><a href="../exceptions/#euroeval.exceptions.InvalidBenchmark" title="euroeval.exceptions.InvalidBenchmark">InvalidBenchmark</a></span></p>
+<p><span class="mkapi-item-type">NotImplementedError</span></p>
 </li>
 </ul>
 </div>
@@ -2140,10 +2126,10 @@ The example with the few-shot examples applied.</p>
     
     
       
-      <script id="__config" type="application/json">{"base": "../../..", "features": ["navigation.top", "navigation.path", "navigation.prune", "navigation.indexes", "navigation.tabs", "navigation.tabs.sticky", "navigation.instant", "navigation.instant.prefetch", "navigation.instant.progress", "navigation.tracking", "navigation.sections"], "search": "../../../assets/javascripts/workers/search.d50fe291.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"base": "../../..", "features": ["navigation.top", "navigation.path", "navigation.prune", "navigation.indexes", "navigation.tabs", "navigation.tabs.sticky", "navigation.instant", "navigation.instant.prefetch", "navigation.instant.progress", "navigation.tracking", "navigation.sections"], "search": "../../../assets/javascripts/workers/search.973d3a69.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../../assets/javascripts/bundle.50899def.min.js"></script>
+      <script src="../../../assets/javascripts/bundle.92b07e13.min.js"></script>
       
         <script src="../../../javascript/mkapi.js"></script>
       

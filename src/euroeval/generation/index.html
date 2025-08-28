@@ -12,7 +12,7 @@
       
       
       <link rel="icon" href="../../../gfx/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.16">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.17">
     
     
       
@@ -625,6 +625,8 @@
       
         
       
+        
+      
     
     
     
@@ -1199,7 +1201,18 @@
 <span class="normal">327</span>
 <span class="normal">328</span>
 <span class="normal">329</span>
-<span class="normal">330</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Functions related to text generation of models.&quot;&quot;&quot;</span>
+<span class="normal">330</span>
+<span class="normal">331</span>
+<span class="normal">332</span>
+<span class="normal">333</span>
+<span class="normal">334</span>
+<span class="normal">335</span>
+<span class="normal">336</span>
+<span class="normal">337</span>
+<span class="normal">338</span>
+<span class="normal">339</span>
+<span class="normal">340</span>
+<span class="normal">341</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Functions related to text generation of models.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
@@ -1207,6 +1220,7 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">more_itertools</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">mit</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">datasets</span><span class="w"> </span><span class="kn">import</span> <span class="n">Dataset</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">tqdm.auto</span><span class="w"> </span><span class="kn">import</span> <span class="n">tqdm</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">.enums</span><span class="w"> </span><span class="kn">import</span> <span class="n">BatchingPreference</span><span class="p">,</span> <span class="n">TaskGroup</span>
@@ -1216,10 +1230,10 @@
     <span class="n">load_cached_model_outputs</span><span class="p">,</span>
     <span class="n">split_dataset_into_cached_and_non_cached</span><span class="p">,</span>
 <span class="p">)</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">clear_memory</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">clear_memory</span><span class="p">,</span> <span class="n">log_once</span>
 
 <span class="k">if</span> <span class="n">t</span><span class="o">.</span><span class="n">TYPE_CHECKING</span><span class="p">:</span>
-    <span class="kn">from</span><span class="w"> </span><span class="nn">datasets</span><span class="w"> </span><span class="kn">import</span> <span class="n">Dataset</span><span class="p">,</span> <span class="n">DatasetDict</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">datasets</span><span class="w"> </span><span class="kn">import</span> <span class="n">DatasetDict</span>
 
     <span class="kn">from</span><span class="w"> </span><span class="nn">.benchmark_modules</span><span class="w"> </span><span class="kn">import</span> <span class="n">BenchmarkModule</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">.data_models</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
@@ -1279,7 +1293,7 @@
 
     <span class="n">scores</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]]</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
     <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="n">tqdm</span><span class="p">(</span>
-        <span class="n">iterable</span><span class="o">=</span><span class="nb">range</span><span class="p">(</span><span class="n">benchmark_config</span><span class="o">.</span><span class="n">num_iterations</span><span class="p">),</span>
+        <span class="n">iterable</span><span class="o">=</span><span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">datasets</span><span class="p">)),</span>
         <span class="n">desc</span><span class="o">=</span><span class="s2">&quot;Benchmarking&quot;</span><span class="p">,</span>
         <span class="n">disable</span><span class="o">=</span><span class="ow">not</span> <span class="n">benchmark_config</span><span class="o">.</span><span class="n">progress_bar</span><span class="p">,</span>
     <span class="p">):</span>
@@ -1290,7 +1304,6 @@
             <span class="n">dataset_config</span><span class="o">=</span><span class="n">dataset_config</span><span class="p">,</span>
             <span class="n">benchmark_config</span><span class="o">=</span><span class="n">benchmark_config</span><span class="p">,</span>
         <span class="p">)</span>
-
         <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Test scores for iteration </span><span class="si">{</span><span class="n">idx</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">test_scores</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
         <span class="n">scores</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">test_scores</span><span class="p">)</span>
         <span class="n">clear_memory</span><span class="p">()</span>
@@ -1327,10 +1340,15 @@
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">cache</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
 
-    <span class="c1"># Split up the dataset into a cached and non-cached part</span>
-    <span class="n">cached_dataset</span><span class="p">,</span> <span class="n">non_cached_dataset</span> <span class="o">=</span> <span class="n">split_dataset_into_cached_and_non_cached</span><span class="p">(</span>
-        <span class="n">dataset</span><span class="o">=</span><span class="n">dataset</span><span class="p">,</span> <span class="n">cache</span><span class="o">=</span><span class="n">cache</span>
-    <span class="p">)</span>
+    <span class="c1"># Split up the dataset into a cached and non-cached part, unless we are not</span>
+    <span class="c1"># bootstrapping the samples. In that case, we just use the dataset as is.</span>
+    <span class="k">if</span> <span class="n">dataset_config</span><span class="o">.</span><span class="n">bootstrap_samples</span><span class="p">:</span>
+        <span class="n">cached_dataset</span><span class="p">,</span> <span class="n">non_cached_dataset</span> <span class="o">=</span> <span class="n">split_dataset_into_cached_and_non_cached</span><span class="p">(</span>
+            <span class="n">dataset</span><span class="o">=</span><span class="n">dataset</span><span class="p">,</span> <span class="n">cache</span><span class="o">=</span><span class="n">cache</span>
+        <span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">cached_dataset</span> <span class="o">=</span> <span class="n">Dataset</span><span class="o">.</span><span class="n">from_dict</span><span class="p">({})</span>
+        <span class="n">non_cached_dataset</span> <span class="o">=</span> <span class="n">dataset</span>
 
     <span class="n">all_preds</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
 
@@ -1431,9 +1449,12 @@
             <span class="n">cached_labels</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">cached_labels</span><span class="p">)</span>
         <span class="n">ground_truth</span> <span class="o">=</span> <span class="n">non_cached_labels</span> <span class="o">+</span> <span class="n">cached_labels</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-            <span class="s2">&quot;The dataset must have either a &#39;label&#39;, &#39;labels&#39;, or &#39;target_text&#39; column&quot;</span>
+        <span class="n">log_once</span><span class="p">(</span>
+            <span class="s2">&quot;No labels found in the dataset. We assume that this is intentional, and &quot;</span>
+            <span class="s2">&quot;will not supply any ground truth labels for evaluation.&quot;</span><span class="p">,</span>
+            <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
         <span class="p">)</span>
+        <span class="n">ground_truth</span> <span class="o">=</span> <span class="p">[]</span>
 
     <span class="n">itr_scores</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">compute_metrics</span><span class="p">(</span>
         <span class="n">model_outputs_and_labels</span><span class="o">=</span><span class="p">(</span><span class="n">all_preds</span><span class="p">,</span> <span class="n">ground_truth</span><span class="p">),</span> <span class="n">dataset</span><span class="o">=</span><span class="n">dataset</span>
@@ -1494,10 +1515,13 @@
         <span class="k">case</span> <span class="p">(</span>
             <span class="n">TaskGroup</span><span class="o">.</span><span class="n">SEQUENCE_CLASSIFICATION</span> <span class="o">|</span> <span class="n">TaskGroup</span><span class="o">.</span><span class="n">MULTIPLE_CHOICE_CLASSIFICATION</span>
         <span class="p">):</span>
-            <span class="n">labels</span> <span class="o">=</span> <span class="p">[</span>
-                <span class="n">dataset_config</span><span class="o">.</span><span class="n">prompt_label_mapping</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">label</span><span class="p">,</span> <span class="n">label</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
-                <span class="k">for</span> <span class="n">label</span> <span class="ow">in</span> <span class="n">batch</span><span class="p">[</span><span class="s2">&quot;label&quot;</span><span class="p">]</span>
-            <span class="p">]</span>
+            <span class="k">if</span> <span class="s2">&quot;label&quot;</span> <span class="ow">in</span> <span class="n">batch</span><span class="p">:</span>
+                <span class="n">labels</span> <span class="o">=</span> <span class="p">[</span>
+                    <span class="n">dataset_config</span><span class="o">.</span><span class="n">prompt_label_mapping</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">label</span><span class="p">,</span> <span class="n">label</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+                    <span class="k">for</span> <span class="n">label</span> <span class="ow">in</span> <span class="n">batch</span><span class="p">[</span><span class="s2">&quot;label&quot;</span><span class="p">]</span>
+                <span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">labels</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;N/A&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">extracted_labels</span><span class="p">)</span>
 
         <span class="k">case</span> <span class="n">TaskGroup</span><span class="o">.</span><span class="n">QUESTION_ANSWERING</span><span class="p">:</span>
             <span class="n">extracted_labels</span> <span class="o">=</span> <span class="p">[</span>
@@ -1590,10 +1614,10 @@
     
     
       
-      <script id="__config" type="application/json">{"base": "../../..", "features": ["navigation.top", "navigation.path", "navigation.prune", "navigation.indexes", "navigation.tabs", "navigation.tabs.sticky", "navigation.instant", "navigation.instant.prefetch", "navigation.instant.progress", "navigation.tracking", "navigation.sections"], "search": "../../../assets/javascripts/workers/search.d50fe291.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"base": "../../..", "features": ["navigation.top", "navigation.path", "navigation.prune", "navigation.indexes", "navigation.tabs", "navigation.tabs.sticky", "navigation.instant", "navigation.instant.prefetch", "navigation.instant.progress", "navigation.tracking", "navigation.sections"], "search": "../../../assets/javascripts/workers/search.973d3a69.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../../assets/javascripts/bundle.50899def.min.js"></script>
+      <script src="../../../assets/javascripts/bundle.92b07e13.min.js"></script>
       
         <script src="../../../javascript/mkapi.js"></script>
       

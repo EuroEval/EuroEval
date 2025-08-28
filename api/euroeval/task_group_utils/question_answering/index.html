@@ -16,7 +16,7 @@
       
       
       <link rel="icon" href="../../../../gfx/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.16">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.17">
     
     
       
@@ -633,6 +633,8 @@
       
         
       
+        
+      
     
     
     
@@ -863,8 +865,6 @@
       
         
       
-        
-      
     
     
     
@@ -991,6 +991,8 @@
       
         
           
+        
+      
         
       
         
@@ -1718,29 +1720,6 @@
   
   <span class="md-ellipsis">
     euroeval.generation_utils
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../human_evaluation/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    euroeval.human_evaluation
     
   </span>
   
@@ -2553,7 +2532,7 @@ The prepared test examples.</p>
 <i class="fa-regular fa-square-minus"></i>
 </span>
 </span>
-<span class="mkapi-object-name"><a href="./#euroeval.task_group_utils.question_answering.postprocess_predictions_and_labels" title="euroeval.task_group_utils.question_answering.postprocess_predictions_and_labels">postprocess_predictions_and_labels</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">predictions</span><span class="mkapi-colon">: </span><span class="mkapi-ann">tuple[<span class="mkapi-tooltip" title="numpy">np</span>.<span class="mkapi-tooltip" title="numpy.core.multiarray.ndarray">ndarray</span>, ...]</span><span class="mkapi-comma">, </span><span class="mkapi-arg">dataset</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="datasets.arrow_dataset.Dataset">Dataset</span></span><span class="mkapi-comma">, </span><span class="mkapi-arg">prepared_dataset</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="datasets.arrow_dataset.Dataset">Dataset</span></span><span class="mkapi-comma">, </span><span class="mkapi-arg">cls_token_index</span><span class="mkapi-colon">: </span><span class="mkapi-ann">int</span><span class="mkapi-paren">)</span><span class="mkapi-arrow"> → </span><span class="mkapi-return">tuple[list[dict], list[dict]]</span></span>
+<span class="mkapi-object-name"><a href="./#euroeval.task_group_utils.question_answering.postprocess_predictions_and_labels" title="euroeval.task_group_utils.question_answering.postprocess_predictions_and_labels">postprocess_predictions_and_labels</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">predictions</span><span class="mkapi-colon">: </span><span class="mkapi-ann">tuple[<span class="mkapi-tooltip" title="numpy">np</span>.<span class="mkapi-tooltip" title="numpy._core.ndarray">ndarray</span>, ...]</span><span class="mkapi-comma">, </span><span class="mkapi-arg">dataset</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="datasets.arrow_dataset.Dataset">Dataset</span></span><span class="mkapi-comma">, </span><span class="mkapi-arg">prepared_dataset</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="datasets.arrow_dataset.Dataset">Dataset</span></span><span class="mkapi-comma">, </span><span class="mkapi-arg">cls_token_index</span><span class="mkapi-colon">: </span><span class="mkapi-ann">int</span><span class="mkapi-paren">)</span><span class="mkapi-arrow"> → </span><span class="mkapi-return">tuple[list[dict], list[dict]]</span></span>
 </p>
 <div class="mkapi-document">
 <p>Postprocess the predictions and labels, to allow easier metric computation.</p>
@@ -2569,7 +2548,7 @@ The prepared test examples.</p>
 <ul class="mkapi-item-list">
 <li>
 <p><span class="mkapi-item-name">predictions</span> : 
-<span class="mkapi-item-type">tuple[<span class="mkapi-tooltip" title="numpy">np</span>.<span class="mkapi-tooltip" title="numpy.core.multiarray.ndarray">ndarray</span>, ...]</span> <span class="mkapi-dash">&mdash;</span>
+<span class="mkapi-item-type">tuple[<span class="mkapi-tooltip" title="numpy">np</span>.<span class="mkapi-tooltip" title="numpy._core.ndarray">ndarray</span>, ...]</span> <span class="mkapi-dash">&mdash;</span>
 A tuple whose first two elements are (start_logits, end_logits).</p>
 </li>
 <li>
@@ -2630,7 +2609,7 @@ The postprocessed predictions and labels.</p>
 <i class="fa-regular fa-square-minus"></i>
 </span>
 </span>
-<span class="mkapi-object-name"><a href="./#euroeval.task_group_utils.question_answering.find_best_answer" title="euroeval.task_group_utils.question_answering.find_best_answer">find_best_answer</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">all_start_logits</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="numpy">np</span>.<span class="mkapi-tooltip" title="numpy.core.multiarray.ndarray">ndarray</span></span><span class="mkapi-comma">, </span><span class="mkapi-arg">all_end_logits</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="numpy">np</span>.<span class="mkapi-tooltip" title="numpy.core.multiarray.ndarray">ndarray</span></span><span class="mkapi-comma">, </span><span class="mkapi-arg">prepared_dataset</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="datasets.arrow_dataset.Dataset">Dataset</span></span><span class="mkapi-comma">, </span><span class="mkapi-arg">feature_indices</span><span class="mkapi-colon">: </span><span class="mkapi-ann">list[int]</span><span class="mkapi-comma">, </span><span class="mkapi-arg">context</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str</span><span class="mkapi-comma">, </span><span class="mkapi-arg">max_answer_length</span><span class="mkapi-colon">: </span><span class="mkapi-ann">int</span><span class="mkapi-comma">, </span><span class="mkapi-arg">num_best_logits</span><span class="mkapi-colon">: </span><span class="mkapi-ann">int</span><span class="mkapi-comma">, </span><span class="mkapi-arg">min_null_score</span><span class="mkapi-colon">: </span><span class="mkapi-ann">float</span><span class="mkapi-comma">, </span><span class="mkapi-arg">cls_token_index</span><span class="mkapi-colon">: </span><span class="mkapi-ann">int</span><span class="mkapi-paren">)</span><span class="mkapi-arrow"> → </span><span class="mkapi-return">str</span></span>
+<span class="mkapi-object-name"><a href="./#euroeval.task_group_utils.question_answering.find_best_answer" title="euroeval.task_group_utils.question_answering.find_best_answer">find_best_answer</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">all_start_logits</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="numpy">np</span>.<span class="mkapi-tooltip" title="numpy._core.ndarray">ndarray</span></span><span class="mkapi-comma">, </span><span class="mkapi-arg">all_end_logits</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="numpy">np</span>.<span class="mkapi-tooltip" title="numpy._core.ndarray">ndarray</span></span><span class="mkapi-comma">, </span><span class="mkapi-arg">prepared_dataset</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="datasets.arrow_dataset.Dataset">Dataset</span></span><span class="mkapi-comma">, </span><span class="mkapi-arg">feature_indices</span><span class="mkapi-colon">: </span><span class="mkapi-ann">list[int]</span><span class="mkapi-comma">, </span><span class="mkapi-arg">context</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str</span><span class="mkapi-comma">, </span><span class="mkapi-arg">max_answer_length</span><span class="mkapi-colon">: </span><span class="mkapi-ann">int</span><span class="mkapi-comma">, </span><span class="mkapi-arg">num_best_logits</span><span class="mkapi-colon">: </span><span class="mkapi-ann">int</span><span class="mkapi-comma">, </span><span class="mkapi-arg">min_null_score</span><span class="mkapi-colon">: </span><span class="mkapi-ann">float</span><span class="mkapi-comma">, </span><span class="mkapi-arg">cls_token_index</span><span class="mkapi-colon">: </span><span class="mkapi-ann">int</span><span class="mkapi-paren">)</span><span class="mkapi-arrow"> → </span><span class="mkapi-return">str</span></span>
 </p>
 <div class="mkapi-document">
 <p>Find the best answer for a given example.</p>
@@ -2646,12 +2625,12 @@ The postprocessed predictions and labels.</p>
 <ul class="mkapi-item-list">
 <li>
 <p><span class="mkapi-item-name">all_start_logits</span> : 
-<span class="mkapi-item-type"><span class="mkapi-tooltip" title="numpy">np</span>.<span class="mkapi-tooltip" title="numpy.core.multiarray.ndarray">ndarray</span></span> <span class="mkapi-dash">&mdash;</span>
+<span class="mkapi-item-type"><span class="mkapi-tooltip" title="numpy">np</span>.<span class="mkapi-tooltip" title="numpy._core.ndarray">ndarray</span></span> <span class="mkapi-dash">&mdash;</span>
 The start logits for all the features.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">all_end_logits</span> : 
-<span class="mkapi-item-type"><span class="mkapi-tooltip" title="numpy">np</span>.<span class="mkapi-tooltip" title="numpy.core.multiarray.ndarray">ndarray</span></span> <span class="mkapi-dash">&mdash;</span>
+<span class="mkapi-item-type"><span class="mkapi-tooltip" title="numpy">np</span>.<span class="mkapi-tooltip" title="numpy._core.ndarray">ndarray</span></span> <span class="mkapi-dash">&mdash;</span>
 The end logits for all the features.</p>
 </li>
 <li>
@@ -2717,7 +2696,7 @@ The best answer for the example.</p>
 <i class="fa-regular fa-square-minus"></i>
 </span>
 </span>
-<span class="mkapi-object-name"><a href="./#euroeval.task_group_utils.question_answering.find_valid_answers" title="euroeval.task_group_utils.question_answering.find_valid_answers">find_valid_answers</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">start_logits</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="numpy">np</span>.<span class="mkapi-tooltip" title="numpy.core.multiarray.ndarray">ndarray</span></span><span class="mkapi-comma">, </span><span class="mkapi-arg">end_logits</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="numpy">np</span>.<span class="mkapi-tooltip" title="numpy.core.multiarray.ndarray">ndarray</span></span><span class="mkapi-comma">, </span><span class="mkapi-arg">offset_mapping</span><span class="mkapi-colon">: </span><span class="mkapi-ann">list[tuple[int, int]]</span><span class="mkapi-comma">, </span><span class="mkapi-arg">context</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str</span><span class="mkapi-comma">, </span><span class="mkapi-arg">max_answer_length</span><span class="mkapi-colon">: </span><span class="mkapi-ann">int</span><span class="mkapi-comma">, </span><span class="mkapi-arg">num_best_logits</span><span class="mkapi-colon">: </span><span class="mkapi-ann">int</span><span class="mkapi-comma">, </span><span class="mkapi-arg">min_null_score</span><span class="mkapi-colon">: </span><span class="mkapi-ann">float</span><span class="mkapi-paren">)</span><span class="mkapi-arrow"> → </span><span class="mkapi-return">list[dict]</span></span>
+<span class="mkapi-object-name"><a href="./#euroeval.task_group_utils.question_answering.find_valid_answers" title="euroeval.task_group_utils.question_answering.find_valid_answers">find_valid_answers</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">start_logits</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="numpy">np</span>.<span class="mkapi-tooltip" title="numpy._core.ndarray">ndarray</span></span><span class="mkapi-comma">, </span><span class="mkapi-arg">end_logits</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="numpy">np</span>.<span class="mkapi-tooltip" title="numpy._core.ndarray">ndarray</span></span><span class="mkapi-comma">, </span><span class="mkapi-arg">offset_mapping</span><span class="mkapi-colon">: </span><span class="mkapi-ann">list[tuple[int, int]]</span><span class="mkapi-comma">, </span><span class="mkapi-arg">context</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str</span><span class="mkapi-comma">, </span><span class="mkapi-arg">max_answer_length</span><span class="mkapi-colon">: </span><span class="mkapi-ann">int</span><span class="mkapi-comma">, </span><span class="mkapi-arg">num_best_logits</span><span class="mkapi-colon">: </span><span class="mkapi-ann">int</span><span class="mkapi-comma">, </span><span class="mkapi-arg">min_null_score</span><span class="mkapi-colon">: </span><span class="mkapi-ann">float</span><span class="mkapi-paren">)</span><span class="mkapi-arrow"> → </span><span class="mkapi-return">list[dict]</span></span>
 </p>
 <div class="mkapi-document">
 <p>Find the valid answers from the start and end indexes.</p>
@@ -2733,12 +2712,12 @@ The best answer for the example.</p>
 <ul class="mkapi-item-list">
 <li>
 <p><span class="mkapi-item-name">start_logits</span> : 
-<span class="mkapi-item-type"><span class="mkapi-tooltip" title="numpy">np</span>.<span class="mkapi-tooltip" title="numpy.core.multiarray.ndarray">ndarray</span></span> <span class="mkapi-dash">&mdash;</span>
+<span class="mkapi-item-type"><span class="mkapi-tooltip" title="numpy">np</span>.<span class="mkapi-tooltip" title="numpy._core.ndarray">ndarray</span></span> <span class="mkapi-dash">&mdash;</span>
 The logits for the start of the answer.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">end_logits</span> : 
-<span class="mkapi-item-type"><span class="mkapi-tooltip" title="numpy">np</span>.<span class="mkapi-tooltip" title="numpy.core.multiarray.ndarray">ndarray</span></span> <span class="mkapi-dash">&mdash;</span>
+<span class="mkapi-item-type"><span class="mkapi-tooltip" title="numpy">np</span>.<span class="mkapi-tooltip" title="numpy._core.ndarray">ndarray</span></span> <span class="mkapi-dash">&mdash;</span>
 The logits for the end of the answer.</p>
 </li>
 <li>
@@ -2844,10 +2823,10 @@ A list of the valid answers, each being a dictionary with keys "text" and
     
     
       
-      <script id="__config" type="application/json">{"base": "../../../..", "features": ["navigation.top", "navigation.path", "navigation.prune", "navigation.indexes", "navigation.tabs", "navigation.tabs.sticky", "navigation.instant", "navigation.instant.prefetch", "navigation.instant.progress", "navigation.tracking", "navigation.sections"], "search": "../../../../assets/javascripts/workers/search.d50fe291.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"base": "../../../..", "features": ["navigation.top", "navigation.path", "navigation.prune", "navigation.indexes", "navigation.tabs", "navigation.tabs.sticky", "navigation.instant", "navigation.instant.prefetch", "navigation.instant.progress", "navigation.tracking", "navigation.sections"], "search": "../../../../assets/javascripts/workers/search.973d3a69.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../../../assets/javascripts/bundle.50899def.min.js"></script>
+      <script src="../../../../assets/javascripts/bundle.92b07e13.min.js"></script>
       
         <script src="../../../../javascript/mkapi.js"></script>
       

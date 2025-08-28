@@ -12,7 +12,7 @@
       
       
       <link rel="icon" href="../../../gfx/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.16">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.17">
     
     
       
@@ -597,6 +597,8 @@
       
         
           
+        
+      
         
       
         
@@ -1753,7 +1755,50 @@
 <span class="normal">656</span>
 <span class="normal">657</span>
 <span class="normal">658</span>
-<span class="normal">659</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Data models used in EuroEval.&quot;&quot;&quot;</span>
+<span class="normal">659</span>
+<span class="normal">660</span>
+<span class="normal">661</span>
+<span class="normal">662</span>
+<span class="normal">663</span>
+<span class="normal">664</span>
+<span class="normal">665</span>
+<span class="normal">666</span>
+<span class="normal">667</span>
+<span class="normal">668</span>
+<span class="normal">669</span>
+<span class="normal">670</span>
+<span class="normal">671</span>
+<span class="normal">672</span>
+<span class="normal">673</span>
+<span class="normal">674</span>
+<span class="normal">675</span>
+<span class="normal">676</span>
+<span class="normal">677</span>
+<span class="normal">678</span>
+<span class="normal">679</span>
+<span class="normal">680</span>
+<span class="normal">681</span>
+<span class="normal">682</span>
+<span class="normal">683</span>
+<span class="normal">684</span>
+<span class="normal">685</span>
+<span class="normal">686</span>
+<span class="normal">687</span>
+<span class="normal">688</span>
+<span class="normal">689</span>
+<span class="normal">690</span>
+<span class="normal">691</span>
+<span class="normal">692</span>
+<span class="normal">693</span>
+<span class="normal">694</span>
+<span class="normal">695</span>
+<span class="normal">696</span>
+<span class="normal">697</span>
+<span class="normal">698</span>
+<span class="normal">699</span>
+<span class="normal">700</span>
+<span class="normal">701</span>
+<span class="normal">702</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Data models used in EuroEval.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">pathlib</span>
@@ -1764,7 +1809,7 @@
 <span class="kn">import</span><span class="w"> </span><span class="nn">pydantic</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">.enums</span><span class="w"> </span><span class="kn">import</span> <span class="n">Device</span><span class="p">,</span> <span class="n">InferenceBackend</span><span class="p">,</span> <span class="n">ModelType</span><span class="p">,</span> <span class="n">TaskGroup</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.enums</span><span class="w"> </span><span class="kn">import</span> <span class="n">Device</span><span class="p">,</span> <span class="n">GenerativeType</span><span class="p">,</span> <span class="n">InferenceBackend</span><span class="p">,</span> <span class="n">ModelType</span><span class="p">,</span> <span class="n">TaskGroup</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.metrics</span><span class="w"> </span><span class="kn">import</span> <span class="n">Metric</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">ScoreDict</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_package_version</span>
@@ -1859,6 +1904,24 @@
 <span class="sd">            using few-shot evaluation.</span>
 <span class="sd">        default_labels:</span>
 <span class="sd">            The default labels for datasets using this task.</span>
+<span class="sd">        requires_zero_shot (optional):</span>
+<span class="sd">            Whether to only allow zero-shot evaluation for this task. If True, the</span>
+<span class="sd">            task will not be evaluated using few-shot examples.</span>
+<span class="sd">        uses_structured_output (optional):</span>
+<span class="sd">            Whether the task uses structured output. If True, the task will return</span>
+<span class="sd">            structured output (e.g., BIO tags for NER). Defaults to False.</span>
+<span class="sd">        uses_logprobs (optional):</span>
+<span class="sd">            Whether the task uses log probabilities. If True, the task will return</span>
+<span class="sd">            log probabilities for the generated tokens. Defaults to False.</span>
+<span class="sd">        requires_logprobs (optional):</span>
+<span class="sd">            Whether the task requires log probabilities. Implies `uses_logprobs`.</span>
+<span class="sd">        allowed_model_types (optional):</span>
+<span class="sd">            A list of model types that are allowed to be evaluated on this task.</span>
+<span class="sd">            Defaults to all model types being allowed.</span>
+<span class="sd">        allowed_generative_types (optional):</span>
+<span class="sd">            A list of generative model types that are allowed to be evaluated on this</span>
+<span class="sd">            task. If None, all generative model types are allowed. Only relevant if</span>
+<span class="sd">            `allowed_model_types` includes generative models.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
@@ -1868,6 +1931,24 @@
     <span class="n">default_num_few_shot_examples</span><span class="p">:</span> <span class="nb">int</span>
     <span class="n">default_max_generated_tokens</span><span class="p">:</span> <span class="nb">int</span>
     <span class="n">default_labels</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
+    <span class="n">requires_zero_shot</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">uses_structured_output</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">uses_logprobs</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">requires_logprobs</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">allowed_model_types</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">ModelType</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span>
+        <span class="n">default_factory</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="p">[</span><span class="n">ModelType</span><span class="o">.</span><span class="n">ENCODER</span><span class="p">,</span> <span class="n">ModelType</span><span class="o">.</span><span class="n">GENERATIVE</span><span class="p">]</span>
+    <span class="p">)</span>
+    <span class="n">allowed_generative_types</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">GenerativeType</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span>
+        <span class="n">default_factory</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="p">[</span>
+            <span class="n">GenerativeType</span><span class="o">.</span><span class="n">BASE</span><span class="p">,</span>
+            <span class="n">GenerativeType</span><span class="o">.</span><span class="n">INSTRUCTION_TUNED</span><span class="p">,</span>
+            <span class="n">GenerativeType</span><span class="o">.</span><span class="n">REASONING</span><span class="p">,</span>
+        <span class="p">]</span>
+    <span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">__post_init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Post-initialisation checks.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">uses_logprobs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">uses_logprobs</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">requires_logprobs</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__hash__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Return a hash of the task.&quot;&quot;&quot;</span>
@@ -1932,7 +2013,7 @@
 <span class="sd">            Whether to run the benchmark in debug mode.</span>
 <span class="sd">        run_with_cli:</span>
 <span class="sd">            Whether the benchmark is being run with the CLI.</span>
-<span class="sd">        only_allow_safetensors:</span>
+<span class="sd">        requires_safetensors:</span>
 <span class="sd">            Whether to only allow models that use the safetensors format.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
@@ -1959,7 +2040,7 @@
     <span class="n">gpu_memory_utilization</span><span class="p">:</span> <span class="nb">float</span>
     <span class="n">debug</span><span class="p">:</span> <span class="nb">bool</span>
     <span class="n">run_with_cli</span><span class="p">:</span> <span class="nb">bool</span>
-    <span class="n">only_allow_safetensors</span><span class="p">:</span> <span class="nb">bool</span>
+    <span class="n">requires_safetensors</span><span class="p">:</span> <span class="nb">bool</span>
 
 
 <span class="k">class</span><span class="w"> </span><span class="nc">BenchmarkConfigParams</span><span class="p">(</span><span class="n">pydantic</span><span class="o">.</span><span class="n">BaseModel</span><span class="p">):</span><div class="mkapi-source-link" id="euroeval.data_models.BenchmarkConfigParams"><a href="../../../api/euroeval/data_models/#euroeval.data_models.BenchmarkConfigParams" title="Go to docs">[docs]</a></div>
@@ -1991,7 +2072,7 @@
     <span class="n">gpu_memory_utilization</span><span class="p">:</span> <span class="nb">float</span>
     <span class="n">debug</span><span class="p">:</span> <span class="nb">bool</span>
     <span class="n">run_with_cli</span><span class="p">:</span> <span class="nb">bool</span>
-    <span class="n">only_allow_safetensors</span><span class="p">:</span> <span class="nb">bool</span>
+    <span class="n">requires_safetensors</span><span class="p">:</span> <span class="nb">bool</span>
 
 
 <span class="k">class</span><span class="w"> </span><span class="nc">BenchmarkResult</span><span class="p">(</span><span class="n">pydantic</span><span class="o">.</span><span class="n">BaseModel</span><span class="p">):</span><div class="mkapi-source-link" id="euroeval.data_models.BenchmarkResult"><a href="../../../api/euroeval/data_models/#euroeval.data_models.BenchmarkResult" title="Go to docs">[docs]</a></div>
@@ -2111,6 +2192,11 @@
 <span class="sd">            to a 1:1 mapping between the labels and themselves. If None then the mapping</span>
 <span class="sd">            will be set to the default mapping for the task and language. Defaults to</span>
 <span class="sd">            None.</span>
+<span class="sd">        splits (optional):</span>
+<span class="sd">            The names of the splits in the dataset. If not provided, defaults to</span>
+<span class="sd">            [&quot;train&quot;, &quot;val&quot;, &quot;test&quot;].</span>
+<span class="sd">        bootstrap_samples (optional):</span>
+<span class="sd">            Whether to bootstrap the dataset samples. Defaults to True.</span>
 <span class="sd">        unofficial (optional):</span>
 <span class="sd">            Whether the dataset is unofficial. Defaults to False.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -2127,6 +2213,8 @@
     <span class="n">_max_generated_tokens</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">_labels</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">_prompt_label_mapping</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="n">t</span><span class="o">.</span><span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;auto&quot;</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">splits</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;train&quot;</span><span class="p">,</span> <span class="s2">&quot;val&quot;</span><span class="p">,</span> <span class="s2">&quot;test&quot;</span><span class="p">])</span>
+    <span class="n">bootstrap_samples</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
     <span class="n">unofficial</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
 
     <span class="nd">@property</span>
@@ -2473,10 +2561,10 @@
     
     
       
-      <script id="__config" type="application/json">{"base": "../../..", "features": ["navigation.top", "navigation.path", "navigation.prune", "navigation.indexes", "navigation.tabs", "navigation.tabs.sticky", "navigation.instant", "navigation.instant.prefetch", "navigation.instant.progress", "navigation.tracking", "navigation.sections"], "search": "../../../assets/javascripts/workers/search.d50fe291.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"base": "../../..", "features": ["navigation.top", "navigation.path", "navigation.prune", "navigation.indexes", "navigation.tabs", "navigation.tabs.sticky", "navigation.instant", "navigation.instant.prefetch", "navigation.instant.progress", "navigation.tracking", "navigation.sections"], "search": "../../../assets/javascripts/workers/search.973d3a69.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../../assets/javascripts/bundle.50899def.min.js"></script>
+      <script src="../../../assets/javascripts/bundle.92b07e13.min.js"></script>
       
         <script src="../../../javascript/mkapi.js"></script>
       

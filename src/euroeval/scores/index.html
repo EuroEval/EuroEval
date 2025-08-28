@@ -12,7 +12,7 @@
       
       
       <link rel="icon" href="../../../gfx/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.16">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.17">
     
     
       
@@ -625,6 +625,8 @@
       
         
       
+        
+      
     
     
     
@@ -951,7 +953,12 @@
 <span class="normal">88</span>
 <span class="normal">89</span>
 <span class="normal">90</span>
-<span class="normal">91</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Aggregation of raw scores into the mean and a confidence interval.&quot;&quot;&quot;</span>
+<span class="normal">91</span>
+<span class="normal">92</span>
+<span class="normal">93</span>
+<span class="normal">94</span>
+<span class="normal">95</span>
+<span class="normal">96</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Aggregation of raw scores into the mean and a confidence interval.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">t</span>
@@ -1005,7 +1012,12 @@
         <span class="n">test_se</span><span class="p">,</span> <span class="n">test_se_str</span> <span class="o">=</span> <span class="n">metric</span><span class="o">.</span><span class="n">postprocessing_fn</span><span class="p">(</span><span class="n">test_se</span><span class="p">)</span>
         <span class="n">total_dict</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;test_</span><span class="si">{</span><span class="n">metric</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">test_score</span>
         <span class="n">total_dict</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;test_</span><span class="si">{</span><span class="n">metric</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">_se&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">test_se</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">metric</span><span class="o">.</span><span class="n">pretty_name</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">test_score_str</span><span class="si">}</span><span class="s2"> ± </span><span class="si">{</span><span class="n">test_se_str</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="n">log_str</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">metric</span><span class="o">.</span><span class="n">pretty_name</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">test_score_str</span><span class="si">}</span><span class="s2"> ± </span><span class="si">{</span><span class="n">test_se_str</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">test_se</span><span class="p">)</span>
+            <span class="k">else</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">metric</span><span class="o">.</span><span class="n">pretty_name</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">test_score_str</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">log_str</span><span class="p">)</span>
 
     <span class="k">return</span> <span class="nb">dict</span><span class="p">(</span><span class="n">raw</span><span class="o">=</span><span class="n">scores</span><span class="p">,</span> <span class="n">total</span><span class="o">=</span><span class="n">total_dict</span><span class="p">)</span>
 
@@ -1037,7 +1049,7 @@
 
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">test_scores</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
             <span class="n">sample_std</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">test_scores</span><span class="p">,</span> <span class="n">ddof</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
-            <span class="n">test_se</span> <span class="o">=</span> <span class="n">sample_std</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">test_scores</span><span class="p">))</span>
+            <span class="n">test_se</span> <span class="o">=</span> <span class="p">(</span><span class="n">sample_std</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">test_scores</span><span class="p">)))</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">test_se</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
 
@@ -1103,10 +1115,10 @@
     
     
       
-      <script id="__config" type="application/json">{"base": "../../..", "features": ["navigation.top", "navigation.path", "navigation.prune", "navigation.indexes", "navigation.tabs", "navigation.tabs.sticky", "navigation.instant", "navigation.instant.prefetch", "navigation.instant.progress", "navigation.tracking", "navigation.sections"], "search": "../../../assets/javascripts/workers/search.d50fe291.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"base": "../../..", "features": ["navigation.top", "navigation.path", "navigation.prune", "navigation.indexes", "navigation.tabs", "navigation.tabs.sticky", "navigation.instant", "navigation.instant.prefetch", "navigation.instant.progress", "navigation.tracking", "navigation.sections"], "search": "../../../assets/javascripts/workers/search.973d3a69.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../../assets/javascripts/bundle.50899def.min.js"></script>
+      <script src="../../../assets/javascripts/bundle.92b07e13.min.js"></script>
       
         <script src="../../../javascript/mkapi.js"></script>
       

@@ -16,7 +16,7 @@
       
       
       <link rel="icon" href="../../../gfx/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.16">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.17">
     
     
       
@@ -633,6 +633,8 @@
       
         
       
+        
+      
     
     
     
@@ -863,8 +865,6 @@
       
         
       
-        
-      
     
     
     
@@ -991,6 +991,8 @@
       
         
           
+        
+      
         
       
         
@@ -1476,29 +1478,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../human_evaluation/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    euroeval.human_evaluation
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../languages/" class="md-nav__link">
         
   
@@ -1590,6 +1569,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#euroeval.metrics.PipelineMetric" class="md-nav__link">
+    <span class="md-ellipsis">
+      PipelineMetric
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#euroeval.metrics.LLMAsAJudgeMetric" class="md-nav__link">
     <span class="md-ellipsis">
       LLMAsAJudgeMetric
@@ -1602,6 +1590,24 @@
   <a href="#euroeval.metrics.SpeedMetric" class="md-nav__link">
     <span class="md-ellipsis">
       SpeedMetric
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#euroeval.metrics.european_values_preprocessing_fn" class="md-nav__link">
+    <span class="md-ellipsis">
+      european_values_preprocessing_fn
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#euroeval.metrics.european_values_scoring_function" class="md-nav__link">
+    <span class="md-ellipsis">
+      european_values_scoring_function
     </span>
   </a>
   
@@ -1892,6 +1898,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#euroeval.metrics.PipelineMetric" class="md-nav__link">
+    <span class="md-ellipsis">
+      PipelineMetric
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#euroeval.metrics.LLMAsAJudgeMetric" class="md-nav__link">
     <span class="md-ellipsis">
       LLMAsAJudgeMetric
@@ -1904,6 +1919,24 @@
   <a href="#euroeval.metrics.SpeedMetric" class="md-nav__link">
     <span class="md-ellipsis">
       SpeedMetric
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#euroeval.metrics.european_values_preprocessing_fn" class="md-nav__link">
+    <span class="md-ellipsis">
+      european_values_preprocessing_fn
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#euroeval.metrics.european_values_scoring_function" class="md-nav__link">
+    <span class="md-ellipsis">
+      european_values_scoring_function
     </span>
   </a>
   
@@ -1968,6 +2001,11 @@ Abstract base class for all metrics.</p>
 A metric which is implemented in the <span class="mkapi-tooltip" title="evaluate"><code>evaluate</code></span> package.</p>
 </li>
 <li>
+<p><span class="mkapi-item-name"><a href="./#euroeval.metrics.PipelineMetric" title="euroeval.metrics.PipelineMetric">PipelineMetric</a></span>
+ <span class="mkapi-dash">&mdash;</span>
+Load a scikit-learn pipeline and use it to get scores from the predictions.</p>
+</li>
+<li>
 <p><span class="mkapi-item-name"><a href="./#euroeval.metrics.LLMAsAJudgeMetric" title="euroeval.metrics.LLMAsAJudgeMetric">LLMAsAJudgeMetric</a></span>
  <span class="mkapi-dash">&mdash;</span>
 Use an LLM to judge the quality of the predictions.</p>
@@ -1981,6 +2019,28 @@ Speed metric.</p>
 <p><span class="mkapi-item-name"><a href="./#euroeval.metrics.Fluency" title="euroeval.metrics.Fluency">Fluency</a></span>
  <span class="mkapi-dash">&mdash;</span>
 Response format for the fluency metric.</p>
+</li>
+</ul>
+</div>
+<p class="mkapi-section">
+<span class="mkapi-object-link">
+<span class="mkapi-section-toggle" title="Toggle functions">
+<i class="fa-regular fa-square-minus"></i>
+</span>
+</span>
+<span class="mkapi-section-name">Functions</span>
+</p>
+<div class="mkapi-section-content">
+<ul class="mkapi-item-list">
+<li>
+<p><span class="mkapi-item-name"><a href="./#euroeval.metrics.european_values_preprocessing_fn" title="euroeval.metrics.european_values_preprocessing_fn">european_values_preprocessing_fn</a></span>
+ <span class="mkapi-dash">&mdash;</span>
+Preprocess the model predictions for the European Values metric.</p>
+</li>
+<li>
+<p><span class="mkapi-item-name"><a href="./#euroeval.metrics.european_values_scoring_function" title="euroeval.metrics.european_values_scoring_function">european_values_scoring_function</a></span>
+ <span class="mkapi-dash">&mdash;</span>
+Scoring function for the European Values metric.</p>
 </li>
 </ul>
 </div>
@@ -2133,6 +2193,77 @@ representation. Defaults to x -&gt; (100 * x, f"{x:.2%}").</p>
 </ul>
 </div>
 </div>
+<p class="mkapi-object mkapi-page-source" id="euroeval.metrics.PipelineMetric">
+<span class="mkapi-object-link">
+
+
+<a href="../../../src/euroeval/metrics/#euroeval.metrics.PipelineMetric" title="Go to source">source</a>
+<span class="mkapi-document-toggle" title="Toggle all docs">
+<i class="fa-regular fa-square-minus"></i>
+</span>
+</span><span class="mkapi-object-kind">class</span>
+<span class="mkapi-object-name"><a href="./#euroeval.metrics.PipelineMetric" title="euroeval.metrics.PipelineMetric">PipelineMetric</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">name</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str</span><span class="mkapi-comma">, </span><span class="mkapi-arg">pretty_name</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str</span><span class="mkapi-comma">, </span><span class="mkapi-arg">pipeline_repo</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str</span><span class="mkapi-comma">, </span><span class="mkapi-arg">pipeline_scoring_function</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="collections.abc">c</span>.<span class="mkapi-tooltip" title="collections.abc.Callable">Callable</span>[['Pipeline', <span class="mkapi-tooltip" title="collections.abc">c</span>.<span class="mkapi-tooltip" title="collections.abc.Sequence">Sequence</span>], float]</span><span class="mkapi-comma">, </span><span class="mkapi-arg">pipeline_file_name</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str</span><span class="mkapi-equal"> = </span><span class="mkapi-default">'pipeline.pkl'</span><span class="mkapi-comma">, </span><span class="mkapi-arg">preprocessing_fn</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="collections.abc">c</span>.<span class="mkapi-tooltip" title="collections.abc.Callable">Callable</span>[[<span class="mkapi-tooltip" title="collections.abc">c</span>.<span class="mkapi-tooltip" title="collections.abc.Sequence">Sequence</span>[<span class="mkapi-tooltip" title="euroeval.metrics.T">T</span>]], <span class="mkapi-tooltip" title="collections.abc">c</span>.<span class="mkapi-tooltip" title="collections.abc.Sequence">Sequence</span>[<span class="mkapi-tooltip" title="euroeval.metrics.T">T</span>]]</span><span class="mkapi-equal"> = </span><span class="mkapi-default">lambda x: x</span><span class="mkapi-comma">, </span><span class="mkapi-arg">postprocessing_fn</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="collections.abc">c</span>.<span class="mkapi-tooltip" title="collections.abc.Callable">Callable</span>[[float], tuple[float, str]] | None</span><span class="mkapi-equal"> = </span><span class="mkapi-default">None</span><span class="mkapi-paren">)</span></span>
+</p>
+<div class="mkapi-document">
+<p class="mkapi-bases">Bases :
+<span class="mkapi-base"><a href="./#euroeval.metrics.Metric" title="euroeval.metrics.Metric">Metric</a></span></p>
+<p>Load a scikit-learn pipeline and use it to get scores from the predictions.</p>
+<p>Initialise the pipeline transform metric.</p>
+<p class="mkapi-section">
+<span class="mkapi-object-link">
+<span class="mkapi-section-toggle" title="Toggle parameters">
+<i class="fa-regular fa-square-minus"></i>
+</span>
+</span>
+<span class="mkapi-section-name">Parameters</span>
+</p>
+<div class="mkapi-section-content">
+<ul class="mkapi-item-list">
+<li>
+<p><span class="mkapi-item-name">name</span> : 
+<span class="mkapi-item-type">str</span> <span class="mkapi-dash">&mdash;</span>
+The name of the metric in snake_case.</p>
+</li>
+<li>
+<p><span class="mkapi-item-name">pretty_name</span> : 
+<span class="mkapi-item-type">str</span> <span class="mkapi-dash">&mdash;</span>
+The pretty name of the metric, used for display purposes.</p>
+</li>
+<li>
+<p><span class="mkapi-item-name">pipeline_repo</span> : 
+<span class="mkapi-item-type">str</span> <span class="mkapi-dash">&mdash;</span>
+The Hugging Face repository ID of the scikit-learn pipeline to load.</p>
+</li>
+<li>
+<p><span class="mkapi-item-name">pipeline_scoring_method</span>
+ <span class="mkapi-dash">&mdash;</span>
+The method to use for scoring the predictions with the pipeline. Takes
+a 1D sequence of predictions and returns a float score.</p>
+</li>
+<li>
+<p><span class="mkapi-item-name">pipeline_file_name</span> : 
+<span class="mkapi-item-type">optional</span> <span class="mkapi-dash">&mdash;</span>
+The name of the file to download from the Hugging Face repository.
+Defaults to "pipeline.joblib".</p>
+</li>
+<li>
+<p><span class="mkapi-item-name">preprocessing_fn</span> : 
+<span class="mkapi-item-type">optional</span> <span class="mkapi-dash">&mdash;</span>
+A function to apply to the predictions before they are passed to the
+pipeline. This is useful for preprocessing the predictions to match
+the expected input format of the pipeline. Defaults to a no-op function
+that returns the input unchanged.</p>
+</li>
+<li>
+<p><span class="mkapi-item-name">postprocessing_fn</span> : 
+<span class="mkapi-item-type">optional</span> <span class="mkapi-dash">&mdash;</span>
+A function to apply to the metric scores after they are computed,
+taking the score to the postprocessed score along with its string
+representation. Defaults to x -&gt; (100 * x, f"{x:.2%}").</p>
+</li>
+</ul>
+</div>
+</div>
 <p class="mkapi-object mkapi-page-source" id="euroeval.metrics.LLMAsAJudgeMetric">
 <span class="mkapi-object-link">
 
@@ -2256,6 +2387,88 @@ The pretty name of the metric, used for display purposes.</p>
 </ul>
 </div>
 </div>
+<p class="mkapi-object mkapi-page-source" id="euroeval.metrics.european_values_preprocessing_fn">
+<span class="mkapi-object-link">
+
+
+<a href="../../../src/euroeval/metrics/#euroeval.metrics.european_values_preprocessing_fn" title="Go to source">source</a>
+<span class="mkapi-document-toggle" title="Toggle all docs">
+<i class="fa-regular fa-square-minus"></i>
+</span>
+</span>
+<span class="mkapi-object-name"><a href="./#euroeval.metrics.european_values_preprocessing_fn" title="euroeval.metrics.european_values_preprocessing_fn">european_values_preprocessing_fn</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">predictions</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="collections.abc">c</span>.<span class="mkapi-tooltip" title="collections.abc.Sequence">Sequence</span>[int]</span><span class="mkapi-paren">)</span><span class="mkapi-arrow"> → </span><span class="mkapi-return"><span class="mkapi-tooltip" title="collections.abc">c</span>.<span class="mkapi-tooltip" title="collections.abc.Sequence">Sequence</span>[int]</span></span>
+</p>
+<div class="mkapi-document">
+<p>Preprocess the model predictions for the European Values metric.</p>
+<p class="mkapi-section">
+<span class="mkapi-object-link">
+<span class="mkapi-section-toggle" title="Toggle parameters">
+<i class="fa-regular fa-square-minus"></i>
+</span>
+</span>
+<span class="mkapi-section-name">Parameters</span>
+</p>
+<div class="mkapi-section-content">
+<ul class="mkapi-item-list">
+<li>
+<p><span class="mkapi-item-name">predictions</span> : 
+<span class="mkapi-item-type"><span class="mkapi-tooltip" title="collections.abc">c</span>.<span class="mkapi-tooltip" title="collections.abc.Sequence">Sequence</span>[int]</span> <span class="mkapi-dash">&mdash;</span>
+The model predictions, a sequence of integers representing the predicted
+choices for each question.</p>
+</li>
+</ul>
+</div>
+<p class="mkapi-section">
+<span class="mkapi-object-link">
+<span class="mkapi-section-toggle" title="Toggle returns">
+<i class="fa-regular fa-square-minus"></i>
+</span>
+</span>
+<span class="mkapi-section-name">Returns</span>
+</p>
+<div class="mkapi-section-content">
+<ul class="mkapi-item-list">
+<li>
+<p><span class="mkapi-item-type"><span class="mkapi-tooltip" title="collections.abc">c</span>.<span class="mkapi-tooltip" title="collections.abc.Sequence">Sequence</span>[int]</span> <span class="mkapi-dash">&mdash;</span>
+The preprocessed model predictions, a sequence of integers representing the
+final predicted choices for each question after any necessary aggregation and
+mapping.</p>
+</li>
+</ul>
+</div>
+<p class="mkapi-section">
+<span class="mkapi-object-link">
+<span class="mkapi-section-toggle" title="Toggle raises">
+<i class="fa-regular fa-square-minus"></i>
+</span>
+</span>
+<span class="mkapi-section-name">Raises</span>
+</p>
+<div class="mkapi-section-content">
+<ul class="mkapi-item-list">
+<li>
+<p><span class="mkapi-item-name">AssertionError</span>
+ <span class="mkapi-dash">&mdash;</span>
+If the number of predictions is not a multiple of 53, which is required
+for the European Values metric.</p>
+</li>
+</ul>
+</div>
+</div>
+<p class="mkapi-object mkapi-page-source" id="euroeval.metrics.european_values_scoring_function">
+<span class="mkapi-object-link">
+
+
+<a href="../../../src/euroeval/metrics/#euroeval.metrics.european_values_scoring_function" title="Go to source">source</a>
+<span class="mkapi-document-toggle" title="Toggle all docs">
+<i class="fa-regular fa-square-minus"></i>
+</span>
+</span>
+<span class="mkapi-object-name"><a href="./#euroeval.metrics.european_values_scoring_function" title="euroeval.metrics.european_values_scoring_function">european_values_scoring_function</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">pipeline</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="sklearn.pipeline.Pipeline">Pipeline</span></span><span class="mkapi-comma">, </span><span class="mkapi-arg">predictions</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="collections.abc">c</span>.<span class="mkapi-tooltip" title="collections.abc.Sequence">Sequence</span>[int]</span><span class="mkapi-paren">)</span><span class="mkapi-arrow"> → </span><span class="mkapi-return">float</span></span>
+</p>
+<div class="mkapi-document">
+<p>Scoring function for the European Values metric.</p>
+</div>
 <p class="mkapi-object mkapi-page-source" id="euroeval.metrics.Fluency">
 <span class="mkapi-object-link">
 
@@ -2364,10 +2577,10 @@ Returns the set of fields that have been explicitly set on this model instance.<
     
     
       
-      <script id="__config" type="application/json">{"base": "../../..", "features": ["navigation.top", "navigation.path", "navigation.prune", "navigation.indexes", "navigation.tabs", "navigation.tabs.sticky", "navigation.instant", "navigation.instant.prefetch", "navigation.instant.progress", "navigation.tracking", "navigation.sections"], "search": "../../../assets/javascripts/workers/search.d50fe291.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"base": "../../..", "features": ["navigation.top", "navigation.path", "navigation.prune", "navigation.indexes", "navigation.tabs", "navigation.tabs.sticky", "navigation.instant", "navigation.instant.prefetch", "navigation.instant.progress", "navigation.tracking", "navigation.sections"], "search": "../../../assets/javascripts/workers/search.973d3a69.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../../assets/javascripts/bundle.50899def.min.js"></script>
+      <script src="../../../assets/javascripts/bundle.92b07e13.min.js"></script>
       
         <script src="../../../javascript/mkapi.js"></script>
       

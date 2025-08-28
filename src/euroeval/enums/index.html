@@ -12,7 +12,7 @@
       
       
       <link rel="icon" href="../../../gfx/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.16">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.17">
     
     
       
@@ -625,6 +625,8 @@
       
         
       
+        
+      
     
     
     
@@ -1052,13 +1054,7 @@
 <span class="normal">135</span>
 <span class="normal">136</span>
 <span class="normal">137</span>
-<span class="normal">138</span>
-<span class="normal">139</span>
-<span class="normal">140</span>
-<span class="normal">141</span>
-<span class="normal">142</span>
-<span class="normal">143</span>
-<span class="normal">144</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Enums used in the project.&quot;&quot;&quot;</span>
+<span class="normal">138</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Enums used in the project.&quot;&quot;&quot;</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">enum</span><span class="w"> </span><span class="kn">import</span> <span class="n">Enum</span><span class="p">,</span> <span class="n">auto</span>
 
@@ -1100,14 +1096,11 @@
 <span class="sd">            VLLM library.</span>
 <span class="sd">        LITELLM:</span>
 <span class="sd">            LiteLLM library.</span>
-<span class="sd">        NONE:</span>
-<span class="sd">            No inference backend used (e.g., for human evaluation).</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="n">TRANSFORMERS</span> <span class="o">=</span> <span class="n">auto</span><span class="p">()</span>
     <span class="n">VLLM</span> <span class="o">=</span> <span class="n">auto</span><span class="p">()</span>
     <span class="n">LITELLM</span> <span class="o">=</span> <span class="n">auto</span><span class="p">()</span>
-    <span class="n">NONE</span> <span class="o">=</span> <span class="n">auto</span><span class="p">()</span>
 
 
 <span class="k">class</span><span class="w"> </span><span class="nc">ModelType</span><span class="p">(</span><span class="n">AutoStrEnum</span><span class="p">):</span><div class="mkapi-source-link" id="euroeval.enums.ModelType"><a href="../../../api/euroeval/enums/#euroeval.enums.ModelType" title="Go to docs">[docs]</a></div>
@@ -1118,13 +1111,10 @@
 <span class="sd">            An encoder (i.e., BERT-style) model.</span>
 <span class="sd">        GENERATIVE:</span>
 <span class="sd">            A generative model. Can be either decoder or encoder-decoder (aka seq2seq).</span>
-<span class="sd">        HUMAN:</span>
-<span class="sd">            Human evaluator.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="n">ENCODER</span> <span class="o">=</span> <span class="n">auto</span><span class="p">()</span>
     <span class="n">GENERATIVE</span> <span class="o">=</span> <span class="n">auto</span><span class="p">()</span>
-    <span class="n">HUMAN</span> <span class="o">=</span> <span class="n">auto</span><span class="p">()</span>
 
 
 <span class="k">class</span><span class="w"> </span><span class="nc">GenerativeType</span><span class="p">(</span><span class="n">AutoStrEnum</span><span class="p">):</span><div class="mkapi-source-link" id="euroeval.enums.GenerativeType"><a href="../../../api/euroeval/enums/#euroeval.enums.GenerativeType" title="Go to docs">[docs]</a></div>
@@ -1263,10 +1253,10 @@
     
     
       
-      <script id="__config" type="application/json">{"base": "../../..", "features": ["navigation.top", "navigation.path", "navigation.prune", "navigation.indexes", "navigation.tabs", "navigation.tabs.sticky", "navigation.instant", "navigation.instant.prefetch", "navigation.instant.progress", "navigation.tracking", "navigation.sections"], "search": "../../../assets/javascripts/workers/search.d50fe291.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"base": "../../..", "features": ["navigation.top", "navigation.path", "navigation.prune", "navigation.indexes", "navigation.tabs", "navigation.tabs.sticky", "navigation.instant", "navigation.instant.prefetch", "navigation.instant.progress", "navigation.tracking", "navigation.sections"], "search": "../../../assets/javascripts/workers/search.973d3a69.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../../assets/javascripts/bundle.50899def.min.js"></script>
+      <script src="../../../assets/javascripts/bundle.92b07e13.min.js"></script>
       
         <script src="../../../javascript/mkapi.js"></script>
       
