@@ -18,8 +18,6 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   classification dataset Estonian Valence and the machine translated and localised
   common-sense reasoning dataset Winogrande-et. This was contributed by @slowwavesleep
   ✨
-- Added several legal benchmarks for Danish, which currently includes contract
-  completeness. These have been marked as unofficial.
 
 ### Changed
 - When evaluating classification tasks, we now force the model to output one of the
