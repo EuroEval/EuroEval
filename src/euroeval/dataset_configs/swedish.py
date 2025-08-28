@@ -78,30 +78,6 @@ EUROPEAN_VALUES_SV_CONFIG = DatasetConfig(
     _instruction_prompt="{text}",
 )
 
-EUROPEAN_VALUES_SITUATIONAL_SV_CONFIG = DatasetConfig(
-    name="european-values-situational-sv",
-    pretty_name="the Swedish version of the European values evaluation dataset, where "
-    "the questions are phrased in a situational way",
-    huggingface_id="EuroEval/european-values-situational-sv",
-    task=EUROPEAN_VALUES,
-    languages=[SV],
-    splits=["test"],
-    bootstrap_samples=False,
-    _instruction_prompt="{text}",
-)
-
-EUROPEAN_VALUES_COMPLETIONS_SV_CONFIG = DatasetConfig(
-    name="european-values-completions-sv",
-    pretty_name="the Swedish version of the European values evaluation dataset, where "
-    "the questions are phrased as sentence completions",
-    huggingface_id="EuroEval/european-values-completions-sv",
-    task=EUROPEAN_VALUES,
-    languages=[SV],
-    splits=["test"],
-    bootstrap_samples=False,
-    _instruction_prompt="{text}",
-)
-
 
 ### Unofficial datasets ###
 
@@ -151,5 +127,31 @@ GOLDENSWAG_SV_CONFIG = DatasetConfig(
     huggingface_id="EuroEval/goldenswag-sv-mini",
     task=COMMON_SENSE,
     languages=[SV],
+    unofficial=True,
+)
+
+EUROPEAN_VALUES_SITUATIONAL_SV_CONFIG = DatasetConfig(
+    name="european-values-situational-sv",
+    pretty_name="the Swedish version of the European values evaluation dataset, where "
+    "the questions are phrased in a situational way",
+    huggingface_id="EuroEval/european-values-situational-sv",
+    task=EUROPEAN_VALUES,
+    languages=[SV],
+    splits=["test"],
+    bootstrap_samples=False,
+    _instruction_prompt="{text}",
+    unofficial=True,
+)
+
+EUROPEAN_VALUES_COMPLETIONS_SV_CONFIG = DatasetConfig(
+    name="european-values-completions-sv",
+    pretty_name="the Swedish version of the European values evaluation dataset, where "
+    "the questions are phrased as sentence completions",
+    huggingface_id="EuroEval/european-values-completions-sv",
+    task=EUROPEAN_VALUES,
+    languages=[SV],
+    splits=["test"],
+    bootstrap_samples=False,
+    _instruction_prompt="{text}",
     unofficial=True,
 )

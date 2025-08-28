@@ -105,6 +105,7 @@ def main() -> None:
         "es": "Opciones",
         "pt": "Opções",
         "fi": "Vastausvaihtoehdot",
+        # "et": "Vastusevariandid",
     }
     subset_mapping = {
         "da": "da-dk",
@@ -119,6 +120,7 @@ def main() -> None:
         "es": "es-es",
         "pt": "pt-pt",
         "fi": "fi-fi",
+        # "et": "et-ee",
     }
     no_yes_mapping = {
         "da": {"0": "Nej", "1": "Ja"},
@@ -133,6 +135,7 @@ def main() -> None:
         "es": {"0": "No", "1": "Sí"},
         "pt": {"0": "Não", "1": "Sim"},
         "fi": {"0": "Ei", "1": "Kyllä"},
+        # "et": {"0": "Ei", "1": "Jah"},
     }
     sentence_completion_mapping = {
         "da": "Færdiggør følgende sætning",
@@ -147,6 +150,7 @@ def main() -> None:
         "es": "Completa la siguiente frase",
         "pt": "Complete a seguinte frase",
         "fi": "Täydennä seuraava lause",
+        # "et": "Täiendage järgmine lause",
     }
 
     for dataset_id, new_dataset_id in zip(
@@ -234,16 +238,13 @@ def main() -> None:
                     # one of the choices
                     labels = list(choices.keys())
                     language_obj = get_all_languages()[language]
-                    assert language_obj._or_separator is not None, (
-                        f"Language {language} does not have an 'or' separator defined."
-                    )
                     prompt = MULTIPLE_CHOICE_TEMPLATES[
                         language_obj
                     ].default_instruction_prompt.format(
                         text=prompt,
                         labels_str=(
                             ", ".join([f"'{label}'" for label in labels[:-1]])
-                            + f" {language_obj._or_separator} '{labels[-1]}'"
+                            + f" {language_obj.or_separator} '{labels[-1]}'"
                         ),
                     )
 
