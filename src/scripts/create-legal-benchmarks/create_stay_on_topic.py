@@ -69,7 +69,12 @@ def main() -> None:
         question = generate_question(
             client=client, system_prompt=system_prompt, allowed=allowed
         )
-        data = {"system_prompt": system_prompt, "text": question, "allowed": allowed}
+        data = {
+            "system_prompt": system_prompt,
+            "text": question,
+            "target_text": "",
+            "allowed": allowed,
+        }
         all_data.append(data)
 
     # Convert to DataFrame
@@ -88,7 +93,7 @@ def main() -> None:
     val_df = df[test_size + train_size :]
 
     # Keep only the required columns for the final dataset
-    columns_to_keep = ["system_prompt", "text", "allowed"]
+    columns_to_keep = ["system_prompt", "text", "target_text", "allowed"]
     train_df = train_df[columns_to_keep]
     val_df = val_df[columns_to_keep]
     test_df = test_df[columns_to_keep]
