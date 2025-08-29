@@ -3,10 +3,12 @@
 import collections.abc as c
 import logging
 import typing as t
+from pathlib import Path
 
 from pydantic import BaseModel, Field
 
 from ..exceptions import InvalidBenchmark
+from ..model_cache import ModelCache
 from ..utils import extract_json_dict_from_string
 from .base import Metric
 
@@ -15,7 +17,7 @@ if t.TYPE_CHECKING:
 
     from ..data_models import BenchmarkConfig, DatasetConfig
 
-logger = logging.getLogger(__name__)
+logger: logging.Logger = logging.getLogger("euroeval")
 
 
 class LLMAsAJudgeMetric(Metric):
@@ -120,16 +122,24 @@ class LLMAsAJudgeMetric(Metric):
             )
 
         # Load the judge model
-        self.judge_model_config = LiteLLMModel.get_model_config(
+        judge_model_config = LiteLLMModel.get_model_config(
             model_id=self.judge_id, benchmark_config=benchmark_config
         )
         self.judge = LiteLLMModel(
-            model_config=self.judge_model_config,
+            model_config=judge_model_config,
             dataset_config=dataset_config,
             benchmark_config=benchmark_config,
             log_metadata=False,
-            generation_kwargs=self.judge_kwargs,
+            **self.judge_kwargs,
         )
+
+        # Create a cache for the judge model
+        judge_cache = ModelCache(
+            model_cache_dir=Path(judge_model_config.model_cache_dir),
+            cache_name=f"{dataset_config.name}-model-outputs.json",
+            max_generated_tokens=dataset_config.max_generated_tokens,
+        )
+        judge_cache.load()
 
         # Prepare the messages for the LLM
         conversations = [
@@ -149,11 +159,26 @@ class LLMAsAJudgeMetric(Metric):
                 for conversation in conversations
             ]
 
-        # Get the judge generations and parse them
-        raw_outputs = self.judge.generate(inputs=dict(messages=conversations))
+        # Get the non-cached conversations and generate the completions for them
+        non_cached_conversations = [
+            (idx, conversation)
+            for idx, conversation in enumerate(conversations)
+            if conversation not in judge_cache
+        ]
+        if non_cached_conversations:
+            model_inputs = dict(messages=[c for _, c in non_cached_conversations])
+            non_cached_outputs = self.judge.generate(inputs=model_inputs)
+
+            # Store the non-cached outputs in the cache
+            judge_cache.add_to_cache(
+                model_inputs=model_inputs, model_output=non_cached_outputs
+            )
+            judge_cache.save()
+
+        # Load all the outputs from the cache, in the original order, and parse them
+        raw_outputs = [judge_cache[conversation] for conversation in conversations]
         json_dicts = [
-            extract_json_dict_from_string(s=sequence)
-            for sequence in raw_outputs.sequences
+            extract_json_dict_from_string(s=output.sequence) for output in raw_outputs
         ]
         outputs = [
             self.response_format.model_validate(obj=json_dict)

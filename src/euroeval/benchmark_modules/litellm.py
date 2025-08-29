@@ -189,7 +189,7 @@ class LiteLLMModel(BenchmarkModule):
         dataset_config: DatasetConfig,
         benchmark_config: BenchmarkConfig,
         log_metadata: bool = True,
-        generation_kwargs: dict[str, t.Any] | None = None,
+        **generation_kwargs: dict[str, t.Any],
     ) -> None:
         """Initialise the model.
 
@@ -1231,7 +1231,6 @@ class LiteLLMModel(BenchmarkModule):
         """
         # Set the core generation arguments
         generation_kwargs: dict[str, t.Any] = dict(
-            model=self.model_config.model_id,
             max_completion_tokens=(
                 REASONING_MAX_TOKENS
                 if self.generative_type == GenerativeType.REASONING
@@ -1343,7 +1342,7 @@ class LiteLLMModel(BenchmarkModule):
                 self._generate_async(
                     model_id=self.model_config.model_id,
                     conversations=[test_conversation],
-                    generation_kwargs=generation_kwargs,
+                    **generation_kwargs,
                 )
             )
             if not failures:
