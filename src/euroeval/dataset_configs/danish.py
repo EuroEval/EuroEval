@@ -2,7 +2,18 @@
 
 from ..data_models import DatasetConfig
 from ..languages import DA
-from ..tasks import COMMON_SENSE, EUROPEAN_VALUES, KNOW, LA, MCRC, NER, RC, SENT, SUMM
+from ..tasks import (
+    COMMON_SENSE,
+    EUROPEAN_VALUES,
+    KNOW,
+    LA,
+    MCRC,
+    NER,
+    RC,
+    SENT,
+    STAY_ON_TOPIC,
+    SUMM,
+)
 
 ### Official datasets ###
 
@@ -171,5 +182,18 @@ GOLDENSWAG_DA_CONFIG = DatasetConfig(
     huggingface_id="EuroEval/goldenswag-da-mini",
     task=COMMON_SENSE,
     languages=[DA],
+    unofficial=True,
+)
+
+
+# Legal datasets
+
+STAY_ON_TOPIC_CONFIG = DatasetConfig(
+    name="legal-stay-on-topic",
+    pretty_name="the Danish legal benchmark dataset Stay on Topic",
+    huggingface_id="EuroEval/legal-stay-on-topic",
+    task=STAY_ON_TOPIC,
+    languages=[DA],
+    splits=["test"],
     unofficial=True,
 )

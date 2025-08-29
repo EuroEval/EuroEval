@@ -163,8 +163,9 @@ STAY_ON_TOPIC = Task(
     name="stay-on-topic",
     task_group=TaskGroup.TEXT_TO_TEXT,
     template_dict=LLM_AS_A_JUDGE_TEMPLATES,
-    metrics=[m.correctness_metric],
+    metrics=[m.rejection_correctness_metric],
     default_num_few_shot_examples=1,
     default_max_generated_tokens=128,
     default_labels=[],
+    requires_zero_shot=True,
 )

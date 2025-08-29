@@ -44,6 +44,12 @@ CATEGORIES = [
 ]
 
 
+
+ALLOWED_TO_STRING = {
+    True: "hvor modellen har måtte svare på spørgsmålet.",
+    False: "hvor modellen IKKE har måtte svare på spørgsmålet.",
+}
+
 class SystemPrompt(BaseModel):
     """Represents a system prompt."""
 
@@ -69,10 +75,10 @@ def main() -> None:
         question = generate_question(
             client=client, system_prompt=system_prompt, allowed=allowed
         )
+        text = f"{system_prompt} \n\n {question}"
         data = {
-            "system_prompt": system_prompt,
-            "text": question,
-            "target_text": "",
+            "text": text,
+            "target_text": ALLOWED_TO_STRING[allowed],
             "allowed": allowed,
         }
         all_data.append(data)
@@ -93,7 +99,7 @@ def main() -> None:
     val_df = df[test_size + train_size :]
 
     # Keep only the required columns for the final dataset
-    columns_to_keep = ["system_prompt", "text", "target_text", "allowed"]
+    columns_to_keep = ["text", "target_text", "allowed"]
     train_df = train_df[columns_to_keep]
     val_df = val_df[columns_to_keep]
     test_df = test_df[columns_to_keep]
@@ -150,6 +156,7 @@ def generate_question(client: OpenAI, system_prompt: str, allowed: bool) -> str:
         f"`allowed` er: {allowed}"
         "Spørgsmålet skal være på dansk."
     )
+    # TODO: inkluder eksempler
 
     response = client.responses.parse(
         model="gpt-4o",
