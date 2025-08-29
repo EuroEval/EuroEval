@@ -1,10 +1,15 @@
 """Templates for the Summarization task."""
 
+import typing as t
+
 from ..data_models import PromptConfig
 from ..languages import DA, DE, EN, ES, FI, FR, IS, IT, NB, NL, NN, NO, PT, SV
 
+if t.TYPE_CHECKING:
+    from ..data_models import Language
+
 # TODO: Missing Faroese
-SUMM_TEMPLATES = {
+SUMM_TEMPLATES: dict["Language", PromptConfig] = {
     DA: PromptConfig(
         default_prompt_prefix="Følgende er dokumenter med tilhørende resuméer.",
         default_prompt_template="Dokument: {text}\nResumé: {target_text}",

@@ -1,9 +1,34 @@
 """Templates for the Named Entity Recognition task."""
 
-from ..data_models import PromptConfig
-from ..languages import DA, DE, EN, ES, ET, FI, FO, FR, IS, IT, LV, NB, NL, NN, NO, PT, SV
+import typing as t
 
-NER_TEMPLATES = {
+from euroeval.data_models import PromptConfig
+
+from ..languages import (
+    DA,
+    DE,
+    EN,
+    ES,
+    ET,
+    FI,
+    FO,
+    FR,
+    IS,
+    IT,
+    LV,
+    NB,
+    NL,
+    NN,
+    NO,
+    PT,
+    SV,
+)
+
+if t.TYPE_CHECKING:
+    from ..data_models import Language
+
+
+NER_TEMPLATES: dict["Language", PromptConfig] = {
     DA: PromptConfig(
         default_prompt_label_mapping={
             "b-per": "person",

@@ -1,10 +1,15 @@
 """Templates for all multiple choice tasks."""
 
+import typing as t
+
 from ..data_models import PromptConfig
 from ..languages import DA, DE, EN, ES, ET, FI, FR, IS, IT, LV, NB, NL, NN, NO, PT, SV
 
+if t.TYPE_CHECKING:
+    from ..data_models import Language
+
 # TODO: Missing Faroese
-MULTIPLE_CHOICE_TEMPLATES = {
+MULTIPLE_CHOICE_TEMPLATES: dict["Language", PromptConfig] = {
     DA: PromptConfig(
         default_prompt_prefix="Følgende er multiple choice spørgsmål (med svar).",
         default_prompt_template="Spørgsmål: {text}\nSvar: {label}",

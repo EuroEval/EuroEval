@@ -1,9 +1,14 @@
 """Templates for the Linguistic Acceptability task."""
 
+import typing as t
+
 from ..data_models import PromptConfig
 from ..languages import DA, DE, EN, ES, FI, FO, FR, IS, IT, LV, NB, NL, NN, NO, PT, SV
 
-LA_TEMPLATES = {
+if t.TYPE_CHECKING:
+    from ..data_models import Language
+
+LA_TEMPLATES: dict["Language", PromptConfig] = {
     DA: PromptConfig(
         default_prompt_label_mapping=dict(correct="ja", incorrect="nej"),
         default_prompt_prefix="Følgende er sætninger og om de er grammatisk korrekte.",
