@@ -8,8 +8,8 @@ from pathlib import Path
 import pytest
 
 from euroeval import __version__, data_models, enums
-from euroeval.data_models import BenchmarkResult, Metric
-from euroeval.metrics import HuggingFaceMetric
+from euroeval.data_models import BenchmarkResult
+from euroeval.metrics import HuggingFaceMetric, Metric
 
 
 def test_all_classes_are_dataclasses_or_pydantic_models() -> None:
