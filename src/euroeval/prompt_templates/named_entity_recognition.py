@@ -2,8 +2,7 @@
 
 import typing as t
 
-from euroeval.data_models import PromptConfig
-
+from ..data_models import PromptConfig
 from ..languages import (
     DA,
     DE,
