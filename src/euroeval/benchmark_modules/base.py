@@ -197,11 +197,13 @@ class BenchmarkModule(ABC):
                 return partial(
                     sequence_classification.compute_metrics,
                     dataset_config=self.dataset_config,
+                    benchmark_config=self.benchmark_config,
                 )
             case TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION:
                 return partial(
                     sequence_classification.compute_metrics,
                     dataset_config=self.dataset_config,
+                    benchmark_config=self.benchmark_config,
                 )
             case TaskGroup.TEXT_TO_TEXT:
                 return partial(
@@ -214,11 +216,13 @@ class BenchmarkModule(ABC):
                     token_classification.compute_metrics,
                     has_misc_tags=self.buffer.get("has_misc_tags", True),
                     dataset_config=self.dataset_config,
+                    benchmark_config=self.benchmark_config,
                 )
             case TaskGroup.QUESTION_ANSWERING:
                 return partial(
                     question_answering.compute_metrics,
                     dataset_config=self.dataset_config,
+                    benchmark_config=self.benchmark_config,
                 )
             case _:
                 raise NotImplementedError(
