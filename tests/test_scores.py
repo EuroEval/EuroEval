@@ -5,7 +5,7 @@ from typing import Generator
 import numpy as np
 import pytest
 
-from euroeval.data_models import Metric
+from euroeval.metrics import Metric
 from euroeval.scores import aggregate_scores, log_scores
 from euroeval.types import ScoreDict
 
