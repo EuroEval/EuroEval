@@ -64,7 +64,7 @@ jobs:
         run: curl -fsSL https://ollama.com/install.sh | sh && ollama serve &
 
       - name: Test with pytest
-        run: uv run pytest -vvv
+        run: uv run pytest
         env:
           HUGGINGFACE_API_KEY: ${{ secrets.HUGGINGFACE_API_KEY }}
           HF_TOKEN: ${{ secrets.HUGGINGFACE_API_KEY }}
