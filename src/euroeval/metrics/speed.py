@@ -1,6 +1,7 @@
 """Inference speed metric."""
 
 import collections.abc as c
+import logging
 import typing as t
 
 from .base import Metric
@@ -9,6 +10,8 @@ if t.TYPE_CHECKING:
     from datasets.arrow_dataset import Dataset
 
     from ..data_models import BenchmarkConfig, DatasetConfig
+
+logger: logging.Logger = logging.getLogger("euroeval")
 
 
 class SpeedMetric(Metric):

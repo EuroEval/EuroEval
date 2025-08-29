@@ -19,7 +19,7 @@ if t.TYPE_CHECKING:
 
     from ..data_models import BenchmarkConfig, DatasetConfig
 
-logger = logging.getLogger(__name__)
+logger: logging.Logger = logging.getLogger("euroeval")
 
 
 T = t.TypeVar("T", bound=int | float | str | bool)
