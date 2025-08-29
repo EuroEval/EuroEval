@@ -10,7 +10,6 @@
 
 """Create the ERRNews summarisation dataset."""
 
-import os
 import tempfile
 import zipfile
 
@@ -26,25 +25,32 @@ def main() -> None:
     source_url = "https://cs.taltech.ee/staff/heharm/ERRnews/data.zip"
     target_repo_id = "EuroEval/err-news-mini"
 
+    # Load the dataset from the zip file
     file_map = {
         "train": "data/train.csv",
         "val": "data/val.csv",
         "test": "data/test.csv",
     }
     ds = DatasetDict()
-    with tempfile.NamedTemporaryFile(delete=False) as temp_file:
+    with tempfile.NamedTemporaryFile() as temp_file:
         response = requests.get(source_url)
         temp_file.write(response.content)
         temp_filename = temp_file.name
+        with zipfile.ZipFile(temp_filename) as zip_file:
+            for key, value in file_map.items():
+                with zip_file.open(value) as csv_file:
+                    df = pd.read_csv(csv_file)
+                    ds[key] = Dataset.from_pandas(df)
 
-    with zipfile.ZipFile(temp_filename) as zip_file:
-        for key, value in file_map.items():
-            with zip_file.open(value) as csv_file:
-                df = pd.read_csv(csv_file)
-                ds[key] = Dataset.from_pandas(df)
-
+    # Keep only the relevant columns and rename them
     ds = ds.select_columns(["transcript", "summary"])
     ds = ds.rename_columns({"transcript": "text", "summary": "target_text"})
+
+    # Sort data by length, to make sure we do not get exceedingly long examples
+    ds = ds.map(lambda x: {"length": len(x["text"].split())})
+    for split in ds.keys():
+        ds[split] = ds[split].sort("length")
+    ds = ds.remove_columns("length")
 
     train_size = 1024
     val_size = 256
@@ -52,7 +58,7 @@ def main() -> None:
 
     new_ds = DatasetDict()
 
-    # rearrange the examples
+    # Create new splits
     new_ds["train"] = ds["train"].select(range(train_size))
     new_ds["val"] = ds["val"].select(range(val_size))
     new_ds["test"] = concatenate_datasets(
@@ -62,9 +68,7 @@ def main() -> None:
         ]
     )
 
-    os.unlink(temp_filename)
-
-    # remove the dataset from Hugging Face Hub if it already exists
+    # Delete the existing dataset repository if it exists
     try:
         api = HfApi()
         api.delete_repo(target_repo_id, repo_type="dataset")
