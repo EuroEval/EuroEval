@@ -96,6 +96,7 @@ class HuggingFaceEncoderModel(BenchmarkModule):
         model_config: "ModelConfig",
         dataset_config: "DatasetConfig",
         benchmark_config: "BenchmarkConfig",
+        log_metadata: bool = True,
     ) -> None:
         """Initialise the model.
 
@@ -106,6 +107,8 @@ class HuggingFaceEncoderModel(BenchmarkModule):
                 The dataset configuration.
             benchmark_config:
                 The benchmark configuration.
+            log_metadata:
+                Whether to log the model metadata.
         """
         model, tokenizer = load_model_and_tokenizer(
             model_config=model_config,
@@ -126,6 +129,7 @@ class HuggingFaceEncoderModel(BenchmarkModule):
             model_config=model_config,
             dataset_config=dataset_config,
             benchmark_config=benchmark_config,
+            log_metadata=log_metadata,
         )
 
     @cached_property

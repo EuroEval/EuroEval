@@ -8,12 +8,14 @@ import importlib.util
 import logging
 import os
 import random
+import re
 import sys
 import typing as t
 import warnings
 from functools import cache
 from pathlib import Path
 
+import demjson3
 import litellm
 import numpy as np
 import requests
@@ -380,3 +382,45 @@ async def add_semaphore_and_catch_exception(
             return await coroutine
         except Exception as exc:
             return exc
+
+
+def extract_json_dict_from_string(s: str) -> dict | None:
+    """Extract a JSON dictionary from a string.
+
+    Args:
+        s:
+            The string to extract the JSON dictionary from.
+
+    Returns:
+        The extracted JSON dictionary, or None if no JSON dictionary could be found.
+    """
+    json_regex = r"\{[^{}]+?\}"
+    if (json_match := re.search(pattern=json_regex, string=s, flags=re.DOTALL)) is None:
+        logger.debug(
+            "The model output does not contain any JSON dictionary, so cannot parse "
+            f"it. Skipping. Here is the output: {s!r}"
+        )
+        return None
+    json_string = json_match.group()
+    try:
+        json_output = demjson3.decode(txt=json_string)
+    except demjson3.JSONDecodeError:
+        logger.debug(
+            "The model output is not valid JSON, so cannot parse it. Skipping. "
+            f"Here is the output: {json_string!r}"
+        )
+        return None
+    if not isinstance(json_output, dict):
+        logger.debug(
+            "The model output is not a JSON dictionary, so cannot parse "
+            f"it. Skipping. Here is the output: {json_string!r}"
+        )
+        return None
+    elif not all(isinstance(key, str) for key in json_output.keys()):
+        logger.debug(
+            "The model output is not a JSON dictionary with string keys, "
+            "so cannot parse it. Skipping. Here is the output: "
+            f"{json_string!r}"
+        )
+        return None
+    return json_output

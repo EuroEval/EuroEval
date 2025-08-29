@@ -61,6 +61,7 @@ class BenchmarkModule(ABC):
         model_config: "ModelConfig",
         dataset_config: "DatasetConfig",
         benchmark_config: "BenchmarkConfig",
+        log_metadata: bool = True,
     ) -> None:
         """Initialise the benchmark module.
 
@@ -71,12 +72,16 @@ class BenchmarkModule(ABC):
                 The dataset configuration.
             benchmark_config:
                 The benchmark configuration.
+            log_metadata:
+                Whether to log the metadata of the model.
         """
         self.model_config = model_config
         self.dataset_config = dataset_config
         self.benchmark_config = benchmark_config
+        self.log_metadata = log_metadata
         self.buffer: dict[str, t.Any] = dict()
-        self._log_metadata()
+        if self.log_metadata:
+            self._log_metadata()
 
     def _log_metadata(self) -> None:
         """Log the metadata of the model."""
