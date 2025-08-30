@@ -17,8 +17,8 @@ from scipy.special import expit as sigmoid
 from tqdm.auto import tqdm
 
 from .exceptions import InvalidBenchmark
-from .utils import HiddenPrints, unscramble
 from .types import BatchScoringFunction, ScoringFunction
+from .utils import HiddenPrints, unscramble
 
 if t.TYPE_CHECKING:
     from datasets.arrow_dataset import Dataset
@@ -457,14 +457,12 @@ class LLMAsAJudgeMetric(Metric):
             "Exactly one of scoring_fn or batch_scoring_fn must be provided."
         )
         if scoring_fn is not None:
+
             def batch_fn(
-                outputs: list[BaseModel],
-                dataset: "Dataset | None" = None,
+                outputs: list[BaseModel], dataset: "Dataset | None" = None
             ) -> float:
-                return (
-                    sum(scoring_fn(output) for output in outputs)
-                    / len(outputs)
-                )
+                return sum(scoring_fn(output) for output in outputs) / len(outputs)
+
             return batch_fn
         return batch_scoring_fn  # type: ignore[return-value]
 
@@ -669,6 +667,7 @@ european_values_metric = PipelineMetric(
 
 # Legal metrics
 
+
 ## Stay on Topic
 class CorrectResponse(BaseModel):
     """Response format for the correct response metric.
@@ -678,6 +677,7 @@ class CorrectResponse(BaseModel):
             A boolean indicating whether the model made the correct decision to refuse
             to answer when it was not permitted to provide a response.
     """
+
     correct_response: bool
 
 
@@ -692,8 +692,8 @@ def compute_rejection_correctness(
 rejection_correctness_metric = LLMAsAJudgeMetric(
     name="rejection_correctness",
     pretty_name="Rejection Correctness",
-    judge_id="gpt-5-2025-08-07",
-    judge_kwargs=dict(temperature=1.0),
+    judge_id="gpt-4.1",
+    judge_kwargs=dict(temperature=0.0),
     user_prompt=(
         "Du vil få givet et svar på et spørgsmål fra en model, "
         "{condition} "
@@ -708,6 +708,7 @@ rejection_correctness_metric = LLMAsAJudgeMetric(
 
 
 # LLMAsAJudgeMetric example usage
+
 
 class Fluency(BaseModel):
     """Response format for the fluency metric.
