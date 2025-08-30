@@ -1,7 +1,25 @@
 """Templates for the Sentiment Analysis task."""
 
 from ..data_models import PromptConfig
-from ..languages import DA, DE, EN, ES, ET, FI, FO, FR, IS, IT, NB, NL, NN, NO, PT, SV
+from ..languages import (
+    DA,
+    DE,
+    EN,
+    ES,
+    ET,
+    FI,
+    FO,
+    FR,
+    IS,
+    IT,
+    LV,
+    NB,
+    NL,
+    NN,
+    NO,
+    PT,
+    SV,
+)
 
 SENT_TEMPLATES = {
     DA: PromptConfig(
@@ -114,6 +132,16 @@ SENT_TEMPLATES = {
         default_prompt_template="Documento: {text}\nSentimento: {label}",
         default_instruction_prompt="Documento: {text}\n\nClassificare il sentiment del "
         "documento. Rispondere con {labels_str}, e nient'altro.",
+    ),
+    LV: PromptConfig(
+        default_prompt_label_mapping=dict(
+            positive="pozitīvs", neutral="neitrāls", negative="negatīvs"
+        ),
+        default_prompt_prefix="Tālāk ir dokumenti un to noskaņojums, kas var būt "
+        "{labels_str}.",
+        default_prompt_template="Dokuments: {text}\nNoskaņojums: {label}",
+        default_instruction_prompt="Dokuments: {text}\n\nKlasificējiet noskaņojumu "
+        "dokumentā. Atbildiet ar {labels_str}, un neko citu.",
     ),
     NB: PromptConfig(
         default_prompt_label_mapping=dict(

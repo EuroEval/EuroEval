@@ -78,6 +78,19 @@ EUROPEAN_VALUES_PT_CONFIG = DatasetConfig(
     _instruction_prompt="{text}",
 )
 
+
+### Unofficial datasets ###
+
+BOOLQ_PT_CONFIG = DatasetConfig(
+    name="boolq-pt",
+    pretty_name="the Portuguese multiple choice reading comprehension dataset "
+    "BoolQ-pt, translated from the English BoolQ dataset",
+    huggingface_id="EuroEval/boolq-pt",
+    task=MCRC,
+    languages=[PT],
+    unofficial=True,
+)
+
 EUROPEAN_VALUES_SITUATIONAL_PT_CONFIG = DatasetConfig(
     name="european-values-situational-pt",
     pretty_name="the Portuguese version of the European values evaluation dataset, "
@@ -88,6 +101,7 @@ EUROPEAN_VALUES_SITUATIONAL_PT_CONFIG = DatasetConfig(
     splits=["test"],
     bootstrap_samples=False,
     _instruction_prompt="{text}",
+    unofficial=True,
 )
 
 EUROPEAN_VALUES_COMPLETIONS_PT_CONFIG = DatasetConfig(
@@ -100,17 +114,5 @@ EUROPEAN_VALUES_COMPLETIONS_PT_CONFIG = DatasetConfig(
     splits=["test"],
     bootstrap_samples=False,
     _instruction_prompt="{text}",
-)
-
-
-### Unofficial datasets ###
-
-BOOLQ_PT_CONFIG = DatasetConfig(
-    name="boolq-pt",
-    pretty_name="the Portuguese multiple choice reading comprehension dataset "
-    "BoolQ-pt, translated from the English BoolQ dataset",
-    huggingface_id="EuroEval/boolq-pt",
-    task=MCRC,
-    languages=[PT],
     unofficial=True,
 )

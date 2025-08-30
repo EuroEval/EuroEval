@@ -1,7 +1,7 @@
 """Templates for all multiple choice tasks."""
 
 from ..data_models import PromptConfig
-from ..languages import DA, DE, EN, ES, ET, FI, FR, IS, IT, NB, NL, NN, NO, PT, SV
+from ..languages import DA, DE, EN, ES, ET, FI, FR, IS, IT, LV, NB, NL, NN, NO, PT, SV
 
 # TODO: Missing Faroese
 MULTIPLE_CHOICE_TEMPLATES = {
@@ -81,6 +81,14 @@ MULTIPLE_CHOICE_TEMPLATES = {
         default_prompt_template="Domanda: {text}\nRisposta: {label}",
         default_instruction_prompt="Domanda: {text}\n\nRispondete alla domanda "
         "precedente con {labels_str}, e nient'altro.",
+        default_prompt_label_mapping="auto",
+    ),
+    LV: PromptConfig(
+        default_prompt_prefix="Tālāk seko jautājumi ar vairākām atbilžu izvēlēm "
+        "(ar atbildēm).",
+        default_prompt_template="Jautājums: {text}\nAtbilde: {label}",
+        default_instruction_prompt="Jautājums: {text}\n\nAtbildiet uz iepriekšējo "
+        "jautājumu, atbildot ar {labels_str}, un nekas cits.",
         default_prompt_label_mapping="auto",
     ),
     NB: PromptConfig(
