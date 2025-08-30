@@ -2,7 +2,18 @@
 
 from ..data_models import DatasetConfig
 from ..languages import DA
-from ..tasks import COMMON_SENSE, EUROPEAN_VALUES, KNOW, LA, MCRC, NER, RC, SENT, SUMM
+from ..tasks import (
+    COMMON_SENSE,
+    EUROPEAN_VALUES,
+    KNOW,
+    LA,
+    MCRC,
+    NER,
+    RC,
+    SENT,
+    STAY_ON_TOPIC,
+    SUMM,
+)
 
 ### Official datasets ###
 
@@ -87,30 +98,6 @@ EUROPEAN_VALUES_DA_CONFIG = DatasetConfig(
     _instruction_prompt="{text}",
 )
 
-EUROPEAN_VALUES_SITUATIONAL_DA_CONFIG = DatasetConfig(
-    name="european-values-situational-da",
-    pretty_name="the Danish version of the European values evaluation dataset, where "
-    "the questions are phrased in a situational way",
-    huggingface_id="EuroEval/european-values-situational-da",
-    task=EUROPEAN_VALUES,
-    languages=[DA],
-    splits=["test"],
-    bootstrap_samples=False,
-    _instruction_prompt="{text}",
-)
-
-EUROPEAN_VALUES_COMPLETIONS_DA_CONFIG = DatasetConfig(
-    name="european-values-completions-da",
-    pretty_name="the Danish version of the European values evaluation dataset, where "
-    "the questions are phrased as sentence completions",
-    huggingface_id="EuroEval/european-values-completions-da",
-    task=EUROPEAN_VALUES,
-    languages=[DA],
-    splits=["test"],
-    bootstrap_samples=False,
-    _instruction_prompt="{text}",
-)
-
 
 ### Unofficial datasets ###
 
@@ -171,5 +158,44 @@ GOLDENSWAG_DA_CONFIG = DatasetConfig(
     huggingface_id="EuroEval/goldenswag-da-mini",
     task=COMMON_SENSE,
     languages=[DA],
+    unofficial=True,
+)
+
+EUROPEAN_VALUES_SITUATIONAL_DA_CONFIG = DatasetConfig(
+    name="european-values-situational-da",
+    pretty_name="the Danish version of the European values evaluation dataset, where "
+    "the questions are phrased in a situational way",
+    huggingface_id="EuroEval/european-values-situational-da",
+    task=EUROPEAN_VALUES,
+    languages=[DA],
+    splits=["test"],
+    bootstrap_samples=False,
+    _instruction_prompt="{text}",
+    unofficial=True,
+)
+
+EUROPEAN_VALUES_COMPLETIONS_DA_CONFIG = DatasetConfig(
+    name="european-values-completions-da",
+    pretty_name="the Danish version of the European values evaluation dataset, where "
+    "the questions are phrased as sentence completions",
+    huggingface_id="EuroEval/european-values-completions-da",
+    task=EUROPEAN_VALUES,
+    languages=[DA],
+    splits=["test"],
+    bootstrap_samples=False,
+    _instruction_prompt="{text}",
+    unofficial=True,
+)
+
+
+# Legal datasets
+
+STAY_ON_TOPIC_CONFIG = DatasetConfig(
+    name="legal-stay-on-topic",
+    pretty_name="the Danish legal benchmark dataset Stay on Topic",
+    huggingface_id="EuroEval/legal-stay-on-topic",
+    task=STAY_ON_TOPIC,
+    languages=[DA],
+    splits=["test"],
     unofficial=True,
 )

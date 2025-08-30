@@ -41,6 +41,7 @@ ALL_LANGUAGES = [
     "es",
     "sv",
     "pt-pt",
+    "lv",
 ]
 
 

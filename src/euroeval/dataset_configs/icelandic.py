@@ -80,31 +80,6 @@ EUROPEAN_VALUES_IS_CONFIG = DatasetConfig(
     _instruction_prompt="{text}",
 )
 
-# TODO: Not available yet
-# EUROPEAN_VALUES_SITUATIONAL_IS_CONFIG = DatasetConfig(
-#     name="european-values-situational-is",
-#     pretty_name="the Icelandic version of the European values evaluation dataset, "
-#     "where the questions are phrased in a situational way",
-#     huggingface_id="EuroEval/european-values-situational-is",
-#     task=EUROPEAN_VALUES,
-#     languages=[IS],
-#     splits=["test"],
-#     bootstrap_samples=False,
-#     _instruction_prompt="{text}",
-# )
-
-EUROPEAN_VALUES_COMPLETIONS_IS_CONFIG = DatasetConfig(
-    name="european-values-completions-is",
-    pretty_name="the Icelandic version of the European values evaluation dataset, "
-    "where the questions are phrased as sentence completions",
-    huggingface_id="EuroEval/european-values-completions-is",
-    task=EUROPEAN_VALUES,
-    languages=[IS],
-    splits=["test"],
-    bootstrap_samples=False,
-    _instruction_prompt="{text}",
-)
-
 
 ### Unofficial datasets ###
 
@@ -191,5 +166,31 @@ MULTI_WIKI_QA_IS_CONFIG = DatasetConfig(
     huggingface_id="EuroEval/multi-wiki-qa-is-mini",
     task=RC,
     languages=[IS],
+    unofficial=True,
+)
+
+EUROPEAN_VALUES_SITUATIONAL_IS_CONFIG = DatasetConfig(
+    name="european-values-situational-is",
+    pretty_name="the Icelandic version of the European values evaluation dataset, "
+    "where the questions are phrased in a situational way",
+    huggingface_id="EuroEval/european-values-situational-is",
+    task=EUROPEAN_VALUES,
+    languages=[IS],
+    splits=["test"],
+    bootstrap_samples=False,
+    _instruction_prompt="{text}",
+    unofficial=True,
+)
+
+EUROPEAN_VALUES_COMPLETIONS_IS_CONFIG = DatasetConfig(
+    name="european-values-completions-is",
+    pretty_name="the Icelandic version of the European values evaluation dataset, "
+    "where the questions are phrased as sentence completions",
+    huggingface_id="EuroEval/european-values-completions-is",
+    task=EUROPEAN_VALUES,
+    languages=[IS],
+    splits=["test"],
+    bootstrap_samples=False,
+    _instruction_prompt="{text}",
     unofficial=True,
 )
