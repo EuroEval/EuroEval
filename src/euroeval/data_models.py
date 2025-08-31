@@ -9,10 +9,13 @@ from dataclasses import dataclass, field
 import pydantic
 import torch
 
-from .enums import Device, GenerativeType, InferenceBackend, ModelType, TaskGroup
-from .metrics import Metric
+from .enums import Device, GenerativeType, ModelType, TaskGroup
 from .types import ScoreDict
 from .utils import get_package_version
+
+if t.TYPE_CHECKING:
+    from .enums import InferenceBackend
+    from .metrics import Metric
 
 
 @dataclass
@@ -127,7 +130,7 @@ class Task:
     name: str
     task_group: TaskGroup
     template_dict: dict["Language", "PromptConfig"]
-    metrics: list[Metric]
+    metrics: list["Metric"]
     default_num_few_shot_examples: int
     default_max_generated_tokens: int
     default_labels: list[str]
@@ -589,7 +592,7 @@ class ModelConfig:
     revision: str
     task: str
     languages: list[Language]
-    inference_backend: InferenceBackend
+    inference_backend: "InferenceBackend"
     merge: bool
     model_type: ModelType
     fresh: bool

@@ -1,10 +1,15 @@
 """Templates for the Summarization task."""
 
+import typing as t
+
 from ..data_models import PromptConfig
-from ..languages import DA, DE, EN, ES, FI, FR, IS, IT, NB, NL, NN, NO, PT, SV
+from ..languages import DA, DE, EN, ES, ET, FI, FR, IS, IT, NB, NL, NN, NO, PT, SV
+
+if t.TYPE_CHECKING:
+    from ..data_models import Language
 
 # TODO: Missing Faroese
-SUMM_TEMPLATES = {
+SUMM_TEMPLATES: dict["Language", PromptConfig] = {
     DA: PromptConfig(
         default_prompt_prefix="Følgende er dokumenter med tilhørende resuméer.",
         default_prompt_template="Dokument: {text}\nResumé: {target_text}",
@@ -32,8 +37,14 @@ SUMM_TEMPLATES = {
         default_prompt_prefix="A continuación se presentan documentos con resúmenes "
         "adjuntos.",
         default_prompt_template="Documento: {text}\nResumen: {target_text}",
-        default_instruction_prompt="Documento: {text}\n\nEscriba un resumen del "
-        "documento anterior.",
+        default_instruction_prompt="Documento: {text}\n\n",
+        default_prompt_label_mapping=dict(),
+    ),
+    ET: PromptConfig(
+        default_prompt_prefix="Allpool on dokumendid koos kokkuvõtetega.",
+        default_prompt_template="Dokument: {text}\nKokkuvõte: {target_text}",
+        default_instruction_prompt="Dokument: {text}\n\nKoosta ülaltoodud dokumendi "
+        "kokkuvõte.",
         default_prompt_label_mapping=dict(),
     ),
     PT: PromptConfig(

@@ -103,6 +103,7 @@ class VLLMModel(HuggingFaceEncoderModel):
         model_config: "ModelConfig",
         dataset_config: "DatasetConfig",
         benchmark_config: "BenchmarkConfig",
+        log_metadata: bool = True,
     ) -> None:
         """Initialise the vLLM model.
 
@@ -113,6 +114,8 @@ class VLLMModel(HuggingFaceEncoderModel):
                 The dataset configuration.
             benchmark_config:
                 The benchmark configuration.
+            log_metadata:
+                Whether to log the model and dataset metadata.
         """
         if (
             importlib.util.find_spec("vllm") is None
@@ -144,6 +147,7 @@ class VLLMModel(HuggingFaceEncoderModel):
             model_config=model_config,
             dataset_config=dataset_config,
             benchmark_config=benchmark_config,
+            log_metadata=log_metadata,
         )
 
         self.buffer |= dict(
@@ -153,6 +157,7 @@ class VLLMModel(HuggingFaceEncoderModel):
                 model_config=self.model_config,
                 tokenizer=self._tokenizer,
                 generative_type=self.generative_type,
+                log_metadata=self.log_metadata,
             ),
         )
         if self.model_config.adapter_base_model_id is not None:
@@ -367,6 +372,7 @@ class VLLMModel(HuggingFaceEncoderModel):
             model_config=self.model_config,
             tokenizer=self._tokenizer,
             generative_type=self.generative_type,
+            log_metadata=self.log_metadata,
         )
         if (
             not self.buffer["first_label_token_mapping"]

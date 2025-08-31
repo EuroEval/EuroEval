@@ -15,7 +15,7 @@ if t.TYPE_CHECKING:
     from datasets.arrow_dataset import Dataset
     from transformers.trainer_utils import EvalPrediction
 
-    from ..data_models import DatasetConfig, GenerativeModelOutput
+    from ..data_models import BenchmarkConfig, DatasetConfig, GenerativeModelOutput
     from ..types import Labels, Predictions
 
 
@@ -25,6 +25,7 @@ logger = logging.getLogger("euroeval")
 def compute_metrics(
     model_outputs_and_labels: "tuple[Predictions, Labels] | EvalPrediction",
     dataset_config: "DatasetConfig",
+    benchmark_config: "BenchmarkConfig",
     dataset: "Dataset",
 ) -> dict[str, float]:
     """Compute the metrics needed for evaluation.
@@ -35,6 +36,8 @@ def compute_metrics(
             contains the true labels.
         dataset_config:
             The configuration of the dataset.
+        benchmark_config:
+            The configuration of the benchmark.
         dataset:
             The dataset used for evaluation. This is only used in case any additional
             metadata is used to compute the metrics.
@@ -80,7 +83,11 @@ def compute_metrics(
     results: dict[str, float] = dict()
     for metric in dataset_config.task.metrics:
         score: float | None = metric(
-            predictions=predictions, references=label_ids, dataset=dataset
+            predictions=predictions,
+            references=label_ids,
+            dataset=dataset,
+            dataset_config=dataset_config,
+            benchmark_config=benchmark_config,
         )
 
         # The metric returns None if we are running on multi-GPU and the current

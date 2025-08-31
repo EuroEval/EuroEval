@@ -360,6 +360,7 @@ def get_first_label_token_mapping(
     model_config: "ModelConfig",
     tokenizer: "PreTrainedTokenizer | None",
     generative_type: "GenerativeType | None",
+    log_metadata: bool,
 ) -> dict[str, str] | bool:
     """Check if the model should output scores.
 
@@ -372,123 +373,114 @@ def get_first_label_token_mapping(
             The tokenizer, or None if not available.
         generative_type:
             The generative type, or None if not available.
+        log_metadata:
+            Whether to log metadata.
 
     Returns:
         A mapping from labels to the first token in each label, or alternatively a
         Boolean value indicating whether the model should output scores (if the mapping
         is outputted then the model will always output scores).
     """
-    if generative_type == GenerativeType.REASONING:
-        log_once(
-            f"The model {model_config.model_id!r} is a reasoning model and "
-            "thus does not support logprobs, so we do not enable it.",
-            level=logging.DEBUG,
-        )
+    if not (dataset_config.task.uses_logprobs and dataset_config.labels):
+        if log_metadata:
+            log_once(
+                "We will not use logprobs with the model, since the dataset does not "
+                "have labels.",
+                level=logging.DEBUG,
+            )
         return False
-
-    if tokenizer is None:
-        if dataset_config.task.uses_logprobs:
+    elif generative_type == GenerativeType.REASONING:
+        if log_metadata:
+            log_once(
+                f"The model {model_config.model_id!r} is a reasoning model and "
+                "thus does not support logprobs, so we do not enable it.",
+                level=logging.DEBUG,
+            )
+        return False
+    elif tokenizer is None:
+        if log_metadata:
             log_once(
                 f"We will use logprobs with the model {model_config.model_id!r} "
                 "since the dataset supports it and no tokenizer is available.",
                 level=logging.DEBUG,
             )
-        else:
-            log_once(
-                f"We will not use logprobs with the model {model_config.model_id!r} "
-                "since the dataset does not support it and no tokenizer is available.",
-                level=logging.DEBUG,
-            )
-        return dataset_config.task.uses_logprobs
+        return True
 
-    # If there are labels associated with the dataset, and that the first token of each
-    # label is distinct, then we can safely use the logprobs
-    if dataset_config.task.uses_logprobs and dataset_config.labels:
-        local_labels = [
-            dataset_config.prompt_label_mapping[label].strip()
-            for label in dataset_config.labels
-        ]
+    local_labels = [
+        dataset_config.prompt_label_mapping[label].strip()
+        for label in dataset_config.labels
+    ]
 
-        # Tokenize some text containing each label, which we will use to extract the
-        # first token of each label
-        all_tokens: list[list[str]]
-        if tokenizer.chat_template is None:
-            add_prefix_space = should_prefix_space_be_added_to_labels(
-                labels_to_be_generated=local_labels, tokenizer=tokenizer
-            )
-            all_tokens = [
-                tokenizer.tokenize(text=f" {label}" if add_prefix_space else label)
-                for label in local_labels
-            ]
-        else:
-            all_tokens = [
-                tokenizer.convert_ids_to_tokens(
-                    ids=tokenizer.apply_chat_template(
-                        conversation=[
-                            dict(role="user", content=""),
-                            dict(role="assistant", content=label),
-                        ],
-                        add_generation_prompt=True,
-                        tokenize=True,
-                    )
-                )
-                for label in local_labels
-            ]
-
-        # Remove any non-alphabetic characters from the tokens
+    # Tokenize some text containing each label, which we will use to extract the
+    # first token of each label
+    all_tokens: list[list[str]]
+    if tokenizer.chat_template is None:
+        add_prefix_space = should_prefix_space_be_added_to_labels(
+            labels_to_be_generated=local_labels, tokenizer=tokenizer
+        )
         all_tokens = [
-            [
-                re.sub(
-                    pattern=r"^[^a-zæøåüöä0-9]+|[^a-zæøåüöä0-9]+$",
-                    repl="",
-                    string=token.lower(),
+            tokenizer.tokenize(text=f" {label}" if add_prefix_space else label)
+            for label in local_labels
+        ]
+    else:
+        all_tokens = [
+            tokenizer.convert_ids_to_tokens(
+                ids=tokenizer.apply_chat_template(
+                    conversation=[
+                        dict(role="user", content=""),
+                        dict(role="assistant", content=label),
+                    ],
+                    add_generation_prompt=True,
+                    tokenize=True,
                 )
-                for token in token_list
-            ]
-            for token_list in all_tokens
+            )
+            for label in local_labels
         ]
 
-        # Extract the first token of each label
-        first_tokens: list[str] = list()
-        for token_list, label in zip(all_tokens, local_labels):
-            matching_tokens = [
-                tok for tok in token_list if tok and label.startswith(tok)
-            ]
-            if not matching_tokens:
+    # Remove any non-alphabetic characters from the tokens
+    all_tokens = [
+        [
+            re.sub(
+                pattern=r"^[^a-zæøåüöä0-9]+|[^a-zæøåüöä0-9]+$",
+                repl="",
+                string=token.lower(),
+            )
+            for token in token_list
+        ]
+        for token_list in all_tokens
+    ]
+
+    # Extract the first token of each label
+    first_tokens: list[str] = list()
+    for token_list, label in zip(all_tokens, local_labels):
+        matching_tokens = [tok for tok in token_list if tok and label.startswith(tok)]
+        if not matching_tokens:
+            if log_metadata:
                 log_once(
                     f"No matching token found in token_list for label '{label}', so "
                     "we will not use logprobs with the model.",
                     level=logging.DEBUG,
                 )
-                return False
-            first_tokens.append(matching_tokens[0])
+            return False
+        first_tokens.append(matching_tokens[0])
 
-        # Build a mapping from labels to the first token in each label if the first
-        # tokens are distinct
-        if len(first_tokens) == len(set(first_tokens)):
+    # Build a mapping from labels to the first token in each label if the first
+    # tokens are distinct
+    if len(first_tokens) == len(set(first_tokens)):
+        if log_metadata:
             log_once(
                 "We will use logprobs with the model since the first tokens of the "
                 "labels are distinct.",
                 level=logging.DEBUG,
             )
-            return {
-                label: first_token
-                for label, first_token in zip(local_labels, first_tokens)
-            }
-        else:
+        return {
+            label: first_token for label, first_token in zip(local_labels, first_tokens)
+        }
+    else:
+        if log_metadata:
             log_once(
                 "We will not use logprobs with the model since the first tokens of the "
                 "labels are not distinct. The first tokens for the labels "
                 f"{local_labels} are {first_tokens}"
             )
-            return False
-
-    # Otherwise, we assume that the model should not output scores, to avoid potential
-    # evaluation errors. This will force the label extraction to rely on word edit
-    # distance instead of logprobs.
-    log_once(
-        "We will not use logprobs with the model, since the dataset does not have "
-        "labels.",
-        level=logging.DEBUG,
-    )
-    return False
+        return False

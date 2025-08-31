@@ -1,9 +1,33 @@
 """Templates for the Named Entity Recognition task."""
 
-from ..data_models import PromptConfig
-from ..languages import DA, DE, EN, ES, FI, FO, FR, IS, IT, LV, NB, NL, NN, NO, PT, SV
+import typing as t
 
-NER_TEMPLATES = {
+from ..data_models import PromptConfig
+from ..languages import (
+    DA,
+    DE,
+    EN,
+    ES,
+    ET,
+    FI,
+    FO,
+    FR,
+    IS,
+    IT,
+    LV,
+    NB,
+    NL,
+    NN,
+    NO,
+    PT,
+    SV,
+)
+
+if t.TYPE_CHECKING:
+    from ..data_models import Language
+
+
+NER_TEMPLATES: dict["Language", PromptConfig] = {
     DA: PromptConfig(
         default_prompt_label_mapping={
             "b-per": "person",
@@ -79,6 +103,25 @@ NER_TEMPLATES = {
         "nombradas en la oración. Debes producir esto como un diccionario JSON con las "
         "claves {labels_str}. Los valores deben ser listas de las "
         "entidades nombradas de ese tipo, exactamente como aparecen en la oración.",
+    ),
+    ET: PromptConfig(
+        default_prompt_label_mapping={
+            "b-per": "inimene",
+            "i-per": "inimene",
+            "b-loc": "asukoht",
+            "i-loc": "asukoht",
+            "b-org": "organisatsioon",
+            "i-org": "organisatsioon",
+            "b-misc": "muu",
+            "i-misc": "muu",
+        },
+        default_prompt_prefix="Allpool on laused ja JSON-sõnastikud, mis sisaldavad "
+        "antud lauses esinevaid nimetatud üksuseid.",
+        default_prompt_template="Lause: {text}\nNimetatud üksused: {label}",
+        default_instruction_prompt="Lause: {text}\n\nTuvasta lauses "
+        "nimetatud üksused. Väljund peaks olema JSON-sõnastik, "
+        "mille võtmed on {labels_str}. Väärtused peaksid olema kindlat tüüpi nimetatud "
+        "üksuste loendid, täpselt nii nagu need lauses esinevad.",
     ),
     PT: PromptConfig(
         default_prompt_label_mapping={

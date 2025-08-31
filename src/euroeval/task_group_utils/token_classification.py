@@ -1,15 +1,16 @@
 """Utility functions related to the token-classification task group."""
 
 import logging
-import re
 import typing as t
 from copy import deepcopy
 
-import demjson3
 import numpy as np
 
 from ..exceptions import InvalidBenchmark
-from ..utils import raise_if_model_output_contains_nan_values
+from ..utils import (
+    extract_json_dict_from_string,
+    raise_if_model_output_contains_nan_values,
+)
 
 if t.TYPE_CHECKING:
     from datasets.arrow_dataset import Dataset
@@ -17,7 +18,7 @@ if t.TYPE_CHECKING:
     from transformers.tokenization_utils_base import BatchEncoding
     from transformers.trainer_utils import EvalPrediction
 
-    from ..data_models import DatasetConfig, GenerativeModelOutput
+    from ..data_models import BenchmarkConfig, DatasetConfig, GenerativeModelOutput
     from ..types import Labels, Predictions
 
 
@@ -28,6 +29,7 @@ def compute_metrics(
     model_outputs_and_labels: "tuple[Predictions, Labels] | EvalPrediction",
     has_misc_tags: bool,
     dataset_config: "DatasetConfig",
+    benchmark_config: "BenchmarkConfig",
     dataset: "Dataset",
 ) -> dict[str, float]:
     """Compute the metrics needed for evaluation.
@@ -40,6 +42,8 @@ def compute_metrics(
             Whether the dataset has MISC tags.
         dataset_config:
             The configuration of the dataset.
+        benchmark_config:
+            The configuration of the benchmark.
         dataset:
             The dataset used for evaluation. This is only used in case any additional
             metadata is used to compute the metrics.
@@ -142,7 +146,11 @@ def compute_metrics(
             if metric.name == "micro_f1"
         )
         micro_f1_score = metric(
-            predictions=predictions, references=list(labels), dataset=dataset
+            predictions=predictions,
+            references=list(labels),
+            dataset=dataset,
+            dataset_config=dataset_config,
+            benchmark_config=benchmark_config,
         )
 
     # Compute the metrics without MISC tags
@@ -165,7 +173,11 @@ def compute_metrics(
             if metric.name == "micro_f1_no_misc"
         )
         micro_f1_no_misc_score = metric(
-            predictions=predictions_no_misc, references=labels_no_misc, dataset=dataset
+            predictions=predictions_no_misc,
+            references=labels_no_misc,
+            dataset=dataset,
+            dataset_config=dataset_config,
+            benchmark_config=benchmark_config,
         )
 
     # Raise error if the metrics are invalid
@@ -194,51 +206,11 @@ def extract_labels_from_generation(
     Returns:
         The predicted labels.
     """
-    raw_predictions = model_output.sequences
-
-    # Attempt to extract the JSON dictionary from the predictions
-    json_regex = r"\{[^{}]+?\}"
-    json_matches = [
-        re.search(pattern=json_regex, string=raw_prediction, flags=re.DOTALL)
-        or raw_prediction
-        for raw_prediction in raw_predictions
-    ]
-    raw_predictions = [
-        json_match.group() if isinstance(json_match, re.Match) else json_match
-        for json_match in json_matches
-    ]
-
     tokens = input_batch["tokens"]
     predicted_labels: list[list[str]] = [["o"] * len(token_ids) for token_ids in tokens]
-    for idx, raw_prediction in enumerate(raw_predictions):
-        try:
-            json_output = demjson3.decode(txt=raw_prediction)
-            if not isinstance(json_output, dict):
-                logger.debug(
-                    "The model output is not a JSON dictionary, so cannot parse "
-                    f"it. Skipping. Here is the output: {raw_prediction}"
-                )
-                continue
-            elif not all(isinstance(key, str) for key in json_output.keys()):
-                logger.debug(
-                    "The model output is not a JSON dictionary with string keys, "
-                    "so cannot parse it. Skipping. Here is the output: "
-                    f"{raw_prediction}"
-                )
-                continue
-            elif not all(isinstance(value, list) for value in json_output.values()):
-                logger.debug(
-                    "The model output is not a JSON dictionary with list values, "
-                    "so cannot parse it. Skipping. Here is the output: "
-                    f"{raw_prediction}"
-                )
-                continue
-            prediction_dict: dict[str, list[str]] = json_output
-        except demjson3.JSONDecodeError:
-            logger.debug(
-                "The model output is not valid JSON, so cannot parse it. Skipping. "
-                f"Here is the output: {raw_prediction!r}"
-            )
+    for idx, raw_prediction in enumerate(model_output.sequences):
+        prediction_dict = extract_json_dict_from_string(s=raw_prediction)
+        if prediction_dict is None:
             continue
 
         prompt_label_mapping = dataset_config.prompt_label_mapping

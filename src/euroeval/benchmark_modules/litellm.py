@@ -188,6 +188,8 @@ class LiteLLMModel(BenchmarkModule):
         model_config: ModelConfig,
         dataset_config: DatasetConfig,
         benchmark_config: BenchmarkConfig,
+        log_metadata: bool = True,
+        **generation_kwargs: dict[str, t.Any],
     ) -> None:
         """Initialise the model.
 
@@ -198,6 +200,11 @@ class LiteLLMModel(BenchmarkModule):
                 The dataset configuration.
             benchmark_config:
                 The benchmark configuration.
+            log_metadata:
+                Whether to log the model metadata.
+            generation_kwargs:
+                The generation kwargs to pass to the model. If None, default values will
+                be used.
         """
         # Detect whether the model is an Ollama model, as we need to extract metadata
         # differently for these models
@@ -216,13 +223,16 @@ class LiteLLMModel(BenchmarkModule):
             model_config=model_config,
             dataset_config=dataset_config,
             benchmark_config=benchmark_config,
+            log_metadata=log_metadata,
         )
 
+        self.generation_kwargs = generation_kwargs
         self.buffer["first_label_token_mapping"] = get_first_label_token_mapping(
             dataset_config=self.dataset_config,
             model_config=self.model_config,
             tokenizer=None,
             generative_type=self.generative_type,
+            log_metadata=self.log_metadata,
         )
 
     @property
@@ -252,11 +262,12 @@ class LiteLLMModel(BenchmarkModule):
         else:
             type_ = GenerativeType.INSTRUCTION_TUNED
 
-        log_once(
-            f"Detected generative type {type_.name!r} for model "
-            f"{self.model_config.model_id!r}",
-            level=logging.DEBUG,
-        )
+        if self.log_metadata:
+            log_once(
+                f"Detected generative type {type_.name!r} for model "
+                f"{self.model_config.model_id!r}",
+                level=logging.DEBUG,
+            )
         return type_
 
     def generate(self, inputs: dict) -> GenerativeModelOutput:
@@ -279,6 +290,7 @@ class LiteLLMModel(BenchmarkModule):
             model_config=self.model_config,
             tokenizer=None,
             generative_type=self.generative_type,
+            log_metadata=self.log_metadata,
         )
 
         all_responses: dict[int, "ModelResponse"] = {}
@@ -289,12 +301,16 @@ class LiteLLMModel(BenchmarkModule):
             if not conversations_to_run:
                 break
 
+            generation_kwargs = self.generation_kwargs or self.get_generation_kwargs(
+                dataset_config=self.dataset_config
+            )
+
             batch_indices, batch_conversations = zip(*conversations_to_run)
             successes, failures = safe_run(
                 self._generate_async(
                     model_id=self.model_config.model_id,
                     conversations=list(batch_conversations),
-                    **self.get_generation_kwargs(dataset_config=self.dataset_config),
+                    **generation_kwargs,
                 )
             )
 
@@ -321,12 +337,7 @@ class LiteLLMModel(BenchmarkModule):
             # Attempt to handle the exceptions, to improve the chance of getting
             # successful generations next time around
             for _, error in failures:
-                self._handle_exception(
-                    error=error,
-                    generation_kwargs=self.get_generation_kwargs(
-                        dataset_config=self.dataset_config
-                    ),
-                )
+                self._handle_exception(error=error, **generation_kwargs)
 
             # Sleep for a second to avoid pinging the API server too quickly
             sleep(1)
@@ -349,9 +360,7 @@ class LiteLLMModel(BenchmarkModule):
 
         return model_output
 
-    def _handle_exception(
-        self, error: Exception, generation_kwargs: dict[str, t.Any]
-    ) -> None:
+    def _handle_exception(self, error: Exception, **generation_kwargs) -> None:
         """Handle an exception from the model.
 
         Args:
@@ -580,9 +589,9 @@ class LiteLLMModel(BenchmarkModule):
         # for all the requests, preventing "too many open files" errors
         router = Router(
             model_list=[
-                dict(
+                litellm.DeploymentTypedDict(
                     model_name=self.model_config.model_id,
-                    litellm_params=generation_kwargs,
+                    litellm_params=litellm.LiteLLMParamsTypedDict(model=model_id),
                 )
             ]
         )
@@ -592,7 +601,9 @@ class LiteLLMModel(BenchmarkModule):
         semaphore = asyncio.Semaphore(max_concurrent_calls)
         requests = [
             add_semaphore_and_catch_exception(
-                router.acompletion(model=model_id, messages=conversation),
+                router.acompletion(
+                    model=model_id, messages=conversation, **generation_kwargs
+                ),
                 semaphore=semaphore,
             )
             for conversation in conversations
@@ -876,13 +887,15 @@ class LiteLLMModel(BenchmarkModule):
                 if context_length_keys:
                     context_length = model_info[context_length_keys[0]]
                     if context_length is not None:
-                        log_once(
-                            f"Detected context length key {context_length_keys[0]!r} "
-                            f"for Ollama model {ollama_model_id!r}",
-                            level=logging.DEBUG,
-                        )
+                        if self.log_metadata:
+                            log_once(
+                                f"Detected context length key "
+                                f"{context_length_keys[0]!r} for Ollama model "
+                                f"{ollama_model_id!r}",
+                                level=logging.DEBUG,
+                            )
                         return int(context_length)
-                else:
+                elif self.log_metadata:
                     log_once(
                         f"Tried to get the maximum length of the Ollama model "
                         f"{ollama_model_id!r}, but could not find a context length. "
@@ -1218,7 +1231,6 @@ class LiteLLMModel(BenchmarkModule):
         """
         # Set the core generation arguments
         generation_kwargs: dict[str, t.Any] = dict(
-            model=self.model_config.model_id,
             max_completion_tokens=(
                 REASONING_MAX_TOKENS
                 if self.generative_type == GenerativeType.REASONING
@@ -1322,7 +1334,7 @@ class LiteLLMModel(BenchmarkModule):
         # First attempt is a test run with a single conversation to handle errors
         # quickly. We repeat this multiple times to deal with different types of
         # errors, and stop if we get a successful response.
-        test_conversation = [
+        test_conversation: list[litellm.AllMessageValues] = [
             litellm.ChatCompletionUserMessage(role="user", content="Test message")
         ]
         for _ in range(5):
@@ -1336,7 +1348,7 @@ class LiteLLMModel(BenchmarkModule):
             if not failures:
                 break
             for _, error in failures:
-                self._handle_exception(error=error, generation_kwargs=generation_kwargs)
+                self._handle_exception(error=error, **generation_kwargs)
 
         return generation_kwargs
 

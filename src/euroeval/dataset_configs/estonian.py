@@ -2,7 +2,7 @@
 
 from ..data_models import DatasetConfig
 from ..languages import ET
-from ..tasks import COMMON_SENSE, SENT
+from ..tasks import COMMON_SENSE, NER, SENT, SUMM
 
 ### Official datasets ###
 
@@ -30,4 +30,20 @@ WINOGRANDE_ET_CONFIG = DatasetConfig(
     "Sinu ülesanne on valida lünka sobiv vastusevariant. "
     "Vasta ainult {labels_str}. Muud vastused ei ole lubatud.",
     _labels=["a", "b"],
+)
+
+ESTNER_CONFIG = DatasetConfig(
+    name="estner",
+    pretty_name="the Estonian named entity recognition dataset EstNER",
+    huggingface_id="EuroEval/estner-mini",
+    task=NER,
+    languages=[ET],
+)
+
+ERR_NEWS_CONFIG = DatasetConfig(
+    name="err-news",
+    pretty_name="the Estonian summarisation dataset ErrNews",
+    huggingface_id="EuroEval/err-news-mini",
+    task=SUMM,
+    languages=[ET],
 )

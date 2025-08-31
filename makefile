@@ -47,7 +47,7 @@ install-uv:
 			echo "Installed uv."; \
 		else \
 			echo "Updating uv..."; \
-			uv self update; \
+			uv self update || true; \
 	fi
 
 install-dependencies:

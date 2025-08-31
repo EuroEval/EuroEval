@@ -26,9 +26,13 @@ jobs:
         with:
           persist-credentials: false
           ref: main
-      - uses: actions/setup-python@v5
+
+      - name: Install uv and set up Python
+        uses: astral-sh/setup-uv@v6
         with:
+          enable-cache: false
           python-version: "3.11"
+
       - name: Run pre-commit hooks
         uses: pre-commit/action@v3.0.1
 
@@ -60,7 +64,7 @@ jobs:
         run: curl -fsSL https://ollama.com/install.sh | sh && ollama serve &
 
       - name: Test with pytest
-        run: uv run pytest -vvv
+        run: uv run pytest
         env:
           HUGGINGFACE_API_KEY: ${{ secrets.HUGGINGFACE_API_KEY }}
           HF_TOKEN: ${{ secrets.HUGGINGFACE_API_KEY }}
@@ -87,6 +91,7 @@ jobs:
       - name: Install uv and set up Python
         uses: astral-sh/setup-uv@v6
         with:
+          enable-cache: false
           python-version: ${{ matrix.python-version }}
 
       - name: Install Dependencies

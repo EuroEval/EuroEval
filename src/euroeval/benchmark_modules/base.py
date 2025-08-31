@@ -61,6 +61,7 @@ class BenchmarkModule(ABC):
         model_config: "ModelConfig",
         dataset_config: "DatasetConfig",
         benchmark_config: "BenchmarkConfig",
+        log_metadata: bool = True,
     ) -> None:
         """Initialise the benchmark module.
 
@@ -71,12 +72,16 @@ class BenchmarkModule(ABC):
                 The dataset configuration.
             benchmark_config:
                 The benchmark configuration.
+            log_metadata:
+                Whether to log the metadata of the model.
         """
         self.model_config = model_config
         self.dataset_config = dataset_config
         self.benchmark_config = benchmark_config
+        self.log_metadata = log_metadata
         self.buffer: dict[str, t.Any] = dict()
-        self._log_metadata()
+        if self.log_metadata:
+            self._log_metadata()
 
     def _log_metadata(self) -> None:
         """Log the metadata of the model."""
@@ -192,11 +197,13 @@ class BenchmarkModule(ABC):
                 return partial(
                     sequence_classification.compute_metrics,
                     dataset_config=self.dataset_config,
+                    benchmark_config=self.benchmark_config,
                 )
             case TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION:
                 return partial(
                     sequence_classification.compute_metrics,
                     dataset_config=self.dataset_config,
+                    benchmark_config=self.benchmark_config,
                 )
             case TaskGroup.TEXT_TO_TEXT:
                 return partial(
@@ -209,11 +216,13 @@ class BenchmarkModule(ABC):
                     token_classification.compute_metrics,
                     has_misc_tags=self.buffer.get("has_misc_tags", True),
                     dataset_config=self.dataset_config,
+                    benchmark_config=self.benchmark_config,
                 )
             case TaskGroup.QUESTION_ANSWERING:
                 return partial(
                     question_answering.compute_metrics,
                     dataset_config=self.dataset_config,
+                    benchmark_config=self.benchmark_config,
                 )
             case _:
                 raise NotImplementedError(

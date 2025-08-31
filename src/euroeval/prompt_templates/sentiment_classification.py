@@ -1,5 +1,7 @@
 """Templates for the Sentiment Analysis task."""
 
+import typing as t
+
 from ..data_models import PromptConfig
 from ..languages import (
     DA,
@@ -21,7 +23,10 @@ from ..languages import (
     SV,
 )
 
-SENT_TEMPLATES = {
+if t.TYPE_CHECKING:
+    from ..data_models import Language
+
+SENT_TEMPLATES: dict["Language", PromptConfig] = {
     DA: PromptConfig(
         default_prompt_label_mapping=dict(
             positive="positiv", neutral="neutral", negative="negativ"

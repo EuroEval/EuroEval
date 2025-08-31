@@ -1,9 +1,14 @@
 """Templates for the Reading Comprehension task."""
 
+import typing as t
+
 from ..data_models import PromptConfig
 from ..languages import DA, DE, EN, ES, FI, FO, FR, IS, IT, LV, NB, NL, NN, NO, PT, SV
 
-RC_TEMPLATES = {
+if t.TYPE_CHECKING:
+    from ..data_models import Language
+
+RC_TEMPLATES: dict["Language", PromptConfig] = {
     DA: PromptConfig(
         default_prompt_prefix="Følgende er tekster med tilhørende spørgsmål og svar.",
         default_prompt_template="Tekst: {text}\nSpørgsmål: {question}\nSvar med maks. "

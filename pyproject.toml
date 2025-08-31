@@ -171,6 +171,7 @@ minversion = "7.0"
 addopts = [
     "--cov=src/euroeval",
     "--color=yes",
+    "-vvv",
 ]
 xfail_strict = true
 filterwarnings = [
