@@ -44,7 +44,7 @@ dataset has a primary and secondary score - see what these are on the [task
 page](/tasks). Lastly, the final columns show the EuroEval version used to benchmark
 the given model on each of the datasets.
 
-To read more about the individual datasets, see the [datasets](/datasets) page. Uf
+To read more about the individual datasets, see the [datasets](/datasets) page. If
 you're interested in the methodology behind the benchmark, see the
 [methodology](/methodology) page.
 
