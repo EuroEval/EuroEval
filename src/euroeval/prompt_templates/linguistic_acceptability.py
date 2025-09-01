@@ -64,8 +64,8 @@ LA_TEMPLATES: dict["Language", PromptConfig] = {
         default_prompt_prefix="Järgnevad on laused ja kas need on grammatiliselt "
         "õiged.",
         default_prompt_template="Lause: {text}\nGrammatikaliselt õige: {label}",
-        default_instruction_prompt="Lause: {text}\n\nMäärake, kas lause on "
-        "grammatiliselt õige või mitte. Vastake {labels_str}, ja mitte midagi muud.",
+        default_instruction_prompt="Lause: {text}\n\nOtsusta, kas lause on "
+        "grammatiliselt õige või mitte. Vasta {labels_str}, ja mitte midagi muud.",
     ),
     PT: PromptConfig(
         default_prompt_label_mapping=dict(correct="sim", incorrect="não"),

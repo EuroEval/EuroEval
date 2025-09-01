@@ -9,17 +9,20 @@ information about what these constitute.
 
 ### Estonian Valence Corpus
 
-This dataset was published in [this paper](http://dx.doi.org/10.7592/FEJF2016.64.polarity). The dataset was compiled of articles of different rubrics of online
-dailies, weeklies, and reader comments, while the polarity of each paragraph was determined by native Estonian readers.
+This dataset was published in [this
+paper](http://dx.doi.org/10.7592/FEJF2016.64.polarity). The dataset was compiled of
+articles of different rubrics of online dailies, weeklies, and reader comments, while
+the polarity of each paragraph was determined by native Estonian readers.
 
-There are 4 labels in the original dataset instead of the usual 3.
-Examples with the labels representing 'mixed' emotion (vastuoluline) were filtered out
-mainly to be consistent with rest of the languages in EuroEval.
+There are 4 labels in the original dataset instead of the usual 3. Examples with the
+labels representing 'mixed' emotion (vastuoluline) were filtered out mainly to be
+consistent with rest of the languages in EuroEval.
 
-The original full dataset consists of 3,277 / 818 samples for the training and test splits,
-respectively. Having filtered out 'mixed' examples, we truncate the train split to 1,024
-examples, and redistribute the rest to validation and test resulting in the final size of
-1,024 / 256 / 2,048 for the training, validation and test splits, respectively.
+The original full dataset consists of 3,277 / 818 samples for the training and test
+splits, respectively. Having filtered out 'mixed' examples, we truncate the train split
+to 1,024 examples, and redistribute the rest to validation and test resulting in the
+final size of 1,024 / 256 / 2,048 for the training, validation and test splits,
+respectively.
 
 
 Here are a few examples from the training split:
@@ -73,74 +76,14 @@ You can evaluate this dataset directly as follows:
 $ euroeval --model <model-id> --dataset estonian-valence
 ```
 
-## Common-sense Reasoning
-
-### WinoGrande-ET
-
-The dataset includes the [WinoGrande](https://doi.org/10.48550/arXiv.1907.10641) test set translated and culturally adapted by hand by a professional translator (citation TBA).
-The structure of the dataset is identical to the original. Since train and dev splits were not translated manually, we employ
-the GPT-4o model to translate the expected number of examples starting from the beginning of the respective splits.
-The final dataset size is 1,024 / 256 / 1,767 for the training, validation and test splits, respectively.
-
-Here are a few examples from the training split (note that unlike the test split these are machine translated):
-
-```json
-{
-  "text": "Ian vabatahtlikult sõi Dennise menudo pärast seda, kui oli juba kausi söönud, sest _ põlgas soolte söömist.\nVastusevariandid:\na. Ian\nb. Dennis",
-  "label": "b"
-}
-```
-```json
-{
-  "text": "Ian vabatahtlikult sõi Dennise menudo pärast seda, kui oli juba kausitäie söönud, sest _ nautis soolte söömist.\nVastusevariandid:\na. Ian\nb. Dennis", "label": "a"
-}
-```
-```json
-{
-  "text": "Ta ei tule kunagi minu koju, aga mina lähen alati tema majja, sest _ on väiksem.\nVastusevariandid:\na. kodu\nb. maja",
-  "label": "a"
-}
-```
-
-When evaluating generative models, we use the following setup (see the
-[methodology](/methodology) for more information on how these are used):
-
-- Number of few-shot examples: 5
-- Prefix prompt:
-  ```
-  Sulle esitatakse lüngaga (_) tekstülesanne ja kaks vastusevarianti (a ja b).
-  ```
-- Base prompt template:
-  ```
-  Tekstülesanne: {text}
-  Vastusevariandid:
-  a. {option_a}
-  b. {option_b}
-  Vastus: {label}
-  ```
-- Instruction-tuned prompt template:
-  ```
-  Tekstülesanne: {text}
-  Vastusevariandid:
-  a. {option_a}
-  b. {option_b}
-
-  Sinu ülesanne on valida lünka sobiv vastusevariant. Vasta ainult 'a' või 'b'. Muud vastused ei ole lubatud.
-  ```
-
-You can evaluate this dataset directly as follows:
-
-```bash
-$ euroeval --model <model-id> --dataset winogrande-et
-```
 
 ## Named Entity Recognition
 
 ### EstNER
 
-This dataset was published in [this paper](https://aclanthology.org/2023.nodalida-1.76/).
-The dataset is a manually annotated collection of Estonian news and
-social media texts.
+This dataset was published in [this
+paper](https://aclanthology.org/2023.nodalida-1.76/). The dataset is a manually
+annotated collection of Estonian news and social media texts.
 
 The original dataset contains 16,966 / 3,297 / 2,797 samples for the training,
 validation and test splits, respectively. We use 1,024 / 256 / 2,048 samples for our
@@ -204,20 +147,225 @@ You can evaluate this dataset directly as follows:
 $ euroeval --model <model-id> --dataset estner
 ```
 
+
+## Linguistic Acceptability
+
+### Unofficial: ScaLA-da
+
+This dataset was published in [this paper](https://aclanthology.org/2023.nodalida-1.20/)
+and was automatically created from the [Estonian Universal Dependencies
+treebank](https://github.com/UniversalDependencies/UD_Estonian-EDT) by assuming that the
+documents in the treebank are correct, and corrupting the samples to create
+grammatically incorrect samples. The corruptions were done by either removing a word
+from a sentence, or by swapping two neighbouring words in a sentence. To ensure that
+this does indeed break the grammaticality of the sentence, a set of rules were used on
+the part-of-speech tags of the words in the sentence.
+
+The original dataset consists of 19,298 samples, from which we use 1,024 / 256 / 2,048
+samples for training, validation and testing, respectively (so 3,328 samples used in
+total). These splits are used as-is in the framework.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Selleks kirjeldatakse programmi käitumust spetsiaalse juhtvoograafi ehk CFG abil (CFG - Control Flow Graph).",
+  "label": "correct"
+}
+```
+```json
+{
+  "text": "Karuks ütleb, et oma natuuri tõttu huvitub ta ka väga paljudest muudest asjadest: sise- ja välispoliitikast, ajaloost, erinevatest ühiskonnaprobleemidest.",
+  "label": "correct"
+}
+```
+```json
+{
+  "text": "Juta teab oma kogemusest, et selline söök tahab pikka ja tunneb kohe ära, et varem valmis tehtud asi on mikrolaineahjus üles soojendatud.",
+  "label": "incorrect"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 12
+- Prefix prompt:
+  ```
+  Järgnevad on laused ja kas need on grammatiliselt õiged.
+  ```
+- Base prompt template:
+  ```
+  Lause: {text}
+  Grammatikaliselt õige: {label}
+  ```
+- Instruction-tuned prompt template:
+  ```
+  Sætning: {text}
+
+  Bestem om sætningen er grammatisk korrekt eller ej. Svar med 'ja', hvis sætningen er korrekt, og 'nej', hvis den ikke er.
+  ```
+- Label mapping:
+    - `correct` ➡️ `jah`
+    - `incorrect` ➡️ `ei`
+
+You can evaluate this dataset directly as follows:
+
+```bash
+$ euroeval --model <model-id> --dataset scala-et
+```
+
+
+### MultiWikiQA-et
+
+This dataset will be published in an upcoming paper, and contains Estonian Wikipedia
+articles with generated questions and answers, using the LLM Gemini-1.5-pro.
+
+The original full dataset consists of 5,000 samples in a single split. We use a 1,024 /
+256 / 2,048 split for training, validation and testing, respectively, sampled randomly.
+
+Here are a few examples from the training split:
+
+```json
+{
+    "context": "Kõrgõzstani 2010. aasta ülestõus, mäss,  revolutsioon või riigipööre oli sündmusteahel, mis kukutas president Kurmanbek Bakijevi ja tõi võimule ajutise valitsuse Roza Otunbajevaga eesotsas.\n\nRahutused algasid 6. aprillil Talasis ja levisid järgmisel päeval teistesse Kõrgõzstani põhjaosa linnadesse. Rahutustes hukkus vähemalt 85 inimest, täiendavaid ohvreid tõid kaasa järgnenud korratused.\n\nRahutuste põhjused \n\nVõimuvahetuse järel kokku tulnud "sõltumatu ühiskondlik komisjon" 6. kuni 8. aprilli sündmuste uurimiseks, leidis, et rahutused põhjustas Bakijevi korruptsioonis, onupojapoliitikas ja riigi vara kõrvaletoimetamises süüdistatud valitsuse "laostav poliitika", sotsiaalse kindlustunde vähenemine, laiade ühiskonnakihtide vaesumine ([48;56;245;2016;3430tostujõu vähenemine ja kiire inflatsioon), opositsiooni ja ajakirjanike laiaulatuslik tagakiusamine, poliitiliste mõrvade seeria ning sõltumatute trükiväljaannete, raadio- ja telekanalite sulgemine.\n\nRahutuste vahetuks käivitajaks on peetud hinnatõusu. Elektri- ja küttehinnad olid kahekordistunud, tõusnud olid näiteks mobiilteenuste hinnad.\n\nTalasi sündmused \n\n6. aprilli hommikul vahistati Talasis partei Ata-Meken aseesimees Bolotbek Šernijazov. Lõunaks kogunes sadu vahistatu poolehoidjaid miilitsajaoskonna juurde ja Šernijazov vabastati. Meeleavaldajad liikusid oblastivalitsuse hoone juurde ja võtsid pantvangi oblastijuhi. Hangiti kive ja bensiini, valmistati ette pudeleid süüteseguga.\n\nÕhtul saabusid Biškekist lennukid ja helikopterid 200 korrakaitsejõudude teenistujaga, kes pidid asepeaminister Akõlbek Džaparovi juhtimisel läbi viima erioperatsiooni oblastijuhi vabastamiseks. Meeleavaldajate vastu kasutati pisargaasi, kummikuule ja valgusmüra granaate(?). Oblastijuht vabastati ja Bolotbek Šernijazov võeti jõudu kasutades uuesti vahi alla.\n\nRahvahulk piiras sisse grupi miilitsatöötajaid, asus neid peksma ja süütas oblastivalitsuse hoone, kuhu umbes 150 miilitsat varjunud olid. Miilitsail lõppes erivarustus, täiendusi toonud sõiduki hõivasid mässajad ja kasutasid valdusse võetud vahendeid miilitsa vastu.\n\nÖöl vastu 7. aprilli vahistati Biškekis ja Ošis mitu opositsioonijuhti, sealhulgas Ömürbek Tekebajev, Almazbek Atambajev ja Temir Sarijev.\n\nTuhanded inimesed kogunesid piirama presidendi- ja valitsushoonet Biškekis. Julgeolekujõud kasutasid rahva laialiajamiseks tulirelvi. Bakijev lahkus pealinnast Džalal-Abadi. Roza Otunbajeva, Tekebajev, Atambajev ja teised tuntud opositsionäärid kuulutasid endid ajutiseks valitsuseks. Bakijev varjas end kuni 15. aprillini ja lahkus seejärel Valgevenesse.\n\nViited\n\nKõrgõzstani poliitika\n2010\nRevolutsioonid",
+    "question": "Kes eemaldati võimult Kõrgõzstani 2010. aasta rahutuste ajal?",
+    "answers": {
+        "answer_start": array([100]),
+        "text": array(["president Kurmanbek Bakijev"], dtype=object)
+    }
+}
+```
+```json
+{
+    "context": "Lepna haruraamatukogu on raamatukogu, mis tegutseb Lääne-Viru maakonnas Rakvere vallas Lepna külas. See on Sõmeru raamatukogu struktuuriüksus.\n\nAjalugu \n\nRaamatukogu täpne ja ametlik asutamise aeg pole kindlalt teada. Raamatukogus leiduvas kroonika kirjutaja arvates ulatub see 1892. aastasse, kuid dokumentaalset kinnitust sellele ei ole leitud. Kirjas on, et raamatukogu asutati Tõrma valla kooli juurde. Küll aga saab ajalehest Virulane (10. mai 1928) lugeda, et Rakvere valla avalik raamatukogu asutati 1925. aasta lõpul "Avalikkude raamatukogu seaduse" alusel ja alustas tegevust 1. jaanuaril 1926.\n\nRaamatukogu aluspõhi töötati välja Rakvere vallas töötavate seltside poolt, kes oma raamatukogud täies ulatuses avalikule raamatukogule üle andsid. Raamatukogu tegevust toetasid rahaliselt nii Rakvere vald kui Haridusministeerium.\n\nRakvere valla avaliku raamatukogu all töötasid erinevad osakonnad (7. osakond),\xa0mille juhatajateks olid nii koolide juhatajad ja teised haridustegelased. Edukamaks osakonnaks aga peeti Mädapea osakonda, mida juhatas Mädapea Algkooli juhataja Jakob Awik. Raamatukogu asus Mädapea mõisas, Mädapea Algkooliga ühe katuse all. 1934. aastal laenutas raamatuid välja toonane kooliõpetaja Helene Tammik.\n\n1965–1991 oli Mädapea mõis Energia kolhoosi hallata.\n\n1991 avati Lepna alevikus paiknev Lepna teeninduspunkt kortermaja neljatoalises korteris kolmandal korrusel. Raamatukogu kogu oli jaotunud kahte hoonesse: Mädapea mõisa ja Lepna kortermajja.\n\n1995 kolis raamatukogu Mädapealt Lepna alevikku kortermaja kahte korterisse, mis asusid maja kolmandal korrusel.\n\n26. juunist 1996 nimetatakse Mädapea raamatukogu Lepna raamatukoguks.\n\nAlates 12. septembrist 2018 kuulub raamatukogu haruraamatukoguna Sõmeru raamatukogustruktuuri.\n\nRaamatukogul on kaks teeninduspunkti: Veltsi Lasteaed-Algkoolis ja Lasila Põhikoolis.\n\nTöötajad \nMädapea raamatukogu töötajad alates 1927. aastast vastavalt Lepna raamatukogu üleandmise ja vastuvõtmise aktidele:\n Jakob Awik 1927\n Helene Tammik 1934\n Ellen Kuusik 01.11.1945–20.02.1954\n Salme Partei 20.02.1949–25.11.1954\n Vilma Niitla (Laar) 25.11.1954–25.05.1955\n Evi Suurväli 25.05.1955–06.08.1956\n Elvi Sats 06.08.1956–30.05.1957\n Maie Tiigi 30.05.1957–05.04.1959\n Vaike Salamets 05.04.1959–15.09.1961\n Elfride Salumäe 15.09.1961–28.03.1963\n Linda Rünk 28.03.1963–07.03.1964\n Evi Lahi 07.03.1964–01.08.1964\n Liia Pall 1964–1947\n Ille Laarman 1975–1977\n Anne Pilipenko1978–20.09.2009 (Mädapea Raamatukogu / Lepna Raamatukogu)\n Jaana Ant 01.09.2009–01.07.2016\n Olga Samra (raamatukogu direktori kohusetäitja) 01.09.2016-märts 2017\n Silja Raudsepp märts 2017– august 2018\n Jaana Ant 22.10.2018 –\n\nKirjandus \n Virulane, 10. mai 1928. lk 4\n\nViited\n\nVälislingid \n Rakvere valla koduleht, rakvere valla raamatukogud\n Lepna raamatukogu koduleht\n Lepna raamatukogu Facebookis\n\nLääne-Viru maakonna raamatukogud\nRakvere vald",
+    "question": "Kes valitses Mädapea mõisat ajavahemikul 1965–1991?",
+    "answers": {
+        "answer_start": array([1261]),
+        "text": array(["Energia kolhoosi"], dtype=object)
+    }
+}
+```
+```json
+{
+    "context": "Kannuka pank ehk Kannuka klindineemik on Põhja-Eesti panga osa Ida-Viru maakonnas Narva-Jõesuu linnas ja Sillamäe linnas. Kannuka pank algab peale Sõtke klindilahest ja kulgeb kuni Pimestiku panga moodustavate klindisaarteni.\n\nKannuka klindineemik on läänepoolsem 2,5 km pikkune ja 1,5 km laiune osa Vaivara Sinimägedega sarnase, Sillamäe rikkevööndi, tektooniliselt rikutud keerulise ehitusega klindivööndist. Panga paeplatoo kõrgub 28...30 meetrit üle merepinna. Paeplatool avanevad õhukese moreenikihi all Kesk-Ordoviitsiumi Volhovi lademe Toila kihistu glaukoniiti sisaldavad lubjakivid.\n\nKlindiserv on kaetud rusukalletega ning paljandid peaaegu puuduvad välja arvatud Sillamäe linnas mõned üksikud lõigud. Kannuka pank on nüüdisajal kasvanud suures osas Sillamäe linna sisse, kuid kohati on säilinud väikeste lõikudena ka pangale omast klindimetsa.\n\nVaata ka\nEesti pankade loend\nMeriküla pank\nPargimäe pank\nPimestiku pank\nPõrguaugumäe pank\nTornimäe pank\nUtria kõrgekallas\nUdria maastikukaitseala\nUtria savikallas\nVaivara klindilõik\nPuhkovo-Olgina klindiplatoo (Puhkovo-Vodava-Olgina klindiplatoo)\nLaagna klindisaarestik\n\nKirjandus\nKalle Suuroja. Põhja-Eesti pangad, Tallinn 2004.\n\nIda-Viru maakonna paljandid\nNarva-Jõesuu linn",
+    "question": "Mis klindivööndis asub Kannuka pank?",
+    "answers": {
+        "answer_start": array([330]),
+        "text": array(["Sillamäe rikkevööndi"], dtype=object)
+    }
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 4
+- Prefix prompt:
+  ```
+  Järgnevad on tekstid koos küsimuste ja vastustega.
+  ```
+- Base prompt template:
+  ```
+  Tekst: {text}
+  Küsimus: {question}
+  Vasta maksimaalselt 3 sõnaga: {label}
+  ```
+- Instruction-tuned prompt template:
+  ```
+  Tekst: {text}
+
+  Vasta järgmisele küsimusele ülevaltoodud teksti kohta maksimaalselt 3 sõnaga.
+
+  Küsimus: {question}
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+$ euroeval --model <model-id> --dataset multi-wiki-qa-et
+```
+
+
+## Common-sense Reasoning
+
+### WinoGrande-ET
+
+The dataset includes the [WinoGrande](https://doi.org/10.48550/arXiv.1907.10641) test
+set translated and culturally adapted by hand by a professional translator (citation
+TBA). The structure of the dataset is identical to the original. Since train and dev
+splits were not translated manually, we employ the GPT-4o model to translate the
+expected number of examples starting from the beginning of the respective splits. The
+final dataset size is 1,024 / 256 / 1,767 for the training, validation and test splits,
+respectively.
+
+Here are a few examples from the training split (note that unlike the test split these are machine translated):
+
+```json
+{
+  "text": "Ian vabatahtlikult sõi Dennise menudo pärast seda, kui oli juba kausi söönud, sest _ põlgas soolte söömist.\nVastusevariandid:\na. Ian\nb. Dennis",
+  "label": "b"
+}
+```
+```json
+{
+  "text": "Ian vabatahtlikult sõi Dennise menudo pärast seda, kui oli juba kausitäie söönud, sest _ nautis soolte söömist.\nVastusevariandid:\na. Ian\nb. Dennis", "label": "a"
+}
+```
+```json
+{
+  "text": "Ta ei tule kunagi minu koju, aga mina lähen alati tema majja, sest _ on väiksem.\nVastusevariandid:\na. kodu\nb. maja",
+  "label": "a"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+  ```
+  Sulle esitatakse lüngaga (_) tekstülesanne ja kaks vastusevarianti (a ja b).
+  ```
+- Base prompt template:
+  ```
+  Tekstülesanne: {text}
+  Vastusevariandid:
+  a. {option_a}
+  b. {option_b}
+  Vastus: {label}
+  ```
+- Instruction-tuned prompt template:
+  ```
+  Tekstülesanne: {text}
+  Vastusevariandid:
+  a. {option_a}
+  b. {option_b}
+
+  Sinu ülesanne on valida lünka sobiv vastusevariant. Vasta ainult 'a' või 'b'. Muud vastused ei ole lubatud.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+$ euroeval --model <model-id> --dataset winogrande-et
+```
+
+
 ## Summarization
 
 ### ERRNews
 
 The dataset was released in [this paper](https://doi.org/10.22364/bjmc.2022.10.3.23).
 
-The dataset consists of news story transcripts of ERR News broadcasts scraped from from the
-[ERR Archive](https://arhiiv.err.ee/err-audioarhiiv) News generated by an ASR pipeline paired with the human written
-summary from the archive.
+The dataset consists of news story transcripts of ERR News broadcasts scraped from from
+the [ERR Archive](https://arhiiv.err.ee/err-audioarhiiv) News generated by an ASR
+pipeline paired with the human written summary from the archive.
 
 The original full dataset consists of 10,420 / 523 / 523 samples for training,
 validation and testing, respectively. We use a 1,024 / 256 / 2,048 split for training,
-validation and testing, respectively. The test split is extended with additional examples
-from the test split.
+validation and testing, respectively. The test split is extended with additional
+examples from the test split.
 
 ```json
 {

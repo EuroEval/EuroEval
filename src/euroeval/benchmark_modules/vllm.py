@@ -392,7 +392,12 @@ class VLLMModel(HuggingFaceEncoderModel):
         if structured_generation_schema is not None:
             guided_decoding = GuidedDecodingParams(json=structured_generation_schema)
         elif self.dataset_config.task.uses_logprobs and self.dataset_config.labels:
-            guided_decoding = GuidedDecodingParams(choice=self.dataset_config.labels)
+            guided_decoding = GuidedDecodingParams(
+                choice=[
+                    self.dataset_config.prompt_label_mapping[label]
+                    for label in self.dataset_config.labels
+                ]
+            )
         else:
             guided_decoding = None
 

@@ -1287,11 +1287,12 @@ class LiteLLMModel(BenchmarkModule):
                     level=logging.DEBUG,
                 )
         elif self.dataset_config.task.uses_logprobs and self.dataset_config.labels:
+            localised_labels = [
+                self.dataset_config.prompt_label_mapping[label]
+                for label in self.dataset_config.labels
+            ]
             keys_and_their_types = {
-                LITELLM_CLASSIFICATION_OUTPUT_KEY: (
-                    t.Literal[*self.dataset_config.labels],
-                    ...,
-                )
+                LITELLM_CLASSIFICATION_OUTPUT_KEY: (t.Literal[*localised_labels], ...)
             }
             pydantic_class = create_model("AnswerFormat", **keys_and_their_types)
             generation_kwargs["response_format"] = pydantic_class
