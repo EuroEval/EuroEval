@@ -915,7 +915,7 @@ def load_tokeniser(
             logger.info(f"Couldn't load tokeniser for {model_id!r}. Retrying.")
             sleep(5)
             continue
-        except KeyError as e:
+        except (KeyError, ValueError) as e:
             if "mistral" in str(e).lower():
                 tokeniser = MistralCommonTokenizer.from_pretrained(
                     model_id,
