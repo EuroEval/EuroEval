@@ -397,7 +397,10 @@ class Benchmarker:
                     try:
                         benchmark_config_copy = deepcopy(benchmark_config)
                         break
-                    except AttributeError:
+                    except TypeError:
+                        logger.debug(
+                            "Failed to deepcopy the benchmark config, retrying..."
+                        )
                         sleep(1)
                 else:
                     raise InvalidBenchmark(
