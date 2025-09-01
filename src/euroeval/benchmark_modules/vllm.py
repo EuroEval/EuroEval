@@ -16,6 +16,7 @@ import torch
 from huggingface_hub import snapshot_download
 from pydantic import conlist, create_model
 from tqdm.auto import tqdm
+from transformers import MistralCommonTokenizer
 from transformers.models.auto.configuration_auto import AutoConfig
 from transformers.models.auto.tokenization_auto import AutoTokenizer
 from urllib3.exceptions import RequestError
@@ -907,7 +908,22 @@ def load_tokenizer(
             continue
         except KeyError as e:
             if "mistral" in str(e).lower():
-                breakpoint()
+                tokenizer = MistralCommonTokenizer.from_pretrained(
+                    model_id,
+                    use_fast=True,
+                    verbose=False,
+                    trust_remote_code=trust_remote_code,
+                    padding_side="left",
+                    truncation_side="left",
+                    model_max_length=model_max_length,
+                    config=config,
+                    token=token,
+                )
+                break
+            raise InvalidModel(
+                f"Could not load tokenizer for model {model_id!r}. The error was "
+                f"{str(e)}."
+            )
     else:
         raise InvalidModel(
             f"Could not load tokenizer for model {model_id!r} after {num_retries} "
