@@ -815,6 +815,14 @@ def load_model_and_tokenizer(
             enable_prefix_caching=False,
             enable_lora=model_config.adapter_base_model_id is not None,
             max_lora_rank=256,
+            # Special arguments in case we are dealing with a Mistral model
+            tokenizer_mode="mistral"
+            if isinstance(tokenizer, MistralCommonTokenizer)
+            else "auto",
+            # config_format="mistral",
+            load_format="mistral"
+            if isinstance(tokenizer, MistralCommonTokenizer)
+            else "auto",
         )
     except (RuntimeError, ValueError, OSError) as e:
         if "awaiting a review from the repo authors" in str(e):
