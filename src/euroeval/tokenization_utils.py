@@ -513,17 +513,19 @@ def has_chat_template(tokenizer: "PreTrainedTokenizer") -> bool:
                 "instruction tuned.",
                 level=logging.DEBUG,
             )
+        return has_template
     elif isinstance(tokenizer, MistralCommonTokenizer):
         log_once(
             "The tokenizer is a Mistral tokeniser, so assuming that the model is "
             "instruction tuned."
         )
         return True
-    log_once(
-        "We cannot find a chat template for the tokenizer, so assuming that the model "
-        "isn't instruction tuned."
-    )
-    return False
+    else:
+        log_once(
+            "We cannot find a chat template for the tokenizer, so assuming that the "
+            "model isn't instruction tuned."
+        )
+        return False
 
 
 def apply_chat_template(
