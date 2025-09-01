@@ -982,6 +982,7 @@ def get_end_of_reasoning_token(
     Returns:
         The end of reasoning token, or None if it could not be found.
     """
+    breakpoint()
     # Create a prompt to check if the model uses the reasoning tokens
     prompt = "What is your name?"
     if has_chat_template(tokeniser=tokeniser):
