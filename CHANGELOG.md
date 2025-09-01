@@ -36,6 +36,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   a dynamic set of choices (Literal[*list_of_choices] is not supported)
 
 ### Fixed
+- Enable support to evaluate Mistral models with their custom `mistral-common`
+  tokeniser, which includes all recent Mistral models. Note that we currently assume
+  that all of these models are instruction-tuned decoder models (which _is_ true
+  currently), which can lead to errors in case they publish different types of models in
+  the future.
 - Now disables the `seed` parameter if the API inference model does not support it,
   which prevented evaluating some models.
 - Now correctly detects an API inference model as non-existing, even if LiteLLM *does*
