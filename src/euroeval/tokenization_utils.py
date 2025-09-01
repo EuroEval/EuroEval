@@ -430,12 +430,12 @@ def get_first_label_token_mapping(
     else:
         all_tokens = [
             tokenizer.convert_ids_to_tokens(
-                ids=tokenizer.apply_chat_template(
+                ids=apply_chat_template(
                     conversation=[
                         dict(role="user", content=""),
                         dict(role="assistant", content=label),
                     ],
-                    add_generation_prompt=True,
+                    tokenizer=tokenizer,
                     tokenize=True,
                 )
             )
@@ -525,8 +525,9 @@ def has_chat_template(tokenizer: "PreTrainedTokenizer") -> bool:
 def apply_chat_template(
     conversation: list[dict[str, str]],
     tokenizer: "PreTrainedTokenizer",
+    tokenize: bool = False,
     **transformers_tokenizer_kwargs,
-) -> str:
+) -> str | list[int]:
     """Apply the chat template to a prompt.
 
     Args:
@@ -534,12 +535,16 @@ def apply_chat_template(
             The conversation to apply the chat template to.
         tokenizer:
             The tokenizer.
+        tokenize:
+            Whether to tokenize the resulting prompt, returning a list of token IDs
+            instead of a string.
         **transformers_tokenizer_kwargs:
             Additional keyword arguments to pass to the tokenizer, in case the tokenizer
             is a regular Hugging Face tokenizer.
 
     Returns:
-        The prompt with the chat template applied.
+        The prompt with the chat template applied, either as a string or a list of
+        token IDs, depending on the value of `tokenize`.
 
     Raises:
         InvalidModel:
@@ -551,14 +556,13 @@ def apply_chat_template(
         )
     elif isinstance(tokenizer, MistralCommonTokenizer):
         templated_prompt = tokenizer.apply_chat_template(
-            conversation=conversation, tokenize=False
+            conversation=conversation, tokenize=tokenize
         )
     else:
         templated_prompt = tokenizer.apply_chat_template(
             conversation=conversation,
             add_generation_prompt=True,
-            tokenize=False,
+            tokenize=tokenize,
             **transformers_tokenizer_kwargs,
         )
-    assert isinstance(templated_prompt, str)
     return templated_prompt
