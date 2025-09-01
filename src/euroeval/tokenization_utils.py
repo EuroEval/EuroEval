@@ -434,6 +434,8 @@ def get_first_label_token_mapping(
                     conversation=[
                         dict(role="user", content=""),
                         dict(role="assistant", content=label),
+                        # Adding extra user message as Mistral tokenisers require
+                        # conversamtions to end with a user message
                         dict(role="user", content=""),
                     ],
                     tokenizer=tokenizer,
