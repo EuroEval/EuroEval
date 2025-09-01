@@ -343,10 +343,6 @@ def get_end_of_chat_token_ids(tokenizer: "PreTrainedTokenizer") -> list[int] | N
     token_ids: list[int] = tokenizer.apply_chat_template(conversation=[user_message])  # type: ignore[assignment]
 
     for idx, token in enumerate(tokenizer.convert_ids_to_tokens(token_ids)):
-        breakpoint()
-        token_id = tokenizer.convert_tokens_to_ids(token)
-        assert isinstance(token_id, int)
-        token = tokenizer.decode([token_id])
         if "X" in token:
             x_token_index = idx
             break
@@ -355,7 +351,12 @@ def get_end_of_chat_token_ids(tokenizer: "PreTrainedTokenizer") -> list[int] | N
 
     end_of_chat_tokens = token_ids[x_token_index + 1 :]
     if len(end_of_chat_tokens) == 0:
-        return None
+        raise ValueError("Could not locate the end-of-chat token for the model.")
+    log_once(
+        f"Detected end-of-chat token IDs as {end_of_chat_tokens}, corresponding to "
+        f"tokens {tokenizer.convert_ids_to_tokens(end_of_chat_tokens)}.",
+        level=logging.DEBUG,
+    )
     return end_of_chat_tokens
 
 
