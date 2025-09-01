@@ -130,6 +130,9 @@ def block_terminal_output() -> None:
     logging.getLogger("vllm.core.scheduler").setLevel(logging.CRITICAL)
     logging.getLogger("vllm.model_executor.weight_utils").setLevel(logging.CRITICAL)
     logging.getLogger("vllm.platforms").setLevel(logging.CRITICAL)
+    logging.getLogger("mistral_common.tokens.tokenizers.tekken").setLevel(
+        logging.CRITICAL
+    )
     os.environ["LOG_LEVEL"] = "CRITICAL"
     os.environ["VLLM_CONFIGURE_LOGGING"] = "0"
 
