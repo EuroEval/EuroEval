@@ -819,7 +819,9 @@ def load_model_and_tokenizer(
             tokenizer_mode="mistral"
             if isinstance(tokenizer, MistralCommonTokenizer)
             else "auto",
-            # config_format="mistral",
+            config_format="mistral"
+            if isinstance(tokenizer, MistralCommonTokenizer)
+            else "auto",
             load_format="mistral"
             if isinstance(tokenizer, MistralCommonTokenizer)
             else "auto",
