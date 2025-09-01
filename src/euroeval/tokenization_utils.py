@@ -434,6 +434,7 @@ def get_first_label_token_mapping(
                     conversation=[
                         dict(role="user", content=""),
                         dict(role="assistant", content=label),
+                        dict(role="user", content=""),
                     ],
                     tokenizer=tokenizer,
                     tokenize=True,
@@ -472,15 +473,16 @@ def get_first_label_token_mapping(
     # Build a mapping from labels to the first token in each label if the first
     # tokens are distinct
     if len(first_tokens) == len(set(first_tokens)):
-        if log_metadata:
-            log_once(
-                "We will use logprobs with the model since the first tokens of the "
-                "labels are distinct.",
-                level=logging.DEBUG,
-            )
-        return {
+        mapping = {
             label: first_token for label, first_token in zip(local_labels, first_tokens)
         }
+        if log_metadata:
+            log_once(
+                "Using logprobs as evaluation strategy for the model, with the "
+                f"following mapping from labels to their first token: {mapping}.",
+                level=logging.DEBUG,
+            )
+        return mapping
     else:
         if log_metadata:
             log_once(
