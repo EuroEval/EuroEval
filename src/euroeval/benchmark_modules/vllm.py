@@ -992,6 +992,7 @@ def get_end_of_reasoning_token(
         prompt = templated_prompt
 
     # Check that the beginning-of-reasoning token is actually used by the model
+    breakpoint()
     completion = (
         model.generate(
             prompts=[prompt],
