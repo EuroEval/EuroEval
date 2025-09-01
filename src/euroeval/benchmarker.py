@@ -393,7 +393,17 @@ class Benchmarker:
             for dataset_config in dataset_configs:
                 # Create a copy of the benchmark config to avoid modifying the
                 # default benchmark config
-                benchmark_config_copy = deepcopy(benchmark_config)
+                for _ in range(num_attempts := 3):
+                    try:
+                        benchmark_config_copy = deepcopy(benchmark_config)
+                        break
+                    except AttributeError:
+                        pass
+                else:
+                    raise InvalidBenchmark(
+                        f"Failed to deepcopy the benchmark config after {num_attempts} "
+                        "attempts."
+                    )
 
                 # Update the benchmark config if the dataset requires it
                 if (
