@@ -905,6 +905,9 @@ def load_tokenizer(
             logger.info(f"Couldn't load tokenizer for {model_id!r}. Retrying.")
             sleep(5)
             continue
+        except KeyError as e:
+            if "mistral" in str(e).lower():
+                breakpoint()
     else:
         raise InvalidModel(
             f"Could not load tokenizer for model {model_id!r} after {num_retries} "
