@@ -396,7 +396,6 @@ class Benchmarker:
                 benchmark_config_copy = deepcopy(benchmark_config)
 
                 # Update the benchmark config if the dataset requires it
-                benchmark_config_params_to_be_set = dict()
                 if (
                     "val" not in dataset_config.splits
                     and not benchmark_config_copy.evaluate_test_split
@@ -406,7 +405,6 @@ class Benchmarker:
                         "you requested evaluating the validation split (the default), "
                         "we will evaluate on the test split."
                     )
-                    benchmark_config_params_to_be_set["evaluate_test_split"] = False
                     benchmark_config_copy.evaluate_test_split = True
                 if (
                     dataset_config.task.requires_zero_shot
@@ -417,7 +415,6 @@ class Benchmarker:
                         "requested few-shot evaluation (the default), we will evaluate "
                         "zero-shot."
                     )
-                    benchmark_config_params_to_be_set["few_shot"] = True
                     benchmark_config_copy.few_shot = False
 
                 # Skip if we have already benchmarked this model on this dataset and
