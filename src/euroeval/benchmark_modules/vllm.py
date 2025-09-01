@@ -927,9 +927,10 @@ def load_tokenizer(
         )
 
     # Ensure that BOS, EOS and PAD tokens are set
-    tokenizer.bos_token, tokenizer.bos_token_id = get_bos_token(tokenizer=tokenizer)
-    tokenizer.eos_token, tokenizer.eos_token_id = get_eos_token(tokenizer=tokenizer)
-    tokenizer.pad_token, tokenizer.pad_token_id = get_pad_token(tokenizer=tokenizer)
+    if not isinstance(tokenizer, MistralCommonTokenizer):
+        tokenizer.bos_token, tokenizer.bos_token_id = get_bos_token(tokenizer=tokenizer)
+        tokenizer.eos_token, tokenizer.eos_token_id = get_eos_token(tokenizer=tokenizer)
+        tokenizer.pad_token, tokenizer.pad_token_id = get_pad_token(tokenizer=tokenizer)
 
     return tokenizer
 
