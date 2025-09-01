@@ -343,6 +343,7 @@ def get_end_of_chat_token_ids(tokenizer: "PreTrainedTokenizer") -> list[int] | N
     token_ids: list[int] = tokenizer.apply_chat_template(conversation=[user_message])  # type: ignore[assignment]
 
     for idx, token in enumerate(tokenizer.convert_ids_to_tokens(token_ids)):
+        breakpoint()
         token_id = tokenizer.convert_tokens_to_ids(token)
         assert isinstance(token_id, int)
         token = tokenizer.decode([token_id])
