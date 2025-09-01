@@ -809,9 +809,7 @@ def load_model_and_tokeniser(
             trust_remote_code=benchmark_config.trust_remote_code,
             revision=revision,
             seed=4242,
-            distributed_executor_backend=(
-                "ray" if torch.cuda.device_count() > 1 else "mp"
-            ),
+            distributed_executor_backend="mp",
             tensor_parallel_size=torch.cuda.device_count(),
             disable_custom_all_reduce=True,
             quantization=quantization,
@@ -992,7 +990,6 @@ def get_end_of_reasoning_token(
         prompt = templated_prompt
 
     # Check that the beginning-of-reasoning token is actually used by the model
-    breakpoint()
     completion = (
         model.generate(
             prompts=[prompt],
