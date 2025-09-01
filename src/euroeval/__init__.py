@@ -12,11 +12,11 @@ import warnings
 from termcolor import colored
 
 # Block specific warnings before importing anything else, as they can be noisy
-warnings.filterwarnings("ignore", category=UserWarning)
-logging.getLogger("httpx").setLevel(logging.CRITICAL)
-logging.getLogger("datasets").setLevel(logging.CRITICAL)
-logging.getLogger("vllm").setLevel(logging.CRITICAL)
-os.environ["VLLM_CONFIGURE_LOGGING"] = "0"
+# warnings.filterwarnings("ignore", category=UserWarning)
+# logging.getLogger("httpx").setLevel(logging.CRITICAL)
+# logging.getLogger("datasets").setLevel(logging.CRITICAL)
+# logging.getLogger("vllm").setLevel(logging.CRITICAL)
+# os.environ["VLLM_CONFIGURE_LOGGING"] = "0"
 
 # Set up logging
 # fmt = colored("%(asctime)s", "light_blue") + " ⋅ " + colored("%(message)s", "green")
@@ -60,7 +60,7 @@ from .utils import block_terminal_output  # noqa: E402
 # Block unwanted terminal outputs. This blocks way more than the above, but since it
 # relies on importing from the `utils` module, external modules are already imported
 # before this is run, necessitating the above block as well
-block_terminal_output()
+# block_terminal_output()
 
 
 # Fetches the version of the package as defined in pyproject.toml
