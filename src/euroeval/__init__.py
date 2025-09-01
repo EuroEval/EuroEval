@@ -77,10 +77,6 @@ os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = "1"
 os.environ["OMP_NUM_THREADS"] = "1"
 
 
-# Disable a warning from Ray regarding the detection of the number of CPUs
-os.environ["RAY_DISABLE_DOCKER_CPU_WARNING"] = "1"
-
-
 # Avoid the "Cannot re-initialize CUDA in forked subprocess" error - see
 # https://github.com/vllm-project/vllm/issues/6152 for more
 os.environ["VLLM_WORKER_MULTIPROC_METHOD"] = "spawn"

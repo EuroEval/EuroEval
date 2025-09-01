@@ -26,9 +26,6 @@ from transformers import logging as tf_logging
 
 from .exceptions import NaNValueInModelOutput
 
-if importlib.util.find_spec("ray") is not None:
-    import ray
-
 if t.TYPE_CHECKING:
     from types import TracebackType
 
@@ -135,15 +132,6 @@ def block_terminal_output() -> None:
     )
     os.environ["LOG_LEVEL"] = "CRITICAL"
     os.environ["VLLM_CONFIGURE_LOGGING"] = "0"
-
-    # Disable ray logging
-    logging.getLogger("ray._private.worker").setLevel(logging.CRITICAL)
-    logging.getLogger("ray._private.services").setLevel(logging.CRITICAL)
-    logging.getLogger("ray._private.runtime_env.packaging").setLevel(logging.CRITICAL)
-    logging.getLogger("ray.dag.compiled_dag_node").setLevel(logging.CRITICAL)
-    logging.getLogger("ray.util.logging.cc").setLevel(logging.CRITICAL)
-    if importlib.util.find_spec("ray") is not None:
-        ray._private.worker._worker_logs_enabled = False
 
     # Disable datasets logging
     logging.getLogger("datasets").setLevel(logging.CRITICAL)

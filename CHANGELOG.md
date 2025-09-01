@@ -50,6 +50,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   vLLM model, during shutdown.
 - Now uses `litellm>=1.75.6`, which fixes an issue related to evaluation of GPT-5 models
   using Ollama.
+- Now always uses the `multiprocessing` backend when evaluating vLLM models, rather than
+  reverting to `ray` when using multiple GPUs, as `ray` led to evaluations of several
+  models freezing.
 
 ### Removed
 - Removed support for human evaluation, as it was not actively maintained and not used.
