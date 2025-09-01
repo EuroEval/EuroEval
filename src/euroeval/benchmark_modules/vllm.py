@@ -59,6 +59,7 @@ from ..tokenization_utils import (
     get_eos_token,
     get_first_label_token_mapping,
     get_pad_token,
+    has_chat_template,
     should_prompts_be_stripped,
 )
 from ..types import ExtractLabelsFunction
@@ -152,7 +153,7 @@ class VLLMModel(HuggingFaceEncoderModel):
         )
 
         self.buffer |= dict(
-            instruction_model=self._tokenizer.chat_template is not None,
+            instruction_model=has_chat_template(tokenizer=self._tokenizer),
             first_label_token_mapping=get_first_label_token_mapping(
                 dataset_config=self.dataset_config,
                 model_config=self.model_config,
@@ -195,7 +196,7 @@ class VLLMModel(HuggingFaceEncoderModel):
         elif self.end_of_reasoning_token is not None:
             return GenerativeType.REASONING
         elif (
-            self._tokenizer.chat_template is not None
+            has_chat_template(tokenizer=self._tokenizer)
             or "instruct" in self.model_config.model_id.lower()
         ):
             return GenerativeType.INSTRUCTION_TUNED
@@ -977,7 +978,7 @@ def get_end_of_reasoning_token(
     """
     # Create a prompt to check if the model uses the reasoning tokens
     prompt = "What is your name?"
-    if tokenizer.chat_template is not None:
+    if has_chat_template(tokenizer=tokenizer):
         templated_prompt = tokenizer.apply_chat_template(
             conversation=[dict(role="user", content=prompt)],
             add_generation_prompt=True,
@@ -1080,7 +1081,7 @@ def get_custom_stop_tokens(
     candidate_stop_tokens = CUSTOM_STOP_TOKENS
 
     prompt = "Hello"
-    if tokenizer.chat_template is not None:
+    if has_chat_template(tokenizer=tokenizer):
         templated_prompt = tokenizer.apply_chat_template(
             conversation=[dict(role="user", content=prompt)],
             add_generation_prompt=True,

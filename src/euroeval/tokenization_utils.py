@@ -5,6 +5,7 @@ import re
 import typing as t
 
 import torch
+from transformers import MistralCommonTokenizer
 
 from .enums import GenerativeType
 from .utils import log_once
@@ -333,7 +334,7 @@ def get_end_of_chat_token_ids(tokenizer: "PreTrainedTokenizer") -> list[int] | N
         ValueError:
             If the end-of-chat token could not be located.
     """
-    if tokenizer.chat_template is None:
+    if not has_chat_template(tokenizer=tokenizer):
         return None
 
     user_message: dict[str, str] = dict(role="user", content="X")
@@ -414,7 +415,7 @@ def get_first_label_token_mapping(
     # Tokenize some text containing each label, which we will use to extract the
     # first token of each label
     all_tokens: list[list[str]]
-    if tokenizer.chat_template is None:
+    if not has_chat_template(tokenizer=tokenizer):
         add_prefix_space = should_prefix_space_be_added_to_labels(
             labels_to_be_generated=local_labels, tokenizer=tokenizer
         )
@@ -484,3 +485,34 @@ def get_first_label_token_mapping(
                 f"{local_labels} are {first_tokens}"
             )
         return False
+
+
+def has_chat_template(tokenizer: "PreTrainedTokenizer") -> bool:
+    """Check if a tokenizer has a chat template.
+
+    Args:
+        tokenizer:
+            The tokenizer.
+
+    Returns:
+        Whether the tokenizer has a chat template.
+    """
+    if hasattr(tokenizer, "chat_template"):
+        has_template = tokenizer.chat_template is not None
+        if has_template:
+            log_once(
+                "The tokenizer has a chat template, so assuming that the model is "
+                "instruction tuned.",
+                level=logging.DEBUG,
+            )
+    elif isinstance(tokenizer, MistralCommonTokenizer):
+        log_once(
+            "The tokenizer is a Mistral tokeniser, so assuming that the model is "
+            "instruction tuned."
+        )
+        return True
+    log_once(
+        "We cannot find a chat template for the tokenizer, so assuming that the model "
+        "isn't instruction tuned."
+    )
+    return False

@@ -333,7 +333,9 @@ def apply_prompt(
             # Pick the chat template that matches the language of the dataset, if such a
             # template exists
             chat_template: str | None = None
-            if isinstance(tokenizer.chat_template, dict):
+            if hasattr(tokenizer, "chat_template") and isinstance(
+                tokenizer.chat_template, dict
+            ):
                 language_codes = [
                     language.code for language in dataset_config.languages
                 ]
