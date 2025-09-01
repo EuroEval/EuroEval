@@ -8,6 +8,7 @@ import typing as t
 
 from .enums import TaskGroup
 from .exceptions import InvalidBenchmark
+from .tokenization_utils import apply_chat_template
 from .utils import log_once
 
 if t.TYPE_CHECKING:
@@ -350,10 +351,9 @@ def apply_prompt(
                         break
 
             texts = [
-                tokenizer.apply_chat_template(
+                apply_chat_template(
                     conversation=messages,
-                    tokenize=False,
-                    add_generation_prompt=True,
+                    tokenizer=tokenizer,
                     chat_template=chat_template,
                 )
                 for messages in messages_list

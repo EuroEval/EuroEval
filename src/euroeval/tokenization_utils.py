@@ -7,6 +7,8 @@ import typing as t
 import torch
 from transformers import MistralCommonTokenizer
 
+from euroeval.exceptions import InvalidModel
+
 from .enums import GenerativeType
 from .utils import log_once
 
@@ -516,3 +518,45 @@ def has_chat_template(tokenizer: "PreTrainedTokenizer") -> bool:
         "isn't instruction tuned."
     )
     return False
+
+
+def apply_chat_template(
+    conversation: list[dict[str, str]],
+    tokenizer: "PreTrainedTokenizer",
+    **transformers_tokenizer_kwargs,
+) -> str:
+    """Apply the chat template to a prompt.
+
+    Args:
+        conversation:
+            The conversation to apply the chat template to.
+        tokenizer:
+            The tokenizer.
+        **transformers_tokenizer_kwargs:
+            Additional keyword arguments to pass to the tokenizer, in case the tokenizer
+            is a regular Hugging Face tokenizer.
+
+    Returns:
+        The prompt with the chat template applied.
+
+    Raises:
+        InvalidModel:
+            If the tokeniser does not have a chat template.
+    """
+    if not has_chat_template(tokenizer=tokenizer):
+        raise InvalidModel(
+            "The tokenizer does not have a chat template, so cannot apply it."
+        )
+    elif isinstance(tokenizer, MistralCommonTokenizer):
+        templated_prompt = tokenizer.apply_chat_template(
+            conversation=conversation, tokenize=False
+        )
+    else:
+        templated_prompt = tokenizer.apply_chat_template(
+            conversation=conversation,
+            add_generation_prompt=True,
+            tokenize=False,
+            **transformers_tokenizer_kwargs,
+        )
+    assert isinstance(templated_prompt, str)
+    return templated_prompt

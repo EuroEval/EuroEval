@@ -54,6 +54,7 @@ from ..task_group_utils import (
     token_classification,
 )
 from ..tokenization_utils import (
+    apply_chat_template,
     get_bos_token,
     get_end_of_chat_token_ids,
     get_eos_token,
@@ -979,13 +980,9 @@ def get_end_of_reasoning_token(
     # Create a prompt to check if the model uses the reasoning tokens
     prompt = "What is your name?"
     if has_chat_template(tokenizer=tokenizer):
-        templated_prompt = tokenizer.apply_chat_template(
-            conversation=[dict(role="user", content=prompt)],
-            add_generation_prompt=True,
-            tokenize=False,
+        prompt = apply_chat_template(
+            conversation=[dict(role="user", content=prompt)], tokenizer=tokenizer
         )
-        assert isinstance(templated_prompt, str)
-        prompt = templated_prompt
 
     # Check that the beginning-of-reasoning token is actually used by the model
     completion = (
@@ -1082,13 +1079,9 @@ def get_custom_stop_tokens(
 
     prompt = "Hello"
     if has_chat_template(tokenizer=tokenizer):
-        templated_prompt = tokenizer.apply_chat_template(
-            conversation=[dict(role="user", content=prompt)],
-            add_generation_prompt=True,
-            tokenize=False,
+        prompt = apply_chat_template(
+            conversation=[dict(role="user", content=prompt)], tokenizer=tokenizer
         )
-        assert isinstance(templated_prompt, str)
-        prompt = templated_prompt
 
     max_tokens = REASONING_MAX_TOKENS if is_reasoning_model else 10
     completion = (
