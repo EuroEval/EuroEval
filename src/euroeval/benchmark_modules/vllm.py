@@ -910,13 +910,9 @@ def load_tokenizer(
             if "mistral" in str(e).lower():
                 tokenizer = MistralCommonTokenizer.from_pretrained(
                     model_id,
-                    use_fast=True,
-                    verbose=False,
-                    trust_remote_code=trust_remote_code,
                     padding_side="left",
                     truncation_side="left",
                     model_max_length=model_max_length,
-                    config=config,
                     token=token,
                 )
                 break
