@@ -390,53 +390,42 @@ class Benchmarker:
                 continue
 
             loaded_model: BenchmarkModule | None = None
+            benchmark_params_to_revert: dict[str, t.Any] = dict()
             for dataset_config in dataset_configs:
-                # Create a copy of the benchmark config to avoid modifying the
-                # default benchmark config
-                for _ in range(num_attempts := 3):
-                    try:
-                        benchmark_config_copy = deepcopy(benchmark_config)
-                        break
-                    except TypeError:
-                        logger.debug(
-                            "Failed to deepcopy the benchmark config, retrying..."
-                        )
-                        sleep(1)
-                else:
-                    raise InvalidBenchmark(
-                        f"Failed to deepcopy the benchmark config after {num_attempts} "
-                        "attempts."
-                    )
+                # Revert any changes to the benchmark configuration made for the
+                # previous dataset
+                for param, value in benchmark_params_to_revert.items():
+                    setattr(benchmark_config, param, value)
+                benchmark_params_to_revert = dict()
 
                 # Update the benchmark config if the dataset requires it
                 if (
                     "val" not in dataset_config.splits
-                    and not benchmark_config_copy.evaluate_test_split
+                    and not benchmark_config.evaluate_test_split
                 ):
                     logger.debug(
                         "The dataset does not have a validation split, so even though "
                         "you requested evaluating the validation split (the default), "
                         "we will evaluate on the test split."
                     )
-                    benchmark_config_copy.evaluate_test_split = True
-                if (
-                    dataset_config.task.requires_zero_shot
-                    and benchmark_config_copy.few_shot
-                ):
+                    benchmark_params_to_revert["evaluate_test_split"] = False
+                    benchmark_config.evaluate_test_split = True
+                if dataset_config.task.requires_zero_shot and benchmark_config.few_shot:
                     logger.debug(
                         "The task requires zero-shot evaluation, so even though you "
                         "requested few-shot evaluation (the default), we will evaluate "
                         "zero-shot."
                     )
-                    benchmark_config_copy.few_shot = False
+                    benchmark_params_to_revert["few_shot"] = True
+                    benchmark_config.few_shot = False
 
                 # Skip if we have already benchmarked this model on this dataset and
                 # we are not forcing the benchmark
-                if not benchmark_config_copy.force and model_has_been_benchmarked(
+                if not benchmark_config.force and model_has_been_benchmarked(
                     model_id=model_id,
                     dataset=dataset_config.name,
-                    few_shot=benchmark_config_copy.few_shot,
-                    validation_split=not benchmark_config_copy.evaluate_test_split,
+                    few_shot=benchmark_config.few_shot,
+                    validation_split=not benchmark_config.evaluate_test_split,
                     benchmark_results=self.benchmark_results,
                 ):
                     logger.debug(
@@ -464,7 +453,7 @@ class Benchmarker:
                     initial_logging(
                         model_config=model_config,
                         dataset_config=dataset_config,
-                        benchmark_config=benchmark_config_copy,
+                        benchmark_config=benchmark_config,
                     )
                     if loaded_model is None:
                         logger.info("Loading model...")
@@ -472,10 +461,10 @@ class Benchmarker:
                             loaded_model = load_model(
                                 model_config=model_config,
                                 dataset_config=dataset_config,
-                                benchmark_config=benchmark_config_copy,
+                                benchmark_config=benchmark_config,
                             )
                         except InvalidModel as e:
-                            if benchmark_config_copy.raise_errors:
+                            if benchmark_config.raise_errors:
                                 raise e
                             logger.info(e.message)
 
@@ -496,12 +485,12 @@ class Benchmarker:
                     model=loaded_model,
                     model_config=model_config,
                     dataset_config=dataset_config,
-                    benchmark_config=benchmark_config_copy,
+                    benchmark_config=benchmark_config,
                 )
 
                 if (
                     isinstance(benchmark_output_or_err, Exception)
-                    and benchmark_config_copy.raise_errors
+                    and benchmark_config.raise_errors
                 ):
                     raise benchmark_output_or_err
 
@@ -523,7 +512,7 @@ class Benchmarker:
                 else:
                     record: BenchmarkResult = benchmark_output_or_err
                     current_benchmark_results.append(record)
-                    if benchmark_config_copy.save_results:
+                    if benchmark_config.save_results:
                         record.append_to_results(results_path=self.results_path)
 
                 num_finished_benchmarks += 1
