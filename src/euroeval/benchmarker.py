@@ -398,7 +398,7 @@ class Benchmarker:
                         benchmark_config_copy = deepcopy(benchmark_config)
                         break
                     except AttributeError:
-                        pass
+                        sleep(1)
                 else:
                     raise InvalidBenchmark(
                         f"Failed to deepcopy the benchmark config after {num_attempts} "
