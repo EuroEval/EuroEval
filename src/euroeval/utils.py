@@ -139,6 +139,7 @@ def block_terminal_output() -> None:
     # Disable ray logging
     logging.getLogger("ray._private.worker").setLevel(logging.CRITICAL)
     logging.getLogger("ray._private.services").setLevel(logging.CRITICAL)
+    logging.getLogger("ray._private.runtime_env.packaging").setLevel(logging.CRITICAL)
     logging.getLogger("ray.dag.compiled_dag_node").setLevel(logging.CRITICAL)
     logging.getLogger("ray.util.logging.cc").setLevel(logging.CRITICAL)
     if importlib.util.find_spec("ray") is not None:
