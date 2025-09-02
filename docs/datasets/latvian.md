@@ -386,7 +386,7 @@ When evaluating generative models, we use the following setup (see the
 - Base prompt template:
   ```
   Jautājums: {text}
-  Iespējas:
+  Izvēles:
   a. {option_a}
   b. {option_b}
   c. {option_c}
@@ -396,7 +396,7 @@ When evaluating generative models, we use the following setup (see the
 - Instruction-tuned prompt template:
   ```
   Jautājums: {text}
-  Iespējas:
+  Izvēles:
   a. {option_a}
   b. {option_b}
   c. {option_c}
@@ -409,4 +409,72 @@ You can evaluate this dataset directly as follows:
 
 ```bash
 $ euroeval --model <model-id> --dataset mmlu-lv
+```
+
+
+## Common-sense Reasoning
+
+### COPA-lv
+
+This dataset was published in [this
+paper](https://aclanthology.org/2025.resourceful-1.22/) and is a translated version of
+the English [COPA dataset](https://aclanthology.org/S12-1052/), which was created from
+scratch by the authors. The dataset was machine translated using the [Tilde Translation
+service](https://tilde.ai/machine-translation/), and the test samples were manually
+post-edited.
+
+The original full dataset consists of 214 / 57 / 132 samples, and we keep the splits
+as-is.
+
+Here are a few examples from the training split (which have _not_ been post-edited):
+
+```json
+{
+  "text": "Īrnieki tika izlikti no dzīvokļa.\nIzvēles:\na. Viņi savu īri nemaksāja.\nb. Viņi sapratās ar savu saimnieku.",
+  "label": "a"
+}
+```
+```json
+{
+  "text": "Svešinieks man svešvalodā kliedza.\nIzvēles:\na. ES truli blenzu uz viņu.\nb. ES apstājos, lai papļāpātu ar viņu.",
+  "label": "a"
+}
+```
+```json
+{
+  "text": "Pagriezu gaismas slēdzi uz augšu un uz leju.\nIzvēles:\na. Gaisma izdzisa.\nb. Gaisma mirgoja.",
+  "label": "b"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+  ```
+  Tālāk seko jautājumi ar vairākām atbilžu izvēlēm (ar atbildēm).
+  ```
+- Base prompt template:
+  ```
+  Jautājums: {text}
+  Izvēles:
+  a. {option_a}
+  b. {option_b}
+  Atbilde: {label}
+  ```
+- Instruction-tuned prompt template:
+  ```
+  Jautājums: {text}
+  Izvēles:
+  a. {option_a}
+  b. {option_b}
+
+  Atbildiet uz iepriekšējo jautājumu, atbildot ar 'a' vai 'b', un nekas cits.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+$ euroeval --model <model-id> --dataset copa-lv
 ```

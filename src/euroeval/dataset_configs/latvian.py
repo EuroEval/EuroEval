@@ -2,7 +2,7 @@
 
 from ..data_models import DatasetConfig
 from ..languages import LV
-from ..tasks import KNOW, LA, NER, RC, SENT
+from ..tasks import COMMON_SENSE, KNOW, LA, NER, RC, SENT
 
 ### Official datasets ###
 
@@ -50,7 +50,15 @@ MMLU_LV_CONFIG = DatasetConfig(
     languages=[LV],
 )
 
-# TODO: Missing common-sense reasoning dataset
+COPA_LV_CONFIG = DatasetConfig(
+    name="copa-lv",
+    pretty_name="the Latvian common-sense reasoning dataset COPA-lv, translated from "
+    "the English COPA dataset",
+    huggingface_id="EuroEval/copa-lv",
+    task=COMMON_SENSE,
+    languages=[LV],
+    _labels=["a", "b"],
+)
 
 
 ### Unofficial datasets ###
