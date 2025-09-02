@@ -34,7 +34,7 @@ def main() -> None:
     val_jsonl_url = f"{url_prefix}/mt/val.jsonl"
     test_jsonl_url = f"{url_prefix}/post-edited/test.json"
 
-    # TEMP: Temporary URL for the test split until this PR has been merged:
+    # TODO: Temporary URL for the test split until this PR has been merged:
     # https://github.com/LUMII-AILab/VTI-Data/pull/5
     test_jsonl_url = (
         "https://raw.githubusercontent.com/saattrupdan/VTI-Data/refs/heads/patch-1"
