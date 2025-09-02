@@ -52,10 +52,6 @@ all = [
     "bitsandbytes>=0.43.1; platform_system == 'Linux'",
     "vllm>=0.10.1; platform_system == 'Linux'",
     "fbgemm-gpu>=1.0.0; platform_system == 'Linux'",
-    "gradio>=4.26.0",
-]
-test = [
-    "gradio>=4.26.0",
 ]
 
 [project.urls]
