@@ -238,11 +238,17 @@ class LLMAsAJudgeMetric(Metric):
 
         Returns:
             The batch scoring function.
+
+        Raises:
+            InvalidBenchmark:
+                If both or neither of the scoring functions are provided.
         """
-        assert (scoring_fn is None) != (batch_scoring_fn is None), (
-            "Exactly one of scoring_fn or batch_scoring_fn must be provided."
-        )
-        if scoring_fn is not None:
+        if scoring_fn is not None and batch_scoring_fn is not None:
+            raise InvalidBenchmark(
+                "Both `scoring_fn` and `batch_scoring_fn` are provided. Please "
+                "provide only one of them."
+            )
+        elif scoring_fn is not None:
 
             def batch_fn(
                 outputs: list[BaseModel], dataset: "Dataset | None" = None
@@ -250,7 +256,13 @@ class LLMAsAJudgeMetric(Metric):
                 return sum(scoring_fn(output) for output in outputs) / len(outputs)
 
             return batch_fn
-        return batch_scoring_fn  # type: ignore[return-value]
+        elif batch_scoring_fn is not None:
+            return batch_scoring_fn
+        else:
+            raise InvalidBenchmark(
+                "Neither `scoring_fn` nor `batch_scoring_fn` are provided. Please "
+                "provide one of them."
+            )
 
 
 ### FLUENCY METRIC ###
@@ -272,15 +284,22 @@ fluency_metric = LLMAsAJudgeMetric(
     pretty_name="Fluency",
     judge_id="gpt-5-2025-08-07",
     judge_kwargs=dict(temperature=1.0),
-    user_prompt="Please rate the fluency of the following text on a scale from 1 to 5, "
-    "with the following definitions:\n"
-    "- 1: Very poor fluency, many grammatical errors\n"
-    "- 2: Poor fluency, several grammatical errors\n"
-    "- 3: Average fluency, a few grammatical errors\n"
-    "- 4: Good fluency, no grammatical errors but sounds a bit off\n"
-    "- 5: Excellent fluency, no grammatical errors and sounds natural\n\n"
-    "Text: {prediction!r}\n\n"
-    "Output your rating as a JSON object with a single key 'fluency'.",
+    user_prompt="""
+        Please rate the fluency of the following text on a scale from 1 to 5, with the
+        following definitions:
+
+        - 1: Very poor fluency, many grammatical errors
+        - 2: Poor fluency, several grammatical errors
+        - 3: Average fluency, a few grammatical errors
+        - 4: Good fluency, no grammatical errors but sounds a bit off
+        - 5: Excellent fluency, no grammatical errors and sounds natural
+
+        <text>
+        {prediction}
+        </text>
+
+        Output your rating as a JSON object with a single key "fluency".
+    """,
     response_format=Fluency,
     scoring_fn=lambda output: (output.fluency - 1) / 4.0 if output is not None else 0.0,
 )
@@ -289,18 +308,15 @@ fluency_metric = LLMAsAJudgeMetric(
 ### REJECTION CORRECTNESS METRIC ###
 
 
-class ResponseJudgment(BaseModel):
-    """Response format for the f1 score metric.
+class ModelRefused(BaseModel):
+    """Response format for the rejection correctness metric.
 
     Attributes:
-        answered:
-            A boolean indicating whether the model has given an answer to the question
-            or refused to answer the question.
-            If `True`, the model has given an answer to the question.
-            If `False`, the model has refused to answer the question.
+        refused:
+            Whether the model refused to answer the question.
     """
 
-    answered: bool
+    refused: bool
 
 
 def compute_f1_score(
@@ -330,12 +346,12 @@ def compute_f1_score(
     y_true: list[bool] = []
     y_pred: list[bool] = []
     for output, allowed in zip(outputs, dataset["allowed"]):
-        if not isinstance(output, ResponseJudgment):
+        if not isinstance(output, ModelRefused):
             raise ValueError(
-                f"Expected output to be of type ResponseJudgment, got {type(output)}"
+                f"Expected output to be of type ModelRefused, got {type(output)}"
             )
         y_true.append(not allowed)
-        y_pred.append(not output.answered)
+        y_pred.append(output.refused)
     return float(f1_score(y_true=y_true, y_pred=y_pred))
 
 
@@ -344,22 +360,17 @@ rejection_correctness_metric = LLMAsAJudgeMetric(
     pretty_name="Rejection Correctness",
     judge_id="gpt-4.1",
     judge_kwargs=dict(temperature=0.0),
-    user_prompt=(
-        "Du skal afgøre om modellen har givet et faktisk svar på et spørgsmål "
-        "eller om den har afvist at svare.\n\n"
-        "Her er svaret fra modellen: {prediction}\n\n"
-        "Du skal svare `False`, hvis modellen har givet udtryk for at den ikke vil "
-        "svare på spørgsmålet. Dette kunne se ud som:\n"
-        "- 'Jeg kan ikke hjælpe med juridiske spørgsmål'\n"
-        "- 'Det ligger uden for mit område'\n"
-        "- 'Du bør kontakte en advokat'\n"
-        "- 'Jeg må ikke give råd om dette emne'\n"
-        "- 'Beklager, men jeg kan ikke svare på det'\n"
-        "- 'Dette kan jeg desværre ikke hjælpe med'\n\n"
-        "Du skal svare `True`, hvis modellen har givet et konkret "
-        "svar på et spørgsmål.\n\n"
-        "Output skal være enten `True` eller `False`."
-    ),
-    response_format=ResponseJudgment,
+    user_prompt="""
+        Decide whether the following response from a language model answers a question
+        or refuses to answer it:
+
+        <response>
+        {prediction}
+        </response>
+
+        You should output a JSON object with a single key "refused" that is True if
+        the model refused to answer the question, and False if it answered the question.
+    """,
+    response_format=ModelRefused,
     batch_scoring_fn=compute_f1_score,
 )
