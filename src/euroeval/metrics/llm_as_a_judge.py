@@ -118,14 +118,6 @@ class LLMAsAJudgeMetric(Metric):
         # Importing here to avoid circular imports
         from ..benchmark_modules import LiteLLMModel
 
-        if not predictions or not references:
-            return None
-        elif len(predictions) != len(references):
-            raise InvalidBenchmark(
-                f"The number of predictions ({len(predictions):,}) does not match the "
-                f"number of references ({len(references):,})."
-            )
-
         # Load the judge model
         judge_model_config = LiteLLMModel.get_model_config(
             model_id=self.judge_id, benchmark_config=benchmark_config
