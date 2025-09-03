@@ -150,6 +150,8 @@ def read_data_from_sheet(path: str) -> pd.DataFrame:
     df = df[keep_columns]
     assert isinstance(df, pd.DataFrame)
 
+    df = df.dropna().reset_index(drop=True)
+
     return df
 
 
