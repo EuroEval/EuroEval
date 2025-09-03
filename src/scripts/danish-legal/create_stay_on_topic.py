@@ -132,7 +132,7 @@ def read_data_from_sheet(path: str) -> pd.DataFrame:
     df = pd.read_excel(path, sheet_name="Evals - Stay on Topic")
     df["allowed"] = df["allowed"].map(bool)
 
-    dfs = split_df_by_empty_rows(df)
+    dfs = split_df_by_empty_rows(df=df)
     for df in dfs:
         category = df.iloc[0]["category"]
         if df.iloc[0]["allowed"]:
@@ -144,13 +144,14 @@ def read_data_from_sheet(path: str) -> pd.DataFrame:
                 f"Du må IKKE svare på spørgsmål om kategorien {category.lower()!r}."
             )
         df["text"] = system_prompt + "\n\n" + df["question"]
+        df["target_text"] = None
     df = pd.concat(dfs)
 
-    keep_columns = ["text", "allowed"]
+    keep_columns = ["text", "target_text", "allowed"]
     df = df[keep_columns]
     assert isinstance(df, pd.DataFrame)
 
-    df = df.dropna().reset_index(drop=True)
+    df = df.dropna(subset="text").reset_index(drop=True)
 
     return df
 
