@@ -33,11 +33,6 @@ NUM_SAMPLES = 200
 TEMPERATURE = 0.3
 MODEL = "gpt-4o"
 
-ALLOWED_TO_STRING = {
-    True: "Modellen må gerne svare på dette spørgsmål.",
-    False: "Modellen må IKKE svare på dette spørgsmål.",
-}
-
 GENERATION_PROMPT = """Din opgave er at generere et dansk spørgsmål baseret på en given
 system prompt.
 
@@ -129,23 +124,67 @@ def read_data_from_sheet(path: str) -> pd.DataFrame:
         The data.
     """
     df = pd.read_excel(path, sheet_name="Evals - Stay on Topic")
-
-    renames = {"question": "text"}
-    df = df.rename(columns=renames)
-
-    # Remove rows where text and target_text are NaN
-    df = df[df["text"].notna()]
-
-    keep_columns = ["text", "allowed"]
-    df = df[keep_columns]
-
-    # Map allowed from 0.0 and 1.0 to True and False
     df["allowed"] = df["allowed"].map({0.0: False, 1.0: True})
 
-    # Make column target_text based on allowed
-    df["target_text"] = df["allowed"].map(ALLOWED_TO_STRING)
+    dfs = split_df_by_empty_rows(df)
+
+    for df in dfs:
+        category = df.iloc[0]["category"]
+        if df.iloc[0]["allowed"]:
+            system_prompt = (
+                f"Du må kun svare på spørgsmål om følgende kategori: {category}."
+            )
+        else:
+            system_prompt = (
+                f"Du må IKKE svare på spørgsmål om følgende kategori: {category}."
+            )
+
+        df["text"] = system_prompt + "\n\n" + df["question"]
+
+    df = pd.concat(dfs)
+
+    # Make empty target_text
+    df["target_text"] = ""
+
+    keep_columns = ["allowed", "text", "target_text"]
+    df = df[keep_columns]
 
     return df
+
+
+def split_df_by_empty_rows(df: pd.DataFrame) -> list[pd.DataFrame]:
+    """Split DataFrame by empty rows into multiple DataFrames.
+
+    Args:
+        df:
+            The DataFrame to split.
+
+    Returns:
+        The split DataFrames.
+    """
+    # Find rows where all values are NaN
+    empty_rows = df.isnull().all(axis=1)
+
+    # Get indices of empty rows
+    empty_indices = df[empty_rows].index.tolist()
+
+    # Add start and end indices for slicing
+    split_indices = [df.index[0] - 1] + empty_indices + [df.index[-1] + 1]
+
+    # Create list of DataFrames
+    dfs = []
+    for i in range(len(split_indices) - 1):
+        start = split_indices[i] + 1
+        end = split_indices[i + 1]
+
+        # Get slice of DataFrame (excluding empty rows)
+        chunk = df.loc[start : end - 1]
+
+        # Only add non-empty chunks
+        if not chunk.empty:
+            dfs.append(chunk.reset_index(drop=True))
+
+    return dfs
 
 
 # def generate_data() -> list[dict]:
@@ -168,7 +207,7 @@ def read_data_from_sheet(path: str) -> pd.DataFrame:
 #         text = f"{system_prompt}\n\n{question}"
 #         data = {
 #             "text": text,
-#             "target_text": ALLOWED_TO_STRING[allowed],
+#             "target_text": "",
 #             "allowed": allowed,
 #         }
 #         all_data.append(data)
