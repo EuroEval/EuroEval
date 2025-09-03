@@ -2,7 +2,18 @@
 
 from ..data_models import DatasetConfig
 from ..languages import DA
-from ..tasks import COMMON_SENSE, EUROPEAN_VALUES, KNOW, LA, MCRC, NER, RC, SENT, SUMM
+from ..tasks import (
+    COMMON_SENSE,
+    EUROPEAN_VALUES,
+    KNOW,
+    LA,
+    MCRC,
+    NER,
+    RC,
+    SENT,
+    STAY_ON_TOPIC,
+    SUMM,
+)
 
 ### Official datasets ###
 
@@ -173,5 +184,18 @@ EUROPEAN_VALUES_COMPLETIONS_DA_CONFIG = DatasetConfig(
     splits=["test"],
     bootstrap_samples=False,
     _instruction_prompt="{text}",
+    unofficial=True,
+)
+
+
+# Legal datasets
+
+LEGAL_STAY_ON_TOPIC_CONFIG = DatasetConfig(
+    name="legal-stay-on-topic",
+    pretty_name="the Danish legal benchmark dataset Stay on Topic",
+    huggingface_id="EuroEval/legal-stay-on-topic",
+    task=STAY_ON_TOPIC,
+    languages=[DA],
+    splits=["test"],
     unofficial=True,
 )

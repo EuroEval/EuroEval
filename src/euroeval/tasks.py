@@ -5,6 +5,7 @@ from .data_models import Task
 from .enums import GenerativeType, ModelType, TaskGroup
 from .prompt_templates import (
     LA_TEMPLATES,
+    LLM_AS_A_JUDGE_TEMPLATES,
     MULTIPLE_CHOICE_TEMPLATES,
     NER_TEMPLATES,
     RC_TEMPLATES,
@@ -153,4 +154,18 @@ SPEED = Task(
     default_num_few_shot_examples=0,
     default_max_generated_tokens=5,
     default_labels=[],
+)
+
+
+### Danish legal benchmark tasks ###
+
+STAY_ON_TOPIC = Task(
+    name="stay-on-topic",
+    task_group=TaskGroup.TEXT_TO_TEXT,
+    template_dict=LLM_AS_A_JUDGE_TEMPLATES,
+    metrics=[m.rejection_correctness_metric],
+    default_num_few_shot_examples=0,
+    default_max_generated_tokens=64,
+    default_labels=[],
+    requires_zero_shot=True,
 )
