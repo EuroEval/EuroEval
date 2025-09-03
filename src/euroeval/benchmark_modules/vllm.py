@@ -709,7 +709,7 @@ def load_model_and_tokeniser(
     dtype: str | torch.dtype = "auto"
 
     # Choose bf16 over fp16 if the model is a fp32 model and the GPU supports it
-    if hf_model_config.torch_dtype == torch.float32:
+    if hf_model_config.dtype == torch.float32:
         if torch.cuda.is_bf16_supported():
             logger.info(
                 "You are loading a model with dtype FP32, which we will convert to "
@@ -726,34 +726,32 @@ def load_model_and_tokeniser(
             dtype = torch.float16
 
     # If the model is a quantized model, we might need to change the dtype
-    if quantization == "mxfp4" and hf_model_config.torch_dtype is None:
+    if quantization == "mxfp4" and hf_model_config.dtype is None:
         dtype = torch.bfloat16 if torch.cuda.is_bf16_supported() else torch.float16
         logger.debug(
-            "You are loading a quantized model where `torch_dtype` has not been set. "
+            "You are loading a quantized model where `dtype` has not been set. "
             f"Setting dtype to {dtype!r}."
         )
-    elif quantization is not None and hf_model_config.torch_dtype != torch.float16:
+    elif quantization is not None and hf_model_config.dtype != torch.float16:
         logger.info(
             "You are loading a quantized model with dtype "
-            f"{hf_model_config.torch_dtype}, which vLLM does not support. Setting "
+            f"{hf_model_config.dtype}, which vLLM does not support. Setting "
             "dtype to float16 instead."
         )
         dtype = torch.float16
 
     # If the model is a bf16 model, we need to check the CUDA compute capability
-    if hf_model_config.torch_dtype == torch.bfloat16:
+    if hf_model_config.dtype == torch.bfloat16:
         min_cuda_compute_capability = get_min_cuda_compute_capability()
         required_capability = VLLM_BF16_MIN_CUDA_COMPUTE_CAPABILITY
 
         if min_cuda_compute_capability is not None:
             if min_cuda_compute_capability < required_capability:
                 logger.info(
-                    "You are loading a model with "
-                    f"dtype {hf_model_config.torch_dtype}, "
-                    "which vLLM only supports for CUDA devices with"
-                    f"CUDA compute capability >={required_capability}. "
-                    "You are using one or more devices with "
-                    f"compute capability {min_cuda_compute_capability}. "
+                    f"You are loading a model with dtype {hf_model_config.dtype}, "
+                    "which vLLM only supports for CUDA devices with CUDA compute "
+                    f"capability >={required_capability}. You are using one or more "
+                    f"devices with compute capability {min_cuda_compute_capability}. "
                     "Setting dtype to float16 instead."
                 )
                 dtype = torch.float16

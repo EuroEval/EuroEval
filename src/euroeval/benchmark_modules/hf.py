@@ -596,9 +596,9 @@ def load_model_and_tokeniser(
         token=benchmark_config.api_key or os.getenv("HUGGINGFACE_API_KEY") or True,
         cache_dir=model_config.model_cache_dir,
         trust_remote_code=benchmark_config.trust_remote_code,
-        torch_dtype=get_torch_dtype(
+        dtype=get_dtype(
             device=benchmark_config.device,
-            torch_dtype_is_set=config.to_dict().get("torch_dtype") is not None,
+            dtype_is_set=config.to_dict().get("dtype") is not None,
             bf16_available=(
                 torch.cuda.is_available() and torch.cuda.is_bf16_supported()
             ),
@@ -929,15 +929,15 @@ def load_tokeniser(
     return tokeniser
 
 
-def get_torch_dtype(
-    device: torch.device, torch_dtype_is_set: bool, bf16_available: bool
+def get_dtype(
+    device: torch.device, dtype_is_set: bool, bf16_available: bool
 ) -> str | torch.dtype:
     """Get the torch dtype, used for loading the model.
 
     Args:
         device:
             The device to use.
-        torch_dtype_is_set:
+        dtype_is_set:
             Whether the torch data type is set in the model configuration.
         bf16_available:
             Whether bfloat16 is available.
@@ -946,7 +946,7 @@ def get_torch_dtype(
         The torch dtype.
     """
     using_cuda = device == torch.device("cuda")
-    if using_cuda and torch_dtype_is_set:
+    if using_cuda and dtype_is_set:
         return "auto"
     elif using_cuda and bf16_available:
         return torch.bfloat16
