@@ -33,7 +33,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   this was required to measure the European values.
 - Updated `vllm` dependency to `>=0.10.1`, which includes GPT-OSS support.
 - Updated `numpy` dependency to `>=2.0.0`, as the previous clash is not applicable
-  anymore.
+- Updated `transformers` dependency to `>=4.56.0`, which includes support for more
+  models.
 - Now requires Python >=3.11, as Python 3.10 does not support structured generation with
   a dynamic set of choices (Literal[*list_of_choices] is not supported)
 
