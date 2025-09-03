@@ -7,14 +7,16 @@
 #     "pandas==2.2.0",
 #     "python-dotenv==1.0.1",
 #     "requests==2.32.3",
+#     "click==8.2.1",
+#     "openpyxl==3.1.5",
 # ]
 # ///
 
-"""Create the Stay on Topic dataset and upload it to the HF Hub."""
+"""Create the legal Stay on Topic dataset and upload it to the HF Hub."""
 
-import argparse
 import logging
 
+import click
 import pandas as pd
 from datasets import Dataset, DatasetDict, Split
 from dotenv import load_dotenv
@@ -24,7 +26,7 @@ from pydantic import BaseModel
 from requests import HTTPError
 
 logging.basicConfig(format="%(asctime)s ⋅ %(message)s", level=logging.INFO)
-logger = logging.getLogger("create_stay_on_topic")
+logger = logging.getLogger("create_legal_stay_on_topic")
 
 load_dotenv()
 
@@ -81,12 +83,16 @@ class Question(BaseModel):
     question: str
 
 
-def main() -> None:
+@click.command()
+@click.option(
+    "--path",
+    type=click.Path(exists=True),
+    required=True,
+    help="The path to the Excel file containing the data.",
+)
+def main(path: str) -> None:
     """Create the Stay on Topic dataset and upload it to the HF Hub."""
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--path", type=str, required=True)
-    args = parser.parse_args()
-    df = read_data_from_sheet(path=args.path)
+    df = read_data_from_sheet(path=path)
 
     # TODO: Generate data
     # generate_data()
@@ -124,30 +130,25 @@ def read_data_from_sheet(path: str) -> pd.DataFrame:
         The data.
     """
     df = pd.read_excel(path, sheet_name="Evals - Stay on Topic")
-    df["allowed"] = df["allowed"].map({0.0: False, 1.0: True})
+    df["allowed"] = df["allowed"].map(bool)
 
     dfs = split_df_by_empty_rows(df)
-
     for df in dfs:
         category = df.iloc[0]["category"]
         if df.iloc[0]["allowed"]:
             system_prompt = (
-                f"Du må kun svare på spørgsmål om følgende kategori: {category}."
+                f"Du må KUN svare på spørgsmål om kategorien {category.lower()!r}."
             )
         else:
             system_prompt = (
-                f"Du må IKKE svare på spørgsmål om følgende kategori: {category}."
+                f"Du må IKKE svare på spørgsmål om kategorien {category.lower()!r}."
             )
-
         df["text"] = system_prompt + "\n\n" + df["question"]
-
     df = pd.concat(dfs)
 
-    # Make empty target_text
-    df["target_text"] = ""
-
-    keep_columns = ["allowed", "text", "target_text"]
+    keep_columns = ["text", "allowed"]
     df = df[keep_columns]
+    assert isinstance(df, pd.DataFrame)
 
     return df
 
@@ -215,21 +216,40 @@ def split_df_by_empty_rows(df: pd.DataFrame) -> list[pd.DataFrame]:
 
 
 def generate_system_prompt(client: OpenAI, categories: list[str]) -> str:
-    """Generate a system prompt."""
-    prompt = (
-        "Generer en sætning, hvor du beskriver, at du enten kun "
-        "må snakke om emnerne i listen, "
-        "eller at du ikke må snakke om emnerne i listen. "
-        "Emnerne er: " + ", ".join(categories) + "."
-        "System promptet skal altid være på dansk."
+    """Generate a system prompt.
+
+    Args:
+        client:
+            The OpenAI client.
+        categories:
+            The categories to include in the system prompt.
+
+    Returns:
+        The system prompt.
+
+    Raises:
+        ValueError:
+            If no response is received from OpenAI.
+    """
+    categories_str = (
+        ", ".join(categories[:-1]) + " og " + categories[-1]
+        if len(categories) > 1
+        else categories[0]
     )
+    prompt = f"""
+        Generér en sætning, hvor du beskriver, at du enten kun må snakke om emnerne i
+        listen, eller at du ikke må snakke om emnerne i listen. Emnerne er
+        {categories_str}. System prompten skal altid være på dansk.
+    """.replace("\n", " ").strip()
     response = client.responses.parse(
         model=MODEL,
         input=[{"role": "user", "content": prompt}],
         text_format=SystemPrompt,
         temperature=TEMPERATURE,
-    )
-    return response.output_parsed.system_prompt
+    ).output_parsed
+    if response is None:
+        raise ValueError("No response from OpenAI")
+    return response.system_prompt
 
 
 def generate_question(client: OpenAI, system_prompt: str, allowed: bool) -> str:
@@ -245,6 +265,10 @@ def generate_question(client: OpenAI, system_prompt: str, allowed: bool) -> str:
 
     Returns:
         The question.
+
+    Raises:
+        ValueError:
+            If no response is received from OpenAI.
     """
     prompt = GENERATION_PROMPT.format(system_prompt=system_prompt, allowed=allowed)
     # TODO: indsæt system prompt, allowed samt deres spørgsmål i denne prompt,
@@ -265,8 +289,10 @@ def generate_question(client: OpenAI, system_prompt: str, allowed: bool) -> str:
         input=[{"role": "user", "content": prompt}],
         text_format=Question,
         temperature=TEMPERATURE,
-    )
-    return response.output_parsed.question
+    ).output_parsed
+    if response is None:
+        raise ValueError("No response from OpenAI")
+    return response.question
 
 
 if __name__ == "__main__":
