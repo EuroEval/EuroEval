@@ -12,6 +12,7 @@
 
 """Create the Stay on Topic dataset and upload it to the HF Hub."""
 
+import argparse
 import logging
 import os
 import random
@@ -99,8 +100,60 @@ class Question(BaseModel):
 
 def main() -> None:
     """Create the Stay on Topic dataset and upload it to the HF Hub."""
-    client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--path", type=str, required=True)
+    args = parser.parse_args()
+    df = read_data_from_sheet(path=args.path)
 
+    # TODO: Generate data
+    # generate_data()
+
+    # Shuffle the data
+    df = df.sample(frac=1, random_state=4242).reset_index(drop=True)
+
+    # Create dataset dictionary
+    dataset = DatasetDict(test=Dataset.from_pandas(df, split=Split.TEST))
+
+    # Create dataset ID
+    dataset_id = "EuroEval/legal-stay-on-topic"
+
+    # Remove the dataset from Hugging Face Hub if it already exists
+    try:
+        api = HfApi()
+        api.delete_repo(dataset_id, repo_type="dataset")
+    except HTTPError:
+        pass
+
+    # Push the dataset to the Hugging Face Hub
+    logger.info(f"Uploading dataset to {dataset_id}...")
+    dataset.push_to_hub(dataset_id, private=True)
+    logger.info("Dataset uploaded successfully!")
+
+
+def read_data_from_sheet(path: str) -> pd.DataFrame:
+    """Read data from a Google Sheet."""
+    # eval_draft.xlsx
+    df = pd.read_excel(path, sheet_name="Evals - Stay on Topic")
+
+    renames = {"question": "text", "answer": "target_text"}
+    df = df.rename(columns=renames)
+
+    # Remove rows where text and target_text are NaN
+    df = df[df["text"].notna() & df["target_text"].notna()]
+
+    keep_columns = ["text", "target_text", "allowed"]
+    df = df[keep_columns]
+
+    return df
+
+
+def generate_data() -> list[dict]:
+    """Generate data.
+
+    Returns:
+        list[dict]: The generated data.
+    """
+    client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
     all_data = []
     for _ in range(NUM_SAMPLES):
         num_categories = random.randint(1, len(CATEGORIES))
@@ -117,55 +170,7 @@ def main() -> None:
             "allowed": allowed,
         }
         all_data.append(data)
-
-    # Convert to DataFrame
-    df = pd.DataFrame(all_data)
-
-    # Shuffle the data
-    df = df.sample(frac=1, random_state=4242).reset_index(drop=True)
-    # Create dataset dictionary
-    dataset = DatasetDict(
-        # train=Dataset.from_pandas(train_df, split=Split.TRAIN),
-        # val=Dataset.from_pandas(val_df, split=Split.VALIDATION),
-        test=Dataset.from_pandas(df, split=Split.TEST)
-    )
-
-    # # Create train/val/test splits (optional; disabled for now)
-    # total_size = len(df)
-    # test_size = int(0.50 * total_size)
-    # train_size = int(0.25 * total_size)
-
-    # test_df = df[:test_size]
-    # train_df = df[test_size : test_size + train_size]
-    # val_df = df[test_size + train_size :]
-
-    # # Keep only the required columns for the final dataset
-    # columns_to_keep = ["text", "target_text", "allowed"]
-    # train_df = train_df[columns_to_keep]
-    # val_df = val_df[columns_to_keep]
-    # test_df = test_df[columns_to_keep]
-
-    # # Create dataset dictionary
-    # dataset = DatasetDict(
-    #     train=Dataset.from_pandas(train_df, split=Split.TRAIN),
-    #     val=Dataset.from_pandas(val_df, split=Split.VALIDATION),
-    #     test=Dataset.from_pandas(test_df, split=Split.TEST),
-    # )
-
-    # Create dataset ID
-    dataset_id = "EuroEval/legal-stay-on-topic"
-
-    # Remove the dataset from Hugging Face Hub if it already exists
-    try:
-        api = HfApi()
-        api.delete_repo(dataset_id, repo_type="dataset")
-    except HTTPError:
-        pass
-
-    # Push the dataset to the Hugging Face Hub
-    logger.info(f"Uploading dataset to {dataset_id}...")
-    dataset.push_to_hub(dataset_id, private=True)
-    logger.info("Dataset uploaded successfully!")
+    return all_data
 
 
 def generate_system_prompt(client: OpenAI, categories: list[str]) -> str:
