@@ -3,7 +3,25 @@
 import typing as t
 
 from ..data_models import PromptConfig
-from ..languages import DA, DE, EN, ES, FI, FO, FR, IS, IT, LV, NB, NL, NN, NO, PT, SV
+from ..languages import (
+    DA,
+    DE,
+    EN,
+    ES,
+    ET,
+    FI,
+    FO,
+    FR,
+    IS,
+    IT,
+    LV,
+    NB,
+    NL,
+    NN,
+    NO,
+    PT,
+    SV,
+)
 
 if t.TYPE_CHECKING:
     from ..data_models import Language
@@ -42,6 +60,14 @@ RC_TEMPLATES: dict["Language", PromptConfig] = {
         "máximo 3 palabras: {label}",
         default_instruction_prompt="Texto: {text}\n\nResponda la siguiente pregunta "
         "sobre el texto anterior en máximo 3 palabras.\n\nPregunta: {question}",
+        default_prompt_label_mapping=dict(),
+    ),
+    ET: PromptConfig(
+        default_prompt_prefix="Järgnevad on tekstid koos küsimuste ja vastustega.",
+        default_prompt_template="Tekst: {text}\nKüsimus: {question}\nVasta "
+        "maksimaalselt 3 sõnaga: {label}",
+        default_instruction_prompt="Tekst: {text}\n\nVasta järgmisele küsimusele "
+        "ülevaltoodud teksti kohta maksimaalselt 3 sõnaga.\n\nKüsimus: {question}",
         default_prompt_label_mapping=dict(),
     ),
     FI: PromptConfig(

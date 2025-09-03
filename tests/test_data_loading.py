@@ -17,8 +17,8 @@ from euroeval.generation_utils import apply_prompt, extract_few_shot_examples
 
 
 @pytest.fixture(scope="module")
-def tokenizer_id() -> Generator[str, None, None]:
-    """Fixture for the tokenizer ID."""
+def tokeniser_id() -> Generator[str, None, None]:
+    """Fixture for the tokeniser ID."""
     yield "google/gemma-3-27b-it"
 
 
@@ -76,13 +76,13 @@ class TestLoadData:
     ],
 )
 def test_examples_in_official_datasets_are_not_too_long(
-    dataset_config: DatasetConfig, benchmark_config: BenchmarkConfig, tokenizer_id: str
+    dataset_config: DatasetConfig, benchmark_config: BenchmarkConfig, tokeniser_id: str
 ) -> None:
     """Test that the examples are not too long in official datasets."""
     dummy_model_config = LiteLLMModel.get_model_config(
         model_id="", benchmark_config=benchmark_config
     )
-    tokenizer = AutoTokenizer.from_pretrained(tokenizer_id)
+    tokeniser = AutoTokenizer.from_pretrained(tokeniser_id)
     dataset = load_raw_data(
         dataset_config=dataset_config, cache_dir=benchmark_config.cache_dir
     )
@@ -107,7 +107,7 @@ def test_examples_in_official_datasets_are_not_too_long(
                     dataset_config=dataset_config,
                     instruction_model=instruction_model,
                     always_populate_text_field=True,
-                    tokenizer=tokenizer,
+                    tokeniser=tokeniser,
                 ),
                 batched=True,
                 load_from_cache_file=False,
@@ -115,7 +115,7 @@ def test_examples_in_official_datasets_are_not_too_long(
             )
 
             max_input_length = max(
-                len(tokenizer(prompt)["input_ids"]) for prompt in prepared_test["text"]
+                len(tokeniser(prompt)["input_ids"]) for prompt in prepared_test["text"]
             )
             max_output_length = dataset_config.max_generated_tokens
             max_length = max_input_length + max_output_length

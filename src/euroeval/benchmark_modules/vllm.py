@@ -16,6 +16,7 @@ import torch
 from huggingface_hub import snapshot_download
 from pydantic import conlist, create_model
 from tqdm.auto import tqdm
+from transformers import MistralCommonTokenizer
 from transformers.models.auto.configuration_auto import AutoConfig
 from transformers.models.auto.tokenization_auto import AutoTokenizer
 from urllib3.exceptions import RequestError
@@ -53,11 +54,13 @@ from ..task_group_utils import (
     token_classification,
 )
 from ..tokenization_utils import (
+    apply_chat_template,
     get_bos_token,
     get_end_of_chat_token_ids,
     get_eos_token,
     get_first_label_token_mapping,
     get_pad_token,
+    has_chat_template,
     should_prompts_be_stripped,
 )
 from ..types import ExtractLabelsFunction
@@ -77,9 +80,6 @@ if t.TYPE_CHECKING or importlib.util.find_spec("vllm") is not None:
     )
     from vllm.lora.request import LoRARequest
     from vllm.sampling_params import GuidedDecodingParams
-
-if t.TYPE_CHECKING or importlib.util.find_spec("ray") is not None:
-    import ray
 
 if t.TYPE_CHECKING:
     from datasets import DatasetDict
@@ -117,26 +117,23 @@ class VLLMModel(HuggingFaceEncoderModel):
             log_metadata:
                 Whether to log the model and dataset metadata.
         """
-        if (
-            importlib.util.find_spec("vllm") is None
-            or importlib.util.find_spec("ray") is None
-        ):
+        if importlib.util.find_spec("vllm") is None:
             raise NeedsExtraInstalled(extra="generative")
 
-        model, tokenizer = load_model_and_tokenizer(
+        model, tokeniser = load_model_and_tokeniser(
             model_config=model_config, benchmark_config=benchmark_config
         )
         self._model: "LLM" = model
-        self._tokenizer: "PreTrainedTokenizer" = tokenizer
+        self._tokeniser: "PreTrainedTokenizer" = tokeniser
         self.end_of_reasoning_token = get_end_of_reasoning_token(
-            model=self._model, tokenizer=self._tokenizer, model_id=model_config.model_id
+            model=self._model, tokeniser=self._tokeniser, model_id=model_config.model_id
         )
         self.end_of_chat_token_ids = get_end_of_chat_token_ids(
-            tokenizer=self._tokenizer
+            tokeniser=self._tokeniser
         )
         self.custom_stop_tokens = get_custom_stop_tokens(
             model=self._model,
-            tokenizer=self._tokenizer,
+            tokeniser=self._tokeniser,
             model_id=model_config.model_id,
             is_reasoning_model=self.end_of_reasoning_token is not None,
         )
@@ -151,11 +148,11 @@ class VLLMModel(HuggingFaceEncoderModel):
         )
 
         self.buffer |= dict(
-            instruction_model=self._tokenizer.chat_template is not None,
+            instruction_model=has_chat_template(tokeniser=self._tokeniser),
             first_label_token_mapping=get_first_label_token_mapping(
                 dataset_config=self.dataset_config,
                 model_config=self.model_config,
-                tokenizer=self._tokenizer,
+                tokeniser=self._tokeniser,
                 generative_type=self.generative_type,
                 log_metadata=self.log_metadata,
             ),
@@ -171,7 +168,7 @@ class VLLMModel(HuggingFaceEncoderModel):
             )
 
     def __del__(self) -> None:
-        """Clean up the model and tokenizer."""
+        """Clean up the model and tokeniser."""
         try:
             if importlib.util.find_spec("vllm") is not None:
                 clear_vllm()
@@ -179,8 +176,8 @@ class VLLMModel(HuggingFaceEncoderModel):
             pass
         if hasattr(self, "_model"):
             del self._model
-        if hasattr(self, "_tokenizer"):
-            del self._tokenizer
+        if hasattr(self, "_tokeniser"):
+            del self._tokeniser
 
     @property
     def generative_type(self) -> GenerativeType | None:
@@ -189,12 +186,12 @@ class VLLMModel(HuggingFaceEncoderModel):
         Returns:
             The generative type of the model, or None if it has not been set yet.
         """
-        if not hasattr(self, "_tokenizer"):
+        if not hasattr(self, "_tokeniser"):
             return None
         elif self.end_of_reasoning_token is not None:
             return GenerativeType.REASONING
         elif (
-            self._tokenizer.chat_template is not None
+            has_chat_template(tokeniser=self._tokeniser)
             or "instruct" in self.model_config.model_id.lower()
         ):
             return GenerativeType.INSTRUCTION_TUNED
@@ -290,7 +287,7 @@ class VLLMModel(HuggingFaceEncoderModel):
                 dataset_config=self.dataset_config,
                 instruction_model=self.buffer["instruction_model"],
                 always_populate_text_field=True,
-                tokenizer=self._tokenizer,
+                tokeniser=self._tokeniser,
             ),
             batched=True,
             load_from_cache_file=False,
@@ -318,23 +315,23 @@ class VLLMModel(HuggingFaceEncoderModel):
         stop_tokens: list[str] = self.custom_stop_tokens.copy()
         if self.buffer["instruction_model"] is False:
             stop_tokens.append("\n\n")
-        if self._tokenizer.pad_token_id is not None:
-            assert isinstance(self._tokenizer.pad_token, str), (
+        if self._tokeniser.pad_token_id is not None:
+            assert isinstance(self._tokeniser.pad_token, str), (
                 f"The pad token for the model {self.model_config.model_id!r} "
-                f"is not a string, which is unexpected: {self._tokenizer.pad_token!r}."
+                f"is not a string, which is unexpected: {self._tokeniser.pad_token!r}."
             )
-            stop_tokens.append(self._tokenizer.pad_token)
-        if self._tokenizer.eos_token_id is not None:
-            assert isinstance(self._tokenizer.eos_token, str), (
+            stop_tokens.append(self._tokeniser.pad_token)
+        if self._tokeniser.eos_token_id is not None:
+            assert isinstance(self._tokeniser.eos_token, str), (
                 f"The EOS token for the model {self.model_config.model_id!r} "
-                f"is not a string, which is unexpected: {self._tokenizer.eos_token!r}."
+                f"is not a string, which is unexpected: {self._tokeniser.eos_token!r}."
             )
-            stop_tokens.append(self._tokenizer.eos_token)
-            if self._tokenizer.pad_token_id is None:
-                self._tokenizer.pad_token_id = self._tokenizer.eos_token_id
-                self._tokenizer.pad_token = self._tokenizer.eos_token
+            stop_tokens.append(self._tokeniser.eos_token)
+            if self._tokeniser.pad_token_id is None:
+                self._tokeniser.pad_token_id = self._tokeniser.eos_token_id
+                self._tokeniser.pad_token = self._tokeniser.eos_token
         if self.end_of_chat_token_ids is not None:
-            end_of_chat_token = self._tokenizer.decode(
+            end_of_chat_token = self._tokeniser.decode(
                 self.end_of_chat_token_ids
             ).strip()
             if end_of_chat_token:
@@ -370,7 +367,7 @@ class VLLMModel(HuggingFaceEncoderModel):
         self.buffer["first_label_token_mapping"] = get_first_label_token_mapping(
             dataset_config=self.dataset_config,
             model_config=self.model_config,
-            tokenizer=self._tokenizer,
+            tokeniser=self._tokeniser,
             generative_type=self.generative_type,
             log_metadata=self.log_metadata,
         )
@@ -389,7 +386,12 @@ class VLLMModel(HuggingFaceEncoderModel):
         if structured_generation_schema is not None:
             guided_decoding = GuidedDecodingParams(json=structured_generation_schema)
         elif self.dataset_config.task.uses_logprobs and self.dataset_config.labels:
-            guided_decoding = GuidedDecodingParams(choice=self.dataset_config.labels)
+            guided_decoding = GuidedDecodingParams(
+                choice=[
+                    self.dataset_config.prompt_label_mapping[label]
+                    for label in self.dataset_config.labels
+                ]
+            )
         else:
             guided_decoding = None
 
@@ -415,7 +417,7 @@ class VLLMModel(HuggingFaceEncoderModel):
         if any(len(prompt) == 0 for prompt in prompts):
             logger.debug("Found empty prompts, replacing with BOS token.")
             prompts = [
-                prompt if len(prompt) > 0 else str(self._tokenizer.bos_token)
+                prompt if len(prompt) > 0 else str(self._tokeniser.bos_token)
                 for prompt in prompts
             ]
 
@@ -426,7 +428,7 @@ class VLLMModel(HuggingFaceEncoderModel):
         if not self.buffer.get(
             "instruction_model", False
         ) and should_prompts_be_stripped(
-            labels_to_be_generated=labels_to_be_generated, tokenizer=self._tokenizer
+            labels_to_be_generated=labels_to_be_generated, tokeniser=self._tokeniser
         ):
             log_once(
                 f"Stripping prompts for model {self.model_config.model_id!r}.",
@@ -464,22 +466,22 @@ class VLLMModel(HuggingFaceEncoderModel):
                         "Prompts are too long, so truncating them and trying again..."
                     )
                     logger.debug(f"The error message was: {str(e)}")
-                    tokenized_prompts = self._tokenizer(
+                    tokenized_prompts = self._tokeniser(
                         text=prompts,
                         truncation=True,
                         max_length=max(
-                            min(self._tokenizer.model_max_length, MAX_CONTEXT_LENGTH)
+                            min(self._tokeniser.model_max_length, MAX_CONTEXT_LENGTH)
                             - max_tokens,
                             0,
                         ),
                     )
-                    prompts = self._tokenizer.batch_decode(
+                    prompts = self._tokeniser.batch_decode(
                         sequences=tokenized_prompts.input_ids, skip_special_tokens=True
                     )
                 else:
                     raise InvalidBenchmark(
                         f"An error occurred during vLLM generation: {str(e)}"
-                    )
+                    ) from e
         else:
             raise InvalidBenchmark(
                 f"Could not generate sequences after {num_attempts} attempts."
@@ -509,7 +511,7 @@ class VLLMModel(HuggingFaceEncoderModel):
         completion_ids: list[list[int]] = [
             output.outputs[0].token_ids for output in raw_outputs
         ]
-        completions = self._tokenizer.batch_decode(
+        completions = self._tokeniser.batch_decode(
             sequences=[
                 torch.LongTensor(completion_id) for completion_id in completion_ids
             ]
@@ -657,10 +659,10 @@ class VLLMModel(HuggingFaceEncoderModel):
         )
 
 
-def load_model_and_tokenizer(
+def load_model_and_tokeniser(
     model_config: "ModelConfig", benchmark_config: "BenchmarkConfig"
 ) -> tuple["LLM", "PreTrainedTokenizer"]:
-    """Load the model and tokenizer.
+    """Load the model and tokeniser.
 
     Args:
         model_config:
@@ -669,7 +671,7 @@ def load_model_and_tokenizer(
             The benchmark configuration.
 
     Returns:
-        A pair (model, tokenizer), with the loaded model and tokenizer
+        A pair (model, tokeniser), with the loaded model and tokeniser
     """
     # Prefer base model ID if the model is an adapter - the adapter will be added on
     # during inference in this case
@@ -779,7 +781,7 @@ def load_model_and_tokenizer(
     else:
         true_max_model_len = MAX_CONTEXT_LENGTH
 
-    tokenizer = load_tokenizer(
+    tokeniser = load_tokeniser(
         model_id=model_config.model_id,
         revision=model_config.revision,
         adapter_base_model_id=model_config.adapter_base_model_id,
@@ -801,9 +803,7 @@ def load_model_and_tokenizer(
             trust_remote_code=benchmark_config.trust_remote_code,
             revision=revision,
             seed=4242,
-            distributed_executor_backend=(
-                "ray" if torch.cuda.device_count() > 1 else "mp"
-            ),
+            distributed_executor_backend="mp",
             tensor_parallel_size=torch.cuda.device_count(),
             disable_custom_all_reduce=True,
             quantization=quantization,
@@ -814,29 +814,39 @@ def load_model_and_tokenizer(
             enable_prefix_caching=False,
             enable_lora=model_config.adapter_base_model_id is not None,
             max_lora_rank=256,
+            # Special arguments in case we are dealing with a Mistral model
+            tokenizer_mode="mistral"
+            if isinstance(tokeniser, MistralCommonTokenizer)
+            else "auto",
+            config_format="mistral"
+            if isinstance(tokeniser, MistralCommonTokenizer)
+            else "auto",
+            load_format="mistral"
+            if isinstance(tokeniser, MistralCommonTokenizer)
+            else "auto",
         )
     except (RuntimeError, ValueError, OSError) as e:
         if "awaiting a review from the repo authors" in str(e):
             raise InvalidModel(
                 f"The model {model_id!r} is awaiting a review from the repository "
                 "authors. Please try again later."
-            )
+            ) from e
         elif "trust_remote_code" in str(e):
             raise InvalidModel(
                 f"Loading the model {model_id!r} needs to trust remote code. "
                 "If you trust the suppliers of this model, then you can enable "
                 "this by setting the `--trust-remote-code` flag."
-            )
+            ) from e
         raise InvalidModel(
             f"The model {model_id!r} could not be loaded. The error was {e!r}."
-        )
+        ) from e
 
     model.config = hf_model_config
 
-    return model, tokenizer
+    return model, tokeniser
 
 
-def load_tokenizer(
+def load_tokeniser(
     model_id: str,
     revision: str,
     adapter_base_model_id: str | None,
@@ -845,7 +855,7 @@ def load_tokenizer(
     model_cache_dir: str,
     token: str | bool,
 ) -> "PreTrainedTokenizer":
-    """Load the tokenizer.
+    """Load the tokeniser.
 
     Args:
         model_id:
@@ -865,7 +875,7 @@ def load_tokenizer(
             The Hugging Face API token.
 
     Returns:
-        The loaded tokenizer.
+        The loaded tokeniser.
     """
     revision = revision if adapter_base_model_id is None else "main"
     config = AutoConfig.from_pretrained(
@@ -878,7 +888,7 @@ def load_tokenizer(
     num_retries = 5
     for _ in range(num_retries):
         try:
-            tokenizer = AutoTokenizer.from_pretrained(
+            tokeniser = AutoTokenizer.from_pretrained(
                 model_id,
                 use_fast=True,
                 verbose=False,
@@ -893,30 +903,45 @@ def load_tokenizer(
         except (json.JSONDecodeError, OSError, TypeError) as e:
             if adapter_base_model_id is None or model_id == adapter_base_model_id:
                 raise InvalidModel(
-                    f"Could not load tokenizer for model {model_id!r}. The error was "
+                    f"Could not load tokeniser for model {model_id!r}. The error was "
                     f"{str(e)}."
-                )
+                ) from e
             logger.debug(
-                f"Could not load tokenizer for {model_id!r}. Falling back to "
+                f"Could not load tokeniser for {model_id!r}. Falling back to "
                 f"{adapter_base_model_id!r}."
             )
             model_id = adapter_base_model_id
         except (TimeoutError, RequestError):
-            logger.info(f"Couldn't load tokenizer for {model_id!r}. Retrying.")
+            logger.info(f"Couldn't load tokeniser for {model_id!r}. Retrying.")
             sleep(5)
             continue
+        except (KeyError, ValueError) as e:
+            if "mistral" in str(e).lower():
+                tokeniser = MistralCommonTokenizer.from_pretrained(
+                    model_id,
+                    padding_side="left",
+                    truncation_side="left",
+                    model_max_length=model_max_length,
+                    token=token,
+                )
+                break
+            raise InvalidModel(
+                f"Could not load tokeniser for model {model_id!r}. The error was "
+                f"{str(e)}."
+            ) from e
     else:
         raise InvalidModel(
-            f"Could not load tokenizer for model {model_id!r} after {num_retries} "
+            f"Could not load tokeniser for model {model_id!r} after {num_retries} "
             "attempts."
         )
 
     # Ensure that BOS, EOS and PAD tokens are set
-    tokenizer.bos_token, tokenizer.bos_token_id = get_bos_token(tokenizer=tokenizer)
-    tokenizer.eos_token, tokenizer.eos_token_id = get_eos_token(tokenizer=tokenizer)
-    tokenizer.pad_token, tokenizer.pad_token_id = get_pad_token(tokenizer=tokenizer)
+    if not isinstance(tokeniser, MistralCommonTokenizer):
+        tokeniser.bos_token, tokeniser.bos_token_id = get_bos_token(tokeniser=tokeniser)
+        tokeniser.eos_token, tokeniser.eos_token_id = get_eos_token(tokeniser=tokeniser)
+        tokeniser.pad_token, tokeniser.pad_token_id = get_pad_token(tokeniser=tokeniser)
 
-    return tokenizer
+    return tokeniser
 
 
 def clear_vllm() -> None:
@@ -924,25 +949,21 @@ def clear_vllm() -> None:
     with contextlib.suppress(ValueError):
         destroy_model_parallel()
         destroy_distributed_environment()
-    if ray.is_initialized():
-        ray.shutdown()
     with contextlib.suppress(AssertionError):
         torch.distributed.destroy_process_group()
-    if ray.is_initialized():
-        ray.shutdown()
     clear_memory()
 
 
 def get_end_of_reasoning_token(
-    model: "LLM", tokenizer: "PreTrainedTokenizer", model_id: str
+    model: "LLM", tokeniser: "PreTrainedTokenizer", model_id: str
 ) -> str | None:
     """Get the end-of-reasoning token for a generative model.
 
     Args:
         model:
             The vLLM model.
-        tokenizer:
-            The tokenizer.
+        tokeniser:
+            The tokeniser.
         model_id:
             The model ID.
 
@@ -951,11 +972,9 @@ def get_end_of_reasoning_token(
     """
     # Create a prompt to check if the model uses the reasoning tokens
     prompt = "What is your name?"
-    if tokenizer.chat_template is not None:
-        templated_prompt = tokenizer.apply_chat_template(
-            conversation=[dict(role="user", content=prompt)],
-            add_generation_prompt=True,
-            tokenize=False,
+    if has_chat_template(tokeniser=tokeniser):
+        templated_prompt = apply_chat_template(
+            conversation=[dict(role="user", content=prompt)], tokeniser=tokeniser
         )
         assert isinstance(templated_prompt, str)
         prompt = templated_prompt
@@ -980,7 +999,7 @@ def get_end_of_reasoning_token(
             f"The model {model_id!r} did not generate any beginning-of-reasoning "
             "tokens in the prompt or the completion. Assuming the model is not "
             "a reasoning model.",
-            level=logging.INFO,
+            level=logging.DEBUG,
         )
         return None
 
@@ -1006,7 +1025,7 @@ def get_end_of_reasoning_token(
             "the beginning-of-reasoning tokens "
             f"{[bor_token for bor_token, _ in bor_reasoning_matches]!r}. "
             "This is probably not correct, so please report this issue.",
-            level=logging.INFO,
+            level=logging.WARNING,
         )
         return None
 
@@ -1016,14 +1035,14 @@ def get_end_of_reasoning_token(
             f"model {model_id!r}. Using {eor_reasoning_matches[0]!r} as "
             "the reasoning token. If this is not the correct reasoning token, "
             "please report this issue.",
-            level=logging.INFO,
+            level=logging.WARNING,
         )
 
     bor_token, eor_token = eor_reasoning_matches[0]
     log_once(
         f"Detected beginning-of-reasoning token {bor_token!r} and end-of-reasoning "
         f"token {eor_token!r} for model {model_id!r}.",
-        level=logging.INFO,
+        level=logging.DEBUG,
     )
 
     return eor_token
@@ -1031,7 +1050,7 @@ def get_end_of_reasoning_token(
 
 def get_custom_stop_tokens(
     model: "LLM",
-    tokenizer: "PreTrainedTokenizer",
+    tokeniser: "PreTrainedTokenizer",
     model_id: str,
     is_reasoning_model: bool,
 ) -> list[str]:
@@ -1040,8 +1059,8 @@ def get_custom_stop_tokens(
     Args:
         model:
             The vLLM model.
-        tokenizer:
-            The tokenizer.
+        tokeniser:
+            The tokeniser.
         model_id:
             The model ID.
         is_reasoning_model:
@@ -1054,11 +1073,9 @@ def get_custom_stop_tokens(
     candidate_stop_tokens = CUSTOM_STOP_TOKENS
 
     prompt = "Hello"
-    if tokenizer.chat_template is not None:
-        templated_prompt = tokenizer.apply_chat_template(
-            conversation=[dict(role="user", content=prompt)],
-            add_generation_prompt=True,
-            tokenize=False,
+    if has_chat_template(tokeniser=tokeniser):
+        templated_prompt = apply_chat_template(
+            conversation=[dict(role="user", content=prompt)], tokeniser=tokeniser
         )
         assert isinstance(templated_prompt, str)
         prompt = templated_prompt

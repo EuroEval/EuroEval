@@ -110,17 +110,17 @@ class HuggingFaceEncoderModel(BenchmarkModule):
             log_metadata:
                 Whether to log the model metadata.
         """
-        model, tokenizer = load_model_and_tokenizer(
+        model, tokeniser = load_model_and_tokeniser(
             model_config=model_config,
             dataset_config=dataset_config,
             benchmark_config=benchmark_config,
         )
         self._model: "PreTrainedModel" = model
-        self._tokenizer: "PreTrainedTokenizer" = tokenizer
+        self._tokeniser: "PreTrainedTokenizer" = tokeniser
 
-        self._model, self._tokenizer = align_model_and_tokenizer(
+        self._model, self._tokeniser = align_model_and_tokeniser(
             model=self._model,
-            tokenizer=self._tokenizer,
+            tokeniser=self._tokeniser,
             model_max_length=self.model_max_length,
             raise_errors=benchmark_config.raise_errors,
         )
@@ -195,10 +195,10 @@ class HuggingFaceEncoderModel(BenchmarkModule):
         ):
             vocab_size = self._model.config.vocab_size
         elif (
-            hasattr(self._tokenizer, "vocab_size")
-            and self._tokenizer.vocab_size is not None
+            hasattr(self._tokeniser, "vocab_size")
+            and self._tokeniser.vocab_size is not None
         ):
-            vocab_size = self._tokenizer.vocab_size
+            vocab_size = self._tokeniser.vocab_size
         else:
             vocab_size = -1
         return vocab_size
@@ -212,18 +212,18 @@ class HuggingFaceEncoderModel(BenchmarkModule):
         """
         all_max_lengths: list[int] = list()
 
-        # Add the registered max length of the tokenizer
+        # Add the registered max length of the tokeniser
         if hasattr(
-            self._tokenizer, "model_max_length"
-        ) and self._tokenizer.model_max_length < int(1e30):
-            all_max_lengths.append(self._tokenizer.model_max_length)
+            self._tokeniser, "model_max_length"
+        ) and self._tokeniser.model_max_length < int(1e30):
+            all_max_lengths.append(self._tokeniser.model_max_length)
 
         # Add the max length derived from the model's input sizes
-        if hasattr(self._tokenizer, "max_model_input_sizes"):
+        if hasattr(self._tokeniser, "max_model_input_sizes"):
             all_max_lengths.extend(
                 [
                     size
-                    for size in self._tokenizer.max_model_input_sizes.values()
+                    for size in self._tokeniser.max_model_input_sizes.values()
                     if size is not None
                 ]
             )
@@ -279,10 +279,10 @@ class HuggingFaceEncoderModel(BenchmarkModule):
                 | TaskGroup.QUESTION_ANSWERING
                 | TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION
             ):
-                return DataCollatorWithPadding(self._tokenizer, padding="longest")
+                return DataCollatorWithPadding(self._tokeniser, padding="longest")
             case TaskGroup.TOKEN_CLASSIFICATION:
                 return DataCollatorForTokenClassification(
-                    tokenizer=self._tokenizer, label_pad_token_id=-100
+                    tokenizer=self._tokeniser, label_pad_token_id=-100
                 )
             case _:
                 raise NotImplementedError(
@@ -361,16 +361,16 @@ class HuggingFaceEncoderModel(BenchmarkModule):
                         self._model.config.label2id[lbl.lower()]
                         for lbl in examples["label"]
                     ]
-                except KeyError:
+                except KeyError as e:
                     raise InvalidBenchmark(
                         f"One of the labels in the dataset, "
                         f"{examples['label'].lower()}, does not occur in the "
                         f"label2id dictionary {self._model.config.label2id}."
-                    )
+                    ) from e
             return examples
 
         def tokenise(examples: dict) -> "BatchEncoding":
-            return self._tokenizer(text=examples["text"], truncation=True, padding=True)
+            return self._tokeniser(text=examples["text"], truncation=True, padding=True)
 
         match task.task_group:
             case TaskGroup.SEQUENCE_CLASSIFICATION:
@@ -384,7 +384,7 @@ class HuggingFaceEncoderModel(BenchmarkModule):
                         split_name: split.map(
                             partial(
                                 multiple_choice_classification.prepare_examples,
-                                tokenizer=self._tokenizer,
+                                tokeniser=self._tokeniser,
                             ),
                             batched=True,
                             batch_size=10,
@@ -408,7 +408,7 @@ class HuggingFaceEncoderModel(BenchmarkModule):
                 dataset = dataset.map(
                     partial(
                         token_classification.tokenize_and_align_labels,
-                        tokenizer=self._tokenizer,
+                        tokeniser=self._tokeniser,
                         label2id=self._model.config.label2id,
                     ),
                     batched=True,
@@ -422,7 +422,7 @@ class HuggingFaceEncoderModel(BenchmarkModule):
                     data_dict["train"] = dataset["train"].map(
                         partial(
                             question_answering.prepare_train_examples,
-                            tokenizer=self._tokenizer,
+                            tokeniser=self._tokeniser,
                         ),
                         batched=True,
                         batch_size=10,
@@ -434,7 +434,7 @@ class HuggingFaceEncoderModel(BenchmarkModule):
                     data_dict["val"] = dataset["val"].map(
                         partial(
                             question_answering.prepare_train_examples,
-                            tokenizer=self._tokenizer,
+                            tokeniser=self._tokeniser,
                         ),
                         batched=True,
                         batch_size=10,
@@ -446,7 +446,7 @@ class HuggingFaceEncoderModel(BenchmarkModule):
                     data_dict["test"] = dataset["test"].map(
                         partial(
                             question_answering.prepare_test_examples,
-                            tokenizer=self._tokenizer,
+                            tokeniser=self._tokeniser,
                         ),
                         batched=True,
                         batch_size=10,
@@ -545,12 +545,12 @@ class HuggingFaceEncoderModel(BenchmarkModule):
         return model_config
 
 
-def load_model_and_tokenizer(
+def load_model_and_tokeniser(
     model_config: "ModelConfig",
     dataset_config: "DatasetConfig",
     benchmark_config: "BenchmarkConfig",
 ) -> tuple["PreTrainedModel", "PreTrainedTokenizer"]:
-    """Load the model and tokenizer.
+    """Load the model and tokeniser.
 
     Args:
         model_config:
@@ -561,7 +561,7 @@ def load_model_and_tokenizer(
             The benchmark configuration
 
     Returns:
-        The loaded model and tokenizer.
+        The loaded model and tokeniser.
     """
     config: "PretrainedConfig"
     block_terminal_output()
@@ -644,11 +644,13 @@ def load_model_and_tokenizer(
                 model_kwargs["ignore_mismatched_sizes"] = True
                 continue
             else:
-                raise InvalidModel(str(e))
-        except (TimeoutError, RequestError):
+                raise InvalidModel(str(e)) from e
+        except (TimeoutError, RequestError) as e:
             attempts_left -= 1
             if attempts_left == 0:
-                raise InvalidModel("The model could not be loaded after 5 attempts.")
+                raise InvalidModel(
+                    "The model could not be loaded after 5 attempts."
+                ) from e
             logger.info(f"Couldn't load the model {model_id!r}. Retrying.")
             sleep(5)
             continue
@@ -656,16 +658,16 @@ def load_model_and_tokenizer(
             if "checkpoint seems to be incorrect" in str(e):
                 raise InvalidModel(
                     f"The model {model_id!r} has an incorrect checkpoint."
-                )
+                ) from e
             if "trust_remote_code" in str(e):
                 raise InvalidModel(
                     f"Loading the model {model_id!r} needs to trust remote code. "
                     "If you trust the suppliers of this model, then you can enable "
                     "this by setting the `--trust-remote-code` flag."
-                )
+                ) from e
             raise InvalidModel(
                 f"The model {model_id!r} could not be loaded. The error was {e!r}."
-            )
+            ) from e
 
     if isinstance(model_or_tuple, tuple):
         model = model_or_tuple[0]
@@ -683,13 +685,13 @@ def load_model_and_tokenizer(
     ):
         model = setup_model_for_question_answering(model=model)
 
-    tokenizer = load_tokenizer(
+    tokeniser = load_tokeniser(
         model=model,
         model_id=model_id,
         trust_remote_code=benchmark_config.trust_remote_code,
     )
 
-    return model, tokenizer
+    return model, tokeniser
 
 
 def get_model_repo_info(
@@ -866,10 +868,10 @@ def get_model_repo_info(
     )
 
 
-def load_tokenizer(
+def load_tokeniser(
     model: "PreTrainedModel | None", model_id: str, trust_remote_code: bool
 ) -> "PreTrainedTokenizer":
-    """Load the tokenizer.
+    """Load the tokeniser.
 
     Args:
         model:
@@ -881,7 +883,7 @@ def load_tokenizer(
             Whether to trust remote code.
 
     Returns:
-        The loaded tokenizer.
+        The loaded tokeniser.
     """
     loading_kwargs: dict[str, bool | str] = dict(
         use_fast=True,
@@ -904,25 +906,27 @@ def load_tokenizer(
     num_retries = 5
     for _ in range(num_retries):
         try:
-            tokenizer = AutoTokenizer.from_pretrained(model_id, **loading_kwargs)
+            tokeniser = AutoTokenizer.from_pretrained(model_id, **loading_kwargs)
             break
-        except (JSONDecodeError, OSError, TypeError):
-            raise InvalidModel(f"Could not load tokenizer for model {model_id!r}.")
+        except (JSONDecodeError, OSError, TypeError) as e:
+            raise InvalidModel(
+                f"Could not load tokeniser for model {model_id!r}."
+            ) from e
         except (TimeoutError, RequestError):
-            logger.info(f"Couldn't load tokenizer for {model_id!r}. Retrying.")
+            logger.info(f"Couldn't load tokeniser for {model_id!r}. Retrying.")
             sleep(5)
             continue
     else:
         raise InvalidModel(
-            f"Could not load tokenizer for model {model_id!r} after {num_retries} "
+            f"Could not load tokeniser for model {model_id!r} after {num_retries} "
             "attempts."
         )
 
     # Ensure that BOS, EOS and PAD tokens are set
-    tokenizer.bos_token, tokenizer.bos_token_id = get_bos_token(tokenizer=tokenizer)
-    tokenizer.eos_token, tokenizer.eos_token_id = get_eos_token(tokenizer=tokenizer)
+    tokeniser.bos_token, tokeniser.bos_token_id = get_bos_token(tokeniser=tokeniser)
+    tokeniser.eos_token, tokeniser.eos_token_id = get_eos_token(tokeniser=tokeniser)
 
-    return tokenizer
+    return tokeniser
 
 
 def get_torch_dtype(
@@ -1010,7 +1014,7 @@ def load_hf_model_config(
             raise InvalidModel(
                 f"The model config for the model {model_id!r} could not be "
                 f"loaded, as the key {key!r} was not found in the config."
-            )
+            ) from e
         except (OSError, GatedRepoError) as e:
             # TEMP: When the model is gated then we cannot set cache dir, for some
             # reason (since transformers v4.38.2, still a problem in v4.48.0). This
@@ -1021,7 +1025,7 @@ def load_hf_model_config(
             raise InvalidModel(
                 f"Couldn't load model config for {model_id!r}. The error was "
                 f"{e!r}. Skipping"
-            )
+            ) from e
         except (TimeoutError, RequestError):
             logger.info(f"Couldn't load model config for {model_id!r}. Retrying.")
             sleep(5)
@@ -1031,17 +1035,17 @@ def load_hf_model_config(
                 raise InvalidModel(
                     f"The model {model_id!r} is awaiting a review from the repository "
                     "authors. Please try again later."
-                )
+                ) from e
             if "trust_remote_code" in str(e):
                 raise NeedsAdditionalArgument(
                     cli_argument="--trust-remote-code",
                     script_argument="trust_remote_code=True",
                     run_with_cli=run_with_cli,
-                )
+                ) from e
             raise InvalidModel(
                 f"The config for the model {model_id!r} could not be loaded. The "
                 f"error was {e!r}."
-            )
+            ) from e
 
 
 def setup_model_for_question_answering(model: "PreTrainedModel") -> "PreTrainedModel":
@@ -1126,33 +1130,33 @@ def get_children_of_module(
         return submodules
 
 
-def align_model_and_tokenizer(
+def align_model_and_tokeniser(
     model: "PreTrainedModel",
-    tokenizer: "PreTrainedTokenizer",
+    tokeniser: "PreTrainedTokenizer",
     model_max_length: int,
     raise_errors: bool = False,
 ) -> tuple["PreTrainedModel", "PreTrainedTokenizer"]:
-    """Aligns the model and the tokenizer.
+    """Aligns the model and the tokeniser.
 
     Args:
         model:
             The model to fix.
-        tokenizer:
-            The tokenizer to fix.
+        tokeniser:
+            The tokeniser to fix.
         model_max_length:
             The maximum length of the model.
         raise_errors:
             Whether to raise errors instead of trying to fix them silently.
 
     Returns:
-        The fixed model and tokenizer.
+        The fixed model and tokeniser.
     """
     model_max_length = min(model_max_length, MAX_CONTEXT_LENGTH)
 
     if model_max_length > 0:
-        tokenizer.model_max_length = model_max_length
+        tokeniser.model_max_length = model_max_length
     else:
-        tokenizer.model_max_length = 512
+        tokeniser.model_max_length = 512
 
     # Move the model to the CPU, since otherwise we can't catch the IndexErrors when
     # finding the maximum sequence length of the model
@@ -1161,9 +1165,9 @@ def align_model_and_tokenizer(
 
     # Manually check that this model max length is valid for the model, and adjust
     # otherwise
-    initial_max_length = tokenizer.model_max_length
+    initial_max_length = tokeniser.model_max_length
     for max_length in range(initial_max_length, 0, -1):
-        tokenizer.model_max_length = max_length
+        tokeniser.model_max_length = max_length
         dummy_inputs = torch.full(
             size=(1, max_length),
             fill_value=DUMMY_FILL_VALUE,
@@ -1190,24 +1194,24 @@ def align_model_and_tokenizer(
     # Move the model back to the original device
     model.to(model_device)  # type: ignore[arg-type]
 
-    # If there is a mismatch between the vocab size according to the tokenizer and
+    # If there is a mismatch between the vocab size according to the tokeniser and
     # the vocab size according to the model, we raise an error
     if hasattr(model.config, "vocab_size"):
-        if model.config.vocab_size < len(tokenizer):
+        if model.config.vocab_size < len(tokeniser):
             if raise_errors:
                 raise InvalidModel(
-                    "The vocab size of the tokenizer is larger than the vocab size of "
+                    "The vocab size of the tokeniser is larger than the vocab size of "
                     "the model. As the --raise-errors option was specified, the "
                     "embeddings of the model will not be automatically adjusted."
                 )
             if hasattr(model, "resize_token_embeddings"):
-                model.resize_token_embeddings(new_num_tokens=tokenizer.vocab_size + 1)
+                model.resize_token_embeddings(new_num_tokens=tokeniser.vocab_size + 1)
 
-    if tokenizer.bos_token is None and tokenizer.eos_token is not None:
-        tokenizer.bos_token = tokenizer.eos_token
-        tokenizer.bos_token_id = tokenizer.eos_token_id
+    if tokeniser.bos_token is None and tokeniser.eos_token is not None:
+        tokeniser.bos_token = tokeniser.eos_token
+        tokeniser.bos_token_id = tokeniser.eos_token_id
 
-    return model, tokenizer
+    return model, tokeniser
 
 
 def task_group_to_class_name(task_group: TaskGroup) -> str:

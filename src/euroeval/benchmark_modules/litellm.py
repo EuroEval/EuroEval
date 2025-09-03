@@ -83,7 +83,7 @@ from ..utils import (
     safe_run,
 )
 from .base import BenchmarkModule
-from .hf import HuggingFaceEncoderModel, load_hf_model_config, load_tokenizer
+from .hf import HuggingFaceEncoderModel, load_hf_model_config, load_tokeniser
 
 if t.TYPE_CHECKING:
     from datasets import DatasetDict
@@ -230,7 +230,7 @@ class LiteLLMModel(BenchmarkModule):
         self.buffer["first_label_token_mapping"] = get_first_label_token_mapping(
             dataset_config=self.dataset_config,
             model_config=self.model_config,
-            tokenizer=None,
+            tokeniser=None,
             generative_type=self.generative_type,
             log_metadata=self.log_metadata,
         )
@@ -288,7 +288,7 @@ class LiteLLMModel(BenchmarkModule):
         self.buffer["first_label_token_mapping"] = get_first_label_token_mapping(
             dataset_config=self.dataset_config,
             model_config=self.model_config,
-            tokenizer=None,
+            tokeniser=None,
             generative_type=self.generative_type,
             log_metadata=self.log_metadata,
         )
@@ -473,7 +473,7 @@ class LiteLLMModel(BenchmarkModule):
                     f"{thinking_budget:,} tokens, which is within the limit of "
                     f"{REASONING_MAX_TOKENS:,} tokens. This should not happen. The "
                     f"error message was: {error_msg}."
-                )
+                ) from error
             log_once(
                 f"The model {model_id!r} can at most use {thinking_budget:,} tokens "
                 "for reasoning, which is less than the default of "
@@ -512,7 +512,7 @@ class LiteLLMModel(BenchmarkModule):
                 "There are too many file descriptors running. See the current "
                 "value by running `ulimit -n`. Try increasing it by running "
                 "`ulimit -n <new-value>` and try again."
-            )
+            ) from error
         elif isinstance(
             error, (Timeout, ServiceUnavailableError, InternalServerError, SystemError)
         ):
@@ -528,41 +528,41 @@ class LiteLLMModel(BenchmarkModule):
                 string=error.message,
             )
             if unsupported_param_match is None:
-                raise InvalidModel(error.message)
+                raise InvalidModel(error.message) from error
             else:
                 unsupported_param = unsupported_param_match.group(0)
                 raise InvalidModel(
                     f"The model {model_id!r} does not support the parameter "
                     f"{unsupported_param!r}. Try again without this parameter. "
                     "Skipping this model."
-                )
+                ) from error
         elif isinstance(error, (APIConnectionError, OSError)):
             raise InvalidBenchmark(
                 f"Encountered {type(error)} during generation: {error}."
-            )
+            ) from error
 
         if isinstance(error, NotFoundError):
             raise InvalidModel(
                 f"The model {model_id!r} was not found. Please check the model ID "
                 "and try again."
-            )
+            ) from error
 
         if isinstance(error, RateLimitError):
             raise InvalidModel(
                 f"You have encountered your rate limit for model {model_id!r}. "
                 "Skipping."
-            )
+            ) from error
 
         if isinstance(error, AuthenticationError):
             raise NeedsAdditionalArgument(
                 cli_argument="--api-key",
                 script_argument="api_key=<your-api-key>",
                 run_with_cli=self.benchmark_config.run_with_cli,
-            )
+            ) from error
 
         raise InvalidBenchmark(
             f"Failed to generate text. The error message was: {error}"
-        )
+        ) from error
 
     async def _generate_async(
         self,
@@ -841,7 +841,7 @@ class LiteLLMModel(BenchmarkModule):
                     run_with_cli=self.benchmark_config.run_with_cli,
                 )
 
-                tokenizer = load_tokenizer(
+                tokeniser = load_tokeniser(
                     model=None,
                     model_id=model_id,
                     trust_remote_code=self.benchmark_config.trust_remote_code,
@@ -853,10 +853,10 @@ class LiteLLMModel(BenchmarkModule):
                 ):
                     vocab_size = hf_config.vocab_size
                 elif (
-                    hasattr(tokenizer, "vocab_size")
-                    and tokenizer.vocab_size is not None
+                    hasattr(tokeniser, "vocab_size")
+                    and tokeniser.vocab_size is not None
                 ):
-                    vocab_size = tokenizer.vocab_size
+                    vocab_size = tokeniser.vocab_size
                 else:
                     vocab_size = -1
                 return vocab_size
@@ -923,7 +923,7 @@ class LiteLLMModel(BenchmarkModule):
                     run_with_cli=self.benchmark_config.run_with_cli,
                 )
 
-                tokenizer = load_tokenizer(
+                tokeniser = load_tokeniser(
                     model=None,
                     model_id=model_id,
                     trust_remote_code=self.benchmark_config.trust_remote_code,
@@ -931,18 +931,18 @@ class LiteLLMModel(BenchmarkModule):
 
                 all_max_lengths: list[int] = list()
 
-                # Add the registered max length of the tokenizer
+                # Add the registered max length of the tokeniser
                 if hasattr(
-                    tokenizer, "model_max_length"
-                ) and tokenizer.model_max_length < int(1e30):
-                    all_max_lengths.append(tokenizer.model_max_length)
+                    tokeniser, "model_max_length"
+                ) and tokeniser.model_max_length < int(1e30):
+                    all_max_lengths.append(tokeniser.model_max_length)
 
                 # Add the max length derived from the model's input sizes
-                if hasattr(tokenizer, "max_model_input_sizes"):
+                if hasattr(tokeniser, "max_model_input_sizes"):
                     all_max_lengths.extend(
                         [
                             size
-                            for size in tokenizer.max_model_input_sizes.values()
+                            for size in tokeniser.max_model_input_sizes.values()
                             if size is not None
                         ]
                     )
@@ -1206,7 +1206,7 @@ class LiteLLMModel(BenchmarkModule):
                 dataset_config=self.dataset_config,
                 instruction_model=True,
                 always_populate_text_field=False,
-                tokenizer=None,
+                tokeniser=None,
             ),
             batched=True,
             load_from_cache_file=False,
@@ -1287,11 +1287,12 @@ class LiteLLMModel(BenchmarkModule):
                     level=logging.DEBUG,
                 )
         elif self.dataset_config.task.uses_logprobs and self.dataset_config.labels:
+            localised_labels = [
+                self.dataset_config.prompt_label_mapping[label]
+                for label in self.dataset_config.labels
+            ]
             keys_and_their_types = {
-                LITELLM_CLASSIFICATION_OUTPUT_KEY: (
-                    t.Literal[*self.dataset_config.labels],
-                    ...,
-                )
+                LITELLM_CLASSIFICATION_OUTPUT_KEY: (t.Literal[*localised_labels], ...)
             }
             pydantic_class = create_model("AnswerFormat", **keys_and_their_types)
             generation_kwargs["response_format"] = pydantic_class
@@ -1424,11 +1425,11 @@ def try_download_ollama_model(model_id: str) -> bool:
             for model_obj in ollama.list().models
             if model_obj.model is not None
         ]
-    except ConnectionError:
+    except ConnectionError as e:
         raise InvalidModel(
             "Ollama does not seem to be running, so we cannot evaluate the model "
             f"{model_id!r}. Please make sure that Ollama is running and try again."
-        )
+        ) from e
 
     ollama_model_id = "/".join(model_id.split("/")[1:])
     if ollama_model_id not in downloaded_ollama_models:
@@ -1458,12 +1459,12 @@ def try_download_ollama_model(model_id: str) -> bool:
                         raise InvalidModel(
                             f"Failed to download Ollama model {ollama_model_id}. "
                             f"The error message was: {inner_e}"
-                        )
+                        ) from inner_e
             else:
                 raise InvalidModel(
                     f"Failed to download Ollama model {ollama_model_id}. "
                     f"The error message was: {e}"
-                )
+                ) from e
 
         # Download the model
         with tqdm(

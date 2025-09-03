@@ -32,10 +32,10 @@ def test_should_prompts_be_stripped(model_id: str, expected: bool, auth: str) ->
         trust_remote_code=True,
         run_with_cli=True,
     )
-    tokenizer = AutoTokenizer.from_pretrained(model_id, config=config)
+    tokeniser = AutoTokenizer.from_pretrained(model_id, config=config)
     labels = ["positiv", "negativ"]
     strip_prompts = should_prompts_be_stripped(
-        labels_to_be_generated=labels, tokenizer=tokenizer
+        labels_to_be_generated=labels, tokeniser=tokeniser
     )
     assert strip_prompts == expected
 
@@ -48,10 +48,10 @@ def test_should_prefix_space_be_added_to_labels(
     model_id: str, expected: bool, auth: str
 ) -> None:
     """Test whether a prefix space should be added to labels."""
-    tokenizer = AutoTokenizer.from_pretrained(model_id, token=auth)
+    tokeniser = AutoTokenizer.from_pretrained(model_id, token=auth)
     labels = ["positiv", "negativ"]
     strip_prompts = should_prefix_space_be_added_to_labels(
-        labels_to_be_generated=labels, tokenizer=tokenizer
+        labels_to_be_generated=labels, tokeniser=tokeniser
     )
     assert strip_prompts == expected
 
@@ -77,11 +77,11 @@ def test_get_end_of_chat_token_ids(
     auth: str,
 ) -> None:
     """Test ability to get the chat token IDs of a model."""
-    tokenizer = AutoTokenizer.from_pretrained(
+    tokeniser = AutoTokenizer.from_pretrained(
         model_id, token=auth, trust_remote_code=True
     )
-    end_of_chat_token_ids = get_end_of_chat_token_ids(tokenizer=tokenizer)
+    end_of_chat_token_ids = get_end_of_chat_token_ids(tokeniser=tokeniser)
     assert end_of_chat_token_ids == expected_token_ids
     if expected_string is not None:
-        end_of_chat_string = tokenizer.decode(end_of_chat_token_ids).strip()
+        end_of_chat_string = tokeniser.decode(end_of_chat_token_ids).strip()
         assert end_of_chat_string == expected_string

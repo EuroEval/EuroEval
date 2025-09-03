@@ -25,12 +25,14 @@ body:
       - label: Danish
       - label: Dutch
       - label: English
+      - label: Estonian
       - label: Faroese
       - label: Finnish
       - label: French
       - label: German
       - label: Icelandic
       - label: Italian
+      - label: Latvian
       - label: Norwegian (Bokmål or Nynorsk)
       - label: Portuguese
       - label: Spanish

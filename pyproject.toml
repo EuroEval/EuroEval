@@ -14,7 +14,7 @@ dependencies = [
     "torch>=2.6.0",
     "pandas>=2.2.0",
     "numpy>=2.0.0",
-    "transformers>=4.55.0",
+    "transformers[mistral-common]>=4.55.0",
     "accelerate>=1.9.0",
     "evaluate>=0.4.1",
     "datasets>=3.5.0",
@@ -33,7 +33,7 @@ dependencies = [
     "rouge-score>=0.1.2",
     "bert-score>=0.3.13",
     "levenshtein>=0.24.0",
-    "scikit-learn<1.6.0",
+    "scikit-learn==1.6.1",  # Required for loading European values pipeline
     "setuptools>=75.8.2",
     "demjson3>=3.0.6",
     "ollama>=0.5.1",
@@ -52,10 +52,6 @@ all = [
     "bitsandbytes>=0.43.1; platform_system == 'Linux'",
     "vllm>=0.10.1; platform_system == 'Linux'",
     "fbgemm-gpu>=1.0.0; platform_system == 'Linux'",
-    "gradio>=4.26.0",
-]
-test = [
-    "gradio>=4.26.0",
 ]
 
 [project.urls]

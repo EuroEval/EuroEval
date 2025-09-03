@@ -122,16 +122,16 @@ class BenchmarkModule(ABC):
             f"{self.__class__.__name__}."
         )
 
-    def get_tokenizer(self) -> "PreTrainedTokenizer":
-        """Get the underlying tokenizer.
+    def get_tokeniser(self) -> "PreTrainedTokenizer":
+        """Get the underlying tokeniser.
 
         Returns:
-            The tokenizer.
+            The tokeniser.
         """
-        if hasattr(self, "_tokenizer"):
-            return self._tokenizer
+        if hasattr(self, "_tokeniser"):
+            return self._tokeniser
         raise NotImplementedError(
-            "The `get_tokenizer` method has not been implemented for "
+            "The `get_tokeniser` method has not been implemented for "
             f"{self.__class__.__name__}."
         )
 

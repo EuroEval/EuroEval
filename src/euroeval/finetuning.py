@@ -119,7 +119,7 @@ def finetune(
             # NaN values can appear in the model output when using mixed precision, as
             # the hidden states get overflowed. In this case we try to disable mixed
             # precision and try again.
-            except NaNValueInModelOutput:
+            except NaNValueInModelOutput as e:
                 if dtype != DataType.FP32:
                     dtype = DataType.FP32
                     model_already_initialized = False
@@ -131,11 +131,11 @@ def finetune(
                     raise InvalidBenchmark(
                         "NaN value detected in model outputs, even with mixed "
                         "precision disabled."
-                    )
+                    ) from e
 
             except Exception as e:
                 if "CUDA" not in str(e) and "out of memory" not in str(e):
-                    raise InvalidBenchmark(str(e))
+                    raise InvalidBenchmark(str(e)) from e
 
                 if bs <= 1:
                     msg = "Could not benchmark the model, even with a batch size of 1!"
@@ -146,7 +146,7 @@ def finetune(
                             "environment variable set, as this removes the upper bound "
                             "on the memory usage."
                         )
-                    raise InvalidBenchmark(msg)
+                    raise InvalidBenchmark(msg) from e
 
                 model_already_initialized = False
 
@@ -195,7 +195,7 @@ def finetune_single_iteration(
 
     trainer = model.trainer_class(
         model=model.get_pytorch_module(),
-        processing_class=model.get_tokenizer(),
+        processing_class=model.get_tokeniser(),
         args=training_args,
         train_dataset=dataset["train"],
         eval_dataset=dataset["val"],
@@ -245,7 +245,7 @@ def finetune_single_iteration(
             clear_memory()
             raise e
         except (RuntimeError, ValueError, IndexError) as e:
-            raise InvalidBenchmark(str(e))
+            raise InvalidBenchmark(str(e)) from e
 
     return test_scores
 

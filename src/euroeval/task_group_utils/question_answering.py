@@ -57,10 +57,10 @@ class QuestionAnsweringTrainer(Trainer):
             **kwargs,
         )
 
-        # Get the CLS token id for the tokenizer
-        if self.tokenizer is not None:
-            assert isinstance(self.tokenizer, PreTrainedTokenizerBase)
-            special_token_metadata = get_special_token_metadata(self.tokenizer)
+        # Get the CLS token id for the tokeniser
+        if self.tokeniser is not None:
+            assert isinstance(self.tokeniser, PreTrainedTokenizerBase)
+            special_token_metadata = get_special_token_metadata(self.tokeniser)
             self.cls_token_id = special_token_metadata["cls_token_id"]
 
         # Set the label names
@@ -228,15 +228,15 @@ def extract_labels_from_generation(
 
 
 def prepare_train_examples(
-    examples: "BatchEncoding", tokenizer: "PreTrainedTokenizer"
+    examples: "BatchEncoding", tokeniser: "PreTrainedTokenizer"
 ) -> "BatchEncoding":
     """Prepare the features for training.
 
     Args:
         examples:
             The examples to prepare.
-        tokenizer:
-            The tokenizer to use to prepare the examples.
+        tokeniser:
+            The tokeniser to use to prepare the examples.
 
     Returns:
         The prepared examples.
@@ -246,15 +246,15 @@ def prepare_train_examples(
     # take a lots of space). So we remove that left whitespace
     examples["question"] = [q.lstrip() for q in examples["question"]]
 
-    # Extract special token metadata from the tokenizer
-    special_token_metadata = get_special_token_metadata(tokenizer=tokenizer)
+    # Extract special token metadata from the tokeniser
+    special_token_metadata = get_special_token_metadata(tokeniser=tokeniser)
     has_cls_token = special_token_metadata["has_cls_token"]
     has_sep_token = special_token_metadata["has_sep_token"]
     cls_token_id = special_token_metadata["cls_token_id"]
     cls_token = special_token_metadata["cls_token"]
     sep_token = special_token_metadata["sep_token"]
 
-    # If the tokenizer is not adding special tokens, then we add them manually
+    # If the tokeniser is not adding special tokens, then we add them manually
     if not has_cls_token and not has_sep_token:
         examples["question"] = [
             f"{cls_token}{q}{sep_token}" for q in examples["question"]
@@ -265,18 +265,18 @@ def prepare_train_examples(
     # split into several features. Since we are always keeping the question tokens, we
     # need to make sure that the stride does not exceed the resulting maximum context
     # length.
-    max_question_tokens = max(len(tokenizer(q).input_ids) for q in examples["question"])
+    max_question_tokens = max(len(tokeniser(q).input_ids) for q in examples["question"])
     num_special_tokens = int(has_cls_token) + int(has_sep_token)
-    stride = tokenizer.model_max_length // 4
-    max_length = tokenizer.model_max_length - stride
+    stride = tokeniser.model_max_length // 4
+    max_length = tokeniser.model_max_length - stride
     stride = min(stride, max_length - max_question_tokens - num_special_tokens)
-    max_length = tokenizer.model_max_length - stride
+    max_length = tokeniser.model_max_length - stride
 
     # Tokenize our examples with truncation and padding, but keep the overflows using a
     # stride. This results in one example possible giving several features when a
     # context is long, each of those features having a context that overlaps a bit the
     # context of the previous feature.
-    tokenized_examples = tokenizer(
+    tokenized_examples = tokeniser(
         text=examples["question"],
         text_pair=examples["context"],
         truncation="only_second",
@@ -313,9 +313,9 @@ def prepare_train_examples(
         sequence_ids = tokenized_examples.sequence_ids(i)
 
         # Manually ensure that the special tokens are set to None in `sequence_ids`
-        for special_token in tokenizer.special_tokens_map.keys():
-            if hasattr(tokenizer, f"{special_token}_id"):
-                special_token_id = getattr(tokenizer, f"{special_token}_id")
+        for special_token in tokeniser.special_tokens_map.keys():
+            if hasattr(tokeniser, f"{special_token}_id"):
+                special_token_id = getattr(tokeniser, f"{special_token}_id")
                 if special_token_id is not None:
                     sequence_ids = [
                         None if token_id == special_token_id else seq_id
@@ -380,15 +380,15 @@ def prepare_train_examples(
 
 
 def prepare_test_examples(
-    examples: "BatchEncoding", tokenizer: "PreTrainedTokenizer"
+    examples: "BatchEncoding", tokeniser: "PreTrainedTokenizer"
 ) -> "BatchEncoding":
     """Prepare test examples.
 
     Args:
         examples:
             Dictionary of test examples.
-        tokenizer:
-            The tokenizer used to preprocess the examples.
+        tokeniser:
+            The tokeniser used to preprocess the examples.
 
     Returns:
         The prepared test examples.
@@ -398,14 +398,14 @@ def prepare_test_examples(
     # take a lots of space). So we remove that left whitespace
     examples["question"] = [q.lstrip() for q in examples["question"]]
 
-    # Extract special token metadata from the tokenizer
-    special_token_metadata = get_special_token_metadata(tokenizer=tokenizer)
+    # Extract special token metadata from the tokeniser
+    special_token_metadata = get_special_token_metadata(tokeniser=tokeniser)
     has_cls_token = special_token_metadata["has_cls_token"]
     has_sep_token = special_token_metadata["has_sep_token"]
     cls_token = special_token_metadata["cls_token"]
     sep_token = special_token_metadata["sep_token"]
 
-    # If the tokenizer is not adding special tokens, then we add them manually
+    # If the tokeniser is not adding special tokens, then we add them manually
     if not has_cls_token and not has_sep_token:
         examples["question"] = [
             f"{cls_token}{q}{sep_token}" for q in examples["question"]
@@ -416,18 +416,18 @@ def prepare_test_examples(
     # split into several features. Since we are always keeping the question tokens, we
     # need to make sure that the stride does not exceed the resulting maximum context
     # length.
-    max_question_tokens = max(len(tokenizer(q).input_ids) for q in examples["question"])
+    max_question_tokens = max(len(tokeniser(q).input_ids) for q in examples["question"])
     num_special_tokens = int(has_cls_token) + int(has_sep_token)
-    stride = tokenizer.model_max_length // 4
-    max_length = tokenizer.model_max_length - stride
+    stride = tokeniser.model_max_length // 4
+    max_length = tokeniser.model_max_length - stride
     stride = min(stride, max_length - max_question_tokens - num_special_tokens)
-    max_length = tokenizer.model_max_length - stride
+    max_length = tokeniser.model_max_length - stride
 
     # Tokenize our examples with truncation and maybe padding, but keep the overflows
     # using a stride. This results in one example possible giving several features when
     # a context is long, each of those features having a context that overlaps a bit
     # the context of the previous feature.
-    tokenized_examples = tokenizer(
+    tokenized_examples = tokeniser(
         text=examples["question"],
         text_pair=examples["context"],
         truncation="only_second",

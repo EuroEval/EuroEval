@@ -94,15 +94,15 @@ class MultipleChoiceClassificationTrainer(Trainer):
 
 
 def prepare_examples(
-    examples: "BatchEncoding", tokenizer: "PreTrainedTokenizer"
+    examples: "BatchEncoding", tokeniser: "PreTrainedTokenizer"
 ) -> "BatchEncoding":
     """Prepare the features.
 
     Args:
         examples:
             The examples to prepare.
-        tokenizer:
-            The tokenizer to use to prepare the examples.
+        tokeniser:
+            The tokeniser to use to prepare the examples.
 
     Returns:
         The prepared examples.
@@ -127,7 +127,7 @@ def prepare_examples(
     question_idx = min(choice_idxs) - 2  # -2 to remove the 'Choices:' line
     context_and_question = "\n".join(sections[: question_idx + 1]).strip()
 
-    new_examples = tokenizer(
+    new_examples = tokeniser(
         text=[context_and_question] * len(choices),
         text_pair=[choice[3:] for choice in choices],
         padding=True,

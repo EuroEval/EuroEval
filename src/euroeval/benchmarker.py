@@ -390,9 +390,15 @@ class Benchmarker:
                 continue
 
             loaded_model: BenchmarkModule | None = None
+            benchmark_params_to_revert: dict[str, t.Any] = dict()
             for dataset_config in dataset_configs:
+                # Revert any changes to the benchmark configuration made for the
+                # previous dataset
+                for param, value in benchmark_params_to_revert.items():
+                    setattr(benchmark_config, param, value)
+                benchmark_params_to_revert = dict()
+
                 # Update the benchmark config if the dataset requires it
-                benchmark_config_params_to_be_set = dict()
                 if (
                     "val" not in dataset_config.splits
                     and not benchmark_config.evaluate_test_split
@@ -402,7 +408,7 @@ class Benchmarker:
                         "you requested evaluating the validation split (the default), "
                         "we will evaluate on the test split."
                     )
-                    benchmark_config_params_to_be_set["evaluate_test_split"] = False
+                    benchmark_params_to_revert["evaluate_test_split"] = False
                     benchmark_config.evaluate_test_split = True
                 if dataset_config.task.requires_zero_shot and benchmark_config.few_shot:
                     logger.debug(
@@ -410,7 +416,7 @@ class Benchmarker:
                         "requested few-shot evaluation (the default), we will evaluate "
                         "zero-shot."
                     )
-                    benchmark_config_params_to_be_set["few_shot"] = True
+                    benchmark_params_to_revert["few_shot"] = True
                     benchmark_config.few_shot = False
 
                 # Skip if we have already benchmarked this model on this dataset and
@@ -508,11 +514,6 @@ class Benchmarker:
                     current_benchmark_results.append(record)
                     if benchmark_config.save_results:
                         record.append_to_results(results_path=self.results_path)
-
-                # Reset the dataset-specific settings in the benchmark config
-                for key, value in benchmark_config_params_to_be_set.items():
-                    logger.debug(f"Setting {key!r} back to {value!r}.")
-                    setattr(benchmark_config, key, value)
 
                 num_finished_benchmarks += 1
                 logger.info(

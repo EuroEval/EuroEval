@@ -89,7 +89,7 @@ def compute_metrics(
                     "MPS backend out of memory",
                 ]
                 if not any(error in str(e) for error in oom_error):
-                    raise InvalidBenchmark(str(e))
+                    raise InvalidBenchmark(str(e)) from e
 
                 if (
                     isinstance(metric, HuggingFaceMetric)
@@ -102,7 +102,7 @@ def compute_metrics(
                         "the CPU."
                     )
                 else:
-                    raise InvalidBenchmark(str(e))
+                    raise InvalidBenchmark(str(e)) from e
             finally:
                 for attribute in METRIC_ATTRIBUTES_TAKING_UP_MEMORY:
                     if hasattr(metric, attribute):

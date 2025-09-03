@@ -59,7 +59,7 @@ def benchmark_speed_single_iteration(
     Returns:
         A dictionary containing the scores for the current iteration.
     """
-    gpt2_tokenizer = AutoTokenizer.from_pretrained("gpt2", trust_remote_code=True)
+    gpt2_tokeniser = AutoTokenizer.from_pretrained("gpt2", trust_remote_code=True)
 
     base_doc = "Document which contains roughly 10 tokens. "
     multiplier = 10 * (1 + itr_idx)
@@ -74,11 +74,11 @@ def benchmark_speed_single_iteration(
         model.generate(inputs=dict(text=[doc]))
 
     def encoder_predict(doc: str) -> None:
-        tokenizer = model.get_tokenizer()
+        tokeniser = model.get_tokeniser()
         pytorch_model = model.get_pytorch_module()
         inputs = {
             key: tensor.to(pytorch_model.device)
-            for key, tensor in tokenizer(
+            for key, tensor in tokeniser(
                 text=[doc], truncation=True, return_tensors="pt"
             ).items()
         }
@@ -102,21 +102,21 @@ def benchmark_speed_single_iteration(
         speed_scores = pyinfer.InferenceReport(
             model=predict, inputs=doc, n_seconds=3
         ).run(print_report=False)
-        num_gpt2_tokens = len(gpt2_tokenizer([doc], truncation=True)["input_ids"][0])
+        num_gpt2_tokens = len(gpt2_tokeniser([doc], truncation=True)["input_ids"][0])
         gpt2_tokens_per_second = speed_scores["Infer(p/sec)"] * num_gpt2_tokens
 
         speed_scores_short = pyinfer.InferenceReport(
             model=predict, inputs=short_doc, n_seconds=3
         ).run(print_report=False)
         num_gpt2_tokens_short = len(
-            gpt2_tokenizer([short_doc], truncation=True)["input_ids"][0]
+            gpt2_tokeniser([short_doc], truncation=True)["input_ids"][0]
         )
         gpt2_tokens_per_second_short = (
             speed_scores_short["Infer(p/sec)"] * num_gpt2_tokens_short
         )
 
     except (RuntimeError, ValueError, IndexError) as e:
-        raise InvalidBenchmark(f"Speed benchmark failed with error: {e!r}")
+        raise InvalidBenchmark(f"Speed benchmark failed with error: {e!r}") from e
 
     return dict(
         test_speed=gpt2_tokens_per_second, test_speed_short=gpt2_tokens_per_second_short

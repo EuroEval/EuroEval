@@ -244,15 +244,15 @@ def extract_labels_from_generation(
 
 
 def tokenize_and_align_labels(
-    examples: dict, tokenizer: "PreTrainedTokenizer", label2id: dict[str, int]
+    examples: dict, tokeniser: "PreTrainedTokenizer", label2id: dict[str, int]
 ) -> "BatchEncoding":
     """Tokenise all texts and align the labels with them.
 
     Args:
         examples:
             The examples to be tokenised.
-        tokenizer:
-            A pretrained tokenizer.
+        tokeniser:
+            A pretrained tokeniser.
         label2id:
             A dictionary that converts NER tags to IDs.
 
@@ -261,22 +261,22 @@ def tokenize_and_align_labels(
     """
     # Tokenize the texts. We use the `is_split_into_words` argument here because
     # the texts in our dataset are lists of words (with a label for each word)
-    tokenized_inputs = tokenizer(
+    tokenized_inputs = tokeniser(
         examples["tokens"], is_split_into_words=True, truncation=True, padding=True
     )
 
     # Extract a mapping between all the tokens and their corresponding word. If the
-    # tokenizer is of a "fast" variant then this can be accessed through the
+    # tokeniser is of a "fast" variant then this can be accessed through the
     # `word_ids` method. Otherwise, we have to extract it manually.
     all_labels: list[list[int]] = list()
     labels: list[str]
     word_ids: list[int | None]
     for i, labels in enumerate(examples["labels"]):
-        # Try to get the word IDs from the tokenizer
+        # Try to get the word IDs from the tokeniser
         try:
             word_ids = tokenized_inputs.word_ids(batch_index=i)
 
-        # If the tokenizer is not of a "fast" variant, we have to extract the word
+        # If the tokeniser is not of a "fast" variant, we have to extract the word
         # IDs manually
         except ValueError:
             # Get the list of words in the document
@@ -286,7 +286,7 @@ def tokenize_and_align_labels(
             tok_ids: list[int] = tokenized_inputs.input_ids[i]
 
             # Decode the token IDs
-            tokens = tokenizer.convert_ids_to_tokens(tok_ids)
+            tokens = tokeniser.convert_ids_to_tokens(tok_ids)
             assert isinstance(tokens, list)
 
             # Remove prefixes from the tokens
@@ -298,14 +298,14 @@ def tokenize_and_align_labels(
                             tokens[tok_idx] = tok[len(prefix) :]
 
             # Replace UNK tokens with the correct word
-            tokens = handle_unk_tokens(tokenizer=tokenizer, tokens=tokens, words=words)
+            tokens = handle_unk_tokens(tokeniser=tokeniser, tokens=tokens, words=words)
 
-            # Get list of special tokens. Some tokenizers do not record these
+            # Get list of special tokens. Some tokenisers do not record these
             # properly, which is why we convert the values to their indices and
             # then back to strings
             sp_toks = [
-                tokenizer.convert_ids_to_tokens(tokenizer.convert_tokens_to_ids(sp_tok))
-                for sp_tok in tokenizer.special_tokens_map.values()
+                tokeniser.convert_ids_to_tokens(tokeniser.convert_tokens_to_ids(sp_tok))
+                for sp_tok in tokeniser.special_tokens_map.values()
             ]
 
             # Replace special tokens with `None`
@@ -329,7 +329,7 @@ def tokenize_and_align_labels(
             if len(word_idxs) != len(token_idxs):
                 raise InvalidBenchmark(
                     "The tokens could not be aligned with the words during manual "
-                    "word-token alignment. It seems that the tokenizer is neither "
+                    "word-token alignment. It seems that the tokeniser is neither "
                     "of the fast variant nor of a SentencePiece/WordPiece variant."
                 )
 
@@ -359,9 +359,9 @@ def tokenize_and_align_labels(
                 label = labels[word_id]
                 try:
                     label_id = label2id[label.lower()]
-                except KeyError:
+                except KeyError as e:
                     msg = f"The label {label} was not found in the model's config."
-                    raise InvalidBenchmark(msg)
+                    raise InvalidBenchmark(msg) from e
                 label_ids.append(label_id)
 
             # For the other tokens in a word, we set the label to -100
@@ -376,13 +376,13 @@ def tokenize_and_align_labels(
 
 
 def handle_unk_tokens(
-    tokenizer: "PreTrainedTokenizer", tokens: list[str], words: list[str]
+    tokeniser: "PreTrainedTokenizer", tokens: list[str], words: list[str]
 ) -> list[str]:
     """Replace unknown tokens in the tokens with the corresponding word.
 
     Args:
-        tokenizer:
-            The tokenizer used to tokenize the words.
+        tokeniser:
+            The tokeniser used to tokenize the words.
         tokens:
             The list of tokens.
         words:
@@ -392,15 +392,15 @@ def handle_unk_tokens(
         The list of tokens with unknown tokens replaced by the corresponding word.
     """
     # Locate the token indices of the unknown tokens
-    token_unk_idxs = [i for i, tok in enumerate(tokens) if tok == tokenizer.unk_token]
+    token_unk_idxs = [i for i, tok in enumerate(tokens) if tok == tokeniser.unk_token]
 
     # Locate the word indices of the words which contain an unknown token
     word_unk_idxs = [
         i
         for i, word in enumerate(words)
-        if tokenizer.unk_token
-        in tokenizer.convert_ids_to_tokens(
-            tokenizer.encode(word, add_special_tokens=False)
+        if tokeniser.unk_token
+        in tokeniser.convert_ids_to_tokens(
+            tokeniser.encode(word, add_special_tokens=False)
         )
     ]
 
@@ -410,8 +410,8 @@ def handle_unk_tokens(
         word = words[word_idx]
 
         # Tokenize the word, which is now a list containing at least one UNK token
-        tokens_with_unk = tokenizer.convert_ids_to_tokens(
-            tokenizer.encode(word, add_special_tokens=False)
+        tokens_with_unk = tokeniser.convert_ids_to_tokens(
+            tokeniser.encode(word, add_special_tokens=False)
         )
 
         # Iterate over the tokens in the word
@@ -420,10 +420,10 @@ def handle_unk_tokens(
             # of the content of this token from the word. The result of the `word`
             # variable will be the content of the UNK token.
             # NOTE: This is a bit hacky and not bulletproof. For instance, if the
-            # word is "1925-1950" and the tokenizer splits it into ["[UNK]", "-",
+            # word is "1925-1950" and the tokeniser splits it into ["[UNK]", "-",
             # "19", "50"], then the result will be 2519 instead of 1925. This
             # happens almost never, however, so we can live with it.
-            if possible_unk_token != tokenizer.unk_token:
+            if possible_unk_token != tokeniser.unk_token:
                 word = word.replace(possible_unk_token, "", 1)
 
         # Replace the token with the word

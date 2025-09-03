@@ -3,7 +3,25 @@
 import typing as t
 
 from ..data_models import PromptConfig
-from ..languages import DA, DE, EN, ES, FI, FO, FR, IS, IT, LV, NB, NL, NN, NO, PT, SV
+from ..languages import (
+    DA,
+    DE,
+    EN,
+    ES,
+    ET,
+    FI,
+    FO,
+    FR,
+    IS,
+    IT,
+    LV,
+    NB,
+    NL,
+    NN,
+    NO,
+    PT,
+    SV,
+)
 
 if t.TYPE_CHECKING:
     from ..data_models import Language
@@ -40,6 +58,14 @@ LA_TEMPLATES: dict["Language", PromptConfig] = {
         default_prompt_template="Texto: {text}\nGramaticalmente correcto: {label}",
         default_instruction_prompt="Texto: {text}\n\nDetermina si el texto es "
         "gramaticalmente correcto o no. Responde con {labels_str}, y nada más.",
+    ),
+    ET: PromptConfig(
+        default_prompt_label_mapping=dict(correct="jah", incorrect="ei"),
+        default_prompt_prefix="Järgnevad on laused ja kas need on grammatiliselt "
+        "õiged.",
+        default_prompt_template="Lause: {text}\nGrammatikaliselt õige: {label}",
+        default_instruction_prompt="Lause: {text}\n\nOtsusta, kas lause on "
+        "grammatiliselt õige või mitte. Vasta {labels_str}, ja mitte midagi muud.",
     ),
     PT: PromptConfig(
         default_prompt_label_mapping=dict(correct="sim", incorrect="não"),

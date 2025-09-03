@@ -8,22 +8,23 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 ### Added
-- Added support for Latvian 🇱🇻! This includes the Latvian part of the reading comprehension
-  dataset MultiWikiQA, the sentiment classification dataset Latvian Twitter Sentiment,
-  the linguistic acceptability dataset ScaLA-lv, the NER dataset WikiANN-lv, the
-  NER dataset FullStack-NER-lv, and the knowledge dataset MMLU-lv.
+- Added support for Latvian 🇱🇻! This includes the sentiment classification dataset
+  Latvian Twitter Sentiment, the linguistic acceptability dataset ScaLA-lv, the named
+  entity recognition datasets FullStack-NER-lv and WikiANN-lv, the reading comprehension
+  dataset MultiWikiQA, the knowledge dataset MMLU-lv, and the common-sense reasoning
+  dataset COPA-lv.
+- Added support for Estonian 🇪🇪! It includes the sentiment classification dataset
+  Estonian Valence, the linguistic acceptability datasets Grammar-et and ScaLA-et, the
+  named entity recognition dataset EstNER, the reading comprehension dataset
+  MultiWikiQA-et, the summarisation dataset ERRNews, the knowledge dataset Trivia-et,
+  and the common-sense reasoning dataset Winogrande-et. This was contributed by
+  @slowwavesleep ✨
 - It is now possible to evaluate how much a model adhere to European values! 🇪🇺 This
   probes 53 questions from the European values survey, which have been chosen based on
   an optimisation procedure that maximises agreement across the EU. We then measure how
   well the model's answers align with the distribution of answers across the EU, using a
   tree-based kernel density estimation. This can only be used zero-shot, and only with
   instruction-based decoder models (including reasoning models).
-- Added support for Estonian 🇪🇪 It currently includes the gold-standard sentiment
-  classification dataset Estonian Valence, the gold-standard named entity recognition
-  dataset EstNER, the gold-standard summarisation dataset ERRNews and the translated
-  common-sense reasoning dataset Winogrande-et which includes manually translated and
-  localised test split, as well as mahine-translated train and validation splits. This was
-  contributed by @slowwavesleep ✨
 
 ### Changed
 - When evaluating classification tasks, we now force the model to output one of the
@@ -37,6 +38,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   a dynamic set of choices (Literal[*list_of_choices] is not supported)
 
 ### Fixed
+- Enable support to evaluate Mistral models with their custom `mistral-common`
+  tokeniser, which includes all recent Mistral models. Note that we currently assume
+  that all of these models are instruction-tuned decoder models (which _is_ true
+  currently), which can lead to errors in case they publish different types of models in
+  the future.
 - Now disables the `seed` parameter if the API inference model does not support it,
   which prevented evaluating some models.
 - Now correctly detects an API inference model as non-existing, even if LiteLLM *does*
@@ -45,6 +51,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   vLLM model, during shutdown.
 - Now uses `litellm>=1.75.6`, which fixes an issue related to evaluation of GPT-5 models
   using Ollama.
+- Now always uses the `multiprocessing` backend when evaluating vLLM models, rather than
+  reverting to `ray` when using multiple GPUs, as `ray` led to evaluations of several
+  models freezing.
 
 ### Removed
 - Removed support for human evaluation, as it was not actively maintained and not used.

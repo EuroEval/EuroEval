@@ -199,9 +199,10 @@ def extract_labels_from_generation(
         # model output, and we raise an error
         if min(edit_distances) > 100:
             raise InvalidBenchmark(
-                f"No candidate labels found for the predicted label "
-                f"{predicted_label!r}. This likely means that the model output is "
-                "completely off, and we cannot extract any labels from it. Please "
+                "No candidate labels found for the predicted label "
+                f"{predicted_label!r}, out of the candidate labels "
+                f"{sample_candidate_labels}. This likely means that the model output "
+                "is completely off, and we cannot extract any labels from it. Please "
                 "check the model output and the candidate labels."
             )
 

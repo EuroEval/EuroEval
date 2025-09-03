@@ -10,6 +10,7 @@ import huggingface_hub as hf_hub
 import numpy as np
 from scipy.special import expit as sigmoid
 
+from ..exceptions import InvalidBenchmark
 from ..utils import unscramble
 from .base import Metric
 
@@ -69,7 +70,7 @@ class PipelineMetric(Metric):
         self.pipeline_repo = pipeline_repo
         self.pipeline_file_name = pipeline_file_name
         self.pipeline_scoring_function = pipeline_scoring_function
-        self.pipeline: "Pipeline" = self._download_pipeline()
+        self.pipeline: "Pipeline | None" = None
         self.preprocessing_fn = preprocessing_fn
 
     def __call__(
@@ -97,15 +98,9 @@ class PipelineMetric(Metric):
 
         Returns:
             The calculated metric score, or None if the score should be ignored.
-
-        Raises:
-            InvalidBenchmark:
-                If the model predictions contain values greater than 1.0, which is not
-                expected for the pipeline being used.
         """
-        assert dataset is not None, (
-            "The dataset must be provided for the PipelineMetric."
-        )
+        if self.pipeline is None:
+            self.pipeline = self._download_pipeline()
         predictions = self.preprocessing_fn(predictions)
         return self.pipeline_scoring_function(self.pipeline, predictions)
 
@@ -117,15 +112,20 @@ class PipelineMetric(Metric):
 
         Raises:
             InvalidBenchmark:
-                If the download fails or the response is not a valid pipeline.
+                If the loading of the pipeline fails for any reason.
         """
         logger.debug(f"Loading pipeline from {self.pipeline_repo}...")
         folder_path = hf_hub.HfApi(
             token=unscramble("HjccJFhIozVymqXDVqTUTXKvYhZMTbfIjMxG_")
         ).snapshot_download(repo_id=self.pipeline_repo, repo_type="model")
         model_path = Path(folder_path, self.pipeline_file_name)
-        with model_path.open(mode="rb") as f:
-            pipeline = cloudpickle.load(f)
+        try:
+            with model_path.open(mode="rb") as f:
+                pipeline = cloudpickle.load(f)
+        except Exception as e:
+            raise InvalidBenchmark(
+                f"Failed to load pipeline from {self.pipeline_repo!r}: {e}"
+            ) from e
         logger.debug(f"Successfully loaded pipeline: {pipeline}")
         return pipeline
 

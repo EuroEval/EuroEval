@@ -8,6 +8,7 @@ import typing as t
 
 from .enums import TaskGroup
 from .exceptions import InvalidBenchmark
+from .tokenization_utils import apply_chat_template
 from .utils import log_once
 
 if t.TYPE_CHECKING:
@@ -174,7 +175,7 @@ def apply_prompt(
     dataset_config: "DatasetConfig",
     instruction_model: bool,
     always_populate_text_field: bool,
-    tokenizer: "PreTrainedTokenizer | None",
+    tokeniser: "PreTrainedTokenizer | None",
 ) -> dict[str, t.Any]:
     """Apply prompt template to an example, potentially with few-shot examples.
 
@@ -190,16 +191,16 @@ def apply_prompt(
         always_populate_text_field:
             Whether to always populate the 'text' field in the examples, as opposed to
             the 'messages' field.
-        tokenizer:
-            The tokenizer to use for the model. If None, the tokenizer is not used.
+        tokeniser:
+            The tokeniser to use for the model. If None, the tokeniser is not used.
 
     Returns:
         The example with the few-shot examples applied.
     """
     # Sanity check
-    if instruction_model and always_populate_text_field and tokenizer is None:
+    if instruction_model and always_populate_text_field and tokeniser is None:
         raise ValueError(
-            "The `tokenizer` argument must be provided when the model is instruction "
+            "The `tokeniser` argument must be provided when the model is instruction "
             "tuned and when we are not just returning the raw messages."
         )
 
@@ -328,30 +329,31 @@ def apply_prompt(
             examples["messages"] = messages_list
 
         else:
-            assert tokenizer is not None
+            assert tokeniser is not None
 
             # Pick the chat template that matches the language of the dataset, if such a
             # template exists
             chat_template: str | None = None
-            if isinstance(tokenizer.chat_template, dict):
+            if hasattr(tokeniser, "chat_template") and isinstance(
+                tokeniser.chat_template, dict
+            ):
                 language_codes = [
                     language.code for language in dataset_config.languages
                 ]
-                for name, candidate_template in tokenizer.chat_template.items():
+                for name, candidate_template in tokeniser.chat_template.items():
                     if name.lower() in language_codes:
                         chat_template = candidate_template
                         log_once(
-                            f"Using the {name!r} chat template for the tokenizer for "
+                            f"Using the {name!r} chat template for the tokeniser for "
                             f"model {model_config.model_id!r}.",
                             level=logging.DEBUG,
                         )
                         break
 
             texts = [
-                tokenizer.apply_chat_template(
+                apply_chat_template(
                     conversation=messages,
-                    tokenize=False,
-                    add_generation_prompt=True,
+                    tokeniser=tokeniser,
                     chat_template=chat_template,
                 )
                 for messages in messages_list
