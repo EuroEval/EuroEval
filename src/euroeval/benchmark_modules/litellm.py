@@ -337,7 +337,9 @@ class LiteLLMModel(BenchmarkModule):
             # Attempt to handle the exceptions, to improve the chance of getting
             # successful generations next time around
             for _, error in failures:
-                self._handle_exception(error=error, **generation_kwargs)
+                generation_kwargs = self._handle_exception(
+                    error=error, **generation_kwargs
+                )
 
             # Sleep for a second to avoid pinging the API server too quickly
             sleep(1)
@@ -360,7 +362,7 @@ class LiteLLMModel(BenchmarkModule):
 
         return model_output
 
-    def _handle_exception(self, error: Exception, **generation_kwargs) -> None:
+    def _handle_exception(self, error: Exception, **generation_kwargs) -> dict:
         """Handle an exception from the model.
 
         Args:
@@ -368,6 +370,9 @@ class LiteLLMModel(BenchmarkModule):
                 The exception to handle.
             generation_kwargs:
                 The generation kwargs to pass to the model.
+
+        Returns:
+            The updated generation kwargs to pass to the model.
         """
         error_msg = str(error).lower()
         model_id = self.model_config.model_id
@@ -409,7 +414,7 @@ class LiteLLMModel(BenchmarkModule):
                 level=logging.DEBUG,
             )
             generation_kwargs["stop"] = None
-            return
+            return generation_kwargs
         elif (
             any(msg.lower() in error_msg for msg in logprobs_messages)
             or logprobs_pattern.search(string=error_msg)
@@ -424,7 +429,7 @@ class LiteLLMModel(BenchmarkModule):
             )
             generation_kwargs.pop("logprobs", None)
             generation_kwargs.pop("top_logprobs", None)
-            return
+            return generation_kwargs
         elif any(msg.lower() in error_msg for msg in temperature_messages):
             log_once(
                 f"The model {model_id!r} does not support "
@@ -432,7 +437,7 @@ class LiteLLMModel(BenchmarkModule):
                 level=logging.DEBUG,
             )
             generation_kwargs.pop("temperature", None)
-            return
+            return generation_kwargs
         elif any(msg.lower() in error_msg for msg in temperature_must_be_one_messages):
             log_once(
                 f"The model {model_id!r} requires "
@@ -440,7 +445,7 @@ class LiteLLMModel(BenchmarkModule):
                 level=logging.DEBUG,
             )
             generation_kwargs["temperature"] = 1.0
-            return
+            return generation_kwargs
         elif (
             any(msg.lower() in error_msg for msg in max_items_messages)
             and self.dataset_config.task == NER
@@ -456,7 +461,7 @@ class LiteLLMModel(BenchmarkModule):
             }
             pydantic_class = create_model("AnswerFormat", **keys_and_their_types)
             generation_kwargs["response_format"] = pydantic_class
-            return
+            return generation_kwargs
         elif any(msg.lower() in error_msg for msg in no_json_schema_messages):
             log_once(
                 f"The model {self.model_config.model_id!r} does not support "
@@ -464,7 +469,7 @@ class LiteLLMModel(BenchmarkModule):
                 level=logging.DEBUG,
             )
             generation_kwargs["response_format"] = dict(type="json_object")
-            return
+            return generation_kwargs
         elif thinking_match := thinking_budget_pattern.search(string=error_msg):
             thinking_budget = int(thinking_match.group(1))
             if thinking_budget >= REASONING_MAX_TOKENS:
@@ -484,7 +489,7 @@ class LiteLLMModel(BenchmarkModule):
             generation_kwargs["thinking"] = dict(
                 type="enabled", budget_tokens=thinking_budget - 1
             )
-            return
+            return generation_kwargs
         elif (
             any(msg.lower() in error_msg for msg in requires_thinking_disabled_messages)
             and self.generative_type != GenerativeType.REASONING
@@ -496,7 +501,7 @@ class LiteLLMModel(BenchmarkModule):
                 level=logging.DEBUG,
             )
             generation_kwargs["thinking"] = dict(type="disabled")
-            return
+            return generation_kwargs
         elif re.search(pattern=seed_pattern, string=error_msg):
             log_once(
                 f"The model {model_id!r} does not support the `seed` parameter, so "
@@ -504,7 +509,7 @@ class LiteLLMModel(BenchmarkModule):
                 level=logging.DEBUG,
             )
             generation_kwargs.pop("seed", None)
-            return
+            return generation_kwargs
         # If there are too many I/O connections, we increase the number of allowed file
         # descriptors
         elif "too many open files" in error_msg:
@@ -521,7 +526,7 @@ class LiteLLMModel(BenchmarkModule):
                 "Retrying in 10 seconds..."
             )
             sleep(10)
-            return
+            return generation_kwargs
         elif isinstance(error, UnsupportedParamsError):
             unsupported_param_match = re.search(
                 pattern=r"(?<=does not support parameters\: \[')([^ ']+)(?='\])",
@@ -1349,7 +1354,9 @@ class LiteLLMModel(BenchmarkModule):
             if not failures:
                 break
             for _, error in failures:
-                self._handle_exception(error=error, **generation_kwargs)
+                generation_kwargs = self._handle_exception(
+                    error=error, **generation_kwargs
+                )
 
         return generation_kwargs
 
