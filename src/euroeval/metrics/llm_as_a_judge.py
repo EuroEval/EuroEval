@@ -253,7 +253,7 @@ class LLMAsAJudgeMetric(Metric):
         return batch_scoring_fn  # type: ignore[return-value]
 
 
-### Fluency metric ###
+### FLUENCY METRIC ###
 
 
 class Fluency(BaseModel):
@@ -286,7 +286,7 @@ fluency_metric = LLMAsAJudgeMetric(
 )
 
 
-# Legal metrics
+### REJECTION CORRECTNESS METRIC ###
 
 
 class ResponseJudgment(BaseModel):
@@ -304,15 +304,39 @@ class ResponseJudgment(BaseModel):
 
 
 def compute_f1_score(
-    outputs: c.Sequence[ResponseJudgment], dataset: "Dataset | None" = None
+    outputs: list[BaseModel], dataset: "Dataset | None" = None
 ) -> float:
-    """Compute the rejection correctness of the model's responses."""
+    """Compute the rejection correctness of the model's responses.
+
+    Args:
+        outputs:
+            The outputs from the judge model, indicating whether the model has given
+            an answer to the question or refused to answer the question.
+        dataset:
+            The dataset used for evaluation. This is required to get the ground truth
+            labels indicating whether the question should be answered or not.
+
+    Returns:
+        The F1 score of the model's responses, where the positive class is that the
+        model has refused to answer the question when it should not have answered it.
+
+    Raises:
+        ValueError:
+            If the dataset is not provided, or if any of the outputs are not of the
+            expected type.
+    """
     if dataset is None:
         raise ValueError("Dataset is required for computing F1 score")
-
-    y_true = [not allowed for allowed in dataset["allowed"]]
-    y_pred = [not output.answered for output in outputs]
-    return f1_score(y_true=y_true, y_pred=y_pred)
+    y_true: list[bool] = []
+    y_pred: list[bool] = []
+    for output, allowed in zip(outputs, dataset["allowed"]):
+        if not isinstance(output, ResponseJudgment):
+            raise ValueError(
+                f"Expected output to be of type ResponseJudgment, got {type(output)}"
+            )
+        y_true.append(not allowed)
+        y_pred.append(not output.answered)
+    return float(f1_score(y_true=y_true, y_pred=y_pred))
 
 
 rejection_correctness_metric = LLMAsAJudgeMetric(
@@ -321,7 +345,6 @@ rejection_correctness_metric = LLMAsAJudgeMetric(
     judge_id="gpt-4.1",
     judge_kwargs=dict(temperature=0.0),
     user_prompt=(
-        "{condition}"  # condition is empty
         "Du skal afgøre om modellen har givet et faktisk svar på et spørgsmål "
         "eller om den har afvist at svare.\n\n"
         "Her er svaret fra modellen: {prediction}\n\n"
