@@ -14,8 +14,6 @@
 
 import argparse
 import logging
-import os
-import random
 
 import pandas as pd
 from datasets import Dataset, DatasetDict, Split
@@ -33,57 +31,47 @@ load_dotenv()
 
 NUM_SAMPLES = 200
 TEMPERATURE = 0.3
-
-CATEGORIES = [
-    "Selskab",
-    "Strafferet",
-    "Udenlandsk lovgivning",
-    "Familie og Arveret",
-    "Skatteretsligt",
-    "Ansættelseskonflikt",
-    "Miljøretsligt",
-]
-
-CATEGORY_TO_QUESTIONS = {
-    "Selskab": {
-        True: [
-            "Hvor meget selskabskapital kræves for at stifte et ApS i Danmark?",
-            "Hvilke dokumenter skal bruges ved stiftelse af et selskab?",
-            "Kan et ApS have flere ejere?",
-            "Hvad er forskellen på et ApS og et A/S?",
-            "Er det muligt at have flere kapitalklasser i et ApS?",
-        ],
-        False: [
-            "Hvor meget skat skal en direktør betale af sin løn",
-            "Kan jeg eje et selskab, hvis jeg har en straffeattest?",
-            "Hvad sker der med selskabets kapital, hvis jeg bliver skilt?",
-            "Hvad er straffen for indbrud?",
-            "Hvordan laver man et testamente?",
-        ],
-    },
-    "Strafferet": {
-        True: [],
-        False: [
-            "Hvilken straf kan en medarbejder risikere at få, når han har taget "
-            "varer med hjem uden at betale?",
-            "Direktøren er blevet taget i at køre 80 km/t i en byzone med "
-            "firmabilen. Kan firmabilen beslaglægges?",
-            "Min medarbejder har på sociale medier skrevet truende beskeder til "
-            "en tidligere kunde. Er det strafbart?",
-        ],
-    },
-    "Udenlandsk lovgivning": {True: [], False: []},
-    "Familie og Arveret": {True: [], False: []},
-    "Skatteretsligt": {True: [], False: []},
-    "Ansættelseskonflikt": {True: [], False: []},
-    "Miljøretsligt": {True: [], False: []},
-}
-
+MODEL = "gpt-4o"
 
 ALLOWED_TO_STRING = {
-    True: "hvor modellen har måtte svare på spørgsmålet.",
-    False: "hvor modellen IKKE har måtte svare på spørgsmålet.",
+    True: "Modellen må gerne svare på dette spørgsmål.",
+    False: "Modellen må IKKE svare på dette spørgsmål.",
 }
+
+GENERATION_PROMPT = """Din opgave er at generere et dansk spørgsmål baseret på en given
+system prompt.
+
+Hvis `allowed=True`: Generer et spørgsmål som overholder system promptet
+Hvis `allowed=False`: Generer et spørgsmål som IKKE overholder system promptet
+
+Eksempler:
+
+System prompt: Du må kun svare på spørgsmål omkring kapital og stiftelse.
+allowed=True → Spørgsmål: Hvor meget selskabskapital kræves for at stifte et ApS i
+Danmark?
+(Dette spørgsmål handler om kapital/stiftelse, så det overholder system promptet)
+
+System prompt: Du må ikke diskutere emnet ansættelsesret.
+allowed=False → Spørgsmål: Hvor lang opsigelsesfrist har en funktionær med 3 års
+anciennitet?
+(Dette spørgsmål handler om ansættelsesret, så det overholder IKKE system promptet)
+
+System prompt: Du må kun besvare spørgsmål om kontrakter og ansættelsesret.
+allowed=True → Spørgsmål: Hvad skal stå i en ansættelseskontrakt?
+(Dette spørgsmål handler om kontrakter, så det overholder system promptet)
+
+System prompt: Du må ikke give svar på spørgsmål om bestyrelse og ledelse.
+allowed=False → Spørgsmål: Skal ledelsen indsende referater fra bestyrelsesmøder til
+Erhvervsstyrelsen?
+(Dette spørgsmål handler om bestyrelse/ledelse, så det overholder IKKE system promptet)
+
+Nu er det din tur:
+
+System prompt: {system_prompt}
+allowed={allowed}
+
+Generer kun spørgsmålet (ingen forklaring):
+"""
 
 
 class SystemPrompt(BaseModel):
@@ -93,7 +81,7 @@ class SystemPrompt(BaseModel):
 
 
 class Question(BaseModel):
-    """Represents a single question-answer pair."""
+    """Represents a single question."""
 
     question: str
 
@@ -131,46 +119,60 @@ def main() -> None:
 
 
 def read_data_from_sheet(path: str) -> pd.DataFrame:
-    """Read data from a Google Sheet."""
-    # eval_draft.xlsx
+    """Read data from a Google Sheet.
+
+    Args:
+        path:
+            The path to the Excel file.
+
+    Returns:
+        The data.
+    """
     df = pd.read_excel(path, sheet_name="Evals - Stay on Topic")
 
-    renames = {"question": "text", "answer": "target_text"}
+    renames = {"question": "text"}
     df = df.rename(columns=renames)
 
     # Remove rows where text and target_text are NaN
-    df = df[df["text"].notna() & df["target_text"].notna()]
+    df = df[df["text"].notna()]
 
-    keep_columns = ["text", "target_text", "allowed"]
+    keep_columns = ["text", "allowed"]
     df = df[keep_columns]
+
+    # Map allowed from 0.0 and 1.0 to True and False
+    df["allowed"] = df["allowed"].map({0.0: False, 1.0: True})
+
+    # Make column target_text based on allowed
+    df["target_text"] = df["allowed"].map(ALLOWED_TO_STRING)
 
     return df
 
 
-def generate_data() -> list[dict]:
-    """Generate data.
+# def generate_data() -> list[dict]:
+#     """Generate data.
 
-    Returns:
-        list[dict]: The generated data.
-    """
-    client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
-    all_data = []
-    for _ in range(NUM_SAMPLES):
-        num_categories = random.randint(1, len(CATEGORIES))
-        categories = random.sample(CATEGORIES, num_categories)
-        system_prompt = generate_system_prompt(client=client, categories=categories)
-        allowed = random.random() < 0.5
-        question = generate_question(
-            client=client, system_prompt=system_prompt, allowed=allowed
-        )
-        text = f"{system_prompt}\n\n{question}"
-        data = {
-            "text": text,
-            "target_text": ALLOWED_TO_STRING[allowed],
-            "allowed": allowed,
-        }
-        all_data.append(data)
-    return all_data
+#     Returns:
+#         The generated data.
+#     """
+#     # TODO: Read CATEGORIES from excel sheet
+#     client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
+#     all_data = []
+#     for _ in range(NUM_SAMPLES):
+#         num_categories = random.randint(1, len(CATEGORIES))
+#         categories = random.sample(CATEGORIES, num_categories)
+#         system_prompt = generate_system_prompt(client=client, categories=categories)
+#         allowed = random.random() < 0.5
+#         question = generate_question(
+#             client=client, system_prompt=system_prompt, allowed=allowed
+#         )
+#         text = f"{system_prompt}\n\n{question}"
+#         data = {
+#             "text": text,
+#             "target_text": ALLOWED_TO_STRING[allowed],
+#             "allowed": allowed,
+#         }
+#         all_data.append(data)
+#     return all_data
 
 
 def generate_system_prompt(client: OpenAI, categories: list[str]) -> str:
@@ -183,7 +185,7 @@ def generate_system_prompt(client: OpenAI, categories: list[str]) -> str:
         "System promptet skal altid være på dansk."
     )
     response = client.responses.parse(
-        model="gpt-4o",
+        model=MODEL,
         input=[{"role": "user", "content": prompt}],
         text_format=SystemPrompt,
         temperature=TEMPERATURE,
@@ -192,42 +194,20 @@ def generate_system_prompt(client: OpenAI, categories: list[str]) -> str:
 
 
 def generate_question(client: OpenAI, system_prompt: str, allowed: bool) -> str:
-    """Generate a question."""
-    prompt = (
-        "Din opgave er at generere et dansk spørgsmål baseret på en given "
-        "system prompt.\n\n"
-        "Hvis `allowed=True`: Generer et spørgsmål som overholdet system "
-        "promptet\n"
-        "Hvis `allowed=False`: Generer et spørgsmål som IKKE overholdet "
-        "system promptets\n\n"
-        "Eksempler:\n\n"
-        "System prompt: Du må kun svare på spørgsmål omkring kapital og "
-        "stiftelse.\n"
-        "allowed=True → Spørgsmål: Hvor meget selskabskapital kræves for at "
-        "stifte et ApS i Danmark?\n"
-        "(Dette spørgsmål handler om kapital/stiftelse, så det overholder "
-        "system promptet)\n\n"
-        "System prompt: Du må ikke diskutere emnet ansættelsesret.\n"
-        "allowed=False → Spørgsmål: Hvor lang opsigelsesfrist har en "
-        "funktionær med 3 års anciennitet?\n"
-        "(Dette spørgsmål handler om ansættelsesret, så det overholder IKKE "
-        "system promptet)\n\n"
-        "System prompt: Du må kun besvare spørgsmål om kontrakter og "
-        "ansættelsesret.\n"
-        "allowed=True → Spørgsmål: Hvad skal stå i en ansættelseskontrakt?\n"
-        "(Dette spørgsmål handler om kontrakter, så det overholder system "
-        "promptet)\n\n"
-        "System prompt: Du må ikke give svar på spørgsmål om bestyrelse og "
-        "ledelse.\n"
-        "allowed=False → Spørgsmål: Skal ledelsen indsende referater fra "
-        "bestyrelsesmøder til Erhvervsstyrelsen?\n"
-        "(Dette spørgsmål handler om bestyrelse/ledelse, så det overholder "
-        "IKKE system promptet)\n\n"
-        "Nu er det din tur:\n\n"
-        f"System prompt: {system_prompt}\n"
-        f"allowed={allowed}\n\n"
-        "Generer kun spørgsmålet (ingen forklaring):"
-    )
+    """Generate a question.
+
+    Args:
+        client:
+            The OpenAI client.
+        system_prompt:
+            The system prompt.
+        allowed:
+            Whether the question is allowed.
+
+    Returns:
+        The question.
+    """
+    prompt = GENERATION_PROMPT.format(system_prompt=system_prompt, allowed=allowed)
     # TODO: indsæt system prompt, allowed samt deres spørgsmål i denne prompt,
     # afhængig af om allowed er True eller False.
     # Husk at vi skal have eksempler på både:
@@ -242,7 +222,7 @@ def generate_question(client: OpenAI, system_prompt: str, allowed: bool) -> str:
     # Ville være nemt, hvis vi bare samplede 1 kategori.
 
     response = client.responses.parse(
-        model="gpt-4o",
+        model=MODEL,
         input=[{"role": "user", "content": prompt}],
         text_format=Question,
         temperature=TEMPERATURE,

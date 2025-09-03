@@ -84,9 +84,7 @@ class BatchScoringFunction(t.Protocol):
     """A function used to compute batch scores from model outputs."""
 
     def __call__(
-        self, 
-        outputs: list["BaseModel"], 
-        dataset: "Dataset | None" = None
+        self, outputs: list["BaseModel"], dataset: "Dataset | None" = None
     ) -> float:
         """Compute a batch score from model outputs.
 
@@ -101,8 +99,6 @@ class BatchScoringFunction(t.Protocol):
             A float score computed from the batch of outputs.
         """
         ...
-
-
 
 
 def is_list_of_int(x: object) -> t.TypeGuard[list[int]]:
@@ -146,5 +142,3 @@ def is_list_of_str(x: object) -> t.TypeGuard[list[str]]:
         Whether the object is a list of strings.
     """
     return isinstance(x, list) and all(isinstance(i, str) for i in x)
-
-

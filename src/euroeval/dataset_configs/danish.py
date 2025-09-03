@@ -190,7 +190,7 @@ EUROPEAN_VALUES_COMPLETIONS_DA_CONFIG = DatasetConfig(
 
 # Legal datasets
 
-STAY_ON_TOPIC_CONFIG = DatasetConfig(
+LEGAL_STAY_ON_TOPIC_CONFIG = DatasetConfig(
     name="legal-stay-on-topic",
     pretty_name="the Danish legal benchmark dataset Stay on Topic",
     huggingface_id="EuroEval/legal-stay-on-topic",
