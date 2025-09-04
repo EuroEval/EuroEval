@@ -532,5 +532,5 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ euroeval --model <model-id> --dataset lsm-summarization-lv
+$ euroeval --model <model-id> --dataset lsm
 ```
