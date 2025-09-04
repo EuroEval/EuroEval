@@ -481,7 +481,7 @@ $ euroeval --model <model-id> --dataset copa-lv
 
 ## Summarisation
 
-### LSM-summarization-lv
+### LSM
 
 This dataset is scraped directly from the Latvian public media news portal [LSM.lv](https://www.lsm.lv/). It consists of news articles and their corresponding summaries as published on the site.
 
