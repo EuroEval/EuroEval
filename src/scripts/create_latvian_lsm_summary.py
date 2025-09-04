@@ -8,7 +8,7 @@
 # ]
 # ///
 
-"""Create the Latvian LSM summarisation mini dataset."""
+"""Create the Latvian summarisation dataset LSM."""
 
 from constants import MAX_NUM_CHARS_IN_ARTICLE, MIN_NUM_CHARS_IN_ARTICLE
 from datasets import Dataset, DatasetDict, Split, load_dataset
@@ -75,7 +75,7 @@ def main() -> None:
     )
 
     # Create dataset ID
-    mini_dataset_id = "EuroEval/lsm-summarization-lv-mini"
+    mini_dataset_id = "EuroEval/lsm-mini"
 
     # Remove the dataset from Hugging Face Hub if it already exists
     try:

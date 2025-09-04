@@ -481,7 +481,7 @@ $ euroeval --model <model-id> --dataset copa-lv
 
 ## Summarisation
 
-### LSM-summarization-lv
+### LSM
 
 This dataset contains news articles and their corresponding summaries from the Latvian public media news portal [LSM.lv](https://www.lsm.lv/).
 
@@ -532,5 +532,5 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ euroeval --model <model-id> --dataset lsm-summarization-lv
+$ euroeval --model <model-id> --dataset lsm
 ```
