@@ -39,12 +39,12 @@ MULTI_WIKI_QA_LV_CONFIG = DatasetConfig(
     languages=[LV],
 )
 
-LSM_SUMMARIZATION_LV_CONFIG = DatasetConfig(
-    name="lsm-summarization-lv",
+LSM_CONFIG = DatasetConfig(
+    name="lsm",
     pretty_name=(
-        "the truncated version of the Latvian summarisation dataset LSM-summarization"
+        "the truncated version of the Latvian summarisation dataset LSM"
     ),
-    huggingface_id="EuroEval/lsm-summarization-lv-mini",
+    huggingface_id="EuroEval/lsm-mini",
     task=SUMM,
     languages=[LV],
 )
