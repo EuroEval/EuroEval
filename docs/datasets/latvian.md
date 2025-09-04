@@ -483,9 +483,9 @@ $ euroeval --model <model-id> --dataset copa-lv
 
 ### LSM-summarization-lv
 
-This dataset is scraped directly from the Latvian public media news portal [LSM.lv](https://www.lsm.lv/). It consists of news articles and their corresponding summaries as published on the site.
+This dataset contains news articles and their corresponding summaries from the Latvian public media news portal [LSM.lv](https://www.lsm.lv/).
 
-The full dataset (https://huggingface.co/datasets/alexandrainst/lsm-summarization) has 4,978 samples. We use 1,024 / 256 / 2,048 samples for training, validation and testing, respectively.
+Samples were collected using the [lsm_scraper](https://github.com/alexandrainst/lsm_scraper). We use 1,024 / 256 / 2,048 samples for training, validation and testing, respectively.
 
 Here are a few examples from the training split:
 
