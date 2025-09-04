@@ -12,7 +12,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   Latvian Twitter Sentiment, the linguistic acceptability dataset ScaLA-lv, the named
   entity recognition datasets FullStack-NER-lv and WikiANN-lv, the reading comprehension
   dataset MultiWikiQA, the knowledge dataset MMLU-lv, the common-sense reasoning
-  dataset COPA-lv, and the summarisation dataset LSM-summarization-lv.
+  dataset COPA-lv, and the summarisation dataset LSM.
 - Added support for Estonian 🇪🇪! It includes the sentiment classification dataset
   Estonian Valence, the linguistic acceptability datasets Grammar-et and ScaLA-et, the
   named entity recognition dataset EstNER, the reading comprehension dataset
