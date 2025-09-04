@@ -943,7 +943,7 @@ def get_dtype(
             Whether bfloat16 is available.
 
     Returns:
-        The torch dtype.
+        The dtype.
     """
     using_cuda = device == torch.device("cuda")
     if using_cuda and dtype_is_set:
