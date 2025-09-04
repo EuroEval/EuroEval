@@ -937,8 +937,7 @@ def get_dtype(
     Args:
         device:
             The device to use.
-        dtype_is_set:
-            Whether the torch data type is set in the model configuration.
+            Whether the data type is set in the model configuration.
         bf16_available:
             Whether bfloat16 is available.
 
