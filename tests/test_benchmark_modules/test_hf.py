@@ -31,7 +31,7 @@ from euroeval.data_models import BenchmarkConfig
 def test_get_dtype(
     test_device: str, dtype_is_set: bool, bf16_available: bool, expected: torch.dtype
 ) -> None:
-    """Test that the torch dtype is set correctly."""
+    """Test that the dtype is set correctly."""
     assert (
         get_dtype(
             device=torch.device(test_device),
