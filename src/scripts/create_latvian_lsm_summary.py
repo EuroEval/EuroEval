@@ -75,7 +75,7 @@ def main() -> None:
     )
 
     # Create dataset ID
-    mini_dataset_id = "EuroEval/lsm-summarization-lv-mini"
+    mini_dataset_id = "EuroEval/lsm-mini"
 
     # Remove the dataset from Hugging Face Hub if it already exists
     try:
