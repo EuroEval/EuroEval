@@ -110,11 +110,22 @@ def prepare_examples(
     doc: str = examples["text"][0]
     sections = doc.split("\n")
 
-    choice_idxs = [
+    candidate_choice_idxs = [
         idx
         for idx, section in enumerate(sections)
         if re.match(pattern=r"^[a-z0-9]+\. ", string=section) is not None
     ]
+
+    # Sometimes the question itself starts with a letter or number followed by a dot, We
+    # want to ignore these cases, and focus on the final contingent block of at least
+    # two choices.
+    choice_idxs: list[int] = list()
+    for idx in reversed(candidate_choice_idxs):
+        if len(choice_idxs) < 2 or (
+            len(choice_idxs) >= 2 and idx == choice_idxs[-1] - 1
+        ):
+            choice_idxs.append(idx)
+
     choices = [sections[idx] for idx in choice_idxs]
 
     # Check that the choices are present, and that all of them are at the end
