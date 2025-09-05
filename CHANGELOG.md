@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 ### Added
-- Added support for Polish 🇵🇱! This includes the reading comprehension dataset PoQuAD.
+- Added support for Polish 🇵🇱! This includes the reading comprehension dataset PoQuAD and the sentiment classification dataset PolEmo 2.0.
 - Added support for Latvian 🇱🇻! This includes the sentiment classification dataset
   Latvian Twitter Sentiment, the linguistic acceptability dataset ScaLA-lv, the named
   entity recognition datasets FullStack-NER-lv and WikiANN-lv, the reading comprehension

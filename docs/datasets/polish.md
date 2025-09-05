@@ -6,6 +6,68 @@ information about what these constitute.
 
 ## Sentiment Classification
 
+### PolEmo 2.0
+This dataset was published in [this paper](https://aclanthology.org/K19-1092/) and consists of Polish online reviews from the medicine and hotels domains, annotated for sentiment. Each review is labelled as positive, negative, neutral, or ambiguous. We have filtered out the ambiguous samples.
+
+The original full dataset consists of 6,573 / 823 / 820 samples for the training, validation and test splits, respectively. We use 1,024 / 256 / 2,048 samples for our training, validation and test splits, respectively. The train and validation splits are subsets of the original splits. For the test split, we use all available test samples and supplement with additional samples from the training set to reach 2,048 samples in total.
+
+The distribution of sentiment labels across the combined splits is as follows:
+- **Negative**: 1,592 samples
+- **Positive**: 1,119 samples
+- **Neutral**: 617 samples
+
+Here are a few examples from the training split:
+
+```json
+{
+    "text": "Stary , bardzo zaniedbany hotel , obsluga czesto nie w humorze nie wykluczajac wlasciciela hotelu . Sniadania malo urozmaicone , powtarzajace sie przez caly tydzien dwa rodzaje byle jakiej wedliny , jednego rodzaju zoltego sera i jajecznicy ze sproszkowanych jajek . Obiadokolacja bardzo pozno 19 . 30 . Dla malych dzieci i zmeczonych narciarzy stanowczo za pozno . Napewno odwiedze Livignio , ale nigdy wiecej hotel Europa .",
+    "label": "negative"
+}
+```
+```json
+{
+    "text": "Arkadiusz Miszuk został powołany na stanowisko prezesa , zaś Dariusz Rutowicz na stanowisko wiceprezesa , giełdowej spółki hotelowej Interferie SA , poinformowała spółka w komunikacie z 16 marca : „ Zarząd spółki Interferie INTERFERIE S . A . w Lubinie , informuje iż Rada Nadzorcza Spółki na posiedzeniu w dniu 16 . 03 . 2012 roku odwołała ze składu Zarządu : 1 ) Pana Adama Milanowskiego , 2 ) Pana Radosława Besztygę . Jednocześnie Zarząd INTERFERIE S . A . w Lubinie , informuje iż w dniu 16 . 03 . 2012 roku Rada Nadzorcza Spółki powołała w skład Zarządu : 1 ) Pana Arkadiusza Miszuka - na stanowisko Prezesa Zarządu , 2 ) Pana Dariusza Rutowicza - na stanowisko Wiceprezesa Zarządu .",
+    "label": "neutral"
+}
+```
+```json
+{
+    "text": "Hotel znajduje się w idealnym miejscu dla fanów pieszych wycieczek . Z dala od zgiełku Krupówek - blisko szlaków wychodzących w góry . Pokoje przestronne i czyste . Obsługa bardzo miła . Basen jest aczkolwiek swoim urokiem nie zachwyca . Bardzo bogate i smaczne śniadania . Również jedzenie w restauracji jest naprawdę godne polecenia . Byli śmy gośćmi hotelu już dwa razy za równo jako para jaki i rodzina z dziećmi i za każdym razem byli śmy zadowoleni .",
+    "label": "positive"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Liczba przykładów few-shot: 12
+- Prefiks promptu:
+  ```
+  Poniżej znajdują się dokumenty i ich sentyment, który może być 'pozytywny', 'neutralny' lub 'negatywny'.
+  ```
+- Szablon podstawowy promptu:
+  ```
+  Dokument: {text}
+  Sentyment: {label}
+  ```
+- Szablon promptu instrukcyjnego:
+  ```
+  Dokument: {text}
+
+  Klasyfikuj sentyment w dokumencie. Odpowiedz z 'pozytywny', 'neutralny' lub 'negatywny', i nic więcej.
+  ```
+- Label mapping:
+    - `positive` ➡️ `positive`
+    - `neutral` ➡️ `neutral`
+    - `negative` ➡️ `negative`
+
+You can evaluate this dataset directly as follows:
+
+```bash
+$ euroeval --model <model-id> --dataset polemo2
+```
+
+
 ## Named Entity Recognition
 
 ## Linguistic Acceptability
