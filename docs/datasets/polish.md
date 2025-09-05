@@ -72,6 +72,70 @@ $ euroeval --model <model-id> --dataset polemo2
 
 ## Linguistic Acceptability
 
+### ScaLA-Pl
+
+This dataset was published in [this paper](https://aclanthology.org/2023.nodalida-1.20/)
+and was automatically created from the [Polish Universal Dependencies
+treebank](https://github.com/UniversalDependencies/UD_Polish-PDB) by assuming that the
+documents in the treebank are correct, and corrupting the samples to create
+grammatically incorrect samples. The corruptions were done by either removing a word
+from a sentence, or by swapping two neighbouring words in a sentence. To ensure that
+this does indeed break the grammaticality of the sentence, a set of rules were used on
+the part-of-speech tags of the words in the sentence.
+
+The original full dataset consists of 22,152 samples, from which we use 1,024 / 256 / 2,048 samples for training,
+validation and testing, respectively.
+
+Here are a few examples from the training split:
+
+```json
+{
+    "text": "Papierową śmierć zafundowaliśmy zafundowali śmy już kilku osobom.",
+    "label": "correct"
+}
+```
+```json
+{
+    "text": "To tylko mały krok; znam doskonale jego rozmiar; jestem świadomy, że polityka nieustanny wysiłek, a kiedy jedno zadanie się kończy, zaraz znajdzie się następne.",
+    "label": "incorrect"
+}
+```
+```json
+{
+    "text": "Tutaj interesuje mnie etyczny kontekst transferu naukowej wiedzy psychologicznej z laboratorium badacza do sali wykładowej i laboratorium studenckiego - czynniki ułatwiające i utrudniające, ale lokowane na stosunkowo wysokim poziomie ogólności.",
+    "label": "incorrect"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 12
+- Prefix prompt:
+  ```
+  Poniżej znajdują się teksty i czy są gramatycznie poprawne.
+  ```
+- Base prompt template:
+  ```
+  Tekst: {text}
+  Gramatycznie poprawny: {label}
+  ```
+- Instruction-tuned prompt template:
+  ```
+  Tekst: {text}
+
+  Określ czy tekst jest gramatycznie poprawny czy nie. Odpowiedz {labels_str}, i nic więcej.
+  ```
+- Label mapping:
+    - `correct` ➡️ `tak`
+    - `incorrect` ➡️ `nie`
+
+You can evaluate this dataset directly as follows:
+
+```bash
+$ euroeval --model <model-id> --dataset scala-pl
+```
+
 ## Reading Comprehension
 
 ### PoQuAD

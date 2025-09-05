@@ -2,9 +2,17 @@
 
 from ..data_models import DatasetConfig
 from ..languages import PL
-from ..tasks import RC, SENT
+from ..tasks import LA, RC, SENT
 
 ### Official datasets ###
+
+SCALA_PL_CONFIG = DatasetConfig(
+    name="scala-pl",
+    pretty_name="the Polish part of the linguistic acceptability dataset ScaLA",
+    huggingface_id="EuroEval/scala-pl",
+    task=LA,
+    languages=[PL],
+)
 
 POQUAD_CONFIG = DatasetConfig(
     name="poquad",
