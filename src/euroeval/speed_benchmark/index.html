@@ -12,7 +12,7 @@
       
       
       <link rel="icon" href="../../../gfx/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.17">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.18">
     
     
       
@@ -627,6 +627,8 @@
       
         
       
+        
+      
     
     
     
@@ -1046,7 +1048,7 @@
 <span class="sd">    Returns:</span>
 <span class="sd">        A dictionary containing the scores for the current iteration.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">gpt2_tokenizer</span> <span class="o">=</span> <span class="n">AutoTokenizer</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="s2">&quot;gpt2&quot;</span><span class="p">,</span> <span class="n">trust_remote_code</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">gpt2_tokeniser</span> <span class="o">=</span> <span class="n">AutoTokenizer</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="s2">&quot;gpt2&quot;</span><span class="p">,</span> <span class="n">trust_remote_code</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
     <span class="n">base_doc</span> <span class="o">=</span> <span class="s2">&quot;Document which contains roughly 10 tokens. &quot;</span>
     <span class="n">multiplier</span> <span class="o">=</span> <span class="mi">10</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">itr_idx</span><span class="p">)</span>
@@ -1061,11 +1063,11 @@
         <span class="n">model</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span><span class="n">inputs</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">text</span><span class="o">=</span><span class="p">[</span><span class="n">doc</span><span class="p">]))</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">encoder_predict</span><span class="p">(</span><span class="n">doc</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">tokenizer</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">get_tokenizer</span><span class="p">()</span>
+        <span class="n">tokeniser</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">get_tokeniser</span><span class="p">()</span>
         <span class="n">pytorch_model</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">get_pytorch_module</span><span class="p">()</span>
         <span class="n">inputs</span> <span class="o">=</span> <span class="p">{</span>
             <span class="n">key</span><span class="p">:</span> <span class="n">tensor</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">pytorch_model</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
-            <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">tensor</span> <span class="ow">in</span> <span class="n">tokenizer</span><span class="p">(</span>
+            <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">tensor</span> <span class="ow">in</span> <span class="n">tokeniser</span><span class="p">(</span>
                 <span class="n">text</span><span class="o">=</span><span class="p">[</span><span class="n">doc</span><span class="p">],</span> <span class="n">truncation</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">return_tensors</span><span class="o">=</span><span class="s2">&quot;pt&quot;</span>
             <span class="p">)</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
         <span class="p">}</span>
@@ -1089,21 +1091,21 @@
         <span class="n">speed_scores</span> <span class="o">=</span> <span class="n">pyinfer</span><span class="o">.</span><span class="n">InferenceReport</span><span class="p">(</span>
             <span class="n">model</span><span class="o">=</span><span class="n">predict</span><span class="p">,</span> <span class="n">inputs</span><span class="o">=</span><span class="n">doc</span><span class="p">,</span> <span class="n">n_seconds</span><span class="o">=</span><span class="mi">3</span>
         <span class="p">)</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">print_report</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-        <span class="n">num_gpt2_tokens</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">gpt2_tokenizer</span><span class="p">([</span><span class="n">doc</span><span class="p">],</span> <span class="n">truncation</span><span class="o">=</span><span class="kc">True</span><span class="p">)[</span><span class="s2">&quot;input_ids&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span>
+        <span class="n">num_gpt2_tokens</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">gpt2_tokeniser</span><span class="p">([</span><span class="n">doc</span><span class="p">],</span> <span class="n">truncation</span><span class="o">=</span><span class="kc">True</span><span class="p">)[</span><span class="s2">&quot;input_ids&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span>
         <span class="n">gpt2_tokens_per_second</span> <span class="o">=</span> <span class="n">speed_scores</span><span class="p">[</span><span class="s2">&quot;Infer(p/sec)&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="n">num_gpt2_tokens</span>
 
         <span class="n">speed_scores_short</span> <span class="o">=</span> <span class="n">pyinfer</span><span class="o">.</span><span class="n">InferenceReport</span><span class="p">(</span>
             <span class="n">model</span><span class="o">=</span><span class="n">predict</span><span class="p">,</span> <span class="n">inputs</span><span class="o">=</span><span class="n">short_doc</span><span class="p">,</span> <span class="n">n_seconds</span><span class="o">=</span><span class="mi">3</span>
         <span class="p">)</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">print_report</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
         <span class="n">num_gpt2_tokens_short</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span>
-            <span class="n">gpt2_tokenizer</span><span class="p">([</span><span class="n">short_doc</span><span class="p">],</span> <span class="n">truncation</span><span class="o">=</span><span class="kc">True</span><span class="p">)[</span><span class="s2">&quot;input_ids&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">gpt2_tokeniser</span><span class="p">([</span><span class="n">short_doc</span><span class="p">],</span> <span class="n">truncation</span><span class="o">=</span><span class="kc">True</span><span class="p">)[</span><span class="s2">&quot;input_ids&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
         <span class="p">)</span>
         <span class="n">gpt2_tokens_per_second_short</span> <span class="o">=</span> <span class="p">(</span>
             <span class="n">speed_scores_short</span><span class="p">[</span><span class="s2">&quot;Infer(p/sec)&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="n">num_gpt2_tokens_short</span>
         <span class="p">)</span>
 
     <span class="k">except</span> <span class="p">(</span><span class="ne">RuntimeError</span><span class="p">,</span> <span class="ne">ValueError</span><span class="p">,</span> <span class="ne">IndexError</span><span class="p">)</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="n">InvalidBenchmark</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Speed benchmark failed with error: </span><span class="si">{</span><span class="n">e</span><span class="si">!r}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="n">InvalidBenchmark</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Speed benchmark failed with error: </span><span class="si">{</span><span class="n">e</span><span class="si">!r}</span><span class="s2">&quot;</span><span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
 
     <span class="k">return</span> <span class="nb">dict</span><span class="p">(</span>
         <span class="n">test_speed</span><span class="o">=</span><span class="n">gpt2_tokens_per_second</span><span class="p">,</span> <span class="n">test_speed_short</span><span class="o">=</span><span class="n">gpt2_tokens_per_second_short</span>

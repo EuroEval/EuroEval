@@ -12,7 +12,7 @@
       
       
       <link rel="icon" href="../../../../gfx/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.17">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.18">
     
     
       
@@ -627,6 +627,8 @@
       
         
       
+        
+      
     
     
     
@@ -838,9 +840,9 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#euroeval.benchmark_modules.base.BenchmarkModule.get_tokenizer" class="md-nav__link">
+  <a href="#euroeval.benchmark_modules.base.BenchmarkModule.get_tokeniser" class="md-nav__link">
     <span class="md-ellipsis">
-      get_tokenizer
+      get_tokeniser
     </span>
   </a>
   
@@ -1356,7 +1358,16 @@
 <span class="normal">359</span>
 <span class="normal">360</span>
 <span class="normal">361</span>
-<span class="normal">362</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Abstract benchmark module class that the model classes inherit from.&quot;&quot;&quot;</span>
+<span class="normal">362</span>
+<span class="normal">363</span>
+<span class="normal">364</span>
+<span class="normal">365</span>
+<span class="normal">366</span>
+<span class="normal">367</span>
+<span class="normal">368</span>
+<span class="normal">369</span>
+<span class="normal">370</span>
+<span class="normal">371</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Abstract benchmark module class that the model classes inherit from.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">c</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
@@ -1419,6 +1430,7 @@
         <span class="n">model_config</span><span class="p">:</span> <span class="s2">&quot;ModelConfig&quot;</span><span class="p">,</span>
         <span class="n">dataset_config</span><span class="p">:</span> <span class="s2">&quot;DatasetConfig&quot;</span><span class="p">,</span>
         <span class="n">benchmark_config</span><span class="p">:</span> <span class="s2">&quot;BenchmarkConfig&quot;</span><span class="p">,</span>
+        <span class="n">log_metadata</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialise the benchmark module.</span>
 
@@ -1429,12 +1441,16 @@
 <span class="sd">                The dataset configuration.</span>
 <span class="sd">            benchmark_config:</span>
 <span class="sd">                The benchmark configuration.</span>
+<span class="sd">            log_metadata:</span>
+<span class="sd">                Whether to log the metadata of the model.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">model_config</span> <span class="o">=</span> <span class="n">model_config</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">dataset_config</span> <span class="o">=</span> <span class="n">dataset_config</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">benchmark_config</span> <span class="o">=</span> <span class="n">benchmark_config</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">log_metadata</span> <span class="o">=</span> <span class="n">log_metadata</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">buffer</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">t</span><span class="o">.</span><span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_log_metadata</span><span class="p">()</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">log_metadata</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_log_metadata</span><span class="p">()</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_log_metadata</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Log the metadata of the model.&quot;&quot;&quot;</span>
@@ -1475,16 +1491,16 @@
             <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">.&quot;</span>
         <span class="p">)</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="nf">get_tokenizer</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;PreTrainedTokenizer&quot;</span><span class="p">:</span><div class="mkapi-source-link" id="euroeval.benchmark_modules.base.BenchmarkModule.get_tokenizer"><a href="../../../../api/euroeval/benchmark_modules/base/#euroeval.benchmark_modules.base.BenchmarkModule.get_tokenizer" title="Go to docs">[docs]</a></div>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the underlying tokenizer.</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_tokeniser</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;PreTrainedTokenizer&quot;</span><span class="p">:</span><div class="mkapi-source-link" id="euroeval.benchmark_modules.base.BenchmarkModule.get_tokeniser"><a href="../../../../api/euroeval/benchmark_modules/base/#euroeval.benchmark_modules.base.BenchmarkModule.get_tokeniser" title="Go to docs">[docs]</a></div>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the underlying tokeniser.</span>
 
 <span class="sd">        Returns:</span>
-<span class="sd">            The tokenizer.</span>
+<span class="sd">            The tokeniser.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;_tokenizer&quot;</span><span class="p">):</span>
-            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tokenizer</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;_tokeniser&quot;</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tokeniser</span>
         <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span>
-            <span class="s2">&quot;The `get_tokenizer` method has not been implemented for &quot;</span>
+            <span class="s2">&quot;The `get_tokeniser` method has not been implemented for &quot;</span>
             <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">.&quot;</span>
         <span class="p">)</span>
 
@@ -1550,11 +1566,13 @@
                 <span class="k">return</span> <span class="n">partial</span><span class="p">(</span>
                     <span class="n">sequence_classification</span><span class="o">.</span><span class="n">compute_metrics</span><span class="p">,</span>
                     <span class="n">dataset_config</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dataset_config</span><span class="p">,</span>
+                    <span class="n">benchmark_config</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">benchmark_config</span><span class="p">,</span>
                 <span class="p">)</span>
             <span class="k">case</span> <span class="n">TaskGroup</span><span class="o">.</span><span class="n">MULTIPLE_CHOICE_CLASSIFICATION</span><span class="p">:</span>
                 <span class="k">return</span> <span class="n">partial</span><span class="p">(</span>
                     <span class="n">sequence_classification</span><span class="o">.</span><span class="n">compute_metrics</span><span class="p">,</span>
                     <span class="n">dataset_config</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dataset_config</span><span class="p">,</span>
+                    <span class="n">benchmark_config</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">benchmark_config</span><span class="p">,</span>
                 <span class="p">)</span>
             <span class="k">case</span> <span class="n">TaskGroup</span><span class="o">.</span><span class="n">TEXT_TO_TEXT</span><span class="p">:</span>
                 <span class="k">return</span> <span class="n">partial</span><span class="p">(</span>
@@ -1567,11 +1585,13 @@
                     <span class="n">token_classification</span><span class="o">.</span><span class="n">compute_metrics</span><span class="p">,</span>
                     <span class="n">has_misc_tags</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">buffer</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;has_misc_tags&quot;</span><span class="p">,</span> <span class="kc">True</span><span class="p">),</span>
                     <span class="n">dataset_config</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dataset_config</span><span class="p">,</span>
+                    <span class="n">benchmark_config</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">benchmark_config</span><span class="p">,</span>
                 <span class="p">)</span>
             <span class="k">case</span> <span class="n">TaskGroup</span><span class="o">.</span><span class="n">QUESTION_ANSWERING</span><span class="p">:</span>
                 <span class="k">return</span> <span class="n">partial</span><span class="p">(</span>
                     <span class="n">question_answering</span><span class="o">.</span><span class="n">compute_metrics</span><span class="p">,</span>
                     <span class="n">dataset_config</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dataset_config</span><span class="p">,</span>
+                    <span class="n">benchmark_config</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">benchmark_config</span><span class="p">,</span>
                 <span class="p">)</span>
             <span class="k">case</span><span class="w"> </span><span class="k">_</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span>

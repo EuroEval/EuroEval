@@ -12,7 +12,7 @@
       
       
       <link rel="icon" href="../../../../gfx/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.17">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.18">
     
     
       
@@ -597,6 +597,8 @@
       
         
           
+        
+      
         
       
         
@@ -1626,7 +1628,14 @@
 <span class="normal">692</span>
 <span class="normal">693</span>
 <span class="normal">694</span>
-<span class="normal">695</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Utility functions related to the question-answering task group.&quot;&quot;&quot;</span>
+<span class="normal">695</span>
+<span class="normal">696</span>
+<span class="normal">697</span>
+<span class="normal">698</span>
+<span class="normal">699</span>
+<span class="normal">700</span>
+<span class="normal">701</span>
+<span class="normal">702</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Utility functions related to the question-answering task group.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">c</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
@@ -1651,7 +1660,7 @@
     <span class="kn">from</span><span class="w"> </span><span class="nn">transformers.trainer_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">EvalPrediction</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">transformers.training_args</span><span class="w"> </span><span class="kn">import</span> <span class="n">TrainingArguments</span>
 
-    <span class="kn">from</span><span class="w"> </span><span class="nn">..data_models</span><span class="w"> </span><span class="kn">import</span> <span class="n">DatasetConfig</span><span class="p">,</span> <span class="n">GenerativeModelOutput</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">..data_models</span><span class="w"> </span><span class="kn">import</span> <span class="n">BenchmarkConfig</span><span class="p">,</span> <span class="n">DatasetConfig</span><span class="p">,</span> <span class="n">GenerativeModelOutput</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">..types</span><span class="w"> </span><span class="kn">import</span> <span class="n">Labels</span><span class="p">,</span> <span class="n">Predictions</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">&quot;euroeval&quot;</span><span class="p">)</span>
@@ -1685,7 +1694,7 @@
             <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
         <span class="p">)</span>
 
-        <span class="c1"># Get the CLS token id for the tokenizer</span>
+        <span class="c1"># Get the CLS token id for the tokeniser</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">tokenizer</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tokenizer</span><span class="p">,</span> <span class="n">PreTrainedTokenizerBase</span><span class="p">)</span>
             <span class="n">special_token_metadata</span> <span class="o">=</span> <span class="n">get_special_token_metadata</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tokenizer</span><span class="p">)</span>
@@ -1777,6 +1786,7 @@
 <span class="k">def</span><span class="w"> </span><span class="nf">compute_metrics</span><span class="p">(</span><div class="mkapi-source-link" id="euroeval.task_group_utils.question_answering.compute_metrics"><a href="../../../../api/euroeval/task_group_utils/question_answering/#euroeval.task_group_utils.question_answering.compute_metrics" title="Go to docs">[docs]</a></div>
     <span class="n">model_outputs_and_labels</span><span class="p">:</span> <span class="s2">&quot;tuple[Predictions, Labels] | EvalPrediction&quot;</span><span class="p">,</span>
     <span class="n">dataset_config</span><span class="p">:</span> <span class="s2">&quot;DatasetConfig&quot;</span><span class="p">,</span>
+    <span class="n">benchmark_config</span><span class="p">:</span> <span class="s2">&quot;BenchmarkConfig&quot;</span><span class="p">,</span>
     <span class="n">dataset</span><span class="p">:</span> <span class="s2">&quot;Dataset&quot;</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Compute the metrics needed for evaluation.</span>
@@ -1787,6 +1797,8 @@
 <span class="sd">            contains the true labels.</span>
 <span class="sd">        dataset_config:</span>
 <span class="sd">            The configuration of the dataset.</span>
+<span class="sd">        benchmark_config:</span>
+<span class="sd">            The configuration of the benchmark.</span>
 <span class="sd">        dataset:</span>
 <span class="sd">            The dataset used for evaluation. This is only used in case any additional</span>
 <span class="sd">            metadata is used to compute the metrics.</span>
@@ -1814,7 +1826,11 @@
     <span class="n">results</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
     <span class="k">for</span> <span class="n">metric</span> <span class="ow">in</span> <span class="n">dataset_config</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">metrics</span><span class="p">:</span>
         <span class="n">score</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">metric</span><span class="p">(</span>
-            <span class="n">predictions</span><span class="o">=</span><span class="n">predictions</span><span class="p">,</span> <span class="n">references</span><span class="o">=</span><span class="n">labels</span><span class="p">,</span> <span class="n">dataset</span><span class="o">=</span><span class="n">dataset</span>
+            <span class="n">predictions</span><span class="o">=</span><span class="n">predictions</span><span class="p">,</span>
+            <span class="n">references</span><span class="o">=</span><span class="n">labels</span><span class="p">,</span>
+            <span class="n">dataset</span><span class="o">=</span><span class="n">dataset</span><span class="p">,</span>
+            <span class="n">dataset_config</span><span class="o">=</span><span class="n">dataset_config</span><span class="p">,</span>
+            <span class="n">benchmark_config</span><span class="o">=</span><span class="n">benchmark_config</span><span class="p">,</span>
         <span class="p">)</span>
 
         <span class="c1"># The metric returns None if we are running on multi-GPU and the current</span>
@@ -1849,15 +1865,15 @@
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">prepare_train_examples</span><span class="p">(</span><div class="mkapi-source-link" id="euroeval.task_group_utils.question_answering.prepare_train_examples"><a href="../../../../api/euroeval/task_group_utils/question_answering/#euroeval.task_group_utils.question_answering.prepare_train_examples" title="Go to docs">[docs]</a></div>
-    <span class="n">examples</span><span class="p">:</span> <span class="s2">&quot;BatchEncoding&quot;</span><span class="p">,</span> <span class="n">tokenizer</span><span class="p">:</span> <span class="s2">&quot;PreTrainedTokenizer&quot;</span>
+    <span class="n">examples</span><span class="p">:</span> <span class="s2">&quot;BatchEncoding&quot;</span><span class="p">,</span> <span class="n">tokeniser</span><span class="p">:</span> <span class="s2">&quot;PreTrainedTokenizer&quot;</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;BatchEncoding&quot;</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Prepare the features for training.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        examples:</span>
 <span class="sd">            The examples to prepare.</span>
-<span class="sd">        tokenizer:</span>
-<span class="sd">            The tokenizer to use to prepare the examples.</span>
+<span class="sd">        tokeniser:</span>
+<span class="sd">            The tokeniser to use to prepare the examples.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The prepared examples.</span>
@@ -1867,15 +1883,15 @@
     <span class="c1"># take a lots of space). So we remove that left whitespace</span>
     <span class="n">examples</span><span class="p">[</span><span class="s2">&quot;question&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">q</span><span class="o">.</span><span class="n">lstrip</span><span class="p">()</span> <span class="k">for</span> <span class="n">q</span> <span class="ow">in</span> <span class="n">examples</span><span class="p">[</span><span class="s2">&quot;question&quot;</span><span class="p">]]</span>
 
-    <span class="c1"># Extract special token metadata from the tokenizer</span>
-    <span class="n">special_token_metadata</span> <span class="o">=</span> <span class="n">get_special_token_metadata</span><span class="p">(</span><span class="n">tokenizer</span><span class="o">=</span><span class="n">tokenizer</span><span class="p">)</span>
+    <span class="c1"># Extract special token metadata from the tokeniser</span>
+    <span class="n">special_token_metadata</span> <span class="o">=</span> <span class="n">get_special_token_metadata</span><span class="p">(</span><span class="n">tokeniser</span><span class="o">=</span><span class="n">tokeniser</span><span class="p">)</span>
     <span class="n">has_cls_token</span> <span class="o">=</span> <span class="n">special_token_metadata</span><span class="p">[</span><span class="s2">&quot;has_cls_token&quot;</span><span class="p">]</span>
     <span class="n">has_sep_token</span> <span class="o">=</span> <span class="n">special_token_metadata</span><span class="p">[</span><span class="s2">&quot;has_sep_token&quot;</span><span class="p">]</span>
     <span class="n">cls_token_id</span> <span class="o">=</span> <span class="n">special_token_metadata</span><span class="p">[</span><span class="s2">&quot;cls_token_id&quot;</span><span class="p">]</span>
     <span class="n">cls_token</span> <span class="o">=</span> <span class="n">special_token_metadata</span><span class="p">[</span><span class="s2">&quot;cls_token&quot;</span><span class="p">]</span>
     <span class="n">sep_token</span> <span class="o">=</span> <span class="n">special_token_metadata</span><span class="p">[</span><span class="s2">&quot;sep_token&quot;</span><span class="p">]</span>
 
-    <span class="c1"># If the tokenizer is not adding special tokens, then we add them manually</span>
+    <span class="c1"># If the tokeniser is not adding special tokens, then we add them manually</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">has_cls_token</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">has_sep_token</span><span class="p">:</span>
         <span class="n">examples</span><span class="p">[</span><span class="s2">&quot;question&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span>
             <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">cls_token</span><span class="si">}{</span><span class="n">q</span><span class="si">}{</span><span class="n">sep_token</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">for</span> <span class="n">q</span> <span class="ow">in</span> <span class="n">examples</span><span class="p">[</span><span class="s2">&quot;question&quot;</span><span class="p">]</span>
@@ -1886,18 +1902,18 @@
     <span class="c1"># split into several features. Since we are always keeping the question tokens, we</span>
     <span class="c1"># need to make sure that the stride does not exceed the resulting maximum context</span>
     <span class="c1"># length.</span>
-    <span class="n">max_question_tokens</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">tokenizer</span><span class="p">(</span><span class="n">q</span><span class="p">)</span><span class="o">.</span><span class="n">input_ids</span><span class="p">)</span> <span class="k">for</span> <span class="n">q</span> <span class="ow">in</span> <span class="n">examples</span><span class="p">[</span><span class="s2">&quot;question&quot;</span><span class="p">])</span>
+    <span class="n">max_question_tokens</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">tokeniser</span><span class="p">(</span><span class="n">q</span><span class="p">)</span><span class="o">.</span><span class="n">input_ids</span><span class="p">)</span> <span class="k">for</span> <span class="n">q</span> <span class="ow">in</span> <span class="n">examples</span><span class="p">[</span><span class="s2">&quot;question&quot;</span><span class="p">])</span>
     <span class="n">num_special_tokens</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">has_cls_token</span><span class="p">)</span> <span class="o">+</span> <span class="nb">int</span><span class="p">(</span><span class="n">has_sep_token</span><span class="p">)</span>
-    <span class="n">stride</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">model_max_length</span> <span class="o">//</span> <span class="mi">4</span>
-    <span class="n">max_length</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">model_max_length</span> <span class="o">-</span> <span class="n">stride</span>
+    <span class="n">stride</span> <span class="o">=</span> <span class="n">tokeniser</span><span class="o">.</span><span class="n">model_max_length</span> <span class="o">//</span> <span class="mi">4</span>
+    <span class="n">max_length</span> <span class="o">=</span> <span class="n">tokeniser</span><span class="o">.</span><span class="n">model_max_length</span> <span class="o">-</span> <span class="n">stride</span>
     <span class="n">stride</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">stride</span><span class="p">,</span> <span class="n">max_length</span> <span class="o">-</span> <span class="n">max_question_tokens</span> <span class="o">-</span> <span class="n">num_special_tokens</span><span class="p">)</span>
-    <span class="n">max_length</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">model_max_length</span> <span class="o">-</span> <span class="n">stride</span>
+    <span class="n">max_length</span> <span class="o">=</span> <span class="n">tokeniser</span><span class="o">.</span><span class="n">model_max_length</span> <span class="o">-</span> <span class="n">stride</span>
 
     <span class="c1"># Tokenize our examples with truncation and padding, but keep the overflows using a</span>
     <span class="c1"># stride. This results in one example possible giving several features when a</span>
     <span class="c1"># context is long, each of those features having a context that overlaps a bit the</span>
     <span class="c1"># context of the previous feature.</span>
-    <span class="n">tokenized_examples</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="p">(</span>
+    <span class="n">tokenized_examples</span> <span class="o">=</span> <span class="n">tokeniser</span><span class="p">(</span>
         <span class="n">text</span><span class="o">=</span><span class="n">examples</span><span class="p">[</span><span class="s2">&quot;question&quot;</span><span class="p">],</span>
         <span class="n">text_pair</span><span class="o">=</span><span class="n">examples</span><span class="p">[</span><span class="s2">&quot;context&quot;</span><span class="p">],</span>
         <span class="n">truncation</span><span class="o">=</span><span class="s2">&quot;only_second&quot;</span><span class="p">,</span>
@@ -1934,9 +1950,9 @@
         <span class="n">sequence_ids</span> <span class="o">=</span> <span class="n">tokenized_examples</span><span class="o">.</span><span class="n">sequence_ids</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
 
         <span class="c1"># Manually ensure that the special tokens are set to None in `sequence_ids`</span>
-        <span class="k">for</span> <span class="n">special_token</span> <span class="ow">in</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">special_tokens_map</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
-            <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">tokenizer</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">special_token</span><span class="si">}</span><span class="s2">_id&quot;</span><span class="p">):</span>
-                <span class="n">special_token_id</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">tokenizer</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">special_token</span><span class="si">}</span><span class="s2">_id&quot;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">special_token</span> <span class="ow">in</span> <span class="n">tokeniser</span><span class="o">.</span><span class="n">special_tokens_map</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">tokeniser</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">special_token</span><span class="si">}</span><span class="s2">_id&quot;</span><span class="p">):</span>
+                <span class="n">special_token_id</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">tokeniser</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">special_token</span><span class="si">}</span><span class="s2">_id&quot;</span><span class="p">)</span>
                 <span class="k">if</span> <span class="n">special_token_id</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
                     <span class="n">sequence_ids</span> <span class="o">=</span> <span class="p">[</span>
                         <span class="kc">None</span> <span class="k">if</span> <span class="n">token_id</span> <span class="o">==</span> <span class="n">special_token_id</span> <span class="k">else</span> <span class="n">seq_id</span>
@@ -2001,15 +2017,15 @@
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">prepare_test_examples</span><span class="p">(</span><div class="mkapi-source-link" id="euroeval.task_group_utils.question_answering.prepare_test_examples"><a href="../../../../api/euroeval/task_group_utils/question_answering/#euroeval.task_group_utils.question_answering.prepare_test_examples" title="Go to docs">[docs]</a></div>
-    <span class="n">examples</span><span class="p">:</span> <span class="s2">&quot;BatchEncoding&quot;</span><span class="p">,</span> <span class="n">tokenizer</span><span class="p">:</span> <span class="s2">&quot;PreTrainedTokenizer&quot;</span>
+    <span class="n">examples</span><span class="p">:</span> <span class="s2">&quot;BatchEncoding&quot;</span><span class="p">,</span> <span class="n">tokeniser</span><span class="p">:</span> <span class="s2">&quot;PreTrainedTokenizer&quot;</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;BatchEncoding&quot;</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Prepare test examples.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        examples:</span>
 <span class="sd">            Dictionary of test examples.</span>
-<span class="sd">        tokenizer:</span>
-<span class="sd">            The tokenizer used to preprocess the examples.</span>
+<span class="sd">        tokeniser:</span>
+<span class="sd">            The tokeniser used to preprocess the examples.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The prepared test examples.</span>
@@ -2019,14 +2035,14 @@
     <span class="c1"># take a lots of space). So we remove that left whitespace</span>
     <span class="n">examples</span><span class="p">[</span><span class="s2">&quot;question&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">q</span><span class="o">.</span><span class="n">lstrip</span><span class="p">()</span> <span class="k">for</span> <span class="n">q</span> <span class="ow">in</span> <span class="n">examples</span><span class="p">[</span><span class="s2">&quot;question&quot;</span><span class="p">]]</span>
 
-    <span class="c1"># Extract special token metadata from the tokenizer</span>
-    <span class="n">special_token_metadata</span> <span class="o">=</span> <span class="n">get_special_token_metadata</span><span class="p">(</span><span class="n">tokenizer</span><span class="o">=</span><span class="n">tokenizer</span><span class="p">)</span>
+    <span class="c1"># Extract special token metadata from the tokeniser</span>
+    <span class="n">special_token_metadata</span> <span class="o">=</span> <span class="n">get_special_token_metadata</span><span class="p">(</span><span class="n">tokeniser</span><span class="o">=</span><span class="n">tokeniser</span><span class="p">)</span>
     <span class="n">has_cls_token</span> <span class="o">=</span> <span class="n">special_token_metadata</span><span class="p">[</span><span class="s2">&quot;has_cls_token&quot;</span><span class="p">]</span>
     <span class="n">has_sep_token</span> <span class="o">=</span> <span class="n">special_token_metadata</span><span class="p">[</span><span class="s2">&quot;has_sep_token&quot;</span><span class="p">]</span>
     <span class="n">cls_token</span> <span class="o">=</span> <span class="n">special_token_metadata</span><span class="p">[</span><span class="s2">&quot;cls_token&quot;</span><span class="p">]</span>
     <span class="n">sep_token</span> <span class="o">=</span> <span class="n">special_token_metadata</span><span class="p">[</span><span class="s2">&quot;sep_token&quot;</span><span class="p">]</span>
 
-    <span class="c1"># If the tokenizer is not adding special tokens, then we add them manually</span>
+    <span class="c1"># If the tokeniser is not adding special tokens, then we add them manually</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">has_cls_token</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">has_sep_token</span><span class="p">:</span>
         <span class="n">examples</span><span class="p">[</span><span class="s2">&quot;question&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span>
             <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">cls_token</span><span class="si">}{</span><span class="n">q</span><span class="si">}{</span><span class="n">sep_token</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">for</span> <span class="n">q</span> <span class="ow">in</span> <span class="n">examples</span><span class="p">[</span><span class="s2">&quot;question&quot;</span><span class="p">]</span>
@@ -2037,18 +2053,18 @@
     <span class="c1"># split into several features. Since we are always keeping the question tokens, we</span>
     <span class="c1"># need to make sure that the stride does not exceed the resulting maximum context</span>
     <span class="c1"># length.</span>
-    <span class="n">max_question_tokens</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">tokenizer</span><span class="p">(</span><span class="n">q</span><span class="p">)</span><span class="o">.</span><span class="n">input_ids</span><span class="p">)</span> <span class="k">for</span> <span class="n">q</span> <span class="ow">in</span> <span class="n">examples</span><span class="p">[</span><span class="s2">&quot;question&quot;</span><span class="p">])</span>
+    <span class="n">max_question_tokens</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">tokeniser</span><span class="p">(</span><span class="n">q</span><span class="p">)</span><span class="o">.</span><span class="n">input_ids</span><span class="p">)</span> <span class="k">for</span> <span class="n">q</span> <span class="ow">in</span> <span class="n">examples</span><span class="p">[</span><span class="s2">&quot;question&quot;</span><span class="p">])</span>
     <span class="n">num_special_tokens</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">has_cls_token</span><span class="p">)</span> <span class="o">+</span> <span class="nb">int</span><span class="p">(</span><span class="n">has_sep_token</span><span class="p">)</span>
-    <span class="n">stride</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">model_max_length</span> <span class="o">//</span> <span class="mi">4</span>
-    <span class="n">max_length</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">model_max_length</span> <span class="o">-</span> <span class="n">stride</span>
+    <span class="n">stride</span> <span class="o">=</span> <span class="n">tokeniser</span><span class="o">.</span><span class="n">model_max_length</span> <span class="o">//</span> <span class="mi">4</span>
+    <span class="n">max_length</span> <span class="o">=</span> <span class="n">tokeniser</span><span class="o">.</span><span class="n">model_max_length</span> <span class="o">-</span> <span class="n">stride</span>
     <span class="n">stride</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">stride</span><span class="p">,</span> <span class="n">max_length</span> <span class="o">-</span> <span class="n">max_question_tokens</span> <span class="o">-</span> <span class="n">num_special_tokens</span><span class="p">)</span>
-    <span class="n">max_length</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">model_max_length</span> <span class="o">-</span> <span class="n">stride</span>
+    <span class="n">max_length</span> <span class="o">=</span> <span class="n">tokeniser</span><span class="o">.</span><span class="n">model_max_length</span> <span class="o">-</span> <span class="n">stride</span>
 
     <span class="c1"># Tokenize our examples with truncation and maybe padding, but keep the overflows</span>
     <span class="c1"># using a stride. This results in one example possible giving several features when</span>
     <span class="c1"># a context is long, each of those features having a context that overlaps a bit</span>
     <span class="c1"># the context of the previous feature.</span>
-    <span class="n">tokenized_examples</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="p">(</span>
+    <span class="n">tokenized_examples</span> <span class="o">=</span> <span class="n">tokeniser</span><span class="p">(</span>
         <span class="n">text</span><span class="o">=</span><span class="n">examples</span><span class="p">[</span><span class="s2">&quot;question&quot;</span><span class="p">],</span>
         <span class="n">text_pair</span><span class="o">=</span><span class="n">examples</span><span class="p">[</span><span class="s2">&quot;context&quot;</span><span class="p">],</span>
         <span class="n">truncation</span><span class="o">=</span><span class="s2">&quot;only_second&quot;</span><span class="p">,</span>

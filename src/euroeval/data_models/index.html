@@ -12,7 +12,7 @@
       
       
       <link rel="icon" href="../../../gfx/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.17">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.18">
     
     
       
@@ -597,6 +597,8 @@
       
         
           
+        
+      
         
       
         
@@ -1798,7 +1800,10 @@
 <span class="normal">699</span>
 <span class="normal">700</span>
 <span class="normal">701</span>
-<span class="normal">702</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Data models used in EuroEval.&quot;&quot;&quot;</span>
+<span class="normal">702</span>
+<span class="normal">703</span>
+<span class="normal">704</span>
+<span class="normal">705</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Data models used in EuroEval.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">pathlib</span>
@@ -1809,10 +1814,13 @@
 <span class="kn">import</span><span class="w"> </span><span class="nn">pydantic</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">.enums</span><span class="w"> </span><span class="kn">import</span> <span class="n">Device</span><span class="p">,</span> <span class="n">GenerativeType</span><span class="p">,</span> <span class="n">InferenceBackend</span><span class="p">,</span> <span class="n">ModelType</span><span class="p">,</span> <span class="n">TaskGroup</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">.metrics</span><span class="w"> </span><span class="kn">import</span> <span class="n">Metric</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.enums</span><span class="w"> </span><span class="kn">import</span> <span class="n">Device</span><span class="p">,</span> <span class="n">GenerativeType</span><span class="p">,</span> <span class="n">ModelType</span><span class="p">,</span> <span class="n">TaskGroup</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">ScoreDict</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_package_version</span>
+
+<span class="k">if</span> <span class="n">t</span><span class="o">.</span><span class="n">TYPE_CHECKING</span><span class="p">:</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">.enums</span><span class="w"> </span><span class="kn">import</span> <span class="n">InferenceBackend</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">.metrics</span><span class="w"> </span><span class="kn">import</span> <span class="n">Metric</span>
 
 
 <span class="nd">@dataclass</span>
@@ -1927,7 +1935,7 @@
     <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
     <span class="n">task_group</span><span class="p">:</span> <span class="n">TaskGroup</span>
     <span class="n">template_dict</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="s2">&quot;Language&quot;</span><span class="p">,</span> <span class="s2">&quot;PromptConfig&quot;</span><span class="p">]</span>
-    <span class="n">metrics</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Metric</span><span class="p">]</span>
+    <span class="n">metrics</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="s2">&quot;Metric&quot;</span><span class="p">]</span>
     <span class="n">default_num_few_shot_examples</span><span class="p">:</span> <span class="nb">int</span>
     <span class="n">default_max_generated_tokens</span><span class="p">:</span> <span class="nb">int</span>
     <span class="n">default_labels</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
@@ -2389,7 +2397,7 @@
     <span class="n">revision</span><span class="p">:</span> <span class="nb">str</span>
     <span class="n">task</span><span class="p">:</span> <span class="nb">str</span>
     <span class="n">languages</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Language</span><span class="p">]</span>
-    <span class="n">inference_backend</span><span class="p">:</span> <span class="n">InferenceBackend</span>
+    <span class="n">inference_backend</span><span class="p">:</span> <span class="s2">&quot;InferenceBackend&quot;</span>
     <span class="n">merge</span><span class="p">:</span> <span class="nb">bool</span>
     <span class="n">model_type</span><span class="p">:</span> <span class="n">ModelType</span>
     <span class="n">fresh</span><span class="p">:</span> <span class="nb">bool</span>

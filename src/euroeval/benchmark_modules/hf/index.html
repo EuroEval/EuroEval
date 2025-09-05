@@ -12,7 +12,7 @@
       
       
       <link rel="icon" href="../../../../gfx/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.17">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.18">
     
     
       
@@ -627,6 +627,8 @@
       
         
       
+        
+      
     
     
     
@@ -924,9 +926,9 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#euroeval.benchmark_modules.hf.load_model_and_tokenizer" class="md-nav__link">
+  <a href="#euroeval.benchmark_modules.hf.load_model_and_tokeniser" class="md-nav__link">
     <span class="md-ellipsis">
-      load_model_and_tokenizer
+      load_model_and_tokeniser
     </span>
   </a>
   
@@ -942,18 +944,18 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#euroeval.benchmark_modules.hf.load_tokenizer" class="md-nav__link">
+  <a href="#euroeval.benchmark_modules.hf.load_tokeniser" class="md-nav__link">
     <span class="md-ellipsis">
-      load_tokenizer
+      load_tokeniser
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#euroeval.benchmark_modules.hf.get_torch_dtype" class="md-nav__link">
+  <a href="#euroeval.benchmark_modules.hf.get_dtype" class="md-nav__link">
     <span class="md-ellipsis">
-      get_torch_dtype
+      get_dtype
     </span>
   </a>
   
@@ -987,9 +989,9 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#euroeval.benchmark_modules.hf.align_model_and_tokenizer" class="md-nav__link">
+  <a href="#euroeval.benchmark_modules.hf.align_model_and_tokeniser" class="md-nav__link">
     <span class="md-ellipsis">
-      align_model_and_tokenizer
+      align_model_and_tokeniser
     </span>
   </a>
   
@@ -2259,7 +2261,6 @@
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">c</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">t</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">functools</span><span class="w"> </span><span class="kn">import</span> <span class="n">cached_property</span><span class="p">,</span> <span class="n">partial</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">json</span><span class="w"> </span><span class="kn">import</span> <span class="n">JSONDecodeError</span>
@@ -2325,6 +2326,7 @@
     <span class="n">block_terminal_output</span><span class="p">,</span>
     <span class="n">create_model_cache_dir</span><span class="p">,</span>
     <span class="n">get_class_by_name</span><span class="p">,</span>
+    <span class="n">get_hf_token</span><span class="p">,</span>
     <span class="n">internet_connection_available</span><span class="p">,</span>
     <span class="n">log_once</span><span class="p">,</span>
 <span class="p">)</span>
@@ -2353,6 +2355,7 @@
         <span class="n">model_config</span><span class="p">:</span> <span class="s2">&quot;ModelConfig&quot;</span><span class="p">,</span>
         <span class="n">dataset_config</span><span class="p">:</span> <span class="s2">&quot;DatasetConfig&quot;</span><span class="p">,</span>
         <span class="n">benchmark_config</span><span class="p">:</span> <span class="s2">&quot;BenchmarkConfig&quot;</span><span class="p">,</span>
+        <span class="n">log_metadata</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialise the model.</span>
 
@@ -2363,18 +2366,20 @@
 <span class="sd">                The dataset configuration.</span>
 <span class="sd">            benchmark_config:</span>
 <span class="sd">                The benchmark configuration.</span>
+<span class="sd">            log_metadata:</span>
+<span class="sd">                Whether to log the model metadata.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">model</span><span class="p">,</span> <span class="n">tokenizer</span> <span class="o">=</span> <span class="n">load_model_and_tokenizer</span><span class="p">(</span>
+        <span class="n">model</span><span class="p">,</span> <span class="n">tokeniser</span> <span class="o">=</span> <span class="n">load_model_and_tokeniser</span><span class="p">(</span>
             <span class="n">model_config</span><span class="o">=</span><span class="n">model_config</span><span class="p">,</span>
             <span class="n">dataset_config</span><span class="o">=</span><span class="n">dataset_config</span><span class="p">,</span>
             <span class="n">benchmark_config</span><span class="o">=</span><span class="n">benchmark_config</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_model</span><span class="p">:</span> <span class="s2">&quot;PreTrainedModel&quot;</span> <span class="o">=</span> <span class="n">model</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_tokenizer</span><span class="p">:</span> <span class="s2">&quot;PreTrainedTokenizer&quot;</span> <span class="o">=</span> <span class="n">tokenizer</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_tokeniser</span><span class="p">:</span> <span class="s2">&quot;PreTrainedTokenizer&quot;</span> <span class="o">=</span> <span class="n">tokeniser</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">_model</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tokenizer</span> <span class="o">=</span> <span class="n">align_model_and_tokenizer</span><span class="p">(</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_model</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tokeniser</span> <span class="o">=</span> <span class="n">align_model_and_tokeniser</span><span class="p">(</span>
             <span class="n">model</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_model</span><span class="p">,</span>
-            <span class="n">tokenizer</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_tokenizer</span><span class="p">,</span>
+            <span class="n">tokeniser</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_tokeniser</span><span class="p">,</span>
             <span class="n">model_max_length</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">model_max_length</span><span class="p">,</span>
             <span class="n">raise_errors</span><span class="o">=</span><span class="n">benchmark_config</span><span class="o">.</span><span class="n">raise_errors</span><span class="p">,</span>
         <span class="p">)</span>
@@ -2383,6 +2388,7 @@
             <span class="n">model_config</span><span class="o">=</span><span class="n">model_config</span><span class="p">,</span>
             <span class="n">dataset_config</span><span class="o">=</span><span class="n">dataset_config</span><span class="p">,</span>
             <span class="n">benchmark_config</span><span class="o">=</span><span class="n">benchmark_config</span><span class="p">,</span>
+            <span class="n">log_metadata</span><span class="o">=</span><span class="n">log_metadata</span><span class="p">,</span>
         <span class="p">)</span>
 
     <span class="nd">@cached_property</span>
@@ -2392,9 +2398,7 @@
 <span class="sd">        Returns:</span>
 <span class="sd">            The number of parameters in the model.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">token</span> <span class="o">=</span> <span class="p">(</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">benchmark_config</span><span class="o">.</span><span class="n">api_key</span> <span class="ow">or</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;HUGGINGFACE_API_KEY&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="kc">True</span>
-        <span class="p">)</span>
+        <span class="n">token</span> <span class="o">=</span> <span class="n">get_hf_token</span><span class="p">(</span><span class="n">api_key</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">benchmark_config</span><span class="o">.</span><span class="n">api_key</span><span class="p">)</span>
         <span class="n">hf_api</span> <span class="o">=</span> <span class="n">HfApi</span><span class="p">(</span><span class="n">token</span><span class="o">=</span><span class="n">token</span><span class="p">)</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="n">repo_info</span> <span class="o">=</span> <span class="n">hf_api</span><span class="o">.</span><span class="n">model_info</span><span class="p">(</span>
@@ -2448,10 +2452,10 @@
         <span class="p">):</span>
             <span class="n">vocab_size</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_model</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">vocab_size</span>
         <span class="k">elif</span> <span class="p">(</span>
-            <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_tokenizer</span><span class="p">,</span> <span class="s2">&quot;vocab_size&quot;</span><span class="p">)</span>
-            <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tokenizer</span><span class="o">.</span><span class="n">vocab_size</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+            <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_tokeniser</span><span class="p">,</span> <span class="s2">&quot;vocab_size&quot;</span><span class="p">)</span>
+            <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tokeniser</span><span class="o">.</span><span class="n">vocab_size</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
         <span class="p">):</span>
-            <span class="n">vocab_size</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tokenizer</span><span class="o">.</span><span class="n">vocab_size</span>
+            <span class="n">vocab_size</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tokeniser</span><span class="o">.</span><span class="n">vocab_size</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">vocab_size</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
         <span class="k">return</span> <span class="n">vocab_size</span>
@@ -2465,18 +2469,18 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">all_max_lengths</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
 
-        <span class="c1"># Add the registered max length of the tokenizer</span>
+        <span class="c1"># Add the registered max length of the tokeniser</span>
         <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_tokenizer</span><span class="p">,</span> <span class="s2">&quot;model_max_length&quot;</span>
-        <span class="p">)</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tokenizer</span><span class="o">.</span><span class="n">model_max_length</span> <span class="o">&lt;</span> <span class="nb">int</span><span class="p">(</span><span class="mf">1e30</span><span class="p">):</span>
-            <span class="n">all_max_lengths</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_tokenizer</span><span class="o">.</span><span class="n">model_max_length</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_tokeniser</span><span class="p">,</span> <span class="s2">&quot;model_max_length&quot;</span>
+        <span class="p">)</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tokeniser</span><span class="o">.</span><span class="n">model_max_length</span> <span class="o">&lt;</span> <span class="nb">int</span><span class="p">(</span><span class="mf">1e30</span><span class="p">):</span>
+            <span class="n">all_max_lengths</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_tokeniser</span><span class="o">.</span><span class="n">model_max_length</span><span class="p">)</span>
 
         <span class="c1"># Add the max length derived from the model&#39;s input sizes</span>
-        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_tokenizer</span><span class="p">,</span> <span class="s2">&quot;max_model_input_sizes&quot;</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_tokeniser</span><span class="p">,</span> <span class="s2">&quot;max_model_input_sizes&quot;</span><span class="p">):</span>
             <span class="n">all_max_lengths</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span>
                 <span class="p">[</span>
                     <span class="n">size</span>
-                    <span class="k">for</span> <span class="n">size</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tokenizer</span><span class="o">.</span><span class="n">max_model_input_sizes</span><span class="o">.</span><span class="n">values</span><span class="p">()</span>
+                    <span class="k">for</span> <span class="n">size</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tokeniser</span><span class="o">.</span><span class="n">max_model_input_sizes</span><span class="o">.</span><span class="n">values</span><span class="p">()</span>
                     <span class="k">if</span> <span class="n">size</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
                 <span class="p">]</span>
             <span class="p">)</span>
@@ -2532,10 +2536,10 @@
                 <span class="o">|</span> <span class="n">TaskGroup</span><span class="o">.</span><span class="n">QUESTION_ANSWERING</span>
                 <span class="o">|</span> <span class="n">TaskGroup</span><span class="o">.</span><span class="n">MULTIPLE_CHOICE_CLASSIFICATION</span>
             <span class="p">):</span>
-                <span class="k">return</span> <span class="n">DataCollatorWithPadding</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_tokenizer</span><span class="p">,</span> <span class="n">padding</span><span class="o">=</span><span class="s2">&quot;longest&quot;</span><span class="p">)</span>
+                <span class="k">return</span> <span class="n">DataCollatorWithPadding</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_tokeniser</span><span class="p">,</span> <span class="n">padding</span><span class="o">=</span><span class="s2">&quot;longest&quot;</span><span class="p">)</span>
             <span class="k">case</span> <span class="n">TaskGroup</span><span class="o">.</span><span class="n">TOKEN_CLASSIFICATION</span><span class="p">:</span>
                 <span class="k">return</span> <span class="n">DataCollatorForTokenClassification</span><span class="p">(</span>
-                    <span class="n">tokenizer</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_tokenizer</span><span class="p">,</span> <span class="n">label_pad_token_id</span><span class="o">=-</span><span class="mi">100</span>
+                    <span class="n">tokenizer</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_tokeniser</span><span class="p">,</span> <span class="n">label_pad_token_id</span><span class="o">=-</span><span class="mi">100</span>
                 <span class="p">)</span>
             <span class="k">case</span><span class="w"> </span><span class="k">_</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span>
@@ -2614,16 +2618,16 @@
                         <span class="bp">self</span><span class="o">.</span><span class="n">_model</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">label2id</span><span class="p">[</span><span class="n">lbl</span><span class="o">.</span><span class="n">lower</span><span class="p">()]</span>
                         <span class="k">for</span> <span class="n">lbl</span> <span class="ow">in</span> <span class="n">examples</span><span class="p">[</span><span class="s2">&quot;label&quot;</span><span class="p">]</span>
                     <span class="p">]</span>
-                <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+                <span class="k">except</span> <span class="ne">KeyError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
                     <span class="k">raise</span> <span class="n">InvalidBenchmark</span><span class="p">(</span>
                         <span class="sa">f</span><span class="s2">&quot;One of the labels in the dataset, &quot;</span>
                         <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">examples</span><span class="p">[</span><span class="s1">&#39;label&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="si">}</span><span class="s2">, does not occur in the &quot;</span>
                         <span class="sa">f</span><span class="s2">&quot;label2id dictionary </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_model</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">label2id</span><span class="si">}</span><span class="s2">.&quot;</span>
-                    <span class="p">)</span>
+                    <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
             <span class="k">return</span> <span class="n">examples</span>
 
         <span class="k">def</span><span class="w"> </span><span class="nf">tokenise</span><span class="p">(</span><span class="n">examples</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;BatchEncoding&quot;</span><span class="p">:</span>
-            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tokenizer</span><span class="p">(</span><span class="n">text</span><span class="o">=</span><span class="n">examples</span><span class="p">[</span><span class="s2">&quot;text&quot;</span><span class="p">],</span> <span class="n">truncation</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">padding</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tokeniser</span><span class="p">(</span><span class="n">text</span><span class="o">=</span><span class="n">examples</span><span class="p">[</span><span class="s2">&quot;text&quot;</span><span class="p">],</span> <span class="n">truncation</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">padding</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
         <span class="k">match</span> <span class="n">task</span><span class="o">.</span><span class="n">task_group</span><span class="p">:</span>
             <span class="k">case</span> <span class="n">TaskGroup</span><span class="o">.</span><span class="n">SEQUENCE_CLASSIFICATION</span><span class="p">:</span>
@@ -2637,7 +2641,7 @@
                         <span class="n">split_name</span><span class="p">:</span> <span class="n">split</span><span class="o">.</span><span class="n">map</span><span class="p">(</span>
                             <span class="n">partial</span><span class="p">(</span>
                                 <span class="n">multiple_choice_classification</span><span class="o">.</span><span class="n">prepare_examples</span><span class="p">,</span>
-                                <span class="n">tokenizer</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_tokenizer</span><span class="p">,</span>
+                                <span class="n">tokeniser</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_tokeniser</span><span class="p">,</span>
                             <span class="p">),</span>
                             <span class="n">batched</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
                             <span class="n">batch_size</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
@@ -2661,7 +2665,7 @@
                 <span class="n">dataset</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">map</span><span class="p">(</span>
                     <span class="n">partial</span><span class="p">(</span>
                         <span class="n">token_classification</span><span class="o">.</span><span class="n">tokenize_and_align_labels</span><span class="p">,</span>
-                        <span class="n">tokenizer</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_tokenizer</span><span class="p">,</span>
+                        <span class="n">tokeniser</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_tokeniser</span><span class="p">,</span>
                         <span class="n">label2id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_model</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">label2id</span><span class="p">,</span>
                     <span class="p">),</span>
                     <span class="n">batched</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
@@ -2675,7 +2679,7 @@
                     <span class="n">data_dict</span><span class="p">[</span><span class="s2">&quot;train&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">dataset</span><span class="p">[</span><span class="s2">&quot;train&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">map</span><span class="p">(</span>
                         <span class="n">partial</span><span class="p">(</span>
                             <span class="n">question_answering</span><span class="o">.</span><span class="n">prepare_train_examples</span><span class="p">,</span>
-                            <span class="n">tokenizer</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_tokenizer</span><span class="p">,</span>
+                            <span class="n">tokeniser</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_tokeniser</span><span class="p">,</span>
                         <span class="p">),</span>
                         <span class="n">batched</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
                         <span class="n">batch_size</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
@@ -2687,7 +2691,7 @@
                     <span class="n">data_dict</span><span class="p">[</span><span class="s2">&quot;val&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">dataset</span><span class="p">[</span><span class="s2">&quot;val&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">map</span><span class="p">(</span>
                         <span class="n">partial</span><span class="p">(</span>
                             <span class="n">question_answering</span><span class="o">.</span><span class="n">prepare_train_examples</span><span class="p">,</span>
-                            <span class="n">tokenizer</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_tokenizer</span><span class="p">,</span>
+                            <span class="n">tokeniser</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_tokeniser</span><span class="p">,</span>
                         <span class="p">),</span>
                         <span class="n">batched</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
                         <span class="n">batch_size</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
@@ -2699,7 +2703,7 @@
                     <span class="n">data_dict</span><span class="p">[</span><span class="s2">&quot;test&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">dataset</span><span class="p">[</span><span class="s2">&quot;test&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">map</span><span class="p">(</span>
                         <span class="n">partial</span><span class="p">(</span>
                             <span class="n">question_answering</span><span class="o">.</span><span class="n">prepare_test_examples</span><span class="p">,</span>
-                            <span class="n">tokenizer</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_tokenizer</span><span class="p">,</span>
+                            <span class="n">tokeniser</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_tokeniser</span><span class="p">,</span>
                         <span class="p">),</span>
                         <span class="n">batched</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
                         <span class="n">batch_size</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
@@ -2798,12 +2802,12 @@
         <span class="k">return</span> <span class="n">model_config</span>
 
 
-<span class="k">def</span><span class="w"> </span><span class="nf">load_model_and_tokenizer</span><span class="p">(</span><div class="mkapi-source-link" id="euroeval.benchmark_modules.hf.load_model_and_tokenizer"><a href="../../../../api/euroeval/benchmark_modules/hf/#euroeval.benchmark_modules.hf.load_model_and_tokenizer" title="Go to docs">[docs]</a></div>
+<span class="k">def</span><span class="w"> </span><span class="nf">load_model_and_tokeniser</span><span class="p">(</span><div class="mkapi-source-link" id="euroeval.benchmark_modules.hf.load_model_and_tokeniser"><a href="../../../../api/euroeval/benchmark_modules/hf/#euroeval.benchmark_modules.hf.load_model_and_tokeniser" title="Go to docs">[docs]</a></div>
     <span class="n">model_config</span><span class="p">:</span> <span class="s2">&quot;ModelConfig&quot;</span><span class="p">,</span>
     <span class="n">dataset_config</span><span class="p">:</span> <span class="s2">&quot;DatasetConfig&quot;</span><span class="p">,</span>
     <span class="n">benchmark_config</span><span class="p">:</span> <span class="s2">&quot;BenchmarkConfig&quot;</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="s2">&quot;PreTrainedModel&quot;</span><span class="p">,</span> <span class="s2">&quot;PreTrainedTokenizer&quot;</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Load the model and tokenizer.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Load the model and tokeniser.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        model_config:</span>
@@ -2814,7 +2818,7 @@
 <span class="sd">            The benchmark configuration</span>
 
 <span class="sd">    Returns:</span>
-<span class="sd">        The loaded model and tokenizer.</span>
+<span class="sd">        The loaded model and tokeniser.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">config</span><span class="p">:</span> <span class="s2">&quot;PretrainedConfig&quot;</span>
     <span class="n">block_terminal_output</span><span class="p">()</span>
@@ -2846,12 +2850,12 @@
         <span class="n">config</span><span class="o">=</span><span class="n">config</span><span class="p">,</span>
         <span class="n">ignore_mismatched_sizes</span><span class="o">=</span><span class="n">ignore_mismatched_sizes</span><span class="p">,</span>
         <span class="n">revision</span><span class="o">=</span><span class="n">model_config</span><span class="o">.</span><span class="n">revision</span><span class="p">,</span>
-        <span class="n">token</span><span class="o">=</span><span class="n">benchmark_config</span><span class="o">.</span><span class="n">api_key</span> <span class="ow">or</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;HUGGINGFACE_API_KEY&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">token</span><span class="o">=</span><span class="n">get_hf_token</span><span class="p">(</span><span class="n">api_key</span><span class="o">=</span><span class="n">benchmark_config</span><span class="o">.</span><span class="n">api_key</span><span class="p">),</span>
         <span class="n">cache_dir</span><span class="o">=</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_cache_dir</span><span class="p">,</span>
         <span class="n">trust_remote_code</span><span class="o">=</span><span class="n">benchmark_config</span><span class="o">.</span><span class="n">trust_remote_code</span><span class="p">,</span>
-        <span class="n">torch_dtype</span><span class="o">=</span><span class="n">get_torch_dtype</span><span class="p">(</span>
+        <span class="n">dtype</span><span class="o">=</span><span class="n">get_dtype</span><span class="p">(</span>
             <span class="n">device</span><span class="o">=</span><span class="n">benchmark_config</span><span class="o">.</span><span class="n">device</span><span class="p">,</span>
-            <span class="n">torch_dtype_is_set</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;torch_dtype&quot;</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">dtype_is_set</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;dtype&quot;</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span>
             <span class="n">bf16_available</span><span class="o">=</span><span class="p">(</span>
                 <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">is_available</span><span class="p">()</span> <span class="ow">and</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">is_bf16_supported</span><span class="p">()</span>
             <span class="p">),</span>
@@ -2897,11 +2901,13 @@
                 <span class="n">model_kwargs</span><span class="p">[</span><span class="s2">&quot;ignore_mismatched_sizes&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
                 <span class="k">continue</span>
             <span class="k">else</span><span class="p">:</span>
-                <span class="k">raise</span> <span class="n">InvalidModel</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">))</span>
-        <span class="k">except</span> <span class="p">(</span><span class="ne">TimeoutError</span><span class="p">,</span> <span class="n">RequestError</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="n">InvalidModel</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">))</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
+        <span class="k">except</span> <span class="p">(</span><span class="ne">TimeoutError</span><span class="p">,</span> <span class="n">RequestError</span><span class="p">)</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
             <span class="n">attempts_left</span> <span class="o">-=</span> <span class="mi">1</span>
             <span class="k">if</span> <span class="n">attempts_left</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-                <span class="k">raise</span> <span class="n">InvalidModel</span><span class="p">(</span><span class="s2">&quot;The model could not be loaded after 5 attempts.&quot;</span><span class="p">)</span>
+                <span class="k">raise</span> <span class="n">InvalidModel</span><span class="p">(</span>
+                    <span class="s2">&quot;The model could not be loaded after 5 attempts.&quot;</span>
+                <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Couldn&#39;t load the model </span><span class="si">{</span><span class="n">model_id</span><span class="si">!r}</span><span class="s2">. Retrying.&quot;</span><span class="p">)</span>
             <span class="n">sleep</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span>
             <span class="k">continue</span>
@@ -2909,16 +2915,16 @@
             <span class="k">if</span> <span class="s2">&quot;checkpoint seems to be incorrect&quot;</span> <span class="ow">in</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">):</span>
                 <span class="k">raise</span> <span class="n">InvalidModel</span><span class="p">(</span>
                     <span class="sa">f</span><span class="s2">&quot;The model </span><span class="si">{</span><span class="n">model_id</span><span class="si">!r}</span><span class="s2"> has an incorrect checkpoint.&quot;</span>
-                <span class="p">)</span>
+                <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
             <span class="k">if</span> <span class="s2">&quot;trust_remote_code&quot;</span> <span class="ow">in</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">):</span>
                 <span class="k">raise</span> <span class="n">InvalidModel</span><span class="p">(</span>
                     <span class="sa">f</span><span class="s2">&quot;Loading the model </span><span class="si">{</span><span class="n">model_id</span><span class="si">!r}</span><span class="s2"> needs to trust remote code. &quot;</span>
                     <span class="s2">&quot;If you trust the suppliers of this model, then you can enable &quot;</span>
                     <span class="s2">&quot;this by setting the `--trust-remote-code` flag.&quot;</span>
-                <span class="p">)</span>
+                <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
             <span class="k">raise</span> <span class="n">InvalidModel</span><span class="p">(</span>
                 <span class="sa">f</span><span class="s2">&quot;The model </span><span class="si">{</span><span class="n">model_id</span><span class="si">!r}</span><span class="s2"> could not be loaded. The error was </span><span class="si">{</span><span class="n">e</span><span class="si">!r}</span><span class="s2">.&quot;</span>
-            <span class="p">)</span>
+            <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
 
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">model_or_tuple</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">):</span>
         <span class="n">model</span> <span class="o">=</span> <span class="n">model_or_tuple</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
@@ -2936,13 +2942,13 @@
     <span class="p">):</span>
         <span class="n">model</span> <span class="o">=</span> <span class="n">setup_model_for_question_answering</span><span class="p">(</span><span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">)</span>
 
-    <span class="n">tokenizer</span> <span class="o">=</span> <span class="n">load_tokenizer</span><span class="p">(</span>
+    <span class="n">tokeniser</span> <span class="o">=</span> <span class="n">load_tokeniser</span><span class="p">(</span>
         <span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span>
         <span class="n">model_id</span><span class="o">=</span><span class="n">model_id</span><span class="p">,</span>
         <span class="n">trust_remote_code</span><span class="o">=</span><span class="n">benchmark_config</span><span class="o">.</span><span class="n">trust_remote_code</span><span class="p">,</span>
     <span class="p">)</span>
 
-    <span class="k">return</span> <span class="n">model</span><span class="p">,</span> <span class="n">tokenizer</span>
+    <span class="k">return</span> <span class="n">model</span><span class="p">,</span> <span class="n">tokeniser</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">get_model_repo_info</span><span class="p">(</span><div class="mkapi-source-link" id="euroeval.benchmark_modules.hf.get_model_repo_info"><a href="../../../../api/euroeval/benchmark_modules/hf/#euroeval.benchmark_modules.hf.get_model_repo_info" title="Go to docs">[docs]</a></div>
@@ -2961,7 +2967,7 @@
 <span class="sd">    Returns:</span>
 <span class="sd">        The information about the model, or None if the model could not be found.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">token</span> <span class="o">=</span> <span class="n">benchmark_config</span><span class="o">.</span><span class="n">api_key</span> <span class="ow">or</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;HUGGINGFACE_API_KEY&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="kc">True</span>
+    <span class="n">token</span> <span class="o">=</span> <span class="n">get_hf_token</span><span class="p">(</span><span class="n">api_key</span><span class="o">=</span><span class="n">benchmark_config</span><span class="o">.</span><span class="n">api_key</span><span class="p">)</span>
     <span class="n">hf_api</span> <span class="o">=</span> <span class="n">HfApi</span><span class="p">(</span><span class="n">token</span><span class="o">=</span><span class="n">token</span><span class="p">)</span>
     <span class="n">model_id</span><span class="p">,</span> <span class="n">revision</span> <span class="o">=</span> <span class="n">model_id</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;@&quot;</span><span class="p">)</span> <span class="k">if</span> <span class="s2">&quot;@&quot;</span> <span class="ow">in</span> <span class="n">model_id</span> <span class="k">else</span> <span class="p">(</span><span class="n">model_id</span><span class="p">,</span> <span class="s2">&quot;main&quot;</span><span class="p">)</span>
 
@@ -3039,12 +3045,7 @@
             <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="k">if</span> <span class="n">base_model_id</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">base_model_info</span> <span class="o">=</span> <span class="n">hf_api</span><span class="o">.</span><span class="n">model_info</span><span class="p">(</span>
-                <span class="n">repo_id</span><span class="o">=</span><span class="n">base_model_id</span><span class="p">,</span>
-                <span class="n">token</span><span class="o">=</span><span class="n">benchmark_config</span><span class="o">.</span><span class="n">api_key</span>
-                <span class="ow">or</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;HUGGINGFACE_API_KEY&quot;</span><span class="p">)</span>
-                <span class="ow">or</span> <span class="kc">True</span><span class="p">,</span>
-            <span class="p">)</span>
+            <span class="n">base_model_info</span> <span class="o">=</span> <span class="n">hf_api</span><span class="o">.</span><span class="n">model_info</span><span class="p">(</span><span class="n">repo_id</span><span class="o">=</span><span class="n">base_model_id</span><span class="p">,</span> <span class="n">token</span><span class="o">=</span><span class="n">token</span><span class="p">)</span>
             <span class="n">tags</span> <span class="o">+=</span> <span class="n">base_model_info</span><span class="o">.</span><span class="n">tags</span> <span class="ow">or</span> <span class="nb">list</span><span class="p">()</span>
             <span class="n">tags</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">tags</span><span class="p">))</span>
 
@@ -3119,10 +3120,10 @@
     <span class="p">)</span>
 
 
-<span class="k">def</span><span class="w"> </span><span class="nf">load_tokenizer</span><span class="p">(</span><div class="mkapi-source-link" id="euroeval.benchmark_modules.hf.load_tokenizer"><a href="../../../../api/euroeval/benchmark_modules/hf/#euroeval.benchmark_modules.hf.load_tokenizer" title="Go to docs">[docs]</a></div>
+<span class="k">def</span><span class="w"> </span><span class="nf">load_tokeniser</span><span class="p">(</span><div class="mkapi-source-link" id="euroeval.benchmark_modules.hf.load_tokeniser"><a href="../../../../api/euroeval/benchmark_modules/hf/#euroeval.benchmark_modules.hf.load_tokeniser" title="Go to docs">[docs]</a></div>
     <span class="n">model</span><span class="p">:</span> <span class="s2">&quot;PreTrainedModel | None&quot;</span><span class="p">,</span> <span class="n">model_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">trust_remote_code</span><span class="p">:</span> <span class="nb">bool</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;PreTrainedTokenizer&quot;</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Load the tokenizer.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Load the tokeniser.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        model:</span>
@@ -3134,7 +3135,7 @@
 <span class="sd">            Whether to trust remote code.</span>
 
 <span class="sd">    Returns:</span>
-<span class="sd">        The loaded tokenizer.</span>
+<span class="sd">        The loaded tokeniser.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">loading_kwargs</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">bool</span> <span class="o">|</span> <span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
         <span class="n">use_fast</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
@@ -3157,45 +3158,46 @@
     <span class="n">num_retries</span> <span class="o">=</span> <span class="mi">5</span>
     <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_retries</span><span class="p">):</span>
         <span class="k">try</span><span class="p">:</span>
-            <span class="n">tokenizer</span> <span class="o">=</span> <span class="n">AutoTokenizer</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">model_id</span><span class="p">,</span> <span class="o">**</span><span class="n">loading_kwargs</span><span class="p">)</span>
+            <span class="n">tokeniser</span> <span class="o">=</span> <span class="n">AutoTokenizer</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">model_id</span><span class="p">,</span> <span class="o">**</span><span class="n">loading_kwargs</span><span class="p">)</span>
             <span class="k">break</span>
-        <span class="k">except</span> <span class="p">(</span><span class="n">JSONDecodeError</span><span class="p">,</span> <span class="ne">OSError</span><span class="p">,</span> <span class="ne">TypeError</span><span class="p">):</span>
-            <span class="k">raise</span> <span class="n">InvalidModel</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Could not load tokenizer for model </span><span class="si">{</span><span class="n">model_id</span><span class="si">!r}</span><span class="s2">.&quot;</span><span class="p">)</span>
+        <span class="k">except</span> <span class="p">(</span><span class="n">JSONDecodeError</span><span class="p">,</span> <span class="ne">OSError</span><span class="p">,</span> <span class="ne">TypeError</span><span class="p">)</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">InvalidModel</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Could not load tokeniser for model </span><span class="si">{</span><span class="n">model_id</span><span class="si">!r}</span><span class="s2">.&quot;</span>
+            <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
         <span class="k">except</span> <span class="p">(</span><span class="ne">TimeoutError</span><span class="p">,</span> <span class="n">RequestError</span><span class="p">):</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Couldn&#39;t load tokenizer for </span><span class="si">{</span><span class="n">model_id</span><span class="si">!r}</span><span class="s2">. Retrying.&quot;</span><span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Couldn&#39;t load tokeniser for </span><span class="si">{</span><span class="n">model_id</span><span class="si">!r}</span><span class="s2">. Retrying.&quot;</span><span class="p">)</span>
             <span class="n">sleep</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span>
             <span class="k">continue</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="k">raise</span> <span class="n">InvalidModel</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;Could not load tokenizer for model </span><span class="si">{</span><span class="n">model_id</span><span class="si">!r}</span><span class="s2"> after </span><span class="si">{</span><span class="n">num_retries</span><span class="si">}</span><span class="s2"> &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;Could not load tokeniser for model </span><span class="si">{</span><span class="n">model_id</span><span class="si">!r}</span><span class="s2"> after </span><span class="si">{</span><span class="n">num_retries</span><span class="si">}</span><span class="s2"> &quot;</span>
             <span class="s2">&quot;attempts.&quot;</span>
         <span class="p">)</span>
 
     <span class="c1"># Ensure that BOS, EOS and PAD tokens are set</span>
-    <span class="n">tokenizer</span><span class="o">.</span><span class="n">bos_token</span><span class="p">,</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">bos_token_id</span> <span class="o">=</span> <span class="n">get_bos_token</span><span class="p">(</span><span class="n">tokenizer</span><span class="o">=</span><span class="n">tokenizer</span><span class="p">)</span>
-    <span class="n">tokenizer</span><span class="o">.</span><span class="n">eos_token</span><span class="p">,</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">eos_token_id</span> <span class="o">=</span> <span class="n">get_eos_token</span><span class="p">(</span><span class="n">tokenizer</span><span class="o">=</span><span class="n">tokenizer</span><span class="p">)</span>
+    <span class="n">tokeniser</span><span class="o">.</span><span class="n">bos_token</span><span class="p">,</span> <span class="n">tokeniser</span><span class="o">.</span><span class="n">bos_token_id</span> <span class="o">=</span> <span class="n">get_bos_token</span><span class="p">(</span><span class="n">tokeniser</span><span class="o">=</span><span class="n">tokeniser</span><span class="p">)</span>
+    <span class="n">tokeniser</span><span class="o">.</span><span class="n">eos_token</span><span class="p">,</span> <span class="n">tokeniser</span><span class="o">.</span><span class="n">eos_token_id</span> <span class="o">=</span> <span class="n">get_eos_token</span><span class="p">(</span><span class="n">tokeniser</span><span class="o">=</span><span class="n">tokeniser</span><span class="p">)</span>
 
-    <span class="k">return</span> <span class="n">tokenizer</span>
+    <span class="k">return</span> <span class="n">tokeniser</span>
 
 
-<span class="k">def</span><span class="w"> </span><span class="nf">get_torch_dtype</span><span class="p">(</span><div class="mkapi-source-link" id="euroeval.benchmark_modules.hf.get_torch_dtype"><a href="../../../../api/euroeval/benchmark_modules/hf/#euroeval.benchmark_modules.hf.get_torch_dtype" title="Go to docs">[docs]</a></div>
-    <span class="n">device</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">device</span><span class="p">,</span> <span class="n">torch_dtype_is_set</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span> <span class="n">bf16_available</span><span class="p">:</span> <span class="nb">bool</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_dtype</span><span class="p">(</span><div class="mkapi-source-link" id="euroeval.benchmark_modules.hf.get_dtype"><a href="../../../../api/euroeval/benchmark_modules/hf/#euroeval.benchmark_modules.hf.get_dtype" title="Go to docs">[docs]</a></div>
+    <span class="n">device</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">device</span><span class="p">,</span> <span class="n">dtype_is_set</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span> <span class="n">bf16_available</span><span class="p">:</span> <span class="nb">bool</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">torch</span><span class="o">.</span><span class="n">dtype</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the torch dtype, used for loading the model.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        device:</span>
 <span class="sd">            The device to use.</span>
-<span class="sd">        torch_dtype_is_set:</span>
-<span class="sd">            Whether the torch data type is set in the model configuration.</span>
+<span class="sd">            Whether the data type is set in the model configuration.</span>
 <span class="sd">        bf16_available:</span>
 <span class="sd">            Whether bfloat16 is available.</span>
 
 <span class="sd">    Returns:</span>
-<span class="sd">        The torch dtype.</span>
+<span class="sd">        The dtype.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">using_cuda</span> <span class="o">=</span> <span class="n">device</span> <span class="o">==</span> <span class="n">torch</span><span class="o">.</span><span class="n">device</span><span class="p">(</span><span class="s2">&quot;cuda&quot;</span><span class="p">)</span>
-    <span class="k">if</span> <span class="n">using_cuda</span> <span class="ow">and</span> <span class="n">torch_dtype_is_set</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">using_cuda</span> <span class="ow">and</span> <span class="n">dtype_is_set</span><span class="p">:</span>
         <span class="k">return</span> <span class="s2">&quot;auto&quot;</span>
     <span class="k">elif</span> <span class="n">using_cuda</span> <span class="ow">and</span> <span class="n">bf16_available</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">bfloat16</span>
@@ -3248,7 +3250,7 @@
                 <span class="n">id2label</span><span class="o">=</span><span class="n">id2label</span><span class="p">,</span>
                 <span class="n">label2id</span><span class="o">=</span><span class="n">label2id</span><span class="p">,</span>
                 <span class="n">revision</span><span class="o">=</span><span class="n">revision</span><span class="p">,</span>
-                <span class="n">token</span><span class="o">=</span><span class="n">api_key</span> <span class="ow">or</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;HUGGINGFACE_API_KEY&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="kc">True</span><span class="p">,</span>
+                <span class="n">token</span><span class="o">=</span><span class="n">get_hf_token</span><span class="p">(</span><span class="n">api_key</span><span class="o">=</span><span class="n">api_key</span><span class="p">),</span>
                 <span class="n">trust_remote_code</span><span class="o">=</span><span class="n">trust_remote_code</span><span class="p">,</span>
                 <span class="n">cache_dir</span><span class="o">=</span><span class="n">model_cache_dir</span><span class="p">,</span>
             <span class="p">)</span>
@@ -3263,7 +3265,7 @@
             <span class="k">raise</span> <span class="n">InvalidModel</span><span class="p">(</span>
                 <span class="sa">f</span><span class="s2">&quot;The model config for the model </span><span class="si">{</span><span class="n">model_id</span><span class="si">!r}</span><span class="s2"> could not be &quot;</span>
                 <span class="sa">f</span><span class="s2">&quot;loaded, as the key </span><span class="si">{</span><span class="n">key</span><span class="si">!r}</span><span class="s2"> was not found in the config.&quot;</span>
-            <span class="p">)</span>
+            <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
         <span class="k">except</span> <span class="p">(</span><span class="ne">OSError</span><span class="p">,</span> <span class="n">GatedRepoError</span><span class="p">)</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
             <span class="c1"># TEMP: When the model is gated then we cannot set cache dir, for some</span>
             <span class="c1"># reason (since transformers v4.38.2, still a problem in v4.48.0). This</span>
@@ -3274,7 +3276,7 @@
             <span class="k">raise</span> <span class="n">InvalidModel</span><span class="p">(</span>
                 <span class="sa">f</span><span class="s2">&quot;Couldn&#39;t load model config for </span><span class="si">{</span><span class="n">model_id</span><span class="si">!r}</span><span class="s2">. The error was &quot;</span>
                 <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">e</span><span class="si">!r}</span><span class="s2">. Skipping&quot;</span>
-            <span class="p">)</span>
+            <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
         <span class="k">except</span> <span class="p">(</span><span class="ne">TimeoutError</span><span class="p">,</span> <span class="n">RequestError</span><span class="p">):</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Couldn&#39;t load model config for </span><span class="si">{</span><span class="n">model_id</span><span class="si">!r}</span><span class="s2">. Retrying.&quot;</span><span class="p">)</span>
             <span class="n">sleep</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span>
@@ -3284,17 +3286,17 @@
                 <span class="k">raise</span> <span class="n">InvalidModel</span><span class="p">(</span>
                     <span class="sa">f</span><span class="s2">&quot;The model </span><span class="si">{</span><span class="n">model_id</span><span class="si">!r}</span><span class="s2"> is awaiting a review from the repository &quot;</span>
                     <span class="s2">&quot;authors. Please try again later.&quot;</span>
-                <span class="p">)</span>
+                <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
             <span class="k">if</span> <span class="s2">&quot;trust_remote_code&quot;</span> <span class="ow">in</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">):</span>
                 <span class="k">raise</span> <span class="n">NeedsAdditionalArgument</span><span class="p">(</span>
                     <span class="n">cli_argument</span><span class="o">=</span><span class="s2">&quot;--trust-remote-code&quot;</span><span class="p">,</span>
                     <span class="n">script_argument</span><span class="o">=</span><span class="s2">&quot;trust_remote_code=True&quot;</span><span class="p">,</span>
                     <span class="n">run_with_cli</span><span class="o">=</span><span class="n">run_with_cli</span><span class="p">,</span>
-                <span class="p">)</span>
+                <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
             <span class="k">raise</span> <span class="n">InvalidModel</span><span class="p">(</span>
                 <span class="sa">f</span><span class="s2">&quot;The config for the model </span><span class="si">{</span><span class="n">model_id</span><span class="si">!r}</span><span class="s2"> could not be loaded. The &quot;</span>
                 <span class="sa">f</span><span class="s2">&quot;error was </span><span class="si">{</span><span class="n">e</span><span class="si">!r}</span><span class="s2">.&quot;</span>
-            <span class="p">)</span>
+            <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
 
 <div class="mkapi-source-link" id="euroeval.benchmark_modules.hf.setup_model_for_question_answering"><a href="../../../../api/euroeval/benchmark_modules/hf/#euroeval.benchmark_modules.hf.setup_model_for_question_answering" title="Go to docs">[docs]</a></div>
 <span class="k">def</span><span class="w"> </span><span class="nf">setup_model_for_question_answering</span><span class="p">(</span><span class="n">model</span><span class="p">:</span> <span class="s2">&quot;PreTrainedModel&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;PreTrainedModel&quot;</span><span class="p">:</span>
@@ -3379,33 +3381,33 @@
         <span class="k">return</span> <span class="n">submodules</span>
 
 
-<span class="k">def</span><span class="w"> </span><span class="nf">align_model_and_tokenizer</span><span class="p">(</span><div class="mkapi-source-link" id="euroeval.benchmark_modules.hf.align_model_and_tokenizer"><a href="../../../../api/euroeval/benchmark_modules/hf/#euroeval.benchmark_modules.hf.align_model_and_tokenizer" title="Go to docs">[docs]</a></div>
+<span class="k">def</span><span class="w"> </span><span class="nf">align_model_and_tokeniser</span><span class="p">(</span><div class="mkapi-source-link" id="euroeval.benchmark_modules.hf.align_model_and_tokeniser"><a href="../../../../api/euroeval/benchmark_modules/hf/#euroeval.benchmark_modules.hf.align_model_and_tokeniser" title="Go to docs">[docs]</a></div>
     <span class="n">model</span><span class="p">:</span> <span class="s2">&quot;PreTrainedModel&quot;</span><span class="p">,</span>
-    <span class="n">tokenizer</span><span class="p">:</span> <span class="s2">&quot;PreTrainedTokenizer&quot;</span><span class="p">,</span>
+    <span class="n">tokeniser</span><span class="p">:</span> <span class="s2">&quot;PreTrainedTokenizer&quot;</span><span class="p">,</span>
     <span class="n">model_max_length</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
     <span class="n">raise_errors</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="s2">&quot;PreTrainedModel&quot;</span><span class="p">,</span> <span class="s2">&quot;PreTrainedTokenizer&quot;</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Aligns the model and the tokenizer.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Aligns the model and the tokeniser.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        model:</span>
 <span class="sd">            The model to fix.</span>
-<span class="sd">        tokenizer:</span>
-<span class="sd">            The tokenizer to fix.</span>
+<span class="sd">        tokeniser:</span>
+<span class="sd">            The tokeniser to fix.</span>
 <span class="sd">        model_max_length:</span>
 <span class="sd">            The maximum length of the model.</span>
 <span class="sd">        raise_errors:</span>
 <span class="sd">            Whether to raise errors instead of trying to fix them silently.</span>
 
 <span class="sd">    Returns:</span>
-<span class="sd">        The fixed model and tokenizer.</span>
+<span class="sd">        The fixed model and tokeniser.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">model_max_length</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">model_max_length</span><span class="p">,</span> <span class="n">MAX_CONTEXT_LENGTH</span><span class="p">)</span>
 
     <span class="k">if</span> <span class="n">model_max_length</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
-        <span class="n">tokenizer</span><span class="o">.</span><span class="n">model_max_length</span> <span class="o">=</span> <span class="n">model_max_length</span>
+        <span class="n">tokeniser</span><span class="o">.</span><span class="n">model_max_length</span> <span class="o">=</span> <span class="n">model_max_length</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="n">tokenizer</span><span class="o">.</span><span class="n">model_max_length</span> <span class="o">=</span> <span class="mi">512</span>
+        <span class="n">tokeniser</span><span class="o">.</span><span class="n">model_max_length</span> <span class="o">=</span> <span class="mi">512</span>
 
     <span class="c1"># Move the model to the CPU, since otherwise we can&#39;t catch the IndexErrors when</span>
     <span class="c1"># finding the maximum sequence length of the model</span>
@@ -3414,9 +3416,9 @@
 
     <span class="c1"># Manually check that this model max length is valid for the model, and adjust</span>
     <span class="c1"># otherwise</span>
-    <span class="n">initial_max_length</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">model_max_length</span>
+    <span class="n">initial_max_length</span> <span class="o">=</span> <span class="n">tokeniser</span><span class="o">.</span><span class="n">model_max_length</span>
     <span class="k">for</span> <span class="n">max_length</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">initial_max_length</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">):</span>
-        <span class="n">tokenizer</span><span class="o">.</span><span class="n">model_max_length</span> <span class="o">=</span> <span class="n">max_length</span>
+        <span class="n">tokeniser</span><span class="o">.</span><span class="n">model_max_length</span> <span class="o">=</span> <span class="n">max_length</span>
         <span class="n">dummy_inputs</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">full</span><span class="p">(</span>
             <span class="n">size</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">max_length</span><span class="p">),</span>
             <span class="n">fill_value</span><span class="o">=</span><span class="n">DUMMY_FILL_VALUE</span><span class="p">,</span>
@@ -3443,24 +3445,24 @@
     <span class="c1"># Move the model back to the original device</span>
     <span class="n">model</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">model_device</span><span class="p">)</span>  <span class="c1"># type: ignore[arg-type]</span>
 
-    <span class="c1"># If there is a mismatch between the vocab size according to the tokenizer and</span>
+    <span class="c1"># If there is a mismatch between the vocab size according to the tokeniser and</span>
     <span class="c1"># the vocab size according to the model, we raise an error</span>
     <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">config</span><span class="p">,</span> <span class="s2">&quot;vocab_size&quot;</span><span class="p">):</span>
-        <span class="k">if</span> <span class="n">model</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">vocab_size</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">tokenizer</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">model</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">vocab_size</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">tokeniser</span><span class="p">):</span>
             <span class="k">if</span> <span class="n">raise_errors</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="n">InvalidModel</span><span class="p">(</span>
-                    <span class="s2">&quot;The vocab size of the tokenizer is larger than the vocab size of &quot;</span>
+                    <span class="s2">&quot;The vocab size of the tokeniser is larger than the vocab size of &quot;</span>
                     <span class="s2">&quot;the model. As the --raise-errors option was specified, the &quot;</span>
                     <span class="s2">&quot;embeddings of the model will not be automatically adjusted.&quot;</span>
                 <span class="p">)</span>
             <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="s2">&quot;resize_token_embeddings&quot;</span><span class="p">):</span>
-                <span class="n">model</span><span class="o">.</span><span class="n">resize_token_embeddings</span><span class="p">(</span><span class="n">new_num_tokens</span><span class="o">=</span><span class="n">tokenizer</span><span class="o">.</span><span class="n">vocab_size</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+                <span class="n">model</span><span class="o">.</span><span class="n">resize_token_embeddings</span><span class="p">(</span><span class="n">new_num_tokens</span><span class="o">=</span><span class="n">tokeniser</span><span class="o">.</span><span class="n">vocab_size</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
 
-    <span class="k">if</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">bos_token</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">eos_token</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">tokenizer</span><span class="o">.</span><span class="n">bos_token</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">eos_token</span>
-        <span class="n">tokenizer</span><span class="o">.</span><span class="n">bos_token_id</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">eos_token_id</span>
+    <span class="k">if</span> <span class="n">tokeniser</span><span class="o">.</span><span class="n">bos_token</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">tokeniser</span><span class="o">.</span><span class="n">eos_token</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">tokeniser</span><span class="o">.</span><span class="n">bos_token</span> <span class="o">=</span> <span class="n">tokeniser</span><span class="o">.</span><span class="n">eos_token</span>
+        <span class="n">tokeniser</span><span class="o">.</span><span class="n">bos_token_id</span> <span class="o">=</span> <span class="n">tokeniser</span><span class="o">.</span><span class="n">eos_token_id</span>
 
-    <span class="k">return</span> <span class="n">model</span><span class="p">,</span> <span class="n">tokenizer</span>
+    <span class="k">return</span> <span class="n">model</span><span class="p">,</span> <span class="n">tokeniser</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">task_group_to_class_name</span><span class="p">(</span><span class="n">task_group</span><span class="p">:</span> <span class="n">TaskGroup</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span><div class="mkapi-source-link" id="euroeval.benchmark_modules.hf.task_group_to_class_name"><a href="../../../../api/euroeval/benchmark_modules/hf/#euroeval.benchmark_modules.hf.task_group_to_class_name" title="Go to docs">[docs]</a></div>

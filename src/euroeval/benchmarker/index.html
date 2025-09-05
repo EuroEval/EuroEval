@@ -12,7 +12,7 @@
       
       
       <link rel="icon" href="../../../gfx/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.17">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.18">
     
     
       
@@ -597,6 +597,8 @@
       
         
           
+        
+      
         
       
         
@@ -2059,7 +2061,8 @@
 <span class="normal">1134</span>
 <span class="normal">1135</span>
 <span class="normal">1136</span>
-<span class="normal">1137</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Class that benchmarks language models.&quot;&quot;&quot;</span>
+<span class="normal">1137</span>
+<span class="normal">1138</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Class that benchmarks language models.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">contextlib</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
@@ -2451,9 +2454,15 @@
                 <span class="k">continue</span>
 
             <span class="n">loaded_model</span><span class="p">:</span> <span class="n">BenchmarkModule</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="n">benchmark_params_to_revert</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">t</span><span class="o">.</span><span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
             <span class="k">for</span> <span class="n">dataset_config</span> <span class="ow">in</span> <span class="n">dataset_configs</span><span class="p">:</span>
+                <span class="c1"># Revert any changes to the benchmark configuration made for the</span>
+                <span class="c1"># previous dataset</span>
+                <span class="k">for</span> <span class="n">param</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">benchmark_params_to_revert</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                    <span class="nb">setattr</span><span class="p">(</span><span class="n">benchmark_config</span><span class="p">,</span> <span class="n">param</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+                <span class="n">benchmark_params_to_revert</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+
                 <span class="c1"># Update the benchmark config if the dataset requires it</span>
-                <span class="n">benchmark_config_params_to_be_set</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
                 <span class="k">if</span> <span class="p">(</span>
                     <span class="s2">&quot;val&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">dataset_config</span><span class="o">.</span><span class="n">splits</span>
                     <span class="ow">and</span> <span class="ow">not</span> <span class="n">benchmark_config</span><span class="o">.</span><span class="n">evaluate_test_split</span>
@@ -2463,7 +2472,7 @@
                         <span class="s2">&quot;you requested evaluating the validation split (the default), &quot;</span>
                         <span class="s2">&quot;we will evaluate on the test split.&quot;</span>
                     <span class="p">)</span>
-                    <span class="n">benchmark_config_params_to_be_set</span><span class="p">[</span><span class="s2">&quot;evaluate_test_split&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
+                    <span class="n">benchmark_params_to_revert</span><span class="p">[</span><span class="s2">&quot;evaluate_test_split&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
                     <span class="n">benchmark_config</span><span class="o">.</span><span class="n">evaluate_test_split</span> <span class="o">=</span> <span class="kc">True</span>
                 <span class="k">if</span> <span class="n">dataset_config</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">requires_zero_shot</span> <span class="ow">and</span> <span class="n">benchmark_config</span><span class="o">.</span><span class="n">few_shot</span><span class="p">:</span>
                     <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
@@ -2471,7 +2480,7 @@
                         <span class="s2">&quot;requested few-shot evaluation (the default), we will evaluate &quot;</span>
                         <span class="s2">&quot;zero-shot.&quot;</span>
                     <span class="p">)</span>
-                    <span class="n">benchmark_config_params_to_be_set</span><span class="p">[</span><span class="s2">&quot;few_shot&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+                    <span class="n">benchmark_params_to_revert</span><span class="p">[</span><span class="s2">&quot;few_shot&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
                     <span class="n">benchmark_config</span><span class="o">.</span><span class="n">few_shot</span> <span class="o">=</span> <span class="kc">False</span>
 
                 <span class="c1"># Skip if we have already benchmarked this model on this dataset and</span>
@@ -2569,11 +2578,6 @@
                     <span class="n">current_benchmark_results</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">record</span><span class="p">)</span>
                     <span class="k">if</span> <span class="n">benchmark_config</span><span class="o">.</span><span class="n">save_results</span><span class="p">:</span>
                         <span class="n">record</span><span class="o">.</span><span class="n">append_to_results</span><span class="p">(</span><span class="n">results_path</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">results_path</span><span class="p">)</span>
-
-                <span class="c1"># Reset the dataset-specific settings in the benchmark config</span>
-                <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">benchmark_config_params_to_be_set</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-                    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Setting </span><span class="si">{</span><span class="n">key</span><span class="si">!r}</span><span class="s2"> back to </span><span class="si">{</span><span class="n">value</span><span class="si">!r}</span><span class="s2">.&quot;</span><span class="p">)</span>
-                    <span class="nb">setattr</span><span class="p">(</span><span class="n">benchmark_config</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
 
                 <span class="n">num_finished_benchmarks</span> <span class="o">+=</span> <span class="mi">1</span>
                 <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>

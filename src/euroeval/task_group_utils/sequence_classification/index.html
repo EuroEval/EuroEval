@@ -12,7 +12,7 @@
       
       
       <link rel="icon" href="../../../../gfx/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.17">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.18">
     
     
       
@@ -597,6 +597,8 @@
       
         
           
+        
+      
         
       
         
@@ -1244,7 +1246,15 @@
 <span class="normal">370</span>
 <span class="normal">371</span>
 <span class="normal">372</span>
-<span class="normal">373</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Utility functions related to the sequence-classification task group.&quot;&quot;&quot;</span>
+<span class="normal">373</span>
+<span class="normal">374</span>
+<span class="normal">375</span>
+<span class="normal">376</span>
+<span class="normal">377</span>
+<span class="normal">378</span>
+<span class="normal">379</span>
+<span class="normal">380</span>
+<span class="normal">381</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Utility functions related to the sequence-classification task group.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
@@ -1261,7 +1271,7 @@
     <span class="kn">from</span><span class="w"> </span><span class="nn">datasets.arrow_dataset</span><span class="w"> </span><span class="kn">import</span> <span class="n">Dataset</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">transformers.trainer_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">EvalPrediction</span>
 
-    <span class="kn">from</span><span class="w"> </span><span class="nn">..data_models</span><span class="w"> </span><span class="kn">import</span> <span class="n">DatasetConfig</span><span class="p">,</span> <span class="n">GenerativeModelOutput</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">..data_models</span><span class="w"> </span><span class="kn">import</span> <span class="n">BenchmarkConfig</span><span class="p">,</span> <span class="n">DatasetConfig</span><span class="p">,</span> <span class="n">GenerativeModelOutput</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">..types</span><span class="w"> </span><span class="kn">import</span> <span class="n">Labels</span><span class="p">,</span> <span class="n">Predictions</span>
 
 
@@ -1271,6 +1281,7 @@
 <span class="k">def</span><span class="w"> </span><span class="nf">compute_metrics</span><span class="p">(</span><div class="mkapi-source-link" id="euroeval.task_group_utils.sequence_classification.compute_metrics"><a href="../../../../api/euroeval/task_group_utils/sequence_classification/#euroeval.task_group_utils.sequence_classification.compute_metrics" title="Go to docs">[docs]</a></div>
     <span class="n">model_outputs_and_labels</span><span class="p">:</span> <span class="s2">&quot;tuple[Predictions, Labels] | EvalPrediction&quot;</span><span class="p">,</span>
     <span class="n">dataset_config</span><span class="p">:</span> <span class="s2">&quot;DatasetConfig&quot;</span><span class="p">,</span>
+    <span class="n">benchmark_config</span><span class="p">:</span> <span class="s2">&quot;BenchmarkConfig&quot;</span><span class="p">,</span>
     <span class="n">dataset</span><span class="p">:</span> <span class="s2">&quot;Dataset&quot;</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Compute the metrics needed for evaluation.</span>
@@ -1281,6 +1292,8 @@
 <span class="sd">            contains the true labels.</span>
 <span class="sd">        dataset_config:</span>
 <span class="sd">            The configuration of the dataset.</span>
+<span class="sd">        benchmark_config:</span>
+<span class="sd">            The configuration of the benchmark.</span>
 <span class="sd">        dataset:</span>
 <span class="sd">            The dataset used for evaluation. This is only used in case any additional</span>
 <span class="sd">            metadata is used to compute the metrics.</span>
@@ -1326,7 +1339,11 @@
     <span class="n">results</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
     <span class="k">for</span> <span class="n">metric</span> <span class="ow">in</span> <span class="n">dataset_config</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">metrics</span><span class="p">:</span>
         <span class="n">score</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">metric</span><span class="p">(</span>
-            <span class="n">predictions</span><span class="o">=</span><span class="n">predictions</span><span class="p">,</span> <span class="n">references</span><span class="o">=</span><span class="n">label_ids</span><span class="p">,</span> <span class="n">dataset</span><span class="o">=</span><span class="n">dataset</span>
+            <span class="n">predictions</span><span class="o">=</span><span class="n">predictions</span><span class="p">,</span>
+            <span class="n">references</span><span class="o">=</span><span class="n">label_ids</span><span class="p">,</span>
+            <span class="n">dataset</span><span class="o">=</span><span class="n">dataset</span><span class="p">,</span>
+            <span class="n">dataset_config</span><span class="o">=</span><span class="n">dataset_config</span><span class="p">,</span>
+            <span class="n">benchmark_config</span><span class="o">=</span><span class="n">benchmark_config</span><span class="p">,</span>
         <span class="p">)</span>
 
         <span class="c1"># The metric returns None if we are running on multi-GPU and the current</span>
@@ -1438,9 +1455,10 @@
         <span class="c1"># model output, and we raise an error</span>
         <span class="k">if</span> <span class="nb">min</span><span class="p">(</span><span class="n">edit_distances</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">100</span><span class="p">:</span>
             <span class="k">raise</span> <span class="n">InvalidBenchmark</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;No candidate labels found for the predicted label &quot;</span>
-                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">predicted_label</span><span class="si">!r}</span><span class="s2">. This likely means that the model output is &quot;</span>
-                <span class="s2">&quot;completely off, and we cannot extract any labels from it. Please &quot;</span>
+                <span class="s2">&quot;No candidate labels found for the predicted label &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">predicted_label</span><span class="si">!r}</span><span class="s2">, out of the candidate labels &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">sample_candidate_labels</span><span class="si">}</span><span class="s2">. This likely means that the model output &quot;</span>
+                <span class="s2">&quot;is completely off, and we cannot extract any labels from it. Please &quot;</span>
                 <span class="s2">&quot;check the model output and the candidate labels.&quot;</span>
             <span class="p">)</span>
 

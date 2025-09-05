@@ -12,7 +12,7 @@
       
       
       <link rel="icon" href="../../../../gfx/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.17">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.18">
     
     
       
@@ -597,6 +597,8 @@
       
         
           
+        
+      
         
       
         
@@ -2461,13 +2463,30 @@
 <span class="normal">1473</span>
 <span class="normal">1474</span>
 <span class="normal">1475</span>
-<span class="normal">1476</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Generative models from an inference API, using the LiteLLM framework.&quot;&quot;&quot;</span>
+<span class="normal">1476</span>
+<span class="normal">1477</span>
+<span class="normal">1478</span>
+<span class="normal">1479</span>
+<span class="normal">1480</span>
+<span class="normal">1481</span>
+<span class="normal">1482</span>
+<span class="normal">1483</span>
+<span class="normal">1484</span>
+<span class="normal">1485</span>
+<span class="normal">1486</span>
+<span class="normal">1487</span>
+<span class="normal">1488</span>
+<span class="normal">1489</span>
+<span class="normal">1490</span>
+<span class="normal">1491</span>
+<span class="normal">1492</span>
+<span class="normal">1493</span>
+<span class="normal">1494</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Generative models from an inference API, using the LiteLLM framework.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">asyncio</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">c</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">t</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">functools</span><span class="w"> </span><span class="kn">import</span> <span class="n">cache</span><span class="p">,</span> <span class="n">cached_property</span><span class="p">,</span> <span class="n">partial</span>
@@ -2542,11 +2561,12 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">..utils</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">add_semaphore_and_catch_exception</span><span class="p">,</span>
     <span class="n">create_model_cache_dir</span><span class="p">,</span>
+    <span class="n">get_hf_token</span><span class="p">,</span>
     <span class="n">log_once</span><span class="p">,</span>
     <span class="n">safe_run</span><span class="p">,</span>
 <span class="p">)</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">BenchmarkModule</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">.hf</span><span class="w"> </span><span class="kn">import</span> <span class="n">HuggingFaceEncoderModel</span><span class="p">,</span> <span class="n">load_hf_model_config</span><span class="p">,</span> <span class="n">load_tokenizer</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.hf</span><span class="w"> </span><span class="kn">import</span> <span class="n">HuggingFaceEncoderModel</span><span class="p">,</span> <span class="n">load_hf_model_config</span><span class="p">,</span> <span class="n">load_tokeniser</span>
 
 <span class="k">if</span> <span class="n">t</span><span class="o">.</span><span class="n">TYPE_CHECKING</span><span class="p">:</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">datasets</span><span class="w"> </span><span class="kn">import</span> <span class="n">DatasetDict</span>
@@ -2651,6 +2671,8 @@
         <span class="n">model_config</span><span class="p">:</span> <span class="n">ModelConfig</span><span class="p">,</span>
         <span class="n">dataset_config</span><span class="p">:</span> <span class="n">DatasetConfig</span><span class="p">,</span>
         <span class="n">benchmark_config</span><span class="p">:</span> <span class="n">BenchmarkConfig</span><span class="p">,</span>
+        <span class="n">log_metadata</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">generation_kwargs</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">t</span><span class="o">.</span><span class="n">Any</span><span class="p">],</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialise the model.</span>
 
@@ -2661,6 +2683,11 @@
 <span class="sd">                The dataset configuration.</span>
 <span class="sd">            benchmark_config:</span>
 <span class="sd">                The benchmark configuration.</span>
+<span class="sd">            log_metadata:</span>
+<span class="sd">                Whether to log the model metadata.</span>
+<span class="sd">            generation_kwargs:</span>
+<span class="sd">                The generation kwargs to pass to the model. If None, default values will</span>
+<span class="sd">                be used.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="c1"># Detect whether the model is an Ollama model, as we need to extract metadata</span>
         <span class="c1"># differently for these models</span>
@@ -2679,13 +2706,16 @@
             <span class="n">model_config</span><span class="o">=</span><span class="n">model_config</span><span class="p">,</span>
             <span class="n">dataset_config</span><span class="o">=</span><span class="n">dataset_config</span><span class="p">,</span>
             <span class="n">benchmark_config</span><span class="o">=</span><span class="n">benchmark_config</span><span class="p">,</span>
+            <span class="n">log_metadata</span><span class="o">=</span><span class="n">log_metadata</span><span class="p">,</span>
         <span class="p">)</span>
 
+        <span class="bp">self</span><span class="o">.</span><span class="n">generation_kwargs</span> <span class="o">=</span> <span class="n">generation_kwargs</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">buffer</span><span class="p">[</span><span class="s2">&quot;first_label_token_mapping&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">get_first_label_token_mapping</span><span class="p">(</span>
             <span class="n">dataset_config</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dataset_config</span><span class="p">,</span>
             <span class="n">model_config</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="p">,</span>
-            <span class="n">tokenizer</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+            <span class="n">tokeniser</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
             <span class="n">generative_type</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">generative_type</span><span class="p">,</span>
+            <span class="n">log_metadata</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">log_metadata</span><span class="p">,</span>
         <span class="p">)</span>
 
     <span class="nd">@property</span>
@@ -2715,11 +2745,12 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="n">type_</span> <span class="o">=</span> <span class="n">GenerativeType</span><span class="o">.</span><span class="n">INSTRUCTION_TUNED</span>
 
-        <span class="n">log_once</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;Detected generative type </span><span class="si">{</span><span class="n">type_</span><span class="o">.</span><span class="n">name</span><span class="si">!r}</span><span class="s2"> for model &quot;</span>
-            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span><span class="si">!r}</span><span class="s2">&quot;</span><span class="p">,</span>
-            <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
-        <span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">log_metadata</span><span class="p">:</span>
+            <span class="n">log_once</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Detected generative type </span><span class="si">{</span><span class="n">type_</span><span class="o">.</span><span class="n">name</span><span class="si">!r}</span><span class="s2"> for model &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span><span class="si">!r}</span><span class="s2">&quot;</span><span class="p">,</span>
+                <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
+            <span class="p">)</span>
         <span class="k">return</span> <span class="n">type_</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">generate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">inputs</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">GenerativeModelOutput</span><span class="p">:</span><div class="mkapi-source-link" id="euroeval.benchmark_modules.litellm.LiteLLMModel.generate"><a href="../../../../api/euroeval/benchmark_modules/litellm/#euroeval.benchmark_modules.litellm.LiteLLMModel.generate" title="Go to docs">[docs]</a></div>
@@ -2740,8 +2771,9 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">buffer</span><span class="p">[</span><span class="s2">&quot;first_label_token_mapping&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">get_first_label_token_mapping</span><span class="p">(</span>
             <span class="n">dataset_config</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dataset_config</span><span class="p">,</span>
             <span class="n">model_config</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="p">,</span>
-            <span class="n">tokenizer</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+            <span class="n">tokeniser</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
             <span class="n">generative_type</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">generative_type</span><span class="p">,</span>
+            <span class="n">log_metadata</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">log_metadata</span><span class="p">,</span>
         <span class="p">)</span>
 
         <span class="n">all_responses</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="s2">&quot;ModelResponse&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
@@ -2752,12 +2784,16 @@
             <span class="k">if</span> <span class="ow">not</span> <span class="n">conversations_to_run</span><span class="p">:</span>
                 <span class="k">break</span>
 
+            <span class="n">generation_kwargs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">generation_kwargs</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_generation_kwargs</span><span class="p">(</span>
+                <span class="n">dataset_config</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dataset_config</span>
+            <span class="p">)</span>
+
             <span class="n">batch_indices</span><span class="p">,</span> <span class="n">batch_conversations</span> <span class="o">=</span> <span class="nb">zip</span><span class="p">(</span><span class="o">*</span><span class="n">conversations_to_run</span><span class="p">)</span>
             <span class="n">successes</span><span class="p">,</span> <span class="n">failures</span> <span class="o">=</span> <span class="n">safe_run</span><span class="p">(</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_generate_async</span><span class="p">(</span>
                     <span class="n">model_id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span><span class="p">,</span>
                     <span class="n">conversations</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="n">batch_conversations</span><span class="p">),</span>
-                    <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">get_generation_kwargs</span><span class="p">(</span><span class="n">dataset_config</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dataset_config</span><span class="p">),</span>
+                    <span class="o">**</span><span class="n">generation_kwargs</span><span class="p">,</span>
                 <span class="p">)</span>
             <span class="p">)</span>
 
@@ -2784,11 +2820,8 @@
             <span class="c1"># Attempt to handle the exceptions, to improve the chance of getting</span>
             <span class="c1"># successful generations next time around</span>
             <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">error</span> <span class="ow">in</span> <span class="n">failures</span><span class="p">:</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">_handle_exception</span><span class="p">(</span>
-                    <span class="n">error</span><span class="o">=</span><span class="n">error</span><span class="p">,</span>
-                    <span class="n">generation_kwargs</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">get_generation_kwargs</span><span class="p">(</span>
-                        <span class="n">dataset_config</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dataset_config</span>
-                    <span class="p">),</span>
+                <span class="n">generation_kwargs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_handle_exception</span><span class="p">(</span>
+                    <span class="n">error</span><span class="o">=</span><span class="n">error</span><span class="p">,</span> <span class="o">**</span><span class="n">generation_kwargs</span>
                 <span class="p">)</span>
 
             <span class="c1"># Sleep for a second to avoid pinging the API server too quickly</span>
@@ -2812,9 +2845,7 @@
 
         <span class="k">return</span> <span class="n">model_output</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="nf">_handle_exception</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">error</span><span class="p">:</span> <span class="ne">Exception</span><span class="p">,</span> <span class="n">generation_kwargs</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">t</span><span class="o">.</span><span class="n">Any</span><span class="p">]</span>
-    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_handle_exception</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">error</span><span class="p">:</span> <span class="ne">Exception</span><span class="p">,</span> <span class="o">**</span><span class="n">generation_kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Handle an exception from the model.</span>
 
 <span class="sd">        Args:</span>
@@ -2822,6 +2853,9 @@
 <span class="sd">                The exception to handle.</span>
 <span class="sd">            generation_kwargs:</span>
 <span class="sd">                The generation kwargs to pass to the model.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            The updated generation kwargs to pass to the model.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">error_msg</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">error</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
         <span class="n">model_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span>
@@ -2863,7 +2897,7 @@
                 <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
             <span class="p">)</span>
             <span class="n">generation_kwargs</span><span class="p">[</span><span class="s2">&quot;stop&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
-            <span class="k">return</span>
+            <span class="k">return</span> <span class="n">generation_kwargs</span>
         <span class="k">elif</span> <span class="p">(</span>
             <span class="nb">any</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="ow">in</span> <span class="n">error_msg</span> <span class="k">for</span> <span class="n">msg</span> <span class="ow">in</span> <span class="n">logprobs_messages</span><span class="p">)</span>
             <span class="ow">or</span> <span class="n">logprobs_pattern</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">string</span><span class="o">=</span><span class="n">error_msg</span><span class="p">)</span>
@@ -2878,7 +2912,7 @@
             <span class="p">)</span>
             <span class="n">generation_kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;logprobs&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
             <span class="n">generation_kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;top_logprobs&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
-            <span class="k">return</span>
+            <span class="k">return</span> <span class="n">generation_kwargs</span>
         <span class="k">elif</span> <span class="nb">any</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="ow">in</span> <span class="n">error_msg</span> <span class="k">for</span> <span class="n">msg</span> <span class="ow">in</span> <span class="n">temperature_messages</span><span class="p">):</span>
             <span class="n">log_once</span><span class="p">(</span>
                 <span class="sa">f</span><span class="s2">&quot;The model </span><span class="si">{</span><span class="n">model_id</span><span class="si">!r}</span><span class="s2"> does not support &quot;</span>
@@ -2886,7 +2920,7 @@
                 <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
             <span class="p">)</span>
             <span class="n">generation_kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;temperature&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
-            <span class="k">return</span>
+            <span class="k">return</span> <span class="n">generation_kwargs</span>
         <span class="k">elif</span> <span class="nb">any</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="ow">in</span> <span class="n">error_msg</span> <span class="k">for</span> <span class="n">msg</span> <span class="ow">in</span> <span class="n">temperature_must_be_one_messages</span><span class="p">):</span>
             <span class="n">log_once</span><span class="p">(</span>
                 <span class="sa">f</span><span class="s2">&quot;The model </span><span class="si">{</span><span class="n">model_id</span><span class="si">!r}</span><span class="s2"> requires &quot;</span>
@@ -2894,7 +2928,7 @@
                 <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
             <span class="p">)</span>
             <span class="n">generation_kwargs</span><span class="p">[</span><span class="s2">&quot;temperature&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1.0</span>
-            <span class="k">return</span>
+            <span class="k">return</span> <span class="n">generation_kwargs</span>
         <span class="k">elif</span> <span class="p">(</span>
             <span class="nb">any</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="ow">in</span> <span class="n">error_msg</span> <span class="k">for</span> <span class="n">msg</span> <span class="ow">in</span> <span class="n">max_items_messages</span><span class="p">)</span>
             <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">dataset_config</span><span class="o">.</span><span class="n">task</span> <span class="o">==</span> <span class="n">NER</span>
@@ -2910,7 +2944,7 @@
             <span class="p">}</span>
             <span class="n">pydantic_class</span> <span class="o">=</span> <span class="n">create_model</span><span class="p">(</span><span class="s2">&quot;AnswerFormat&quot;</span><span class="p">,</span> <span class="o">**</span><span class="n">keys_and_their_types</span><span class="p">)</span>
             <span class="n">generation_kwargs</span><span class="p">[</span><span class="s2">&quot;response_format&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">pydantic_class</span>
-            <span class="k">return</span>
+            <span class="k">return</span> <span class="n">generation_kwargs</span>
         <span class="k">elif</span> <span class="nb">any</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="ow">in</span> <span class="n">error_msg</span> <span class="k">for</span> <span class="n">msg</span> <span class="ow">in</span> <span class="n">no_json_schema_messages</span><span class="p">):</span>
             <span class="n">log_once</span><span class="p">(</span>
                 <span class="sa">f</span><span class="s2">&quot;The model </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span><span class="si">!r}</span><span class="s2"> does not support &quot;</span>
@@ -2918,7 +2952,7 @@
                 <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
             <span class="p">)</span>
             <span class="n">generation_kwargs</span><span class="p">[</span><span class="s2">&quot;response_format&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="nb">type</span><span class="o">=</span><span class="s2">&quot;json_object&quot;</span><span class="p">)</span>
-            <span class="k">return</span>
+            <span class="k">return</span> <span class="n">generation_kwargs</span>
         <span class="k">elif</span> <span class="n">thinking_match</span> <span class="o">:=</span> <span class="n">thinking_budget_pattern</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">string</span><span class="o">=</span><span class="n">error_msg</span><span class="p">):</span>
             <span class="n">thinking_budget</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">thinking_match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span>
             <span class="k">if</span> <span class="n">thinking_budget</span> <span class="o">&gt;=</span> <span class="n">REASONING_MAX_TOKENS</span><span class="p">:</span>
@@ -2927,7 +2961,7 @@
                     <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">thinking_budget</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2"> tokens, which is within the limit of &quot;</span>
                     <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">REASONING_MAX_TOKENS</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2"> tokens. This should not happen. The &quot;</span>
                     <span class="sa">f</span><span class="s2">&quot;error message was: </span><span class="si">{</span><span class="n">error_msg</span><span class="si">}</span><span class="s2">.&quot;</span>
-                <span class="p">)</span>
+                <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">error</span>
             <span class="n">log_once</span><span class="p">(</span>
                 <span class="sa">f</span><span class="s2">&quot;The model </span><span class="si">{</span><span class="n">model_id</span><span class="si">!r}</span><span class="s2"> can at most use </span><span class="si">{</span><span class="n">thinking_budget</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2"> tokens &quot;</span>
                 <span class="s2">&quot;for reasoning, which is less than the default of &quot;</span>
@@ -2938,7 +2972,7 @@
             <span class="n">generation_kwargs</span><span class="p">[</span><span class="s2">&quot;thinking&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
                 <span class="nb">type</span><span class="o">=</span><span class="s2">&quot;enabled&quot;</span><span class="p">,</span> <span class="n">budget_tokens</span><span class="o">=</span><span class="n">thinking_budget</span> <span class="o">-</span> <span class="mi">1</span>
             <span class="p">)</span>
-            <span class="k">return</span>
+            <span class="k">return</span> <span class="n">generation_kwargs</span>
         <span class="k">elif</span> <span class="p">(</span>
             <span class="nb">any</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="ow">in</span> <span class="n">error_msg</span> <span class="k">for</span> <span class="n">msg</span> <span class="ow">in</span> <span class="n">requires_thinking_disabled_messages</span><span class="p">)</span>
             <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">generative_type</span> <span class="o">!=</span> <span class="n">GenerativeType</span><span class="o">.</span><span class="n">REASONING</span>
@@ -2950,7 +2984,7 @@
                 <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
             <span class="p">)</span>
             <span class="n">generation_kwargs</span><span class="p">[</span><span class="s2">&quot;thinking&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="nb">type</span><span class="o">=</span><span class="s2">&quot;disabled&quot;</span><span class="p">)</span>
-            <span class="k">return</span>
+            <span class="k">return</span> <span class="n">generation_kwargs</span>
         <span class="k">elif</span> <span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">pattern</span><span class="o">=</span><span class="n">seed_pattern</span><span class="p">,</span> <span class="n">string</span><span class="o">=</span><span class="n">error_msg</span><span class="p">):</span>
             <span class="n">log_once</span><span class="p">(</span>
                 <span class="sa">f</span><span class="s2">&quot;The model </span><span class="si">{</span><span class="n">model_id</span><span class="si">!r}</span><span class="s2"> does not support the `seed` parameter, so &quot;</span>
@@ -2958,7 +2992,7 @@
                 <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
             <span class="p">)</span>
             <span class="n">generation_kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;seed&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
-            <span class="k">return</span>
+            <span class="k">return</span> <span class="n">generation_kwargs</span>
         <span class="c1"># If there are too many I/O connections, we increase the number of allowed file</span>
         <span class="c1"># descriptors</span>
         <span class="k">elif</span> <span class="s2">&quot;too many open files&quot;</span> <span class="ow">in</span> <span class="n">error_msg</span><span class="p">:</span>
@@ -2966,7 +3000,7 @@
                 <span class="s2">&quot;There are too many file descriptors running. See the current &quot;</span>
                 <span class="s2">&quot;value by running `ulimit -n`. Try increasing it by running &quot;</span>
                 <span class="s2">&quot;`ulimit -n &lt;new-value&gt;` and try again.&quot;</span>
-            <span class="p">)</span>
+            <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">error</span>
         <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span>
             <span class="n">error</span><span class="p">,</span> <span class="p">(</span><span class="n">Timeout</span><span class="p">,</span> <span class="n">ServiceUnavailableError</span><span class="p">,</span> <span class="n">InternalServerError</span><span class="p">,</span> <span class="ne">SystemError</span><span class="p">)</span>
         <span class="p">):</span>
@@ -2975,48 +3009,48 @@
                 <span class="s2">&quot;Retrying in 10 seconds...&quot;</span>
             <span class="p">)</span>
             <span class="n">sleep</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
-            <span class="k">return</span>
+            <span class="k">return</span> <span class="n">generation_kwargs</span>
         <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">error</span><span class="p">,</span> <span class="n">UnsupportedParamsError</span><span class="p">):</span>
             <span class="n">unsupported_param_match</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span>
                 <span class="n">pattern</span><span class="o">=</span><span class="sa">r</span><span class="s2">&quot;(?&lt;=does not support parameters\: \[&#39;)([^ &#39;]+)(?=&#39;\])&quot;</span><span class="p">,</span>
                 <span class="n">string</span><span class="o">=</span><span class="n">error</span><span class="o">.</span><span class="n">message</span><span class="p">,</span>
             <span class="p">)</span>
             <span class="k">if</span> <span class="n">unsupported_param_match</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="k">raise</span> <span class="n">InvalidModel</span><span class="p">(</span><span class="n">error</span><span class="o">.</span><span class="n">message</span><span class="p">)</span>
+                <span class="k">raise</span> <span class="n">InvalidModel</span><span class="p">(</span><span class="n">error</span><span class="o">.</span><span class="n">message</span><span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">error</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">unsupported_param</span> <span class="o">=</span> <span class="n">unsupported_param_match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
                 <span class="k">raise</span> <span class="n">InvalidModel</span><span class="p">(</span>
                     <span class="sa">f</span><span class="s2">&quot;The model </span><span class="si">{</span><span class="n">model_id</span><span class="si">!r}</span><span class="s2"> does not support the parameter &quot;</span>
                     <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">unsupported_param</span><span class="si">!r}</span><span class="s2">. Try again without this parameter. &quot;</span>
                     <span class="s2">&quot;Skipping this model.&quot;</span>
-                <span class="p">)</span>
+                <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">error</span>
         <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">error</span><span class="p">,</span> <span class="p">(</span><span class="n">APIConnectionError</span><span class="p">,</span> <span class="ne">OSError</span><span class="p">)):</span>
             <span class="k">raise</span> <span class="n">InvalidBenchmark</span><span class="p">(</span>
                 <span class="sa">f</span><span class="s2">&quot;Encountered </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">error</span><span class="p">)</span><span class="si">}</span><span class="s2"> during generation: </span><span class="si">{</span><span class="n">error</span><span class="si">}</span><span class="s2">.&quot;</span>
-            <span class="p">)</span>
+            <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">error</span>
 
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">error</span><span class="p">,</span> <span class="n">NotFoundError</span><span class="p">):</span>
             <span class="k">raise</span> <span class="n">InvalidModel</span><span class="p">(</span>
                 <span class="sa">f</span><span class="s2">&quot;The model </span><span class="si">{</span><span class="n">model_id</span><span class="si">!r}</span><span class="s2"> was not found. Please check the model ID &quot;</span>
                 <span class="s2">&quot;and try again.&quot;</span>
-            <span class="p">)</span>
+            <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">error</span>
 
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">error</span><span class="p">,</span> <span class="n">RateLimitError</span><span class="p">):</span>
             <span class="k">raise</span> <span class="n">InvalidModel</span><span class="p">(</span>
                 <span class="sa">f</span><span class="s2">&quot;You have encountered your rate limit for model </span><span class="si">{</span><span class="n">model_id</span><span class="si">!r}</span><span class="s2">. &quot;</span>
                 <span class="s2">&quot;Skipping.&quot;</span>
-            <span class="p">)</span>
+            <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">error</span>
 
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">error</span><span class="p">,</span> <span class="n">AuthenticationError</span><span class="p">):</span>
             <span class="k">raise</span> <span class="n">NeedsAdditionalArgument</span><span class="p">(</span>
                 <span class="n">cli_argument</span><span class="o">=</span><span class="s2">&quot;--api-key&quot;</span><span class="p">,</span>
                 <span class="n">script_argument</span><span class="o">=</span><span class="s2">&quot;api_key=&lt;your-api-key&gt;&quot;</span><span class="p">,</span>
                 <span class="n">run_with_cli</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">benchmark_config</span><span class="o">.</span><span class="n">run_with_cli</span><span class="p">,</span>
-            <span class="p">)</span>
+            <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">error</span>
 
         <span class="k">raise</span> <span class="n">InvalidBenchmark</span><span class="p">(</span>
             <span class="sa">f</span><span class="s2">&quot;Failed to generate text. The error message was: </span><span class="si">{</span><span class="n">error</span><span class="si">}</span><span class="s2">&quot;</span>
-        <span class="p">)</span>
+        <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">error</span>
 
     <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_generate_async</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
@@ -3043,9 +3077,9 @@
         <span class="c1"># for all the requests, preventing &quot;too many open files&quot; errors</span>
         <span class="n">router</span> <span class="o">=</span> <span class="n">Router</span><span class="p">(</span>
             <span class="n">model_list</span><span class="o">=</span><span class="p">[</span>
-                <span class="nb">dict</span><span class="p">(</span>
+                <span class="n">litellm</span><span class="o">.</span><span class="n">DeploymentTypedDict</span><span class="p">(</span>
                     <span class="n">model_name</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span><span class="p">,</span>
-                    <span class="n">litellm_params</span><span class="o">=</span><span class="n">generation_kwargs</span><span class="p">,</span>
+                    <span class="n">litellm_params</span><span class="o">=</span><span class="n">litellm</span><span class="o">.</span><span class="n">LiteLLMParamsTypedDict</span><span class="p">(</span><span class="n">model</span><span class="o">=</span><span class="n">model_id</span><span class="p">),</span>
                 <span class="p">)</span>
             <span class="p">]</span>
         <span class="p">)</span>
@@ -3055,7 +3089,9 @@
         <span class="n">semaphore</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">Semaphore</span><span class="p">(</span><span class="n">max_concurrent_calls</span><span class="p">)</span>
         <span class="n">requests</span> <span class="o">=</span> <span class="p">[</span>
             <span class="n">add_semaphore_and_catch_exception</span><span class="p">(</span>
-                <span class="n">router</span><span class="o">.</span><span class="n">acompletion</span><span class="p">(</span><span class="n">model</span><span class="o">=</span><span class="n">model_id</span><span class="p">,</span> <span class="n">messages</span><span class="o">=</span><span class="n">conversation</span><span class="p">),</span>
+                <span class="n">router</span><span class="o">.</span><span class="n">acompletion</span><span class="p">(</span>
+                    <span class="n">model</span><span class="o">=</span><span class="n">model_id</span><span class="p">,</span> <span class="n">messages</span><span class="o">=</span><span class="n">conversation</span><span class="p">,</span> <span class="o">**</span><span class="n">generation_kwargs</span>
+                <span class="p">),</span>
                 <span class="n">semaphore</span><span class="o">=</span><span class="n">semaphore</span><span class="p">,</span>
             <span class="p">)</span>
             <span class="k">for</span> <span class="n">conversation</span> <span class="ow">in</span> <span class="n">conversations</span>
@@ -3234,9 +3270,7 @@
                     <span class="n">repo_info</span> <span class="o">=</span> <span class="n">hf_api</span><span class="o">.</span><span class="n">model_info</span><span class="p">(</span>
                         <span class="n">repo_id</span><span class="o">=</span><span class="n">model_id</span><span class="p">,</span>
                         <span class="n">revision</span><span class="o">=</span><span class="s2">&quot;main&quot;</span><span class="p">,</span>
-                        <span class="n">token</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;HUGGINGFACE_API_KEY&quot;</span><span class="p">)</span>
-                        <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">benchmark_config</span><span class="o">.</span><span class="n">api_key</span>
-                        <span class="ow">or</span> <span class="kc">True</span><span class="p">,</span>
+                        <span class="n">token</span><span class="o">=</span><span class="n">get_hf_token</span><span class="p">(</span><span class="n">api_key</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">benchmark_config</span><span class="o">.</span><span class="n">api_key</span><span class="p">),</span>
                     <span class="p">)</span>
                 <span class="k">except</span> <span class="p">(</span>
                     <span class="n">RepositoryNotFoundError</span><span class="p">,</span>
@@ -3293,7 +3327,7 @@
                     <span class="n">run_with_cli</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">benchmark_config</span><span class="o">.</span><span class="n">run_with_cli</span><span class="p">,</span>
                 <span class="p">)</span>
 
-                <span class="n">tokenizer</span> <span class="o">=</span> <span class="n">load_tokenizer</span><span class="p">(</span>
+                <span class="n">tokeniser</span> <span class="o">=</span> <span class="n">load_tokeniser</span><span class="p">(</span>
                     <span class="n">model</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                     <span class="n">model_id</span><span class="o">=</span><span class="n">model_id</span><span class="p">,</span>
                     <span class="n">trust_remote_code</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">benchmark_config</span><span class="o">.</span><span class="n">trust_remote_code</span><span class="p">,</span>
@@ -3305,10 +3339,10 @@
                 <span class="p">):</span>
                     <span class="n">vocab_size</span> <span class="o">=</span> <span class="n">hf_config</span><span class="o">.</span><span class="n">vocab_size</span>
                 <span class="k">elif</span> <span class="p">(</span>
-                    <span class="nb">hasattr</span><span class="p">(</span><span class="n">tokenizer</span><span class="p">,</span> <span class="s2">&quot;vocab_size&quot;</span><span class="p">)</span>
-                    <span class="ow">and</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">vocab_size</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+                    <span class="nb">hasattr</span><span class="p">(</span><span class="n">tokeniser</span><span class="p">,</span> <span class="s2">&quot;vocab_size&quot;</span><span class="p">)</span>
+                    <span class="ow">and</span> <span class="n">tokeniser</span><span class="o">.</span><span class="n">vocab_size</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
                 <span class="p">):</span>
-                    <span class="n">vocab_size</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">vocab_size</span>
+                    <span class="n">vocab_size</span> <span class="o">=</span> <span class="n">tokeniser</span><span class="o">.</span><span class="n">vocab_size</span>
                 <span class="k">else</span><span class="p">:</span>
                     <span class="n">vocab_size</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
                 <span class="k">return</span> <span class="n">vocab_size</span>
@@ -3339,13 +3373,15 @@
                 <span class="k">if</span> <span class="n">context_length_keys</span><span class="p">:</span>
                     <span class="n">context_length</span> <span class="o">=</span> <span class="n">model_info</span><span class="p">[</span><span class="n">context_length_keys</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span>
                     <span class="k">if</span> <span class="n">context_length</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                        <span class="n">log_once</span><span class="p">(</span>
-                            <span class="sa">f</span><span class="s2">&quot;Detected context length key </span><span class="si">{</span><span class="n">context_length_keys</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">!r}</span><span class="s2"> &quot;</span>
-                            <span class="sa">f</span><span class="s2">&quot;for Ollama model </span><span class="si">{</span><span class="n">ollama_model_id</span><span class="si">!r}</span><span class="s2">&quot;</span><span class="p">,</span>
-                            <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
-                        <span class="p">)</span>
+                        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">log_metadata</span><span class="p">:</span>
+                            <span class="n">log_once</span><span class="p">(</span>
+                                <span class="sa">f</span><span class="s2">&quot;Detected context length key &quot;</span>
+                                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">context_length_keys</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">!r}</span><span class="s2"> for Ollama model &quot;</span>
+                                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">ollama_model_id</span><span class="si">!r}</span><span class="s2">&quot;</span><span class="p">,</span>
+                                <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
+                            <span class="p">)</span>
                         <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="n">context_length</span><span class="p">)</span>
-                <span class="k">else</span><span class="p">:</span>
+                <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">log_metadata</span><span class="p">:</span>
                     <span class="n">log_once</span><span class="p">(</span>
                         <span class="sa">f</span><span class="s2">&quot;Tried to get the maximum length of the Ollama model &quot;</span>
                         <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">ollama_model_id</span><span class="si">!r}</span><span class="s2">, but could not find a context length. &quot;</span>
@@ -3373,7 +3409,7 @@
                     <span class="n">run_with_cli</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">benchmark_config</span><span class="o">.</span><span class="n">run_with_cli</span><span class="p">,</span>
                 <span class="p">)</span>
 
-                <span class="n">tokenizer</span> <span class="o">=</span> <span class="n">load_tokenizer</span><span class="p">(</span>
+                <span class="n">tokeniser</span> <span class="o">=</span> <span class="n">load_tokeniser</span><span class="p">(</span>
                     <span class="n">model</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                     <span class="n">model_id</span><span class="o">=</span><span class="n">model_id</span><span class="p">,</span>
                     <span class="n">trust_remote_code</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">benchmark_config</span><span class="o">.</span><span class="n">trust_remote_code</span><span class="p">,</span>
@@ -3381,18 +3417,18 @@
 
                 <span class="n">all_max_lengths</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
 
-                <span class="c1"># Add the registered max length of the tokenizer</span>
+                <span class="c1"># Add the registered max length of the tokeniser</span>
                 <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span>
-                    <span class="n">tokenizer</span><span class="p">,</span> <span class="s2">&quot;model_max_length&quot;</span>
-                <span class="p">)</span> <span class="ow">and</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">model_max_length</span> <span class="o">&lt;</span> <span class="nb">int</span><span class="p">(</span><span class="mf">1e30</span><span class="p">):</span>
-                    <span class="n">all_max_lengths</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tokenizer</span><span class="o">.</span><span class="n">model_max_length</span><span class="p">)</span>
+                    <span class="n">tokeniser</span><span class="p">,</span> <span class="s2">&quot;model_max_length&quot;</span>
+                <span class="p">)</span> <span class="ow">and</span> <span class="n">tokeniser</span><span class="o">.</span><span class="n">model_max_length</span> <span class="o">&lt;</span> <span class="nb">int</span><span class="p">(</span><span class="mf">1e30</span><span class="p">):</span>
+                    <span class="n">all_max_lengths</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tokeniser</span><span class="o">.</span><span class="n">model_max_length</span><span class="p">)</span>
 
                 <span class="c1"># Add the max length derived from the model&#39;s input sizes</span>
-                <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">tokenizer</span><span class="p">,</span> <span class="s2">&quot;max_model_input_sizes&quot;</span><span class="p">):</span>
+                <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">tokeniser</span><span class="p">,</span> <span class="s2">&quot;max_model_input_sizes&quot;</span><span class="p">):</span>
                     <span class="n">all_max_lengths</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span>
                         <span class="p">[</span>
                             <span class="n">size</span>
-                            <span class="k">for</span> <span class="n">size</span> <span class="ow">in</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">max_model_input_sizes</span><span class="o">.</span><span class="n">values</span><span class="p">()</span>
+                            <span class="k">for</span> <span class="n">size</span> <span class="ow">in</span> <span class="n">tokeniser</span><span class="o">.</span><span class="n">max_model_input_sizes</span><span class="o">.</span><span class="n">values</span><span class="p">()</span>
                             <span class="k">if</span> <span class="n">size</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
                         <span class="p">]</span>
                     <span class="p">)</span>
@@ -3656,7 +3692,7 @@
                 <span class="n">dataset_config</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dataset_config</span><span class="p">,</span>
                 <span class="n">instruction_model</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
                 <span class="n">always_populate_text_field</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-                <span class="n">tokenizer</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                <span class="n">tokeniser</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
             <span class="p">),</span>
             <span class="n">batched</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
             <span class="n">load_from_cache_file</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
@@ -3681,7 +3717,6 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="c1"># Set the core generation arguments</span>
         <span class="n">generation_kwargs</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">t</span><span class="o">.</span><span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
-            <span class="n">model</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span><span class="p">,</span>
             <span class="n">max_completion_tokens</span><span class="o">=</span><span class="p">(</span>
                 <span class="n">REASONING_MAX_TOKENS</span>
                 <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">generative_type</span> <span class="o">==</span> <span class="n">GenerativeType</span><span class="o">.</span><span class="n">REASONING</span>
@@ -3738,11 +3773,12 @@
                     <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
                 <span class="p">)</span>
         <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">dataset_config</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">uses_logprobs</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">dataset_config</span><span class="o">.</span><span class="n">labels</span><span class="p">:</span>
+            <span class="n">localised_labels</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">dataset_config</span><span class="o">.</span><span class="n">prompt_label_mapping</span><span class="p">[</span><span class="n">label</span><span class="p">]</span>
+                <span class="k">for</span> <span class="n">label</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">dataset_config</span><span class="o">.</span><span class="n">labels</span>
+            <span class="p">]</span>
             <span class="n">keys_and_their_types</span> <span class="o">=</span> <span class="p">{</span>
-                <span class="n">LITELLM_CLASSIFICATION_OUTPUT_KEY</span><span class="p">:</span> <span class="p">(</span>
-                    <span class="n">t</span><span class="o">.</span><span class="n">Literal</span><span class="p">[</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">dataset_config</span><span class="o">.</span><span class="n">labels</span><span class="p">],</span>
-                    <span class="o">...</span><span class="p">,</span>
-                <span class="p">)</span>
+                <span class="n">LITELLM_CLASSIFICATION_OUTPUT_KEY</span><span class="p">:</span> <span class="p">(</span><span class="n">t</span><span class="o">.</span><span class="n">Literal</span><span class="p">[</span><span class="o">*</span><span class="n">localised_labels</span><span class="p">],</span> <span class="o">...</span><span class="p">)</span>
             <span class="p">}</span>
             <span class="n">pydantic_class</span> <span class="o">=</span> <span class="n">create_model</span><span class="p">(</span><span class="s2">&quot;AnswerFormat&quot;</span><span class="p">,</span> <span class="o">**</span><span class="n">keys_and_their_types</span><span class="p">)</span>
             <span class="n">generation_kwargs</span><span class="p">[</span><span class="s2">&quot;response_format&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">pydantic_class</span>
@@ -3785,7 +3821,7 @@
         <span class="c1"># First attempt is a test run with a single conversation to handle errors</span>
         <span class="c1"># quickly. We repeat this multiple times to deal with different types of</span>
         <span class="c1"># errors, and stop if we get a successful response.</span>
-        <span class="n">test_conversation</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="n">test_conversation</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">litellm</span><span class="o">.</span><span class="n">AllMessageValues</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span>
             <span class="n">litellm</span><span class="o">.</span><span class="n">ChatCompletionUserMessage</span><span class="p">(</span><span class="n">role</span><span class="o">=</span><span class="s2">&quot;user&quot;</span><span class="p">,</span> <span class="n">content</span><span class="o">=</span><span class="s2">&quot;Test message&quot;</span><span class="p">)</span>
         <span class="p">]</span>
         <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">5</span><span class="p">):</span>
@@ -3799,7 +3835,9 @@
             <span class="k">if</span> <span class="ow">not</span> <span class="n">failures</span><span class="p">:</span>
                 <span class="k">break</span>
             <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">error</span> <span class="ow">in</span> <span class="n">failures</span><span class="p">:</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">_handle_exception</span><span class="p">(</span><span class="n">error</span><span class="o">=</span><span class="n">error</span><span class="p">,</span> <span class="n">generation_kwargs</span><span class="o">=</span><span class="n">generation_kwargs</span><span class="p">)</span>
+                <span class="n">generation_kwargs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_handle_exception</span><span class="p">(</span>
+                    <span class="n">error</span><span class="o">=</span><span class="n">error</span><span class="p">,</span> <span class="o">**</span><span class="n">generation_kwargs</span>
+                <span class="p">)</span>
 
         <span class="k">return</span> <span class="n">generation_kwargs</span>
 
@@ -3875,11 +3913,11 @@
             <span class="k">for</span> <span class="n">model_obj</span> <span class="ow">in</span> <span class="n">ollama</span><span class="o">.</span><span class="n">list</span><span class="p">()</span><span class="o">.</span><span class="n">models</span>
             <span class="k">if</span> <span class="n">model_obj</span><span class="o">.</span><span class="n">model</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
         <span class="p">]</span>
-    <span class="k">except</span> <span class="ne">ConnectionError</span><span class="p">:</span>
+    <span class="k">except</span> <span class="ne">ConnectionError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
         <span class="k">raise</span> <span class="n">InvalidModel</span><span class="p">(</span>
             <span class="s2">&quot;Ollama does not seem to be running, so we cannot evaluate the model &quot;</span>
             <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">model_id</span><span class="si">!r}</span><span class="s2">. Please make sure that Ollama is running and try again.&quot;</span>
-        <span class="p">)</span>
+        <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
 
     <span class="n">ollama_model_id</span> <span class="o">=</span> <span class="s2">&quot;/&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">model_id</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;/&quot;</span><span class="p">)[</span><span class="mi">1</span><span class="p">:])</span>
     <span class="k">if</span> <span class="n">ollama_model_id</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">downloaded_ollama_models</span><span class="p">:</span>
@@ -3909,12 +3947,12 @@
                         <span class="k">raise</span> <span class="n">InvalidModel</span><span class="p">(</span>
                             <span class="sa">f</span><span class="s2">&quot;Failed to download Ollama model </span><span class="si">{</span><span class="n">ollama_model_id</span><span class="si">}</span><span class="s2">. &quot;</span>
                             <span class="sa">f</span><span class="s2">&quot;The error message was: </span><span class="si">{</span><span class="n">inner_e</span><span class="si">}</span><span class="s2">&quot;</span>
-                        <span class="p">)</span>
+                        <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">inner_e</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="n">InvalidModel</span><span class="p">(</span>
                     <span class="sa">f</span><span class="s2">&quot;Failed to download Ollama model </span><span class="si">{</span><span class="n">ollama_model_id</span><span class="si">}</span><span class="s2">. &quot;</span>
                     <span class="sa">f</span><span class="s2">&quot;The error message was: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span>
-                <span class="p">)</span>
+                <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
 
         <span class="c1"># Download the model</span>
         <span class="k">with</span> <span class="n">tqdm</span><span class="p">(</span>

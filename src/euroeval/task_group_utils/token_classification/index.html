@@ -12,7 +12,7 @@
       
       
       <link rel="icon" href="../../../../gfx/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.17">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.18">
     
     
       
@@ -597,6 +597,8 @@
       
         
           
+        
+      
         
       
         
@@ -1312,46 +1314,19 @@
 <span class="normal">429</span>
 <span class="normal">430</span>
 <span class="normal">431</span>
-<span class="normal">432</span>
-<span class="normal">433</span>
-<span class="normal">434</span>
-<span class="normal">435</span>
-<span class="normal">436</span>
-<span class="normal">437</span>
-<span class="normal">438</span>
-<span class="normal">439</span>
-<span class="normal">440</span>
-<span class="normal">441</span>
-<span class="normal">442</span>
-<span class="normal">443</span>
-<span class="normal">444</span>
-<span class="normal">445</span>
-<span class="normal">446</span>
-<span class="normal">447</span>
-<span class="normal">448</span>
-<span class="normal">449</span>
-<span class="normal">450</span>
-<span class="normal">451</span>
-<span class="normal">452</span>
-<span class="normal">453</span>
-<span class="normal">454</span>
-<span class="normal">455</span>
-<span class="normal">456</span>
-<span class="normal">457</span>
-<span class="normal">458</span>
-<span class="normal">459</span>
-<span class="normal">460</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Utility functions related to the token-classification task group.&quot;&quot;&quot;</span>
+<span class="normal">432</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Utility functions related to the token-classification task group.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">t</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">copy</span><span class="w"> </span><span class="kn">import</span> <span class="n">deepcopy</span>
 
-<span class="kn">import</span><span class="w"> </span><span class="nn">demjson3</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">..exceptions</span><span class="w"> </span><span class="kn">import</span> <span class="n">InvalidBenchmark</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">..utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">raise_if_model_output_contains_nan_values</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..utils</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">extract_json_dict_from_string</span><span class="p">,</span>
+    <span class="n">raise_if_model_output_contains_nan_values</span><span class="p">,</span>
+<span class="p">)</span>
 
 <span class="k">if</span> <span class="n">t</span><span class="o">.</span><span class="n">TYPE_CHECKING</span><span class="p">:</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">datasets.arrow_dataset</span><span class="w"> </span><span class="kn">import</span> <span class="n">Dataset</span>
@@ -1359,7 +1334,7 @@
     <span class="kn">from</span><span class="w"> </span><span class="nn">transformers.tokenization_utils_base</span><span class="w"> </span><span class="kn">import</span> <span class="n">BatchEncoding</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">transformers.trainer_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">EvalPrediction</span>
 
-    <span class="kn">from</span><span class="w"> </span><span class="nn">..data_models</span><span class="w"> </span><span class="kn">import</span> <span class="n">DatasetConfig</span><span class="p">,</span> <span class="n">GenerativeModelOutput</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">..data_models</span><span class="w"> </span><span class="kn">import</span> <span class="n">BenchmarkConfig</span><span class="p">,</span> <span class="n">DatasetConfig</span><span class="p">,</span> <span class="n">GenerativeModelOutput</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">..types</span><span class="w"> </span><span class="kn">import</span> <span class="n">Labels</span><span class="p">,</span> <span class="n">Predictions</span>
 
 
@@ -1370,6 +1345,7 @@
     <span class="n">model_outputs_and_labels</span><span class="p">:</span> <span class="s2">&quot;tuple[Predictions, Labels] | EvalPrediction&quot;</span><span class="p">,</span>
     <span class="n">has_misc_tags</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
     <span class="n">dataset_config</span><span class="p">:</span> <span class="s2">&quot;DatasetConfig&quot;</span><span class="p">,</span>
+    <span class="n">benchmark_config</span><span class="p">:</span> <span class="s2">&quot;BenchmarkConfig&quot;</span><span class="p">,</span>
     <span class="n">dataset</span><span class="p">:</span> <span class="s2">&quot;Dataset&quot;</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Compute the metrics needed for evaluation.</span>
@@ -1382,6 +1358,8 @@
 <span class="sd">            Whether the dataset has MISC tags.</span>
 <span class="sd">        dataset_config:</span>
 <span class="sd">            The configuration of the dataset.</span>
+<span class="sd">        benchmark_config:</span>
+<span class="sd">            The configuration of the benchmark.</span>
 <span class="sd">        dataset:</span>
 <span class="sd">            The dataset used for evaluation. This is only used in case any additional</span>
 <span class="sd">            metadata is used to compute the metrics.</span>
@@ -1484,7 +1462,11 @@
             <span class="k">if</span> <span class="n">metric</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="s2">&quot;micro_f1&quot;</span>
         <span class="p">)</span>
         <span class="n">micro_f1_score</span> <span class="o">=</span> <span class="n">metric</span><span class="p">(</span>
-            <span class="n">predictions</span><span class="o">=</span><span class="n">predictions</span><span class="p">,</span> <span class="n">references</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="n">labels</span><span class="p">),</span> <span class="n">dataset</span><span class="o">=</span><span class="n">dataset</span>
+            <span class="n">predictions</span><span class="o">=</span><span class="n">predictions</span><span class="p">,</span>
+            <span class="n">references</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="n">labels</span><span class="p">),</span>
+            <span class="n">dataset</span><span class="o">=</span><span class="n">dataset</span><span class="p">,</span>
+            <span class="n">dataset_config</span><span class="o">=</span><span class="n">dataset_config</span><span class="p">,</span>
+            <span class="n">benchmark_config</span><span class="o">=</span><span class="n">benchmark_config</span><span class="p">,</span>
         <span class="p">)</span>
 
     <span class="c1"># Compute the metrics without MISC tags</span>
@@ -1507,7 +1489,11 @@
             <span class="k">if</span> <span class="n">metric</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="s2">&quot;micro_f1_no_misc&quot;</span>
         <span class="p">)</span>
         <span class="n">micro_f1_no_misc_score</span> <span class="o">=</span> <span class="n">metric</span><span class="p">(</span>
-            <span class="n">predictions</span><span class="o">=</span><span class="n">predictions_no_misc</span><span class="p">,</span> <span class="n">references</span><span class="o">=</span><span class="n">labels_no_misc</span><span class="p">,</span> <span class="n">dataset</span><span class="o">=</span><span class="n">dataset</span>
+            <span class="n">predictions</span><span class="o">=</span><span class="n">predictions_no_misc</span><span class="p">,</span>
+            <span class="n">references</span><span class="o">=</span><span class="n">labels_no_misc</span><span class="p">,</span>
+            <span class="n">dataset</span><span class="o">=</span><span class="n">dataset</span><span class="p">,</span>
+            <span class="n">dataset_config</span><span class="o">=</span><span class="n">dataset_config</span><span class="p">,</span>
+            <span class="n">benchmark_config</span><span class="o">=</span><span class="n">benchmark_config</span><span class="p">,</span>
         <span class="p">)</span>
 
     <span class="c1"># Raise error if the metrics are invalid</span>
@@ -1536,51 +1522,11 @@
 <span class="sd">    Returns:</span>
 <span class="sd">        The predicted labels.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">raw_predictions</span> <span class="o">=</span> <span class="n">model_output</span><span class="o">.</span><span class="n">sequences</span>
-
-    <span class="c1"># Attempt to extract the JSON dictionary from the predictions</span>
-    <span class="n">json_regex</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">&quot;\{[^</span><span class="si">{}</span><span class="s2">]+?\}&quot;</span>
-    <span class="n">json_matches</span> <span class="o">=</span> <span class="p">[</span>
-        <span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">pattern</span><span class="o">=</span><span class="n">json_regex</span><span class="p">,</span> <span class="n">string</span><span class="o">=</span><span class="n">raw_prediction</span><span class="p">,</span> <span class="n">flags</span><span class="o">=</span><span class="n">re</span><span class="o">.</span><span class="n">DOTALL</span><span class="p">)</span>
-        <span class="ow">or</span> <span class="n">raw_prediction</span>
-        <span class="k">for</span> <span class="n">raw_prediction</span> <span class="ow">in</span> <span class="n">raw_predictions</span>
-    <span class="p">]</span>
-    <span class="n">raw_predictions</span> <span class="o">=</span> <span class="p">[</span>
-        <span class="n">json_match</span><span class="o">.</span><span class="n">group</span><span class="p">()</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">json_match</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">Match</span><span class="p">)</span> <span class="k">else</span> <span class="n">json_match</span>
-        <span class="k">for</span> <span class="n">json_match</span> <span class="ow">in</span> <span class="n">json_matches</span>
-    <span class="p">]</span>
-
     <span class="n">tokens</span> <span class="o">=</span> <span class="n">input_batch</span><span class="p">[</span><span class="s2">&quot;tokens&quot;</span><span class="p">]</span>
     <span class="n">predicted_labels</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[[</span><span class="s2">&quot;o&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">token_ids</span><span class="p">)</span> <span class="k">for</span> <span class="n">token_ids</span> <span class="ow">in</span> <span class="n">tokens</span><span class="p">]</span>
-    <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">raw_prediction</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">raw_predictions</span><span class="p">):</span>
-        <span class="k">try</span><span class="p">:</span>
-            <span class="n">json_output</span> <span class="o">=</span> <span class="n">demjson3</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">txt</span><span class="o">=</span><span class="n">raw_prediction</span><span class="p">)</span>
-            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">json_output</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
-                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
-                    <span class="s2">&quot;The model output is not a JSON dictionary, so cannot parse &quot;</span>
-                    <span class="sa">f</span><span class="s2">&quot;it. Skipping. Here is the output: </span><span class="si">{</span><span class="n">raw_prediction</span><span class="si">}</span><span class="s2">&quot;</span>
-                <span class="p">)</span>
-                <span class="k">continue</span>
-            <span class="k">elif</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">json_output</span><span class="o">.</span><span class="n">keys</span><span class="p">()):</span>
-                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
-                    <span class="s2">&quot;The model output is not a JSON dictionary with string keys, &quot;</span>
-                    <span class="s2">&quot;so cannot parse it. Skipping. Here is the output: &quot;</span>
-                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">raw_prediction</span><span class="si">}</span><span class="s2">&quot;</span>
-                <span class="p">)</span>
-                <span class="k">continue</span>
-            <span class="k">elif</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span> <span class="k">for</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">json_output</span><span class="o">.</span><span class="n">values</span><span class="p">()):</span>
-                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
-                    <span class="s2">&quot;The model output is not a JSON dictionary with list values, &quot;</span>
-                    <span class="s2">&quot;so cannot parse it. Skipping. Here is the output: &quot;</span>
-                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">raw_prediction</span><span class="si">}</span><span class="s2">&quot;</span>
-                <span class="p">)</span>
-                <span class="k">continue</span>
-            <span class="n">prediction_dict</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="n">json_output</span>
-        <span class="k">except</span> <span class="n">demjson3</span><span class="o">.</span><span class="n">JSONDecodeError</span><span class="p">:</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
-                <span class="s2">&quot;The model output is not valid JSON, so cannot parse it. Skipping. &quot;</span>
-                <span class="sa">f</span><span class="s2">&quot;Here is the output: </span><span class="si">{</span><span class="n">raw_prediction</span><span class="si">!r}</span><span class="s2">&quot;</span>
-            <span class="p">)</span>
+    <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">raw_prediction</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">model_output</span><span class="o">.</span><span class="n">sequences</span><span class="p">):</span>
+        <span class="n">prediction_dict</span> <span class="o">=</span> <span class="n">extract_json_dict_from_string</span><span class="p">(</span><span class="n">s</span><span class="o">=</span><span class="n">raw_prediction</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">prediction_dict</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">continue</span>
 
         <span class="n">prompt_label_mapping</span> <span class="o">=</span> <span class="n">dataset_config</span><span class="o">.</span><span class="n">prompt_label_mapping</span>
@@ -1614,15 +1560,15 @@
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">tokenize_and_align_labels</span><span class="p">(</span><div class="mkapi-source-link" id="euroeval.task_group_utils.token_classification.tokenize_and_align_labels"><a href="../../../../api/euroeval/task_group_utils/token_classification/#euroeval.task_group_utils.token_classification.tokenize_and_align_labels" title="Go to docs">[docs]</a></div>
-    <span class="n">examples</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">tokenizer</span><span class="p">:</span> <span class="s2">&quot;PreTrainedTokenizer&quot;</span><span class="p">,</span> <span class="n">label2id</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">]</span>
+    <span class="n">examples</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">tokeniser</span><span class="p">:</span> <span class="s2">&quot;PreTrainedTokenizer&quot;</span><span class="p">,</span> <span class="n">label2id</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">]</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;BatchEncoding&quot;</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Tokenise all texts and align the labels with them.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        examples:</span>
 <span class="sd">            The examples to be tokenised.</span>
-<span class="sd">        tokenizer:</span>
-<span class="sd">            A pretrained tokenizer.</span>
+<span class="sd">        tokeniser:</span>
+<span class="sd">            A pretrained tokeniser.</span>
 <span class="sd">        label2id:</span>
 <span class="sd">            A dictionary that converts NER tags to IDs.</span>
 
@@ -1631,22 +1577,22 @@
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="c1"># Tokenize the texts. We use the `is_split_into_words` argument here because</span>
     <span class="c1"># the texts in our dataset are lists of words (with a label for each word)</span>
-    <span class="n">tokenized_inputs</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="p">(</span>
+    <span class="n">tokenized_inputs</span> <span class="o">=</span> <span class="n">tokeniser</span><span class="p">(</span>
         <span class="n">examples</span><span class="p">[</span><span class="s2">&quot;tokens&quot;</span><span class="p">],</span> <span class="n">is_split_into_words</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">truncation</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">padding</span><span class="o">=</span><span class="kc">True</span>
     <span class="p">)</span>
 
     <span class="c1"># Extract a mapping between all the tokens and their corresponding word. If the</span>
-    <span class="c1"># tokenizer is of a &quot;fast&quot; variant then this can be accessed through the</span>
+    <span class="c1"># tokeniser is of a &quot;fast&quot; variant then this can be accessed through the</span>
     <span class="c1"># `word_ids` method. Otherwise, we have to extract it manually.</span>
     <span class="n">all_labels</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
     <span class="n">labels</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
     <span class="n">word_ids</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span><span class="p">]</span>
     <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">labels</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">examples</span><span class="p">[</span><span class="s2">&quot;labels&quot;</span><span class="p">]):</span>
-        <span class="c1"># Try to get the word IDs from the tokenizer</span>
+        <span class="c1"># Try to get the word IDs from the tokeniser</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="n">word_ids</span> <span class="o">=</span> <span class="n">tokenized_inputs</span><span class="o">.</span><span class="n">word_ids</span><span class="p">(</span><span class="n">batch_index</span><span class="o">=</span><span class="n">i</span><span class="p">)</span>
 
-        <span class="c1"># If the tokenizer is not of a &quot;fast&quot; variant, we have to extract the word</span>
+        <span class="c1"># If the tokeniser is not of a &quot;fast&quot; variant, we have to extract the word</span>
         <span class="c1"># IDs manually</span>
         <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
             <span class="c1"># Get the list of words in the document</span>
@@ -1656,7 +1602,7 @@
             <span class="n">tok_ids</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="n">tokenized_inputs</span><span class="o">.</span><span class="n">input_ids</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
 
             <span class="c1"># Decode the token IDs</span>
-            <span class="n">tokens</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">convert_ids_to_tokens</span><span class="p">(</span><span class="n">tok_ids</span><span class="p">)</span>
+            <span class="n">tokens</span> <span class="o">=</span> <span class="n">tokeniser</span><span class="o">.</span><span class="n">convert_ids_to_tokens</span><span class="p">(</span><span class="n">tok_ids</span><span class="p">)</span>
             <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">tokens</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span>
 
             <span class="c1"># Remove prefixes from the tokens</span>
@@ -1668,14 +1614,14 @@
                             <span class="n">tokens</span><span class="p">[</span><span class="n">tok_idx</span><span class="p">]</span> <span class="o">=</span> <span class="n">tok</span><span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="n">prefix</span><span class="p">)</span> <span class="p">:]</span>
 
             <span class="c1"># Replace UNK tokens with the correct word</span>
-            <span class="n">tokens</span> <span class="o">=</span> <span class="n">handle_unk_tokens</span><span class="p">(</span><span class="n">tokenizer</span><span class="o">=</span><span class="n">tokenizer</span><span class="p">,</span> <span class="n">tokens</span><span class="o">=</span><span class="n">tokens</span><span class="p">,</span> <span class="n">words</span><span class="o">=</span><span class="n">words</span><span class="p">)</span>
+            <span class="n">tokens</span> <span class="o">=</span> <span class="n">handle_unk_tokens</span><span class="p">(</span><span class="n">tokeniser</span><span class="o">=</span><span class="n">tokeniser</span><span class="p">,</span> <span class="n">tokens</span><span class="o">=</span><span class="n">tokens</span><span class="p">,</span> <span class="n">words</span><span class="o">=</span><span class="n">words</span><span class="p">)</span>
 
-            <span class="c1"># Get list of special tokens. Some tokenizers do not record these</span>
+            <span class="c1"># Get list of special tokens. Some tokenisers do not record these</span>
             <span class="c1"># properly, which is why we convert the values to their indices and</span>
             <span class="c1"># then back to strings</span>
             <span class="n">sp_toks</span> <span class="o">=</span> <span class="p">[</span>
-                <span class="n">tokenizer</span><span class="o">.</span><span class="n">convert_ids_to_tokens</span><span class="p">(</span><span class="n">tokenizer</span><span class="o">.</span><span class="n">convert_tokens_to_ids</span><span class="p">(</span><span class="n">sp_tok</span><span class="p">))</span>
-                <span class="k">for</span> <span class="n">sp_tok</span> <span class="ow">in</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">special_tokens_map</span><span class="o">.</span><span class="n">values</span><span class="p">()</span>
+                <span class="n">tokeniser</span><span class="o">.</span><span class="n">convert_ids_to_tokens</span><span class="p">(</span><span class="n">tokeniser</span><span class="o">.</span><span class="n">convert_tokens_to_ids</span><span class="p">(</span><span class="n">sp_tok</span><span class="p">))</span>
+                <span class="k">for</span> <span class="n">sp_tok</span> <span class="ow">in</span> <span class="n">tokeniser</span><span class="o">.</span><span class="n">special_tokens_map</span><span class="o">.</span><span class="n">values</span><span class="p">()</span>
             <span class="p">]</span>
 
             <span class="c1"># Replace special tokens with `None`</span>
@@ -1699,7 +1645,7 @@
             <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">word_idxs</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">token_idxs</span><span class="p">):</span>
                 <span class="k">raise</span> <span class="n">InvalidBenchmark</span><span class="p">(</span>
                     <span class="s2">&quot;The tokens could not be aligned with the words during manual &quot;</span>
-                    <span class="s2">&quot;word-token alignment. It seems that the tokenizer is neither &quot;</span>
+                    <span class="s2">&quot;word-token alignment. It seems that the tokeniser is neither &quot;</span>
                     <span class="s2">&quot;of the fast variant nor of a SentencePiece/WordPiece variant.&quot;</span>
                 <span class="p">)</span>
 
@@ -1729,9 +1675,9 @@
                 <span class="n">label</span> <span class="o">=</span> <span class="n">labels</span><span class="p">[</span><span class="n">word_id</span><span class="p">]</span>
                 <span class="k">try</span><span class="p">:</span>
                     <span class="n">label_id</span> <span class="o">=</span> <span class="n">label2id</span><span class="p">[</span><span class="n">label</span><span class="o">.</span><span class="n">lower</span><span class="p">()]</span>
-                <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+                <span class="k">except</span> <span class="ne">KeyError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
                     <span class="n">msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;The label </span><span class="si">{</span><span class="n">label</span><span class="si">}</span><span class="s2"> was not found in the model&#39;s config.&quot;</span>
-                    <span class="k">raise</span> <span class="n">InvalidBenchmark</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+                    <span class="k">raise</span> <span class="n">InvalidBenchmark</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
                 <span class="n">label_ids</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">label_id</span><span class="p">)</span>
 
             <span class="c1"># For the other tokens in a word, we set the label to -100</span>
@@ -1746,13 +1692,13 @@
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">handle_unk_tokens</span><span class="p">(</span><div class="mkapi-source-link" id="euroeval.task_group_utils.token_classification.handle_unk_tokens"><a href="../../../../api/euroeval/task_group_utils/token_classification/#euroeval.task_group_utils.token_classification.handle_unk_tokens" title="Go to docs">[docs]</a></div>
-    <span class="n">tokenizer</span><span class="p">:</span> <span class="s2">&quot;PreTrainedTokenizer&quot;</span><span class="p">,</span> <span class="n">tokens</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">words</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
+    <span class="n">tokeniser</span><span class="p">:</span> <span class="s2">&quot;PreTrainedTokenizer&quot;</span><span class="p">,</span> <span class="n">tokens</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">words</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Replace unknown tokens in the tokens with the corresponding word.</span>
 
 <span class="sd">    Args:</span>
-<span class="sd">        tokenizer:</span>
-<span class="sd">            The tokenizer used to tokenize the words.</span>
+<span class="sd">        tokeniser:</span>
+<span class="sd">            The tokeniser used to tokenize the words.</span>
 <span class="sd">        tokens:</span>
 <span class="sd">            The list of tokens.</span>
 <span class="sd">        words:</span>
@@ -1762,15 +1708,15 @@
 <span class="sd">        The list of tokens with unknown tokens replaced by the corresponding word.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="c1"># Locate the token indices of the unknown tokens</span>
-    <span class="n">token_unk_idxs</span> <span class="o">=</span> <span class="p">[</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">tok</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">tokens</span><span class="p">)</span> <span class="k">if</span> <span class="n">tok</span> <span class="o">==</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">unk_token</span><span class="p">]</span>
+    <span class="n">token_unk_idxs</span> <span class="o">=</span> <span class="p">[</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">tok</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">tokens</span><span class="p">)</span> <span class="k">if</span> <span class="n">tok</span> <span class="o">==</span> <span class="n">tokeniser</span><span class="o">.</span><span class="n">unk_token</span><span class="p">]</span>
 
     <span class="c1"># Locate the word indices of the words which contain an unknown token</span>
     <span class="n">word_unk_idxs</span> <span class="o">=</span> <span class="p">[</span>
         <span class="n">i</span>
         <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">word</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">words</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">unk_token</span>
-        <span class="ow">in</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">convert_ids_to_tokens</span><span class="p">(</span>
-            <span class="n">tokenizer</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="n">word</span><span class="p">,</span> <span class="n">add_special_tokens</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">tokeniser</span><span class="o">.</span><span class="n">unk_token</span>
+        <span class="ow">in</span> <span class="n">tokeniser</span><span class="o">.</span><span class="n">convert_ids_to_tokens</span><span class="p">(</span>
+            <span class="n">tokeniser</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="n">word</span><span class="p">,</span> <span class="n">add_special_tokens</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
         <span class="p">)</span>
     <span class="p">]</span>
 
@@ -1780,8 +1726,8 @@
         <span class="n">word</span> <span class="o">=</span> <span class="n">words</span><span class="p">[</span><span class="n">word_idx</span><span class="p">]</span>
 
         <span class="c1"># Tokenize the word, which is now a list containing at least one UNK token</span>
-        <span class="n">tokens_with_unk</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">convert_ids_to_tokens</span><span class="p">(</span>
-            <span class="n">tokenizer</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="n">word</span><span class="p">,</span> <span class="n">add_special_tokens</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="n">tokens_with_unk</span> <span class="o">=</span> <span class="n">tokeniser</span><span class="o">.</span><span class="n">convert_ids_to_tokens</span><span class="p">(</span>
+            <span class="n">tokeniser</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="n">word</span><span class="p">,</span> <span class="n">add_special_tokens</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
         <span class="p">)</span>
 
         <span class="c1"># Iterate over the tokens in the word</span>
@@ -1790,10 +1736,10 @@
             <span class="c1"># of the content of this token from the word. The result of the `word`</span>
             <span class="c1"># variable will be the content of the UNK token.</span>
             <span class="c1"># NOTE: This is a bit hacky and not bulletproof. For instance, if the</span>
-            <span class="c1"># word is &quot;1925-1950&quot; and the tokenizer splits it into [&quot;[UNK]&quot;, &quot;-&quot;,</span>
+            <span class="c1"># word is &quot;1925-1950&quot; and the tokeniser splits it into [&quot;[UNK]&quot;, &quot;-&quot;,</span>
             <span class="c1"># &quot;19&quot;, &quot;50&quot;], then the result will be 2519 instead of 1925. This</span>
             <span class="c1"># happens almost never, however, so we can live with it.</span>
-            <span class="k">if</span> <span class="n">possible_unk_token</span> <span class="o">!=</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">unk_token</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">possible_unk_token</span> <span class="o">!=</span> <span class="n">tokeniser</span><span class="o">.</span><span class="n">unk_token</span><span class="p">:</span>
                 <span class="n">word</span> <span class="o">=</span> <span class="n">word</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">possible_unk_token</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
 
         <span class="c1"># Replace the token with the word</span>

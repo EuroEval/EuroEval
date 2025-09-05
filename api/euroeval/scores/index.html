@@ -16,7 +16,7 @@
       
       
       <link rel="icon" href="../../../gfx/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.17">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.18">
     
     
       
@@ -635,6 +635,8 @@
       
         
       
+        
+      
     
     
     
@@ -1021,6 +1023,8 @@
       
         
       
+        
+      
     
     
     
@@ -1047,6 +1051,71 @@
   
   <span class="md-ellipsis">
     euroeval.dataset_configs
+    
+  </span>
+  
+
+      
+        <span class="md-nav__icon md-icon"></span>
+      
+    </a>
+  
+
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+      
+        
+        
+      
+    
+    <li class="md-nav__item md-nav__item--pruned md-nav__item--nested">
+      
+        
+  
+  
+  
+    <a href="../metrics/" class="md-nav__link">
+      
+  
+  
+  <span class="md-ellipsis">
+    euroeval.metrics
     
   </span>
   
@@ -1484,29 +1553,6 @@
   
   <span class="md-ellipsis">
     euroeval.languages
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../metrics/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    euroeval.metrics
     
   </span>
   
@@ -1974,7 +2020,7 @@ identical to <code>scores</code> and 'total' being a dictionary with the aggrega
 <i class="fa-regular fa-square-minus"></i>
 </span>
 </span>
-<span class="mkapi-object-name"><a href="./#euroeval.scores.aggregate_scores" title="euroeval.scores.aggregate_scores">aggregate_scores</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">scores</span><span class="mkapi-colon">: </span><span class="mkapi-ann">list[dict[str, float]]</span><span class="mkapi-comma">, </span><span class="mkapi-arg">metric</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><a href="../metrics/#euroeval.metrics.Metric" title="euroeval.metrics.Metric">Metric</a></span><span class="mkapi-paren">)</span><span class="mkapi-arrow"> → </span><span class="mkapi-return">tuple[float, float]</span></span>
+<span class="mkapi-object-name"><a href="./#euroeval.scores.aggregate_scores" title="euroeval.scores.aggregate_scores">aggregate_scores</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">scores</span><span class="mkapi-colon">: </span><span class="mkapi-ann">list[dict[str, float]]</span><span class="mkapi-comma">, </span><span class="mkapi-arg">metric</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><a href="../metrics/base/#euroeval.metrics.base.Metric" title="euroeval.metrics.base.Metric">Metric</a></span><span class="mkapi-paren">)</span><span class="mkapi-arrow"> → </span><span class="mkapi-return">tuple[float, float]</span></span>
 </p>
 <div class="mkapi-document">
 <p>Helper function to compute the mean with confidence intervals.</p>
@@ -1996,7 +2042,7 @@ Dictionary with the names of the metrics as keys, of the form
 </li>
 <li>
 <p><span class="mkapi-item-name">metric</span> : 
-<span class="mkapi-item-type"><a href="../metrics/#euroeval.metrics.Metric" title="euroeval.metrics.Metric">Metric</a></span> <span class="mkapi-dash">&mdash;</span>
+<span class="mkapi-item-type"><a href="../metrics/base/#euroeval.metrics.base.Metric" title="euroeval.metrics.base.Metric">Metric</a></span> <span class="mkapi-dash">&mdash;</span>
 The metric, which is used to collect the correct metric from <code>scores</code>.</p>
 </li>
 </ul>

@@ -16,7 +16,7 @@
       
       
       <link rel="icon" href="../../../gfx/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.17">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.18">
     
     
       
@@ -635,6 +635,8 @@
       
         
       
+        
+      
     
     
     
@@ -1021,6 +1023,8 @@
       
         
       
+        
+      
     
     
     
@@ -1047,6 +1051,71 @@
   
   <span class="md-ellipsis">
     euroeval.dataset_configs
+    
+  </span>
+  
+
+      
+        <span class="md-nav__icon md-icon"></span>
+      
+    </a>
+  
+
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+      
+        
+        
+      
+    
+    <li class="md-nav__item md-nav__item--pruned md-nav__item--nested">
+      
+        
+  
+  
+  
+    <a href="../metrics/" class="md-nav__link">
+      
+  
+  
+  <span class="md-ellipsis">
+    euroeval.metrics
     
   </span>
   
@@ -1778,29 +1847,6 @@
   
   <span class="md-ellipsis">
     euroeval.languages
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../metrics/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    euroeval.metrics
     
   </span>
   
@@ -2568,7 +2614,7 @@ If <a href="./#euroeval.data_models.Language.or_separator" title="euroeval.data_
 <i class="fa-regular fa-square-minus"></i>
 </span>
 </span><span class="mkapi-object-kind">dataclass</span>
-<span class="mkapi-object-name"><a href="./#euroeval.data_models.Task" title="euroeval.data_models.Task">Task</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">name</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str</span><span class="mkapi-comma">, </span><span class="mkapi-arg">task_group</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><a href="../enums/#euroeval.enums.TaskGroup" title="euroeval.enums.TaskGroup">TaskGroup</a></span><span class="mkapi-comma">, </span><span class="mkapi-arg">template_dict</span><span class="mkapi-colon">: </span><span class="mkapi-ann">dict['Language', 'PromptConfig']</span><span class="mkapi-comma">, </span><span class="mkapi-arg">metrics</span><span class="mkapi-colon">: </span><span class="mkapi-ann">list[<a href="../metrics/#euroeval.metrics.Metric" title="euroeval.metrics.Metric">Metric</a>]</span><span class="mkapi-comma">, </span><span class="mkapi-arg">default_num_few_shot_examples</span><span class="mkapi-colon">: </span><span class="mkapi-ann">int</span><span class="mkapi-comma">, </span><span class="mkapi-arg">default_max_generated_tokens</span><span class="mkapi-colon">: </span><span class="mkapi-ann">int</span><span class="mkapi-comma">, </span><span class="mkapi-arg">default_labels</span><span class="mkapi-colon">: </span><span class="mkapi-ann">list[str]</span><span class="mkapi-comma">, </span><span class="mkapi-arg">requires_zero_shot</span><span class="mkapi-colon">: </span><span class="mkapi-ann">bool</span><span class="mkapi-equal"> = </span><span class="mkapi-default">False</span><span class="mkapi-comma">, </span><span class="mkapi-arg">uses_structured_output</span><span class="mkapi-colon">: </span><span class="mkapi-ann">bool</span><span class="mkapi-equal"> = </span><span class="mkapi-default">False</span><span class="mkapi-comma">, </span><span class="mkapi-arg">uses_logprobs</span><span class="mkapi-colon">: </span><span class="mkapi-ann">bool</span><span class="mkapi-equal"> = </span><span class="mkapi-default">False</span><span class="mkapi-comma">, </span><span class="mkapi-arg">requires_logprobs</span><span class="mkapi-colon">: </span><span class="mkapi-ann">bool</span><span class="mkapi-equal"> = </span><span class="mkapi-default">False</span><span class="mkapi-comma">, </span><span class="mkapi-arg">allowed_model_types</span><span class="mkapi-colon">: </span><span class="mkapi-ann">list[<a href="../enums/#euroeval.enums.ModelType" title="euroeval.enums.ModelType">ModelType</a>]</span><span class="mkapi-equal"> = </span><span class="mkapi-default"><span class="mkapi-tooltip" title="dataclasses.field">field</span>(default_factory=lambda: [<a href="../enums/#euroeval.enums.ModelType" title="euroeval.enums.ModelType">ModelType</a>.<span class="mkapi-tooltip" title="euroeval.enums.ModelType.ENCODER">ENCODER</span>, <a href="../enums/#euroeval.enums.ModelType" title="euroeval.enums.ModelType">ModelType</a>.<span class="mkapi-tooltip" title="euroeval.enums.ModelType.GENERATIVE">GENERATIVE</span>])</span><span class="mkapi-comma">, </span><span class="mkapi-arg">allowed_generative_types</span><span class="mkapi-colon">: </span><span class="mkapi-ann">list[<a href="../enums/#euroeval.enums.GenerativeType" title="euroeval.enums.GenerativeType">GenerativeType</a>]</span><span class="mkapi-equal"> = </span><span class="mkapi-default"><span class="mkapi-tooltip" title="dataclasses.field">field</span>(default_factory=lambda: [<a href="../enums/#euroeval.enums.GenerativeType" title="euroeval.enums.GenerativeType">GenerativeType</a>.<span class="mkapi-tooltip" title="euroeval.enums.GenerativeType.BASE">BASE</span>, <a href="../enums/#euroeval.enums.GenerativeType" title="euroeval.enums.GenerativeType">GenerativeType</a>.<span class="mkapi-tooltip" title="euroeval.enums.GenerativeType.INSTRUCTION_TUNED">INSTRUCTION_TUNED</span>, <a href="../enums/#euroeval.enums.GenerativeType" title="euroeval.enums.GenerativeType">GenerativeType</a>.<span class="mkapi-tooltip" title="euroeval.enums.GenerativeType.REASONING">REASONING</span>])</span><span class="mkapi-paren">)</span></span>
+<span class="mkapi-object-name"><a href="./#euroeval.data_models.Task" title="euroeval.data_models.Task">Task</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">name</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str</span><span class="mkapi-comma">, </span><span class="mkapi-arg">task_group</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><a href="../enums/#euroeval.enums.TaskGroup" title="euroeval.enums.TaskGroup">TaskGroup</a></span><span class="mkapi-comma">, </span><span class="mkapi-arg">template_dict</span><span class="mkapi-colon">: </span><span class="mkapi-ann">dict['Language', 'PromptConfig']</span><span class="mkapi-comma">, </span><span class="mkapi-arg">metrics</span><span class="mkapi-colon">: </span><span class="mkapi-ann">list['Metric']</span><span class="mkapi-comma">, </span><span class="mkapi-arg">default_num_few_shot_examples</span><span class="mkapi-colon">: </span><span class="mkapi-ann">int</span><span class="mkapi-comma">, </span><span class="mkapi-arg">default_max_generated_tokens</span><span class="mkapi-colon">: </span><span class="mkapi-ann">int</span><span class="mkapi-comma">, </span><span class="mkapi-arg">default_labels</span><span class="mkapi-colon">: </span><span class="mkapi-ann">list[str]</span><span class="mkapi-comma">, </span><span class="mkapi-arg">requires_zero_shot</span><span class="mkapi-colon">: </span><span class="mkapi-ann">bool</span><span class="mkapi-equal"> = </span><span class="mkapi-default">False</span><span class="mkapi-comma">, </span><span class="mkapi-arg">uses_structured_output</span><span class="mkapi-colon">: </span><span class="mkapi-ann">bool</span><span class="mkapi-equal"> = </span><span class="mkapi-default">False</span><span class="mkapi-comma">, </span><span class="mkapi-arg">uses_logprobs</span><span class="mkapi-colon">: </span><span class="mkapi-ann">bool</span><span class="mkapi-equal"> = </span><span class="mkapi-default">False</span><span class="mkapi-comma">, </span><span class="mkapi-arg">requires_logprobs</span><span class="mkapi-colon">: </span><span class="mkapi-ann">bool</span><span class="mkapi-equal"> = </span><span class="mkapi-default">False</span><span class="mkapi-comma">, </span><span class="mkapi-arg">allowed_model_types</span><span class="mkapi-colon">: </span><span class="mkapi-ann">list[<a href="../enums/#euroeval.enums.ModelType" title="euroeval.enums.ModelType">ModelType</a>]</span><span class="mkapi-equal"> = </span><span class="mkapi-default"><span class="mkapi-tooltip" title="dataclasses.field">field</span>(default_factory=lambda: [<a href="../enums/#euroeval.enums.ModelType" title="euroeval.enums.ModelType">ModelType</a>.<span class="mkapi-tooltip" title="euroeval.enums.ModelType.ENCODER">ENCODER</span>, <a href="../enums/#euroeval.enums.ModelType" title="euroeval.enums.ModelType">ModelType</a>.<span class="mkapi-tooltip" title="euroeval.enums.ModelType.GENERATIVE">GENERATIVE</span>])</span><span class="mkapi-comma">, </span><span class="mkapi-arg">allowed_generative_types</span><span class="mkapi-colon">: </span><span class="mkapi-ann">list[<a href="../enums/#euroeval.enums.GenerativeType" title="euroeval.enums.GenerativeType">GenerativeType</a>]</span><span class="mkapi-equal"> = </span><span class="mkapi-default"><span class="mkapi-tooltip" title="dataclasses.field">field</span>(default_factory=lambda: [<a href="../enums/#euroeval.enums.GenerativeType" title="euroeval.enums.GenerativeType">GenerativeType</a>.<span class="mkapi-tooltip" title="euroeval.enums.GenerativeType.BASE">BASE</span>, <a href="../enums/#euroeval.enums.GenerativeType" title="euroeval.enums.GenerativeType">GenerativeType</a>.<span class="mkapi-tooltip" title="euroeval.enums.GenerativeType.INSTRUCTION_TUNED">INSTRUCTION_TUNED</span>, <a href="../enums/#euroeval.enums.GenerativeType" title="euroeval.enums.GenerativeType">GenerativeType</a>.<span class="mkapi-tooltip" title="euroeval.enums.GenerativeType.REASONING">REASONING</span>])</span><span class="mkapi-paren">)</span></span>
 </p>
 <div class="mkapi-document">
 <p>A dataset task.</p>
@@ -2599,7 +2645,7 @@ The template dictionary for the task, from language to prompt template.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">metrics</span> : 
-<span class="mkapi-item-type">list[<a href="../metrics/#euroeval.metrics.Metric" title="euroeval.metrics.Metric">Metric</a>]</span> <span class="mkapi-dash">&mdash;</span>
+<span class="mkapi-item-type">list['Metric']</span> <span class="mkapi-dash">&mdash;</span>
 The metrics used to evaluate the task.</p>
 </li>
 <li>
