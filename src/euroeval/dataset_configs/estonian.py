@@ -4,7 +4,23 @@ from ..data_models import DatasetConfig
 from ..languages import ET
 from ..tasks import COMMON_SENSE, EUROPEAN_VALUES, LA, NER, RC, SENT, SUMM
 
+from euroeval.common import DatasetConfig
+from euroeval.tasks import KNOW
+from euroeval.languages import ET
+
+# Add this under the ### Unofficial datasets ### section
+
+
+
 ### Official datasets ###
+EXAM_ET_CONFIG = DatasetConfig(
+    name="exam_et",
+    pretty_name="Estonian Exam Dataset", 
+    huggingface_id="EuroEval/exam_et",
+    task=KNOW,
+    languages=[ET],
+    unofficial=True,
+)
 
 ESTONIAN_VALENCE_CONFIG = DatasetConfig(
     name="estonian-valence",
