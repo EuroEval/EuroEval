@@ -473,3 +473,25 @@ You can evaluate this dataset directly as follows:
 ```bash
 $ euroeval --model <model-id> --dataset err-news
 ```
+## exam_et
+
+The `exam_et` dataset contains Estonian examination questions in a multiple-choice format, designed to test knowledge across various subjects. This dataset originates from Estonian educational assessments and provides a comprehensive evaluation of Estonian language understanding and subject knowledge.
+
+**Split details**: The dataset is split into training (1,024 samples), validation (256 samples), and test (2,048 samples) sets, maintaining consistency with EuroEval standards.
+
+**Example samples**:
+```json
+{
+    "question": "[Example Estonian question]",
+    "options": ["A) Option 1", "B) Option 2", "C) Option 3", "D) Option 4"],
+    "answer": "A",
+    "subject": "general"
+}
+```
+
+**Evaluation setup**: Models are evaluated using accuracy on the multiple-choice questions. The model must select the correct answer from the provided options.
+
+**Evaluation command**:
+```bash
+python -m euroeval --model_id your_model --datasets exam_et --batch_size 32
+```
