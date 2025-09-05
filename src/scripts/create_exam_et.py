@@ -27,7 +27,7 @@ from sklearn.model_selection import train_test_split
 
 
 def main() -> None:
-    """Create the Exam-et dataset and upload them to the HF Hub."""
+    """Create the Exam-et dataset and upload it to the HF Hub."""
     repo_id = "TalTechNLP/exam_et"
     target_repo_id = "EuroEval/exam-et"
 
