@@ -7,7 +7,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 
 ## [Unreleased]
-
+### Fixed
+- Fixed a bug causing encoders to fail when evaluating on the Exam-et dataset.
 
 
 ## [v16.0.0] - 2025-09-05

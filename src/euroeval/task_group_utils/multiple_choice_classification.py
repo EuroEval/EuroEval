@@ -126,7 +126,7 @@ def prepare_examples(
         ):
             choice_idxs.append(idx)
 
-    choices = [sections[idx] for idx in choice_idxs]
+    choices = [sections[idx] for idx in reversed(choice_idxs)]
 
     # Check that the choices are present, and that all of them are at the end
     assert len(choices) > 0, "No choices found in the document."
@@ -146,7 +146,7 @@ def prepare_examples(
     )
     new_examples["label"] = [
         int(choice.startswith(f"{letter}. ") and letter == examples["label"][0])
-        for letter, choice in zip("abcde", choices)
+        for letter, choice in zip("abcdefghijklmnopqrstuvwxyz", choices)
     ]
     new_examples["id"] = [hashlib.md5(string=doc.encode()).hexdigest()] * len(choices)
     return new_examples
