@@ -5,6 +5,9 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+### Added
+- Added the Estonian knowledge dataset [exam_et](https://huggingface.co/datasets/TalTechNLP/exam_et). The split is given by 1,024 / 256 / 2,048 samples for train / validation / test, respectively.
 
 ## [Unreleased]
 ### Added
