@@ -349,6 +349,75 @@ $ euroeval --model <model-id> --dataset multi-wiki-qa-et
 ```
 
 
+## Knowledge
+
+### Exam-et
+
+This dataset was released in [this
+repository](https://huggingface.co/datasets/TalTechNLP/exam_et) and contains questions
+with multiple-choice answers from Estonian high-school tests.
+
+The original full dataset contains 1,614 samples in a single split, across eight
+different subjects. We use a 512 / 64 / 896 split for training, validation and testing,
+respectively, with stratification based on the subject.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Kas väide iseloomustab Eestit perioodil 1920-1934 või 1934-1940: riigikogu valiti iga kolme aasta järel?\nVastusevariandid:\na. Eesti 1920-1934\nb. Eesti 1934-1940",
+  "label": "a"
+}
+```
+```json
+{
+  "text": "Kas väide on tõene või väär? Veendumuste pärast võib isikult Eesti kodakondsuse ära võtta.\nVastusevariandid:\na. tõene\nb. väär",
+  "label": "b"
+}
+```
+```json
+{
+  "text": "Kellel on Eesti vabariigis õigus kehtestada eriolukord?\nVastusevariandid:\na. politseil\nb. õiguskantsleril\nc. vabariigi valitsusel\nd. riigikohtul",
+  "label": "c"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+  ```
+  Järgnevad on vastusevariantidega küsimused (koos vastustega).
+  ```
+- Base prompt template:
+  ```
+  Küsimus: {text}
+  Vastusevariandid:
+  a. {option_a}
+  b. {option_b}
+  Vastus: {label}
+  ```
+- Instruction-tuned prompt template:
+  ```
+  Küsimus: {text}
+  Vastusevariandid:
+  a. {option_a}
+  b. {option_b}
+  (...)
+  o. {option_o}
+
+  Vasta ülaltoodud küsimusele ainult 'a', 'b', (...), 'n' või 'o', ja mitte millegi
+  muuga.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+$ euroeval --model <model-id> --dataset exam-et
+```
+
+
 ## Common-sense Reasoning
 
 ### WinoGrande-ET
