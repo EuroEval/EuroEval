@@ -10,6 +10,7 @@ from dataclasses import asdict
 
 from tqdm.auto import tqdm
 
+from .constants import NUM_GENERATION_TOKENS_FOR_CLASSIFICATION
 from .data_models import GenerativeModelOutput, SingleGenerativeModelOutput
 
 if t.TYPE_CHECKING:
@@ -189,7 +190,11 @@ class ModelCache:
                 # the indices of the top scores, to save space. Further, we only store
                 # the scores if the generated sequence is shorter than the maximum
                 # length
-                if model_output.scores is not None and self.max_generated_tokens <= 10:
+                if (
+                    model_output.scores is not None
+                    and self.max_generated_tokens
+                    <= NUM_GENERATION_TOKENS_FOR_CLASSIFICATION
+                ):
                     assert model_output.scores is not None
                     scores = model_output.scores[sample_idx]
                 else:

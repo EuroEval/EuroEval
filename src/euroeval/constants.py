@@ -75,3 +75,9 @@ LITELLM_CLASSIFICATION_OUTPUT_KEY = "label"
 
 # These characters are stripped from JSON output when trying to identify the label
 JSON_STRIP_CHARACTERS = ' {}\n\r":'
+
+
+# The number of tokens we generate when evaluating generative models on classification
+# tasks. We also use this to determine whether we should store logprobs in the model
+# outputs (and cache).
+NUM_GENERATION_TOKENS_FOR_CLASSIFICATION = 10

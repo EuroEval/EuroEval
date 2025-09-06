@@ -1,6 +1,7 @@
 """All benchmarks tasks used in EuroEval."""
 
 from . import metrics as m
+from .constants import NUM_GENERATION_TOKENS_FOR_CLASSIFICATION
 from .data_models import Task
 from .enums import GenerativeType, ModelType, TaskGroup
 from .prompt_templates import (
@@ -28,7 +29,7 @@ LA = Task(
     template_dict=LA_TEMPLATES,
     metrics=[m.mcc_metric, m.macro_f1_metric],
     default_num_few_shot_examples=12,
-    default_max_generated_tokens=10,
+    default_max_generated_tokens=NUM_GENERATION_TOKENS_FOR_CLASSIFICATION,
     default_labels=["correct", "incorrect"],
     uses_logprobs=True,
 )
@@ -73,7 +74,7 @@ SENT = Task(
     template_dict=SENT_TEMPLATES,
     metrics=[m.mcc_metric, m.macro_f1_metric],
     default_num_few_shot_examples=12,
-    default_max_generated_tokens=10,
+    default_max_generated_tokens=NUM_GENERATION_TOKENS_FOR_CLASSIFICATION,
     default_labels=["positive", "neutral", "negative"],
     uses_logprobs=True,
 )
@@ -97,7 +98,7 @@ KNOW = Task(
     template_dict=MULTIPLE_CHOICE_TEMPLATES,
     metrics=[m.mcc_metric, m.accuracy_metric],
     default_num_few_shot_examples=5,
-    default_max_generated_tokens=10,
+    default_max_generated_tokens=NUM_GENERATION_TOKENS_FOR_CLASSIFICATION,
     default_labels=["a", "b", "c", "d"],
     uses_logprobs=True,
 )
@@ -109,7 +110,7 @@ MCRC = Task(
     template_dict=MULTIPLE_CHOICE_TEMPLATES,
     metrics=[m.mcc_metric, m.accuracy_metric],
     default_num_few_shot_examples=5,
-    default_max_generated_tokens=10,
+    default_max_generated_tokens=NUM_GENERATION_TOKENS_FOR_CLASSIFICATION,
     default_labels=["a", "b", "c", "d"],
     uses_logprobs=True,
 )
@@ -121,7 +122,7 @@ COMMON_SENSE = Task(
     template_dict=MULTIPLE_CHOICE_TEMPLATES,
     metrics=[m.mcc_metric, m.accuracy_metric],
     default_num_few_shot_examples=5,
-    default_max_generated_tokens=10,
+    default_max_generated_tokens=NUM_GENERATION_TOKENS_FOR_CLASSIFICATION,
     default_labels=["a", "b", "c", "d"],
     uses_logprobs=True,
 )
@@ -133,7 +134,7 @@ EUROPEAN_VALUES = Task(
     template_dict=MULTIPLE_CHOICE_TEMPLATES,
     metrics=[m.european_values_metric],
     default_num_few_shot_examples=0,
-    default_max_generated_tokens=10,
+    default_max_generated_tokens=NUM_GENERATION_TOKENS_FOR_CLASSIFICATION,
     default_labels=["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10"],
     allowed_model_types=[ModelType.GENERATIVE],
     allowed_generative_types=[
