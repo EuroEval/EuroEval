@@ -25,7 +25,7 @@ from datasets.utils import disable_progress_bar
 from requests.exceptions import RequestException
 from transformers import logging as tf_logging
 
-from .exceptions import NaNValueInModelOutput
+from .exceptions import InvalidBenchmark, NaNValueInModelOutput
 
 if t.TYPE_CHECKING:
     from types import TracebackType
@@ -457,3 +457,34 @@ def get_hf_token(api_key: str | None) -> str | bool:
             level=logging.DEBUG,
         )
         return False
+
+
+def extract_multiple_choice_labels(
+    prompt: str, candidate_labels: list[str]
+) -> list[str]:
+    """Extract multiple choice labels from a prompt.
+
+    Args:
+        prompt:
+            The prompt to extract the labels from.
+        candidate_labels:
+            The candidate labels to look for in the prompt.
+
+    Returns:
+        The extracted labels.
+    """
+    sample_candidate_labels: list[str] = list()
+    for candidate_label in candidate_labels:
+        candidate_label_match = re.search(
+            pattern=rf"\b{candidate_label}\. ", string=prompt, flags=re.IGNORECASE
+        )
+        if candidate_label_match is not None:
+            sample_candidate_labels.append(candidate_label)
+    if not sample_candidate_labels:
+        raise InvalidBenchmark(
+            "Could not extract any candidate labels from the prompt. Please ensure "
+            "that the candidate labels are present in the prompt, each followed by a "
+            "dot and a space (e.g., 'a. '). The candidate labels are: "
+            f"{', '.join(candidate_labels)}. Here is the prompt: {prompt!r}"
+        )
+    return sample_candidate_labels

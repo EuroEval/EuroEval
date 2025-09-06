@@ -9,7 +9,11 @@ import numpy as np
 
 from ..enums import TaskGroup
 from ..exceptions import InvalidBenchmark
-from ..utils import log_once, raise_if_model_output_contains_nan_values
+from ..utils import (
+    extract_multiple_choice_labels,
+    log_once,
+    raise_if_model_output_contains_nan_values,
+)
 
 if t.TYPE_CHECKING:
     from datasets.arrow_dataset import Dataset
@@ -158,16 +162,9 @@ def extract_labels_from_generation(
         # Special case if we are doing multiple choice classification: we in this case
         # dynamically change the candidate labels to the labels mentioned in the prompt
         if dataset_config.task.task_group == TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION:
-            prompt = input_batch["prompt"][idx]
-            sample_candidate_labels: list[str] = list()
-            for candidate_label in candidate_labels:
-                candidate_label_match = re.search(
-                    pattern=rf"\b{candidate_label}\. ",
-                    string=prompt,
-                    flags=re.IGNORECASE,
-                )
-                if candidate_label_match is not None:
-                    sample_candidate_labels.append(candidate_label)
+            sample_candidate_labels = extract_multiple_choice_labels(
+                prompt=input_batch["prompt"][idx], candidate_labels=candidate_labels
+            )
         else:
             sample_candidate_labels = candidate_labels
 
