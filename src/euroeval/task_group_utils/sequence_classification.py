@@ -159,17 +159,18 @@ def extract_labels_from_generation(
         # dynamically change the candidate labels to the labels mentioned in the prompt
         if dataset_config.task.task_group == TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION:
             prompt = input_batch["text"][idx]
-            breakpoint()
-            sample_candidate_labels = [
-                candidate_label
-                for candidate_label in candidate_labels
-                if re.search(
+            sample_candidate_labels: list[str] = list()
+            for candidate_label in candidate_labels:
+                candidate_label_match = re.search(
                     pattern=rf"\b{candidate_label}. ",
                     string=prompt,
                     flags=re.IGNORECASE,
                 )
-                is not None
-            ]
+                if candidate_label_match is not None:
+                    sample_candidate_labels.append(candidate_label)
+                else:
+                    breakpoint()
+                    pass
         else:
             sample_candidate_labels = candidate_labels
 
