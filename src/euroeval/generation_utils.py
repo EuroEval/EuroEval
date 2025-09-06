@@ -290,6 +290,7 @@ def apply_prompt(
             ]
 
         case TaskGroup.TOKEN_CLASSIFICATION:
+            labels_str = dataset_config.get_labels_str()
 
             def create_label(example: dict) -> str:
                 prompt_labels = dataset_config.prompt_label_mapping.values()
@@ -311,12 +312,15 @@ def apply_prompt(
                 create_prompt(
                     text=" ".join(example["tokens"]).replace("\n", " ").strip(),
                     label=create_label(example=example),
+                    labels_str=labels_str,
                 )
                 for example in few_shot_examples
             ]
             new_sections = [
                 create_prompt(
-                    text=" ".join(tokens).replace("\n", " ").strip(), label=""
+                    text=" ".join(tokens).replace("\n", " ").strip(),
+                    label="",
+                    labels_str=labels_str,
                 )
                 for tokens in examples["tokens"]
             ]
