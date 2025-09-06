@@ -367,9 +367,10 @@ class VLLMModel(HuggingFaceEncoderModel):
             answer_format_class = create_model("AnswerFormat", **keys_and_their_types)
             structured_generation_schema = answer_format_class.model_json_schema()
             # TODO: Deal with the reasoning model case
-            logger.debug(
+            log_once(
                 "Using structured generation with the JSON schema: "
-                f"{json.dumps(structured_generation_schema)}"
+                f"{json.dumps(structured_generation_schema)}",
+                level=logging.DEBUG,
             )
             guided_decoding = GuidedDecodingParams(json=structured_generation_schema)
         elif self.dataset_config.task.uses_logprobs and self.dataset_config.labels:
@@ -380,12 +381,14 @@ class VLLMModel(HuggingFaceEncoderModel):
                     for label in self.dataset_config.labels
                 ]
             )
-            logger.debug(
-                f"Using guided decoding with the choices: {guided_decoding.choice!r}."
+            log_once(
+                "Using structured generation with the choices: "
+                f"{guided_decoding.choice!r}.",
+                level=logging.DEBUG,
             )
         else:
             guided_decoding = None
-            logger.debug("Not using guided decoding.")
+            log_once("Not using structured generation.", level=logging.DEBUG)
 
         # Define the parameters used for vLLM generation
         max_tokens: int = (
