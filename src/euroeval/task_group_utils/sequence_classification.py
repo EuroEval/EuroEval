@@ -212,6 +212,10 @@ def extract_labels_from_generation(
                     "warning very often, please report this issue to the EuroEval "
                     "team at github.com/EuroEval/EuroEval/issues."
                 )
+                logger.debug(
+                    "The candidate labels were extracted from the prompt: "
+                    f"{input_batch['text'][idx]!r}."
+                )
             else:
                 raise InvalidBenchmark(
                     "No candidate labels found for the predicted label "
