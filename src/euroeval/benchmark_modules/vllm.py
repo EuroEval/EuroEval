@@ -550,6 +550,7 @@ class VLLMModel(HuggingFaceEncoderModel):
             )
 
         # Add logprobs scores to the output
+        breakpoint()
         if self.buffer["first_label_token_mapping"]:
             scores: list[list[list[tuple[str, float]]]] = [
                 [
