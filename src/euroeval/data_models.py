@@ -125,9 +125,12 @@ class Task:
             A list of generative model types that are allowed to be evaluated on this
             task. If None, all generative model types are allowed. Only relevant if
             `allowed_model_types` includes generative models.
-        allow_random_outputs (optional):
-            Whether to use a random output in case the model is unable to generate a
-            valid output. Only relevant for classification tasks. Defaults to True.
+        allow_invalid_model_outputs (optional):
+            Whether to allow invalid model outputs. This is only relevant for generative
+            models on classification tasks, where the model may generate an output
+            which is not one of the allowed labels. If True, the model output will be
+            mapped to the closest valid label. If False, the model output will be
+            considered incorrect and the evaluation will be aborted. Defaults to True.
     """
 
     name: str
@@ -151,7 +154,7 @@ class Task:
             GenerativeType.REASONING,
         ]
     )
-    allow_random_outputs: bool = True
+    allow_invalid_model_outputs: bool = True
 
     def __post_init__(self) -> None:
         """Post-initialisation checks."""

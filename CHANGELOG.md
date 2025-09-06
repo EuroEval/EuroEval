@@ -10,7 +10,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Changed
 - Previously we would abort an evaluation completely if the model outputted a single
   invalid output on a classification task. As individual samples rarely have a great
-  influence on the overall score, we now just assign the first label to the sample and
+  influence on the overall score, we now just assign the closest label to the sample and
   continue the evaluation. This will be logged to the user, so that they are aware of
   this. Some tasks are more sensitive to individual samples, such as European values,
   where we still abort the evaluation if a single sample is invalid.
