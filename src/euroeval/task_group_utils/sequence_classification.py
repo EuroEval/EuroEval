@@ -143,6 +143,7 @@ def extract_labels_from_generation(
             dataset_config=dataset_config,
             first_label_token_mapping=first_label_token_mapping,
         )
+        breakpoint()
         if labels is not None:
             return labels
         elif dataset_config.task.requires_logprobs:
