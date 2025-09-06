@@ -806,7 +806,7 @@ def load_model_and_tokeniser(
             disable_custom_all_reduce=True,
             quantization=quantization,
             dtype=dtype,
-            enforce_eager=True,
+            enforce_eager=False,
             # TEMP: Prefix caching isn't supported with sliding window in vLLM yet,
             # so we disable it for now
             enable_prefix_caching=False,
