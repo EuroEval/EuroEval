@@ -162,7 +162,7 @@ def extract_labels_from_generation(
             sample_candidate_labels: list[str] = list()
             for candidate_label in candidate_labels:
                 candidate_label_match = re.search(
-                    pattern=rf"\b{candidate_label}. ",
+                    pattern=rf"\b{candidate_label}\. ",
                     string=prompt,
                     flags=re.IGNORECASE,
                 )
