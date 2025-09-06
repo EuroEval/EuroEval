@@ -20,6 +20,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   for such tasks. This did not affect the results, but it meant that some evaluations
   failed.
 - Now includes FlashInfer as a dependency, as it is required by vLLM.
+- Changed the choices in European values to use letters, like the other multiple
+  choice tasks, rather than numbers. Aside from ensuring consistency, we also avoid the
+  issue where '10' and '1' often both have the same first token ('1'), causing us not to
+  be able to use logprobs to determine the answer.
 
 
 ## [v16.0.0] - 2025-09-05
