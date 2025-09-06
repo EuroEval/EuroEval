@@ -138,7 +138,7 @@ def extract_labels_from_generation(
         for lbl in dataset_config.id2label.values()
     ]
     if dataset_config.task.task_group == TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION:
-        [
+        sample_candidate_labels = [
             extract_multiple_choice_labels(
                 prompt=prompt, candidate_labels=default_labels
             )
