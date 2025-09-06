@@ -133,6 +133,7 @@ class ModelCache:
             value:
                 The value to set in the cache.
         """
+        breakpoint()
         hashed_key = self._hash_key(key=key)
         self.cache[hashed_key] = value
 
