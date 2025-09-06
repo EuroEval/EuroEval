@@ -135,7 +135,7 @@ EUROPEAN_VALUES = Task(
     metrics=[m.european_values_metric],
     default_num_few_shot_examples=0,
     default_max_generated_tokens=NUM_GENERATION_TOKENS_FOR_CLASSIFICATION,
-    default_labels=["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10"],
+    default_labels=["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k"],
     allowed_model_types=[ModelType.GENERATIVE],
     allowed_generative_types=[
         GenerativeType.INSTRUCTION_TUNED,
