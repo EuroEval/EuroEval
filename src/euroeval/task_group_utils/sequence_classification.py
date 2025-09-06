@@ -222,7 +222,9 @@ def extract_labels_from_generation(
                     f"{predicted_label!r}, out of the candidate labels "
                     f"{sample_candidate_labels}. This likely means that the model "
                     "output is completely off, and we cannot extract any labels from "
-                    "it. Please check the model output and the candidate labels."
+                    "it. Please check the model output and the candidate labels. The "
+                    "candidate labels were extracted from the prompt: "
+                    f"{input_batch['text'][idx]!r}."
                 )
 
         new_predicted_labels.append(best_candidate_label)
