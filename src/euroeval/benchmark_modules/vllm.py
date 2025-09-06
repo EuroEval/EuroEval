@@ -385,6 +385,7 @@ class VLLMModel(HuggingFaceEncoderModel):
             )
         else:
             guided_decoding = None
+            logger.debug("Not using guided decoding.")
 
         # Define the parameters used for vLLM generation
         max_tokens: int = (
