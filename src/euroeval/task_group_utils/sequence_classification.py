@@ -166,7 +166,9 @@ def extract_labels_from_generation(
                 "This task requires the model to output logprobs, and this model "
                 "does not seem to be able to do that. Skipping the evaluation."
             )
-    breakpoint()
+    else:
+        breakpoint()
+        pass
 
     new_predicted_labels: list[str] = list()
     for idx, predicted_label in enumerate(model_output.sequences):
