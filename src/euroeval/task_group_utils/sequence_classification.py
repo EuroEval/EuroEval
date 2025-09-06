@@ -206,9 +206,11 @@ def extract_labels_from_generation(
                     "No candidate labels found for the predicted label "
                     f"{predicted_label!r}, out of the candidate labels "
                     f"{sample_candidate_labels}. This likely means that the model "
-                    "output is completely off, but since random outputs are allowed, "
-                    "we will use the closest candidate label, "
-                    f"({best_candidate_label})) as the output label."
+                    "output is completely off, but since invalid model outputs are "
+                    "allowed for this task, we will use the closest candidate label "
+                    f"({best_candidate_label})) as the output label. If you see this "
+                    "warning very often, please report this issue to the EuroEval "
+                    "team at github.com/EuroEval/EuroEval/issues."
                 )
             else:
                 raise InvalidBenchmark(
