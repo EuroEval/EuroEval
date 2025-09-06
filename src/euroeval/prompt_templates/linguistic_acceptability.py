@@ -19,7 +19,7 @@ from ..languages import (
     NL,
     NN,
     NO,
-    PT,
+    PL,
     SV,
 )
 
@@ -67,13 +67,13 @@ LA_TEMPLATES: dict["Language", PromptConfig] = {
         default_instruction_prompt="Lause: {text}\n\nOtsusta, kas lause on "
         "grammatiliselt õige või mitte. Vasta {labels_str}, ja mitte midagi muud.",
     ),
-    PT: PromptConfig(
-        default_prompt_label_mapping=dict(correct="sim", incorrect="não"),
-        default_prompt_prefix="Seguem-se abaixo textos e se são "
-        "gramaticalmente correctos",
-        default_prompt_template="Texto: {text}\nGramaticalmente correcto: {label}",
-        default_instruction_prompt="Texto: {text}\n\nDetermina se o texto é "
-        "gramaticalmente correcto ou não. Responde com {labels_str}, e nada mais.",
+    PL: PromptConfig(
+        default_prompt_label_mapping=dict(correct="tak", incorrect="nie"),
+        default_prompt_prefix="Poniżej znajdują się teksty i czy są "
+        "gramatycznie poprawne.",
+        default_prompt_template="Tekst: {text}\nGramatycznie poprawny: {label}",
+        default_instruction_prompt="Tekst: {text}\n\nOkreśl czy tekst jest "
+        "gramatycznie poprawny czy nie. Odpowiedz {labels_str}, i nic więcej.",
     ),
     FI: PromptConfig(
         default_prompt_label_mapping=dict(correct="kyllä", incorrect="ei"),

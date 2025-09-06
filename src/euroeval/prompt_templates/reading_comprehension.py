@@ -19,6 +19,7 @@ from ..languages import (
     NL,
     NN,
     NO,
+    PL,
     PT,
     SV,
 )
@@ -155,6 +156,16 @@ RC_TEMPLATES: dict["Language", PromptConfig] = {
         "ord: {label}",
         default_instruction_prompt="Tekst: {text}\n\nBesvar følgende spørsmål om "
         "teksten ovenfor med maks 3 ord.\n\nSpørsmål: {question}",
+        default_prompt_label_mapping=dict(),
+    ),
+    PL: PromptConfig(
+        default_prompt_prefix=(
+            "Poniżej znajdują się teksty z towarzyszącymi pytaniami i odpowiedziami."
+        ),
+        default_prompt_template="Tekst: {text}\nPytanie: {question}\nOdpowiedź w "
+        "maksymalnie 3 słowach: {label}",
+        default_instruction_prompt="Tekst: {text}\n\nOdpowiedz na następujące pytanie "
+        "dotyczące powyższego tekstu w maksymalnie 3 słowach.\n\nPytanie: {question}",
         default_prompt_label_mapping=dict(),
     ),
     PT: PromptConfig(
