@@ -358,7 +358,16 @@ class VLLMModel(HuggingFaceEncoderModel):
             )
 
         structured_generation_schema = None
-        if self.dataset_config.task.uses_structured_output:
+        if (
+            self.dataset_config.task.uses_structured_output
+            or (self.dataset_config.task.uses_logprobs and self.dataset_config.labels)
+        ) and self.generative_type == GenerativeType.REASONING:
+            guided_decoding = None
+            logger.debug(
+                "The dataset uses structured output, but we are not using it as the "
+                "model is a reasoning model."
+            )
+        elif self.dataset_config.task.uses_structured_output:
             ner_tag_names = list(self.dataset_config.prompt_label_mapping.values())
             keys_and_their_types: dict[str, t.Any] = {
                 tag_name: (conlist(str, max_length=5), ...)
@@ -366,7 +375,6 @@ class VLLMModel(HuggingFaceEncoderModel):
             }
             answer_format_class = create_model("AnswerFormat", **keys_and_their_types)
             structured_generation_schema = answer_format_class.model_json_schema()
-            # TODO: Deal with the reasoning model case
             log_once(
                 "Using structured generation with the JSON schema: "
                 f"{json.dumps(structured_generation_schema)}",
@@ -374,7 +382,6 @@ class VLLMModel(HuggingFaceEncoderModel):
             )
             guided_decoding = GuidedDecodingParams(json=structured_generation_schema)
         elif self.dataset_config.task.uses_logprobs and self.dataset_config.labels:
-            # TODO: Deal with the reasoning model case
             guided_decoding = GuidedDecodingParams(
                 choice=[
                     self.dataset_config.prompt_label_mapping[label]
@@ -388,7 +395,10 @@ class VLLMModel(HuggingFaceEncoderModel):
             )
         else:
             guided_decoding = None
-            log_once("Not using structured generation.", level=logging.DEBUG)
+            log_once(
+                "Not using structured generation as the dataset does not require it.",
+                level=logging.DEBUG,
+            )
 
         # Define the parameters used for vLLM generation
         max_tokens: int = (
