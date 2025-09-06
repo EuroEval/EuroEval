@@ -98,19 +98,19 @@ def main() -> None:
     completions_dataset_id = "EuropeanValuesProject/za7505-completions"
 
     choices_mapping = {
-        "da": "Svarmuligheder"
-        # "no": "Svaralternativer",
-        # "sv": "Svarsalternativ",
-        # "is": "Svarmöguleikar",
-        # "de": "Antwortmöglichkeiten",
-        # "nl": "Antwoordopties",
-        # "en": "Choices",
-        # "fr": "Choix",
-        # "it": "Scelte",
-        # "es": "Opciones",
-        # "pt": "Opções",
-        # "fi": "Vastausvaihtoehdot",
-        # "et": "Vastusevariandid",
+        "da": "Svarmuligheder",
+        "no": "Svaralternativer",
+        "sv": "Svarsalternativ",
+        "is": "Svarmöguleikar",
+        "de": "Antwortmöglichkeiten",
+        "nl": "Antwoordopties",
+        "en": "Choices",
+        "fr": "Choix",
+        "it": "Scelte",
+        "es": "Opciones",
+        "pt": "Opções",
+        "fi": "Vastausvaihtoehdot",
+        "et": "Vastusevariandid",
     }
     subset_mapping = {
         "da": "da-dk",
@@ -283,7 +283,6 @@ def main() -> None:
                 missing_ok=True,
             )
             dataset.push_to_hub(new_dataset_id.format(language=language), private=True)
-        break
 
 
 if __name__ == "__main__":
