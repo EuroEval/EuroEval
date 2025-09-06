@@ -375,4 +375,7 @@ def apply_prompt(
             for new_prompt, _ in new_sections
         ]
 
+    # Always add the final prompts without few-shot examples, too, for analysis
+    examples["prompt"] = [new_prompt for new_prompt, _ in new_sections]
+
     return examples
