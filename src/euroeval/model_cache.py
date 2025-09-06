@@ -12,6 +12,7 @@ from tqdm.auto import tqdm
 
 from .constants import NUM_GENERATION_TOKENS_FOR_CLASSIFICATION
 from .data_models import GenerativeModelOutput, SingleGenerativeModelOutput
+from .utils import log_once
 
 if t.TYPE_CHECKING:
     from pathlib import Path
@@ -198,6 +199,12 @@ class ModelCache:
                     assert model_output.scores is not None
                     scores = model_output.scores[sample_idx]
                 else:
+                    if model_output.scores is not None:
+                        log_once(
+                            "The generated sequence is longer than the maximum "
+                            "length for classification. Not caching the scores.",
+                            level=logging.DEBUG,
+                        )
                     scores = None
                 self[model_input] = SingleGenerativeModelOutput(
                     sequence=model_output.sequences[sample_idx], scores=scores
