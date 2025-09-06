@@ -15,6 +15,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   continue the evaluation. This will be logged to the user, so that they are aware of
   this. Some tasks are more sensitive to individual samples, such as European values,
   where we still abort the evaluation if a single sample is invalid.
+- Fixed a bug where logprobs were not used for classification tasks when evaluating
+  generative models, due to the fact that we raised the number of generated tokens to 10
+  for such tasks. This did not affect the results, but it meant that some evaluations
+  failed.
 
 
 ## [v16.0.0] - 2025-09-05
