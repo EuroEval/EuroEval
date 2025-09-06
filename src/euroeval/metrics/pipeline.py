@@ -193,7 +193,6 @@ def european_values_preprocessing_fn(
         }
         integer_prediction = idx_to_choice[prediction]
         integer_predictions.append(integer_prediction)
-        pass
 
     assert len(predictions) % num_questions == 0, (
         f"The number of predictions ({len(predictions)}) is not a multiple of "
