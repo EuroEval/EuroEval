@@ -189,7 +189,7 @@ class ModelCache:
                 # the indices of the top scores, to save space. Further, we only store
                 # the scores if the generated sequence is shorter than the maximum
                 # length
-                if model_output.scores is not None and self.max_generated_tokens < 8:
+                if model_output.scores is not None and self.max_generated_tokens <= 10:
                     assert model_output.scores is not None
                     scores = model_output.scores[sample_idx]
                 else:
