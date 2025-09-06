@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   generative models, due to the fact that we raised the number of generated tokens to 10
   for such tasks. This did not affect the results, but it meant that some evaluations
   failed.
+- Now includes FlashInfer as a dependency, as it is required by vLLM.
 
 
 ## [v16.0.0] - 2025-09-05
