@@ -167,7 +167,6 @@ def generate_single_iteration(
                 batch = {key: [value] for key, value in batch.items()}
 
             model_output = model.generate(inputs=batch)
-            breakpoint()
             extracted_labels = model.extract_labels_from_generation(
                 input_batch=batch, model_output=model_output
             )
@@ -200,7 +199,6 @@ def generate_single_iteration(
         model_output = load_cached_model_outputs(
             cached_dataset=cached_dataset, cache=cache
         )
-        breakpoint()
         extracted_labels = model.extract_labels_from_generation(
             input_batch=cached_dataset[:], model_output=model_output
         )
