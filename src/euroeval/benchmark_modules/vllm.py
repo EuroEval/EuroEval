@@ -381,7 +381,7 @@ class VLLMModel(HuggingFaceEncoderModel):
                 ]
             )
             logger.debug(
-                "Using guided decoding with the choices: {guided_decoding.choice!r}."
+                f"Using guided decoding with the choices: {guided_decoding.choice!r}."
             )
         else:
             guided_decoding = None
