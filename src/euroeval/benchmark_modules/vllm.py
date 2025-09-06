@@ -439,6 +439,7 @@ class VLLMModel(HuggingFaceEncoderModel):
         # Generate sequences using vLLM
         input_is_a_test = len(prompts) == 1 and len(set(prompts[0])) == 1
         num_attempts = 3
+        truncation_attempts = 0
         for _ in range(num_attempts):
             try:
                 raw_outputs = self._model.generate(
@@ -466,13 +467,19 @@ class VLLMModel(HuggingFaceEncoderModel):
                         "Prompts are too long, so truncating them and trying again..."
                     )
                     logger.debug(f"The error message was: {str(e)}")
+
+                    # If we have already tried truncating the prompts a few times, then
+                    # we truncate a bit more aggressively
+                    extra_truncation = 50 * truncation_attempts
+                    truncation_attempts += 1
+
                     tokenized_prompts = self._tokeniser(
                         text=prompts,
                         truncation=True,
                         max_length=max(
                             min(self._tokeniser.model_max_length, MAX_CONTEXT_LENGTH)
                             - max_tokens
-                            - 50,  # Buffer of 50 tokens
+                            - extra_truncation,
                             0,
                         ),
                     )
