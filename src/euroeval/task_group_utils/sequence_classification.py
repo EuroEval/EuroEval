@@ -132,6 +132,21 @@ def extract_labels_from_generation(
             or if the model outputted log probabilities but the first label token
             mapping is not provided.
     """
+    # Get the candidate labels, which are the labels that the model can predict
+    default_labels = [
+        dataset_config.prompt_label_mapping[lbl]
+        for lbl in dataset_config.id2label.values()
+    ]
+    if dataset_config.task.task_group == TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION:
+        [
+            extract_multiple_choice_labels(
+                prompt=prompt, candidate_labels=default_labels
+            )
+            for prompt in input_batch["prompt"]
+        ]
+    else:
+        sample_candidate_labels = [default_labels] * len(input_batch["prompt"])
+
     if model_output.scores is not None:
         if first_label_token_mapping is False:
             raise InvalidBenchmark(
@@ -142,8 +157,8 @@ def extract_labels_from_generation(
             generation_logprobs=model_output.scores,
             dataset_config=dataset_config,
             first_label_token_mapping=first_label_token_mapping,
+            candidate_labels=sample_candidate_labels,
         )
-        breakpoint()
         if labels is not None:
             return labels
         elif dataset_config.task.requires_logprobs:
@@ -152,23 +167,8 @@ def extract_labels_from_generation(
                 "does not seem to be able to do that. Skipping the evaluation."
             )
 
-    # Get the candidate labels, which are the labels that the model can predict
-    candidate_labels = [
-        dataset_config.prompt_label_mapping[lbl]
-        for lbl in dataset_config.id2label.values()
-    ]
-
     new_predicted_labels: list[str] = list()
     for idx, predicted_label in enumerate(model_output.sequences):
-        # Special case if we are doing multiple choice classification: we in this case
-        # dynamically change the candidate labels to the labels mentioned in the prompt
-        if dataset_config.task.task_group == TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION:
-            sample_candidate_labels = extract_multiple_choice_labels(
-                prompt=input_batch["prompt"][idx], candidate_labels=candidate_labels
-            )
-        else:
-            sample_candidate_labels = candidate_labels
-
         # If the prediction includes a boxed answer, use that instead of the full
         # generation
         if (m := re.search(r"boxed\{(.*?)\}", predicted_label)) is not None:
@@ -189,10 +189,12 @@ def extract_labels_from_generation(
                 s2=candidate_label.lower(),
                 weights=(insertion_weight, deletion_weight, substitution_weight),
             )
-            for candidate_label in sample_candidate_labels
+            for candidate_label in sample_candidate_labels[idx]
         ]
 
-        best_candidate_label = sample_candidate_labels[np.argmin(edit_distances).item()]
+        best_candidate_label = sample_candidate_labels[idx][
+            np.argmin(edit_distances).item()
+        ]
 
         # If no candidate labels were found, we either pick the label with the smallest
         # word edit distance to the predicted label (if invalid model outputs are
@@ -202,7 +204,7 @@ def extract_labels_from_generation(
                 logger.warning(
                     "No candidate labels found for the predicted label "
                     f"{predicted_label!r}, out of the candidate labels "
-                    f"{sample_candidate_labels}. This likely means that the model "
+                    f"{sample_candidate_labels[idx]}. This likely means that the model "
                     "output is completely off, but since invalid model outputs are "
                     "allowed for this task, we will use the closest candidate label "
                     f"({best_candidate_label})) as the output label. If you see this "
@@ -217,7 +219,7 @@ def extract_labels_from_generation(
                 raise InvalidBenchmark(
                     "No candidate labels found for the predicted label "
                     f"{predicted_label!r}, out of the candidate labels "
-                    f"{sample_candidate_labels}. This likely means that the model "
+                    f"{sample_candidate_labels[idx]}. This likely means that the model "
                     "output is completely off, and we cannot extract any labels from "
                     "it. Please check the model output and the candidate labels. The "
                     "candidate labels were extracted from the prompt: "
@@ -233,6 +235,7 @@ def get_closest_logprobs_labels(
     generation_logprobs: list[list[list[tuple[str, float]]]],
     dataset_config: "DatasetConfig",
     first_label_token_mapping: dict[str, str] | t.Literal[True],
+    candidate_labels: list[list[str]],
 ) -> list[str] | None:
     """Get the labels with the highest predicted logprob value.
 
@@ -250,6 +253,8 @@ def get_closest_logprobs_labels(
         first_label_token_mapping:
             A mapping from labels to the first token in each label, or alternatively a
             `True` value indicating that the model should output logprobs.
+        candidate_labels:
+            The candidate labels for each sample in the batch.
 
     Returns:
         The predicted labels, or None if labels could not be extracted.
@@ -258,12 +263,8 @@ def get_closest_logprobs_labels(
         InvalidBenchmark:
             If no candidate label can be found for any of the generated labels.
     """
-    english_labels = list(dataset_config.id2label.values())
-    english2local = dataset_config.prompt_label_mapping
-    candidate_labels = [english2local[lbl].lower() for lbl in english_labels]
-
     output_labels: list[str] = list()
-    for sample in generation_logprobs:
+    for idx, sample in enumerate(generation_logprobs):
         for logprob_list in sample:
             generated_labels = [
                 re.sub(pattern=r"^[^a-zæøåüöä0-9]+$", repl="", string=label.lower())
@@ -281,7 +282,7 @@ def get_closest_logprobs_labels(
                 if isinstance(first_label_token_mapping, dict):
                     if any(
                         candidate_label not in first_label_token_mapping
-                        for candidate_label in candidate_labels
+                        for candidate_label in candidate_labels[idx]
                     ):
                         raise InvalidBenchmark(
                             "There is a label not present in the first label token "
@@ -292,13 +293,13 @@ def get_closest_logprobs_labels(
 
                     candidate_output_labels = {
                         candidate_label
-                        for candidate_label in candidate_labels
+                        for candidate_label in candidate_labels[idx]
                         if generated_label == first_label_token_mapping[candidate_label]
                     }
                 else:
                     candidate_output_labels = {
                         candidate_label
-                        for candidate_label in candidate_labels
+                        for candidate_label in candidate_labels[idx]
                         if candidate_label.startswith(generated_label)
                     }
 
@@ -344,7 +345,7 @@ def get_closest_logprobs_labels(
                 elif len(candidate_output_labels) == 0:
                     candidate_output_labels_starting_with_generated_label = [
                         candidate_label
-                        for candidate_label in candidate_labels
+                        for candidate_label in candidate_labels[idx]
                         if candidate_label.startswith(generated_label)
                     ]
                     if candidate_output_labels_starting_with_generated_label:
@@ -380,18 +381,18 @@ def get_closest_logprobs_labels(
             if len(sample) == 0:
                 log_once(
                     "The model outputted an empty string, so no candidate labels could "
-                    f"be determined. Using the first label, {candidate_labels[0]!r}, "
-                    "as the output label.",
+                    "be determined. Using the first label, "
+                    "{candidate_labels[idx][0]!r}, as the output label.",
                     level=logging.INFO,
                 )
             else:
                 log_once(
                     "Could not find a candidate label for any of the generated "
                     f"labels in the sample {sample}. Using the first label, "
-                    f"{candidate_labels[0]!r}, as the output label.",
+                    f"{candidate_labels[idx][0]!r}, as the output label.",
                     level=logging.INFO,
                 )
-            output_labels.append(candidate_labels[0])
+            output_labels.append(candidate_labels[idx][0])
 
     assert len(output_labels) == len(generation_logprobs)
     return output_labels
