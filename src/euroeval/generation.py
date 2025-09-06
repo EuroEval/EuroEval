@@ -180,7 +180,6 @@ def generate_single_iteration(
                     dataset_config=dataset_config,
                 )
 
-            breakpoint()
             cache.add_to_cache(model_inputs=batch, model_output=model_output)
             all_preds.extend(extracted_labels)
 
