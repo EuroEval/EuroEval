@@ -155,7 +155,6 @@ def extract_labels_from_generation(
             )
         labels = get_closest_logprobs_labels(
             generation_logprobs=model_output.scores,
-            dataset_config=dataset_config,
             first_label_token_mapping=first_label_token_mapping,
             candidate_labels=sample_candidate_labels,
         )
@@ -233,7 +232,6 @@ def extract_labels_from_generation(
 
 def get_closest_logprobs_labels(
     generation_logprobs: list[list[list[tuple[str, float]]]],
-    dataset_config: "DatasetConfig",
     first_label_token_mapping: dict[str, str] | t.Literal[True],
     candidate_labels: list[list[str]],
 ) -> list[str] | None:
@@ -248,8 +246,6 @@ def get_closest_logprobs_labels(
         generation_logprobs:
             The logprobs of the generated tokens, for all samples in the batch. Of shape
             (batch_size, num_tokens, num_logprobs).
-        dataset_config:
-            The configuration of the dataset.
         first_label_token_mapping:
             A mapping from labels to the first token in each label, or alternatively a
             `True` value indicating that the model should output logprobs.
