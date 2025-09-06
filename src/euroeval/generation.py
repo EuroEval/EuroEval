@@ -200,6 +200,7 @@ def generate_single_iteration(
         model_output = load_cached_model_outputs(
             cached_dataset=cached_dataset, cache=cache
         )
+        breakpoint()
         extracted_labels = model.extract_labels_from_generation(
             input_batch=cached_dataset[:], model_output=model_output
         )
