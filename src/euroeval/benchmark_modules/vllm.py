@@ -337,31 +337,6 @@ class VLLMModel(HuggingFaceEncoderModel):
             if end_of_chat_token:
                 stop_tokens.append(end_of_chat_token)
 
-        structured_generation_schema = None
-        if self.dataset_config.task.uses_structured_output:
-            if self.generative_type == GenerativeType.REASONING:
-                log_once(
-                    f"The model {self.model_config.model_id!r} is a reasoning model "
-                    "and thus does not support structured generation, so we do not "
-                    "enable it.",
-                    level=logging.DEBUG,
-                )
-            else:
-                ner_tag_names = list(self.dataset_config.prompt_label_mapping.values())
-                keys_and_their_types: dict[str, t.Any] = {
-                    tag_name: (conlist(str, max_length=5), ...)
-                    for tag_name in ner_tag_names
-                }
-                answer_format_class = create_model(
-                    "AnswerFormat", **keys_and_their_types
-                )
-                structured_generation_schema = answer_format_class.model_json_schema()
-                log_once(
-                    "Using structured generation with the JSON schema "
-                    f"{structured_generation_schema}",
-                    level=logging.DEBUG,
-                )
-
         # Get the mapping from labels to the first token in the label. We call this each
         # time we generate a new dataset since the dataset config can change
         self.buffer["first_label_token_mapping"] = get_first_label_token_mapping(
@@ -382,15 +357,31 @@ class VLLMModel(HuggingFaceEncoderModel):
                 "error was. Skipping this evaluation."
             )
 
-        # Define the guided decoding that we will use for structured generation
-        if structured_generation_schema is not None:
+        structured_generation_schema = None
+        if self.dataset_config.task.uses_structured_output:
+            ner_tag_names = list(self.dataset_config.prompt_label_mapping.values())
+            keys_and_their_types: dict[str, t.Any] = {
+                tag_name: (conlist(str, max_length=5), ...)
+                for tag_name in ner_tag_names
+            }
+            answer_format_class = create_model("AnswerFormat", **keys_and_their_types)
+            structured_generation_schema = answer_format_class.model_json_schema()
+            # TODO: Deal with the reasoning model case
+            logger.debug(
+                "Using structured generation with the JSON schema: "
+                f"{json.dumps(structured_generation_schema)}"
+            )
             guided_decoding = GuidedDecodingParams(json=structured_generation_schema)
         elif self.dataset_config.task.uses_logprobs and self.dataset_config.labels:
+            # TODO: Deal with the reasoning model case
             guided_decoding = GuidedDecodingParams(
                 choice=[
                     self.dataset_config.prompt_label_mapping[label]
                     for label in self.dataset_config.labels
                 ]
+            )
+            logger.debug(
+                "Using guided decoding with the choices: {guided_decoding.choice!r}."
             )
         else:
             guided_decoding = None
