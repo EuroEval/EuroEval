@@ -7,7 +7,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 
 ## [Unreleased]
-### Added
+- Add the knowledge dataset Trivia-et for Estonian. The dataset contains 800 trivia
+  questions about Estonia. In this version we rearrange the examples in
+  240 / 60 / 500 samples for training, validation and test splits, respectively.
+  It's marked as unofficial for now. This was contributed by @slowwavesleep ✨
 - Added new `--generative-type` argument, which can be used to override the automatic
   detection of the generative type (base decoder, instruction-tuned decoder, or
   reasoning decoder) of a decoder model. This can be useful if the automatic detection

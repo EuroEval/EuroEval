@@ -483,6 +483,77 @@ $ euroeval --model <model-id> --dataset winogrande-et
 ```
 
 
+## Knowledge
+
+### Trivia-ET
+
+This dataset was published [here](https://huggingface.co/datasets/TalTechNLP/trivia_et). It was extracted from
+the "Eesti Mäng" board game, and contains trivia questions about Estonia.
+
+The original dataset contains 800 examples. From these, we use 240 / 60 / 500 samples for our training,
+validation and test splits, respectively.
+
+Note that this is a gated dataset, and we would like to avoid contaminating LLM pre-training data as much as possible.
+Accordingly, we selected more generic questions not representative of the full dataset in terms of question content
+to show here:
+
+```json
+{
+  "text": "Mis on isoterm?\nVastusevariandid:\na. samatemperatuurijoon\nb. samaõhurõhujoon\nc. samapingejoon\nd. samakõrgusjoon",
+  "label": "a"
+}
+```
+
+```json
+{
+  "text": "Mis on isobaat?\nVastusevariandid:\na. samasügavusjoon\nb. samaõhurõhujoon\nc. samatemperatuurijoon\nd. samakõrgusjoon",
+  "label": "a"
+}
+```
+
+```json
+{
+  "text": "Mida mõõdetakse baromeetriga?\nVastusevariandid:\na. veekogude sügavust\nb. temperatuuri\nc. jõgede voolukiirust\nd. õhurõhku",
+  "label": "d"
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+  ```
+  Järgnevad on vastusevariantidega küsimused (koos vastustega).
+  ```
+- Base prompt template:
+  ```
+  Küsimus: {text}
+  Vastusevariandid:
+  a. {option_a}
+  b. {option_b}
+  c. {option_c}
+  d. {option_d}
+  Vastus: {label}
+  ```
+- Instruction-tuned prompt template:
+  ```
+  Küsimus: {text}
+  Vastusevariandid:
+  a. {option_a}
+  b. {option_b}
+  c. {option_c}
+  d. {option_d}
+
+  Võimalikud vastused:  'a', 'b', 'c' or 'd'. Muud vastused ei ole lubatud.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+$ euroeval --model <model-id> --dataset trivia-et
+```
+
+
 ## Summarization
 
 ### ERRNews

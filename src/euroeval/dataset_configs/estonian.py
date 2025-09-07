@@ -82,14 +82,22 @@ EUROPEAN_VALUES_ET_CONFIG = DatasetConfig(
     _instruction_prompt="{text}",
 )
 
-
-### Unofficial datasets ###
+### Unofficial datasets ###
 
 SCALA_ET_CONFIG = DatasetConfig(
     name="scala-et",
     pretty_name="the Estonian part of the linguistic acceptability dataset ScaLA",
     huggingface_id="EuroEval/scala-et",
     task=LA,
+    languages=[ET],
+    unofficial=True,
+)
+
+TRIVIA_ET_CONFIG = DatasetConfig(
+    name="trivia-et",
+    pretty_name="the Estonian knowledge dataset Trivia-et",
+    huggingface_id="EuroEval/trivia-et",
+    task=KNOW,
     languages=[ET],
     unofficial=True,
 )
