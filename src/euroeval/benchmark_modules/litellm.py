@@ -717,8 +717,8 @@ class LiteLLMModel(BenchmarkModule):
             if hasattr(request, "close"):
                 try:
                     request.close()
-                except RuntimeError:
-                    pass
+                except RuntimeError as e:
+                    logger.debug(f"RuntimeError during request.close(): {e}")
 
         return successes, failures
 
