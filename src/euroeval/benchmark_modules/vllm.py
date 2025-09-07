@@ -187,16 +187,29 @@ class VLLMModel(HuggingFaceEncoderModel):
             The generative type of the model, or None if it has not been set yet.
         """
         if not hasattr(self, "_tokeniser"):
+            log_once(
+                "The generative type of the model has not been set yet as the "
+                "tokeniser has not been loaded.",
+                level=logging.DEBUG,
+            )
             return None
+        elif self.benchmark_config.generative_type is not None:
+            type_ = self.benchmark_config.generative_type
         elif self.end_of_reasoning_token is not None:
-            return GenerativeType.REASONING
+            type_ = GenerativeType.REASONING
         elif (
             has_chat_template(tokeniser=self._tokeniser)
             or "instruct" in self.model_config.model_id.lower()
         ):
-            return GenerativeType.INSTRUCTION_TUNED
+            type_ = GenerativeType.INSTRUCTION_TUNED
         else:
-            return GenerativeType.BASE
+            type_ = GenerativeType.BASE
+        log_once(
+            f"Detected generative type {type_.name!r} for model "
+            f"{self.model_config.model_id!r}",
+            level=logging.DEBUG,
+        )
+        return type_
 
     @property
     def extract_labels_from_generation(self) -> ExtractLabelsFunction:

@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 
 ## [Unreleased]
+### Added
+- Added new `--generative-type` argument, which can be used to override the automatic
+  detection of the generative type (base decoder, instruction-tuned decoder, or
+  reasoning decoder) of a decoder model. This can be useful if the automatic detection
+  fails for a specific model.
+- Now supports evaluating base decoders on inference servers. This requires the
+  `--generative-type base` argument to be set, as the automatic detection will not work
+  for these models.
+
 ### Fixed
 - Fixed a bug causing encoders to fail when evaluating on the Exam-et dataset.
 - Previously we would abort an evaluation completely if the model outputted a single

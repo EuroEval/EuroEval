@@ -225,6 +225,9 @@ class BenchmarkConfig:
             Whether the benchmark is being run with the CLI.
         requires_safetensors:
             Whether to only allow models that use the safetensors format.
+        generative_type:
+            The type of generative model to benchmark. Only relevant if the model is
+            generative.
     """
 
     model_languages: list[Language]
@@ -251,6 +254,7 @@ class BenchmarkConfig:
     debug: bool
     run_with_cli: bool
     requires_safetensors: bool
+    generative_type: GenerativeType | None
 
 
 class BenchmarkConfigParams(pydantic.BaseModel):
@@ -280,6 +284,7 @@ class BenchmarkConfigParams(pydantic.BaseModel):
     api_base: str | None
     api_version: str | None
     gpu_memory_utilization: float
+    generative_type: GenerativeType | None
     debug: bool
     run_with_cli: bool
     requires_safetensors: bool
