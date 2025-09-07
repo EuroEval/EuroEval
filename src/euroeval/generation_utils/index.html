@@ -1242,7 +1242,45 @@
 <span class="normal">375</span>
 <span class="normal">376</span>
 <span class="normal">377</span>
-<span class="normal">378</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Utility functions related to generative models.&quot;&quot;&quot;</span>
+<span class="normal">378</span>
+<span class="normal">379</span>
+<span class="normal">380</span>
+<span class="normal">381</span>
+<span class="normal">382</span>
+<span class="normal">383</span>
+<span class="normal">384</span>
+<span class="normal">385</span>
+<span class="normal">386</span>
+<span class="normal">387</span>
+<span class="normal">388</span>
+<span class="normal">389</span>
+<span class="normal">390</span>
+<span class="normal">391</span>
+<span class="normal">392</span>
+<span class="normal">393</span>
+<span class="normal">394</span>
+<span class="normal">395</span>
+<span class="normal">396</span>
+<span class="normal">397</span>
+<span class="normal">398</span>
+<span class="normal">399</span>
+<span class="normal">400</span>
+<span class="normal">401</span>
+<span class="normal">402</span>
+<span class="normal">403</span>
+<span class="normal">404</span>
+<span class="normal">405</span>
+<span class="normal">406</span>
+<span class="normal">407</span>
+<span class="normal">408</span>
+<span class="normal">409</span>
+<span class="normal">410</span>
+<span class="normal">411</span>
+<span class="normal">412</span>
+<span class="normal">413</span>
+<span class="normal">414</span>
+<span class="normal">415</span>
+<span class="normal">416</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Utility functions related to generative models.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">itertools</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">it</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
@@ -1253,7 +1291,7 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">.enums</span><span class="w"> </span><span class="kn">import</span> <span class="n">TaskGroup</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.exceptions</span><span class="w"> </span><span class="kn">import</span> <span class="n">InvalidBenchmark</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.tokenization_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">apply_chat_template</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">log_once</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">extract_multiple_choice_labels</span><span class="p">,</span> <span class="n">log_once</span>
 
 <span class="k">if</span> <span class="n">t</span><span class="o">.</span><span class="n">TYPE_CHECKING</span><span class="p">:</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">datasets</span><span class="w"> </span><span class="kn">import</span> <span class="n">DatasetDict</span>
@@ -1474,18 +1512,49 @@
             <span class="k">return</span> <span class="n">dataset_config</span><span class="o">.</span><span class="n">prompt_template</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">),</span> <span class="s2">&quot;&quot;</span>
 
     <span class="k">match</span> <span class="n">dataset_config</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">task_group</span><span class="p">:</span>
-        <span class="k">case</span> <span class="p">(</span>
-            <span class="n">TaskGroup</span><span class="o">.</span><span class="n">SEQUENCE_CLASSIFICATION</span> <span class="o">|</span> <span class="n">TaskGroup</span><span class="o">.</span><span class="n">MULTIPLE_CHOICE_CLASSIFICATION</span>
-        <span class="p">):</span>
+        <span class="k">case</span> <span class="n">TaskGroup</span><span class="o">.</span><span class="n">SEQUENCE_CLASSIFICATION</span><span class="p">:</span>
+            <span class="n">labels_str</span> <span class="o">=</span> <span class="n">dataset_config</span><span class="o">.</span><span class="n">get_labels_str</span><span class="p">()</span>
             <span class="n">few_shot_sections</span> <span class="o">=</span> <span class="p">[</span>
                 <span class="n">create_prompt</span><span class="p">(</span>
                     <span class="n">text</span><span class="o">=</span><span class="n">example</span><span class="p">[</span><span class="s2">&quot;text&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">,</span> <span class="s2">&quot; &quot;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">(),</span>
                     <span class="n">label</span><span class="o">=</span><span class="n">example</span><span class="p">[</span><span class="s2">&quot;label&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">,</span> <span class="s2">&quot; &quot;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">(),</span>
+                    <span class="n">labels_str</span><span class="o">=</span><span class="n">labels_str</span><span class="p">,</span>
                 <span class="p">)</span>
                 <span class="k">for</span> <span class="n">example</span> <span class="ow">in</span> <span class="n">few_shot_examples</span>
             <span class="p">]</span>
             <span class="n">new_sections</span> <span class="o">=</span> <span class="p">[</span>
-                <span class="n">create_prompt</span><span class="p">(</span><span class="n">text</span><span class="o">=</span><span class="n">text</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">,</span> <span class="s2">&quot; &quot;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">(),</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
+                <span class="n">create_prompt</span><span class="p">(</span>
+                    <span class="n">text</span><span class="o">=</span><span class="n">text</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">,</span> <span class="s2">&quot; &quot;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">(),</span>
+                    <span class="n">label</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+                    <span class="n">labels_str</span><span class="o">=</span><span class="n">labels_str</span><span class="p">,</span>
+                <span class="p">)</span>
+                <span class="k">for</span> <span class="n">text</span> <span class="ow">in</span> <span class="n">examples</span><span class="p">[</span><span class="s2">&quot;text&quot;</span><span class="p">]</span>
+            <span class="p">]</span>
+
+        <span class="k">case</span> <span class="n">TaskGroup</span><span class="o">.</span><span class="n">MULTIPLE_CHOICE_CLASSIFICATION</span><span class="p">:</span>
+            <span class="n">few_shot_sections</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="n">create_prompt</span><span class="p">(</span>
+                    <span class="n">text</span><span class="o">=</span><span class="n">example</span><span class="p">[</span><span class="s2">&quot;text&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">,</span> <span class="s2">&quot; &quot;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">(),</span>
+                    <span class="n">label</span><span class="o">=</span><span class="n">example</span><span class="p">[</span><span class="s2">&quot;label&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">,</span> <span class="s2">&quot; &quot;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">(),</span>
+                    <span class="n">labels_str</span><span class="o">=</span><span class="n">dataset_config</span><span class="o">.</span><span class="n">get_labels_str</span><span class="p">(</span>
+                        <span class="n">labels</span><span class="o">=</span><span class="n">extract_multiple_choice_labels</span><span class="p">(</span>
+                            <span class="n">prompt</span><span class="o">=</span><span class="n">example</span><span class="p">[</span><span class="s2">&quot;text&quot;</span><span class="p">],</span>
+                            <span class="n">candidate_labels</span><span class="o">=</span><span class="n">dataset_config</span><span class="o">.</span><span class="n">labels</span><span class="p">,</span>
+                        <span class="p">)</span>
+                    <span class="p">),</span>
+                <span class="p">)</span>
+                <span class="k">for</span> <span class="n">example</span> <span class="ow">in</span> <span class="n">few_shot_examples</span>
+            <span class="p">]</span>
+            <span class="n">new_sections</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="n">create_prompt</span><span class="p">(</span>
+                    <span class="n">text</span><span class="o">=</span><span class="n">text</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">,</span> <span class="s2">&quot; &quot;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">(),</span>
+                    <span class="n">label</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+                    <span class="n">labels_str</span><span class="o">=</span><span class="n">dataset_config</span><span class="o">.</span><span class="n">get_labels_str</span><span class="p">(</span>
+                        <span class="n">labels</span><span class="o">=</span><span class="n">extract_multiple_choice_labels</span><span class="p">(</span>
+                            <span class="n">prompt</span><span class="o">=</span><span class="n">text</span><span class="p">,</span> <span class="n">candidate_labels</span><span class="o">=</span><span class="n">dataset_config</span><span class="o">.</span><span class="n">labels</span>
+                        <span class="p">)</span>
+                    <span class="p">),</span>
+                <span class="p">)</span>
                 <span class="k">for</span> <span class="n">text</span> <span class="ow">in</span> <span class="n">examples</span><span class="p">[</span><span class="s2">&quot;text&quot;</span><span class="p">]</span>
             <span class="p">]</span>
 
@@ -1503,6 +1572,7 @@
             <span class="p">]</span>
 
         <span class="k">case</span> <span class="n">TaskGroup</span><span class="o">.</span><span class="n">TOKEN_CLASSIFICATION</span><span class="p">:</span>
+            <span class="n">labels_str</span> <span class="o">=</span> <span class="n">dataset_config</span><span class="o">.</span><span class="n">get_labels_str</span><span class="p">()</span>
 
             <span class="k">def</span><span class="w"> </span><span class="nf">create_label</span><span class="p">(</span><span class="n">example</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
                 <span class="n">prompt_labels</span> <span class="o">=</span> <span class="n">dataset_config</span><span class="o">.</span><span class="n">prompt_label_mapping</span><span class="o">.</span><span class="n">values</span><span class="p">()</span>
@@ -1524,12 +1594,15 @@
                 <span class="n">create_prompt</span><span class="p">(</span>
                     <span class="n">text</span><span class="o">=</span><span class="s2">&quot; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">example</span><span class="p">[</span><span class="s2">&quot;tokens&quot;</span><span class="p">])</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">,</span> <span class="s2">&quot; &quot;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">(),</span>
                     <span class="n">label</span><span class="o">=</span><span class="n">create_label</span><span class="p">(</span><span class="n">example</span><span class="o">=</span><span class="n">example</span><span class="p">),</span>
+                    <span class="n">labels_str</span><span class="o">=</span><span class="n">labels_str</span><span class="p">,</span>
                 <span class="p">)</span>
                 <span class="k">for</span> <span class="n">example</span> <span class="ow">in</span> <span class="n">few_shot_examples</span>
             <span class="p">]</span>
             <span class="n">new_sections</span> <span class="o">=</span> <span class="p">[</span>
                 <span class="n">create_prompt</span><span class="p">(</span>
-                    <span class="n">text</span><span class="o">=</span><span class="s2">&quot; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">tokens</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">,</span> <span class="s2">&quot; &quot;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">(),</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;&quot;</span>
+                    <span class="n">text</span><span class="o">=</span><span class="s2">&quot; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">tokens</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">,</span> <span class="s2">&quot; &quot;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">(),</span>
+                    <span class="n">label</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+                    <span class="n">labels_str</span><span class="o">=</span><span class="n">labels_str</span><span class="p">,</span>
                 <span class="p">)</span>
                 <span class="k">for</span> <span class="n">tokens</span> <span class="ow">in</span> <span class="n">examples</span><span class="p">[</span><span class="s2">&quot;tokens&quot;</span><span class="p">]</span>
             <span class="p">]</span>
@@ -1618,6 +1691,9 @@
             <span class="n">prompt_prefix</span> <span class="o">+</span> <span class="n">few_shot_prompt</span> <span class="o">+</span> <span class="n">new_prompt</span>
             <span class="k">for</span> <span class="n">new_prompt</span><span class="p">,</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">new_sections</span>
         <span class="p">]</span>
+
+    <span class="c1"># Always add the final prompts without few-shot examples, too, for analysis</span>
+    <span class="n">examples</span><span class="p">[</span><span class="s2">&quot;prompt&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">new_prompt</span> <span class="k">for</span> <span class="n">new_prompt</span><span class="p">,</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">new_sections</span><span class="p">]</span>
 
     <span class="k">return</span> <span class="n">examples</span>
 </code></pre></div></td></tr></table></div>

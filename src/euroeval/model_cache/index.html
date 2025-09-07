@@ -1177,7 +1177,19 @@
 <span class="normal">259</span>
 <span class="normal">260</span>
 <span class="normal">261</span>
-<span class="normal">262</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;ModelCache class for caching model outputs.&quot;&quot;&quot;</span>
+<span class="normal">262</span>
+<span class="normal">263</span>
+<span class="normal">264</span>
+<span class="normal">265</span>
+<span class="normal">266</span>
+<span class="normal">267</span>
+<span class="normal">268</span>
+<span class="normal">269</span>
+<span class="normal">270</span>
+<span class="normal">271</span>
+<span class="normal">272</span>
+<span class="normal">273</span>
+<span class="normal">274</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;ModelCache class for caching model outputs.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">hashlib</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
@@ -1189,7 +1201,9 @@
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">tqdm.auto</span><span class="w"> </span><span class="kn">import</span> <span class="n">tqdm</span>
 
+<span class="kn">from</span><span class="w"> </span><span class="nn">.constants</span><span class="w"> </span><span class="kn">import</span> <span class="n">NUM_GENERATION_TOKENS_FOR_CLASSIFICATION</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.data_models</span><span class="w"> </span><span class="kn">import</span> <span class="n">GenerativeModelOutput</span><span class="p">,</span> <span class="n">SingleGenerativeModelOutput</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">log_once</span>
 
 <span class="k">if</span> <span class="n">t</span><span class="o">.</span><span class="n">TYPE_CHECKING</span><span class="p">:</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
@@ -1368,10 +1382,20 @@
                 <span class="c1"># the indices of the top scores, to save space. Further, we only store</span>
                 <span class="c1"># the scores if the generated sequence is shorter than the maximum</span>
                 <span class="c1"># length</span>
-                <span class="k">if</span> <span class="n">model_output</span><span class="o">.</span><span class="n">scores</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_generated_tokens</span> <span class="o">&lt;</span> <span class="mi">8</span><span class="p">:</span>
+                <span class="k">if</span> <span class="p">(</span>
+                    <span class="n">model_output</span><span class="o">.</span><span class="n">scores</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+                    <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_generated_tokens</span>
+                    <span class="o">&lt;=</span> <span class="n">NUM_GENERATION_TOKENS_FOR_CLASSIFICATION</span>
+                <span class="p">):</span>
                     <span class="k">assert</span> <span class="n">model_output</span><span class="o">.</span><span class="n">scores</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
                     <span class="n">scores</span> <span class="o">=</span> <span class="n">model_output</span><span class="o">.</span><span class="n">scores</span><span class="p">[</span><span class="n">sample_idx</span><span class="p">]</span>
                 <span class="k">else</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">model_output</span><span class="o">.</span><span class="n">scores</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                        <span class="n">log_once</span><span class="p">(</span>
+                            <span class="s2">&quot;The generated sequence is longer than the maximum &quot;</span>
+                            <span class="s2">&quot;length for classification. Not caching the scores.&quot;</span><span class="p">,</span>
+                            <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
+                        <span class="p">)</span>
                     <span class="n">scores</span> <span class="o">=</span> <span class="kc">None</span>
                 <span class="bp">self</span><span class="p">[</span><span class="n">model_input</span><span class="p">]</span> <span class="o">=</span> <span class="n">SingleGenerativeModelOutput</span><span class="p">(</span>
                     <span class="n">sequence</span><span class="o">=</span><span class="n">model_output</span><span class="o">.</span><span class="n">sequences</span><span class="p">[</span><span class="n">sample_idx</span><span class="p">],</span> <span class="n">scores</span><span class="o">=</span><span class="n">scores</span>

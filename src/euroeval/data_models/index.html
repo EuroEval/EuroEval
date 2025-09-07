@@ -1013,6 +1013,15 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#euroeval.data_models.DatasetConfig.get_labels_str" class="md-nav__link">
+    <span class="md-ellipsis">
+      get_labels_str
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1803,7 +1812,11 @@
 <span class="normal">702</span>
 <span class="normal">703</span>
 <span class="normal">704</span>
-<span class="normal">705</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Data models used in EuroEval.&quot;&quot;&quot;</span>
+<span class="normal">705</span>
+<span class="normal">706</span>
+<span class="normal">707</span>
+<span class="normal">708</span>
+<span class="normal">709</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Data models used in EuroEval.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">pathlib</span>
@@ -1930,6 +1943,12 @@
 <span class="sd">            A list of generative model types that are allowed to be evaluated on this</span>
 <span class="sd">            task. If None, all generative model types are allowed. Only relevant if</span>
 <span class="sd">            `allowed_model_types` includes generative models.</span>
+<span class="sd">        allow_invalid_model_outputs (optional):</span>
+<span class="sd">            Whether to allow invalid model outputs. This is only relevant for generative</span>
+<span class="sd">            models on classification tasks, where the model may generate an output</span>
+<span class="sd">            which is not one of the allowed labels. If True, the model output will be</span>
+<span class="sd">            mapped to the closest valid label. If False, the model output will be</span>
+<span class="sd">            considered incorrect and the evaluation will be aborted. Defaults to True.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
@@ -1953,6 +1972,7 @@
             <span class="n">GenerativeType</span><span class="o">.</span><span class="n">REASONING</span><span class="p">,</span>
         <span class="p">]</span>
     <span class="p">)</span>
+    <span class="n">allow_invalid_model_outputs</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">__post_init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Post-initialisation checks.&quot;&quot;&quot;</span>
@@ -2235,7 +2255,6 @@
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_prompt_prefix</span> <span class="ow">is</span> <span class="kc">None</span>
             <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">_prompt_prefix</span>
         <span class="p">)</span>
-        <span class="n">prompt_prefix</span> <span class="o">=</span> <span class="n">prompt_prefix</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">{labels_str}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_labels_str</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">prompt_prefix</span>
 
     <span class="nd">@property</span>
@@ -2248,7 +2267,6 @@
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_prompt_template</span> <span class="ow">is</span> <span class="kc">None</span>
             <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">_prompt_template</span>
         <span class="p">)</span>
-        <span class="n">prompt_template</span> <span class="o">=</span> <span class="n">prompt_template</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">{labels_str}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_labels_str</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">prompt_template</span>
 
     <span class="nd">@property</span>
@@ -2260,9 +2278,6 @@
             <span class="n">prompt_config</span><span class="o">.</span><span class="n">default_instruction_prompt</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_instruction_prompt</span> <span class="ow">is</span> <span class="kc">None</span>
             <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">_instruction_prompt</span>
-        <span class="p">)</span>
-        <span class="n">instruction_prompt</span> <span class="o">=</span> <span class="n">instruction_prompt</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span>
-            <span class="s2">&quot;</span><span class="si">{labels_str}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_labels_str</span>
         <span class="p">)</span>
         <span class="k">return</span> <span class="n">instruction_prompt</span>
 
@@ -2324,15 +2339,16 @@
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Return a hash of the dataset configuration.&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="nb">hash</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
 
-    <span class="nd">@property</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">_labels_str</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_labels_str</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">labels</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span><div class="mkapi-source-link" id="euroeval.data_models.DatasetConfig.get_labels_str"><a href="../../../api/euroeval/data_models/#euroeval.data_models.DatasetConfig.get_labels_str" title="Go to docs">[docs]</a></div>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Converts a set of labels to a natural string, in the specified language.</span>
 
 <span class="sd">        If the task is NER, we separate using &#39;and&#39; and use the mapped labels instead of</span>
 <span class="sd">        the BIO NER labels.</span>
 
 <span class="sd">        Args:</span>
-<span class="sd">            language: The language to be used when converting the labels.</span>
+<span class="sd">            labels (optional):</span>
+<span class="sd">                The labels to convert to a natural string. If None, uses all the labels</span>
+<span class="sd">                in the dataset. Defaults to None.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The natural string representation of the labels in specified language.</span>
@@ -2344,16 +2360,17 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="n">sep_word</span> <span class="o">=</span> <span class="n">main_language</span><span class="o">.</span><span class="n">or_separator</span>
 
-        <span class="n">local_labels</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="k">for</span> <span class="n">label</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">labels</span><span class="p">:</span>
-            <span class="k">if</span> <span class="n">label</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">prompt_label_mapping</span><span class="p">:</span>
-                <span class="k">continue</span>
-            <span class="n">local_label</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">prompt_label_mapping</span><span class="p">[</span><span class="n">label</span><span class="p">]</span>
-            <span class="k">if</span> <span class="n">local_label</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">local_labels</span><span class="p">:</span>
-                <span class="n">local_labels</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">local_label</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">labels</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">labels</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
+            <span class="k">for</span> <span class="n">english_label</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">labels</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">english_label</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">prompt_label_mapping</span><span class="p">:</span>
+                    <span class="k">continue</span>
+                <span class="n">label</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">prompt_label_mapping</span><span class="p">[</span><span class="n">english_label</span><span class="p">]</span>
+                <span class="k">if</span> <span class="n">label</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">labels</span><span class="p">:</span>
+                    <span class="n">labels</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">label</span><span class="p">)</span>
 
         <span class="c1"># Convert labels to single-quoted labels - and remove duplicates</span>
-        <span class="n">quoted_labels</span> <span class="o">=</span> <span class="p">[</span><span class="sa">f</span><span class="s2">&quot;&#39;</span><span class="si">{</span><span class="n">label</span><span class="si">}</span><span class="s2">&#39;&quot;</span> <span class="k">for</span> <span class="n">label</span> <span class="ow">in</span> <span class="n">local_labels</span><span class="p">]</span>
+        <span class="n">quoted_labels</span> <span class="o">=</span> <span class="p">[</span><span class="sa">f</span><span class="s2">&quot;&#39;</span><span class="si">{</span><span class="n">label</span><span class="si">}</span><span class="s2">&#39;&quot;</span> <span class="k">for</span> <span class="n">label</span> <span class="ow">in</span> <span class="n">labels</span><span class="p">]</span>
 
         <span class="k">if</span> <span class="ow">not</span> <span class="n">quoted_labels</span><span class="p">:</span>
             <span class="k">return</span> <span class="s2">&quot;&quot;</span>

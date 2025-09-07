@@ -1265,6 +1265,15 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#euroeval.metrics.pipeline.PreprocessingFunction" class="md-nav__link">
+    <span class="md-ellipsis">
+      PreprocessingFunction
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#euroeval.metrics.pipeline.PipelineMetric" class="md-nav__link">
     <span class="md-ellipsis">
       PipelineMetric
@@ -2011,6 +2020,15 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#euroeval.metrics.pipeline.PreprocessingFunction" class="md-nav__link">
+    <span class="md-ellipsis">
+      PreprocessingFunction
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#euroeval.metrics.pipeline.PipelineMetric" class="md-nav__link">
     <span class="md-ellipsis">
       PipelineMetric
@@ -2077,6 +2095,11 @@
 <div class="mkapi-section-content">
 <ul class="mkapi-item-list">
 <li>
+<p><span class="mkapi-item-name"><a href="./#euroeval.metrics.pipeline.PreprocessingFunction" title="euroeval.metrics.pipeline.PreprocessingFunction">PreprocessingFunction</a></span>
+ <span class="mkapi-dash">&mdash;</span>
+A protocol for a preprocessing function.</p>
+</li>
+<li>
 <p><span class="mkapi-item-name"><a href="./#euroeval.metrics.pipeline.PipelineMetric" title="euroeval.metrics.pipeline.PipelineMetric">PipelineMetric</a></span>
  <span class="mkapi-dash">&mdash;</span>
 Load a scikit-learn pipeline and use it to get scores from the predictions.</p>
@@ -2106,6 +2129,22 @@ Scoring function for the European Values metric.</p>
 </ul>
 </div>
 </div>
+<p class="mkapi-object mkapi-page-source" id="euroeval.metrics.pipeline.PreprocessingFunction">
+<span class="mkapi-object-link">
+
+
+<a href="../../../../src/euroeval/metrics/pipeline/#euroeval.metrics.pipeline.PreprocessingFunction" title="Go to source">source</a>
+<span class="mkapi-document-toggle" title="Toggle all docs">
+<i class="fa-regular fa-square-minus"></i>
+</span>
+</span><span class="mkapi-object-kind">class</span>
+<span class="mkapi-object-name"><a href="./#euroeval.metrics.pipeline.PreprocessingFunction" title="euroeval.metrics.pipeline.PreprocessingFunction">PreprocessingFunction</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-paren">)</span></span>
+</p>
+<div class="mkapi-document">
+<p class="mkapi-bases">Bases :
+<span class="mkapi-base"><span class="mkapi-tooltip" title="typing">t</span>.<span class="mkapi-tooltip" title="typing.Protocol">Protocol</span></span></p>
+<p>A protocol for a preprocessing function.</p>
+</div>
 <p class="mkapi-object mkapi-page-source" id="euroeval.metrics.pipeline.PipelineMetric">
 <span class="mkapi-object-link">
 
@@ -2115,7 +2154,7 @@ Scoring function for the European Values metric.</p>
 <i class="fa-regular fa-square-minus"></i>
 </span>
 </span><span class="mkapi-object-kind">class</span>
-<span class="mkapi-object-name"><a href="./#euroeval.metrics.pipeline.PipelineMetric" title="euroeval.metrics.pipeline.PipelineMetric">PipelineMetric</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">name</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str</span><span class="mkapi-comma">, </span><span class="mkapi-arg">pretty_name</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str</span><span class="mkapi-comma">, </span><span class="mkapi-arg">pipeline_repo</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str</span><span class="mkapi-comma">, </span><span class="mkapi-arg">pipeline_scoring_function</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="collections.abc">c</span>.<span class="mkapi-tooltip" title="collections.abc.Callable">Callable</span>[['Pipeline', <span class="mkapi-tooltip" title="collections.abc">c</span>.<span class="mkapi-tooltip" title="collections.abc.Sequence">Sequence</span>], float]</span><span class="mkapi-comma">, </span><span class="mkapi-arg">pipeline_file_name</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str</span><span class="mkapi-equal"> = </span><span class="mkapi-default">'pipeline.pkl'</span><span class="mkapi-comma">, </span><span class="mkapi-arg">preprocessing_fn</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="collections.abc">c</span>.<span class="mkapi-tooltip" title="collections.abc.Callable">Callable</span>[[<span class="mkapi-tooltip" title="collections.abc">c</span>.<span class="mkapi-tooltip" title="collections.abc.Sequence">Sequence</span>[<span class="mkapi-tooltip" title="euroeval.metrics.pipeline.T">T</span>]], <span class="mkapi-tooltip" title="collections.abc">c</span>.<span class="mkapi-tooltip" title="collections.abc.Sequence">Sequence</span>[<span class="mkapi-tooltip" title="euroeval.metrics.pipeline.T">T</span>]]</span><span class="mkapi-equal"> = </span><span class="mkapi-default">lambda x: x</span><span class="mkapi-comma">, </span><span class="mkapi-arg">postprocessing_fn</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="collections.abc">c</span>.<span class="mkapi-tooltip" title="collections.abc.Callable">Callable</span>[[float], tuple[float, str]] | None</span><span class="mkapi-equal"> = </span><span class="mkapi-default">None</span><span class="mkapi-paren">)</span></span>
+<span class="mkapi-object-name"><a href="./#euroeval.metrics.pipeline.PipelineMetric" title="euroeval.metrics.pipeline.PipelineMetric">PipelineMetric</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">name</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str</span><span class="mkapi-comma">, </span><span class="mkapi-arg">pretty_name</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str</span><span class="mkapi-comma">, </span><span class="mkapi-arg">pipeline_repo</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str</span><span class="mkapi-comma">, </span><span class="mkapi-arg">pipeline_scoring_function</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="collections.abc">c</span>.<span class="mkapi-tooltip" title="collections.abc.Callable">Callable</span>[['Pipeline', <span class="mkapi-tooltip" title="collections.abc">c</span>.<span class="mkapi-tooltip" title="collections.abc.Sequence">Sequence</span>], float]</span><span class="mkapi-comma">, </span><span class="mkapi-arg">pipeline_file_name</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str</span><span class="mkapi-equal"> = </span><span class="mkapi-default">'pipeline.pkl'</span><span class="mkapi-comma">, </span><span class="mkapi-arg">preprocessing_fn</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><a href="./#euroeval.metrics.pipeline.PreprocessingFunction" title="euroeval.metrics.pipeline.PreprocessingFunction">PreprocessingFunction</a> | None</span><span class="mkapi-equal"> = </span><span class="mkapi-default">None</span><span class="mkapi-comma">, </span><span class="mkapi-arg">postprocessing_fn</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="collections.abc">c</span>.<span class="mkapi-tooltip" title="collections.abc.Callable">Callable</span>[[float], tuple[float, str]] | None</span><span class="mkapi-equal"> = </span><span class="mkapi-default">None</span><span class="mkapi-paren">)</span></span>
 </p>
 <div class="mkapi-document">
 <p class="mkapi-bases">Bases :
@@ -2186,7 +2225,7 @@ representation. Defaults to x -&gt; (100 * x, f"{x:.2%}").</p>
 <i class="fa-regular fa-square-minus"></i>
 </span>
 </span>
-<span class="mkapi-object-name"><a href="./#euroeval.metrics.pipeline.european_values_preprocessing_fn" title="euroeval.metrics.pipeline.european_values_preprocessing_fn">european_values_preprocessing_fn</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">predictions</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="collections.abc">c</span>.<span class="mkapi-tooltip" title="collections.abc.Sequence">Sequence</span>[int]</span><span class="mkapi-paren">)</span><span class="mkapi-arrow"> → </span><span class="mkapi-return"><span class="mkapi-tooltip" title="collections.abc">c</span>.<span class="mkapi-tooltip" title="collections.abc.Sequence">Sequence</span>[int]</span></span>
+<span class="mkapi-object-name"><a href="./#euroeval.metrics.pipeline.european_values_preprocessing_fn" title="euroeval.metrics.pipeline.european_values_preprocessing_fn">european_values_preprocessing_fn</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">predictions</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="collections.abc">c</span>.<span class="mkapi-tooltip" title="collections.abc.Sequence">Sequence</span>[int]</span><span class="mkapi-comma">, </span><span class="mkapi-arg">dataset</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="datasets.arrow_dataset.Dataset">Dataset</span></span><span class="mkapi-paren">)</span><span class="mkapi-arrow"> → </span><span class="mkapi-return"><span class="mkapi-tooltip" title="collections.abc">c</span>.<span class="mkapi-tooltip" title="collections.abc.Sequence">Sequence</span>[int]</span></span>
 </p>
 <div class="mkapi-document">
 <p>Preprocess the model predictions for the European Values metric.</p>
@@ -2205,6 +2244,12 @@ representation. Defaults to x -&gt; (100 * x, f"{x:.2%}").</p>
 <span class="mkapi-item-type"><span class="mkapi-tooltip" title="collections.abc">c</span>.<span class="mkapi-tooltip" title="collections.abc.Sequence">Sequence</span>[int]</span> <span class="mkapi-dash">&mdash;</span>
 The model predictions, a sequence of integers representing the predicted
 choices for each question.</p>
+</li>
+<li>
+<p><span class="mkapi-item-name">dataset</span> : 
+<span class="mkapi-item-type"><span class="mkapi-tooltip" title="datasets.arrow_dataset.Dataset">Dataset</span></span> <span class="mkapi-dash">&mdash;</span>
+The dataset used for evaluation. This is only used in case any additional
+metadata is used to compute the metrics.</p>
 </li>
 </ul>
 </div>

@@ -915,7 +915,13 @@
 <span class="normal">74</span>
 <span class="normal">75</span>
 <span class="normal">76</span>
-<span class="normal">77</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Constants used throughout the project.&quot;&quot;&quot;</span>
+<span class="normal">77</span>
+<span class="normal">78</span>
+<span class="normal">79</span>
+<span class="normal">80</span>
+<span class="normal">81</span>
+<span class="normal">82</span>
+<span class="normal">83</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Constants used throughout the project.&quot;&quot;&quot;</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">.enums</span><span class="w"> </span><span class="kn">import</span> <span class="n">TaskGroup</span>
 
@@ -992,6 +998,12 @@
 
 <span class="c1"># These characters are stripped from JSON output when trying to identify the label</span>
 <span class="n">JSON_STRIP_CHARACTERS</span> <span class="o">=</span> <span class="s1">&#39; </span><span class="si">{}</span><span class="se">\n\r</span><span class="s1">&quot;:&#39;</span>
+
+
+<span class="c1"># The number of tokens we generate when evaluating generative models on classification</span>
+<span class="c1"># tasks. We also use this to determine whether we should store logprobs in the model</span>
+<span class="c1"># outputs (and cache).</span>
+<span class="n">NUM_GENERATION_TOKENS_FOR_CLASSIFICATION</span> <span class="o">=</span> <span class="mi">10</span>
 </code></pre></div></td></tr></table></div>
 
 

@@ -2252,7 +2252,7 @@ mapping is not provided.</p>
 <i class="fa-regular fa-square-minus"></i>
 </span>
 </span>
-<span class="mkapi-object-name"><a href="./#euroeval.task_group_utils.sequence_classification.get_closest_logprobs_labels" title="euroeval.task_group_utils.sequence_classification.get_closest_logprobs_labels">get_closest_logprobs_labels</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">generation_logprobs</span><span class="mkapi-colon">: </span><span class="mkapi-ann">list[list[list[tuple[str, float]]]]</span><span class="mkapi-comma">, </span><span class="mkapi-arg">dataset_config</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><a href="../../data_models/#euroeval.data_models.DatasetConfig" title="euroeval.data_models.DatasetConfig">DatasetConfig</a></span><span class="mkapi-comma">, </span><span class="mkapi-arg">first_label_token_mapping</span><span class="mkapi-colon">: </span><span class="mkapi-ann">dict[str, str] | <span class="mkapi-tooltip" title="typing">t</span>.<span class="mkapi-tooltip" title="typing.Literal">Literal</span>[True]</span><span class="mkapi-paren">)</span><span class="mkapi-arrow"> → </span><span class="mkapi-return">list[str] | None</span></span>
+<span class="mkapi-object-name"><a href="./#euroeval.task_group_utils.sequence_classification.get_closest_logprobs_labels" title="euroeval.task_group_utils.sequence_classification.get_closest_logprobs_labels">get_closest_logprobs_labels</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">generation_logprobs</span><span class="mkapi-colon">: </span><span class="mkapi-ann">list[list[list[tuple[str, float]]]]</span><span class="mkapi-comma">, </span><span class="mkapi-arg">first_label_token_mapping</span><span class="mkapi-colon">: </span><span class="mkapi-ann">dict[str, str] | <span class="mkapi-tooltip" title="typing">t</span>.<span class="mkapi-tooltip" title="typing.Literal">Literal</span>[True]</span><span class="mkapi-comma">, </span><span class="mkapi-arg">candidate_labels</span><span class="mkapi-colon">: </span><span class="mkapi-ann">list[list[str]]</span><span class="mkapi-paren">)</span><span class="mkapi-arrow"> → </span><span class="mkapi-return">list[str] | None</span></span>
 </p>
 <div class="mkapi-document">
 <p>Get the labels with the highest predicted logprob value.</p>
@@ -2277,15 +2277,15 @@ The logprobs of the generated tokens, for all samples in the batch. Of shape
 (batch_size, num_tokens, num_logprobs).</p>
 </li>
 <li>
-<p><span class="mkapi-item-name">dataset_config</span> : 
-<span class="mkapi-item-type"><a href="../../data_models/#euroeval.data_models.DatasetConfig" title="euroeval.data_models.DatasetConfig">DatasetConfig</a></span> <span class="mkapi-dash">&mdash;</span>
-The configuration of the dataset.</p>
-</li>
-<li>
 <p><span class="mkapi-item-name">first_label_token_mapping</span> : 
 <span class="mkapi-item-type">dict[str, str] | <span class="mkapi-tooltip" title="typing">t</span>.<span class="mkapi-tooltip" title="typing.Literal">Literal</span>[True]</span> <span class="mkapi-dash">&mdash;</span>
 A mapping from labels to the first token in each label, or alternatively a
 <code>True</code> value indicating that the model should output logprobs.</p>
+</li>
+<li>
+<p><span class="mkapi-item-name">candidate_labels</span> : 
+<span class="mkapi-item-type">list[list[str]]</span> <span class="mkapi-dash">&mdash;</span>
+The candidate labels for each sample in the batch.</p>
 </li>
 </ul>
 </div>

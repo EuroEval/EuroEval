@@ -1254,7 +1254,20 @@
 <span class="normal">378</span>
 <span class="normal">379</span>
 <span class="normal">380</span>
-<span class="normal">381</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Utility functions related to the sequence-classification task group.&quot;&quot;&quot;</span>
+<span class="normal">381</span>
+<span class="normal">382</span>
+<span class="normal">383</span>
+<span class="normal">384</span>
+<span class="normal">385</span>
+<span class="normal">386</span>
+<span class="normal">387</span>
+<span class="normal">388</span>
+<span class="normal">389</span>
+<span class="normal">390</span>
+<span class="normal">391</span>
+<span class="normal">392</span>
+<span class="normal">393</span>
+<span class="normal">394</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Utility functions related to the sequence-classification task group.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
@@ -1265,7 +1278,11 @@
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">..enums</span><span class="w"> </span><span class="kn">import</span> <span class="n">TaskGroup</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..exceptions</span><span class="w"> </span><span class="kn">import</span> <span class="n">InvalidBenchmark</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">..utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">log_once</span><span class="p">,</span> <span class="n">raise_if_model_output_contains_nan_values</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..utils</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">extract_multiple_choice_labels</span><span class="p">,</span>
+    <span class="n">log_once</span><span class="p">,</span>
+    <span class="n">raise_if_model_output_contains_nan_values</span><span class="p">,</span>
+<span class="p">)</span>
 
 <span class="k">if</span> <span class="n">t</span><span class="o">.</span><span class="n">TYPE_CHECKING</span><span class="p">:</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">datasets.arrow_dataset</span><span class="w"> </span><span class="kn">import</span> <span class="n">Dataset</span>
@@ -1384,6 +1401,21 @@
 <span class="sd">            or if the model outputted log probabilities but the first label token</span>
 <span class="sd">            mapping is not provided.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Get the candidate labels, which are the labels that the model can predict</span>
+    <span class="n">default_labels</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="n">dataset_config</span><span class="o">.</span><span class="n">prompt_label_mapping</span><span class="p">[</span><span class="n">lbl</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">lbl</span> <span class="ow">in</span> <span class="n">dataset_config</span><span class="o">.</span><span class="n">id2label</span><span class="o">.</span><span class="n">values</span><span class="p">()</span>
+    <span class="p">]</span>
+    <span class="k">if</span> <span class="n">dataset_config</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">task_group</span> <span class="o">==</span> <span class="n">TaskGroup</span><span class="o">.</span><span class="n">MULTIPLE_CHOICE_CLASSIFICATION</span><span class="p">:</span>
+        <span class="n">sample_candidate_labels</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">extract_multiple_choice_labels</span><span class="p">(</span>
+                <span class="n">prompt</span><span class="o">=</span><span class="n">prompt</span><span class="p">,</span> <span class="n">candidate_labels</span><span class="o">=</span><span class="n">default_labels</span>
+            <span class="p">)</span>
+            <span class="k">for</span> <span class="n">prompt</span> <span class="ow">in</span> <span class="n">input_batch</span><span class="p">[</span><span class="s2">&quot;prompt&quot;</span><span class="p">]</span>
+        <span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">sample_candidate_labels</span> <span class="o">=</span> <span class="p">[</span><span class="n">default_labels</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">input_batch</span><span class="p">[</span><span class="s2">&quot;prompt&quot;</span><span class="p">])</span>
+
     <span class="k">if</span> <span class="n">model_output</span><span class="o">.</span><span class="n">scores</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
         <span class="k">if</span> <span class="n">first_label_token_mapping</span> <span class="ow">is</span> <span class="kc">False</span><span class="p">:</span>
             <span class="k">raise</span> <span class="n">InvalidBenchmark</span><span class="p">(</span>
@@ -1392,8 +1424,8 @@
             <span class="p">)</span>
         <span class="n">labels</span> <span class="o">=</span> <span class="n">get_closest_logprobs_labels</span><span class="p">(</span>
             <span class="n">generation_logprobs</span><span class="o">=</span><span class="n">model_output</span><span class="o">.</span><span class="n">scores</span><span class="p">,</span>
-            <span class="n">dataset_config</span><span class="o">=</span><span class="n">dataset_config</span><span class="p">,</span>
             <span class="n">first_label_token_mapping</span><span class="o">=</span><span class="n">first_label_token_mapping</span><span class="p">,</span>
+            <span class="n">candidate_labels</span><span class="o">=</span><span class="n">sample_candidate_labels</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="k">if</span> <span class="n">labels</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">labels</span>
@@ -1403,31 +1435,8 @@
                 <span class="s2">&quot;does not seem to be able to do that. Skipping the evaluation.&quot;</span>
             <span class="p">)</span>
 
-    <span class="c1"># Get the candidate labels, which are the labels that the model can predict</span>
-    <span class="n">candidate_labels</span> <span class="o">=</span> <span class="p">[</span>
-        <span class="n">dataset_config</span><span class="o">.</span><span class="n">prompt_label_mapping</span><span class="p">[</span><span class="n">lbl</span><span class="p">]</span>
-        <span class="k">for</span> <span class="n">lbl</span> <span class="ow">in</span> <span class="n">dataset_config</span><span class="o">.</span><span class="n">id2label</span><span class="o">.</span><span class="n">values</span><span class="p">()</span>
-    <span class="p">]</span>
-
     <span class="n">new_predicted_labels</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
     <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">predicted_label</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">model_output</span><span class="o">.</span><span class="n">sequences</span><span class="p">):</span>
-        <span class="c1"># Special case if we are doing multiple choice classification: we in this case</span>
-        <span class="c1"># dynamically change the candidate labels to the labels mentioned in the prompt</span>
-        <span class="k">if</span> <span class="n">dataset_config</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">task_group</span> <span class="o">==</span> <span class="n">TaskGroup</span><span class="o">.</span><span class="n">MULTIPLE_CHOICE_CLASSIFICATION</span><span class="p">:</span>
-            <span class="n">prompt</span> <span class="o">=</span> <span class="n">input_batch</span><span class="p">[</span><span class="s2">&quot;text&quot;</span><span class="p">][</span><span class="n">idx</span><span class="p">]</span>
-            <span class="n">sample_candidate_labels</span> <span class="o">=</span> <span class="p">[</span>
-                <span class="n">candidate_label</span>
-                <span class="k">for</span> <span class="n">candidate_label</span> <span class="ow">in</span> <span class="n">candidate_labels</span>
-                <span class="k">if</span> <span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span>
-                    <span class="n">pattern</span><span class="o">=</span><span class="sa">rf</span><span class="s2">&quot;\b</span><span class="si">{</span><span class="n">candidate_label</span><span class="si">}</span><span class="s2">. &quot;</span><span class="p">,</span>
-                    <span class="n">string</span><span class="o">=</span><span class="n">prompt</span><span class="p">,</span>
-                    <span class="n">flags</span><span class="o">=</span><span class="n">re</span><span class="o">.</span><span class="n">IGNORECASE</span><span class="p">,</span>
-                <span class="p">)</span>
-                <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
-            <span class="p">]</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">sample_candidate_labels</span> <span class="o">=</span> <span class="n">candidate_labels</span>
-
         <span class="c1"># If the prediction includes a boxed answer, use that instead of the full</span>
         <span class="c1"># generation</span>
         <span class="k">if</span> <span class="p">(</span><span class="n">m</span> <span class="o">:=</span> <span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;boxed\{(.*?)\}&quot;</span><span class="p">,</span> <span class="n">predicted_label</span><span class="p">))</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
@@ -1448,22 +1457,43 @@
                 <span class="n">s2</span><span class="o">=</span><span class="n">candidate_label</span><span class="o">.</span><span class="n">lower</span><span class="p">(),</span>
                 <span class="n">weights</span><span class="o">=</span><span class="p">(</span><span class="n">insertion_weight</span><span class="p">,</span> <span class="n">deletion_weight</span><span class="p">,</span> <span class="n">substitution_weight</span><span class="p">),</span>
             <span class="p">)</span>
-            <span class="k">for</span> <span class="n">candidate_label</span> <span class="ow">in</span> <span class="n">sample_candidate_labels</span>
+            <span class="k">for</span> <span class="n">candidate_label</span> <span class="ow">in</span> <span class="n">sample_candidate_labels</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
         <span class="p">]</span>
 
-        <span class="c1"># If no candidate labels were found, we assume that something is wrong with the</span>
-        <span class="c1"># model output, and we raise an error</span>
-        <span class="k">if</span> <span class="nb">min</span><span class="p">(</span><span class="n">edit_distances</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">100</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="n">InvalidBenchmark</span><span class="p">(</span>
-                <span class="s2">&quot;No candidate labels found for the predicted label &quot;</span>
-                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">predicted_label</span><span class="si">!r}</span><span class="s2">, out of the candidate labels &quot;</span>
-                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">sample_candidate_labels</span><span class="si">}</span><span class="s2">. This likely means that the model output &quot;</span>
-                <span class="s2">&quot;is completely off, and we cannot extract any labels from it. Please &quot;</span>
-                <span class="s2">&quot;check the model output and the candidate labels.&quot;</span>
-            <span class="p">)</span>
+        <span class="n">best_candidate_label</span> <span class="o">=</span> <span class="n">sample_candidate_labels</span><span class="p">[</span><span class="n">idx</span><span class="p">][</span>
+            <span class="n">np</span><span class="o">.</span><span class="n">argmin</span><span class="p">(</span><span class="n">edit_distances</span><span class="p">)</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
+        <span class="p">]</span>
 
-        <span class="c1"># Pick the label with the smallest word edit distance to the predicted label</span>
-        <span class="n">best_candidate_label</span> <span class="o">=</span> <span class="n">sample_candidate_labels</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">argmin</span><span class="p">(</span><span class="n">edit_distances</span><span class="p">)</span><span class="o">.</span><span class="n">item</span><span class="p">()]</span>
+        <span class="c1"># If no candidate labels were found, we either pick the label with the smallest</span>
+        <span class="c1"># word edit distance to the predicted label (if invalid model outputs are</span>
+        <span class="c1"># allowed), or we raise an error</span>
+        <span class="k">if</span> <span class="nb">min</span><span class="p">(</span><span class="n">edit_distances</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">100</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">dataset_config</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">allow_invalid_model_outputs</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                    <span class="s2">&quot;No candidate labels found for the predicted label &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">predicted_label</span><span class="si">!r}</span><span class="s2">, out of the candidate labels &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">sample_candidate_labels</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span><span class="si">}</span><span class="s2">. This likely means that the model &quot;</span>
+                    <span class="s2">&quot;output is completely off, but since invalid model outputs are &quot;</span>
+                    <span class="s2">&quot;allowed for this task, we will use the closest candidate label &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;(</span><span class="si">{</span><span class="n">best_candidate_label</span><span class="si">}</span><span class="s2">)) as the output label. If you see this &quot;</span>
+                    <span class="s2">&quot;warning very often, please report this issue to the EuroEval &quot;</span>
+                    <span class="s2">&quot;team at github.com/EuroEval/EuroEval/issues.&quot;</span>
+                <span class="p">)</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+                    <span class="s2">&quot;The candidate labels were extracted from the prompt: &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">input_batch</span><span class="p">[</span><span class="s1">&#39;text&#39;</span><span class="p">][</span><span class="n">idx</span><span class="p">]</span><span class="si">!r}</span><span class="s2">.&quot;</span>
+                <span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">InvalidBenchmark</span><span class="p">(</span>
+                    <span class="s2">&quot;No candidate labels found for the predicted label &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">predicted_label</span><span class="si">!r}</span><span class="s2">, out of the candidate labels &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">sample_candidate_labels</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span><span class="si">}</span><span class="s2">. This likely means that the model &quot;</span>
+                    <span class="s2">&quot;output is completely off, and we cannot extract any labels from &quot;</span>
+                    <span class="s2">&quot;it. Please check the model output and the candidate labels. The &quot;</span>
+                    <span class="s2">&quot;candidate labels were extracted from the prompt: &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">input_batch</span><span class="p">[</span><span class="s1">&#39;text&#39;</span><span class="p">][</span><span class="n">idx</span><span class="p">]</span><span class="si">!r}</span><span class="s2">.&quot;</span>
+                <span class="p">)</span>
+
         <span class="n">new_predicted_labels</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">best_candidate_label</span><span class="p">)</span>
 
     <span class="k">return</span> <span class="n">new_predicted_labels</span>
@@ -1471,8 +1501,8 @@
 
 <span class="k">def</span><span class="w"> </span><span class="nf">get_closest_logprobs_labels</span><span class="p">(</span><div class="mkapi-source-link" id="euroeval.task_group_utils.sequence_classification.get_closest_logprobs_labels"><a href="../../../../api/euroeval/task_group_utils/sequence_classification/#euroeval.task_group_utils.sequence_classification.get_closest_logprobs_labels" title="Go to docs">[docs]</a></div>
     <span class="n">generation_logprobs</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]]]],</span>
-    <span class="n">dataset_config</span><span class="p">:</span> <span class="s2">&quot;DatasetConfig&quot;</span><span class="p">,</span>
     <span class="n">first_label_token_mapping</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="n">t</span><span class="o">.</span><span class="n">Literal</span><span class="p">[</span><span class="kc">True</span><span class="p">],</span>
+    <span class="n">candidate_labels</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]],</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the labels with the highest predicted logprob value.</span>
 
@@ -1485,11 +1515,11 @@
 <span class="sd">        generation_logprobs:</span>
 <span class="sd">            The logprobs of the generated tokens, for all samples in the batch. Of shape</span>
 <span class="sd">            (batch_size, num_tokens, num_logprobs).</span>
-<span class="sd">        dataset_config:</span>
-<span class="sd">            The configuration of the dataset.</span>
 <span class="sd">        first_label_token_mapping:</span>
 <span class="sd">            A mapping from labels to the first token in each label, or alternatively a</span>
 <span class="sd">            `True` value indicating that the model should output logprobs.</span>
+<span class="sd">        candidate_labels:</span>
+<span class="sd">            The candidate labels for each sample in the batch.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The predicted labels, or None if labels could not be extracted.</span>
@@ -1498,12 +1528,8 @@
 <span class="sd">        InvalidBenchmark:</span>
 <span class="sd">            If no candidate label can be found for any of the generated labels.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">english_labels</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">dataset_config</span><span class="o">.</span><span class="n">id2label</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
-    <span class="n">english2local</span> <span class="o">=</span> <span class="n">dataset_config</span><span class="o">.</span><span class="n">prompt_label_mapping</span>
-    <span class="n">candidate_labels</span> <span class="o">=</span> <span class="p">[</span><span class="n">english2local</span><span class="p">[</span><span class="n">lbl</span><span class="p">]</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="k">for</span> <span class="n">lbl</span> <span class="ow">in</span> <span class="n">english_labels</span><span class="p">]</span>
-
     <span class="n">output_labels</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
-    <span class="k">for</span> <span class="n">sample</span> <span class="ow">in</span> <span class="n">generation_logprobs</span><span class="p">:</span>
+    <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">sample</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">generation_logprobs</span><span class="p">):</span>
         <span class="k">for</span> <span class="n">logprob_list</span> <span class="ow">in</span> <span class="n">sample</span><span class="p">:</span>
             <span class="n">generated_labels</span> <span class="o">=</span> <span class="p">[</span>
                 <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="n">pattern</span><span class="o">=</span><span class="sa">r</span><span class="s2">&quot;^[^a-zæøåüöä0-9]+$&quot;</span><span class="p">,</span> <span class="n">repl</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">string</span><span class="o">=</span><span class="n">label</span><span class="o">.</span><span class="n">lower</span><span class="p">())</span>
@@ -1521,7 +1547,7 @@
                 <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">first_label_token_mapping</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
                     <span class="k">if</span> <span class="nb">any</span><span class="p">(</span>
                         <span class="n">candidate_label</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">first_label_token_mapping</span>
-                        <span class="k">for</span> <span class="n">candidate_label</span> <span class="ow">in</span> <span class="n">candidate_labels</span>
+                        <span class="k">for</span> <span class="n">candidate_label</span> <span class="ow">in</span> <span class="n">candidate_labels</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
                     <span class="p">):</span>
                         <span class="k">raise</span> <span class="n">InvalidBenchmark</span><span class="p">(</span>
                             <span class="s2">&quot;There is a label not present in the first label token &quot;</span>
@@ -1532,13 +1558,13 @@
 
                     <span class="n">candidate_output_labels</span> <span class="o">=</span> <span class="p">{</span>
                         <span class="n">candidate_label</span>
-                        <span class="k">for</span> <span class="n">candidate_label</span> <span class="ow">in</span> <span class="n">candidate_labels</span>
+                        <span class="k">for</span> <span class="n">candidate_label</span> <span class="ow">in</span> <span class="n">candidate_labels</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
                         <span class="k">if</span> <span class="n">generated_label</span> <span class="o">==</span> <span class="n">first_label_token_mapping</span><span class="p">[</span><span class="n">candidate_label</span><span class="p">]</span>
                     <span class="p">}</span>
                 <span class="k">else</span><span class="p">:</span>
                     <span class="n">candidate_output_labels</span> <span class="o">=</span> <span class="p">{</span>
                         <span class="n">candidate_label</span>
-                        <span class="k">for</span> <span class="n">candidate_label</span> <span class="ow">in</span> <span class="n">candidate_labels</span>
+                        <span class="k">for</span> <span class="n">candidate_label</span> <span class="ow">in</span> <span class="n">candidate_labels</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
                         <span class="k">if</span> <span class="n">candidate_label</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">generated_label</span><span class="p">)</span>
                     <span class="p">}</span>
 
@@ -1584,7 +1610,7 @@
                 <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">candidate_output_labels</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
                     <span class="n">candidate_output_labels_starting_with_generated_label</span> <span class="o">=</span> <span class="p">[</span>
                         <span class="n">candidate_label</span>
-                        <span class="k">for</span> <span class="n">candidate_label</span> <span class="ow">in</span> <span class="n">candidate_labels</span>
+                        <span class="k">for</span> <span class="n">candidate_label</span> <span class="ow">in</span> <span class="n">candidate_labels</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
                         <span class="k">if</span> <span class="n">candidate_label</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">generated_label</span><span class="p">)</span>
                     <span class="p">]</span>
                     <span class="k">if</span> <span class="n">candidate_output_labels_starting_with_generated_label</span><span class="p">:</span>
@@ -1620,18 +1646,18 @@
             <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">sample</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
                 <span class="n">log_once</span><span class="p">(</span>
                     <span class="s2">&quot;The model outputted an empty string, so no candidate labels could &quot;</span>
-                    <span class="sa">f</span><span class="s2">&quot;be determined. Using the first label, </span><span class="si">{</span><span class="n">candidate_labels</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">!r}</span><span class="s2">, &quot;</span>
-                    <span class="s2">&quot;as the output label.&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;be determined. Using the first label, &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">candidate_labels</span><span class="p">[</span><span class="n">idx</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="si">!r}</span><span class="s2">, as the output label.&quot;</span><span class="p">,</span>
                     <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">,</span>
                 <span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">log_once</span><span class="p">(</span>
                     <span class="s2">&quot;Could not find a candidate label for any of the generated &quot;</span>
                     <span class="sa">f</span><span class="s2">&quot;labels in the sample </span><span class="si">{</span><span class="n">sample</span><span class="si">}</span><span class="s2">. Using the first label, &quot;</span>
-                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">candidate_labels</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">!r}</span><span class="s2">, as the output label.&quot;</span><span class="p">,</span>
+                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">candidate_labels</span><span class="p">[</span><span class="n">idx</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="si">!r}</span><span class="s2">, as the output label.&quot;</span><span class="p">,</span>
                     <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">,</span>
                 <span class="p">)</span>
-            <span class="n">output_labels</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">candidate_labels</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+            <span class="n">output_labels</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">candidate_labels</span><span class="p">[</span><span class="n">idx</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span>
 
     <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">output_labels</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">generation_logprobs</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">output_labels</span>

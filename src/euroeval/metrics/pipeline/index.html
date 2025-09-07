@@ -821,6 +821,15 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#euroeval.metrics.pipeline.PreprocessingFunction" class="md-nav__link">
+    <span class="md-ellipsis">
+      PreprocessingFunction
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#euroeval.metrics.pipeline.PipelineMetric" class="md-nav__link">
     <span class="md-ellipsis">
       PipelineMetric
@@ -1107,7 +1116,49 @@
 <span class="normal">231</span>
 <span class="normal">232</span>
 <span class="normal">233</span>
-<span class="normal">234</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Metrics based on a scikit-learn Pipeline.&quot;&quot;&quot;</span>
+<span class="normal">234</span>
+<span class="normal">235</span>
+<span class="normal">236</span>
+<span class="normal">237</span>
+<span class="normal">238</span>
+<span class="normal">239</span>
+<span class="normal">240</span>
+<span class="normal">241</span>
+<span class="normal">242</span>
+<span class="normal">243</span>
+<span class="normal">244</span>
+<span class="normal">245</span>
+<span class="normal">246</span>
+<span class="normal">247</span>
+<span class="normal">248</span>
+<span class="normal">249</span>
+<span class="normal">250</span>
+<span class="normal">251</span>
+<span class="normal">252</span>
+<span class="normal">253</span>
+<span class="normal">254</span>
+<span class="normal">255</span>
+<span class="normal">256</span>
+<span class="normal">257</span>
+<span class="normal">258</span>
+<span class="normal">259</span>
+<span class="normal">260</span>
+<span class="normal">261</span>
+<span class="normal">262</span>
+<span class="normal">263</span>
+<span class="normal">264</span>
+<span class="normal">265</span>
+<span class="normal">266</span>
+<span class="normal">267</span>
+<span class="normal">268</span>
+<span class="normal">269</span>
+<span class="normal">270</span>
+<span class="normal">271</span>
+<span class="normal">272</span>
+<span class="normal">273</span>
+<span class="normal">274</span>
+<span class="normal">275</span>
+<span class="normal">276</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Metrics based on a scikit-learn Pipeline.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">c</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
@@ -1135,6 +1186,27 @@
 <span class="n">T</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">TypeVar</span><span class="p">(</span><span class="s2">&quot;T&quot;</span><span class="p">,</span> <span class="n">bound</span><span class="o">=</span><span class="nb">int</span> <span class="o">|</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">bool</span><span class="p">)</span>
 
 
+<span class="k">class</span><span class="w"> </span><span class="nc">PreprocessingFunction</span><span class="p">(</span><span class="n">t</span><span class="o">.</span><span class="n">Protocol</span><span class="p">):</span><div class="mkapi-source-link" id="euroeval.metrics.pipeline.PreprocessingFunction"><a href="../../../../api/euroeval/metrics/pipeline/#euroeval.metrics.pipeline.PreprocessingFunction" title="Go to docs">[docs]</a></div>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;A protocol for a preprocessing function.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">predictions</span><span class="p">:</span> <span class="n">c</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="n">dataset</span><span class="p">:</span> <span class="s2">&quot;Dataset&quot;</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">c</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Preprocess the model predictions before they are passed to the pipeline.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            predictions:</span>
+<span class="sd">                The model predictions.</span>
+<span class="sd">            dataset:</span>
+<span class="sd">                The dataset used for evaluation. This is only used in case any</span>
+<span class="sd">                additional metadata is used to compute the metrics.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            The preprocessed model predictions.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="o">...</span>
+
+
 <span class="k">class</span><span class="w"> </span><span class="nc">PipelineMetric</span><span class="p">(</span><span class="n">Metric</span><span class="p">):</span><div class="mkapi-source-link" id="euroeval.metrics.pipeline.PipelineMetric"><a href="../../../../api/euroeval/metrics/pipeline/#euroeval.metrics.pipeline.PipelineMetric" title="Go to docs">[docs]</a></div>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Load a scikit-learn pipeline and use it to get scores from the predictions.&quot;&quot;&quot;</span>
 
@@ -1145,7 +1217,7 @@
         <span class="n">pipeline_repo</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
         <span class="n">pipeline_scoring_function</span><span class="p">:</span> <span class="n">c</span><span class="o">.</span><span class="n">Callable</span><span class="p">[[</span><span class="s2">&quot;Pipeline&quot;</span><span class="p">,</span> <span class="n">c</span><span class="o">.</span><span class="n">Sequence</span><span class="p">],</span> <span class="nb">float</span><span class="p">],</span>
         <span class="n">pipeline_file_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;pipeline.pkl&quot;</span><span class="p">,</span>
-        <span class="n">preprocessing_fn</span><span class="p">:</span> <span class="n">c</span><span class="o">.</span><span class="n">Callable</span><span class="p">[[</span><span class="n">c</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="n">T</span><span class="p">]],</span> <span class="n">c</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="n">T</span><span class="p">]]</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="p">,</span>
+        <span class="n">preprocessing_fn</span><span class="p">:</span> <span class="n">PreprocessingFunction</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">postprocessing_fn</span><span class="p">:</span> <span class="n">c</span><span class="o">.</span><span class="n">Callable</span><span class="p">[[</span><span class="nb">float</span><span class="p">],</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialise the pipeline transform metric.</span>
@@ -1210,7 +1282,10 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">pipeline</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">pipeline</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_download_pipeline</span><span class="p">()</span>
-        <span class="n">predictions</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">preprocessing_fn</span><span class="p">(</span><span class="n">predictions</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">preprocessing_fn</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">predictions</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">preprocessing_fn</span><span class="p">(</span>
+                <span class="n">predictions</span><span class="o">=</span><span class="n">predictions</span><span class="p">,</span> <span class="n">dataset</span><span class="o">=</span><span class="n">dataset</span>
+            <span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">pipeline_scoring_function</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pipeline</span><span class="p">,</span> <span class="n">predictions</span><span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_download_pipeline</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Pipeline&quot;</span><span class="p">:</span>
@@ -1241,14 +1316,19 @@
 
 <span class="c1">### European Values Metric ###</span>
 
-<div class="mkapi-source-link" id="euroeval.metrics.pipeline.european_values_preprocessing_fn"><a href="../../../../api/euroeval/metrics/pipeline/#euroeval.metrics.pipeline.european_values_preprocessing_fn" title="Go to docs">[docs]</a></div>
-<span class="k">def</span><span class="w"> </span><span class="nf">european_values_preprocessing_fn</span><span class="p">(</span><span class="n">predictions</span><span class="p">:</span> <span class="n">c</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">c</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">]:</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">european_values_preprocessing_fn</span><span class="p">(</span><div class="mkapi-source-link" id="euroeval.metrics.pipeline.european_values_preprocessing_fn"><a href="../../../../api/euroeval/metrics/pipeline/#euroeval.metrics.pipeline.european_values_preprocessing_fn" title="Go to docs">[docs]</a></div>
+    <span class="n">predictions</span><span class="p">:</span> <span class="n">c</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="n">dataset</span><span class="p">:</span> <span class="s2">&quot;Dataset&quot;</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">c</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Preprocess the model predictions for the European Values metric.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        predictions:</span>
 <span class="sd">            The model predictions, a sequence of integers representing the predicted</span>
 <span class="sd">            choices for each question.</span>
+<span class="sd">        dataset:</span>
+<span class="sd">            The dataset used for evaluation. This is only used in case any additional</span>
+<span class="sd">            metadata is used to compute the metrics.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The preprocessed model predictions, a sequence of integers representing the</span>
@@ -1262,6 +1342,17 @@
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">num_questions</span> <span class="o">=</span> <span class="mi">53</span>
     <span class="n">num_phrasings_per_question</span> <span class="o">=</span> <span class="mi">5</span>
+
+    <span class="c1"># Convert the predictions to integers</span>
+    <span class="n">integer_predictions</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">prediction</span><span class="p">,</span> <span class="n">idx_to_choice</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">predictions</span><span class="p">,</span> <span class="n">dataset</span><span class="p">[</span><span class="s2">&quot;idx_to_choice&quot;</span><span class="p">]):</span>
+        <span class="n">idx_to_choice</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="nb">int</span><span class="p">(</span><span class="n">idx</span><span class="p">):</span> <span class="nb">int</span><span class="p">(</span><span class="n">choice</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">choice</span> <span class="ow">in</span> <span class="n">idx_to_choice</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">choice</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+        <span class="p">}</span>
+        <span class="n">integer_prediction</span> <span class="o">=</span> <span class="n">idx_to_choice</span><span class="p">[</span><span class="n">prediction</span><span class="p">]</span>
+        <span class="n">integer_predictions</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">integer_prediction</span><span class="p">)</span>
 
     <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">predictions</span><span class="p">)</span> <span class="o">%</span> <span class="n">num_questions</span> <span class="o">==</span> <span class="mi">0</span><span class="p">,</span> <span class="p">(</span>
         <span class="sa">f</span><span class="s2">&quot;The number of predictions (</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">predictions</span><span class="p">)</span><span class="si">}</span><span class="s2">) is not a multiple of &quot;</span>
@@ -1280,7 +1371,7 @@
         <span class="c1"># Shape: (num_questions, num_phrasings_per_question)</span>
         <span class="n">arr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span>
             <span class="p">[</span>
-                <span class="n">predictions</span><span class="p">[</span><span class="n">i</span> <span class="p">:</span> <span class="n">i</span> <span class="o">+</span> <span class="n">num_phrasings_per_question</span><span class="p">]</span>
+                <span class="n">integer_predictions</span><span class="p">[</span><span class="n">i</span> <span class="p">:</span> <span class="n">i</span> <span class="o">+</span> <span class="n">num_phrasings_per_question</span><span class="p">]</span>
                 <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">predictions</span><span class="p">),</span> <span class="n">num_phrasings_per_question</span><span class="p">)</span>
             <span class="p">]</span>
         <span class="p">)</span>
@@ -1297,7 +1388,7 @@
         <span class="n">arr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">apply_along_axis</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">bincount</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="o">.</span><span class="n">argmax</span><span class="p">(),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">arr</span><span class="o">=</span><span class="n">arr</span><span class="p">)</span>
 
         <span class="c1"># Convert the array to a list</span>
-        <span class="n">predictions</span> <span class="o">=</span> <span class="n">arr</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+        <span class="n">integer_predictions</span> <span class="o">=</span> <span class="n">arr</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
 
     <span class="c1"># Some of the questions are categorical and we&#39;re only interested in whether the</span>
     <span class="c1"># model chooses a specific choice or not. This mapping takes the question index</span>
@@ -1317,11 +1408,13 @@
     <span class="p">}</span>
 
     <span class="c1"># Map the predictions to the choices we&#39;re interested in</span>
-    <span class="n">predictions</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">predictions</span><span class="p">)</span>
+    <span class="n">integer_predictions</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">integer_predictions</span><span class="p">)</span>
     <span class="k">for</span> <span class="n">question_idx</span><span class="p">,</span> <span class="n">choice</span> <span class="ow">in</span> <span class="n">question_choices</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-        <span class="n">predictions</span><span class="p">[</span><span class="n">question_idx</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span> <span class="k">if</span> <span class="n">predictions</span><span class="p">[</span><span class="n">question_idx</span><span class="p">]</span> <span class="o">==</span> <span class="n">choice</span> <span class="k">else</span> <span class="mi">0</span>
+        <span class="n">integer_predictions</span><span class="p">[</span><span class="n">question_idx</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="mi">1</span> <span class="k">if</span> <span class="n">integer_predictions</span><span class="p">[</span><span class="n">question_idx</span><span class="p">]</span> <span class="o">==</span> <span class="n">choice</span> <span class="k">else</span> <span class="mi">0</span>
+        <span class="p">)</span>
 
-    <span class="k">return</span> <span class="n">predictions</span>
+    <span class="k">return</span> <span class="n">integer_predictions</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">european_values_scoring_function</span><span class="p">(</span><div class="mkapi-source-link" id="euroeval.metrics.pipeline.european_values_scoring_function"><a href="../../../../api/euroeval/metrics/pipeline/#euroeval.metrics.pipeline.european_values_scoring_function" title="Go to docs">[docs]</a></div>

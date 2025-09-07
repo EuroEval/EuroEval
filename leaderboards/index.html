@@ -1519,19 +1519,14 @@
 <li><strong>Generative Leaderboard</strong>: This leaderboard shows the performance of models that can
   generate text. These models have been evaluated on <em>all</em> <a href="/tasks">tasks</a>, both NLU and
   NLG.</li>
-<li><strong>NLU Leaderboard</strong>: This leaderboard shows the performance of models that can only
-  understand text, and not generate text themselves. These models have been evaluated on
-  the NLU tasks only.</li>
+<li><strong>NLU Leaderboard</strong>: This leaderboard shows the performance of models that can
+  understand text, which includes both generative and non-generative models.</li>
 </ul>
 <h2 id="how-to-read-the-leaderboards">📊 How to Read the Leaderboards</h2>
 <p>The main score column is the <code>Rank</code>, showing the <a href="/methodology">mean rank score</a> of the
 model across all the tasks in the leaderboard. The lower the rank, the better the model.</p>
 <p>The columns that follow the rank columns are metadata about the model:</p>
 <ul>
-<li><code>Parameters</code>: The total number of parameters in the model, in millions.</li>
-<li><code>Vocabulary</code>: The size of the model's vocabulary, in thousands.</li>
-<li><code>Context</code>: The maximum number of tokens that the model can process at a time.</li>
-<li><code>Speed</code>: The inference time of the model - see more <a href="/tasks/speed">here</a>.</li>
 <li><code>Type</code>: The type of model:<ul>
 <li>🔍 indicates that it is an encoder model (e.g., BERT)</li>
 <li>🧠 indicates that it is a base generative model (e.g., GPT-2)</li>
@@ -1539,6 +1534,9 @@ model across all the tasks in the leaderboard. The lower the rank, the better th
 <li>🤔 indicates that it is a reasoning model (e.g., o1)</li>
 </ul>
 </li>
+<li><code>Parameters</code>: The total number of parameters in the model, in millions.</li>
+<li><code>Vocabulary</code>: The size of the model's vocabulary, in thousands.</li>
+<li><code>Context</code>: The maximum number of tokens that the model can process at a time.</li>
 <li><code>Commercial</code>: Whether the model can be used for commercial purposes. See <a href="/faq">here</a>
   for more information.</li>
 <li><code>Merge</code>: Whether the model is a merge of other models.</li>
@@ -1550,12 +1548,6 @@ the given model on each of the datasets.</p>
 <p>To read more about the individual datasets, see the <a href="/datasets">datasets</a> page. If
 you're interested in the methodology behind the benchmark, see the
 <a href="/methodology">methodology</a> page.</p>
-<div class="tabbed-set tabbed-alternate" data-tabs="1:2"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><input id="__tabbed_1_2" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="__tabbed_1_1">Generative Scatter Plot</label><label for="__tabbed_1_2">NLU Scatter Plot</label></div>
-<div class="tabbed-content">
-<div class="tabbed-block"></div>
-<div class="tabbed-block"></div>
-</div>
-</div>
 
 
 
