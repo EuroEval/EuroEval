@@ -16,6 +16,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   `--generative-type base` argument to be set, as the automatic detection will not work
   for these models.
 
+
+## [v16.0.1] - 2025-09-07
 ### Fixed
 - Fixed a bug causing encoders to fail when evaluating on the Exam-et dataset.
 - Previously we would abort an evaluation completely if the model outputted a single
