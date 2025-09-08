@@ -47,7 +47,9 @@ REQUIRED_CATEGORIES_TO_INDICES = {
     "--num-samples",
     "-n",
     default=10,
-    help=f"Number of samples to generate (default: {10})",
+    default=10,
+    show_default=True,
+    help="Number of samples to generate.",
 )
 def main(contract_path: Path, num_samples: int) -> None:
     """Create the legal completeness detection dataset and upload it to the HF Hub.
