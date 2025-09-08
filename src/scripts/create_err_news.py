@@ -17,7 +17,6 @@ import pandas as pd
 import requests
 from datasets import Dataset, DatasetDict, concatenate_datasets
 from huggingface_hub import HfApi
-from requests import HTTPError
 
 
 def main() -> None:
@@ -69,11 +68,7 @@ def main() -> None:
     )
 
     # Delete the existing dataset repository if it exists
-    try:
-        api = HfApi()
-        api.delete_repo(target_repo_id, repo_type="dataset")
-    except HTTPError:
-        pass
+    HfApi().delete_repo(target_repo_id, repo_type="dataset", missing_ok=True)
 
     # Push the dataset to the Hugging Face Hub
     new_ds.push_to_hub(target_repo_id, private=True)

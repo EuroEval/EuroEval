@@ -13,7 +13,6 @@ from typing import MutableMapping
 
 from datasets import DatasetDict, load_dataset
 from huggingface_hub import HfApi
-from requests import HTTPError
 
 
 def main() -> None:
@@ -49,12 +48,8 @@ def main() -> None:
     # retain only used columns
     ds = ds.select_columns(["text", "label"])
 
-    try:
-        api = HfApi()
-        api.delete_repo(target_repo_id, repo_type="dataset")
-    except HTTPError:
-        pass
-
+    # Push the dataset to the Hugging Face Hub
+    HfApi().delete_repo(target_repo_id, repo_type="dataset", missing_ok=True)
     ds.push_to_hub(target_repo_id, private=True)
 
 

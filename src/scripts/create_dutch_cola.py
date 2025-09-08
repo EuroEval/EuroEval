@@ -130,6 +130,8 @@ def main() -> None:
         test=Dataset.from_pandas(new_test_df, split=Split.TEST),
     )
 
+    HfApi().delete_repo(dataset_id, repo_type="dataset", missing_ok=True)
+
     dataset.push_to_hub(dataset_id, private=True)
 
 
