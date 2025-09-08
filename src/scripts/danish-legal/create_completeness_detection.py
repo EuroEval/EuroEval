@@ -189,7 +189,15 @@ def _renumber_section_title(section: str, new_number: int) -> str:
 
 
 def _sample_missing_categories(min_missing: int = 1, max_missing: int = 3) -> list[str]:
-    """Sample 1-3 categories to remove."""
+    """Sample 1-3 categories to remove.
+
+    Args:
+        min_missing: The minimum number of categories to remove
+        max_missing: The maximum number of categories to remove
+
+    Returns:
+        A list of categories to remove
+    """
     num_to_remove = random.randint(min_missing, max_missing)
     available_categories = [
         cat for cat, indices in REQUIRED_CATEGORIES_TO_INDICES.items() if indices
@@ -202,7 +210,16 @@ def _sample_missing_categories(min_missing: int = 1, max_missing: int = 3) -> li
 def _create_complete_contract(
     contract_sections: list[str], not_required_indices: list[int]
 ) -> dict:
-    """Create a complete contract by optionally removing only non-required sections."""
+    """Create a complete contract by optionally removing only non-required sections.
+
+    Args:
+        contract_sections: The contract as a list of sections
+        not_required_indices: list of indices to exclude
+
+    Returns:
+        A dictionary with the complete contract text, missing categories,
+        excluded indices, and is_complete
+    """
     # Optionally remove some non-required sections
     indices_to_exclude = {
         idx
@@ -232,7 +249,6 @@ def _create_incomplete_contract(
 
     Args:
         contract_sections: The contract as a list of sections
-        required_categories_to_indices: dictionary mapping categories to section indices
         not_required_indices: list of indices to exclude
 
     Returns:
