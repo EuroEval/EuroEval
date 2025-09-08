@@ -68,7 +68,7 @@ def main(contract_path: Path, num_samples: int) -> None:
     markdown = result.document.export_to_markdown()
 
     # Parse contract into sections
-    contract_sections = parse_contract_into_sections(markdown)
+    contract_sections = parse_contract_into_sections(markdown_text=markdown)
 
     # Get non-required indices
     not_required_indices = [
