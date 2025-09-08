@@ -176,7 +176,15 @@ def generate_unique_samples(
 
 
 def _renumber_section_title(section: str, new_number: int) -> str:
-    """Renumber a section's title from ## X. Title to ## new_number. Title."""
+    """Renumber a section's title from `## X. Title` to `## new_number. Title`.
+
+    Args:
+        section: The section to renumber
+        new_number: The new number to renumber the section to
+
+    Returns:
+        The renumbered section
+    """
     return re.sub(r"^## \d+\.", f"## {new_number}.", section)
 
 
