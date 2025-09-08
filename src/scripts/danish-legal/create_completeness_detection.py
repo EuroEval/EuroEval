@@ -7,6 +7,7 @@ from pathlib import Path
 
 import click
 import pandas as pd
+import tqdm
 from datasets import Dataset, DatasetDict, Split
 from docling.document_converter import DocumentConverter
 from huggingface_hub import HfApi
@@ -136,6 +137,9 @@ def generate_unique_samples(
     attempts = 0
     max_attempts = num_samples * 10
 
+    # Use tqdm to show progress
+    pbar = tqdm.tqdm(total=num_samples, desc="Generating unique samples")
+
     while len(samples) < num_samples and attempts < max_attempts:
         attempts += 1
 
@@ -170,11 +174,9 @@ def generate_unique_samples(
             }
 
             samples.append(sample)
-            logger.info(f"Generated unique sample {len(samples)}/{num_samples}")
-        else:
-            logger.debug(f"Duplicate contract detected, skipping (attempt {attempts})")
+            pbar.update(1)
 
-    logger.info(f"Generated {len(samples)} unique samples out of {attempts} attempts")
+    pbar.close()
     return samples
 
 
