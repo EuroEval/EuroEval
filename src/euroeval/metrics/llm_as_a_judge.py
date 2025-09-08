@@ -374,3 +374,98 @@ rejection_correctness_metric = LLMAsAJudgeMetric(
     response_format=ModelRefused,
     batch_scoring_fn=compute_rejection_correctness,
 )
+
+
+### Completeness Detection metric ###
+
+
+class CompletenessDetection(BaseModel):
+    """Response format for the completeness detection metric.
+
+    Attributes:
+        all_missings_categories_identified:
+            Whether the model has identified all the missing categories in the contract.
+    """
+
+    all_missings_categories_identified: bool
+
+
+def compute_f1_score(
+    outputs: list[BaseModel], dataset: "Dataset | None" = None
+) -> float:
+    """Compute the comleteness detection F1 score..
+
+    The F1 score is computed as the harmonic mean of the precision and recall:
+
+    1. Recall: The percentage of contracts with missing elements that the model
+        correctly identifies.
+    2. Precision: The percentage of identified incomplete contracts that are
+        actually incomplete.
+
+    Args:
+        outputs:
+            The outputs from the judge model, indicating whether the model
+            has identified all the missing categories in the contract or not.
+        dataset:
+            The dataset used for evaluation. This is required to get the ground
+            truth labels indicating whether the contract is complete or not.
+
+    Returns:
+        The F1 score.
+    """
+    if dataset is None:
+        raise ValueError(
+            "Dataset is required to compute F1 score for completeness detection"
+        )
+
+    contracts_with_missing_elements = [
+        outputs[i] for i in range(len(outputs)) if not dataset[i]["is_complete"]
+    ]
+    recall = sum(
+        not output.is_complete for output in contracts_with_missing_elements
+    ) / len(contracts_with_missing_elements)
+    identified_as_incomplete = [output for output in outputs if not output.is_complete]
+    precision = sum(
+        not dataset[i]["is_complete"] for i in range(len(identified_as_incomplete))
+    ) / len(identified_as_incomplete)
+
+    f1 = 2 * (precision * recall) / (precision + recall)
+    return f1
+
+
+completeness_detection_metric = LLMAsAJudgeMetric(
+    name="completeness_detection",
+    pretty_name="Completeness Detection",
+    judge_id="gpt-4.1",
+    judge_kwargs=dict(temperature=0.0),
+    user_prompt=(
+        "You are evaluating whether a language model correctly identified missing "
+        "sections in a contract.\n\n"
+        "**Task**: Determine if the model's response correctly identifies ALL missing "
+        "categories and ONLY the missing categories (there may not be any missing "
+        "categories).\n\n"
+        "**Ground Truth Missing Categories:**\n"
+        "{condition}\n\n"
+        "**Model's Response:**\n"
+        "{prediction}\n\n"
+        "**Evaluation Criteria:**\n"
+        "1. If there are no missing categories: The model should clearly state the "
+        "contract is complete/has all necessary elements\n"
+        "2. If there are missing categories: The model should identify ALL of them and "
+        "not identify any non-missing categories as missing\n"
+        "3. The model's response should be accurate regardless of how it phrases the "
+        "categories (synonyms/paraphrases are acceptable)\n\n"
+        "**Output Format:**\n"
+        "Respond with a JSON object:\n"
+        "{\n"
+        '    "all_missings_categories_identified": true/false,\n'
+        "}\n\n"
+        'Set "all_missings_categories_identified" to:\n'
+        "- **true** if the model correctly identified all missing categories (and no "
+        "false positives)\n"
+        "- **false** if the model missed any categories OR incorrectly identified "
+        "non-missing categories as missing"
+    ),
+    response_format=CompletenessDetection,
+    batch_scoring_fn=compute_f1_score,
+)

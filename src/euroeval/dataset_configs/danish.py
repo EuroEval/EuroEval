@@ -4,6 +4,7 @@ from ..data_models import DatasetConfig
 from ..languages import DA
 from ..tasks import (
     COMMON_SENSE,
+    COMPLETENESS_DETECTION,
     EUROPEAN_VALUES,
     KNOW,
     LA,
@@ -195,6 +196,16 @@ LEGAL_STAY_ON_TOPIC_CONFIG = DatasetConfig(
     pretty_name="the Danish legal benchmark dataset Stay on Topic",
     huggingface_id="EuroEval/legal-stay-on-topic",
     task=STAY_ON_TOPIC,
+    languages=[DA],
+    splits=["test"],
+    unofficial=True,
+)
+
+LEGAL_COMPLETENESS_DETECTION_CONFIG = DatasetConfig(
+    name="legal-completeness-detection",
+    pretty_name="the Danish legal benchmark dataset Completeness Detection",
+    huggingface_id="EuroEval/legal-completeness-detection",
+    task=COMPLETENESS_DETECTION,
     languages=[DA],
     splits=["test"],
     unofficial=True,
