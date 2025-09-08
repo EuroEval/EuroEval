@@ -23,6 +23,7 @@ SYSTEM_PROMPT = (
     "Identificer om følgende kontrakt er komplet eller om der mangler nogle elementer. "
     "Beskriv hvilke elementer der mangler."
 )
+SECTION_HEADER_PATTERN = r"^## \d+\."
 
 # Hardcoded mapping to the indices in `contract_sections`
 # for each category.
@@ -184,7 +185,7 @@ def _renumber_section_title(section: str, new_number: int) -> str:
     Returns:
         The renumbered section
     """
-    return re.sub(r"^## \d+\.", f"## {new_number}.", section)
+    return re.sub(SECTION_HEADER_PATTERN, f"## {new_number}.", section)
 
 
 def _sample_missing_categories(min_missing: int = 1, max_missing: int = 3) -> list[str]:
@@ -317,7 +318,7 @@ def _renumber_and_join_sections(sections: list[str]) -> str:
     section_counter = 1
 
     for section in sections:
-        if re.match(r"^## \d+\.", section):
+        if re.match(SECTION_HEADER_PATTERN, section):
             renumbered_section = _renumber_section_title(section, section_counter)
             section_counter += 1
         else:
