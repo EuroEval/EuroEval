@@ -189,7 +189,7 @@ def _renumber_section_title(section: str, new_number: int) -> str:
 
 
 def _sample_missing_categories(min_missing: int = 1, max_missing: int = 3) -> list[str]:
-    """Sample 1-3 categories to remove.
+    """Sample categories to exclude.
 
     Args:
         min_missing: The minimum number of categories to remove
