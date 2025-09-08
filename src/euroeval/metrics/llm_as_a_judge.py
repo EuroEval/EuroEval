@@ -393,7 +393,7 @@ class CompletenessDetection(BaseModel):
 def compute_f1_score(
     outputs: list[BaseModel], dataset: "Dataset | None" = None
 ) -> float:
-    """Compute the comleteness detection F1 score..
+    """Compute the completeness detection F1 score.
 
     The F1 score is computed as the harmonic mean of the precision and recall:
 
