@@ -319,7 +319,9 @@ def _renumber_and_join_sections(sections: list[str]) -> str:
 
     for section in sections:
         if re.match(SECTION_HEADER_PATTERN, section):
-            renumbered_section = _renumber_section_title(section, section_counter)
+            renumbered_section = _renumber_section_title(
+                section=section, new_number=section_counter
+            )
             section_counter += 1
         else:
             renumbered_section = section
