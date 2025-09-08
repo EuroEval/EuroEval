@@ -307,7 +307,7 @@ def debug_log(
                     for label in batch["label"]
                 ]
             else:
-                labels = ["N/A"] * len(extracted_labels)
+                labels = [None] * len(extracted_labels)
 
         case TaskGroup.QUESTION_ANSWERING:
             extracted_labels = [
@@ -333,9 +333,11 @@ def debug_log(
     for input_text, raw_output, prediction, label in zip(
         input_texts, model_output.sequences, extracted_labels, labels
     ):
-        logger.info(
+        output_text = (
             f"Input: '{input_text}'\n"
             f"Raw output: '{raw_output}'\n"
-            f"Prediction: '{prediction}'\n"
-            f"Label: '{label}'"
+            f"Prediction: '{prediction}'"
         )
+        if label is not None:
+            output_text += f"\nLabel: '{label}'"
+        logger.info(output_text)
