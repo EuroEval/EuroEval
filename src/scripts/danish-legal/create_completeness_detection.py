@@ -31,10 +31,6 @@ logger = logging.getLogger(__name__)
 # Constants
 COMPLETE_CONTRACT_PROBABILITY = 0.3
 NON_REQUIRED_REMOVAL_PROB = 0.3
-SYSTEM_PROMPT = (
-    "Identificer om følgende kontrakt er komplet eller om der mangler nogle elementer. "
-    "Beskriv hvilke elementer der mangler."
-)
 SECTION_HEADER_PATTERN = r"^## \d+\."
 
 # Hardcoded mapping to the indices in `contract_sections`
@@ -174,7 +170,7 @@ def generate_unique_samples(
             seen_contracts.add(contract_text)
 
             sample = {
-                "text": f"{SYSTEM_PROMPT}\n\n{contract_text}",
+                "text": contract_text,
                 "target_text": target_text,
                 "is_complete": contract["is_complete"],
                 "missing_categories": contract["missing_categories"],
