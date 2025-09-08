@@ -4,11 +4,10 @@ import logging
 import random
 import re
 from pathlib import Path
-from typing import Dict, List, Set
 
 import click
 import pandas as pd
-from datasets import Dataset, DatasetDict, Split
+from datasets import Dataset, Datasetdict, Split
 from docling.document_converter import DocumentConverter
 from huggingface_hub import HfApi
 from requests import HTTPError
@@ -84,7 +83,7 @@ def main(contract_path: Path, num_samples: int) -> None:
     )
 
     df = pd.DataFrame(samples)
-    dataset = DatasetDict(test=Dataset.from_pandas(df, split=Split.TEST))
+    dataset = Datasetdict(test=Dataset.from_pandas(df, split=Split.TEST))
 
     # Remove existing dataset if it exists
     dataset_id = "EuroEval/legal-completeness-detection"
@@ -98,7 +97,7 @@ def main(contract_path: Path, num_samples: int) -> None:
     dataset.push_to_hub(dataset_id, private=True)
 
 
-def parse_contract_into_sections(markdown_text: str) -> List[str]:
+def parse_contract_into_sections(markdown_text: str) -> list[str]:
     """Parse markdown into sections, excluding subsections with bullet points.
 
     Args:
@@ -114,19 +113,19 @@ def parse_contract_into_sections(markdown_text: str) -> List[str]:
 
 
 def generate_unique_samples(
-    contract_sections: List[str], not_required_indices: List[int], num_samples: int
-) -> List[Dict]:
+    contract_sections: list[str], not_required_indices: list[int], num_samples: int
+) -> list[dict]:
     """Generate unique contract samples.
 
     Args:
         contract_sections: The contract as a list of sections
-        not_required_indices: List of indices to exclude
+        not_required_indices: list of indices to exclude
         num_samples: Number of samples to generate
 
     Returns:
         A list of unique contract samples
     """
-    samples: List[Dict] = []
+    samples: list[dict] = []
     seen_contracts = set()
     attempts = 0
     max_attempts = num_samples * 10
@@ -178,7 +177,7 @@ def _renumber_section_title(section: str, new_number: int) -> str:
     return re.sub(r"^## \d+\.", f"## {new_number}.", section)
 
 
-def _sample_missing_categories(min_missing: int = 1, max_missing: int = 3) -> List[str]:
+def _sample_missing_categories(min_missing: int = 1, max_missing: int = 3) -> list[str]:
     """Sample 1-3 categories to remove."""
     num_to_remove = random.randint(min_missing, max_missing)
     available_categories = [
@@ -190,8 +189,8 @@ def _sample_missing_categories(min_missing: int = 1, max_missing: int = 3) -> Li
 
 
 def _create_complete_contract(
-    contract_sections: List[str], not_required_indices: List[int]
-) -> Dict:
+    contract_sections: list[str], not_required_indices: list[int]
+) -> dict:
     """Create a complete contract by optionally removing only non-required sections."""
     # Optionally remove some non-required sections
     indices_to_exclude = {
@@ -216,14 +215,14 @@ def _create_complete_contract(
 
 
 def _create_incomplete_contract(
-    contract_sections: List[str], not_required_indices: List[int]
-) -> Dict:
+    contract_sections: list[str], not_required_indices: list[int]
+) -> dict:
     """Create an incomplete contract by removing required and optional sections.
 
     Args:
         contract_sections: The contract as a list of sections
-        required_categories_to_indices: Dictionary mapping categories to section indices
-        not_required_indices: List of indices to exclude
+        required_categories_to_indices: dictionary mapping categories to section indices
+        not_required_indices: list of indices to exclude
 
     Returns:
         A dictionary with the incomplete contract text, missing categories,
@@ -262,11 +261,11 @@ def _create_incomplete_contract(
     }
 
 
-def _get_indices_to_exclude(missing_categories: List[str]) -> Set[int]:
+def _get_indices_to_exclude(missing_categories: list[str]) -> set[int]:
     """Get all section indices that should be excluded.
 
     Args:
-        missing_categories: List of categories to exclude
+        missing_categories: list of categories to exclude
 
     Returns:
         A set of section indices to exclude
@@ -277,11 +276,11 @@ def _get_indices_to_exclude(missing_categories: List[str]) -> Set[int]:
     return indices_to_exclude
 
 
-def _renumber_and_join_sections(sections: List[str]) -> str:
+def _renumber_and_join_sections(sections: list[str]) -> str:
     """Renumber sections and join them into a complete contract.
 
     Args:
-        sections: List of sections to renumber and join
+        sections: list of sections to renumber and join
 
     Returns:
         A string of the renumbered and joined sections
