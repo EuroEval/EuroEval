@@ -337,31 +337,6 @@ class VLLMModel(HuggingFaceEncoderModel):
             if end_of_chat_token:
                 stop_tokens.append(end_of_chat_token)
 
-        structured_generation_schema = None
-        if self.dataset_config.task.uses_structured_output:
-            if self.generative_type == GenerativeType.REASONING:
-                log_once(
-                    f"The model {self.model_config.model_id!r} is a reasoning model "
-                    "and thus does not support structured generation, so we do not "
-                    "enable it.",
-                    level=logging.DEBUG,
-                )
-            else:
-                ner_tag_names = list(self.dataset_config.prompt_label_mapping.values())
-                keys_and_their_types: dict[str, t.Any] = {
-                    tag_name: (conlist(str, max_length=5), ...)
-                    for tag_name in ner_tag_names
-                }
-                answer_format_class = create_model(
-                    "AnswerFormat", **keys_and_their_types
-                )
-                structured_generation_schema = answer_format_class.model_json_schema()
-                log_once(
-                    "Using structured generation with the JSON schema "
-                    f"{structured_generation_schema}",
-                    level=logging.DEBUG,
-                )
-
         # Get the mapping from labels to the first token in the label. We call this each
         # time we generate a new dataset since the dataset config can change
         self.buffer["first_label_token_mapping"] = get_first_label_token_mapping(
@@ -382,8 +357,29 @@ class VLLMModel(HuggingFaceEncoderModel):
                 "error was. Skipping this evaluation."
             )
 
-        # Define the guided decoding that we will use for structured generation
-        if structured_generation_schema is not None:
+        structured_generation_schema = None
+        if (
+            self.dataset_config.task.uses_structured_output
+            or (self.dataset_config.task.uses_logprobs and self.dataset_config.labels)
+        ) and self.generative_type == GenerativeType.REASONING:
+            guided_decoding = None
+            logger.debug(
+                "The dataset uses structured output, but we are not using it as the "
+                "model is a reasoning model."
+            )
+        elif self.dataset_config.task.uses_structured_output:
+            ner_tag_names = list(self.dataset_config.prompt_label_mapping.values())
+            keys_and_their_types: dict[str, t.Any] = {
+                tag_name: (conlist(str, max_length=5), ...)
+                for tag_name in ner_tag_names
+            }
+            answer_format_class = create_model("AnswerFormat", **keys_and_their_types)
+            structured_generation_schema = answer_format_class.model_json_schema()
+            log_once(
+                "Using structured generation with the JSON schema: "
+                f"{json.dumps(structured_generation_schema)}",
+                level=logging.DEBUG,
+            )
             guided_decoding = GuidedDecodingParams(json=structured_generation_schema)
         elif self.dataset_config.task.uses_logprobs and self.dataset_config.labels:
             guided_decoding = GuidedDecodingParams(
@@ -392,8 +388,17 @@ class VLLMModel(HuggingFaceEncoderModel):
                     for label in self.dataset_config.labels
                 ]
             )
+            log_once(
+                "Using structured generation with the choices: "
+                f"{guided_decoding.choice!r}.",
+                level=logging.DEBUG,
+            )
         else:
             guided_decoding = None
+            log_once(
+                "Not using structured generation as the dataset does not require it.",
+                level=logging.DEBUG,
+            )
 
         # Define the parameters used for vLLM generation
         max_tokens: int = (
@@ -439,6 +444,7 @@ class VLLMModel(HuggingFaceEncoderModel):
         # Generate sequences using vLLM
         input_is_a_test = len(prompts) == 1 and len(set(prompts[0])) == 1
         num_attempts = 3
+        truncation_attempts = 0
         for _ in range(num_attempts):
             try:
                 raw_outputs = self._model.generate(
@@ -466,12 +472,19 @@ class VLLMModel(HuggingFaceEncoderModel):
                         "Prompts are too long, so truncating them and trying again..."
                     )
                     logger.debug(f"The error message was: {str(e)}")
+
+                    # If we have already tried truncating the prompts a few times, then
+                    # we truncate a bit more aggressively
+                    extra_truncation = 50 * truncation_attempts
+                    truncation_attempts += 1
+
                     tokenized_prompts = self._tokeniser(
                         text=prompts,
                         truncation=True,
                         max_length=max(
                             min(self._tokeniser.model_max_length, MAX_CONTEXT_LENGTH)
-                            - max_tokens,
+                            - max_tokens
+                            - extra_truncation,
                             0,
                         ),
                     )

@@ -26,6 +26,27 @@ logger: logging.Logger = logging.getLogger("euroeval")
 T = t.TypeVar("T", bound=int | float | str | bool)
 
 
+class PreprocessingFunction(t.Protocol):
+    """A protocol for a preprocessing function."""
+
+    def __call__(
+        self, predictions: c.Sequence[int], dataset: "Dataset"
+    ) -> c.Sequence[int]:
+        """Preprocess the model predictions before they are passed to the pipeline.
+
+        Args:
+            predictions:
+                The model predictions.
+            dataset:
+                The dataset used for evaluation. This is only used in case any
+                additional metadata is used to compute the metrics.
+
+        Returns:
+            The preprocessed model predictions.
+        """
+        ...
+
+
 class PipelineMetric(Metric):
     """Load a scikit-learn pipeline and use it to get scores from the predictions."""
 
@@ -36,7 +57,7 @@ class PipelineMetric(Metric):
         pipeline_repo: str,
         pipeline_scoring_function: c.Callable[["Pipeline", c.Sequence], float],
         pipeline_file_name: str = "pipeline.pkl",
-        preprocessing_fn: c.Callable[[c.Sequence[T]], c.Sequence[T]] = lambda x: x,
+        preprocessing_fn: PreprocessingFunction | None = None,
         postprocessing_fn: c.Callable[[float], tuple[float, str]] | None = None,
     ) -> None:
         """Initialise the pipeline transform metric.
@@ -101,7 +122,10 @@ class PipelineMetric(Metric):
         """
         if self.pipeline is None:
             self.pipeline = self._download_pipeline()
-        predictions = self.preprocessing_fn(predictions)
+        if self.preprocessing_fn is not None:
+            predictions = self.preprocessing_fn(
+                predictions=predictions, dataset=dataset
+            )
         return self.pipeline_scoring_function(self.pipeline, predictions)
 
     def _download_pipeline(self) -> "Pipeline":
@@ -133,13 +157,18 @@ class PipelineMetric(Metric):
 ### European Values Metric ###
 
 
-def european_values_preprocessing_fn(predictions: c.Sequence[int]) -> c.Sequence[int]:
+def european_values_preprocessing_fn(
+    predictions: c.Sequence[int], dataset: "Dataset"
+) -> c.Sequence[int]:
     """Preprocess the model predictions for the European Values metric.
 
     Args:
         predictions:
             The model predictions, a sequence of integers representing the predicted
             choices for each question.
+        dataset:
+            The dataset used for evaluation. This is only used in case any additional
+            metadata is used to compute the metrics.
 
     Returns:
         The preprocessed model predictions, a sequence of integers representing the
@@ -153,6 +182,17 @@ def european_values_preprocessing_fn(predictions: c.Sequence[int]) -> c.Sequence
     """
     num_questions = 53
     num_phrasings_per_question = 5
+
+    # Convert the predictions to integers
+    integer_predictions = []
+    for prediction, idx_to_choice in zip(predictions, dataset["idx_to_choice"]):
+        idx_to_choice = {
+            int(idx): int(choice)
+            for idx, choice in idx_to_choice.items()
+            if choice is not None
+        }
+        integer_prediction = idx_to_choice[prediction]
+        integer_predictions.append(integer_prediction)
 
     assert len(predictions) % num_questions == 0, (
         f"The number of predictions ({len(predictions)}) is not a multiple of "
@@ -171,7 +211,7 @@ def european_values_preprocessing_fn(predictions: c.Sequence[int]) -> c.Sequence
         # Shape: (num_questions, num_phrasings_per_question)
         arr = np.array(
             [
-                predictions[i : i + num_phrasings_per_question]
+                integer_predictions[i : i + num_phrasings_per_question]
                 for i in range(0, len(predictions), num_phrasings_per_question)
             ]
         )
@@ -188,7 +228,7 @@ def european_values_preprocessing_fn(predictions: c.Sequence[int]) -> c.Sequence
         arr = np.apply_along_axis(lambda x: np.bincount(x).argmax(), axis=1, arr=arr)
 
         # Convert the array to a list
-        predictions = arr.tolist()
+        integer_predictions = arr.tolist()
 
     # Some of the questions are categorical and we're only interested in whether the
     # model chooses a specific choice or not. This mapping takes the question index
@@ -208,11 +248,13 @@ def european_values_preprocessing_fn(predictions: c.Sequence[int]) -> c.Sequence
     }
 
     # Map the predictions to the choices we're interested in
-    predictions = list(predictions)
+    integer_predictions = list(integer_predictions)
     for question_idx, choice in question_choices.items():
-        predictions[question_idx] = 1 if predictions[question_idx] == choice else 0
+        integer_predictions[question_idx] = (
+            1 if integer_predictions[question_idx] == choice else 0
+        )
 
-    return predictions
+    return integer_predictions
 
 
 def european_values_scoring_function(

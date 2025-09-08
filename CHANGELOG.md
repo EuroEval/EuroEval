@@ -7,6 +7,34 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 
 ## [Unreleased]
+
+- Add the knowledge dataset Trivia-et for Estonian. The dataset contains 800 trivia
+  questions about Estonia. In this version we rearrange the examples in
+  240 / 60 / 500 samples for training, validation and test splits, respectively.
+  It's marked as unofficial for now. This was contributed by @slowwavesleep ✨
+
+
+## [v16.0.1] - 2025-09-07
+### Fixed
+- Fixed a bug causing encoders to fail when evaluating on the Exam-et dataset.
+- Previously we would abort an evaluation completely if the model outputted a single
+  invalid output on a classification task. As individual samples rarely have a great
+  influence on the overall score, we now just assign the closest label to the sample and
+  continue the evaluation. This will be logged to the user, so that they are aware of
+  this. Some tasks are more sensitive to individual samples, such as European values,
+  where we still abort the evaluation if a single sample is invalid.
+- Fixed a bug where logprobs were not used for classification tasks when evaluating
+  generative models, due to the fact that we raised the number of generated tokens to 10
+  for such tasks. This did not affect the results, but it meant that some evaluations
+  failed.
+- Now includes FlashInfer as a dependency, as it is required by vLLM.
+- Changed the choices in European values to use letters, like the other multiple
+  choice tasks, rather than numbers. Aside from ensuring consistency, we also avoid the
+  issue where '10' and '1' often both have the same first token ('1'), causing us not to
+  be able to use logprobs to determine the answer.
+
+
+## [v16.0.0] - 2025-09-05
 ### Added
 - Added support for Polish 🇵🇱! This includes the reading comprehension dataset PoQuAD, the sentiment classification dataset PolEmo 2.0, and the linguistic acceptability dataset ScaLA-pl.
 - Added support for Latvian 🇱🇻! This includes the sentiment classification dataset
@@ -17,7 +45,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Added support for Estonian 🇪🇪! It includes the sentiment classification dataset
   Estonian Valence, the linguistic acceptability datasets Grammar-et and ScaLA-et, the
   named entity recognition dataset EstNER, the reading comprehension dataset
-  MultiWikiQA-et, the summarisation dataset ERRNews, the knowledge dataset Trivia-et,
+  MultiWikiQA-et, the summarisation dataset ERRNews, the knowledge dataset Exam-et,
   and the common-sense reasoning dataset Winogrande-et. This was contributed by
   @slowwavesleep ✨
 - It is now possible to evaluate how much a model adhere to European values! 🇪🇺 This
@@ -56,6 +84,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Now always uses the `multiprocessing` backend when evaluating vLLM models, rather than
   reverting to `ray` when using multiple GPUs, as `ray` led to evaluations of several
   models freezing.
+- Now does not require the user to be logged in to Hugging Face to benchmark models on
+  the Hugging Face Hub, if the models are public.
 
 ### Removed
 - Removed support for human evaluation, as it was not actively maintained and not used.
