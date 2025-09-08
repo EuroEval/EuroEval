@@ -1,3 +1,15 @@
+# /// script
+# requires-python = ">=3.10,<4.0"
+# dependencies = [
+#     "click==8.2.1",
+#     "datasets==3.5.0",
+#     "docling>=2.51.0",
+#     "huggingface-hub==0.24.0",
+#     "pandas==2.2.0",
+#     "tqdm>=4.0.0",
+# ]
+# ///
+
 """Create the legal completeness detection dataset."""
 
 import logging
