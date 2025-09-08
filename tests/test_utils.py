@@ -1,4 +1,4 @@
-"""Unit tests for the `utils` module."""
+"""Tests for the `utils` module."""
 
 import random
 
@@ -10,7 +10,7 @@ from euroeval.utils import enforce_reproducibility, scramble, unscramble
 
 
 class TestEnforceReproducibility:
-    """Unit tests for the `enforce_reproducibility` function."""
+    """Tests for the `enforce_reproducibility` function."""
 
     def test_random_arrays_not_equal(self) -> None:
         """Test that two random arrays are not equal."""

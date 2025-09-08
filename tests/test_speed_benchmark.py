@@ -1,4 +1,4 @@
-"""Unit tests for the `speed_benchmark` module."""
+"""Tests for the `speed_benchmark` module."""
 
 from typing import Generator
 
@@ -28,7 +28,7 @@ def model(
 
 
 class TestBenchmarkSpeed:
-    """Unit tests for the `benchmark_speed` function."""
+    """Tests for the `benchmark_speed` function."""
 
     @pytest.fixture(scope="class")
     def itr(self) -> Generator[tqdm, None, None]:

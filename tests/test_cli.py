@@ -1,4 +1,4 @@
-"""Unit tests for the `cli` module."""
+"""Tests for the `cli` module."""
 
 from typing import Generator
 
