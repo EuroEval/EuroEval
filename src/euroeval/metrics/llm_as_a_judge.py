@@ -432,34 +432,38 @@ completeness_detection_metric = LLMAsAJudgeMetric(
     pretty_name="Completeness Detection",
     judge_id="gpt-4.1",
     judge_kwargs=dict(temperature=0.0),
-    user_prompt=(
-        "You are evaluating whether a language model correctly identified missing "
-        "sections in a contract.\n\n"
-        "**Task**: Determine if the model's response correctly identifies ALL missing "
-        "categories and ONLY the missing categories (there may not be any missing "
-        "categories).\n\n"
-        "**Ground Truth Missing Categories:**\n"
-        "{condition}\n\n"
-        "**Model's Response:**\n"
-        "{prediction}\n\n"
-        "**Evaluation Criteria:**\n"
-        "1. If there are no missing categories: The model should clearly state the "
-        "contract is complete/has all necessary elements\n"
-        "2. If there are missing categories: The model should identify ALL of them and "
-        "not identify any non-missing categories as missing\n"
-        "3. The model's response should be accurate regardless of how it phrases the "
-        "categories (synonyms/paraphrases are acceptable)\n\n"
-        "**Output Format:**\n"
-        "Respond with a JSON object:\n"
-        "{\n"
-        '    "all_missings_categories_identified": true/false,\n'
-        "}\n\n"
-        'Set "all_missings_categories_identified" to:\n'
-        "- **true** if the model correctly identified all missing categories (and no "
-        "false positives)\n"
-        "- **false** if the model missed any categories OR incorrectly identified "
-        "non-missing categories as missing"
-    ),
+    user_prompt="""You are evaluating whether a language model correctly identified
+missing sections in a contract.
+
+**Task**: Determine if the model's response correctly identifies ALL missing
+categories and ONLY the missing categories (there may not be any missing
+categories).
+
+**Ground Truth Missing Categories:**
+{condition}
+
+**Model's Response:**
+{prediction}
+
+**Evaluation Criteria:**
+1. If there are no missing categories: The model should clearly state the
+   contract is complete/has all necessary elements
+2. If there are missing categories: The model should identify ALL of them and
+   not identify any non-missing categories as missing
+3. The model's response should be accurate regardless of how it phrases the
+   categories (synonyms/paraphrases are acceptable)
+
+**Output Format:**
+Respond with a JSON object:
+{
+    "all_missings_categories_identified": true/false,
+}
+
+Set "all_missings_categories_identified" to:
+- **true** if the model correctly identified all missing categories (and no
+  false positives)
+- **false** if the model missed any categories OR incorrectly identified
+  non-missing categories as missing""",
     response_format=CompletenessDetection,
     batch_scoring_fn=compute_f1_score,
 )
