@@ -116,8 +116,12 @@ def parse_contract_into_sections(markdown_text: str) -> list[str]:
     Returns:
         A list of sections
     """
+    # Split on section headers like "## 1. Tiltrædelse" but exclude subsections
+    # that have bullet points (indicated by a dash after double newlines).
+    # This pattern may be specific to docling's PDF parsing output and could
+    # change in future versions.
     sections = re.split(
-        r"(?=^## \d+\.\s+(?!.*\n\n-))", markdown_text, flags=re.MULTILINE
+        r"(?=^## \d+\.(?![^\n]*\n\n-))", markdown_text, flags=re.MULTILINE
     )
     return [section.strip() for section in sections if section.strip()]
 
