@@ -295,6 +295,79 @@ $ euroeval --model <model-id> --dataset squad
 ```
 
 
+### Unofficial: XQuAD-en
+
+This dataset was published in [this paper](https://aclanthology.org/2020.acl-main.421/)
+and contains 1190 question-answer pairs from [SQuAD
+v1.1](https://rajpurkar.github.io/SQuAD-explorer/) translated into ten languages by
+professional translators.
+
+The dataset is split intro 550 / 128 / 512 question-answer pairs for training,
+validation, and testing, respectively.
+
+Here are a few examples from the training split:
+
+```json
+{
+    "context": "Newcastle replaced him in January 1756 with Lord Loudoun, with Major General James Abercrombie as his second in command. Neither of these men had as much campaign experience as the trio of officers France sent to North America. French regular army reinforcements arrived in New France in May 1756, led by Major General Louis-Joseph de Montcalm and seconded by the Chevalier de Lévis and Colonel François-Charles de Bourlamaque, all experienced veterans from the War of the Austrian Succession. During that time in Europe, on May 18, 1756, England formally declared war on France, which expanded the war into Europe, which was later to be known as the Seven Years" War.",
+    "question": "Who led New France reinforcements in 1756?",
+    "answers": {
+        "answer_start": array([305], dtype=int32),
+        "text": array(["Major General Louis-Joseph de Montcalm"], dtype=object)
+    }
+}
+```
+```json
+{
+    "context": "Jacksonville is in the First Coast region of northeast Florida and is centered on the banks of the St. Johns River, about 25 miles (40 km) south of the Georgia state line and about 340 miles (550 km) north of Miami. The Jacksonville Beaches communities are along the adjacent Atlantic coast. The area was originally inhabited by the Timucua people, and in 1564 was the site of the French colony of Fort Caroline, one of the earliest European settlements in what is now the continental United States. Under British rule, settlement grew at the narrow point in the river where cattle crossed, known as Wacca Pilatka to the Seminole and the Cow Ford to the British. A platted town was established there in 1822, a year after the United States gained Florida from Spain; it was named after Andrew Jackson, the first military governor of the Florida Territory and seventh President of the United States.",
+    "question": "Prior to the arrival of the French, the area now known as Jacksonville was previously inhabited by what people?",
+    "answers": {
+        "answer_start": array([329], dtype=int32),
+        "text": array(["the Timucua"], dtype=object)
+    }
+}
+```
+```json
+{
+    "context": "Luther\"s hymns were frequently evoked by particular events in his life and the unfolding Reformation. This behavior started with his learning of the execution of Johann Esch and Heinrich Voes, the first individuals to be martyred by the Roman Catholic Church for Lutheran views, prompting Luther to write the hymn "Ein neues Lied wir heben an" ("A new song we raise"), which is generally known in English by John C. Messenger\"s translation by the title and first line "Flung to the Heedless Winds" and sung to the tune Ibstone composed in 1875 by Maria C. Tiddeman.",
+    "question": "What is the hymn known as in English?",
+    "answers": {
+        "answer_start": array([469], dtype=int32),
+        "text": array(["Flung to the Heedless Winds"], dtype=object)
+    }
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 4
+- Prefix prompt:
+  ```
+  The following are texts with accompanying questions and answers.
+  ```
+- Base prompt template:
+  ```
+  Text: {text}
+  Question: {question}
+  Answer in max 3 words:
+  ```
+- Instruction-tuned prompt template:
+  ```
+  Text: {text}
+
+  Answer the following question about the above text in at most 3 words.
+
+  Question: {question}
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+$ euroeval --model <model-id> --dataset xquad-en
+```
+
+
 ### Unofficial: BeleBele-en
 
 This dataset was published in [this paper](https://aclanthology.org/2024.acl-long.44/)

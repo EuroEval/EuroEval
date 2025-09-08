@@ -1,10 +1,10 @@
 # /// script
 # requires-python = ">=3.10,<4.0"
 # dependencies = [
-#     "datasets==2.15.0",
-#     "huggingface-hub==0.24.0",
+#     "datasets==4.0.0",
+#     "huggingface-hub==0.34.4",
+#     "requests==2.32.5",
 #     "pandas==2.2.0",
-#     "requests==2.32.3",
 # ]
 # ///
 
@@ -43,11 +43,8 @@ def main() -> None:
         lengths = df.context.str.len()
         df = df[lengths.between(MIN_NUM_CHARS_IN_CONTEXT, MAX_NUM_CHARS_IN_CONTEXT)]
 
-        # Rename answers to answer
-        df = df.rename(columns={"answers": "answer"})
-
         # Make splits
-        val_size = 128
+        val_size = 64
         test_size = 512
 
         val_df = df.sample(n=val_size, random_state=42)
