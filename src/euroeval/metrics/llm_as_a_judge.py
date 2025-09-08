@@ -418,19 +418,13 @@ def compute_f1_score(
             "Dataset is required to compute F1 score for completeness detection"
         )
 
-    contracts_with_missing_elements = [
-        outputs[i] for i in range(len(outputs)) if not dataset[i]["is_complete"]
-    ]
-    recall = sum(
-        not output.is_complete for output in contracts_with_missing_elements
-    ) / len(contracts_with_missing_elements)
-    identified_as_incomplete = [output for output in outputs if not output.is_complete]
-    precision = sum(
-        not dataset[i]["is_complete"] for i in range(len(identified_as_incomplete))
-    ) / len(identified_as_incomplete)
+    y_true: list[bool] = []
+    y_pred: list[bool] = []
+    for i, output in enumerate(outputs):
+        y_true.append(not dataset[i]["is_complete"])  # True if incomplete
+        y_pred.append(not output.is_complete)  # True if model predicted incomplete
 
-    f1 = 2 * (precision * recall) / (precision + recall)
-    return f1
+    return float(f1_score(y_true=y_true, y_pred=y_pred))
 
 
 completeness_detection_metric = LLMAsAJudgeMetric(
