@@ -95,7 +95,7 @@ def main(contract_path: Path, num_samples: int) -> None:
 
     # Remove existing dataset if it exists
     dataset_id = "EuroEval/legal-completeness-detection"
-    HfApi().delete_repo(dataset_id, repo_type="dataset", exists_ok=True)
+    HfApi().delete_repo(dataset_id, repo_type="dataset", missing_ok=True)
 
     # Upload dataset
     dataset.push_to_hub(dataset_id, private=True)
