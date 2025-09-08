@@ -18,8 +18,7 @@ logger = logging.getLogger(__name__)
 
 # Constants
 COMPLETE_CONTRACT_PROBABILITY = 0.3
-NON_REQUIRED_REMOVAL_PROB = 0.3  # For complete contracts
-OPTIONAL_REMOVAL_PROB = 0.4  # For incomplete contracts
+NON_REQUIRED_REMOVAL_PROB = 0.3
 SYSTEM_PROMPT = (
     "Identificer om følgende kontrakt er komplet eller om der mangler nogle elementer. "
     "Beskriv hvilke elementer der mangler."
@@ -265,7 +264,9 @@ def _create_incomplete_contract(
 
     # Optionally exclude some non-required sections too
     optional_indices_to_exclude = {
-        idx for idx in not_required_indices if random.random() < OPTIONAL_REMOVAL_PROB
+        idx
+        for idx in not_required_indices
+        if random.random() < NON_REQUIRED_REMOVAL_PROB
     }
 
     # Combine all exclusions
