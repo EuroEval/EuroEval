@@ -347,7 +347,8 @@ def safe_run(coroutine: t.Coroutine[t.Any, t.Any, T]) -> T:
     loop = asyncio.new_event_loop()
     try:
         asyncio.set_event_loop(loop)
-        return loop.run_until_complete(coroutine)
+        response = loop.run_until_complete(coroutine)
+        return response
     finally:
         loop.close()
         asyncio.set_event_loop(None)

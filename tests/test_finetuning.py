@@ -10,18 +10,6 @@ from euroeval.enums import DataType
 from euroeval.finetuning import get_training_args
 
 
-# TODO
-def test_finetune() -> None:
-    """Test that the `finetune` function works as expected."""
-    pass
-
-
-# TODO
-def test_finetune_single_iteration() -> None:
-    """Test that the `finetune_single_iteration` function works as expected."""
-    pass
-
-
 class TestGetTrainingArgs:
     """Test that the `get_training_args` function works as expected."""
 

@@ -296,19 +296,7 @@ def get_closest_logprobs_labels(
                     candidate_output_labels = {
                         candidate_label
                         for candidate_label in candidate_labels[idx]
-                        if candidate_label.startswith(generated_label)
-                    }
-
-                # If the generated label is a numeral (e.g., "1", "2", "3") and there is
-                # a matching candidate label, we only keep the full match
-                if re.match(r"^\d+$", generated_label) and any(
-                    candidate_label == generated_label
-                    for candidate_label in candidate_output_labels
-                ):
-                    candidate_output_labels = {
-                        candidate_label
-                        for candidate_label in candidate_output_labels
-                        if candidate_label == generated_label
+                        if candidate_label.startswith(generated_label.strip())
                     }
 
                 # If we can uniquely determine the output label, we break the loop.
@@ -357,19 +345,6 @@ def get_closest_logprobs_labels(
                         )
                         return None
 
-            # If we did not find any candidate label for any of the generated labels, we
-            # assume that something is wrong with the model output, and we fall back to
-            # using word edit distance to extract the labels
-            else:
-                log_once(
-                    f"No candidate label found for any of the generated labels "
-                    f"{generated_labels}. This means that using logprobs to extract "
-                    "the labels is not reliable, and we will instead fall back to "
-                    "extracting the labels using word edit distance.",
-                    level=logging.DEBUG,
-                )
-                return None
-
             if output_label is not None:
                 output_labels.append(output_label)
                 break
@@ -377,18 +352,20 @@ def get_closest_logprobs_labels(
             if len(sample) == 0:
                 log_once(
                     "The model outputted an empty string, so no candidate labels could "
-                    "be determined. Using the first label, "
-                    f"{candidate_labels[idx][0]!r}, as the output label.",
+                    "be determined. This means that using logprobs to extract the "
+                    "labels is not reliable, and we will instead fall back to "
+                    "extracting the labels using word edit distance.",
                     level=logging.INFO,
                 )
             else:
                 log_once(
-                    "Could not find a candidate label for any of the generated "
-                    f"labels in the sample {sample}. Using the first label, "
-                    f"{candidate_labels[idx][0]!r}, as the output label.",
+                    "No candidate label found for any of the generated labels, which "
+                    "means that using logprobs to extract the labels is not reliable, "
+                    "and we will instead fall back to extracting the labels using "
+                    "word edit distance.",
                     level=logging.INFO,
                 )
-            output_labels.append(candidate_labels[idx][0])
+            return None
 
     assert len(output_labels) == len(generation_logprobs)
     return output_labels

@@ -1,4 +1,4 @@
-"""Unit tests for the `tokenization_utils` module."""
+"""Tests for the `tokenization_utils` module."""
 
 import pytest
 from transformers.models.auto.tokenization_auto import AutoTokenizer

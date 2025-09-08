@@ -1,4 +1,4 @@
-"""Unit tests for the `benchmark_config_factory` module."""
+"""Tests for the `benchmark_config_factory` module."""
 
 from typing import Generator
 
