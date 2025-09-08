@@ -7,7 +7,7 @@ from pathlib import Path
 
 import click
 import pandas as pd
-from datasets import Dataset, Datasetdict, Split
+from datasets import Dataset, DatasetDict, Split
 from docling.document_converter import DocumentConverter
 from huggingface_hub import HfApi
 from requests import HTTPError
@@ -83,7 +83,7 @@ def main(contract_path: Path, num_samples: int) -> None:
     )
 
     df = pd.DataFrame(samples)
-    dataset = Datasetdict(test=Dataset.from_pandas(df, split=Split.TEST))
+    dataset = DatasetDict(test=Dataset.from_pandas(df, split=Split.TEST))
 
     # Remove existing dataset if it exists
     dataset_id = "EuroEval/legal-completeness-detection"
@@ -98,7 +98,13 @@ def main(contract_path: Path, num_samples: int) -> None:
 
 
 def parse_contract_into_sections(markdown_text: str) -> list[str]:
-    """Parse markdown into sections, excluding subsections with bullet points.
+    r"""Parse markdown into sections, excluding subsections with bullet points.
+
+    Splits on all sections as
+        `\n\n## 1. Tiltrædelse\n\n`
+
+    And does not split on subsection as
+        `\n\n## 1. Daglig administration\n\n-`
 
     Args:
         markdown_text: The markdown text of the contract
