@@ -21,6 +21,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   `--generative-type base` argument to be set, as the automatic detection will not work
   for these models.
 
+### Changed
+- Reduced the number of tokens used for reasoning models from 32,768 to 8,192, as models
+  reaching the full 32,768 tokens were because they ended up repeating themselves,
+  making the evaluation slower without any benefit.
+
 
 ## [v16.0.1] - 2025-09-07
 ### Fixed
