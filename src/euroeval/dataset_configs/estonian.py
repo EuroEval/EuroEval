@@ -47,13 +47,12 @@ ERR_NEWS_CONFIG = DatasetConfig(
     languages=[ET],
 )
 
-EXAM_ET_CONFIG = DatasetConfig(
-    name="exam-et",
-    pretty_name="the Estonian knowledge assessment dataset Exam-et",
-    huggingface_id="EuroEval/exam-et",
+TRIVIA_ET_CONFIG = DatasetConfig(
+    name="trivia-et",
+    pretty_name="the Estonian knowledge dataset Trivia-et",
+    huggingface_id="EuroEval/trivia-et",
     task=KNOW,
     languages=[ET],
-    _labels=["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o"],
 )
 
 WINOGRANDE_ET_CONFIG = DatasetConfig(
@@ -93,11 +92,12 @@ SCALA_ET_CONFIG = DatasetConfig(
     unofficial=True,
 )
 
-TRIVIA_ET_CONFIG = DatasetConfig(
-    name="trivia-et",
-    pretty_name="the Estonian knowledge dataset Trivia-et",
-    huggingface_id="EuroEval/trivia-et",
+EXAM_ET_CONFIG = DatasetConfig(
+    name="exam-et",
+    pretty_name="the Estonian knowledge assessment dataset Exam-et",
+    huggingface_id="EuroEval/exam-et",
     task=KNOW,
     languages=[ET],
+    _labels=["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o"],
     unofficial=True,
 )
