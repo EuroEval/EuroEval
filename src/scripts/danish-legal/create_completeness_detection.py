@@ -11,7 +11,6 @@ import tqdm
 from datasets import Dataset, DatasetDict, Split
 from docling.document_converter import DocumentConverter
 from huggingface_hub import HfApi
-from requests import HTTPError
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -88,11 +87,7 @@ def main(contract_path: Path, num_samples: int) -> None:
 
     # Remove existing dataset if it exists
     dataset_id = "EuroEval/legal-completeness-detection"
-    try:
-        api = HfApi()
-        api.delete_repo(dataset_id, repo_type="dataset")
-    except HTTPError:
-        pass
+    HfApi().delete_repo(dataset_id, repo_type="dataset", exists_ok=True)
 
     # Upload dataset
     dataset.push_to_hub(dataset_id, private=True)
