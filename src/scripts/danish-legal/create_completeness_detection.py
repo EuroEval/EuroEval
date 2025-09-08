@@ -47,7 +47,6 @@ REQUIRED_CATEGORIES_TO_INDICES = {
     "--num-samples",
     "-n",
     default=10,
-    default=10,
     show_default=True,
     help="Number of samples to generate.",
 )
