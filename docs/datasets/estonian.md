@@ -411,7 +411,7 @@ When evaluating generative models, we use the following setup (see the
   c. {option_c}
   d. {option_d}
 
-  Võimalikud vastused:  'a', 'b', 'c' or 'd'. Muud vastused ei ole lubatud.
+  Võimalikud vastused: 'a', 'b', 'c' or 'd'. Muud vastused ei ole lubatud.
   ```
 
 You can evaluate this dataset directly as follows:
