@@ -56,10 +56,6 @@ def main(contract_path: Path, num_samples: int) -> None:
 
     This script modifies the input contract to create a dataset of samples
     with complete and incomplete contracts.
-
-    Args:
-        contract_path: Path to the contract PDF file
-        num_samples: Number of samples to generate
     """
     # Load and process contract
     logger.info(f"Processing contract from {contract_path}")
