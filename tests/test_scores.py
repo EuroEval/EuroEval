@@ -1,4 +1,4 @@
-"""Unit tests for the `scores` module."""
+"""Tests for the `scores` module."""
 
 from typing import Generator
 
@@ -21,7 +21,7 @@ def scores(metric: Metric) -> Generator[list[dict[str, float]], None, None]:
 
 
 class TestAggregateScores:
-    """Unit tests for the `aggregate_scores` function."""
+    """Tests for the `aggregate_scores` function."""
 
     def test_scores(self, scores: list[dict[str, float]], metric: Metric) -> None:
         """Test that `aggregate_scores` works when scores are provided."""
@@ -43,7 +43,7 @@ class TestAggregateScores:
 
 
 class TestLogScores:
-    """Unit tests for the `log_scores` function."""
+    """Tests for the `log_scores` function."""
 
     @pytest.fixture(scope="class")
     def logged_scores(

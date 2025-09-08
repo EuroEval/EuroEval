@@ -31,7 +31,7 @@ from litellm.exceptions import (
 )
 from litellm.llms.vertex_ai.common_utils import VertexAIError
 from litellm.router import Router
-from litellm.types.utils import ChoiceLogprobs
+from litellm.types.utils import ChoiceLogprobs, Logprobs
 from litellm.utils import supports_reasoning, supports_response_schema
 from pydantic import conlist, create_model
 from requests.exceptions import RequestException
@@ -175,6 +175,15 @@ REASONING_MODELS = [
     r"(xai/)?grok-3-mini.*",
 ]
 
+BASE_DECODER_MODELS = [
+    r"gpt-3.5-turbo-instruct.*",
+    r"ada-[0-9]{3}",
+    r"babbage-[0-9]{3}",
+    r"curie-[0-9]{3}",
+    r"davinci-[0-9]{3}",
+    r"text-davinci-[0-9]{3}",
+]
+
 
 class LiteLLMModel(BenchmarkModule):
     """A generative model from LiteLLM."""
@@ -242,7 +251,9 @@ class LiteLLMModel(BenchmarkModule):
         Returns:
             The generative type of the model, or None if it has not been set yet.
         """
-        if self.is_ollama:
+        if self.benchmark_config.generative_type is not None:
+            type_ = self.benchmark_config.generative_type
+        elif self.is_ollama:
             reasoning_model = "thinking" in (self._ollama_show.capabilities or [])
             type_ = (
                 GenerativeType.REASONING
@@ -257,6 +268,10 @@ class LiteLLMModel(BenchmarkModule):
             pattern="|".join(REASONING_MODELS), string=self.model_config.model_id
         ):
             type_ = GenerativeType.REASONING
+        elif re.fullmatch(
+            pattern="|".join(BASE_DECODER_MODELS), string=self.model_config.model_id
+        ):
+            type_ = GenerativeType.BASE
         elif supports_reasoning(model=self.model_config.model_id):
             type_ = GenerativeType.REASONING
         else:
@@ -279,9 +294,20 @@ class LiteLLMModel(BenchmarkModule):
 
         Returns:
             The generated model outputs.
+
+        Raises:
+            InvalidBenchmark:
+                If the inputs do not contain either 'messages' or 'text' keys.
         """
-        assert "messages" in inputs, "The input must contain a 'messages' key."
-        conversations: list[list[litellm.AllMessageValues]] = inputs["messages"]
+        model_inputs: list[list[litellm.AllMessageValues] | str]
+        if "messages" in inputs:
+            model_inputs = inputs["messages"]
+        elif "text" in inputs:
+            model_inputs = inputs["text"]
+        else:
+            raise InvalidBenchmark(
+                "The inputs must contain either 'messages' or 'text' keys."
+            )
 
         # Get the mapping from labels to the first token in the label. We call this each
         # time we generate a new dataset since the dataset config can change
@@ -294,22 +320,22 @@ class LiteLLMModel(BenchmarkModule):
         )
 
         all_responses: dict[int, "ModelResponse"] = {}
-        conversations_to_run: list[tuple[int, list[litellm.AllMessageValues]]] = list(
-            enumerate(conversations)
+        inputs_to_run: list[tuple[int, list[litellm.AllMessageValues] | str]] = list(
+            enumerate(model_inputs)
         )
         for attempt in range(num_attempts := 10):
-            if not conversations_to_run:
+            if not inputs_to_run:
                 break
 
             generation_kwargs = self.generation_kwargs or self.get_generation_kwargs(
                 dataset_config=self.dataset_config
             )
 
-            batch_indices, batch_conversations = zip(*conversations_to_run)
+            batch_indices, batch_inputs = zip(*inputs_to_run)
             successes, failures = safe_run(
                 self._generate_async(
                     model_id=self.model_config.model_id,
-                    conversations=list(batch_conversations),
+                    inputs=list(batch_inputs),
                     **generation_kwargs,
                 )
             )
@@ -321,17 +347,17 @@ class LiteLLMModel(BenchmarkModule):
 
             # If all requests were successful, break
             if not failures:
-                conversations_to_run = []
+                inputs_to_run = []
                 break
 
             # Put the failed requests back in the queue to try again
-            conversations_to_run = [
-                (batch_indices[idx], conversations[batch_indices[idx]])
+            inputs_to_run = [
+                (batch_indices[idx], model_inputs[batch_indices[idx]])
                 for idx, _ in failures
             ]
             logger.debug(
                 f"Attempt {attempt + 1:,}/{num_attempts:,}: retrying "
-                f"{len(conversations_to_run):,} failed message(s)"
+                f"{len(inputs_to_run):,} failed message(s)"
             )
 
             # Attempt to handle the exceptions, to improve the chance of getting
@@ -349,14 +375,14 @@ class LiteLLMModel(BenchmarkModule):
             )
 
         # Extract the generations from the model output
-        ordered_responses = [all_responses[i] for i in range(len(conversations))]
+        ordered_responses = [all_responses[i] for i in range(len(model_inputs))]
         model_output = self._create_model_output(
             model_responses=ordered_responses, model_id=self.model_config.model_id
         )
 
-        if len(conversations) != len(model_output.sequences):
+        if len(model_inputs) != len(model_output.sequences):
             raise InvalidBenchmark(
-                f"Number of model inputs ({len(conversations):,}) does not match the "
+                f"Number of model inputs ({len(model_inputs):,}) does not match the "
                 f"number of model outputs ({len(model_output.sequences):,})."
             )
 
@@ -378,15 +404,23 @@ class LiteLLMModel(BenchmarkModule):
         model_id = self.model_config.model_id
 
         # Error messages that we want to catch and handle
-        stop_messages = ["stop_sequences", "'stop' is not supported with this model"]
+        stop_messages = [
+            "stop_sequences",
+            "'stop' is not supported with this model",
+            "'$.stop' is invalid",
+        ]
         logprobs_messages = [
             "you are not allowed to request logprobs",
             "you've reached the maximum number of requests with logprobs",
             "logprobs is not supported",
             "logprobs is not enabled",
         ]
+        top_logprobs_messages = ["got an unexpected keyword argument 'top_logprobs'"]
         logprobs_pattern = re.compile(
             r"does not support parameters: \[.*'top_logprobs'.*\]"
+        )
+        max_completion_tokens_pattern = re.compile(
+            r"does not support parameters: \[.*'max_completion_tokens'.*\]"
         )
         temperature_messages = [
             "'temperature' is not supported with this model.",
@@ -406,6 +440,9 @@ class LiteLLMModel(BenchmarkModule):
         )
         requires_thinking_disabled_messages = ["thinking.type: Field required"]
         seed_pattern = re.compile(r"does not support parameters: \[.*'seed'.*\]")
+        response_format_messages = [
+            "got an unexpected keyword argument 'response_format'"
+        ]
 
         if any(msg.lower() in error_msg for msg in stop_messages):
             log_once(
@@ -429,6 +466,24 @@ class LiteLLMModel(BenchmarkModule):
             )
             generation_kwargs.pop("logprobs", None)
             generation_kwargs.pop("top_logprobs", None)
+            return generation_kwargs
+        elif any(msg.lower() in error_msg for msg in top_logprobs_messages):
+            log_once(
+                f"The model {model_id!r} does not support the `top_logprobs` argument, "
+                "so moving the value to `logprobs`.",
+                level=logging.DEBUG,
+            )
+            generation_kwargs["logprobs"] = generation_kwargs.pop("top_logprobs", None)
+            return generation_kwargs
+        elif max_completion_tokens_pattern.search(string=error_msg):
+            log_once(
+                f"The model {model_id!r} does not support max_completion_tokens, so "
+                "disabling it.",
+                level=logging.DEBUG,
+            )
+            generation_kwargs["max_tokens"] = generation_kwargs.pop(
+                "max_completion_tokens", None
+            )
             return generation_kwargs
         elif any(msg.lower() in error_msg for msg in temperature_messages):
             log_once(
@@ -510,6 +565,14 @@ class LiteLLMModel(BenchmarkModule):
             )
             generation_kwargs.pop("seed", None)
             return generation_kwargs
+        elif any(msg.lower() in error_msg for msg in response_format_messages):
+            log_once(
+                f"The model {model_id!r} does not support the `response_format` "
+                "parameter, so disabling it.",
+                level=logging.DEBUG,
+            )
+            generation_kwargs.pop("response_format", None)
+            return generation_kwargs
         # If there are too many I/O connections, we increase the number of allowed file
         # descriptors
         elif "too many open files" in error_msg:
@@ -572,7 +635,7 @@ class LiteLLMModel(BenchmarkModule):
     async def _generate_async(
         self,
         model_id: str,
-        conversations: list[list[litellm.AllMessageValues]],
+        inputs: list[list[litellm.AllMessageValues] | str],
         **generation_kwargs,
     ) -> tuple[list[tuple[int, "ModelResponse"]], list[tuple[int, Exception]]]:
         """Generate outputs from the model asynchronously.
@@ -580,8 +643,8 @@ class LiteLLMModel(BenchmarkModule):
         Args:
             model_id:
                 The ID of the model to use for generation.
-            conversations:
-                The conversations to pass to the model.
+            inputs:
+                The inputs to pass to the model.
             **generation_kwargs:
                 Additional generation arguments to pass to the model.
 
@@ -604,15 +667,37 @@ class LiteLLMModel(BenchmarkModule):
         # Get the LLM generations asynchronously
         max_concurrent_calls = 20
         semaphore = asyncio.Semaphore(max_concurrent_calls)
-        requests = [
-            add_semaphore_and_catch_exception(
-                router.acompletion(
-                    model=model_id, messages=conversation, **generation_kwargs
-                ),
-                semaphore=semaphore,
-            )
-            for conversation in conversations
-        ]
+        if self.generative_type == GenerativeType.BASE:
+            if not all(isinstance(input_, str) for input_ in inputs):
+                raise InvalidBenchmark(
+                    "For base generative models, all inputs must be strings."
+                )
+            requests = [
+                add_semaphore_and_catch_exception(
+                    router.atext_completion(
+                        model=model_id, prompt=input_, **generation_kwargs
+                    ),
+                    semaphore=semaphore,
+                )
+                for input_ in inputs
+                if isinstance(input_, str)
+            ]
+        else:
+            if not all(isinstance(input_, list) for input_ in inputs):
+                raise InvalidBenchmark(
+                    "For instruction-tuned and reasoning generative models, all "
+                    "inputs must be lists of messages."
+                )
+            requests = [
+                add_semaphore_and_catch_exception(
+                    router.acompletion(
+                        model=model_id, messages=input_, **generation_kwargs
+                    ),
+                    semaphore=semaphore,
+                )
+                for input_ in inputs
+                if isinstance(input_, list)
+            ]
         responses = await tqdm_async.gather(*requests, leave=False)
 
         # Separate the successful responses from the failed ones
@@ -630,7 +715,10 @@ class LiteLLMModel(BenchmarkModule):
         # Close connections
         for request in requests:
             if hasattr(request, "close"):
-                request.close()
+                try:
+                    request.close()
+                except RuntimeError as e:
+                    logger.debug(f"RuntimeError during request.close(): {e}")
 
         return successes, failures
 
@@ -663,10 +751,18 @@ class LiteLLMModel(BenchmarkModule):
                 continue
 
             model_response_choices = model_response.choices[0]
-            assert isinstance(model_response_choices, litellm.Choices)
-            generated_message: litellm.Message = model_response_choices.message
-            generation_output = generated_message.content or ""
-            generation_output = generation_output.strip()
+
+            if isinstance(model_response_choices, litellm.Choices):
+                generated_message: litellm.Message = model_response_choices.message
+                generation_output = generated_message.content or ""
+                generation_output = generation_output.strip()
+            elif isinstance(model_response_choices, litellm.litellm.TextChoices):
+                generation_output = model_response_choices.text or ""
+            else:
+                raise InvalidBenchmark(
+                    "The model response choices must be of type Choices or "
+                    f"TextChoices. Got {type(model_response_choices)}."
+                )
 
             # In the case where we're dealing with a classification task, the model is
             # outputting a JSON dictionary, so we will extract the generated text from
@@ -687,40 +783,55 @@ class LiteLLMModel(BenchmarkModule):
 
             # Structure the model output as a GenerativeModelOutput object
             sequences.append(generation_output)
-            if hasattr(model_response_choices, "logprobs"):
+            if (
+                hasattr(model_response_choices, "logprobs")
+                and model_response_choices.logprobs is not None
+            ):
                 logprobs_obj = model_response_choices.logprobs
-                if isinstance(logprobs_obj, ChoiceLogprobs):
-                    logprobs_list: list[list[tuple[str, float]]] = [
-                        [
-                            (top_logprob.token, top_logprob.logprob)
-                            for top_logprob in content.top_logprobs
-                        ]
-                        for content in model_response_choices.logprobs.content or list()
-                    ]
 
-                    # If the model outputted a JSON dictionary, we need to find the
-                    # token index of the value within the dictionary, rather than the
-                    # first token of the entire output
-                    if generation_dct:
-                        key_name = next(iter(generation_dct.keys()))
-                        logprobs_list = [
-                            lst
-                            for lst in logprobs_list
-                            if (
-                                lst
-                                and lst[0]
-                                and (token := lst[0][0].strip(JSON_STRIP_CHARACTERS))
-                                and not key_name.startswith(token)
-                            )
-                        ]
-
-                    scores.append(logprobs_list)
-                else:
+                if not isinstance(logprobs_obj, (Logprobs, ChoiceLogprobs)):
                     log_once(
                         "The logprobs object is malformed, so we won't use logprobs to "
                         "determine the labels.",
                         level=logging.WARNING,
                     )
+                    continue
+
+                logprobs_list: list[list[tuple[str, float]]]
+                if isinstance(logprobs_obj, ChoiceLogprobs):
+                    logprobs_list = [
+                        [
+                            (top_logprob.token, top_logprob.logprob)
+                            for top_logprob in content.top_logprobs
+                        ]
+                        for content in logprobs_obj.content or list()
+                    ]
+                else:
+                    logprobs_list = [
+                        [
+                            (token, logprob)
+                            for token, logprob in (top_logprobs_dct or dict()).items()
+                        ]
+                        for top_logprobs_dct in logprobs_obj.top_logprobs or list()
+                    ]
+
+                # If the model outputted a JSON dictionary, we need to find the
+                # token index of the value within the dictionary, rather than the
+                # first token of the entire output
+                if generation_dct:
+                    key_name = next(iter(generation_dct.keys()))
+                    logprobs_list = [
+                        lst
+                        for lst in logprobs_list
+                        if (
+                            lst
+                            and lst[0]
+                            and (token := lst[0][0].strip(JSON_STRIP_CHARACTERS))
+                            and not key_name.startswith(token)
+                        )
+                    ]
+
+                scores.append(logprobs_list)
 
         if not sequences:
             logger.warning(
@@ -1207,7 +1318,7 @@ class LiteLLMModel(BenchmarkModule):
                 few_shot_examples=few_shot_examples,
                 model_config=self.model_config,
                 dataset_config=self.dataset_config,
-                instruction_model=True,
+                instruction_model=self.generative_type != GenerativeType.BASE,
                 always_populate_text_field=False,
                 tokeniser=None,
             ),
@@ -1338,14 +1449,18 @@ class LiteLLMModel(BenchmarkModule):
         # First attempt is a test run with a single conversation to handle errors
         # quickly. We repeat this multiple times to deal with different types of
         # errors, and stop if we get a successful response.
-        test_conversation: list[litellm.AllMessageValues] = [
-            litellm.ChatCompletionUserMessage(role="user", content="Test message")
-        ]
-        for _ in range(5):
+        test_input: list[litellm.AllMessageValues] | str
+        if self.generative_type == GenerativeType.BASE:
+            test_input = "Test message"
+        else:
+            test_input = [
+                litellm.ChatCompletionUserMessage(role="user", content="Test message")
+            ]
+        for _ in range(num_attempts := 10):
             _, failures = safe_run(
                 self._generate_async(
                     model_id=self.model_config.model_id,
-                    conversations=[test_conversation],
+                    inputs=[test_input],
                     **generation_kwargs,
                 )
             )
@@ -1355,6 +1470,11 @@ class LiteLLMModel(BenchmarkModule):
                 generation_kwargs = self._handle_exception(
                     error=error, **generation_kwargs
                 )
+        else:
+            raise InvalidModel(
+                "Failed to get a successful response from the model "
+                f"{self.model_config.model_id!r} after {num_attempts} attempts."
+            )
 
         return generation_kwargs
 

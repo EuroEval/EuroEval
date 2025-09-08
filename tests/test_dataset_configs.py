@@ -1,4 +1,4 @@
-"""Unit tests for the `dataset_configs` module."""
+"""Tests for the `dataset_configs` module."""
 
 from typing import Generator
 
@@ -9,7 +9,7 @@ from euroeval.dataset_configs import get_all_dataset_configs, get_dataset_config
 
 
 class TestGetAllDatasetConfigs:
-    """Unit tests for the `get_all_dataset_configs` function."""
+    """Tests for the `get_all_dataset_configs` function."""
 
     @pytest.fixture(scope="class")
     def dataset_configs(self) -> Generator[dict[str, DatasetConfig], None, None]:
@@ -31,7 +31,7 @@ class TestGetAllDatasetConfigs:
 
 
 class TestGetDatasetConfig:
-    """Unit tests for the `get_dataset_config` function."""
+    """Tests for the `get_dataset_config` function."""
 
     def test_get_angry_tweets_config(self) -> None:
         """Test that the angry tweets dataset config can be retrieved."""

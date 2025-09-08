@@ -1,4 +1,4 @@
-"""Unit tests for the `types` module."""
+"""Tests for the `types` module."""
 
 import pytest
 

@@ -1,4 +1,4 @@
-"""Unit tests for the `languages` module."""
+"""Tests for the `languages` module."""
 
 from typing import Generator
 
@@ -9,7 +9,7 @@ from euroeval.languages import get_all_languages
 
 
 class TestGetAllLanguages:
-    """Unit tests for the `get_all_languages` function."""
+    """Tests for the `get_all_languages` function."""
 
     @pytest.fixture(scope="class")
     def languages(self) -> Generator[dict[str, Language], None, None]:

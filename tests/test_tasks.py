@@ -1,4 +1,4 @@
-"""Unit tests for the `tasks` module."""
+"""Tests for the `tasks` module."""
 
 from typing import Generator
 
@@ -9,7 +9,7 @@ from euroeval.tasks import get_all_tasks
 
 
 class TestGetAllTasks:
-    """Unit tests for the `get_all_tasks` function."""
+    """Tests for the `get_all_tasks` function."""
 
     @pytest.fixture(scope="class")
     def tasks(self) -> Generator[dict[str, Task], None, None]:
