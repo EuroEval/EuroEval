@@ -65,13 +65,9 @@ def main() -> None:
         test=Dataset.from_pandas(test_df, split=Split.TEST),
     )
 
-    # Create dataset ID
-    mini_dataset_id = "EuroEval/mlsum-es-mini"
-
-    # Remove the dataset from Hugging Face Hub if it already exists
-    HfApi().delete_repo(dataset_id, repo_type="dataset", missing_ok=True)
-
     # Push the dataset to the Hugging Face Hub
+    mini_dataset_id = "EuroEval/mlsum-es-mini"
+    HfApi().delete_repo(mini_dataset_id, repo_type="dataset", missing_ok=True)
     dataset.push_to_hub(mini_dataset_id, private=True)
 
 
