@@ -116,7 +116,16 @@ def parse_contract_into_sections(markdown_text: str) -> List[str]:
 def generate_unique_samples(
     contract_sections: List[str], not_required_indices: List[int], num_samples: int
 ) -> List[Dict]:
-    """Generate unique contract samples."""
+    """Generate unique contract samples.
+
+    Args:
+        contract_sections: The contract as a list of sections
+        not_required_indices: List of indices to exclude
+        num_samples: Number of samples to generate
+
+    Returns:
+        A list of unique contract samples
+    """
     samples: List[Dict] = []
     seen_contracts = set()
     attempts = 0
