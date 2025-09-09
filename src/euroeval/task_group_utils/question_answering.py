@@ -58,9 +58,9 @@ class QuestionAnsweringTrainer(Trainer):
         )
 
         # Get the CLS token id for the tokeniser
-        if self.tokeniser is not None:
-            assert isinstance(self.tokeniser, PreTrainedTokenizerBase)
-            special_token_metadata = get_special_token_metadata(self.tokeniser)
+        if self.tokenizer is not None:
+            assert isinstance(self.tokenizer, PreTrainedTokenizerBase)
+            special_token_metadata = get_special_token_metadata(self.tokenizer)
             self.cls_token_id = special_token_metadata["cls_token_id"]
 
         # Set the label names

@@ -1,6 +1,6 @@
 [project]
 name = "EuroEval"
-version = "15.16.0.dev"
+version = "16.0.1.dev"
 description = "The robust European language model benchmark."
 readme = "README.md"
 authors = [
@@ -14,7 +14,7 @@ dependencies = [
     "torch>=2.6.0",
     "pandas>=2.2.0",
     "numpy>=2.0.0",
-    "transformers[mistral-common]>=4.55.0",
+    "transformers[mistral-common]>=4.56.0",
     "accelerate>=1.9.0",
     "evaluate>=0.4.1",
     "datasets>=3.5.0",
@@ -46,11 +46,13 @@ dependencies = [
 generative = [
     "bitsandbytes>=0.43.1; platform_system == 'Linux'",
     "vllm>=0.10.1; platform_system == 'Linux'",
+    "flashinfer-python>=0.3.1; platform_system == 'Linux'",
     "fbgemm-gpu>=1.0.0; platform_system == 'Linux'",
 ]
 all = [
     "bitsandbytes>=0.43.1; platform_system == 'Linux'",
     "vllm>=0.10.1; platform_system == 'Linux'",
+    "flashinfer-python>=0.3.1; platform_system == 'Linux'",
     "fbgemm-gpu>=1.0.0; platform_system == 'Linux'",
 ]
 

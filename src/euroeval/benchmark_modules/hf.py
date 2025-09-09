@@ -2,7 +2,6 @@
 
 import collections.abc as c
 import logging
-import os
 import typing as t
 from functools import cached_property, partial
 from json import JSONDecodeError
@@ -68,6 +67,7 @@ from ..utils import (
     block_terminal_output,
     create_model_cache_dir,
     get_class_by_name,
+    get_hf_token,
     internet_connection_available,
     log_once,
 )
@@ -139,9 +139,7 @@ class HuggingFaceEncoderModel(BenchmarkModule):
         Returns:
             The number of parameters in the model.
         """
-        token = (
-            self.benchmark_config.api_key or os.getenv("HUGGINGFACE_API_KEY") or True
-        )
+        token = get_hf_token(api_key=self.benchmark_config.api_key)
         hf_api = HfApi(token=token)
         try:
             repo_info = hf_api.model_info(
@@ -593,12 +591,12 @@ def load_model_and_tokeniser(
         config=config,
         ignore_mismatched_sizes=ignore_mismatched_sizes,
         revision=model_config.revision,
-        token=benchmark_config.api_key or os.getenv("HUGGINGFACE_API_KEY") or True,
+        token=get_hf_token(api_key=benchmark_config.api_key),
         cache_dir=model_config.model_cache_dir,
         trust_remote_code=benchmark_config.trust_remote_code,
-        torch_dtype=get_torch_dtype(
+        dtype=get_dtype(
             device=benchmark_config.device,
-            torch_dtype_is_set=config.to_dict().get("torch_dtype") is not None,
+            dtype_is_set=config.to_dict().get("dtype") is not None,
             bf16_available=(
                 torch.cuda.is_available() and torch.cuda.is_bf16_supported()
             ),
@@ -710,7 +708,7 @@ def get_model_repo_info(
     Returns:
         The information about the model, or None if the model could not be found.
     """
-    token = benchmark_config.api_key or os.getenv("HUGGINGFACE_API_KEY") or True
+    token = get_hf_token(api_key=benchmark_config.api_key)
     hf_api = HfApi(token=token)
     model_id, revision = model_id.split("@") if "@" in model_id else (model_id, "main")
 
@@ -788,12 +786,7 @@ def get_model_repo_info(
             level=logging.DEBUG,
         )
         if base_model_id is not None:
-            base_model_info = hf_api.model_info(
-                repo_id=base_model_id,
-                token=benchmark_config.api_key
-                or os.getenv("HUGGINGFACE_API_KEY")
-                or True,
-            )
+            base_model_info = hf_api.model_info(repo_id=base_model_id, token=token)
             tags += base_model_info.tags or list()
             tags = list(set(tags))
 
@@ -929,24 +922,23 @@ def load_tokeniser(
     return tokeniser
 
 
-def get_torch_dtype(
-    device: torch.device, torch_dtype_is_set: bool, bf16_available: bool
+def get_dtype(
+    device: torch.device, dtype_is_set: bool, bf16_available: bool
 ) -> str | torch.dtype:
     """Get the torch dtype, used for loading the model.
 
     Args:
         device:
             The device to use.
-        torch_dtype_is_set:
-            Whether the torch data type is set in the model configuration.
+            Whether the data type is set in the model configuration.
         bf16_available:
             Whether bfloat16 is available.
 
     Returns:
-        The torch dtype.
+        The dtype.
     """
     using_cuda = device == torch.device("cuda")
-    if using_cuda and torch_dtype_is_set:
+    if using_cuda and dtype_is_set:
         return "auto"
     elif using_cuda and bf16_available:
         return torch.bfloat16
@@ -999,7 +991,7 @@ def load_hf_model_config(
                 id2label=id2label,
                 label2id=label2id,
                 revision=revision,
-                token=api_key or os.getenv("HUGGINGFACE_API_KEY") or True,
+                token=get_hf_token(api_key=api_key),
                 trust_remote_code=trust_remote_code,
                 cache_dir=model_cache_dir,
             )

@@ -22,7 +22,6 @@ from constants import (
 )
 from datasets import Dataset, DatasetDict, Split
 from huggingface_hub import HfApi
-from requests import HTTPError
 
 
 def main() -> None:
@@ -33,13 +32,6 @@ def main() -> None:
     train_jsonl_url = f"{url_prefix}/mt/train.jsonl"
     val_jsonl_url = f"{url_prefix}/mt/val.jsonl"
     test_jsonl_url = f"{url_prefix}/post-edited/test.json"
-
-    # TODO: Temporary URL for the test split until this PR has been merged:
-    # https://github.com/LUMII-AILab/VTI-Data/pull/5
-    test_jsonl_url = (
-        "https://raw.githubusercontent.com/saattrupdan/VTI-Data/refs/heads/patch-1"
-        "/copa/post-edited/test.jsonl"
-    )
 
     # Load and prepare the dataframes
     train_df = load_and_prepare_dataframe(url=train_jsonl_url)
@@ -57,11 +49,7 @@ def main() -> None:
     dataset_id = "EuroEval/copa-lv"
 
     # Remove the dataset from Hugging Face Hub if it already exists
-    try:
-        api = HfApi()
-        api.delete_repo(dataset_id, repo_type="dataset")
-    except HTTPError:
-        pass
+    HfApi().delete_repo(dataset_id, repo_type="dataset", missing_ok=True)
 
     # Push the dataset to the Hugging Face Hub
     dataset.push_to_hub(dataset_id, private=True)

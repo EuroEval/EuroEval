@@ -16,6 +16,7 @@ from functools import cache
 from pathlib import Path
 
 import demjson3
+import huggingface_hub as hf_hub
 import litellm
 import numpy as np
 import requests
@@ -24,7 +25,7 @@ from datasets.utils import disable_progress_bar
 from requests.exceptions import RequestException
 from transformers import logging as tf_logging
 
-from .exceptions import NaNValueInModelOutput
+from .exceptions import InvalidBenchmark, NaNValueInModelOutput
 
 if t.TYPE_CHECKING:
     from types import TracebackType
@@ -93,21 +94,15 @@ def block_terminal_output() -> None:
     # Ignore miscellaneous warnings
     warnings.filterwarnings("ignore", category=UserWarning)
     warnings.filterwarnings("ignore", category=FutureWarning)
-    warnings.filterwarnings(
-        "ignore",
-        module="torch.nn.parallel*",
-        message="Was asked to gather along dimension 0, but all input tensors were "
-        "scalars; will instead unsqueeze and return a vector.",
-    )
-    warnings.filterwarnings("ignore", module="seqeval*")
     logging.getLogger("absl").setLevel(logging.CRITICAL)
 
     # Disable matplotlib logging
     logging.getLogger("matplotlib.font_manager").setLevel(logging.CRITICAL)
 
     # Disable PyTorch logging
-    logging.getLogger("torch.distributed.distributed_c10d").setLevel(logging.CRITICAL)
-    logging.getLogger("torch.nn.parallel.distributed").setLevel(logging.CRITICAL)
+    logging.getLogger("torch.utils.cpp_extension").setLevel(logging.CRITICAL)
+    warnings.filterwarnings(action="ignore", module="torch*")
+    os.environ["TORCH_LOGS"] = "-all"
 
     # Disable huggingface_hub logging
     logging.getLogger("huggingface_hub").setLevel(logging.CRITICAL)
@@ -137,6 +132,9 @@ def block_terminal_output() -> None:
     logging.getLogger("datasets").setLevel(logging.CRITICAL)
     logging.getLogger("filelock").setLevel(logging.CRITICAL)
     disable_progress_bar()
+
+    # Disable evaluate logging
+    warnings.filterwarnings("ignore", module="seqeval*")
 
     # Disable most of the `transformers` logging
     tf_logging._default_log_level = logging.CRITICAL
@@ -349,7 +347,8 @@ def safe_run(coroutine: t.Coroutine[t.Any, t.Any, T]) -> T:
     loop = asyncio.new_event_loop()
     try:
         asyncio.set_event_loop(loop)
-        return loop.run_until_complete(coroutine)
+        response = loop.run_until_complete(coroutine)
+        return response
     finally:
         loop.close()
         asyncio.set_event_loop(None)
@@ -416,3 +415,77 @@ def extract_json_dict_from_string(s: str) -> dict | None:
         )
         return None
     return json_output
+
+
+@cache
+def get_hf_token(api_key: str | None) -> str | bool:
+    """Get the Hugging Face token.
+
+    Args:
+        api_key:
+            The API key to use as the Hugging Face token. If None, we will try to
+            extract it in other ways.
+
+    Returns:
+        The Hugging Face token, or True if no token is set but the user is logged in, or
+        False if no token is set and the user is not logged in.
+    """
+    if api_key is not None:
+        log_once(
+            "Using the Hugging Face API key passed to the function.",
+            level=logging.DEBUG,
+        )
+        return api_key
+    elif (token := os.getenv("HUGGINGFACE_API_KEY")) is not None:
+        log_once(
+            "Using the Hugging Face API key from the environment variable "
+            "`HUGGINGFACE_API_KEY`.",
+            level=logging.DEBUG,
+        )
+        return token
+    try:
+        hf_hub.whoami()
+        log_once(
+            "No Hugging Face API key was set, but the user is logged in to Hugging "
+            "Face, so using the local token.",
+            level=logging.DEBUG,
+        )
+        return True
+    except hf_hub.errors.LocalTokenNotFoundError:
+        log_once(
+            "No Hugging Face API key was set and the user is not logged in to Hugging "
+            "Face, so no token will be used.",
+            level=logging.DEBUG,
+        )
+        return False
+
+
+def extract_multiple_choice_labels(
+    prompt: str, candidate_labels: list[str]
+) -> list[str]:
+    """Extract multiple choice labels from a prompt.
+
+    Args:
+        prompt:
+            The prompt to extract the labels from.
+        candidate_labels:
+            The candidate labels to look for in the prompt.
+
+    Returns:
+        The extracted labels.
+    """
+    sample_candidate_labels: list[str] = list()
+    for candidate_label in candidate_labels:
+        candidate_label_match = re.search(
+            pattern=rf"\b{candidate_label}\. ", string=prompt, flags=re.IGNORECASE
+        )
+        if candidate_label_match is not None:
+            sample_candidate_labels.append(candidate_label)
+    if not sample_candidate_labels:
+        raise InvalidBenchmark(
+            "Could not extract any candidate labels from the prompt. Please ensure "
+            "that the candidate labels are present in the prompt, each followed by a "
+            "dot and a space (e.g., 'a. '). The candidate labels are: "
+            f"{', '.join(candidate_labels)}. Here is the prompt: {prompt!r}"
+        )
+    return sample_candidate_labels

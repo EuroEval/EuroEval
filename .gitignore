@@ -34,7 +34,7 @@ var/
 pip-log.txt
 pip-delete-this-directory.txt
 
-# Unit test / coverage reports
+# Tests / coverage reports
 htmlcov/
 .tox/
 .coverage
@@ -118,4 +118,6 @@ docs/datasets/dataset_example_commands.txt
 
 # Various graphics
 gfx/euroeval-*.png
+gfx/euroeval-*.jpeg
+gfx/euroeval-*.jpg
 gfx/euroeval-*.xcf

@@ -13,7 +13,6 @@ from typing import MutableMapping
 
 from datasets import DatasetDict, load_dataset
 from huggingface_hub import HfApi
-from requests import HTTPError
 
 
 def main() -> None:
@@ -44,11 +43,7 @@ def main() -> None:
     ds = ds.map(convert_labels)
 
     # remove the dataset from Hugging Face Hub if it already exists
-    try:
-        api = HfApi()
-        api.delete_repo(target_repo_id, repo_type="dataset")
-    except HTTPError:
-        pass
+    HfApi().delete_repo(target_repo_id, repo_type="dataset", missing_ok=True)
 
     # push the dataset to the Hugging Face Hub
     ds.push_to_hub(target_repo_id, private=True)

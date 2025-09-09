@@ -1,4 +1,4 @@
-"""Unit tests for the `callbacks` module."""
+"""Tests for the `callbacks` module."""
 
 from dataclasses import dataclass
 from typing import Generator

@@ -18,7 +18,6 @@ import requests
 from constants import MAX_NUM_CHARS_IN_DOCUMENT, MIN_NUM_CHARS_IN_DOCUMENT  # noqa
 from datasets import Dataset, DatasetDict, Split
 from huggingface_hub import HfApi
-from requests import HTTPError
 from sklearn.model_selection import train_test_split
 
 logging.basicConfig(format="%(asctime)s ⋅ %(message)s", level=logging.INFO)
@@ -116,11 +115,7 @@ def main() -> None:
     dataset_id = "EuroEval/no-cola-mini"
 
     # Remove the dataset from Hugging Face Hub if it already exists
-    try:
-        api: HfApi = HfApi()
-        api.delete_repo(dataset_id, repo_type="dataset")
-    except HTTPError:
-        pass
+    HfApi().delete_repo(dataset_id, repo_type="dataset", missing_ok=True)
 
     # Push the dataset to the Hugging Face Hub
     dataset.push_to_hub(dataset_id, private=True)
