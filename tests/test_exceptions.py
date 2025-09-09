@@ -1,4 +1,4 @@
-"""Unit tests for the `exceptions` module."""
+"""Tests for the `exceptions` module."""
 
 import inspect
 

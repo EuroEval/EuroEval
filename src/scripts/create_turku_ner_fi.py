@@ -14,7 +14,6 @@ import pandas as pd
 import requests
 from datasets import Dataset, DatasetDict, Split
 from huggingface_hub import HfApi
-from requests import HTTPError
 
 LABEL_MAPS = {
     "B-PRO": "B-MISC",
@@ -63,16 +62,10 @@ def main() -> None:
         test=Dataset.from_pandas(test_df, split=Split.TEST),
     )
 
-    mini_dataset_id = "EuroEval/turku-ner-fi-mini"
-    # Remove the dataset from Hugging Face Hub if it already exists
-    try:
-        api = HfApi()
-        api.delete_repo(mini_dataset_id, repo_type="dataset")
-    except HTTPError:
-        pass
-
     # Push the dataset to the Hugging Face Hub
-    dataset.push_to_hub(mini_dataset_id, private=True)
+    dataset_id = "EuroEval/turku-ner-fi-mini"
+    HfApi().delete_repo(dataset_id, repo_type="dataset", missing_ok=True)
+    dataset.push_to_hub(dataset_id, private=True)
 
 
 def read_dataset() -> dict:

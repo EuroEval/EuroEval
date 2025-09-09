@@ -1,4 +1,4 @@
-"""Unit tests for the `model_loading` module."""
+"""Tests for the `model_loading` module."""
 
 import pytest
 import torch

@@ -89,6 +89,7 @@ def benchmark_config(
         api_base=None,
         api_version=None,
         gpu_memory_utilization=0.9,
+        generative_type=None,
         debug=False,
         run_with_cli=True,
         requires_safetensors=False,

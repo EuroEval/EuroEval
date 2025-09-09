@@ -14,7 +14,6 @@ import pandas as pd
 from constants import MAX_NUM_CHARS_IN_ARTICLE, MIN_NUM_CHARS_IN_ARTICLE
 from datasets import Dataset, DatasetDict, Split, load_dataset
 from huggingface_hub import HfApi
-from requests import HTTPError
 
 
 def main() -> None:
@@ -65,18 +64,10 @@ def main() -> None:
         test=Dataset.from_pandas(test_df, split=Split.TEST),
     )
 
-    # Create dataset ID
-    mini_dataset_id = "EuroEval/nordjylland-news-mini"
-
-    # Remove the dataset from Hugging Face Hub if it already exists
-    try:
-        api: HfApi = HfApi()
-        api.delete_repo(mini_dataset_id, repo_type="dataset")
-    except HTTPError:
-        pass
-
+    dataset_id = "EuroEval/nordjylland-news-mini"
     # Push the dataset to the Hugging Face Hub
-    dataset.push_to_hub(mini_dataset_id, private=True)
+    HfApi().delete_repo(dataset_id, repo_type="dataset", missing_ok=True)
+    dataset.push_to_hub(dataset_id, private=True)
 
 
 if __name__ == "__main__":

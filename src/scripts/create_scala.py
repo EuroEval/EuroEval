@@ -23,7 +23,6 @@ from datasets.dataset_dict import DatasetDict
 from huggingface_hub.hf_api import HfApi
 from load_ud_pos import load_pldt_pos
 from pandas.errors import SettingWithCopyWarning
-from requests.exceptions import HTTPError
 from tqdm.auto import tqdm
 
 
@@ -143,17 +142,9 @@ def main() -> None:
                 train=train, val=val, test=test, full_train=full_train
             )
 
-            # Create dataset ID
-            dataset_id = f"EuroEval/scala-{lang}"
-
-            # Remove the dataset from Hugging Face Hub if it already exists
-            try:
-                api = HfApi()
-                api.delete_repo(dataset_id, repo_type="dataset")
-            except HTTPError:
-                pass
-
             # Push the dataset to the Hugging Face Hub
+            dataset_id = f"EuroEval/scala-{lang}"
+            HfApi().delete_repo(dataset_id, repo_type="dataset", missing_ok=True)
             dataset.push_to_hub(dataset_id, private=True)
 
 

@@ -217,7 +217,7 @@ def european_values_preprocessing_fn(
         )
 
         # Double check that we reshaped the predictions correctly
-        for idx, pred in enumerate(predictions):
+        for idx, pred in enumerate(integer_predictions):
             assert arr[idx // 5, idx % 5] == pred, (
                 f"Reshaped predictions do not match the original predictions at index "
                 f"{idx}: {arr[idx // 5, idx % 5]} != {pred}."

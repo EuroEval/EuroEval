@@ -8,7 +8,7 @@ import torch
 
 from .data_models import BenchmarkConfig
 from .dataset_configs import get_all_dataset_configs
-from .enums import Device
+from .enums import Device, GenerativeType
 from .exceptions import InvalidBenchmark
 from .languages import get_all_languages
 from .tasks import SPEED, get_all_tasks
@@ -43,6 +43,7 @@ def build_benchmark_config(
     api_base: str | None,
     api_version: str | None,
     gpu_memory_utilization: float,
+    generative_type: GenerativeType | None,
     debug: bool,
     run_with_cli: bool,
     requires_safetensors: bool,
@@ -107,6 +108,9 @@ def build_benchmark_config(
             faster evaluation, but at the risk of running out of GPU memory. Only reduce
             this if you are running out of GPU memory. Only relevant if the model is
             generative.
+        generative_type:
+            The type of generative model. Only relevant if the model is generative. If
+            not specified, the type will be inferred automatically.
         debug:
             Whether to run the benchmark in debug mode.
         run_with_cli:
@@ -157,6 +161,7 @@ def build_benchmark_config(
         api_base=api_base,
         api_version=api_version,
         gpu_memory_utilization=gpu_memory_utilization,
+        generative_type=generative_type,
         debug=debug,
         run_with_cli=run_with_cli,
         requires_safetensors=requires_safetensors,

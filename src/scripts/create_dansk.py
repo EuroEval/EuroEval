@@ -15,7 +15,6 @@ from dataclasses import dataclass
 import pandas as pd
 from datasets import Dataset, DatasetDict, Split, load_dataset
 from huggingface_hub import HfApi
-from requests import HTTPError
 
 
 @dataclass
@@ -177,11 +176,7 @@ def main() -> None:
     dataset_id = "EuroEval/dansk-mini"
 
     # Remove the dataset from Hugging Face Hub if it already exists
-    try:
-        api = HfApi()
-        api.delete_repo(dataset_id, repo_type="dataset")
-    except HTTPError:
-        pass
+    HfApi().delete_repo(dataset_id, repo_type="dataset", missing_ok=True)
 
     # Push the dataset to the Hugging Face Hub
     dataset.push_to_hub(dataset_id, private=True)
