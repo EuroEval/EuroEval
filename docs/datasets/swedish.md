@@ -573,10 +573,9 @@ $ euroeval --model <model-id> --dataset arc-sv
 
 This dataset contains data from six Swedish knowledge tests and was published at [this HuggingFace repository](https://huggingface.co/datasets/Ekgren/swedish_skolprov). The dataset features multiple-choice questions from official Swedish examinations including the Swedish Scholastic Aptitude Test (högskoleprovet), medical doctor test (kunskapsprov läkare), dentist test (kunskapsprov tandläkare), audiologist test (kunskapsprov audionom), pharmacist test (kunskapsprov apotekare), and mathematics and physics test (matematik och fysikprovet).
 
-The original dataset consists of 545 samples, which we filter down to 512 samples. We use a 192 / 64 / 256 split for training, validation and testing, respectively.
+The original dataset consists of 545 samples, which we filter down to 512 samples. We use a 32 / 480 split for training and testing, respectively.
 
 Here are a few examples from the training split:
-
 
 ```json
 {
