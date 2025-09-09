@@ -444,7 +444,7 @@ class Benchmarker:
 
                 # Skip if the model type should not be benchmarked on this dataset
                 model_type = model_config.model_type
-                allowed_model_types = dataset_config.task.allowed_model_types
+                allowed_model_types = dataset_config.allowed_model_types
                 if model_type not in allowed_model_types:
                     logger.debug(
                         f"Skipping benchmarking {model_id} on "

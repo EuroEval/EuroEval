@@ -118,14 +118,14 @@ class Task:
             log probabilities for the generated tokens. Defaults to False.
         requires_logprobs (optional):
             Whether the task requires log probabilities. Implies `uses_logprobs`.
-        allowed_model_types (optional):
+        default_allowed_model_types (optional):
             A list of model types that are allowed to be evaluated on this task.
             Defaults to all model types being allowed.
-        allowed_generative_types (optional):
+        default_allowed_generative_types (optional):
             A list of generative model types that are allowed to be evaluated on this
             task. If None, all generative model types are allowed. Only relevant if
             `allowed_model_types` includes generative models.
-        allow_invalid_model_outputs (optional):
+        default_allow_invalid_model_outputs (optional):
             Whether to allow invalid model outputs. This is only relevant for generative
             models on classification tasks, where the model may generate an output
             which is not one of the allowed labels. If True, the model output will be
@@ -144,17 +144,17 @@ class Task:
     uses_structured_output: bool = False
     uses_logprobs: bool = False
     requires_logprobs: bool = False
-    allowed_model_types: list[ModelType] = field(
+    default_allowed_model_types: list[ModelType] = field(
         default_factory=lambda: [ModelType.ENCODER, ModelType.GENERATIVE]
     )
-    allowed_generative_types: list[GenerativeType] = field(
+    default_allowed_generative_types: list[GenerativeType] = field(
         default_factory=lambda: [
             GenerativeType.BASE,
             GenerativeType.INSTRUCTION_TUNED,
             GenerativeType.REASONING,
         ]
     )
-    allow_invalid_model_outputs: bool = True
+    default_allow_invalid_model_outputs: bool = True
 
     def __post_init__(self) -> None:
         """Post-initialisation checks."""
@@ -407,6 +407,21 @@ class DatasetConfig:
             to a 1:1 mapping between the labels and themselves. If None then the mapping
             will be set to the default mapping for the task and language. Defaults to
             None.
+        _allowed_model_types (optional):
+            A list of model types that are allowed to be evaluated on this dataset.
+            Defaults to the one for the task.
+        _allowed_generative_types (optional):
+            A list of generative model types that are allowed to be evaluated on this
+            dataset. If None, all generative model types are allowed. Only relevant if
+            `allowed_model_types` includes generative models. Defaults to the one for
+            the task.
+        _allow_invalid_model_outputs (optional):
+            Whether to allow invalid model outputs. This is only relevant for
+            generative models on classification tasks, where the model may generate an
+            output which is not one of the allowed labels. If True, the model output
+            will be mapped to the closest valid label. If False, the model output will
+            be considered incorrect and the evaluation will be aborted. Defaults to
+            the one for the task.
         splits (optional):
             The names of the splits in the dataset. If not provided, defaults to
             ["train", "val", "test"].
@@ -428,6 +443,9 @@ class DatasetConfig:
     _max_generated_tokens: int | None = None
     _labels: list[str] | None = None
     _prompt_label_mapping: dict[str, str] | t.Literal["auto"] | None = None
+    _allowed_model_types: list[ModelType] | None = None
+    _allowed_generative_types: list[GenerativeType] | None = None
+    _allow_invalid_model_outputs: bool | None = None
     splits: list[str] = field(default_factory=lambda: ["train", "val", "test"])
     bootstrap_samples: bool = True
     unofficial: bool = False
@@ -506,6 +524,33 @@ class DatasetConfig:
             return {label: label for label in self.labels}
         else:
             return prompt_config.default_prompt_label_mapping
+
+    @property
+    def allowed_model_types(self) -> list[ModelType]:
+        """A list of model types that are allowed to be evaluated on this dataset."""
+        return (
+            self._allowed_model_types
+            if self._allowed_model_types is not None
+            else self.task.default_allowed_model_types
+        )
+
+    @property
+    def allowed_generative_types(self) -> list[GenerativeType]:
+        """A list of generative model types that are allowed on this dataset."""
+        return (
+            self._allowed_generative_types
+            if self._allowed_generative_types is not None
+            else self.task.default_allowed_generative_types
+        )
+
+    @property
+    def allow_invalid_model_outputs(self) -> bool:
+        """Whether to allow invalid model outputs."""
+        return (
+            self._allow_invalid_model_outputs
+            if self._allow_invalid_model_outputs is not None
+            else self.task.default_allow_invalid_model_outputs
+        )
 
     @property
     def id2label(self) -> dict[int, str]:
