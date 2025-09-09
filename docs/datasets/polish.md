@@ -338,9 +338,9 @@ $ euroeval --model <model-id> --dataset llmzszl
 
 ## Summarization
 
-### PSC (Polish Summaries Corpus)
+### PSC
 
-This dataset was published in [this paper](https://aclanthology.org/L14-1145/) and is a resource created for automated single-document summarization of Polish. The corpus contains manual summaries of news articles, with multiple independently created summaries for single texts to overcome annotator bias. It includes both abstract free-word summaries and extraction-based summaries created by selecting text spans from the original documents.
+The Polish Summaries Corpus (PSC) was published in [this paper](https://aclanthology.org/L14-1145/) and is a resource created for automated single-document summarization of Polish. The corpus contains manual summaries of news articles, with multiple independently created summaries for single texts to overcome annotator bias. It includes both abstract free-word summaries and extraction-based summaries created by selecting text spans from the original documents.
 
 The original dataset consists only of a training split. We use 1,024 / 256 / 2,048 samples for our training, validation and test splits, respectively. All splits are subsets of the original training data, with the validation and test splits sampled from the original training set.
 
