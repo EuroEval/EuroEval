@@ -383,11 +383,17 @@ class CompletenessDetection(BaseModel):
     """Response format for the completeness detection metric.
 
     Attributes:
-        all_missings_categories_identified:
-            Whether the model has identified all the missing categories in the contract.
+        identified_missing_categories:
+            Return a list of tuples with the elements the LLM has
+            identified as missing in the contract. Each tuple contains
+            (description, integer_id) where:
+            - description is the missing element description
+            - integer_id is the ground truth ID (1, 2, 3, etc.) if the element
+              matches a ground truth missing element, or -1 if it doesn't match
+              any ground truth missing element.
     """
 
-    all_missings_categories_identified: bool
+    identified_missing_categories: list[tuple[str, int]]
 
 
 def compute_f1_score(
@@ -432,12 +438,11 @@ completeness_detection_metric = LLMAsAJudgeMetric(
     pretty_name="Completeness Detection",
     judge_id="gpt-4.1",
     judge_kwargs=dict(temperature=0.0),
-    user_prompt="""You are evaluating whether a language model correctly identified
-missing sections in a contract.
+    user_prompt="""You are evaluating a language model's response about missing
+elements in a contract.
 
-**Task**: Determine if the model's response correctly identifies ALL missing
-categories and ONLY the missing categories (there may not be any missing
-categories).
+**Task**: Identify what elements the language model claimed were missing, and
+map each to the corresponding ground truth missing element ID.
 
 **Ground Truth Missing Categories:**
 {condition}
@@ -445,18 +450,24 @@ categories).
 **Model's Response:**
 {prediction}
 
-**Evaluation Criteria:**
-1. If there are no missing categories: The model should clearly state the
-   contract is complete/has all necessary elements
-2. If there are missing categories: The model should identify ALL of them and
-   not identify any non-missing categories as missing
-3. The model's response should be accurate regardless of how it phrases the
-   categories (synonyms/paraphrases are acceptable)
+**Instructions:**
+1. Carefully read the model's response and extract ALL elements/categories
+   that the model identified as missing
+2. For each element the model identified as missing:
+   - If it matches a ground truth missing element (using reasonable
+     interpretation - synonyms/paraphrases are acceptable), assign it the
+     corresponding integer ID (1, 2, 3, etc. as shown in the ground truth)
+   - If it does not match any ground truth missing element, assign it -1
+3. If the model stated the contract is complete (no missing elements),
+   return an empty list
 
-You should output a JSON object with a single key "all_missings_categories_identified"
-that is True if the model correctly identified all missing categories (and no false
-positives), and False if the model missed any categories OR incorrectly identified
-non-missing categories as missing.""",
+You should output a JSON object with the key "identified_missing_categories"
+containing a list of tuples where:
+- Each tuple contains: [element description, integer ID]
+- Element description: the element/category the model identified as missing
+  (use the model's exact wording or a clear paraphrase)
+- Integer ID: the ground truth ID (1, 2, 3, etc.) if it matches a ground
+  truth element, or -1 if it doesn't match any ground truth element""",
     response_format=CompletenessDetection,
     batch_scoring_fn=compute_f1_score,
 )

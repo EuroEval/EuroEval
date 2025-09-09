@@ -34,17 +34,26 @@ NON_REQUIRED_REMOVAL_PROB = 0.3
 SECTION_HEADER_PATTERN = r"^## \d+\."
 
 # Hardcoded mapping to the indices in `contract_sections`
-# for each category.
-REQUIRED_CATEGORIES_TO_INDICES = {
-    "Partner/Identitet": [0],
-    "Arbejdstid": [6],
-    "Ansvarsområde": [2],
-    "Ansættelse": [1],
-    "Ferie/Fravær": [7, 8, 10, 11, 12, 13],
-    "Ophør/Opsigelse": [17],
-    "Løn/Vederlag": [3, 4, 5],
-    "Klausuler": [18],
-    "Personale vilkår": [9],
+# for each category/element description
+# We only keep the legally required elements
+REQUIRED_ELEMENTS_TO_INDICES = {
+    "Manglende angivelse af virksomhedens navn": [0],  # Partner/Identitet
+    "Manglende angivelse af arbejdsstedets beliggenhed eller hvor arbejdet udføres": [
+        6
+    ],  # Arbejdstid
+    "Manglende angivelse af den ansattes arbejdstid og rådighed": [14],  # Arbejdstid
+    "Manglende beskrivelse af medarbejderes stilling, tittel, rang eller "
+    "jobkategori.": [2],  # Ansvarsområde
+    "Manglende angivelse af ansættelsesforholdets begyndelses tidspunkt": [
+        1
+    ],  # Ansættelse
+    "Manglende vilkår for opsigelse med varsler fra både ansatte og virksomhed": [
+        17
+    ],  # Ophør/Opsigelse
+    "Manglende angivelse af ansattes løn, vederlag og tillæg": [3],  # Løn/Vederlag
+    "Manglende angivelse af hvilke bidrag til social sikring, som er knyttet til "
+    "ansættelsesforholdet": [5],  # Løn/Vederlag
+    "Manglende angivelse af retten til efteruddannelse": [9],  # Personale vilkår
 }
 
 
@@ -79,7 +88,7 @@ def main(contract_path: Path, num_samples: int) -> None:
     not_required_indices = [
         i
         for i in range(len(contract_sections))
-        if not any(i in indices for indices in REQUIRED_CATEGORIES_TO_INDICES.values())
+        if not any(i in indices for indices in REQUIRED_ELEMENTS_TO_INDICES.values())
     ]
 
     # Generate samples
@@ -163,10 +172,13 @@ def generate_unique_samples(
                 contract_sections=contract_sections,
                 not_required_indices=not_required_indices,
             )
-            target_text = (
-                "Kontrakten mangler at beskrive følgende emner: "
-                f"{', '.join(contract['missing_categories'])}"
+            missing_list = "\n".join(
+                [
+                    f"{i + 1}. {category}"
+                    for i, category in enumerate(contract["missing_categories"])
+                ]
             )
+            target_text = f"Kontrakten har følgende mangler:\n{missing_list}"
 
         # Check if this contract is unique
         contract_text = contract["contract_text"]
@@ -212,7 +224,7 @@ def _sample_missing_categories(min_missing: int = 1, max_missing: int = 3) -> li
     """
     num_to_remove = random.randint(min_missing, max_missing)
     available_categories = [
-        cat for cat, indices in REQUIRED_CATEGORIES_TO_INDICES.items() if indices
+        cat for cat, indices in REQUIRED_ELEMENTS_TO_INDICES.items() if indices
     ]
     return random.sample(
         available_categories, min(num_to_remove, len(available_categories))
@@ -313,7 +325,7 @@ def _get_indices_to_exclude(missing_categories: list[str]) -> set[int]:
     """
     indices_to_exclude = set()
     for category in missing_categories:
-        indices_to_exclude.update(REQUIRED_CATEGORIES_TO_INDICES[category])
+        indices_to_exclude.update(REQUIRED_ELEMENTS_TO_INDICES[category])
     return indices_to_exclude
 
 
