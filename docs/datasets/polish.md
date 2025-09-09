@@ -214,6 +214,7 @@ PoQuAD is a Polish Question Answering dataset with contexts from Polish Wikipedi
 This dataset was published in [this paper](https://dl.acm.org/doi/10.1145/3587259.3627548).
 
 The original dataset consists of 51,951 samples. We use 1,024 / 256 / 2,048 samples for training, validation and testing, respectively.
+We do not use the impossible questions in this version of the dataset.
 
 Here are a few examples from the training split:
 
