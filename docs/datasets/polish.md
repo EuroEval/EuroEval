@@ -140,7 +140,7 @@ $ euroeval --model <model-id> --dataset kpwr-ner
 
 ## Linguistic Acceptability
 
-### ScaLA-Pl
+### ScaLA-pl
 
 This dataset was published in [this paper](https://aclanthology.org/2023.nodalida-1.20/)
 and was automatically created from the [Polish Universal Dependencies
