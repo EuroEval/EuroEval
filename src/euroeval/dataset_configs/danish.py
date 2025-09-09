@@ -206,9 +206,15 @@ LEGAL_COMPLETENESS_DETECTION_CONFIG = DatasetConfig(
     languages=[DA],
     splits=["test"],
     unofficial=True,
-    _instruction_prompt=(
-        "Identificér om følgende kontrakt er komplet, eller om en eller flere "
-        "elementer mangler. Hvis der er manglende elementer, skal du beskrive disse. "
-        "\n\n{text}"
-    ),
+    _instruction_prompt="""
+        Identificér om følgende kontrakt er fuldstændig, eller om en eller flere
+        elementer mangler. Hvis der er manglende elementer, skal du beskrive disse.
+
+        <kontrakt>
+        {text}
+        </kontrakt>
+
+        Beskriv maksimalt 3 manglende elementer, eller skriv "Kontrakten er
+        fuldstændig."
+    """,
 )
