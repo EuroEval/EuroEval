@@ -17,7 +17,7 @@ SCALA_PL_CONFIG = DatasetConfig(
 POQUAD_CONFIG = DatasetConfig(
     name="poquad",
     pretty_name="the Polish question answering dataset PoQuAD",
-    huggingface_id="EuroEval/poquad",
+    huggingface_id="EuroEval/poquad-mini",
     task=RC,
     languages=[PL],
 )
