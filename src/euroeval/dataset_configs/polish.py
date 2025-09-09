@@ -2,7 +2,7 @@
 
 from ..data_models import DatasetConfig
 from ..languages import PL
-from ..tasks import LA, NER, RC, SENT
+from ..tasks import LA, NER, RC, SENT, SUMM
 
 ### Official datasets ###
 
@@ -35,5 +35,13 @@ KPWR_NER_CONFIG = DatasetConfig(
     pretty_name="the Polish entity recognition dataset KPWr-NER",
     huggingface_id="EuroEval/kpwr-ner",
     task=NER,
+    languages=[PL],
+)
+
+PSC_CONFIG = DatasetConfig(
+    name="psc",
+    pretty_name="the Polish summarisation dataset PSC",
+    huggingface_id="EuroEval/psc",
+    task=SUMM,
     languages=[PL],
 )

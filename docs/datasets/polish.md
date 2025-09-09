@@ -282,3 +282,56 @@ $ euroeval --model <model-id> --dataset poquad
 ## Common-sense Reasoning
 
 ## Summarization
+
+### PSC (Polish Summaries Corpus)
+
+This dataset was published in [this paper](https://aclanthology.org/L14-1145/) and is a resource created for automated single-document summarization of Polish. The corpus contains manual summaries of news articles, with multiple independently created summaries for single texts to overcome annotator bias. It includes both abstract free-word summaries and extraction-based summaries created by selecting text spans from the original documents.
+
+The original dataset consists only of a training split. We use 1,024 / 256 / 2,048 samples for our training, validation and test splits, respectively. All splits are subsets of the original training data, with the validation and test splits sampled from the original training set.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Rozpoczynający się 31 grudnia 2000 roku The Race ma stać się pokazem możliwości technicznych współczesnego jachtingu, rozwoju technologii telekomunikacyjnych, ma dowieść siły marketingowej wielkich wydarzeń sportowych, a także potęgi finansowej sponsorów tego przedsięwzięcia. Około dziesięciu superjachtów wystartuje 31 grudnia 2000 roku o północy z Barcelony. Najlepszy po około dwóch miesiącach powinien wpłynąć do Starego Portu w Marsylii.",
+  "target_text": "31 grudnia 2000 roku rozpoczynają się regaty The Race, będące rozwinięciem regat dookoła świata - Jules Verne Trophy. Jachty wystartują z Barcelony i przepłyną bez pomocy  i zawijania do portów trzy oceany.  Organizatorzy regat chcą dotrzeć do miliardów odbiorców.  By pobić rekordy oglądalności i zaprezentować sponsorów wykorzystana zostanie najnowsza technika m.in kamery na jachtach."
+}
+```
+```json
+{
+  "text": "jeśli w polskich przedsiębiorstwach nie zostanie przeprowadzona restrukturyzacja, z ograniczeniem zatrudnienia i wzrostem wydajności, nie ma co marzyć, aby stały się one konkurencyjne w momencie wejścia Polski do Unii Europejskiej. wejście zagranicznego inwestora często oznacza zmniejszenie zatrudnienia. Do zmniejszania liczby pracowników prowadzą fuzje przedsiębiorstw. Na ochronny parasol pakietów socjalnych i odprawy dla zwalnianych mogą liczyć zatrudnieni górnictwie i hutnictwie. Na osłonę nie mogą liczyć pracownicy przemysłu lekkiego.",
+  "target_text": "W firmach konieczne są zwolnienia restrukturyzacyjne i wzrost wydajności pracy. Jeśli porównamy polskie przedsiębiorstwa z ich zachodnimi odpowiednikami, okazuje się, że w stosunku do wielkości produkcji zatrudnienie u nas jest drastycznie większe. Głęboka restrukturyzacja jest konieczna, jeśli polscy producenci chcą być konkurencyjni po wstąpieniu Polski do Unii Europejskiej. Wymusza ją też kryzys na Wschodzie. Często są one również wynikami wejścia zagranicznego inwestora lub fuzji. Oprócz zwolnień potrzebne są inwestycje."
+}
+```
+```json
+{
+  "text": "Podczas II Kongresu Filmu Polskiego ogromne poruszenie środowiska filmowego wywołał list ministra Andrzeja Zakrzewskiego. Minister Zakrzewski zaatakował środowisko filmowe za to, że dotąd nie ma nowego prawa filmowego.  Filmowcy Poczuli się skrzywdzeni ocenami, bo straty były przy zmianie ustrojowej i likwidacji państwowego mecenatu nieuniknione. A Polska najlepiej chyba ze wszystkich krajów postkomunistycznych przeprowadziła swoją kinematografię przez ten trudny okres.",
+  "target_text": "Środowisko filmowe jest poruszone listem ministra kultury, który krytykuje polskie kino i atakuje filmowców m.in. za niewypracowanie nowego prawa filmowego. Twórcy czują się skrzywdzeni bezpodstawnymi zarzutami. Zaznaczają, że to ministerstwo odpowiada za zatrzymanie prac nad ustawą o kinematografii. Publiczna krytyka i niedbałość o interesy środowiska twórczego są oburzające. Minister potwierdza, że jest autorem listu, i nie akceptuje obecnej formuły Komitetu Kinematografii."
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 1
+- Prefix prompt:
+  ```
+  Poniżej znajdują się artykuły z towarzyszącymi streszczeniami.
+  ```
+- Base prompt template:
+  ```
+  Artykuł: {text}
+  Streszczenie: {target_text}
+  ```
+- Instruction-tuned prompt template:
+  ```
+  Artykuł: {text}
+
+  Napisz streszczenie powyższego artykułu.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+$ euroeval --model <model-id> --dataset psc
+```
