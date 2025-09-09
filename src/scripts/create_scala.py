@@ -21,7 +21,25 @@ from constants import MAX_NUM_CHARS_IN_DOCUMENT, MIN_NUM_CHARS_IN_DOCUMENT  # no
 from datasets.arrow_dataset import Dataset
 from datasets.dataset_dict import DatasetDict
 from huggingface_hub.hf_api import HfApi
-from load_ud_pos import load_pldt_pos
+from load_ud_pos import (
+    load_dadt_pos,
+    load_dedt_pos,
+    load_endt_pos,
+    load_esdt_pos,
+    load_etdt_pos,
+    load_fidt_pos,
+    load_fodt_pos,
+    load_frdt_pos,
+    load_isdt_pos,
+    load_itdt_pos,
+    load_lvdt_pos,
+    load_nldt_pos,
+    load_nodt_nb_pos,
+    load_nodt_nn_pos,
+    load_pldt_pos,
+    load_ptdt_pos,
+    load_svdt_pos,
+)
 from pandas.errors import SettingWithCopyWarning
 from tqdm.auto import tqdm
 
@@ -30,23 +48,23 @@ def main() -> None:
     """Create the ScaLA datasets and upload them to the HF Hub."""
     # Set up the POS dataset loaders
     pos_datasets = {
-        # "da": load_dadt_pos,
-        # "nb": load_nodt_nb_pos,
-        # "nn": load_nodt_nn_pos,
-        # "sv": load_svdt_pos,
-        # "is": load_isdt_pos,
-        # "fo": load_fodt_pos,
-        # "de": load_dedt_pos,
-        # "nl": load_nldt_pos,
-        # "en": load_endt_pos,
-        # "fr": load_frdt_pos,
-        # "it": load_itdt_pos,
-        # "es": load_esdt_pos,
-        # "fi": load_fidt_pos,
-        # "pt": load_ptdt_pos,
-        # "lv": load_lvdt_pos,
-        # "et": load_etdt_pos,
-        "pl": load_pldt_pos
+        "da": load_dadt_pos,
+        "nb": load_nodt_nb_pos,
+        "nn": load_nodt_nn_pos,
+        "sv": load_svdt_pos,
+        "is": load_isdt_pos,
+        "fo": load_fodt_pos,
+        "de": load_dedt_pos,
+        "nl": load_nldt_pos,
+        "en": load_endt_pos,
+        "fr": load_frdt_pos,
+        "it": load_itdt_pos,
+        "es": load_esdt_pos,
+        "fi": load_fidt_pos,
+        "pt": load_ptdt_pos,
+        "lv": load_lvdt_pos,
+        "et": load_etdt_pos,
+        "pl": load_pldt_pos,
     }
 
     # Set up the progress bar and iterate over the languages
