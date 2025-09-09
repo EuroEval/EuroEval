@@ -376,98 +376,116 @@ rejection_correctness_metric = LLMAsAJudgeMetric(
 )
 
 
-### Completeness Detection metric ###
+### CONTRACT COMPLETENESS METRIC ###
 
 
-class CompletenessDetection(BaseModel):
-    """Response format for the completeness detection metric.
+class MissingElements(BaseModel):
+    """Response format for the contract completeness metric.
 
     Attributes:
-        identified_missing_categories:
-            Return a list of tuples with the elements the LLM has
-            identified as missing in the contract. Each tuple contains
-            (description, integer_id) where:
-            - description is the missing element description
-            - integer_id is the ground truth ID (1, 2, 3, etc.) if the element
-              matches a ground truth missing element, or -1 if it doesn't match
-              any ground truth missing element.
+        ground_truth_missing_elements:
+            A list of the ground truth missing elements, or an empty list if there are
+            no missing elements.
+        missing_elements:
+            A list of the model's identified missing elements, or an empty list if the
+            model stated the contract is complete (no missing elements).
+        ground_truth_indices:
+            A list of the corresponding integer IDs for each of the model's identified
+            missing elements, or -1 if it doesn't match any ground truth element.
     """
 
-    identified_missing_categories: list[tuple[str, int]]
+    ground_truth_missing_elements: list[str]
+    missing_elements: list[str]
+    ground_truth_indices: list[int]
 
 
-def compute_f1_score(
-    outputs: list[BaseModel], dataset: "Dataset | None" = None
-) -> float:
-    """Compute the completeness detection F1 score.
+def compute_contract_completeness(output: BaseModel) -> float:
+    """Compute the contract completeness score for a single output.
 
-    The F1 score is computed as the harmonic mean of the precision and recall:
-
-    1. Recall: The percentage of contracts with missing elements that the model
-        correctly identifies.
-    2. Precision: The percentage of identified incomplete contracts that are
-        actually incomplete.
+    This is computed as the F1 score on the missing elements, where "missing" is the
+    positive class.
 
     Args:
-        outputs:
-            The outputs from the judge model, indicating whether the model
-            has identified all the missing categories in the contract or not.
-        dataset:
-            The dataset used for evaluation. This is required to get the ground
-            truth labels indicating whether the contract is complete or not.
+        output:
+            The output from the judge model. This has the keys `missing_elements`
+            and `ground_truth_indices`, where the former is a list of the model's
+            identified missing elements, and the latter is a list of the corresponding
+            integer IDs (1, 2, 3, etc.) if it matches a ground truth element, or -1 if
+            it doesn't match any ground truth element.
 
     Returns:
-        The F1 score.
+        The F1 score of the model's identified missing elements.
     """
-    if dataset is None:
-        raise ValueError(
-            "Dataset is required to compute F1 score for completeness detection"
+    if not isinstance(output, MissingElements):
+        raise InvalidBenchmark(
+            f"Expected output to be of type `MissingElements`, got {type(output)}"
         )
+    if len(output.missing_elements) != len(output.ground_truth_indices):
+        logger.warning(
+            f"The model identified {len(output.missing_elements)} missing "
+            f"elements, but provided {len(output.ground_truth_indices)} indices. "
+            "This indicates a mismatch between the identified elements and the "
+            "provided indices. Giving a score of 0.0, but this should be fixed."
+        )
+        return 0.0
+    num_unique_identified_missing_elements = len(
+        {idx for idx in output.ground_truth_indices if idx != -1}
+    )
+    num_irrelevant_elements_found = len(
+        [idx for idx in output.ground_truth_indices if idx == -1]
+    )
+    recall = (
+        num_unique_identified_missing_elements
+        / len(output.ground_truth_missing_elements)
+        if output.ground_truth_missing_elements
+        else 1.0
+    )
+    precision = (
+        1 - num_irrelevant_elements_found / len(output.missing_elements)
+        if output.missing_elements
+        else 1.0
+    )
+    f1_score = (
+        2 * (precision * recall) / (precision + recall)
+        if precision + recall > 0
+        else 0.0
+    )
+    return f1_score
 
-    y_true: list[bool] = []
-    y_pred: list[bool] = []
-    for i, output in enumerate(outputs):
-        y_true.append(not dataset[i]["is_complete"])  # True if incomplete
-        y_pred.append(not output.is_complete)  # True if model predicted incomplete
 
-    return float(f1_score(y_true=y_true, y_pred=y_pred))
-
-
-completeness_detection_metric = LLMAsAJudgeMetric(
-    name="completeness_detection",
-    pretty_name="Completeness Detection",
+contract_completeness_metric = LLMAsAJudgeMetric(
+    name="contract_completeness",
+    pretty_name="Contract Completeness",
     judge_id="gpt-4.1",
     judge_kwargs=dict(temperature=0.0),
-    user_prompt="""You are evaluating a language model's response about missing
-elements in a contract.
+    user_prompt="""
+        You are evaluating a language model's response about missing elements in a
+        contract. You will be provided with a list of the ground truth missing elements
+        in the contract, as well as the model's response.
 
-**Task**: Identify what elements the language model claimed were missing, and
-map each to the corresponding ground truth missing element ID.
+        <ground-truth-missing-elements>
+        {condition}
+        </ground-truth-missing-elements>
 
-**Ground Truth Missing Categories:**
-{condition}
+        <model-response>
+        {prediction}
+        </model-response>
 
-**Model's Response:**
-{prediction}
+        For each of the model's identified missing elements, you need to determine if it
+        matches any of the ground truth missing elements. If it does, you should assign
+        it the corresponding integer ID (1, 2, 3, etc.). If it does not match any ground
+        truth missing element, you should assign it -1.
 
-**Instructions:**
-1. Carefully read the model's response and extract ALL elements/categories
-   that the model identified as missing
-2. For each element the model identified as missing:
-   - If it matches a ground truth missing element (using reasonable
-     interpretation - synonyms/paraphrases are acceptable), assign it the
-     corresponding integer ID (1, 2, 3, etc. as shown in the ground truth)
-   - If it does not match any ground truth missing element, assign it -1
-3. If the model stated the contract is complete (no missing elements),
-   return an empty list
+        Output your results as a JSON object with the following keys:
 
-You should output a JSON object with the key "identified_missing_categories"
-containing a list of tuples where:
-- Each tuple contains: [element description, integer ID]
-- Element description: the element/category the model identified as missing
-  (use the model's exact wording or a clear paraphrase)
-- Integer ID: the ground truth ID (1, 2, 3, etc.) if it matches a ground
-  truth element, or -1 if it doesn't match any ground truth element""",
-    response_format=CompletenessDetection,
-    batch_scoring_fn=compute_f1_score,
+        - "ground_truth_missing_elements": A list of the ground truth missing elements,
+          or an empty list if there are no missing elements.
+        - "missing_elements": A list of the model's identified missing elements, or an
+          empty list if the model stated the contract is complete (no missing elements).
+        - "ground_truth_indices": A list of the corresponding integer IDs for each of
+          the model's identified missing elements, or -1 if it doesn't match any ground
+          truth element.
+    """,
+    response_format=MissingElements,
+    scoring_fn=compute_contract_completeness,
 )
