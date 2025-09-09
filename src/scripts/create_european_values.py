@@ -16,12 +16,16 @@ import logging
 from collections import defaultdict
 
 import pandas as pd
-from datasets import Dataset, DatasetDict, Split, disable_progress_bars, load_dataset
+from datasets import (
+    Dataset,
+    DatasetDict,
+    Split,
+    disable_caching,
+    disable_progress_bars,
+    load_dataset,
+)
 from huggingface_hub import HfApi
 from tqdm.auto import tqdm
-
-from euroeval.languages import get_all_languages
-from euroeval.prompt_templates.multiple_choice import MULTIPLE_CHOICE_TEMPLATES
 
 logging.basicConfig(format="%(asctime)s ⋅ %(message)s", level=logging.INFO)
 logger = logging.getLogger("create_european_values")
@@ -86,6 +90,7 @@ QUESTIONS_TO_INCLUDE = [
 def main() -> None:
     """Create the European values dataset and upload it to the HF Hub."""
     disable_progress_bars()
+    disable_caching()
 
     api = HfApi()
     vanilla_dataset_id = "EuropeanValuesProject/za7505"
@@ -105,7 +110,7 @@ def main() -> None:
         "es": "Opciones",
         "pt": "Opções",
         "fi": "Vastausvaihtoehdot",
-        # "et": "Vastusevariandid",
+        "et": "Vastusevariandid",
     }
     subset_mapping = {
         "da": "da-dk",
@@ -120,7 +125,7 @@ def main() -> None:
         "es": "es-es",
         "pt": "pt-pt",
         "fi": "fi-fi",
-        # "et": "et-ee",
+        "et": "et-ee",
     }
     no_yes_mapping = {
         "da": {"0": "Nej", "1": "Ja"},
@@ -135,7 +140,7 @@ def main() -> None:
         "es": {"0": "No", "1": "Sí"},
         "pt": {"0": "Não", "1": "Sim"},
         "fi": {"0": "Ei", "1": "Kyllä"},
-        # "et": {"0": "Ei", "1": "Jah"},
+        "et": {"0": "Ei", "1": "Jah"},
     }
     sentence_completion_mapping = {
         "da": "Færdiggør følgende sætning",
@@ -150,7 +155,7 @@ def main() -> None:
         "es": "Completa la siguiente frase",
         "pt": "Complete a seguinte frase",
         "fi": "Täydennä seuraava lause",
-        # "et": "Täiendage järgmine lause",
+        "et": "Täiendage järgmine lause",
     }
 
     for dataset_id, new_dataset_id in zip(
@@ -182,10 +187,10 @@ def main() -> None:
             df.set_index("question_id", inplace=True)
             del dataset
 
-            data_dict = defaultdict(list)
+            data_dict: dict[str, list] = defaultdict(list)
             for question_id_with_choice in QUESTIONS_TO_INCLUDE:
                 question_id = question_id_with_choice.split(":")[0]
-                choice = (
+                choice_focus = (
                     question_id_with_choice.split(":", 1)[1]
                     if ":" in question_id_with_choice
                     else ""
@@ -223,29 +228,29 @@ def main() -> None:
                     ):
                         choices = no_yes_mapping[language]
 
+                    # Store the mapping from letters to the choice numerals
+                    letters = "abcdefghijklmnopqrstuvwxyz"
+                    idx_to_choice: dict[str, str] = {
+                        str(idx): choice
+                        for idx, choice in zip(
+                            range(len(choices)), sorted(choices.keys(), key=int)
+                        )
+                        if choice is not None
+                    }
+                    choice_to_letter: dict[str, str] = {
+                        choice: letters[int(idx)]
+                        for idx, choice in idx_to_choice.items()
+                    }
+
                     # Create the prompt string, joining the question and choices
                     prompt = f"{question}\n{choices_str}:\n" + "\n".join(
                         [
-                            f"{key}. {value}"
-                            for key, value in sorted(
+                            f"{choice_to_letter[choice]}. {value}"
+                            for choice, value in sorted(
                                 choices.items(),
                                 key=lambda x: int(x[0]) if x[0].isdigit() else x[0],
                             )
                         ]
-                    )
-
-                    # Add a statement at the end stating that the model has to choose
-                    # one of the choices
-                    labels = list(choices.keys())
-                    language_obj = get_all_languages()[language]
-                    prompt = MULTIPLE_CHOICE_TEMPLATES[
-                        language_obj
-                    ].default_instruction_prompt.format(
-                        text=prompt,
-                        labels_str=(
-                            ", ".join([f"'{label}'" for label in labels[:-1]])
-                            + f" {language_obj.or_separator} '{labels[-1]}'"
-                        ),
                     )
 
                     # Special case for the completions dataset, where we
@@ -259,8 +264,9 @@ def main() -> None:
                         )
 
                     data_dict["question_id"].append(question_id)
-                    data_dict["choice"].append(choice)
+                    data_dict["choice"].append(choice_to_letter.get(choice_focus, ""))
                     data_dict["text"].append(prompt)
+                    data_dict["idx_to_choice"].append(idx_to_choice)
 
             if question_id is not None and question_id not in df.index:
                 continue

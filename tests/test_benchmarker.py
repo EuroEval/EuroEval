@@ -1,4 +1,4 @@
-"""Unit tests for the `benchmarker` module."""
+"""Tests for the `benchmarker` module."""
 
 import logging
 import os

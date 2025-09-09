@@ -9,7 +9,7 @@ import typing as t
 from .enums import TaskGroup
 from .exceptions import InvalidBenchmark
 from .tokenization_utils import apply_chat_template
-from .utils import log_once
+from .utils import extract_multiple_choice_labels, log_once
 
 if t.TYPE_CHECKING:
     from datasets import DatasetDict
@@ -230,18 +230,49 @@ def apply_prompt(
             return dataset_config.prompt_template.format(**kwargs), ""
 
     match dataset_config.task.task_group:
-        case (
-            TaskGroup.SEQUENCE_CLASSIFICATION | TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION
-        ):
+        case TaskGroup.SEQUENCE_CLASSIFICATION:
+            labels_str = dataset_config.get_labels_str()
             few_shot_sections = [
                 create_prompt(
                     text=example["text"].replace("\n", " ").strip(),
                     label=example["label"].replace("\n", " ").strip(),
+                    labels_str=labels_str,
                 )
                 for example in few_shot_examples
             ]
             new_sections = [
-                create_prompt(text=text.replace("\n", " ").strip(), label="")
+                create_prompt(
+                    text=text.replace("\n", " ").strip(),
+                    label="",
+                    labels_str=labels_str,
+                )
+                for text in examples["text"]
+            ]
+
+        case TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION:
+            few_shot_sections = [
+                create_prompt(
+                    text=example["text"].replace("\n", " ").strip(),
+                    label=example["label"].replace("\n", " ").strip(),
+                    labels_str=dataset_config.get_labels_str(
+                        labels=extract_multiple_choice_labels(
+                            prompt=example["text"],
+                            candidate_labels=dataset_config.labels,
+                        )
+                    ),
+                )
+                for example in few_shot_examples
+            ]
+            new_sections = [
+                create_prompt(
+                    text=text.replace("\n", " ").strip(),
+                    label="",
+                    labels_str=dataset_config.get_labels_str(
+                        labels=extract_multiple_choice_labels(
+                            prompt=text, candidate_labels=dataset_config.labels
+                        )
+                    ),
+                )
                 for text in examples["text"]
             ]
 
@@ -259,6 +290,7 @@ def apply_prompt(
             ]
 
         case TaskGroup.TOKEN_CLASSIFICATION:
+            labels_str = dataset_config.get_labels_str()
 
             def create_label(example: dict) -> str:
                 prompt_labels = dataset_config.prompt_label_mapping.values()
@@ -280,12 +312,15 @@ def apply_prompt(
                 create_prompt(
                     text=" ".join(example["tokens"]).replace("\n", " ").strip(),
                     label=create_label(example=example),
+                    labels_str=labels_str,
                 )
                 for example in few_shot_examples
             ]
             new_sections = [
                 create_prompt(
-                    text=" ".join(tokens).replace("\n", " ").strip(), label=""
+                    text=" ".join(tokens).replace("\n", " ").strip(),
+                    label="",
+                    labels_str=labels_str,
                 )
                 for tokens in examples["tokens"]
             ]
@@ -374,5 +409,8 @@ def apply_prompt(
             prompt_prefix + few_shot_prompt + new_prompt
             for new_prompt, _ in new_sections
         ]
+
+    # Always add the final prompts without few-shot examples, too, for analysis
+    examples["prompt"] = [new_prompt for new_prompt, _ in new_sections]
 
     return examples

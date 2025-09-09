@@ -1,4 +1,4 @@
-"""Unit tests for the `data_models` module."""
+"""Tests for the `data_models` module."""
 
 import inspect
 import json
@@ -31,7 +31,7 @@ def test_all_classes_are_dataclasses_or_pydantic_models() -> None:
 
 
 class TestMetric:
-    """Unit tests for the `Metric` class."""
+    """Tests for the `Metric` class."""
 
     def test_metric_is_object(self, metric: HuggingFaceMetric) -> None:
         """Test that the metric config is a `Metric` object."""
@@ -72,7 +72,7 @@ class TestMetric:
 # TODO
 @pytest.mark.skip("Not implemented")
 class TestBenchmarkConfigParams:
-    """Unit tests for the `BenchmarkConfigParams` class."""
+    """Tests for the `BenchmarkConfigParams` class."""
 
     pass
 

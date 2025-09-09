@@ -349,6 +349,145 @@ $ euroeval --model <model-id> --dataset multi-wiki-qa-et
 ```
 
 
+## Knowledge
+
+### Trivia-et
+
+This dataset was published [here](https://huggingface.co/datasets/TalTechNLP/trivia_et).
+It was extracted from the "Eesti Mäng" board game, and contains trivia questions about
+Estonia.
+
+The original dataset contains 800 examples. From these, we use 240 / 60 / 500 samples
+for our training, validation and test splits, respectively.
+
+Note that this is a gated dataset, and we would like to avoid contaminating LLM
+pre-training data as much as possible. Accordingly, we selected more generic questions
+not representative of the full dataset in terms of question content to show here:
+
+```json
+{
+  "text": "Mis on isoterm?\nVastusevariandid:\na. samatemperatuurijoon\nb. samaõhurõhujoon\nc. samapingejoon\nd. samakõrgusjoon",
+  "label": "a"
+}
+```
+
+```json
+{
+  "text": "Mis on isobaat?\nVastusevariandid:\na. samasügavusjoon\nb. samaõhurõhujoon\nc. samatemperatuurijoon\nd. samakõrgusjoon",
+  "label": "a"
+}
+```
+
+```json
+{
+  "text": "Mida mõõdetakse baromeetriga?\nVastusevariandid:\na. veekogude sügavust\nb. temperatuuri\nc. jõgede voolukiirust\nd. õhurõhku",
+  "label": "d"
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+  ```
+  Järgnevad on vastusevariantidega küsimused (koos vastustega).
+  ```
+- Base prompt template:
+  ```
+  Küsimus: {text}
+  Vastusevariandid:
+  a. {option_a}
+  b. {option_b}
+  c. {option_c}
+  d. {option_d}
+  Vastus: {label}
+  ```
+- Instruction-tuned prompt template:
+  ```
+  Küsimus: {text}
+  Vastusevariandid:
+  a. {option_a}
+  b. {option_b}
+  c. {option_c}
+  d. {option_d}
+
+  Võimalikud vastused: 'a', 'b', 'c' or 'd'. Muud vastused ei ole lubatud.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+$ euroeval --model <model-id> --dataset trivia-et
+```
+
+
+### Unofficial: Exam-et
+
+This dataset was released in [this
+repository](https://huggingface.co/datasets/TalTechNLP/exam_et) and contains questions
+with multiple-choice answers from Estonian high-school tests.
+
+The original full dataset contains 1,614 samples in a single split, across eight
+different subjects. We use a 512 / 64 / 896 split for training, validation and testing,
+respectively, with stratification based on the subject.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Kas väide iseloomustab Eestit perioodil 1920-1934 või 1934-1940: riigikogu valiti iga kolme aasta järel?\nVastusevariandid:\na. Eesti 1920-1934\nb. Eesti 1934-1940",
+  "label": "a"
+}
+```
+```json
+{
+  "text": "Kas väide on tõene või väär? Veendumuste pärast võib isikult Eesti kodakondsuse ära võtta.\nVastusevariandid:\na. tõene\nb. väär",
+  "label": "b"
+}
+```
+```json
+{
+  "text": "Kellel on Eesti vabariigis õigus kehtestada eriolukord?\nVastusevariandid:\na. politseil\nb. õiguskantsleril\nc. vabariigi valitsusel\nd. riigikohtul",
+  "label": "c"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+  ```
+  Järgnevad on vastusevariantidega küsimused (koos vastustega).
+  ```
+- Base prompt template:
+  ```
+  Küsimus: {text}
+  Vastusevariandid:
+  a. {option_a}
+  b. {option_b}
+  Vastus: {label}
+  ```
+- Instruction-tuned prompt template:
+  ```
+  Küsimus: {text}
+  Vastusevariandid:
+  a. {option_a}
+  b. {option_b}
+  (...)
+  o. {option_o}
+
+  Vasta ülaltoodud küsimusele ainult 'a', 'b', (...), 'n' või 'o', ja mitte millegi
+  muuga.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+$ euroeval --model <model-id> --dataset exam-et
+```
+
+
 ## Common-sense Reasoning
 
 ### WinoGrande-ET
@@ -361,7 +500,8 @@ expected number of examples starting from the beginning of the respective splits
 final dataset size is 1,024 / 256 / 1,767 for the training, validation and test splits,
 respectively.
 
-Here are a few examples from the training split (note that unlike the test split these are machine translated):
+Here are a few examples from the training split (note that unlike the test split these
+are machine translated):
 
 ```json
 {
@@ -371,7 +511,8 @@ Here are a few examples from the training split (note that unlike the test split
 ```
 ```json
 {
-  "text": "Ian vabatahtlikult sõi Dennise menudo pärast seda, kui oli juba kausitäie söönud, sest _ nautis soolte söömist.\nVastusevariandid:\na. Ian\nb. Dennis", "label": "a"
+  "text": "Ian vabatahtlikult sõi Dennise menudo pärast seda, kui oli juba kausitäie söönud, sest _ nautis soolte söömist.\nVastusevariandid:\na. Ian\nb. Dennis",
+  "label": "a"
 }
 ```
 ```json
@@ -426,8 +567,8 @@ pipeline paired with the human written summary from the archive.
 
 The original full dataset consists of 10,420 / 523 / 523 samples for training,
 validation and testing, respectively. We use a 1,024 / 256 / 2,048 split for training,
-validation and testing, respectively. The test split is extended with additional examples
-from the train split.
+validation and testing, respectively. The test split is extended with additional
+examples from the train split.
 
 ```json
 {

@@ -5,7 +5,6 @@ import contextlib
 import importlib.util
 import json
 import logging
-import os
 import re
 import typing as t
 from functools import partial
@@ -67,6 +66,7 @@ from ..types import ExtractLabelsFunction
 from ..utils import (
     clear_memory,
     create_model_cache_dir,
+    get_hf_token,
     get_min_cuda_compute_capability,
     log_once,
 )
@@ -187,16 +187,29 @@ class VLLMModel(HuggingFaceEncoderModel):
             The generative type of the model, or None if it has not been set yet.
         """
         if not hasattr(self, "_tokeniser"):
+            log_once(
+                "The generative type of the model has not been set yet as the "
+                "tokeniser has not been loaded.",
+                level=logging.DEBUG,
+            )
             return None
+        elif self.benchmark_config.generative_type is not None:
+            type_ = self.benchmark_config.generative_type
         elif self.end_of_reasoning_token is not None:
-            return GenerativeType.REASONING
+            type_ = GenerativeType.REASONING
         elif (
             has_chat_template(tokeniser=self._tokeniser)
             or "instruct" in self.model_config.model_id.lower()
         ):
-            return GenerativeType.INSTRUCTION_TUNED
+            type_ = GenerativeType.INSTRUCTION_TUNED
         else:
-            return GenerativeType.BASE
+            type_ = GenerativeType.BASE
+        log_once(
+            f"Detected generative type {type_.name!r} for model "
+            f"{self.model_config.model_id!r}",
+            level=logging.DEBUG,
+        )
+        return type_
 
     @property
     def extract_labels_from_generation(self) -> ExtractLabelsFunction:
@@ -337,31 +350,6 @@ class VLLMModel(HuggingFaceEncoderModel):
             if end_of_chat_token:
                 stop_tokens.append(end_of_chat_token)
 
-        structured_generation_schema = None
-        if self.dataset_config.task.uses_structured_output:
-            if self.generative_type == GenerativeType.REASONING:
-                log_once(
-                    f"The model {self.model_config.model_id!r} is a reasoning model "
-                    "and thus does not support structured generation, so we do not "
-                    "enable it.",
-                    level=logging.DEBUG,
-                )
-            else:
-                ner_tag_names = list(self.dataset_config.prompt_label_mapping.values())
-                keys_and_their_types: dict[str, t.Any] = {
-                    tag_name: (conlist(str, max_length=5), ...)
-                    for tag_name in ner_tag_names
-                }
-                answer_format_class = create_model(
-                    "AnswerFormat", **keys_and_their_types
-                )
-                structured_generation_schema = answer_format_class.model_json_schema()
-                log_once(
-                    "Using structured generation with the JSON schema "
-                    f"{structured_generation_schema}",
-                    level=logging.DEBUG,
-                )
-
         # Get the mapping from labels to the first token in the label. We call this each
         # time we generate a new dataset since the dataset config can change
         self.buffer["first_label_token_mapping"] = get_first_label_token_mapping(
@@ -382,8 +370,29 @@ class VLLMModel(HuggingFaceEncoderModel):
                 "error was. Skipping this evaluation."
             )
 
-        # Define the guided decoding that we will use for structured generation
-        if structured_generation_schema is not None:
+        structured_generation_schema = None
+        if (
+            self.dataset_config.task.uses_structured_output
+            or (self.dataset_config.task.uses_logprobs and self.dataset_config.labels)
+        ) and self.generative_type == GenerativeType.REASONING:
+            guided_decoding = None
+            logger.debug(
+                "The dataset uses structured output, but we are not using it as the "
+                "model is a reasoning model."
+            )
+        elif self.dataset_config.task.uses_structured_output:
+            ner_tag_names = list(self.dataset_config.prompt_label_mapping.values())
+            keys_and_their_types: dict[str, t.Any] = {
+                tag_name: (conlist(str, max_length=5), ...)
+                for tag_name in ner_tag_names
+            }
+            answer_format_class = create_model("AnswerFormat", **keys_and_their_types)
+            structured_generation_schema = answer_format_class.model_json_schema()
+            log_once(
+                "Using structured generation with the JSON schema: "
+                f"{json.dumps(structured_generation_schema)}",
+                level=logging.DEBUG,
+            )
             guided_decoding = GuidedDecodingParams(json=structured_generation_schema)
         elif self.dataset_config.task.uses_logprobs and self.dataset_config.labels:
             guided_decoding = GuidedDecodingParams(
@@ -392,8 +401,17 @@ class VLLMModel(HuggingFaceEncoderModel):
                     for label in self.dataset_config.labels
                 ]
             )
+            log_once(
+                "Using structured generation with the choices: "
+                f"{guided_decoding.choice!r}.",
+                level=logging.DEBUG,
+            )
         else:
             guided_decoding = None
+            log_once(
+                "Not using structured generation as the dataset does not require it.",
+                level=logging.DEBUG,
+            )
 
         # Define the parameters used for vLLM generation
         max_tokens: int = (
@@ -439,6 +457,7 @@ class VLLMModel(HuggingFaceEncoderModel):
         # Generate sequences using vLLM
         input_is_a_test = len(prompts) == 1 and len(set(prompts[0])) == 1
         num_attempts = 3
+        truncation_attempts = 0
         for _ in range(num_attempts):
             try:
                 raw_outputs = self._model.generate(
@@ -466,12 +485,19 @@ class VLLMModel(HuggingFaceEncoderModel):
                         "Prompts are too long, so truncating them and trying again..."
                     )
                     logger.debug(f"The error message was: {str(e)}")
+
+                    # If we have already tried truncating the prompts a few times, then
+                    # we truncate a bit more aggressively
+                    extra_truncation = 50 * truncation_attempts
+                    truncation_attempts += 1
+
                     tokenized_prompts = self._tokeniser(
                         text=prompts,
                         truncation=True,
                         max_length=max(
                             min(self._tokeniser.model_max_length, MAX_CONTEXT_LENGTH)
-                            - max_tokens,
+                            - max_tokens
+                            - extra_truncation,
                             0,
                         ),
                     )
@@ -709,7 +735,7 @@ def load_model_and_tokeniser(
     dtype: str | torch.dtype = "auto"
 
     # Choose bf16 over fp16 if the model is a fp32 model and the GPU supports it
-    if hf_model_config.torch_dtype == torch.float32:
+    if hf_model_config.dtype == torch.float32:
         if torch.cuda.is_bf16_supported():
             logger.info(
                 "You are loading a model with dtype FP32, which we will convert to "
@@ -726,34 +752,32 @@ def load_model_and_tokeniser(
             dtype = torch.float16
 
     # If the model is a quantized model, we might need to change the dtype
-    if quantization == "mxfp4" and hf_model_config.torch_dtype is None:
+    if quantization == "mxfp4" and hf_model_config.dtype is None:
         dtype = torch.bfloat16 if torch.cuda.is_bf16_supported() else torch.float16
         logger.debug(
-            "You are loading a quantized model where `torch_dtype` has not been set. "
+            "You are loading a quantized model where `dtype` has not been set. "
             f"Setting dtype to {dtype!r}."
         )
-    elif quantization is not None and hf_model_config.torch_dtype != torch.float16:
+    elif quantization is not None and hf_model_config.dtype != torch.float16:
         logger.info(
             "You are loading a quantized model with dtype "
-            f"{hf_model_config.torch_dtype}, which vLLM does not support. Setting "
+            f"{hf_model_config.dtype}, which vLLM does not support. Setting "
             "dtype to float16 instead."
         )
         dtype = torch.float16
 
     # If the model is a bf16 model, we need to check the CUDA compute capability
-    if hf_model_config.torch_dtype == torch.bfloat16:
+    if hf_model_config.dtype == torch.bfloat16:
         min_cuda_compute_capability = get_min_cuda_compute_capability()
         required_capability = VLLM_BF16_MIN_CUDA_COMPUTE_CAPABILITY
 
         if min_cuda_compute_capability is not None:
             if min_cuda_compute_capability < required_capability:
                 logger.info(
-                    "You are loading a model with "
-                    f"dtype {hf_model_config.torch_dtype}, "
-                    "which vLLM only supports for CUDA devices with"
-                    f"CUDA compute capability >={required_capability}. "
-                    "You are using one or more devices with "
-                    f"compute capability {min_cuda_compute_capability}. "
+                    f"You are loading a model with dtype {hf_model_config.dtype}, "
+                    "which vLLM only supports for CUDA devices with CUDA compute "
+                    f"capability >={required_capability}. You are using one or more "
+                    f"devices with compute capability {min_cuda_compute_capability}. "
                     "Setting dtype to float16 instead."
                 )
                 dtype = torch.float16
@@ -788,7 +812,7 @@ def load_model_and_tokeniser(
         trust_remote_code=benchmark_config.trust_remote_code,
         model_max_length=true_max_model_len,
         model_cache_dir=model_config.model_cache_dir,
-        token=benchmark_config.api_key or os.getenv("HUGGINGFACE_API_KEY") or True,
+        token=get_hf_token(api_key=benchmark_config.api_key),
     )
 
     clear_vllm()

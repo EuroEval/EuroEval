@@ -11,7 +11,6 @@
 
 from datasets import Dataset, DatasetDict, concatenate_datasets, load_dataset
 from huggingface_hub import HfApi
-from requests import HTTPError
 
 
 def main() -> None:
@@ -61,11 +60,7 @@ def main() -> None:
         new_ds[split] = concatenate_datasets([original_ds, corrected_ds])
     new_ds = new_ds.shuffle(seed=42)
 
-    try:
-        api = HfApi()
-        api.delete_repo(target_repo_id, repo_type="dataset")
-    except HTTPError:
-        pass
+    HfApi().delete_repo(target_repo_id, repo_type="dataset", missing_ok=True)
 
     new_ds.push_to_hub(target_repo_id, private=True)
 

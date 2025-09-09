@@ -22,7 +22,6 @@ from datasets.dataset_dict import DatasetDict
 from datasets.load import load_dataset
 from datasets.splits import Split
 from huggingface_hub.hf_api import HfApi
-from requests.exceptions import HTTPError
 
 
 def main() -> None:
@@ -83,18 +82,10 @@ def main() -> None:
         test=Dataset.from_pandas(final_test_df, split=Split.TEST),
     )
 
-    # Create dataset ID
-    mini_dataset_id = "EuroEval/tydiqa-fi-mini"
-
-    # Remove the dataset from Hugging Face Hub if it already exists
-    try:
-        api: HfApi = HfApi()
-        api.delete_repo(mini_dataset_id, repo_type="dataset")
-    except HTTPError:
-        pass
-
     # Push the dataset to the Hugging Face Hub
-    dataset.push_to_hub(mini_dataset_id, private=True)
+    dataset_id = "EuroEval/tydiqa-fi-mini"
+    HfApi().delete_repo(dataset_id, repo_type="dataset", missing_ok=True)
+    dataset.push_to_hub(dataset_id, private=True)
 
 
 def process_df(df: pd.DataFrame) -> pd.DataFrame:

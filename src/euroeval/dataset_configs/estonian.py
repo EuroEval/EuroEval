@@ -2,7 +2,7 @@
 
 from ..data_models import DatasetConfig
 from ..languages import ET
-from ..tasks import COMMON_SENSE, EUROPEAN_VALUES, LA, NER, RC, SENT, SUMM
+from ..tasks import COMMON_SENSE, EUROPEAN_VALUES, KNOW, LA, NER, RC, SENT, SUMM
 
 ### Official datasets ###
 
@@ -47,7 +47,13 @@ ERR_NEWS_CONFIG = DatasetConfig(
     languages=[ET],
 )
 
-# TODO: Missing knowledge dataset
+TRIVIA_ET_CONFIG = DatasetConfig(
+    name="trivia-et",
+    pretty_name="the Estonian knowledge dataset Trivia-et",
+    huggingface_id="EuroEval/trivia-et",
+    task=KNOW,
+    languages=[ET],
+)
 
 WINOGRANDE_ET_CONFIG = DatasetConfig(
     name="winogrande-et",
@@ -75,8 +81,7 @@ EUROPEAN_VALUES_ET_CONFIG = DatasetConfig(
     _instruction_prompt="{text}",
 )
 
-
-### Unofficial datasets ###
+### Unofficial datasets ###
 
 SCALA_ET_CONFIG = DatasetConfig(
     name="scala-et",
@@ -84,5 +89,15 @@ SCALA_ET_CONFIG = DatasetConfig(
     huggingface_id="EuroEval/scala-et",
     task=LA,
     languages=[ET],
+    unofficial=True,
+)
+
+EXAM_ET_CONFIG = DatasetConfig(
+    name="exam-et",
+    pretty_name="the Estonian knowledge assessment dataset Exam-et",
+    huggingface_id="EuroEval/exam-et",
+    task=KNOW,
+    languages=[ET],
+    _labels=["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o"],
     unofficial=True,
 )

@@ -80,6 +80,15 @@ EUROPEAN_VALUES_EN_CONFIG = DatasetConfig(
 
 ### Unofficial datasets ###
 
+XQUAD_EN_CONFIG = DatasetConfig(
+    name="xquad-en",
+    pretty_name="the English version of the reading comprehension dataset XQuAD",
+    huggingface_id="EuroEval/xquad-en",
+    task=RC,
+    languages=[EN],
+    unofficial=True,
+)
+
 ARC_CONFIG = DatasetConfig(
     name="arc",
     pretty_name="the truncated version of the English knowledge dataset ARC",

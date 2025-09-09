@@ -1,6 +1,5 @@
 """Freshly initialised encoder models."""
 
-import os
 import typing as t
 from functools import cached_property
 from json import JSONDecodeError
@@ -26,7 +25,7 @@ from ..exceptions import (
     NeedsEnvironmentVariable,
     NeedsExtraInstalled,
 )
-from ..utils import block_terminal_output, create_model_cache_dir
+from ..utils import block_terminal_output, create_model_cache_dir, get_hf_token
 from .hf import (
     HuggingFaceEncoderModel,
     align_model_and_tokeniser,
@@ -266,7 +265,7 @@ def load_model_and_tokeniser(
 
     config = AutoConfig.from_pretrained(
         real_model_id,
-        token=benchmark_config.api_key or os.getenv("HUGGINGFACE_API_KEY") or True,
+        token=get_hf_token(api_key=benchmark_config.api_key),
         num_labels=len(id2label),
         id2label=id2label,
         label2id={label: id_ for id_, label in id2label.items()},
@@ -286,7 +285,7 @@ def load_model_and_tokeniser(
         tokeniser: "PreTrainedTokenizer" = AutoTokenizer.from_pretrained(
             real_model_id,
             revision=model_config.revision,
-            token=benchmark_config.api_key or os.getenv("HUGGINGFACE_API_KEY") or True,
+            token=get_hf_token(api_key=benchmark_config.api_key),
             add_prefix_space=prefix,
             cache_dir=model_config.model_cache_dir,
             use_fast=True,

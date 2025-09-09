@@ -7,9 +7,8 @@ import typing as t
 import torch
 from transformers import MistralCommonTokenizer
 
-from euroeval.exceptions import InvalidModel
-
 from .enums import GenerativeType
+from .exceptions import InvalidModel
 from .utils import log_once
 
 if t.TYPE_CHECKING:

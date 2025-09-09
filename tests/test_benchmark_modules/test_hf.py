@@ -7,12 +7,12 @@ import pytest
 import torch
 from huggingface_hub.hf_api import HfApi
 
-from euroeval.benchmark_modules.hf import get_model_repo_info, get_torch_dtype
+from euroeval.benchmark_modules.hf import get_dtype, get_model_repo_info
 from euroeval.data_models import BenchmarkConfig
 
 
 @pytest.mark.parametrize(
-    argnames=["test_device", "torch_dtype_is_set", "bf16_available", "expected"],
+    argnames=["test_device", "dtype_is_set", "bf16_available", "expected"],
     argvalues=[
         ("cpu", True, True, torch.float32),
         ("cpu", True, False, torch.float32),
@@ -28,17 +28,14 @@ from euroeval.data_models import BenchmarkConfig
         ("cuda", False, False, torch.float16),
     ],
 )
-def test_get_torch_dtype(
-    test_device: str,
-    torch_dtype_is_set: bool,
-    bf16_available: bool,
-    expected: torch.dtype,
+def test_get_dtype(
+    test_device: str, dtype_is_set: bool, bf16_available: bool, expected: torch.dtype
 ) -> None:
-    """Test that the torch dtype is set correctly."""
+    """Test that the dtype is set correctly."""
     assert (
-        get_torch_dtype(
+        get_dtype(
             device=torch.device(test_device),
-            torch_dtype_is_set=torch_dtype_is_set,
+            dtype_is_set=dtype_is_set,
             bf16_available=bf16_available,
         )
         == expected

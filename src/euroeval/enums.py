@@ -12,6 +12,14 @@ class AutoStrEnum(str, Enum):
     ) -> str:
         return name.lower()
 
+    def __str__(self) -> str:
+        """Return the value in upper case for better readability."""
+        return self.value.upper()
+
+    def __repr__(self) -> str:
+        """Return the value in upper case for better readability."""
+        return self.value.upper()
+
 
 class Device(AutoStrEnum):
     """The compute device to use for the evaluation.
@@ -59,6 +67,10 @@ class ModelType(AutoStrEnum):
 
     ENCODER = auto()
     GENERATIVE = auto()
+
+    def __repr__(self) -> str:
+        """Return the value in upper case for better readability."""
+        return self.value.upper()
 
 
 class GenerativeType(AutoStrEnum):

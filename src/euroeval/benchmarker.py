@@ -19,7 +19,7 @@ from .constants import GENERATIVE_PIPELINE_TAGS
 from .data_loading import load_data
 from .data_models import BenchmarkConfigParams, BenchmarkResult
 from .dataset_configs import get_all_dataset_configs
-from .enums import Device, ModelType
+from .enums import Device, GenerativeType, ModelType
 from .exceptions import HuggingFaceHubDown, InvalidBenchmark, InvalidModel
 from .finetuning import finetune
 from .generation import generate
@@ -79,6 +79,7 @@ class Benchmarker:
         api_base: str | None = None,
         api_version: str | None = None,
         gpu_memory_utilization: float = 0.9,
+        generative_type: GenerativeType | None = None,
         debug: bool = False,
         run_with_cli: bool = False,
         requires_safetensors: bool = False,
@@ -151,6 +152,10 @@ class Benchmarker:
                 is generative. A larger value will result in faster evaluation, but at
                 the risk of running out of GPU memory. Only reduce this if you are
                 running out of GPU memory. Defaults to 0.9.
+            generative_type:
+                The type of generative model to benchmark. Only relevant if the model is
+                generative. If not specified, then the type will be inferred based on
+                the tags of the model. Defaults to None.
             debug:
                 Whether to output debug information. Defaults to False.
             run_with_cli:
@@ -199,6 +204,7 @@ class Benchmarker:
             api_base=api_base,
             api_version=api_version,
             gpu_memory_utilization=gpu_memory_utilization,
+            generative_type=generative_type,
             debug=debug,
             run_with_cli=run_with_cli,
             requires_safetensors=requires_safetensors,

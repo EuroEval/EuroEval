@@ -2,7 +2,7 @@
 
 from ..data_models import DatasetConfig
 from ..languages import LV
-from ..tasks import COMMON_SENSE, KNOW, LA, NER, RC, SENT
+from ..tasks import COMMON_SENSE, KNOW, LA, NER, RC, SENT, SUMM
 
 ### Official datasets ###
 
@@ -39,7 +39,14 @@ MULTI_WIKI_QA_LV_CONFIG = DatasetConfig(
     languages=[LV],
 )
 
-# TODO: Missing summarisation dataset
+LSM_CONFIG = DatasetConfig(
+    name="lsm",
+    pretty_name="the truncated version of the Latvian summarisation dataset LSM",
+    huggingface_id="EuroEval/lsm-mini",
+    task=SUMM,
+    languages=[LV],
+)
+
 
 MMLU_LV_CONFIG = DatasetConfig(
     name="mmlu-lv",

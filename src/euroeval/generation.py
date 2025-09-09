@@ -307,7 +307,7 @@ def debug_log(
                     for label in batch["label"]
                 ]
             else:
-                labels = ["N/A"] * len(extracted_labels)
+                labels = [None] * len(extracted_labels)
 
         case TaskGroup.QUESTION_ANSWERING:
             extracted_labels = [

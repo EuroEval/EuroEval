@@ -125,6 +125,12 @@ class Task:
             A list of generative model types that are allowed to be evaluated on this
             task. If None, all generative model types are allowed. Only relevant if
             `allowed_model_types` includes generative models.
+        allow_invalid_model_outputs (optional):
+            Whether to allow invalid model outputs. This is only relevant for generative
+            models on classification tasks, where the model may generate an output
+            which is not one of the allowed labels. If True, the model output will be
+            mapped to the closest valid label. If False, the model output will be
+            considered incorrect and the evaluation will be aborted. Defaults to True.
     """
 
     name: str
@@ -148,6 +154,7 @@ class Task:
             GenerativeType.REASONING,
         ]
     )
+    allow_invalid_model_outputs: bool = True
 
     def __post_init__(self) -> None:
         """Post-initialisation checks."""
@@ -218,6 +225,9 @@ class BenchmarkConfig:
             Whether the benchmark is being run with the CLI.
         requires_safetensors:
             Whether to only allow models that use the safetensors format.
+        generative_type:
+            The type of generative model to benchmark. Only relevant if the model is
+            generative.
     """
 
     model_languages: list[Language]
@@ -244,6 +254,7 @@ class BenchmarkConfig:
     debug: bool
     run_with_cli: bool
     requires_safetensors: bool
+    generative_type: GenerativeType | None
 
 
 class BenchmarkConfigParams(pydantic.BaseModel):
@@ -273,6 +284,7 @@ class BenchmarkConfigParams(pydantic.BaseModel):
     api_base: str | None
     api_version: str | None
     gpu_memory_utilization: float
+    generative_type: GenerativeType | None
     debug: bool
     run_with_cli: bool
     requires_safetensors: bool
@@ -430,7 +442,6 @@ class DatasetConfig:
             if self._prompt_prefix is None
             else self._prompt_prefix
         )
-        prompt_prefix = prompt_prefix.replace("{labels_str}", self._labels_str)
         return prompt_prefix
 
     @property
@@ -443,7 +454,6 @@ class DatasetConfig:
             if self._prompt_template is None
             else self._prompt_template
         )
-        prompt_template = prompt_template.replace("{labels_str}", self._labels_str)
         return prompt_template
 
     @property
@@ -455,9 +465,6 @@ class DatasetConfig:
             prompt_config.default_instruction_prompt
             if self._instruction_prompt is None
             else self._instruction_prompt
-        )
-        instruction_prompt = instruction_prompt.replace(
-            "{labels_str}", self._labels_str
         )
         return instruction_prompt
 
@@ -519,15 +526,16 @@ class DatasetConfig:
         """Return a hash of the dataset configuration."""
         return hash(self.name)
 
-    @property
-    def _labels_str(self) -> str:
+    def get_labels_str(self, labels: list[str] | None = None) -> str:
         """Converts a set of labels to a natural string, in the specified language.
 
         If the task is NER, we separate using 'and' and use the mapped labels instead of
         the BIO NER labels.
 
         Args:
-            language: The language to be used when converting the labels.
+            labels (optional):
+                The labels to convert to a natural string. If None, uses all the labels
+                in the dataset. Defaults to None.
 
         Returns:
             The natural string representation of the labels in specified language.
@@ -539,16 +547,17 @@ class DatasetConfig:
         else:
             sep_word = main_language.or_separator
 
-        local_labels: list[str] = []
-        for label in self.labels:
-            if label not in self.prompt_label_mapping:
-                continue
-            local_label = self.prompt_label_mapping[label]
-            if local_label not in local_labels:
-                local_labels.append(local_label)
+        if labels is None:
+            labels = list()
+            for english_label in self.labels:
+                if english_label not in self.prompt_label_mapping:
+                    continue
+                label = self.prompt_label_mapping[english_label]
+                if label not in labels:
+                    labels.append(label)
 
         # Convert labels to single-quoted labels - and remove duplicates
-        quoted_labels = [f"'{label}'" for label in local_labels]
+        quoted_labels = [f"'{label}'" for label in labels]
 
         if not quoted_labels:
             return ""

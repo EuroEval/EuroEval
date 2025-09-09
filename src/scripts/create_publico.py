@@ -16,7 +16,6 @@ import nltk
 from datasets import Dataset, DatasetDict, load_dataset
 from huggingface_hub.hf_api import HfApi
 from nltk.tokenize import sent_tokenize  # noqa: E402
-from requests.exceptions import HTTPError
 
 nltk.download("punkt")
 
@@ -39,16 +38,9 @@ def main() -> None:
 
     dataset = DatasetDict({"train": train, "val": val, "test": test})
 
-    dataset_id = "EuroEval/publico-mini"
-
-    # Remove the dataset from Hugging Face Hub if it already exists
-    try:
-        api = HfApi()
-        api.delete_repo(dataset_id, repo_type="dataset")
-    except HTTPError:
-        pass
-
     # Push the dataset to the Hugging Face Hub
+    dataset_id = "EuroEval/publico-mini"
+    HfApi().delete_repo(dataset_id, repo_type="dataset", missing_ok=True)
     dataset.push_to_hub(dataset_id, private=True)
 
 

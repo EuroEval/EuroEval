@@ -10,7 +10,9 @@ from dataclasses import asdict
 
 from tqdm.auto import tqdm
 
+from .constants import NUM_GENERATION_TOKENS_FOR_CLASSIFICATION
 from .data_models import GenerativeModelOutput, SingleGenerativeModelOutput
+from .utils import log_once
 
 if t.TYPE_CHECKING:
     from pathlib import Path
@@ -189,10 +191,20 @@ class ModelCache:
                 # the indices of the top scores, to save space. Further, we only store
                 # the scores if the generated sequence is shorter than the maximum
                 # length
-                if model_output.scores is not None and self.max_generated_tokens < 8:
+                if (
+                    model_output.scores is not None
+                    and self.max_generated_tokens
+                    <= NUM_GENERATION_TOKENS_FOR_CLASSIFICATION
+                ):
                     assert model_output.scores is not None
                     scores = model_output.scores[sample_idx]
                 else:
+                    if model_output.scores is not None:
+                        log_once(
+                            "The generated sequence is longer than the maximum "
+                            "length for classification. Not caching the scores.",
+                            level=logging.DEBUG,
+                        )
                     scores = None
                 self[model_input] = SingleGenerativeModelOutput(
                     sequence=model_output.sequences[sample_idx], scores=scores

@@ -13,6 +13,7 @@ from termcolor import colored
 
 # Block specific warnings before importing anything else, as they can be noisy
 warnings.filterwarnings("ignore", category=UserWarning)
+warnings.filterwarnings("ignore", category=FutureWarning)
 logging.getLogger("httpx").setLevel(logging.CRITICAL)
 logging.getLogger("datasets").setLevel(logging.CRITICAL)
 logging.getLogger("vllm").setLevel(logging.CRITICAL)
@@ -99,6 +100,10 @@ os.environ["DISABLE_AIOHTTP_TRANSPORT"] = "True"
 # Enable the newer vLLM V1 engine, which is faster and offers more compatibility with
 # newer models
 os.environ["VLLM_USE_V1"] = "1"
+
+
+# Use the FlashInfer flash-attention backend for vLLM
+os.environ["VLLM_ATTENTION_BACKEND"] = "FLASHINFER"
 
 
 # Set the HF_TOKEN env var to copy the HUGGINGFACE_API_KEY env var, as vLLM uses the
