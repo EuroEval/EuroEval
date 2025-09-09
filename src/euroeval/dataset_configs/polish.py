@@ -41,7 +41,7 @@ KPWR_NER_CONFIG = DatasetConfig(
 PSC_CONFIG = DatasetConfig(
     name="psc",
     pretty_name="the Polish summarisation dataset PSC",
-    huggingface_id="EuroEval/psc",
+    huggingface_id="EuroEval/psc-mini",
     task=SUMM,
     languages=[PL],
 )
