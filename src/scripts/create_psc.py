@@ -74,7 +74,8 @@ def main() -> None:
         test=Dataset.from_pandas(test_df, split=Split.TEST),
     )
 
-    dataset_id = "EuroEval/psc"
+    dataset_id = "EuroEval/psc-mini"
+    
     # Push the dataset to the Hugging Face Hub
     HfApi().delete_repo(dataset_id, repo_type="dataset", missing_ok=True)
     dataset.push_to_hub(dataset_id, private=True)
