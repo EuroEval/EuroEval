@@ -49,7 +49,7 @@ PSC_CONFIG = DatasetConfig(
 LLMZSZL_CONFIG = DatasetConfig(
     name="llmzszl",
     pretty_name="the Polish multiple choice dataset LLMzSzŁ",
-    huggingface_id="EuroEval/llmzszl",
+    huggingface_id="EuroEval/llmzszl-mini",
     task=KNOW,
     languages=[PL],
 )
