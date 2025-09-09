@@ -569,7 +569,7 @@ $ euroeval --model <model-id> --dataset arc-sv
 ```
 
 
-### Unofficial: Skolprov-sv
+### Unofficial: Skolprov
 
 This dataset contains data from six Swedish knowledge tests and was published at [this HuggingFace repository](https://huggingface.co/datasets/Ekgren/swedish_skolprov). The dataset features multiple-choice questions from official Swedish examinations including the Swedish Scholastic Aptitude Test (högskoleprovet), medical doctor test (kunskapsprov läkare), dentist test (kunskapsprov tandläkare), audiologist test (kunskapsprov audionom), pharmacist test (kunskapsprov apotekare), and mathematics and physics test (matematik och fysikprovet).
 
