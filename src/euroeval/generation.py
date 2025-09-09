@@ -330,14 +330,21 @@ def debug_log(
     else:
         input_texts = batch["text"]
 
-    for input_text, raw_output, prediction, label in zip(
-        input_texts, model_output.sequences, extracted_labels, labels
-    ):
-        output_text = (
-            f"Input: '{input_text}'\n"
-            f"Raw output: '{raw_output}'\n"
-            f"Prediction: '{prediction}'"
+    metadata_keys: list[str] = [
+        key
+        for key in batch.keys()
+        if key not in ["text", "messages", "label", "labels", "target_text"]
+    ]
+
+    for idx in range(len(input_texts)):
+        data_to_log: dict[str, t.Any] = {
+            "Input": input_texts[idx],
+            "Raw output": model_output.sequences[idx],
+            "Prediction": extracted_labels[idx],
+        }
+        if labels[idx]:
+            data_to_log["Label"] = labels[idx]
+        data_to_log |= {key.capitalize(): batch[key][idx] for key in metadata_keys}
+        logger.info(
+            "\n".join(f"{key}: {value!r}" for key, value in data_to_log.items())
         )
-        if label is not None:
-            output_text += f"\nLabel: '{label}'"
-        logger.info(output_text)
