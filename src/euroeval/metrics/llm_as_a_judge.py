@@ -453,17 +453,10 @@ categories).
 3. The model's response should be accurate regardless of how it phrases the
    categories (synonyms/paraphrases are acceptable)
 
-**Output Format:**
-Respond with a JSON object:
-{
-    "all_missings_categories_identified": true/false,
-}
-
-Set "all_missings_categories_identified" to:
-- **true** if the model correctly identified all missing categories (and no
-  false positives)
-- **false** if the model missed any categories OR incorrectly identified
-  non-missing categories as missing""",
+You should output a JSON object with a single key "all_missings_categories_identified"
+that is True if the model correctly identified all missing categories (and no false
+positives), and False if the model missed any categories OR incorrectly identified
+non-missing categories as missing.""",
     response_format=CompletenessDetection,
     batch_scoring_fn=compute_f1_score,
 )
