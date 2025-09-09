@@ -155,3 +155,12 @@ EUROPEAN_VALUES_COMPLETIONS_SV_CONFIG = DatasetConfig(
     _instruction_prompt="{text}",
     unofficial=True,
 )
+
+SKOLPROV_SV_CONFIG = DatasetConfig(
+    name="skolprov-sv",
+    pretty_name="the Swedish knowledge dataset Skolprov",
+    huggingface_id="EuroEval/skolprov-sv",
+    task=KNOW,
+    languages=[SV],
+    unofficial=True,
+)

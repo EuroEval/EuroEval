@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 ### Added
+- Added the Swedish knowledge dataset Skolprov. It is unofficial for now.
 - Added the knowledge dataset Trivia-et for Estonian. The dataset contains 800 trivia
   questions about Estonia. In this version we rearrange the examples in
   240 / 60 / 500 samples for training, validation and test splits, respectively.

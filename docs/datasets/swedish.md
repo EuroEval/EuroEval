@@ -569,6 +569,71 @@ $ euroeval --model <model-id> --dataset arc-sv
 ```
 
 
+### Unofficial: Skolprov-sv
+
+This dataset contains data from six Swedish knowledge tests and was published at [this HuggingFace repository](https://huggingface.co/datasets/Ekgren/swedish_skolprov). The dataset features multiple-choice questions from official Swedish examinations including the Swedish Scholastic Aptitude Test (högskoleprovet), medical doctor test (kunskapsprov läkare), dentist test (kunskapsprov tandläkare), audiologist test (kunskapsprov audionom), pharmacist test (kunskapsprov apotekare), and mathematics and physics test (matematik och fysikprovet).
+
+The original dataset consists of 545 samples, which we filter down to 512 samples. We use a 192 / 64 / 256 split for training, validation and testing, respectively.
+
+Here are a few examples from the training split:
+
+
+```json
+{
+  "text": "En man, 63 år, har en skelett-, lymfkörtel-, och levermetastaserad prostatacancer där aktiv onkologisk behandling är avslutad. Han är inskriven i ett specialiserat palliativt hemsjukvårdsteam. Han har en långverkande smärtlindring med T. oxykodon 20 mg morgon och kväll. Nu söker han akut vård på grund av buksmärta och ihållande kräkningar. Vad bör du ordinera mot mannens smärtor?\nSvarsalternativ:\na. Tablett kortverkande oxykodon 5 mg peroralt\nb. Tablett ibuprofen 400 mg peroralt\nc. Tablett kortverkande oxykodon 20 mg peroralt\nd. Inj. 5 mg kortverkande oxykodon subkutant\ne. Paracetamol 1 g intravenöst",
+  "label": "d"
+}
+```
+```json
+{
+  "text": "Vilken typ av hörapparat är att föredra för barn under 3 år med en permenent sensorineural hörselnedsättning?\nSvarsalternativ:\na. RIC (reciever in the canal) med öppen dome\nb. benledd hörapparat\nc. bakom-örat-apparat med individuellt anpassad insats\nd. endast mikrofonsystem för att förbättra signal/brus förhållandet",
+  "label": "c"
+}
+```
+```json
+{
+  "text": "Varför är det viktigt med utredande samtal?\nSvarsalternativ:\na. Det kan etablera ett ömsesidigt förtroende mellan audionom och patient som underlag inför utförandet av en individuell, kvalitativ rehabilitering.\nb. Det ger audionomen möjlighet att observera patientens kommunikation som underlag inför utförandet av en individuell, kvalitativ rehabilitering.\nc. Det kan förbättra taluppfattningen som en del i utförandet av en individuell, kvalitativ rehabilitering.\nd. Det samlar nödvändig information om patienten, som underlag inför utförandet av en individuell, kvalitativ rehabilitering.",
+  "label": "d"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+  ```
+  Följande är flervalsfrågor (med svar).
+  ```
+- Base prompt template:
+  ```
+  Fråga: {text}
+  Svarsalternativ:
+  a. {option_a}
+  b. {option_b}
+  c. {option_c}
+  d. {option_d}
+  Svar: {label}
+  ```
+- Instruction-tuned prompt template:
+  ```
+  Fråga: {text}
+  Svarsalternativ:
+  a. {option_a}
+  b. {option_b}
+  c. {option_c}
+  d. {option_d}
+
+  Besvara följande fråga med 'a', 'b', 'c' eller 'd', och inget annat.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+$ euroeval --model <model-id> --dataset skolprov-sv
+```
+
+
 ## Common-sense Reasoning
 
 ### HellaSwag-sv
