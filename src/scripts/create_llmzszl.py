@@ -27,7 +27,7 @@ from sklearn.model_selection import train_test_split
 
 
 def main() -> None:
-    """Create the LLMZSZL Polish multiple choice dataset and upload it to the HF Hub."""
+    """Create the LLMzSzŁ Polish knowledge dataset and upload it to the HF Hub."""
     # Define the dataset ID
     repo_id = "amu-cai/llmzszl-dataset"
 
