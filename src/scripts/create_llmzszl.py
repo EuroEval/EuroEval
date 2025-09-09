@@ -9,7 +9,7 @@
 # ]
 # ///
 
-"""Create the LLMZSZL Polish multiple choice dataset and upload it to the HF Hub."""
+"""Create the LLMzSzŁ Polish knowledge dataset and upload it to the HF Hub."""
 
 from collections import Counter
 
@@ -27,7 +27,7 @@ from sklearn.model_selection import train_test_split
 
 
 def main() -> None:
-    """Create the LLMZSZL Polish multiple choice dataset and upload it to the HF Hub."""
+    """Create the LLMzSzŁ Polish knowledge dataset and upload it to the HF Hub."""
     # Define the dataset ID
     repo_id = "amu-cai/llmzszl-dataset"
 
@@ -139,7 +139,7 @@ def main() -> None:
     )
 
     # Create dataset ID
-    dataset_id = "EuroEval/llmzszl"
+    dataset_id = "EuroEval/llmzszl-mini"
 
     # Remove the dataset from Hugging Face Hub if it already exists
     HfApi().delete_repo(dataset_id, repo_type="dataset", missing_ok=True)

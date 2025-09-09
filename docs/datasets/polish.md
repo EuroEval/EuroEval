@@ -6,7 +6,7 @@ information about what these constitute.
 
 ## Sentiment Classification
 
-### PolEmo 2.0
+### PolEmo2
 This dataset was published in [this paper](https://aclanthology.org/K19-1092/) and consists of Polish online reviews from the medicine and hotels domains, annotated for sentiment. Each review is labelled as positive, negative, neutral, or ambiguous. We have filtered out the ambiguous samples.
 
 The original full dataset consists of 6,573 / 823 / 820 samples for the training, validation and test splits, respectively. We use 1,024 / 256 / 2,048 samples for our training, validation and test splits, respectively. The train and validation splits are subsets of the original splits. For the test split, we use all available test samples and supplement with additional samples from the training set to reach 2,048 samples in total.
@@ -140,7 +140,7 @@ $ euroeval --model <model-id> --dataset kpwr-ner
 
 ## Linguistic Acceptability
 
-### ScaLA-Pl
+### ScaLA-pl
 
 This dataset was published in [this paper](https://aclanthology.org/2023.nodalida-1.20/)
 and was automatically created from the [Polish Universal Dependencies
@@ -203,6 +203,7 @@ You can evaluate this dataset directly as follows:
 ```bash
 $ euroeval --model <model-id> --dataset scala-pl
 ```
+
 
 ## Reading Comprehension
 
@@ -326,9 +327,9 @@ $ euroeval --model <model-id> --dataset llmzszl
 
 ## Summarization
 
-### PSC (Polish Summaries Corpus)
+### PSC
 
-This dataset was published in [this paper](https://aclanthology.org/L14-1145/) and is a resource created for automated single-document summarization of Polish. The corpus contains manual summaries of news articles, with multiple independently created summaries for single texts to overcome annotator bias. It includes both abstract free-word summaries and extraction-based summaries created by selecting text spans from the original documents.
+The Polish Summaries Corpus (PSC) was published in [this paper](https://aclanthology.org/L14-1145/) and is a resource created for automated single-document summarization of Polish. The corpus contains manual summaries of news articles, with multiple independently created summaries for single texts to overcome annotator bias. It includes both abstract free-word summaries and extraction-based summaries created by selecting text spans from the original documents.
 
 The original dataset consists only of a training split. We use 1,024 / 256 / 2,048 samples for our training, validation and test splits, respectively. All splits are subsets of the original training data, with the validation and test splits sampled from the original training set.
 

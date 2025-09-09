@@ -17,7 +17,7 @@ SCALA_PL_CONFIG = DatasetConfig(
 POQUAD_CONFIG = DatasetConfig(
     name="poquad",
     pretty_name="the Polish question answering dataset PoQuAD",
-    huggingface_id="EuroEval/poquad",
+    huggingface_id="EuroEval/poquad-mini",
     task=RC,
     languages=[PL],
 )
@@ -25,7 +25,7 @@ POQUAD_CONFIG = DatasetConfig(
 POLEMO2_CONFIG = DatasetConfig(
     name="polemo2",
     pretty_name="the Polish sentiment analysis dataset PolEmo 2.0",
-    huggingface_id="EuroEval/polemo2",
+    huggingface_id="EuroEval/polemo2-mini",
     task=SENT,
     languages=[PL],
 )
@@ -41,7 +41,7 @@ KPWR_NER_CONFIG = DatasetConfig(
 PSC_CONFIG = DatasetConfig(
     name="psc",
     pretty_name="the Polish summarisation dataset PSC",
-    huggingface_id="EuroEval/psc",
+    huggingface_id="EuroEval/psc-mini",
     task=SUMM,
     languages=[PL],
 )
@@ -49,7 +49,7 @@ PSC_CONFIG = DatasetConfig(
 LLMZSZL_CONFIG = DatasetConfig(
     name="llmzszl",
     pretty_name="the Polish multiple choice dataset LLMzSzŁ",
-    huggingface_id="EuroEval/llmzszl",
+    huggingface_id="EuroEval/llmzszl-mini",
     task=KNOW,
     languages=[PL],
 )
