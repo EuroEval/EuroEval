@@ -218,32 +218,21 @@ Here are a few examples from the training split:
 
 ```json
 {
-    "context": "Gdański MKS reprezentuje 388 zakładów. Lech Wałęsa zwraca się do SB, by zaprzestały szykan wobec strajkujących i opozycyjnych działaczy. O godzinie 14 do stoczni przybywa wojewoda gdański w celu ustalenia szczegółów rozmów z delegacją rządową. 6 godzin później przybywa ona z wicepremierem Jagielskim na czele do Gdańska i rozpoczyna rozmowy z MKS-em. Transmituje się je na cały zakład. Nieco później do rozmów dołącza delegacja szczecińskiego MKS-u (skupiał on wtedy 134 zakłady). Ukazuje się pierwszy numer Strajkowego Biuletynu Informacyjnego „Solidarność”.\nW Gdańskiej Stoczni Remontowej na placu przed budynkiem Dyrekcji GSR odbywa się Msza Święta, którą koncelebruje ks. Henryk Jankowski.",
-    "question": "Kto odprawił mszę w stoczni?",
-    "answers": {
-        "text": array(["ks. Henryk Jankowski"], dtype=object),
-        "answer_start": array([673], dtype=int32)
-    }
-}
+  "context": "Luna (Karol Sevilla) jest nastolatką z Meksyku, która szczęśliwie jedzie przez życie na wrotkach. Jak każda dziewczyna w jej wieku, mieszka wraz ze swoją rodziną, chodzi do szkoły i ma swoją grupę znajomych. Ma również pracę jako dostawca w restauracji typu fast food. Luna spędza większość swojego czasu na wrotkach na nabrzeżu swego ukochanego miasta, słuchając piosenek skomponowanych przez jej najlepszego przyjaciela, Simóna (Michael Ronda). Ale jej życie przybiera jednak niespodziewany obrót, gdy jej rodzice otrzymują propozycję niemożliwą do odrzucenia..., jutro rodzina Valente musi opuścić swój ukochany dom i przenieść się do innego kraju, do Argentyny. Luna musi przystosować się do nowego życia, nowych przyjaciół i nowej szkoły, gdzie spotyka się świat luksusu i elit, który niewiele ma z nią wspólnego. Luna szuka schronienia w swojej jeździe na wrotkach, a przez nie odkrywa tor wrotkarski, Jam & Roller, który oferuje jej nowy wszechświat na kołach. Podczas tego nowego etapu w swoim życiu Luna rozwija swoją pasję do jazdy i tańca na wrotkach oraz odkrywa drogę do nowych przyjaciół i pierwszej miłości, którą znajduje w osobie zupełnie innej od niej samej, Matteo (Ruggero Pasquarelli). Na przeszkodzie stoi jednak najpopularniejsza dziewczyna w szkole i dziewczyna Matteo, Ámbar (Valentina Zenere), która za wszelką cenę chce uczynić życie Luny niemożliwym. Również podczas rozwijania swych pasji, Luna może być o krok od odkrycia swojej prawdziwej tożsamości.",
+  "question": "Gdzie przeprowadza się Luna?",
+  "answers": {'text': array(['do Argentyny'], dtype=object), 'answer_start': array([652], dtype=int32), 'generative_answer': array(['do Argentyny'], dtype=object)}}
 ```
 ```json
 {
-    "context": "W swojej kampanii reklamowej, uruchomionej z okazji otwarcia roller coastera, park błędnie określił Zadrę jako kolejkę górską drewnianą (ang. wooden coaster), podczas gdy według standardów branży model I-Box stanowi kolejkę górską stalową (stalowy tor) o hybrydowej konstrukcji podpór (stalowo-drewnianej). Niejasna była również sytuacja dotycząca ostatecznej wysokości konstrukcji, którą park określał w swoich materiałach jako 61, 63, a nawet 63,8 m. Podana wysokość 62,8 m pochodzi z wywiadu udzielonego w 2018 roku magazynowi branżowemu First Drop przez projektanta kolejki, Alana Schilke. W 2021 roku producent atrakcji potwierdził wymienione w wywiadzie parametry techniczne.", "question": "Z jakich materiałów zostały wykonane filary hybrydowej kolejki?",
-    "answers": {
-        "text": array(["stalowo-drewnianej"], dtype=object),
-        "answer_start": array([286], dtype=int32)
-        }
-}
+  "context": "W sezonie 1933 Ruch zdobył mistrzostwo Polski. Katzy zagrał w dziewiętnastu kolejkach ligowych. Jedynym meczem, w którym nie wystąpił, było spotkanie inauguracyjne sezon przeciwko Garbarni Kraków (6:0, 2 kwietnia 1933 roku). Podczas wyjazdowego meczu towarzyskiego z Polonią Karwina (4:1, 14 maja 1933 roku) został usunięty z boiska za krytykowanie decyzji sędziego. W październiku zagrał w przegranym sparingu reprezentacji Śląska, której przeciwnikiem była reprezentacja Polski (1:2, 4 października 1933 roku).",
+  "question": "W ilu rundach spotkań wziął udział Stefan Katzy?",
+  "answers": {'text': array(['w dziewiętnastu'], dtype=object), 'answer_start': array([60], dtype=int32), 'generative_answer': array(['W dziewiętnastu'], dtype=object)}}
 ```
 ```json
 {
-    "context": "Król spędzał swój czas w Aubonne, małej szwajcarskiej wiosce nad jeziorem Leman, ale od kilku lat mieszkał też w swojej rezydencji w zachodniej Rumunii (w Săvârşin, zamku kupionym przez rodzinę królewską w 1943 roku). Rodzina królewska korzysta także z prywatności zapewnionej przez Pałac Elżbiety, posiadłości w zielonym obszarze na północ od Bukaresztu, udostępnionym rodzinie królewskiej przez władze Rumunii. Tutaj właśnie, na pierwszym piętrze pałacu, król Michał zmuszony został do abdykacji 30 grudnia 1947 roku.",
-    "question": "Jaki organ pozwolił rodzinie królewskiej dysponować Pałacem Elżbiety?",
-    "answers": {
-        "text": array(["władze Rumunii"], dtype=object),
-        "answer_start": array([397], dtype=int32)
-    }
-}
+  "context": "Następnego dnia Amerykanie wysłali nad stację kolejową w Ploeszti 136 B-24 i 94 B-17 w asyście 132 P-38 i 48 P-47. 1 Grupa wysłała na przechwycenie 23 myśliwce IAR, ale tylko część z nich odnalazła bombowce meldując o zestrzeleniu trzech B-24. Sierż. Raghiga Dumitrescu stoczył walkę z czterema P-38, uszkadzając jeden z nich, jednak później sam został zestrzelony. Dwa inne samoloty lądowały na brzuchach. 5 Grupa poderwała 8 IAR-80 i 4 Bf 109E z 51 eskadry oraz 7 Bf 109E z 52 eskadry. Ich piloci odnotowali pięć zestrzeleń pewnych i jedno prawdopodobne. Kpt. Iliescu lądował awaryjnie uszkodzonym samolotem. 6 Grupa wykonała 49 lotów na IAR odnotowując pięć zwycięstw, w tym trzy potwierdzone, bez strat własnych. 7 Grupa wysłała 15 IAR-81C i 13 Bf 109G, meldując o trzech zwycięstwach przy stracie jednego samolotu. Piloci niemieckiego III/JG 77 meldowali o 16 zestrzelonych B-24 ze stratą 7 Bf 109G. O strąceniu 4 B-24 i 1 B-17 meldowali piloci z 10./JG 301. Sześć kolejnych Liberatorów mieli zestrzelić piloci II/JG 51, jednego B-17 lotnicy 12./NJG 6, a jednego P-51 pilot 1./JG 302. Prawdziwe straty Amerykanów wyniosły 10 B-24 (po pięć z 450. i 451. BG), trzy B-17 oraz jeden P-38 z 14. FG. Myśliwce eskorty nie odnotowały ani jednego zestrzelenia.", "question": "Czy sierżantowi Raghiga Dumitrescu udało się doprowadzić do awarii którego z samolotów P-38?",
+  "answers": {'text': array(['Sierż. Raghiga Dumitrescu stoczył walkę z czterema P-38, uszkadzając jeden z nich'],
+      dtype=object), 'answer_start': array([244], dtype=int32), 'generative_answer': array(['tak'], dtype=object)}}
 ```
 
 When evaluating generative models, we use the following setup (see the

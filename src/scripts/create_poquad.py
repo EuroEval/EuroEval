@@ -27,9 +27,9 @@ from requests.exceptions import HTTPError
 
 def main() -> None:
     """Create the PoQuaD-mini dataset and upload it to the HF Hub."""
-    dataset_id = "clarin-pl/poquad"
+    dataset_id = "mzasada/poquad_v2"
 
-    # Load the dataset from the `clarin-pl` organisation
+    # Load the dataset
     train = load_dataset(dataset_id, split="train")
     val = load_dataset(dataset_id, split="validation")
 
@@ -39,6 +39,9 @@ def main() -> None:
 
     # Merge the splits
     df = pd.concat([train.to_pandas(), val.to_pandas()], ignore_index=True)
+
+    # Ignore impossible questions
+    df = df[df.is_impossible == "False"]
 
     # Ensure that `df` is indeed a Pandas DataFrame
     assert isinstance(df, pd.DataFrame)
