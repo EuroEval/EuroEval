@@ -162,5 +162,6 @@ SKOLPROV_CONFIG = DatasetConfig(
     huggingface_id="EuroEval/skolprov",
     task=KNOW,
     languages=[SV],
+    splits=["train", "test"],
     unofficial=True,
 )
