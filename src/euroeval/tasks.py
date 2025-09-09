@@ -176,7 +176,7 @@ COMPLETENESS_DETECTION = Task(
     template_dict=LLM_AS_A_JUDGE_TEMPLATES,
     metrics=[m.completeness_detection_metric],
     default_num_few_shot_examples=0,
-    default_max_generated_tokens=32,
+    default_max_generated_tokens=128,
     default_labels=[],
     requires_zero_shot=True,
 )
