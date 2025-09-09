@@ -25,7 +25,7 @@ POQUAD_CONFIG = DatasetConfig(
 POLEMO2_CONFIG = DatasetConfig(
     name="polemo2",
     pretty_name="the Polish sentiment analysis dataset PolEmo 2.0",
-    huggingface_id="EuroEval/polemo2",
+    huggingface_id="EuroEval/polemo2-mini",
     task=SENT,
     languages=[PL],
 )
