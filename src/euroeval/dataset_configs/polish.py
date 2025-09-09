@@ -2,7 +2,7 @@
 
 from ..data_models import DatasetConfig
 from ..languages import PL
-from ..tasks import LA, NER, RC, SENT, SUMM
+from ..tasks import KNOW, LA, NER, RC, SENT, SUMM
 
 ### Official datasets ###
 
@@ -43,5 +43,13 @@ PSC_CONFIG = DatasetConfig(
     pretty_name="the Polish summarisation dataset PSC",
     huggingface_id="EuroEval/psc",
     task=SUMM,
+    languages=[PL],
+)
+
+LLMZSZL_CONFIG = DatasetConfig(
+    name="llmzszl",
+    pretty_name="the Polish multiple choice dataset LLMzSzŁ",
+    huggingface_id="EuroEval/llmzszl",
+    task=KNOW,
     languages=[PL],
 )

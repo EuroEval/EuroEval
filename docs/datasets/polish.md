@@ -279,6 +279,60 @@ $ euroeval --model <model-id> --dataset poquad
 
 ## Knowledge
 
+### LLMzSzŁ
+
+This dataset was created based on Polish national exams extracted from the archives of the Polish Central Examination Board. LLMzSzŁ (LLMs Behind the School Desk) represents the first comprehensive benchmark for the Polish language at this scale. The dataset features both academic and professional tests covering 4 types of exams from 154 different domains. The dataset was created to evaluate the ability of language models to transfer knowledge between languages and to assess their performance on Polish educational content.
+
+The original dataset consisted of almost 19,000 closed-ended questions in a single test split. We use a 1,024 / 256 / 2,048 split for training, validation and testing, respectively (so 3,328 samples used in total).
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Czujnik do pomiaru poziomu obciążenia, stosowany w wozach paszowych jako element systemu zdalnego ważenia masy mieszanki, jest czujnikiem\nChoices:\na. tensometrycznym.\nb. podczerwieni.\nc. indukcyjnym.\nd. optycznym.",
+  "label": "a"
+}
+```
+```json
+{
+  "text": "Wybierz prawidłową kolejność wykonania operacji remontowych maszyny.\nChoices:\na. Weryfikacja, regeneracja, oczyszczenie, demontaż, badanie i odbiór maszyny po remoncie.\nb. Demontaż, weryfikacja, oczyszczenie, regeneracja, badanie i odbiór maszyny po remoncie.\nc. Oczyszczenie, demontaż, weryfikacja, regeneracja, naprawa zespołów, montaż, badanie i odbiór maszyny po remoncie.\nd. Regeneracja, demontaż, weryfikacja, oczyszczenie, naprawa zespołów, regeneracja, badanie i odbiór maszyny po remoncie.",
+  "label": "c"
+}
+```
+```json
+{
+  "text": "Cieczą ciężką jednorodną nazywamy substancję ciekłą, której gęstość jest\nChoices:\na. równa gęstości wody.\nb. większa od gęstości wody.\nc. mniejsza od gęstości wody.\nd. wypadkową gęstości cieczy ciężkiej i wody.",
+  "label": "b"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+  ```
+  Poniżej znajdują się pytania wielokrotnego wyboru (z odpowiedziami).
+  ```
+- Base prompt template:
+  ```
+  Pytanie: {text}
+  Odpowiedź: {label}
+  ```
+- Instruction-tuned prompt template:
+  ```
+  Pytanie: {text}
+
+  Odpowiedz na powyższe pytanie, odpowiadając {labels_str}, i nic więcej.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+$ euroeval --model <model-id> --dataset llmzszl
+```
+
+
 ## Common-sense Reasoning
 
 ## Summarization
