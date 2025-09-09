@@ -2,7 +2,7 @@
 
 from ..data_models import DatasetConfig
 from ..languages import PL
-from ..tasks import LA, RC, SENT
+from ..tasks import LA, NER, RC, SENT
 
 ### Official datasets ###
 
@@ -27,5 +27,13 @@ POLEMO2_CONFIG = DatasetConfig(
     pretty_name="the Polish sentiment analysis dataset PolEmo 2.0",
     huggingface_id="EuroEval/polemo2",
     task=SENT,
+    languages=[PL],
+)
+
+KPWR_NER_CONFIG = DatasetConfig(
+    name="kpwr-ner",
+    pretty_name="the Polish entity recognition dataset KPWr-NER",
+    huggingface_id="EuroEval/kpwr-ner",
+    task=NER,
     languages=[PL],
 )

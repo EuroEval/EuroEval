@@ -19,6 +19,7 @@ from ..languages import (
     NL,
     NN,
     NO,
+    PL,
     PT,
     SV,
 )
@@ -335,6 +336,25 @@ NER_TEMPLATES: dict["Language", PromptConfig] = {
         "i frasen. Du bør outputte dette som en JSON-ordbok med nøklene {labels_str}."
         "Verdiene skal være lister over de navngitte enhetene "
         "av den typen, akkurat som de vises i frasen.",
+    ),
+    PL: PromptConfig(
+        default_prompt_label_mapping={
+            "b-per": "osoba",
+            "i-per": "osoba",
+            "b-loc": "lokalizacja",
+            "i-loc": "lokalizacja",
+            "b-org": "organizacja",
+            "i-org": "organizacja",
+            "b-misc": "różne",
+            "i-misc": "różne",
+        },
+        default_prompt_prefix="Poniżej znajdują się zdania i słowniki JSON z nazwanymi "
+        "jednostkami występującymi w danym zdaniu.",
+        default_prompt_template="Zdanie: {text}\nNazwane jednostki: {label}",
+        default_instruction_prompt="Zdanie: {text}\n\nZidentyfikuj nazwane jednostki "
+        "w zdaniu. Powinieneś wypisać to jako słownik JSON z kluczami "
+        "{labels_str}. Wartości powinny być listami nazwanych jednostek "
+        "tego typu, dokładnie tak jak pojawiają się w zdaniu.",
     ),
     SV: PromptConfig(
         default_prompt_label_mapping={

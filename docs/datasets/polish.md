@@ -70,6 +70,74 @@ $ euroeval --model <model-id> --dataset polemo2
 
 ## Named Entity Recognition
 
+### KPWr-NER
+
+This dataset was published in [this paper](https://aclanthology.org/L12-1574/) and is part of the KPWr (KrakówPoland Wrocław) corpus - a free Polish corpus annotated with various types of linguistic entities including named entities. The corpus was created to serve as training and testing material for Machine Learning algorithms and is released under a Creative Commons licence. The named entity annotations include persons, locations, organizations, and miscellaneous entities, which are mapped to standard BIO format labels.
+
+The original dataset uses the train and test splits from the source corpus. The validation split is created from the original training split. We use 1,024 / 256 / 2,048 samples for our training, validation and test splits, respectively. The train and validation splits are subsets of the original training split, while the test split is a subset of the original test split.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "tokens": array(['Rublowka', '(', 'ros', '.', 'Рублёвка', ')', '–', 'potoczna',
+       'nazwa', 'zachodniego', 'przedmieścia', 'Moskwy', '.'], dtype=object),
+  "labels": array(['B-LOC', 'O', 'O', 'O', 'B-LOC', 'O', 'O', 'O', 'O', 'O', 'O', 'B-LOC', 'O'], dtype=object)
+}
+```
+```json
+{
+  "tokens": array(['Wiele', 'z', 'nich', 'zebrał', 'w', 'tomie', 'Cymelium', '(',
+       '1978', ')', '.'], dtype=object),
+  "labels": array(['O', 'O', 'O', 'O', 'O', 'O', 'B-MISC', 'O', 'O', 'O', 'O'], dtype=object)
+}
+```
+```json
+{
+  "tokens": array(['Raul', 'Lozano', ':', 'Żeby', 'nie', 'było', ',', 'że',
+       'faworyzuje', 'mistrza', 'Polski', 'w', 'siatkówce', ',', 'nie',
+       'przyjechał', 'na', 'mecze', 'rozgrywane', 'w', 'Bełchatowie', '.'],
+      dtype=object),
+  "labels": array(['B-PER', 'I-PER', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'B-LOC', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'B-LOC', 'O'], dtype=object)
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 8
+- Prefix prompt:
+  ```
+  Poniżej znajdują się zdania i słowniki JSON z nazwanymi jednostkami występującymi w danym zdaniu.
+  ```
+- Base prompt template:
+  ```
+  Zdanie: {text}
+  Nazwane jednostki: {label}
+  ```
+- Instruction-tuned prompt template:
+  ```
+  Zdanie: {text}
+
+  Zidentyfikuj nazwane jednostki w zdaniu. Powinieneś wypisać to jako słownik JSON z kluczami 'osoba', 'lokalizacja', 'organizacja' i 'różne'. Wartości powinny być listami nazwanych jednostek tego typu, dokładnie tak jak pojawiają się w zdaniu.
+  ```
+- Label mapping:
+    - `B-PER` ➡️ `osoba`
+    - `I-PER` ➡️ `osoba`
+    - `B-LOC` ➡️ `lokalizacja`
+    - `I-LOC` ➡️ `lokalizacja`
+    - `B-ORG` ➡️ `organizacja`
+    - `I-ORG` ➡️ `organizacja`
+    - `B-MISC` ➡️ `różne`
+    - `I-MISC` ➡️ `różne`
+
+You can evaluate this dataset directly as follows:
+
+```bash
+$ euroeval --model <model-id> --dataset kpwr-ner
+```
+
+
 ## Linguistic Acceptability
 
 ### ScaLA-Pl
