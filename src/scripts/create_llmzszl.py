@@ -9,7 +9,7 @@
 # ]
 # ///
 
-"""Create the LLMZSZL Polish multiple choice dataset and upload it to the HF Hub."""
+"""Create the LLMzSzŁ Polish knowledge dataset and upload it to the HF Hub."""
 
 from collections import Counter
 
