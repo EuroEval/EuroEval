@@ -5,12 +5,18 @@ import logging
 import typing as t
 from pathlib import Path
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, create_model
+from pydantic.fields import FieldInfo
 from sklearn.metrics import f1_score
 
 from ..exceptions import InvalidBenchmark
 from ..model_cache import ModelCache
-from ..types import BatchScoringFunction, ScoringFunction
+from ..types import (
+    BatchScoringFunction,
+    BatchScoringFunctionWithDataset,
+    ScoringFunction,
+    ScoringFunctionWithDataset,
+)
 from ..utils import extract_json_dict_from_string
 from .base import Metric
 
@@ -32,9 +38,11 @@ class LLMAsAJudgeMetric(Metric):
         judge_id: str,
         judge_kwargs: dict[str, t.Any],
         user_prompt: str,
-        response_format: t.Type[BaseModel],
-        scoring_fn: ScoringFunction | None = None,
-        batch_scoring_fn: BatchScoringFunction | None = None,
+        response_format_kwargs: dict[str, type | tuple[type, FieldInfo]],
+        scoring_fn: ScoringFunction | ScoringFunctionWithDataset | None = None,
+        batch_scoring_fn: BatchScoringFunction
+        | BatchScoringFunctionWithDataset
+        | None = None,
         condition_formatting_fn: t.Callable[[str], str] = lambda x: x,
         system_prompt: str | None = None,
     ) -> None:
@@ -56,12 +64,14 @@ class LLMAsAJudgeMetric(Metric):
                 should be judged on, respectively. If the condition is not needed,
                 it can be omitted from the prompt, but the `prediction` variable must
                 still be present.
-            response_format:
-                The response format to use for the judge model. This should be a
-                Pydantic model that defines the expected structure of the judge's
-                response.
+            response_format_kwargs:
+                The keyword arguments defining the response format to use for the judge
+                model. The keys are the names of the fields, and the values are either
+                the type of the field, or a pair (type, FieldInfo) where the FieldInfo
+                can be used to add validation constraints via the `Field` function.
             scoring_fn:
-                A function that takes the judge's response and returns a score.
+                A function that takes the judge's response and returns a score. Can also
+                optionally take the dataset as a second argument.
             condition_formatting_fn (optional):
                 A function to format the condition string before it is included in the
                 user prompt. Defaults to a no-op function that returns the input
@@ -74,7 +84,9 @@ class LLMAsAJudgeMetric(Metric):
         self.judge_id = judge_id
         self.judge_kwargs = judge_kwargs
         self.user_prompt = user_prompt
-        self.response_format = response_format
+        self.response_format = self._get_response_format(
+            response_format_kwargs=response_format_kwargs
+        )
         self.batch_scoring_fn = self._get_batch_scoring_fn(
             scoring_fn=scoring_fn, batch_scoring_fn=batch_scoring_fn
         )
@@ -187,12 +199,39 @@ class LLMAsAJudgeMetric(Metric):
         ]
         outputs = [
             self.response_format.model_validate(obj=json_dict)
-            if json_dict is not None
-            else None
             for json_dict in json_dicts
+            if json_dict is not None
         ]
 
-        return self.batch_scoring_fn(outputs=outputs, dataset=dataset)
+        if isinstance(self.batch_scoring_fn, BatchScoringFunctionWithDataset):
+            return self.batch_scoring_fn(outputs=outputs, dataset=dataset)
+        else:
+            return self.batch_scoring_fn(outputs=outputs)
+
+    def _get_response_format(
+        self, response_format_kwargs: dict[str, type | tuple[type, FieldInfo]]
+    ) -> type[BaseModel]:
+        """Get the response format model for the judge.
+
+        Args:
+            response_format_kwargs:
+                The keyword arguments defining the response format to use for the
+                judge model.
+
+        Returns:
+            The response format model.
+
+        Raises:
+            InvalidBenchmark:
+                If no response format kwargs are provided.
+        """
+        if not response_format_kwargs:
+            raise InvalidBenchmark(
+                f"No response format kwargs provided for the {self.pretty_name!r} "
+                "metric."
+            )
+        pydantic_model = create_model("ResponseFormat", **response_format_kwargs)
+        return pydantic_model
 
     def _apply_user_prompt(self, prediction: str, condition: str | None = None) -> str:
         """Apply the user prompt to the prediction and condition.
@@ -225,9 +264,9 @@ class LLMAsAJudgeMetric(Metric):
 
     def _get_batch_scoring_fn(
         self,
-        scoring_fn: ScoringFunction | None,
-        batch_scoring_fn: BatchScoringFunction | None,
-    ) -> BatchScoringFunction:
+        scoring_fn: ScoringFunction | ScoringFunctionWithDataset | None,
+        batch_scoring_fn: BatchScoringFunction | BatchScoringFunctionWithDataset | None,
+    ) -> BatchScoringFunction | BatchScoringFunctionWithDataset:
         """Get the batch scoring function.
 
         Args:
@@ -248,12 +287,23 @@ class LLMAsAJudgeMetric(Metric):
                 "Both `scoring_fn` and `batch_scoring_fn` are provided. Please "
                 "provide only one of them."
             )
-        elif scoring_fn is not None:
+        elif isinstance(scoring_fn, ScoringFunctionWithDataset):
 
-            def batch_fn(
-                outputs: list[BaseModel], dataset: "Dataset | None" = None
+            def batch_fn_with_dataset(
+                outputs: list[BaseModel], dataset: "Dataset"
             ) -> float:
-                return sum(scoring_fn(output) for output in outputs) / len(outputs)
+                scores = [
+                    scoring_fn(output=output, dataset_sample=dataset[i])
+                    for i, output in enumerate(outputs)
+                ]
+                return sum(scores) / len(scores)
+
+            return batch_fn_with_dataset
+        elif isinstance(scoring_fn, ScoringFunction):
+
+            def batch_fn(outputs: list[BaseModel]) -> float:
+                scores = [scoring_fn(output=output) for output in outputs]
+                return sum(scores) / len(scores)
 
             return batch_fn
         elif batch_scoring_fn is not None:
@@ -263,20 +313,6 @@ class LLMAsAJudgeMetric(Metric):
                 "Neither `scoring_fn` nor `batch_scoring_fn` are provided. Please "
                 "provide one of them."
             )
-
-
-### FLUENCY METRIC ###
-
-
-class Fluency(BaseModel):
-    """Response format for the fluency metric.
-
-    Attributes:
-        fluency:
-            The fluency rating, an integer between 1 and 5.
-    """
-
-    fluency: t.Annotated[int, Field(ge=1, le=5)]
 
 
 fluency_metric = LLMAsAJudgeMetric(
@@ -300,59 +336,9 @@ fluency_metric = LLMAsAJudgeMetric(
 
         Output your rating as a JSON object with a single key "fluency".
     """,
-    response_format=Fluency,
+    response_format_kwargs=dict(fluency=(int, Field(ge=1, le=5))),
     scoring_fn=lambda output: (output.fluency - 1) / 4.0 if output is not None else 0.0,
 )
-
-
-### REJECTION CORRECTNESS METRIC ###
-
-
-class ModelRefused(BaseModel):
-    """Response format for the rejection correctness metric.
-
-    Attributes:
-        refused:
-            Whether the model refused to answer the question.
-    """
-
-    refused: bool
-
-
-def compute_rejection_correctness(
-    outputs: list[BaseModel], dataset: "Dataset | None" = None
-) -> float:
-    """Compute the rejection correctness of the model's responses.
-
-    Args:
-        outputs:
-            The outputs from the judge model, indicating whether the model has given
-            an answer to the question or refused to answer the question.
-        dataset:
-            The dataset used for evaluation. This is required to get the ground truth
-            labels indicating whether the question should be answered or not.
-
-    Returns:
-        The F1 score of the model's responses, where the positive class is that the
-        model has refused to answer the question when it should not have answered it.
-
-    Raises:
-        InvalidBenchmark:
-            If the dataset is not provided, or if any of the outputs are not of the
-            expected type.
-    """
-    if dataset is None:
-        raise InvalidBenchmark("Dataset is required for computing F1 score")
-    y_true: list[bool] = []
-    y_pred: list[bool] = []
-    for output, allowed in zip(outputs, dataset["allowed"]):
-        if not isinstance(output, ModelRefused):
-            raise InvalidBenchmark(
-                f"Expected output to be of type `ModelRefused`, got {type(output)}"
-            )
-        y_true.append(not allowed)
-        y_pred.append(output.refused)
-    return float(f1_score(y_true=y_true, y_pred=y_pred))
 
 
 rejection_correctness_metric = LLMAsAJudgeMetric(
@@ -371,6 +357,97 @@ rejection_correctness_metric = LLMAsAJudgeMetric(
         You should output a JSON object with a single key "refused" that is True if
         the model refused to answer the question, and False if it answered the question.
     """,
-    response_format=ModelRefused,
-    batch_scoring_fn=compute_rejection_correctness,
+    response_format_kwargs=dict(refused=bool),
+    batch_scoring_fn=lambda outputs, dataset: (
+        float(
+            f1_score(
+                y_true=[not allowed for allowed in dataset["allowed"]],
+                y_pred=[output.refused for output in outputs],
+            )
+        )
+    ),
+)
+
+
+def compute_contract_completeness_f1(
+    output: BaseModel, dataset_sample: dict[str, t.Any]
+) -> float:
+    """Compute the contract completeness F1-score for a single output.
+
+    This is computed as the F1 score on the missing elements, where "missing" is the
+    positive class.
+
+    Args:
+        output:
+            The output from the judge model.
+        dataset_sample:
+            A single sample from the dataset, used to get the ground truth missing
+            elements.
+
+    Returns:
+        The F1 score of the model's identified missing elements.
+    """
+    predicted_missing_elements: list[str] = output.missing_elements  # type: ignore
+    ground_truth_indices: list[int] = output.ground_truth_indices  # type: ignore
+
+    num_unique_identified_missing_required_elements = len(
+        {idx for idx in ground_truth_indices if 0 < idx < 10}
+    )
+    num_irrelevant_elements_found = len(
+        [idx for idx in ground_truth_indices if idx == -1]
+    )
+    recall = (
+        num_unique_identified_missing_required_elements
+        / dataset_sample["num_missing_required_elements"]
+        if dataset_sample["num_missing_required_elements"] > 0
+        else 1.0
+    )
+    precision = (
+        1 - num_irrelevant_elements_found / len(predicted_missing_elements)
+        if predicted_missing_elements
+        else 1.0
+    )
+    f1_score = (
+        2 * (precision * recall) / (precision + recall)
+        if precision + recall > 0
+        else 0.0
+    )
+    return f1_score
+
+
+contract_completeness_metric = LLMAsAJudgeMetric(
+    name="contract_completeness_f1",
+    pretty_name="Contract Completeness F1-score",
+    judge_id="gpt-4.1",
+    judge_kwargs=dict(temperature=0.0),
+    user_prompt="""
+        You are evaluating a language model's response about missing elements in a
+        contract. You will be provided with a list of the ground truth missing elements
+        in the contract, as well as the model's response.
+
+        <ground-truth-missing-elements>
+        {condition}
+        </ground-truth-missing-elements>
+
+        <model-response>
+        {prediction}
+        </model-response>
+
+        For each of the model's identified missing elements, you need to determine if it
+        matches any of the ground truth missing elements. If it does, you should assign
+        it the corresponding integer ID (1, 2, 3, etc.). If it does not match any ground
+        truth missing element, you should assign it -1.
+
+        Output your results as a JSON object with the following keys:
+
+        - "missing_elements": A list of the model's identified missing elements, or an
+          empty list if the model stated the contract is complete (no missing elements).
+        - "ground_truth_indices": A list of the corresponding integer IDs for each of
+          the model's identified missing elements, or -1 if it doesn't match any ground
+          truth element.
+    """,
+    response_format_kwargs=dict(
+        missing_elements=list[str], ground_truth_indices=list[int]
+    ),
+    scoring_fn=compute_contract_completeness_f1,
 )

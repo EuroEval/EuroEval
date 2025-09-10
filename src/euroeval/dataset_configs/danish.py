@@ -4,6 +4,7 @@ from ..data_models import DatasetConfig
 from ..languages import DA
 from ..tasks import (
     COMMON_SENSE,
+    COMPLETENESS_DETECTION,
     EUROPEAN_VALUES,
     KNOW,
     LA,
@@ -195,4 +196,24 @@ LEGAL_STAY_ON_TOPIC_CONFIG = DatasetConfig(
     languages=[DA],
     splits=["test"],
     unofficial=True,
+)
+
+CONTRACT_COMPLETENESS_DETECTION_CONFIG = DatasetConfig(
+    name="contract-completeness-detection",
+    pretty_name="the Danish legal benchmark dataset Contract Completeness Detection",
+    huggingface_id="EuroEval/legal-completeness-detection",
+    task=COMPLETENESS_DETECTION,
+    languages=[DA],
+    splits=["test"],
+    unofficial=True,
+    _instruction_prompt="""
+        Identificér om følgende kontrakt mangler en eller flere elementer.
+
+        <kontrakt>
+        {text}
+        </kontrakt>
+
+        Beskriv maksimalt 3 manglende elementer, eller skriv "Kontrakten er
+        fuldstændig." hvis kontrakten ikke mangler noget.
+    """,
 )

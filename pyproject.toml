@@ -33,7 +33,7 @@ dependencies = [
     "rouge-score>=0.1.2",
     "bert-score>=0.3.13",
     "levenshtein>=0.24.0",
-    "scikit-learn==1.6.1",  # Required for loading European values pipeline
+    "scikit-learn==1.6.1", # Required for loading European values pipeline
     "setuptools>=75.8.2",
     "demjson3>=3.0.6",
     "ollama>=0.5.1",
