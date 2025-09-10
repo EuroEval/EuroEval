@@ -203,7 +203,10 @@ class VLLMModel(HuggingFaceEncoderModel):
             type_ = GenerativeType.REASONING
         elif self.model_config.param in {"no-thinking"}:
             type_ = GenerativeType.INSTRUCTION_TUNED
-        elif self.end_of_reasoning_token is not None:
+        elif (
+            hasattr(self, "end_of_reasoning_token")
+            and self.end_of_reasoning_token is not None
+        ):
             type_ = GenerativeType.REASONING
         elif (
             has_chat_template(tokeniser=self._tokeniser)
