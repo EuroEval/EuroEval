@@ -426,7 +426,7 @@ def apply_prompt(
 
 
 def raise_if_wrong_params(
-    model_config: ModelConfig, allowed_params: dict[re.Pattern, list[str]]
+    model_config: "ModelConfig", allowed_params: dict[re.Pattern, list[str]]
 ) -> None:
     """Raise an error if the model configuration has invalid parameters.
 
