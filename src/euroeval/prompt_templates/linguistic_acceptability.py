@@ -20,6 +20,7 @@ from ..languages import (
     NN,
     NO,
     PL,
+    PT,
     SV,
 )
 
@@ -74,6 +75,14 @@ LA_TEMPLATES: dict["Language", PromptConfig] = {
         default_prompt_template="Tekst: {text}\nGramatycznie poprawny: {label}",
         default_instruction_prompt="Tekst: {text}\n\nOkreśl czy tekst jest "
         "gramatycznie poprawny czy nie. Odpowiedz {labels_str}, i nic więcej.",
+    ),
+    PT: PromptConfig(
+        default_prompt_label_mapping=dict(correct="sim", incorrect="não"),
+        default_prompt_prefix="Seguem-se abaixo textos e se são "
+        "gramaticalmente correctos",
+        default_prompt_template="Texto: {text}\nGramaticalmente correcto: {label}",
+        default_instruction_prompt="Texto: {text}\n\nDetermina se o texto é "
+        "gramaticalmente correcto ou não. Responde com {labels_str}, e nada mais.",
     ),
     FI: PromptConfig(
         default_prompt_label_mapping=dict(correct="kyllä", incorrect="ei"),

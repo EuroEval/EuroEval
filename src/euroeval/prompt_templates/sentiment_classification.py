@@ -20,6 +20,7 @@ from ..languages import (
     NN,
     NO,
     PL,
+    PT,
     SV,
 )
 
@@ -91,6 +92,16 @@ SENT_TEMPLATES: dict["Language", PromptConfig] = {
             "Dokument: {text}\n\nKlasyfikuj sentyment w dokumencie. "
             "Odpowiedz z {labels_str}, i nic więcej."
         ),
+    ),
+    PT: PromptConfig(
+        default_prompt_label_mapping=dict(
+            positive="positivo", neutral="neutro", negative="negativo"
+        ),
+        default_prompt_prefix="Abaixo encontras documentos e os seus "
+        "sentimentos correspondentes, que podem ser {labels_str}.",
+        default_prompt_template="Documento: {text}\nSentimento: {label}",
+        default_instruction_prompt="Documento: {text}\n\nClassifica o "
+        "sentimento do documento. Responde apenas com {labels_str}.",
     ),
     FI: PromptConfig(
         default_prompt_label_mapping=dict(
