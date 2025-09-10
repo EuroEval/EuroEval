@@ -4,10 +4,11 @@ import itertools as it
 import json
 import logging
 import random
+import re
 import typing as t
 
 from .enums import GenerativeType, TaskGroup
-from .exceptions import InvalidBenchmark
+from .exceptions import InvalidBenchmark, InvalidModel
 from .tokenisation_utils import apply_chat_template
 from .utils import extract_multiple_choice_labels, log_once
 
@@ -422,3 +423,42 @@ def apply_prompt(
     examples["prompt"] = [new_prompt for new_prompt, _ in new_sections]
 
     return examples
+
+
+def raise_if_wrong_params(
+    model_config: ModelConfig, allowed_params: dict[re.Pattern, list[str]]
+) -> None:
+    """Raise an error if the model configuration has invalid parameters.
+
+    Args:
+        model_config:
+            The model configuration.
+        allowed_params:
+            The allowed parameters for the model, being a dictionary mapping a regex
+            pattern matching the model ID to a list of allowed parameters for those
+            models.
+
+    Raises:
+        InvalidModel:
+            If the model configuration has invalid parameters.
+    """
+    if model_config.param is None:
+        return
+    for model_regex, allowed_params_list in allowed_params.items():
+        if re.fullmatch(pattern=model_regex, string=model_config.model_id):
+            if model_config.param not in allowed_params_list:
+                msg = (
+                    f"Invalid parameter {model_config.param!r} for model "
+                    f"{model_config.model_id!r}."
+                )
+                if allowed_params_list:
+                    msg += f" Allowed parameters are: {', '.join(allowed_params_list)}."
+                else:
+                    msg += " No parameters are allowed."
+                raise InvalidModel(msg)
+            return
+    else:
+        raise InvalidModel(
+            f"The parameter {model_config.param!r} is not supported for the model "
+            f"{model_config.model_id!r}."
+        )

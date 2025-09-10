@@ -44,7 +44,11 @@ from ..exceptions import (
     NeedsEnvironmentVariable,
     NeedsExtraInstalled,
 )
-from ..generation_utils import apply_prompt, extract_few_shot_examples
+from ..generation_utils import (
+    apply_prompt,
+    extract_few_shot_examples,
+    raise_if_wrong_params,
+)
 from ..languages import get_all_languages
 from ..task_group_utils import (
     question_answering,
@@ -92,6 +96,11 @@ if t.TYPE_CHECKING:
 logger = logging.getLogger("euroeval")
 
 
+ALLOWED_VLLM_PARAMS = {
+    re.compile(r".*"): ["thinking", "no-thinking"]  # Matches model ID
+}
+
+
 class VLLMModel(HuggingFaceEncoderModel):
     """A generative model using the vLLM inference framework."""
 
@@ -120,6 +129,10 @@ class VLLMModel(HuggingFaceEncoderModel):
         """
         if importlib.util.find_spec("vllm") is None:
             raise NeedsExtraInstalled(extra="generative")
+
+        raise_if_wrong_params(
+            model_config=model_config, allowed_params=ALLOWED_VLLM_PARAMS
+        )
 
         model, tokeniser = load_model_and_tokeniser(
             model_config=model_config, benchmark_config=benchmark_config

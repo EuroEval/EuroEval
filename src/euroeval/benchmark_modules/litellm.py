@@ -65,7 +65,11 @@ from ..exceptions import (
     NeedsEnvironmentVariable,
     NeedsExtraInstalled,
 )
-from ..generation_utils import apply_prompt, extract_few_shot_examples
+from ..generation_utils import (
+    apply_prompt,
+    extract_few_shot_examples,
+    raise_if_wrong_params,
+)
 from ..task_group_utils import (
     question_answering,
     sequence_classification,
@@ -154,18 +158,22 @@ NUM_PARAMS_MAPPING = {
 }
 
 
-ALLOWED_PARAMS = {
+ALLOWED_LITELLM_PARAMS = {
     # OpenAI models
-    r"gpt-5-.*": ["minimal", "low", "medium", "high"],
-    r"o[1-9](-mini|-preview)?(-[0-9]{4}-[0-9]{2}-[0-9]{2})?": ["low", "medium", "high"],
+    re.compile(r"gpt-5-.*"): ["minimal", "low", "medium", "high"],
+    re.compile(r"o[1-9](-mini|-preview)?(-[0-9]{4}-[0-9]{2}-[0-9]{2})?"): [
+        "low",
+        "medium",
+        "high",
+    ],
     # Anthropic models
-    r"(anthropic/)?claude-3-7-sonnet.*": ["no-thinking", "thinking"],
-    r"(anthropic/)?claude-(sonnet|opus)-4.*": ["no-thinking", "thinking"],
+    re.compile(r"(anthropic/)?claude-3-7-sonnet.*"): ["no-thinking", "thinking"],
+    re.compile(r"(anthropic/)?claude-(sonnet|opus)-4.*"): ["no-thinking", "thinking"],
     # Gemini models
-    r"(gemini/)?gemini-2.5-flash-lite.*": ["no-thinking", "thinking"],
-    r"(gemini/)?gemini-2.5-flash.*": ["no-thinking", "thinking"],
+    re.compile(r"(gemini/)?gemini-2.5-flash-lite.*"): ["no-thinking", "thinking"],
+    re.compile(r"(gemini/)?gemini-2.5-flash.*"): ["no-thinking", "thinking"],
     # xAI models
-    r"(xai/)?grok-3-mini(-fast)?(-beta)?": ["low", "medium", "high"],
+    re.compile(r"(xai/)?grok-3-mini(-fast)?(-beta)?"): ["low", "medium", "high"],
 }
 
 
@@ -216,6 +224,10 @@ class LiteLLMModel(BenchmarkModule):
                 The generation kwargs to pass to the model. If None, default values will
                 be used.
         """
+        raise_if_wrong_params(
+            model_config=model_config, allowed_params=ALLOWED_LITELLM_PARAMS
+        )
+
         # Detect whether the model is an Ollama model, as we need to extract metadata
         # differently for these models
         self.is_ollama = model_config.model_id.startswith(
@@ -226,8 +238,6 @@ class LiteLLMModel(BenchmarkModule):
             if self.is_ollama
             else ollama.ShowResponse(model_info=None)
         )
-
-        raise_if_wrong_params(model_config=model_config, allowed_params=ALLOWED_PARAMS)
 
         super().__init__(
             model_config=model_config,
@@ -1497,43 +1507,6 @@ class LiteLLMModel(BenchmarkModule):
             )
 
         return generation_kwargs
-
-
-def raise_if_wrong_params(
-    model_config: ModelConfig, allowed_params: dict[str, list[str]]
-) -> None:
-    """Raise an error if the model configuration has invalid parameters.
-
-    Args:
-        model_config:
-            The model configuration.
-        allowed_params:
-            The allowed parameters for the model.
-
-    Raises:
-        InvalidModel:
-            If the model configuration has invalid parameters.
-    """
-    if model_config.param is None:
-        return
-    for model_regex, allowed_params_list in allowed_params.items():
-        if re.fullmatch(pattern=model_regex, string=model_config.model_id):
-            if model_config.param not in allowed_params_list:
-                msg = (
-                    f"Invalid parameter {model_config.param!r} for model "
-                    f"{model_config.model_id!r}."
-                )
-                if allowed_params_list:
-                    msg += f" Allowed parameters are: {', '.join(allowed_params_list)}."
-                else:
-                    msg += " No parameters are allowed."
-                raise InvalidModel(msg)
-            return
-    else:
-        raise InvalidModel(
-            f"The parameter {model_config.param!r} is not supported for the model "
-            f"{model_config.model_id!r}."
-        )
 
 
 def try_download_ollama_model(model_id: str) -> bool:
