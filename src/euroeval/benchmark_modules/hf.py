@@ -57,6 +57,7 @@ from ..exceptions import (
     NeedsEnvironmentVariable,
     NeedsExtraInstalled,
 )
+from ..generation_utils import raise_if_wrong_params
 from ..languages import get_all_languages
 from ..task_group_utils import (
     multiple_choice_classification,
@@ -112,6 +113,10 @@ class HuggingFaceEncoderModel(BenchmarkModule):
             log_metadata:
                 Whether to log the model metadata.
         """
+        raise_if_wrong_params(
+            model_config=model_config, allowed_params=self.allowed_params
+        )
+
         model, tokeniser = load_model_and_tokeniser(
             model_config=model_config,
             dataset_config=dataset_config,

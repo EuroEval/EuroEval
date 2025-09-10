@@ -158,25 +158,6 @@ NUM_PARAMS_MAPPING = {
 }
 
 
-ALLOWED_LITELLM_PARAMS = {
-    # OpenAI models
-    re.compile(r"gpt-5-.*"): ["minimal", "low", "medium", "high"],
-    re.compile(r"o[1-9](-mini|-preview)?(-[0-9]{4}-[0-9]{2}-[0-9]{2})?"): [
-        "low",
-        "medium",
-        "high",
-    ],
-    # Anthropic models
-    re.compile(r"(anthropic/)?claude-3-7-sonnet.*"): ["no-thinking", "thinking"],
-    re.compile(r"(anthropic/)?claude-(sonnet|opus)-4.*"): ["no-thinking", "thinking"],
-    # Gemini models
-    re.compile(r"(gemini/)?gemini-2.5-flash-lite.*"): ["no-thinking", "thinking"],
-    re.compile(r"(gemini/)?gemini-2.5-flash.*"): ["no-thinking", "thinking"],
-    # xAI models
-    re.compile(r"(xai/)?grok-3-mini(-fast)?(-beta)?"): ["low", "medium", "high"],
-}
-
-
 REASONING_MODELS = [
     r"o[1-9](-mini|-preview)?(-[0-9]{4}-[0-9]{2}-[0-9]{2})?",
     r"(gemini/)?gemini.*thinking.*",
@@ -200,6 +181,26 @@ class LiteLLMModel(BenchmarkModule):
     fresh_model = False
     batching_preference = BatchingPreference.ALL_AT_ONCE
     high_priority = False
+    allowed_params = {
+        # OpenAI models
+        re.compile(r"gpt-5-.*"): ["minimal", "low", "medium", "high"],
+        re.compile(r"o[1-9](-mini|-preview)?(-[0-9]{4}-[0-9]{2}-[0-9]{2})?"): [
+            "low",
+            "medium",
+            "high",
+        ],
+        # Anthropic models
+        re.compile(r"(anthropic/)?claude-3-7-sonnet.*"): ["no-thinking", "thinking"],
+        re.compile(r"(anthropic/)?claude-(sonnet|opus)-4.*"): [
+            "no-thinking",
+            "thinking",
+        ],
+        # Gemini models
+        re.compile(r"(gemini/)?gemini-2.5-flash-lite.*"): ["no-thinking", "thinking"],
+        re.compile(r"(gemini/)?gemini-2.5-flash.*"): ["no-thinking", "thinking"],
+        # xAI models
+        re.compile(r"(xai/)?grok-3-mini(-fast)?(-beta)?"): ["low", "medium", "high"],
+    }
 
     def __init__(
         self,
@@ -225,7 +226,7 @@ class LiteLLMModel(BenchmarkModule):
                 be used.
         """
         raise_if_wrong_params(
-            model_config=model_config, allowed_params=ALLOWED_LITELLM_PARAMS
+            model_config=model_config, allowed_params=self.allowed_params
         )
 
         # Detect whether the model is an Ollama model, as we need to extract metadata

@@ -25,6 +25,7 @@ from ..exceptions import (
     NeedsEnvironmentVariable,
     NeedsExtraInstalled,
 )
+from ..generation_utils import raise_if_wrong_params
 from ..utils import block_terminal_output, create_model_cache_dir, get_hf_token
 from .hf import (
     HuggingFaceEncoderModel,
@@ -64,6 +65,10 @@ class FreshEncoderModel(HuggingFaceEncoderModel):
             log_metadata:
                 Whether to log metadata about the model and the benchmark.
         """
+        raise_if_wrong_params(
+            model_config=model_config, allowed_params=self.allowed_params
+        )
+
         # This is already set when calling `super.__init__`, but we need it to get a
         # value from `self.model_max_length`, so we set it here as well.
         self.model_config = model_config

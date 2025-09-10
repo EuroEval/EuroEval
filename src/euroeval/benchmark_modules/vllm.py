@@ -96,17 +96,13 @@ if t.TYPE_CHECKING:
 logger = logging.getLogger("euroeval")
 
 
-ALLOWED_VLLM_PARAMS = {
-    re.compile(r".*"): ["thinking", "no-thinking"]  # Matches model ID
-}
-
-
 class VLLMModel(HuggingFaceEncoderModel):
     """A generative model using the vLLM inference framework."""
 
     fresh_model = False
     batching_preference = BatchingPreference.ALL_AT_ONCE
     high_priority = True
+    allowed_params = {re.compile(r".*"): ["thinking", "no-thinking"]}
 
     def __init__(
         self,
@@ -131,7 +127,7 @@ class VLLMModel(HuggingFaceEncoderModel):
             raise NeedsExtraInstalled(extra="generative")
 
         raise_if_wrong_params(
-            model_config=model_config, allowed_params=ALLOWED_VLLM_PARAMS
+            model_config=model_config, allowed_params=self.allowed_params
         )
 
         model, tokeniser = load_model_and_tokeniser(
