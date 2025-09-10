@@ -3,7 +3,25 @@
 import typing as t
 
 from ..data_models import PromptConfig
-from ..languages import DA, DE, EN, ES, ET, FI, FR, IS, IT, LV, NB, NL, NN, NO, PT, SV
+from ..languages import (
+    DA,
+    DE,
+    EN,
+    ES,
+    ET,
+    FI,
+    FR,
+    IS,
+    IT,
+    LV,
+    NB,
+    NL,
+    NN,
+    NO,
+    PL,
+    PT,
+    SV,
+)
 
 if t.TYPE_CHECKING:
     from ..data_models import Language
@@ -120,6 +138,14 @@ SUMM_TEMPLATES: dict["Language", PromptConfig] = {
         default_prompt_template="Dokument: {text}\nSammendrag: {target_text}",
         default_instruction_prompt="Dokument: {text}\n\nSkriv et sammendrag av "
         "dokumentet ovenfor.",
+        default_prompt_label_mapping=dict(),
+    ),
+    PL: PromptConfig(
+        default_prompt_prefix="Poniżej znajdują się artykuły z towarzyszącymi "
+        "streszczeniami.",
+        default_prompt_template="Artykuł: {text}\nStreszczenie: {target_text}",
+        default_instruction_prompt="Artykuł: {text}\n\nNapisz streszczenie "
+        "powyższego artykułu.",
         default_prompt_label_mapping=dict(),
     ),
     SV: PromptConfig(

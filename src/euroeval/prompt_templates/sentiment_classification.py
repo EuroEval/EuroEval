@@ -19,7 +19,7 @@ from ..languages import (
     NL,
     NN,
     NO,
-    PT,
+    PL,
     SV,
 )
 
@@ -78,15 +78,19 @@ SENT_TEMPLATES: dict["Language", PromptConfig] = {
         "meelestatuse järgi. Võimalikud vastused: {labels_str}. Muud vastused "
         "ei ole lubatud.",
     ),
-    PT: PromptConfig(
+    PL: PromptConfig(
         default_prompt_label_mapping=dict(
-            positive="positivo", neutral="neutro", negative="negativo"
+            positive="pozytywny", neutral="neutralny", negative="negatywny"
         ),
-        default_prompt_prefix="Abaixo encontras documentos e os seus "
-        "sentimentos correspondentes, que podem ser {labels_str}.",
-        default_prompt_template="Documento: {text}\nSentimento: {label}",
-        default_instruction_prompt="Documento: {text}\n\nClassifica o "
-        "sentimento do documento. Responde apenas com {labels_str}.",
+        default_prompt_prefix=(
+            "Poniżej znajdują się dokumenty i ich sentyment, który może być "
+            "{labels_str}."
+        ),
+        default_prompt_template="Dokument: {text}\nSentyment: {label}",
+        default_instruction_prompt=(
+            "Dokument: {text}\n\nKlasyfikuj sentyment w dokumencie. "
+            "Odpowiedz z {labels_str}, i nic więcej."
+        ),
     ),
     FI: PromptConfig(
         default_prompt_label_mapping=dict(

@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 ### Added
+- Added support for Polish 🇵🇱! This includes the reading comprehension dataset PoQuAD, the sentiment classification dataset PolEmo 2.0, the linguistic acceptability dataset ScaLA-pl, the named entity recognition dataset KPWr-NER, the summarisation dataset PSC, and the knowledge dataset LLMzSzŁ.
 - Added the Swedish knowledge dataset Skolprov. It is unofficial for now.
 - Added the knowledge dataset Trivia-et for Estonian. The dataset contains 800 trivia
   questions about Estonia. In this version we rearrange the examples in
