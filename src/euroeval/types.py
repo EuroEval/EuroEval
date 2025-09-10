@@ -64,6 +64,7 @@ class ExtractLabelsFunction(t.Protocol):
         ...
 
 
+@t.runtime_checkable
 class ScoringFunction(t.Protocol):
     """A function used to compute a score from a single model output."""
 
@@ -80,20 +81,54 @@ class ScoringFunction(t.Protocol):
         ...
 
 
+@t.runtime_checkable
+class ScoringFunctionWithDataset(t.Protocol):
+    """A function used to compute a score from a single model output and dataset."""
+
+    def __call__(self, output: "BaseModel", dataset_sample: dict[str, t.Any]) -> float:
+        """Compute a score from a model output.
+
+        Args:
+            output:
+                A model output (Pydantic model) from the judge.
+            dataset:
+                The dataset used for evaluation.
+
+        Returns:
+            A float score computed from the output.
+        """
+        ...
+
+
+@t.runtime_checkable
 class BatchScoringFunction(t.Protocol):
     """A function used to compute batch scores from model outputs."""
 
-    def __call__(
-        self, outputs: list["BaseModel"], dataset: "Dataset | None" = None
-    ) -> float:
+    def __call__(self, outputs: list["BaseModel"]) -> float:
+        """Compute a batch score from model outputs.
+
+        Args:
+            outputs:
+                List of model outputs (Pydantic models) from the judge.
+
+        Returns:
+            A float score computed from the batch of outputs.
+        """
+        ...
+
+
+@t.runtime_checkable
+class BatchScoringFunctionWithDataset(t.Protocol):
+    """A function used to compute batch scores from model outputs and dataset."""
+
+    def __call__(self, outputs: list["BaseModel"], dataset: "Dataset") -> float:
         """Compute a batch score from model outputs.
 
         Args:
             outputs:
                 List of model outputs (Pydantic models) from the judge.
             dataset:
-                Optional dataset used for evaluation. Can be used for additional
-                context when computing the score.
+                The dataset used for evaluation.
 
         Returns:
             A float score computed from the batch of outputs.

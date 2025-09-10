@@ -198,23 +198,22 @@ LEGAL_STAY_ON_TOPIC_CONFIG = DatasetConfig(
     unofficial=True,
 )
 
-LEGAL_COMPLETENESS_DETECTION_CONFIG = DatasetConfig(
-    name="legal-completeness-detection",
-    pretty_name="the Danish legal benchmark dataset Completeness Detection",
+CONTRACT_COMPLETENESS_DETECTION_CONFIG = DatasetConfig(
+    name="contract-completeness-detection",
+    pretty_name="the Danish legal benchmark dataset Contract Completeness Detection",
     huggingface_id="EuroEval/legal-completeness-detection",
     task=COMPLETENESS_DETECTION,
     languages=[DA],
     splits=["test"],
     unofficial=True,
     _instruction_prompt="""
-        Identificér om følgende kontrakt er fuldstændig, eller om en eller flere
-        elementer mangler. Hvis der er manglende elementer, skal du beskrive disse.
+        Identificér om følgende kontrakt mangler en eller flere elementer.
 
         <kontrakt>
         {text}
         </kontrakt>
 
         Beskriv maksimalt 3 manglende elementer, eller skriv "Kontrakten er
-        fuldstændig."
+        fuldstændig." hvis kontrakten ikke mangler noget.
     """,
 )

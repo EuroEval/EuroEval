@@ -22,6 +22,7 @@ import numpy as np
 import requests
 import torch
 from datasets.utils import disable_progress_bar
+from dill import PicklingWarning
 from requests.exceptions import RequestException
 from transformers import logging as tf_logging
 
@@ -94,7 +95,6 @@ def block_terminal_output() -> None:
     # Ignore miscellaneous warnings
     warnings.filterwarnings("ignore", category=UserWarning)
     warnings.filterwarnings("ignore", category=FutureWarning)
-    logging.getLogger("absl").setLevel(logging.CRITICAL)
 
     # Disable matplotlib logging
     logging.getLogger("matplotlib.font_manager").setLevel(logging.CRITICAL)
@@ -136,11 +136,14 @@ def block_terminal_output() -> None:
     # Disable evaluate logging
     warnings.filterwarnings("ignore", module="seqeval*")
 
-    # Disable most of the `transformers` logging
+    # Disable transformers logging
     tf_logging._default_log_level = logging.CRITICAL
     tf_logging.set_verbosity(logging.CRITICAL)
     logging.getLogger("transformers.trainer").setLevel(logging.CRITICAL)
     logging.getLogger("accelerate").setLevel(logging.CRITICAL)
+
+    # Disable dill warnings
+    warnings.filterwarnings(action="ignore", category=PicklingWarning, module="dill*")
 
 
 def get_class_by_name(class_name: str | list[str], module_name: str) -> t.Type | None:
