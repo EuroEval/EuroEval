@@ -967,7 +967,7 @@ $ euroeval --model <model-id> --dataset winogrande-da
 ```
 
 
-## Summarization
+## Summarisation
 
 ### Nordjylland News
 

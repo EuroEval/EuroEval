@@ -624,7 +624,7 @@ $ euroeval --model <model-id> --dataset winogrande-fi
 ```
 
 
-## Summarization
+## Summarisation
 
 ### XLSum-fi
 

@@ -758,7 +758,7 @@ $ euroeval --model <model-id> --dataset winogrande-es
 ```
 
 
-## Summarization
+## Summarisation
 
 ### MLSum-es
 

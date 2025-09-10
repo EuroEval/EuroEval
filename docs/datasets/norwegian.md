@@ -1341,7 +1341,7 @@ $ euroeval --model <model-id> --dataset winogrande-no
 ```
 
 
-## Summarization
+## Summarisation
 
 ### NoSammendrag
 

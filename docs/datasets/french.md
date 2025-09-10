@@ -710,7 +710,7 @@ $ euroeval --model <model-id> --dataset winogrande-fr
 ```
 
 
-## Summarization
+## Summarisation
 
 ### Orange Sum
 

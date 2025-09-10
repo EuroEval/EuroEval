@@ -546,7 +546,7 @@ $ euroeval --model <model-id> --dataset goldenswag-pl
 ```
 
 
-## Summarization
+## Summarisation
 
 ### PSC
 

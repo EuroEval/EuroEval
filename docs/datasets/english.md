@@ -842,7 +842,7 @@ $ euroeval --model <model-id> --dataset winogrande
 ```
 
 
-## Summarization
+## Summarisation
 
 ### CNN/DailyMail
 

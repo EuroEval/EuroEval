@@ -784,7 +784,7 @@ $ euroeval --model <model-id> --dataset winogrande-it
 ```
 
 
-## Summarization
+## Summarisation
 
 ### IlPost-Sum
 

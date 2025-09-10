@@ -804,7 +804,7 @@ $ euroeval --model <model-id> --dataset winogrande-nl
 ```
 
 
-## Summarization
+## Summarisation
 
 ### WikiLingua-nl
 

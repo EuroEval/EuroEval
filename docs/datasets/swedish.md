@@ -834,7 +834,7 @@ $ euroeval --model <model-id> --dataset winogrande-sv
 ```
 
 
-## Summarization
+## Summarisation
 
 ### SweDN
 

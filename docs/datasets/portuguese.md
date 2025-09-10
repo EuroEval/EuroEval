@@ -572,7 +572,7 @@ $ euroeval --model <model-id> --dataset winogrande-pt
 ```
 
 
-## Summarization
+## Summarisation
 
 ### Publico
 

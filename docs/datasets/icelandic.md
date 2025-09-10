@@ -998,7 +998,7 @@ $ euroeval --model <model-id> --dataset hellaswag-is
 ```
 
 
-## Summarization
+## Summarisation
 
 ### RRN
 

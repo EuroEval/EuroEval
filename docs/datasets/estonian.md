@@ -555,7 +555,7 @@ $ euroeval --model <model-id> --dataset winogrande-et
 ```
 
 
-## Summarization
+## Summarisation
 
 ### ERRNews
 
