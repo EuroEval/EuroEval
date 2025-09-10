@@ -137,10 +137,7 @@ class VLLMModel(HuggingFaceEncoderModel):
         )
 
         self.end_of_reasoning_token = get_end_of_reasoning_token(
-            model=self._model,
-            tokeniser=self._tokeniser,
-            model_id=model_config.model_id,
-            generative_type=self.generative_type,
+            model=self._model, tokeniser=self._tokeniser, model_id=model_config.model_id
         )
         self.end_of_chat_token_ids = get_end_of_chat_token_ids(
             tokeniser=self._tokeniser, generative_type=self.generative_type
@@ -990,10 +987,7 @@ def clear_vllm() -> None:
 
 
 def get_end_of_reasoning_token(
-    model: "LLM",
-    tokeniser: "PreTrainedTokenizer",
-    model_id: str,
-    generative_type: GenerativeType | None,
+    model: "LLM", tokeniser: "PreTrainedTokenizer", model_id: str
 ) -> str | None:
     """Get the end-of-reasoning token for a generative model.
 
@@ -1004,15 +998,10 @@ def get_end_of_reasoning_token(
             The tokeniser.
         model_id:
             The model ID.
-        generative_type:
-            The generative type of the model.
 
     Returns:
         The end of reasoning token, or None if it could not be found.
     """
-    if generative_type not in {GenerativeType.REASONING, None}:
-        return None
-
     # Create a prompt to check if the model uses the reasoning tokens
     prompt = "What is your name?"
     if has_chat_template(tokeniser=tokeniser):
