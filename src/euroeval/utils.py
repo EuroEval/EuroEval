@@ -509,8 +509,8 @@ def split_model_id(model_id: str) -> "ModelIdComponents":
 
     # Attempt to extract the model ID, revision, and param using regex
     model_id_match = re.match(pattern=r"^[^@#]+", string=model_id)
-    revision_match = re.search(pattern=r"@([^@#]+)$", string=model_id)
-    param_match = re.search(pattern=r"#([^@#]+)$", string=model_id)
+    revision_match = re.search(pattern=r"@([^@#]+)", string=model_id)
+    param_match = re.search(pattern=r"#([^@#]+)", string=model_id)
 
     # If we cannot extract the model ID, raise an error
     if model_id_match is None:
