@@ -163,6 +163,7 @@ def model_config() -> Generator[ModelConfig, None, None]:
     yield ModelConfig(
         model_id="model_id",
         revision="revision",
+        param=None,
         task="task",
         languages=[DA],
         merge=False,

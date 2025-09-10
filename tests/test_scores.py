@@ -56,6 +56,7 @@ class TestLogScores:
             scores=scores,
             model_id="model_id",
             model_revision="main",
+            model_param=None,
         )
 
     def test_is_correct_type(self, logged_scores: ScoreDict) -> None:

@@ -13,6 +13,7 @@ from euroeval.constants import MAX_CONTEXT_LENGTH
 from euroeval.data_loading import load_data, load_raw_data
 from euroeval.data_models import BenchmarkConfig, DatasetConfig
 from euroeval.dataset_configs import get_all_dataset_configs, get_dataset_config
+from euroeval.enums import GenerativeType
 from euroeval.generation_utils import apply_prompt, extract_few_shot_examples
 
 
@@ -105,7 +106,11 @@ def test_examples_in_official_datasets_are_not_too_long(
                     few_shot_examples=few_shot_examples,
                     model_config=dummy_model_config,
                     dataset_config=dataset_config,
-                    instruction_model=instruction_model,
+                    generative_type=(
+                        GenerativeType.INSTRUCTION_TUNED
+                        if instruction_model
+                        else GenerativeType.BASE
+                    ),
                     always_populate_text_field=True,
                     tokeniser=tokeniser,
                 ),
