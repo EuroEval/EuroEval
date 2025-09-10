@@ -126,6 +126,16 @@ class VLLMModel(HuggingFaceEncoderModel):
         )
         self._model: "LLM" = model
         self._tokeniser: "PreTrainedTokenizer" = tokeniser
+
+        # We specify `HuggingFaceEncoderModel` here instead of `VLLMModel`, as we want
+        # to call the `__init__` method of the `BenchmarkModule` class.
+        super(HuggingFaceEncoderModel, self).__init__(
+            model_config=model_config,
+            dataset_config=dataset_config,
+            benchmark_config=benchmark_config,
+            log_metadata=log_metadata,
+        )
+
         self.end_of_reasoning_token = get_end_of_reasoning_token(
             model=self._model,
             tokeniser=self._tokeniser,
@@ -140,15 +150,6 @@ class VLLMModel(HuggingFaceEncoderModel):
             tokeniser=self._tokeniser,
             model_id=model_config.model_id,
             generative_type=self.generative_type,
-        )
-
-        # We specify `HuggingFaceEncoderModel` here instead of `VLLMModel`, as we want
-        # to call the `__init__` method of the `BenchmarkModule` class.
-        super(HuggingFaceEncoderModel, self).__init__(
-            model_config=model_config,
-            dataset_config=dataset_config,
-            benchmark_config=benchmark_config,
-            log_metadata=log_metadata,
         )
 
         self.buffer |= dict(
