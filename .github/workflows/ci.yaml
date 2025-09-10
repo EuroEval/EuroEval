@@ -34,7 +34,7 @@ jobs:
           python-version: "3.11"
 
       - name: Remove pre-commit cache
-        run: rm -rf ~/.cache/pre-commit || true
+        run: uv cache clean pre-commit
 
       - name: Run pre-commit hooks
         uses: pre-commit/action@v3.0.1
