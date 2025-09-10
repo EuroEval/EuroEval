@@ -355,8 +355,9 @@ $ euroeval --model <model-id> --dataset foqa
 
 ### Unofficial: MultiWikiQA-fo
 
-This dataset will be published in an upcoming paper, and contains Faroese Wikipedia
-articles with generated questions and answers, using the LLM Gemini-1.5-pro.
+This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2509.04111)
+and contains Wikipedia articles with LLM-generated questions and answers in 300+
+languages.
 
 The original full dataset consists of 5,000 samples in a single split. We use a 1,024 /
 256 / 2,048 split for training, validation and testing, respectively, sampled randomly.

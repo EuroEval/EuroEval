@@ -227,8 +227,9 @@ $ euroeval --model <model-id> --dataset scala-pt
 
 ### MultiWikiQA-pt
 
-This dataset will be published in an upcoming paper, and contains Portuguese Wikipedia
-articles with generated questions and answers, using the LLM Gemini-1.5-pro.
+This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2509.04111)
+and contains Wikipedia articles with LLM-generated questions and answers in 300+
+languages.
 
 As Portuguese Wikipedia is a mixture of both European Portuguese and Brazilian
 Portuguese, we filtered the Wikipedia articles with [this

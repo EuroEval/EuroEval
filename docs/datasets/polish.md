@@ -7,9 +7,17 @@ information about what these constitute.
 ## Sentiment Classification
 
 ### PolEmo2
-This dataset was published in [this paper](https://aclanthology.org/K19-1092/) and consists of Polish online reviews from the medicine and hotels domains, annotated for sentiment. Each review is labelled as positive, negative, neutral, or ambiguous. We have filtered out the ambiguous samples.
+This dataset was published in [this paper](https://doi.org/10.18653/v1/K19-1092) and
+consists of Polish online reviews from the medicine and hotels domains, annotated for
+sentiment. Each review is labelled as positive, negative, neutral, or ambiguous. We have
+filtered out the ambiguous samples.
 
-The original full dataset consists of 6,573 / 823 / 820 samples for the training, validation and test splits, respectively. We use 1,024 / 256 / 2,048 samples for our training, validation and test splits, respectively. The train and validation splits are subsets of the original splits. For the test split, we use all available test samples and supplement with additional samples from the training set to reach 2,048 samples in total.
+The original full dataset consists of 6,573 / 823 / 820 samples for the training,
+validation and test splits, respectively. We use 1,024 / 256 / 2,048 samples for our
+training, validation and test splits, respectively. The train and validation splits are
+subsets of the original splits. For the test split, we use all available test samples
+and supplement with additional samples from the training set to reach 2,048 samples in
+total.
 
 The distribution of sentiment labels across the combined splits is as follows:
 - **Negative**: 1,592 samples
@@ -72,9 +80,20 @@ $ euroeval --model <model-id> --dataset polemo2
 
 ### KPWr-NER
 
-This dataset was published in [this paper](https://aclanthology.org/L12-1574/) and is part of the KPWr (KrakówPoland Wrocław) corpus - a free Polish corpus annotated with various types of linguistic entities including named entities. The corpus was created to serve as training and testing material for Machine Learning algorithms and is released under a Creative Commons licence. The named entity annotations include persons, locations, organizations, and miscellaneous entities, which are mapped to standard BIO format labels.
+This dataset was published in [this paper](https://aclanthology.org/L12-1574/) and is
+part of the KPWr (KrakówPoland Wrocław) corpus - a free Polish corpus annotated with
+various types of linguistic entities including named entities. The corpus was created to
+serve as training and testing material for Machine Learning algorithms and is released
+under a Creative Commons licence. The named entity annotations include persons,
+locations, organizations, and miscellaneous entities, which are mapped to standard BIO
+format labels.
 
-The original dataset uses the train and test splits from the source corpus. The original data train split has 13,959 samples and test split has 4,323 samples. The validation split is created from the original training split. We use 1,024 / 256 / 2,048 samples for our training, validation and test splits, respectively. The train and validation splits are subsets of the original training split, while the test split is a subset of the original test split.
+The original dataset uses the train and test splits from the source corpus. The original
+data train split has 13,959 samples and test split has 4,323 samples. The validation
+split is created from the original training split. We use 1,024 / 256 / 2,048 samples
+for our training, validation and test splits, respectively. The train and validation
+    splits are subsets of the original training split, while the test split is a subset
+    of the original test split.
 
 Here are a few examples from the training split:
 
@@ -151,8 +170,8 @@ from a sentence, or by swapping two neighbouring words in a sentence. To ensure 
 this does indeed break the grammaticality of the sentence, a set of rules were used on
 the part-of-speech tags of the words in the sentence.
 
-The original full dataset consists of 22,152 samples, from which we use 1,024 / 256 / 2,048 samples for training,
-validation and testing, respectively.
+The original full dataset consists of 22,152 samples, from which we use 1,024 / 256 /
+2,048 samples for training, validation and testing, respectively.
 
 Here are a few examples from the training split:
 
@@ -209,12 +228,14 @@ $ euroeval --model <model-id> --dataset scala-pl
 
 ### PoQuAD
 
-PoQuAD is a Polish Question Answering dataset with contexts from Polish Wikipedia. It follows the SQuAD format with innovations including lower annotation density, abstractive answers, polar questions, and impossible questions.
+PoQuAD was published in [this paper](https://doi.org/10.1145/3587259.3627548) and is a
+Polish Question Answering dataset with contexts from Polish Wikipedia. It follows the
+SQuAD format with innovations including lower annotation density, abstractive answers,
+polar questions, and impossible questions.
 
-This dataset was published in [this paper](https://dl.acm.org/doi/10.1145/3587259.3627548).
-
-The original dataset consists of 51,951 samples. We use 1,024 / 256 / 2,048 samples for training, validation and testing, respectively.
-We do not use the impossible questions in this version of the dataset.
+The original dataset consists of 51,951 samples. We use 1,024 / 256 / 2,048 samples for
+training, validation and testing, respectively. We do not use the impossible questions
+in this version of the dataset.
 
 Here are a few examples from the training split:
 
@@ -269,8 +290,9 @@ $ euroeval --model <model-id> --dataset poquad
 
 ### Unofficial: MultiWikiQA-pl
 
-This dataset will be published in an upcoming paper, and contains Polish Wikipedia
-articles with generated questions and answers, using the LLM Gemini-1.5-pro.
+This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2509.04111)
+and contains Wikipedia articles with LLM-generated questions and answers in 300+
+languages.
 
 The original full dataset consists of 5,000 samples in a single split. We use a 1,024 /
 256 / 2,048 split for training, validation and testing, respectively, sampled randomly.
@@ -343,9 +365,17 @@ $ euroeval --model <model-id> --dataset multi-wiki-qa-pl
 
 ### LLMzSzŁ
 
-This dataset was created based on Polish national exams extracted from the archives of the Polish Central Examination Board. LLMzSzŁ (LLMs Behind the School Desk) represents the first comprehensive benchmark for the Polish language at this scale. The dataset features both academic and professional tests covering 4 types of exams from 154 different domains. The dataset was created to evaluate the ability of language models to transfer knowledge between languages and to assess their performance on Polish educational content.
+This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2501.02266)
+and is based on Polish national exams extracted from the archives of the Polish Central
+Examination Board. LLMzSzŁ (LLMs Behind the School Desk) represents the first
+comprehensive benchmark for the Polish language at this scale. The dataset features both
+academic and professional tests covering 4 types of exams from 154 different domains.
+The dataset was created to evaluate the ability of language models to transfer knowledge
+between languages and to assess their performance on Polish educational content.
 
-The original dataset consisted of almost 19,000 closed-ended questions in a single test split. We use a 1,024 / 256 / 2,048 split for training, validation and testing, respectively (so 3,328 samples used in total).
+The original dataset consisted of almost 19,000 closed-ended questions in a single test
+split. We use a 1,024 / 256 / 2,048 split for training, validation and testing,
+respectively (so 3,328 samples used in total).
 
 Here are a few examples from the training split:
 
@@ -550,9 +580,17 @@ $ euroeval --model <model-id> --dataset goldenswag-pl
 
 ### PSC
 
-The Polish Summaries Corpus (PSC) was published in [this paper](https://aclanthology.org/L14-1145/) and is a resource created for automated single-document summarization of Polish. The corpus contains manual summaries of news articles, with multiple independently created summaries for single texts to overcome annotator bias. It includes both abstract free-word summaries and extraction-based summaries created by selecting text spans from the original documents.
+The Polish Summaries Corpus (PSC) was published in [this
+paper](https://aclanthology.org/L14-1145/) and is a resource created for automated
+single-document summarization of Polish. The corpus contains manual summaries of news
+articles, with multiple independently created summaries for single texts to overcome
+annotator bias. It includes both abstract free-word summaries and extraction-based
+summaries created by selecting text spans from the original documents.
 
-The original dataset consists only of a training split. We use 1,024 / 256 / 2,048 samples for our training, validation and test splits, respectively. All splits are subsets of the original training data, with the validation and test splits sampled from the original training set.
+The original dataset consists only of a training split. We use 1,024 / 256 / 2,048
+samples for our training, validation and test splits, respectively. All splits are
+subsets of the original training data, with the validation and test splits sampled from
+the original training set.
 
 Here are a few examples from the training split:
 
