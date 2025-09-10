@@ -26,7 +26,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   datasets.
 - Added the English common-sense reasoning dataset Winogrande and its translated
   versions of Winogrande for Danish, German, Spanish, Finnish, French, Italian, Latvian,
-  Dutch, Norwegian, Polish, Portuguese and Swedish.
+  Dutch, Norwegian, Polish, Portuguese and Swedish. These are unofficial for now.
 - Added new `--generative-type` argument, which can be used to override the automatic
   detection of the generative type (base decoder, instruction-tuned decoder, or
   reasoning decoder) of a decoder model. This can be useful if the automatic detection
