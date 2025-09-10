@@ -588,6 +588,7 @@ def apply_chat_template(
             conversation=conversation, tokenize=tokenise
         )
     else:
+        breakpoint()
         templated_prompt = tokeniser.apply_chat_template(
             conversation=conversation,
             add_generation_prompt=add_generation_prompt,
