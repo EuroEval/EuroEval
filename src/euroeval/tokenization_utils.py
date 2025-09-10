@@ -5,7 +5,6 @@ import re
 import typing as t
 
 import torch
-from jinja2.exceptions import SecurityError
 from transformers import MistralCommonTokenizer
 
 from .enums import GenerativeType
@@ -580,6 +579,10 @@ def apply_chat_template(
         InvalidModel:
             If the tokeniser does not have a chat template.
     """
+    # Ensure that the first user message is not empty, as this can cause issues with
+    # Jinja2
+    conversation[0]["content"] = conversation[0]["content"] or " "
+
     if not has_chat_template(tokeniser=tokeniser):
         raise InvalidModel(
             "The tokeniser does not have a chat template, so cannot apply it."
@@ -589,16 +592,11 @@ def apply_chat_template(
             conversation=conversation, tokenize=tokenise
         )
     else:
-        try:
-            templated_prompt = tokeniser.apply_chat_template(
-                conversation=conversation,
-                add_generation_prompt=add_generation_prompt,
-                tokenize=tokenise,
-                enable_thinking=enable_thinking,
-                **extra_kwargs,
-            )
-        except SecurityError as e:
-            logger.error(str(e))
-            breakpoint()
-            pass
+        templated_prompt = tokeniser.apply_chat_template(
+            conversation=conversation,
+            add_generation_prompt=add_generation_prompt,
+            tokenize=tokenise,
+            enable_thinking=enable_thinking,
+            **extra_kwargs,
+        )
     return templated_prompt
