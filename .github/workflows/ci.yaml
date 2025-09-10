@@ -35,6 +35,8 @@ jobs:
 
       - name: Run pre-commit hooks
         uses: pre-commit/action@v3.0.1
+        with:
+          enable-cache: false
 
   pytest-linux:
     if: github.event.pull_request.draft == false
