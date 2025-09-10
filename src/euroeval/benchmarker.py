@@ -810,6 +810,7 @@ class Benchmarker:
                     scores=scores,
                     model_id=model_config.model_id,
                     model_revision=model_config.revision,
+                    model_param=model_config.param,
                 )
 
                 record = BenchmarkResult(
@@ -1114,6 +1115,8 @@ def initial_logging(
     model_id = model_config.model_id
     if model_config.revision and model_config.revision != "main":
         model_id += f"@{model_config.revision}"
+    if model_config.param is not None:
+        model_id += f"#{model_config.param}"
 
     split_type = "validation" if not benchmark_config.evaluate_test_split else "test"
     if model_config.task in GENERATIVE_PIPELINE_TAGS:

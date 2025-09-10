@@ -623,6 +623,8 @@ class ModelConfig:
             The ID of the model.
         revision:
             The revision of the model.
+        param:
+            The parameter of the model, or None if the model has no parameters.
         task:
             The task that the model was trained on.
         languages:
@@ -644,6 +646,7 @@ class ModelConfig:
 
     model_id: str
     revision: str
+    param: str | None
     task: str
     languages: list[Language]
     inference_backend: "InferenceBackend"
@@ -757,3 +760,21 @@ class PromptConfig:
     default_prompt_template: str
     default_instruction_prompt: str
     default_prompt_label_mapping: dict[str, str] | t.Literal["auto"]
+
+
+@dataclass
+class ModelIdComponents:
+    """A model ID split into its components.
+
+    Attributes:
+        model_id:
+            The main model ID without revision or parameters.
+        revision:
+            The revision of the model, if any.
+        param:
+            The parameter of the model, if any.
+    """
+
+    model_id: str
+    revision: str
+    param: str | None

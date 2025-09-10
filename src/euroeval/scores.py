@@ -19,6 +19,7 @@ def log_scores(
     scores: list[dict[str, float]],
     model_id: str,
     model_revision: str,
+    model_param: str | None,
 ) -> "ScoreDict":
     """Log the scores.
 
@@ -34,6 +35,8 @@ def log_scores(
             The model ID of the model that was evaluated.
         model_revision:
             The revision of the model.
+        model_param:
+            The model parameter, if any.
 
     Returns:
         A dictionary with keys 'raw_scores' and 'total', with 'raw_scores' being
@@ -42,6 +45,8 @@ def log_scores(
     """
     if model_revision and model_revision != "main":
         model_id += f"@{model_revision}"
+    if model_param is not None:
+        model_id += f"#{model_param}"
 
     logger.info(f"Finished evaluation of {model_id} on {dataset_name}.")
 

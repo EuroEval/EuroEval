@@ -6,7 +6,7 @@ import logging
 import random
 import typing as t
 
-from .enums import TaskGroup
+from .enums import GenerativeType, TaskGroup
 from .exceptions import InvalidBenchmark
 from .tokenization_utils import apply_chat_template
 from .utils import extract_multiple_choice_labels, log_once
@@ -173,7 +173,7 @@ def apply_prompt(
     few_shot_examples: list[dict[str, t.Any]],
     model_config: "ModelConfig",
     dataset_config: "DatasetConfig",
-    instruction_model: bool,
+    generative_type: GenerativeType | None,
     always_populate_text_field: bool,
     tokeniser: "PreTrainedTokenizer | None",
 ) -> dict[str, t.Any]:
@@ -184,10 +184,12 @@ def apply_prompt(
             The examples to apply the few-shot examples to.
         few_shot_examples:
             The few-shot examples to apply.
+        model_config:
+            The model configuration.
         dataset_config:
             The dataset configuration.
-        instruction_model:
-            Whether the model is instruction-tuned.
+        generative_type:
+            The generative type of the model.
         always_populate_text_field:
             Whether to always populate the 'text' field in the examples, as opposed to
             the 'messages' field.
@@ -198,7 +200,11 @@ def apply_prompt(
         The example with the few-shot examples applied.
     """
     # Sanity check
-    if instruction_model and always_populate_text_field and tokeniser is None:
+    if (
+        generative_type == GenerativeType.INSTRUCTION_TUNED
+        and always_populate_text_field
+        and tokeniser is None
+    ):
         raise ValueError(
             "The `tokeniser` argument must be provided when the model is instruction "
             "tuned and when we are not just returning the raw messages."
@@ -222,7 +228,7 @@ def apply_prompt(
         )
         label_mapping = dataset_config.prompt_label_mapping
         label = label_mapping.get(label, label)
-        if instruction_model:
+        if generative_type == GenerativeType.INSTRUCTION_TUNED:
             prompt = dataset_config.instruction_prompt.format(**kwargs)
             return prompt, label
         else:
@@ -348,7 +354,7 @@ def apply_prompt(
                 f"Unsupported task group: {dataset_config.task.task_group}."
             )
 
-    if instruction_model:
+    if generative_type == GenerativeType.INSTRUCTION_TUNED:
         few_shot_messages = [
             dict(role=role, content=content)
             for prompt, label in few_shot_sections
@@ -362,7 +368,6 @@ def apply_prompt(
 
         if not always_populate_text_field:
             examples["messages"] = messages_list
-
         else:
             assert tokeniser is not None
 
@@ -389,6 +394,9 @@ def apply_prompt(
                 apply_chat_template(
                     conversation=messages,
                     tokeniser=tokeniser,
+                    tokenise=False,
+                    add_generation_prompt=True,
+                    enable_thinking=(generative_type == GenerativeType.REASONING),
                     chat_template=chat_template,
                 )
                 for messages in messages_list

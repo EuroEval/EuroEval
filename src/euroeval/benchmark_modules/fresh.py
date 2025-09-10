@@ -183,9 +183,10 @@ class FreshEncoderModel(HuggingFaceEncoderModel):
         """
         return ModelConfig(
             model_id=model_id,
+            revision="main",
+            param=None,
             task="fill-mask",
             languages=list(),
-            revision="main",
             merge=False,
             inference_backend=InferenceBackend.TRANSFORMERS,
             model_type=ModelType.ENCODER,

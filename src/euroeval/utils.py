@@ -4,7 +4,6 @@ import asyncio
 import gc
 import importlib
 import importlib.metadata
-import importlib.util
 import logging
 import os
 import random
@@ -25,11 +24,12 @@ from datasets.utils import disable_progress_bar
 from requests.exceptions import RequestException
 from transformers import logging as tf_logging
 
-from .exceptions import InvalidBenchmark, NaNValueInModelOutput
+from .exceptions import InvalidBenchmark, InvalidModel, NaNValueInModelOutput
 
 if t.TYPE_CHECKING:
     from types import TracebackType
 
+    from .data_models import ModelIdComponents
     from .types import Predictions
 
 
@@ -489,3 +489,35 @@ def extract_multiple_choice_labels(
             f"{', '.join(candidate_labels)}. Here is the prompt: {prompt!r}"
         )
     return sample_candidate_labels
+
+
+def split_model_id(model_id: str) -> "ModelIdComponents":
+    """Split a model ID into its components.
+
+    Args:
+        model_id:
+            The model ID to split.
+
+    Returns:
+        The split model ID.
+
+    Raises:
+        If the model ID is not valid.
+    """
+    # Importing here to avoid circular imports
+    from .data_models import ModelIdComponents
+
+    # Attempt to extract the model ID, revision, and param using regex
+    model_id_match = re.match(pattern=r"^[^@#]+", string=model_id)
+    revision_match = re.search(pattern=r"@([^@#]+)$", string=model_id)
+    param_match = re.search(pattern=r"#([^@#]+)$", string=model_id)
+
+    # If we cannot extract the model ID, raise an error
+    if model_id_match is None:
+        raise InvalidModel(f"The model ID {model_id!r} is not valid.")
+    model_id = model_id_match.group()
+
+    # Extract the revision and param and return the result
+    revision = revision_match.group(1) if revision_match is not None else "main"
+    param = param_match.group(1) if param_match is not None else None
+    return ModelIdComponents(model_id=model_id, revision=revision, param=param)

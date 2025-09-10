@@ -81,6 +81,7 @@ from ..utils import (
     get_hf_token,
     log_once,
     safe_run,
+    split_model_id,
 )
 from .base import BenchmarkModule
 from .hf import HuggingFaceEncoderModel, load_hf_model_config, load_tokeniser
@@ -260,9 +261,9 @@ class LiteLLMModel(BenchmarkModule):
                 if reasoning_model
                 else GenerativeType.INSTRUCTION_TUNED
             )
-        elif self.model_config.revision in {"thinking"}:
+        elif self.model_config.param in {"thinking"}:
             type_ = GenerativeType.REASONING
-        elif self.model_config.revision in {"no-thinking"}:
+        elif self.model_config.param in {"no-thinking"}:
             type_ = GenerativeType.INSTRUCTION_TUNED
         elif re.fullmatch(
             pattern="|".join(REASONING_MODELS), string=self.model_config.model_id
@@ -1158,7 +1159,7 @@ class LiteLLMModel(BenchmarkModule):
             Whether the model exists, or an error describing why we cannot check
             whether the model exists.
         """
-        model_id, _ = model_id.split("@") if "@" in model_id else (model_id, "main")
+        model_id = split_model_id(model_id=model_id).model_id
         if model_id in litellm.model_list:
             return True
 
@@ -1246,10 +1247,29 @@ class LiteLLMModel(BenchmarkModule):
         Returns:
             The model configuration.
         """
-        model_id, revision = model_id.split("@") if "@" in model_id else (model_id, "")
+        model_id_components = split_model_id(model_id=model_id)
+
+        # Backwards compatibility: If the revision is set but not the parameter, we
+        # assume that the revision is actually the parameter and log this as a warning.
+        if model_id_components.revision != "main" and model_id_components.param is None:
+            proper_model_id = (
+                f"{model_id_components.model_id}#{model_id_components.revision}"
+            )
+            log_once(
+                f"The model ID {model_id!r} specifies a revision "
+                f"{model_id_components.revision!r} but not a parameter. We assume "
+                "that the revision is actually the parameter and set the revision "
+                "to 'main'. In the future, use the new '#' syntax to specify the "
+                f"parameter (in this case, this would be {proper_model_id!r}), as this "
+                "will be an error in future versions of EuroEval."
+            )
+            model_id_components.param = model_id_components.revision
+            model_id_components.revision = "main"
+
         return ModelConfig(
-            model_id=model_id,
-            revision=revision,
+            model_id=model_id_components.model_id,
+            revision=model_id_components.revision,
+            param=model_id_components.param,
             task="text-generation",
             languages=list(),
             merge=False,
@@ -1318,7 +1338,7 @@ class LiteLLMModel(BenchmarkModule):
                 few_shot_examples=few_shot_examples,
                 model_config=self.model_config,
                 dataset_config=self.dataset_config,
-                instruction_model=self.generative_type != GenerativeType.BASE,
+                generative_type=self.generative_type,
                 always_populate_text_field=False,
                 tokeniser=None,
             ),
@@ -1424,7 +1444,7 @@ class LiteLLMModel(BenchmarkModule):
         if self.buffer["first_label_token_mapping"]:
             generation_kwargs["logprobs"] = True
             generation_kwargs["top_logprobs"] = MAX_LITELLM_LOGPROBS
-        if self.model_config.revision == "thinking":
+        if self.model_config.param == "thinking":
             generation_kwargs["thinking"] = dict(
                 type="enabled", budget_tokens=REASONING_MAX_TOKENS - 1
             )
@@ -1432,16 +1452,16 @@ class LiteLLMModel(BenchmarkModule):
                 f"Enabling thinking mode for model {self.model_config.model_id!r}",
                 level=logging.DEBUG,
             )
-        elif self.model_config.revision == "no-thinking":
+        elif self.model_config.param == "no-thinking":
             generation_kwargs["thinking"] = dict(budget_tokens=0)
             log_once(
                 f"Disabling thinking mode for model {self.model_config.model_id!r}",
                 level=logging.DEBUG,
             )
-        elif self.model_config.revision in {"minimal", "low", "medium", "high"}:
-            generation_kwargs["reasoning_effort"] = self.model_config.revision
+        elif self.model_config.param in {"minimal", "low", "medium", "high"}:
+            generation_kwargs["reasoning_effort"] = self.model_config.param
             log_once(
-                f"Enabling reasoning effort {self.model_config.revision!r} for model "
+                f"Enabling reasoning effort {self.model_config.param!r} for model "
                 f"{self.model_config.model_id!r}",
                 level=logging.DEBUG,
             )
@@ -1494,14 +1514,14 @@ def raise_if_wrong_params(
         InvalidModel:
             If the model configuration has invalid parameters.
     """
-    param = model_config.revision
-    if param == "":
+    if model_config.param is None:
         return
     for model_regex, allowed_params_list in allowed_params.items():
         if re.fullmatch(pattern=model_regex, string=model_config.model_id):
-            if param not in allowed_params_list:
+            if model_config.param not in allowed_params_list:
                 msg = (
-                    f"Invalid parameter {param!r} for model {model_config.model_id!r}."
+                    f"Invalid parameter {model_config.param!r} for model "
+                    f"{model_config.model_id!r}."
                 )
                 if allowed_params_list:
                     msg += f" Allowed parameters are: {', '.join(allowed_params_list)}."
@@ -1511,7 +1531,7 @@ def raise_if_wrong_params(
             return
     else:
         raise InvalidModel(
-            f"The parameter {param!r} is not supported for the model "
+            f"The parameter {model_config.param!r} is not supported for the model "
             f"{model_config.model_id!r}."
         )
 

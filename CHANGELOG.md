@@ -30,6 +30,15 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   for these models.
 
 ### Changed
+- Changed the model ID syntax, where we now use `#` to indicate parameters and still use
+  `@` to indicate revision. For instance, `o3#low` indicates the `o3` model with the
+  low reasoning effort, and `tencent/Hunyuan-1.8B-Instruct@v1#no-thinking` indicates the
+  Hunyuan model from the `v1` branch and with the `enable_thinking=False` parameter set.
+  This is fully backwards compatible, in the sense that API models still support using
+  `@` for parameters as well, just like previously, but you will get a warning that this
+  syntax is deprecated.
+- Added `thinking` and `no-thinking` parameters for all open-weight models now. Of
+  course, it only makes a difference for models that supports this flag.
 - Reduced the number of tokens used for reasoning models from 32,768 to 8,192, as models
   reaching the full 32,768 tokens were because they ended up repeating themselves,
   making the evaluation slower without any benefit.
