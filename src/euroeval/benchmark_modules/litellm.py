@@ -73,7 +73,7 @@ from ..task_group_utils import (
     token_classification,
 )
 from ..tasks import NER
-from ..tokenization_utils import get_first_label_token_mapping
+from ..tokenisation_utils import get_first_label_token_mapping
 from ..types import ExtractLabelsFunction
 from ..utils import (
     add_semaphore_and_catch_exception,

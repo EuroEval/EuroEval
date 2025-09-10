@@ -52,7 +52,7 @@ from ..task_group_utils import (
     text_to_text,
     token_classification,
 )
-from ..tokenization_utils import (
+from ..tokenisation_utils import (
     apply_chat_template,
     get_bos_token,
     get_end_of_chat_token_ids,

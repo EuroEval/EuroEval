@@ -8,7 +8,7 @@ import typing as t
 
 from .enums import GenerativeType, TaskGroup
 from .exceptions import InvalidBenchmark
-from .tokenization_utils import apply_chat_template
+from .tokenisation_utils import apply_chat_template
 from .utils import extract_multiple_choice_labels, log_once
 
 if t.TYPE_CHECKING:

@@ -63,7 +63,7 @@ from ..task_group_utils import (
     question_answering,
     token_classification,
 )
-from ..tokenization_utils import get_bos_token, get_eos_token
+from ..tokenisation_utils import get_bos_token, get_eos_token
 from ..utils import (
     block_terminal_output,
     create_model_cache_dir,
