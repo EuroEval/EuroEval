@@ -16,6 +16,7 @@ from zipfile import ZipFile
 
 import pandas as pd
 import requests as rq
+from constants import CHOICES_MAPPING
 from datasets import Dataset, DatasetDict, Split
 from huggingface_hub import HfApi
 from sklearn.model_selection import train_test_split
@@ -59,7 +60,7 @@ def main() -> None:
         "Hvad betyder udtrykket '"
         + row.talemaade_udtryk.replace("\n", " ").strip()
         + "'?\n"
-        "Svarmuligheder:\n"
+        f"{CHOICES_MAPPING['da']}:\n"
         "a. " + row.A.replace("\n", " ").strip() + "\n"
         "b. " + row.B.replace("\n", " ").strip() + "\n"
         "c. " + row.C.replace("\n", " ").strip() + "\n"

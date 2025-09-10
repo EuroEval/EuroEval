@@ -8,7 +8,7 @@
 # ]
 # ///
 
-"""Create the Icelandic Error Corpus dataset  and upload it to the HF Hub."""
+"""Create the Icelandic Error Corpus dataset and upload it to the HF Hub."""
 
 import re
 from typing import List

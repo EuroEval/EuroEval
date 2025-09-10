@@ -645,6 +645,70 @@ You can evaluate this dataset directly as follows:
 $ euroeval --model <model-id> --dataset goldenswag-fr
 ```
 
+### Unofficial: Winogrande-fr
+
+This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2506.19468)
+and is a translated and filtered version of the English [Winogrande
+dataset](https://doi.org/10.1145/3474381).
+
+The original full dataset consists of 47 / 1,210 samples for training and testing, and
+we use the same splits.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Dennis a donné son marteau à Robert pour qu'il puisse enfoncer les clous. _ avait beaucoup de marteaux. À quoi se réfère le blanc _ ?\nChoix:\na. Dennis\nb. Robert",
+  "label": "a"
+}
+```
+
+```json
+{
+  "text": "Samantha a apporté une carte de rétablissement à l'hôpital mais Emily a oublié parce que _ était attentionnée. À quoi se réfère le blanc _ ?\nChoix:\na. Samantha\nb. Emily",
+  "label": "a"
+}
+```
+
+```json
+{
+  "text": "Lindsey aimait le goût du canard mais Megan préférait le poulet. _ a commandé le poulet kung pao pour le dîner. À quoi se réfère le blanc _ ?\nChoix:\na. Lindsey\nb. Megan",
+  "label": "b"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+  ```
+  Les questions suivantes sont des questions à choix multiples (avec réponses).
+  ```
+- Base prompt template:
+  ```
+  Question: {text}
+  Choix:
+  a. {option_a}
+  b. {option_b}
+  Réponse: {label}
+  ```
+- Instruction-tuned prompt template:
+  ```
+  Question: {text}
+  Choix:
+  a. {option_a}
+  b. {option_b}
+
+  Répondez à la question ci-dessus par 'a' ou 'b', et rien d'autre.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+$ euroeval --model <model-id> --dataset winogrande-fr
+```
+
 
 ## Summarization
 

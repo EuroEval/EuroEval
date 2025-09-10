@@ -1,6 +1,7 @@
 """All Portuguese dataset configurations used in EuroEval."""
 
 from ..data_models import DatasetConfig
+from ..enums import ModelType
 from ..languages import PT
 from ..tasks import COMMON_SENSE, EUROPEAN_VALUES, KNOW, LA, MCRC, NER, RC, SENT, SUMM
 
@@ -88,6 +89,19 @@ BOOLQ_PT_CONFIG = DatasetConfig(
     huggingface_id="EuroEval/boolq-pt",
     task=MCRC,
     languages=[PT],
+    unofficial=True,
+)
+
+WINOGRANDE_PT_CONFIG = DatasetConfig(
+    name="winogrande-pt",
+    pretty_name="the Portuguese common-sense reasoning dataset Winogrande-pt, "
+    "translated from the English Winogrande dataset",
+    huggingface_id="EuroEval/winogrande-pt",
+    task=COMMON_SENSE,
+    languages=[PT],
+    splits=["train", "test"],
+    _labels=["a", "b"],
+    _allowed_model_types=[ModelType.GENERATIVE],
     unofficial=True,
 )
 

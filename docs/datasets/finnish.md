@@ -559,6 +559,70 @@ You can evaluate this dataset directly as follows:
 $ euroeval --model <model-id> --dataset goldenswag-fi
 ```
 
+### Unofficial: Winogrande-fi
+
+This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2506.19468)
+and is a translated and filtered version of the English [Winogrande
+dataset](https://doi.org/10.1145/3474381).
+
+The original full dataset consists of 47 / 1,210 samples for training and testing, and
+we use the same splits.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Kun Dennis oli Puolassa, hän nautti matkasta enemmän kuin Jason, koska _ ymmärsi puolaa syvällisemmin. Mihin tyhjä _ viittaa?\nVastausvaihtoehdot:\na. Vaihtoehto A: Dennis\nb. Vaihtoehto B: Jason",
+  "label": "a"
+}
+```
+
+```json
+{
+  "text": "Michael halusi viedä Craigin vesille uudella veneellään. _ sanoi, että olisi hauskaa näyttää hänelle köysiä. Mihin tyhjä _ viittaa?\nVastausvaihtoehdot:\na. Vaihtoehto A: Michael\nb. Vaihtoehto B: Craig",
+  "label": "a"
+}
+```
+
+```json
+{
+  "text": "Voittaaksemme käyttäytymisharhan, meidän täytyy keskittyä enemmän tietoisten toimien muuttamiseen kuin tiedostamattomien toimien muuttamiseen, koska _ toimet ovat vapaaehtoisia. Mihin tyhjä _ viittaa?\nVastausvaihtoehdot:\na. Vaihtoehto A: tiedostamattomat\nb. Vaihtoehto B: tietoiset",
+  "label": "b"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+  ```
+  Seuraavat ovat monivalintakysymyksiä (vastauksineen).
+  ```
+- Base prompt template:
+  ```
+  Kysymys: {text}
+  Vastausvaihtoehdot:
+  a. {option_a}
+  b. {option_b}
+  Vastaus: {label}
+  ```
+- Instruction-tuned prompt template:
+  ```
+  Kysymys: {text}
+  Vastausvaihtoehdot:
+  a. {option_a}
+  b. {option_b}
+
+  Vastaa yllä olevaan kysymykseen käyttämällä 'a' tai 'b', äläkä mitään muuta.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+$ euroeval --model <model-id> --dataset winogrande-fi
+```
+
 
 ## Summarization
 

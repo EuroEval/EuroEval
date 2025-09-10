@@ -1276,6 +1276,70 @@ You can evaluate this dataset directly as follows:
 $ euroeval --model <model-id> --dataset hellaswag-no
 ```
 
+### Unofficial: Winogrande-no
+
+This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2506.19468)
+and is a translated and filtered version of the English [Winogrande
+dataset](https://doi.org/10.1145/3474381).
+
+The original full dataset consists of 47 / 1,210 samples for training and testing, and
+we use the same splits.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Gjessene foretrekker å hekke på markene i stedet for i skogene fordi i _ er rovdyr veldig synlige. Hva refererer det tomme _ til?\nSvaralternativer:\na. Alternativ A: markene\nb. Alternativ B: skogene",
+  "label": "a"
+}
+```
+
+```json
+{
+  "text": "Planten tok opp for mye plass i urnen, fordi _ var stor. Hva refererer det tomme _ til?\nSvaralternativer:\na. Alternativ A: plante\nb. Alternativ B: urne",
+  "label": "a"
+}
+```
+
+```json
+{
+  "text": "Lindsey elsket smaken av and, men Megan likte kylling bedre. _ bestilte kung pao kylling til middag. Hva refererer det tomme _ til?\nSvaralternativer:\na. Alternativ A: Lindsey\nb. Alternativ B: Megan",
+  "label": "b"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+  ```
+  Følgende er flervalgsspørsmål (med svar).
+  ```
+- Base prompt template:
+  ```
+  Spørsmål: {text}
+  Svaralternativer:
+  a. {option_a}
+  b. {option_b}
+  Svar: {label}
+  ```
+- Instruction-tuned prompt template:
+  ```
+  Spørsmål: {text}
+  Svaralternativer:
+  a. {option_a}
+  b. {option_b}
+
+  Besvar følgende spørsmål med 'a' eller 'b', og ikke noe annet.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+$ euroeval --model <model-id> --dataset winogrande-no
+```
+
 
 ## Summarization
 

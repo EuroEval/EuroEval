@@ -14,6 +14,7 @@ from collections import Counter
 
 import pandas as pd
 from constants import (
+    CHOICES_MAPPING,
     MAX_NUM_CHARS_IN_INSTRUCTION,
     MAX_NUM_CHARS_IN_OPTION,
     MAX_REPETITIONS,
@@ -94,7 +95,7 @@ def load_and_prepare_dataframe(url: str) -> pd.DataFrame:
     assert isinstance(df, pd.DataFrame)
 
     # Create the text column with choices in Latvian
-    choices_word = "Izvēles"  # "Choices" in Latvian
+    choices_word = CHOICES_MAPPING["lv"]
     df["text"] = [
         row.instruction.replace("\n", " ").strip() + "\n"
         f"{choices_word}:\n"

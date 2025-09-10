@@ -739,6 +739,70 @@ You can evaluate this dataset directly as follows:
 $ euroeval --model <model-id> --dataset goldenswag-nl
 ```
 
+### Unofficial: Winogrande-nl
+
+This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2506.19468)
+and is a translated and filtered version of the English [Winogrande
+dataset](https://doi.org/10.1145/3474381).
+
+The original full dataset consists of 47 / 1,210 samples for training and testing, and
+we use the same splits.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Emily vroeg haar zus Sarah of ze tampons of maandverband nodig had uit de winkel, hoewel _ dat niet nodig had omdat ze was overgestapt op het gebruik van menstruatiecups. Waar verwijst de lege _ naar?\nAntwoordopties:\na. Optie A: Emily\nb. Optie B: Sarah",
+  "label": "a"
+}
+```
+
+```json
+{
+  "text": "Bij het kopen van een huis heeft Patricia niet zoveel geld te besteden als Tanya, dus _ koopt een huis met 1 slaapkamer. Waar verwijst de lege _ naar?\nAntwoordopties:\na. Optie A: Patricia\nb. Optie B: Tanya",
+  "label": "a"
+}
+```
+
+```json
+{
+  "text": "Eenmaal in Polen genoot Dennis meer van de reis dan Jason omdat _ een oppervlakkige kennis van de Poolse taal had. Waar verwijst de lege _ naar?\nAntwoordopties:\na. Optie A: Dennis\nb. Optie B: Jason",
+  "label": "b"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+  ```
+  Hieronder staan meerkeuzevragen (met antwoorden).
+  ```
+- Base prompt template:
+  ```
+  Vraag: {text}
+  Antwoordopties:
+  a. {option_a}
+  b. {option_b}
+  Antwoord: {label}
+  ```
+- Instruction-tuned prompt template:
+  ```
+  Vraag: {text}
+  Antwoordopties:
+  a. {option_a}
+  b. {option_b}
+
+  Beantwoord de bovenstaande vraag met 'a' of 'b', en niets anders.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+$ euroeval --model <model-id> --dataset winogrande-nl
+```
+
 
 ## Summarization
 

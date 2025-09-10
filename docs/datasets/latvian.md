@@ -479,6 +479,71 @@ You can evaluate this dataset directly as follows:
 $ euroeval --model <model-id> --dataset copa-lv
 ```
 
+### Unofficial: Winogrande-lv
+
+This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2506.19468)
+and is a translated and filtered version of the English [Winogrande
+dataset](https://doi.org/10.1145/3474381).
+
+The original full dataset consists of 47 / 1,210 samples for training and testing, and
+we use the same splits.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Pērkot māju, Patrīcijai nav tik daudz naudas, ko tērēt kā Tanjai, tāpēc _ nopērk vienas guļamistabas māju. Ko norāda tukšums _?\nIzvēles:\na. Opcija A: Patrīcija\nb. Opcija B: Tanja",
+  "label": "a"
+}
+```
+
+```json
+{
+  "text": "Es nevarēju kontrolēt mitrumu, kā es kontrolēju lietu, jo _ nāca no visām pusēm. Ko norāda tukšums _?\nIzvēles:\na. Opcija A: mitrums\nb. Opcija B: lietus",
+  "label": "a"
+}
+```
+
+```json
+{
+  "text": "Derriks nespēja koncentrēties darbā, atšķirībā no Džastina, jo _ bija jautrs darbs. Ko norāda tukšums _?\nIzvēles:\na. Opcija A: Derriks\nb. Opcija B: Džastins",
+  "label": "b"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+  ```
+  Tālāk seko jautājumi ar vairākām atbilžu izvēlēm (ar atbildēm).
+  ```
+- Base prompt template:
+  ```
+  Jautājums: {text}
+  Izvēles:
+  a. {option_a}
+  b. {option_b}
+  Atbilde: {label}
+  ```
+- Instruction-tuned prompt template:
+  ```
+  Jautājums: {text}
+  Izvēles:
+  a. {option_a}
+  b. {option_b}
+
+  Atbildiet uz iepriekšējo jautājumu, atbildot ar 'a' vai 'b', un nekas cits.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+$ euroeval --model <model-id> --dataset winogrande-lv
+```
+
+
 ## Summarisation
 
 ### LSM

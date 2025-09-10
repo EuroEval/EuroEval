@@ -780,6 +780,67 @@ You can evaluate this dataset directly as follows:
 $ euroeval --model <model-id> --dataset hellaswag
 ```
 
+### Unofficial: Winogrande
+
+This dataset was published in [this paper](https://doi.org/10.1145/3474381). The
+original full dataset consists of 47 / 1,210 samples for training and testing, and we
+use the same splits.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Elena would grab their inventory in the back of the store for Megan to sell each time because _ was a businessperson. What does the blank _ refer to?\nChoices:\na. Elena\nb. Megan",
+  "label": "a"
+}
+```
+
+```json
+{
+  "text": "Once in Poland, Dennis enjoyed the trip more than Jason because _ had a deeper understanding of the Polish language. What does the blank _ refer to?\nChoices:\na. Dennis\nb. Jason",
+  "label": "a"
+}
+```
+
+```json
+{
+  "text": "Handling emergencies was never very difficult for Kevin but it was for Nelson because _ wasn't able to remain calm under pressure. What does the blank _ refer to?\nChoices:\na. Kevin\nb. Nelson",
+  "label": "b"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+  ```
+  The following are multiple choice questions (with answers).
+  ```
+- Base prompt template:
+  ```
+  Question: {text}
+  Options:
+  a. {option_a}
+  b. {option_b}
+  Answer: {label}
+  ```
+- Instruction-tuned prompt template:
+  ```
+  Question: {text}
+  Options:
+  a. {option_a}
+  b. {option_b}
+
+  Answer the above question by replying with 'a' or 'b', and nothing else.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+$ euroeval --model <model-id> --dataset winogrande
+```
+
 
 ## Summarization
 

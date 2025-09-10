@@ -17,6 +17,7 @@ from typing import Any, Dict, List
 import pandas as pd
 import requests
 from constants import (
+    CHOICES_MAPPING,
     MAX_NUM_CHARS_IN_INSTRUCTION,
     MAX_NUM_CHARS_IN_OPTION,
     MAX_REPETITIONS,
@@ -74,7 +75,7 @@ def main() -> None:
     ]
 
     # Create the text column with choices in Latvian
-    choices_word = "Izvēles"  # "Choices" in Latvian
+    choices_word = CHOICES_MAPPING["lv"]
     df["text"] = [
         row.instruction.replace("\n", " ").strip() + "\n"
         f"{choices_word}:\n"

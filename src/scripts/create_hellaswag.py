@@ -15,6 +15,7 @@ from collections import Counter
 
 import pandas as pd
 from constants import (
+    CHOICES_MAPPING,
     MAX_NUM_CHARS_IN_INSTRUCTION,
     MAX_NUM_CHARS_IN_OPTION,
     MAX_REPETITIONS,
@@ -25,27 +26,15 @@ from datasets import Dataset, DatasetDict, Split, load_dataset
 from huggingface_hub import HfApi
 from sklearn.model_selection import train_test_split
 
+LANGUAGES = ["da", "de", "en", "es", "fr", "is", "it", "nl", "no", "pt", "sv"]
+
 
 def main() -> None:
     """Create the HellaSwag-mini datasets and upload them to the HF Hub."""
     # Define the base download URL
     repo_id = "alexandrainst/m_hellaswag"
 
-    # Create a mapping with the word "Choices" in different languages
-    choices_mapping = {
-        "da": "Svarmuligheder",
-        "no": "Svaralternativer",
-        "sv": "Svarsalternativ",
-        "is": "Svarmöguleikar",
-        "de": "Antwortmöglichkeiten",
-        "nl": "Antwoordopties",
-        "en": "Choices",
-        "fr": "Choix",
-        "it": "Scelte",
-        "es": "Opciones",
-    }
-
-    for language in choices_mapping.keys():
+    for language in LANGUAGES:
         # Download the dataset
         try:
             dataset = load_dataset(path=repo_id, name=language, token=True, split="val")
@@ -87,7 +76,7 @@ def main() -> None:
         # Make a `text` column with all the options in it
         df["text"] = [
             row.ctx.replace("\n", " ").strip() + "\n"
-            f"{choices_mapping[language]}:\n"
+            f"{CHOICES_MAPPING[language]}:\n"
             "a. " + row.endings[0].replace("\n", " ").strip() + "\n"
             "b. " + row.endings[1].replace("\n", " ").strip() + "\n"
             "c. " + row.endings[2].replace("\n", " ").strip() + "\n"

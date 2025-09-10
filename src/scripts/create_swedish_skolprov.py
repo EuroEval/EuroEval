@@ -4,7 +4,6 @@
 #     "datasets==3.5.0",
 #     "huggingface-hub==0.24.0",
 #     "pandas==2.2.0",
-#     "polars==1.31.0",
 #     "requests==2.32.3",
 #     "scikit-learn<1.6.0",
 # ]
@@ -16,6 +15,7 @@ from collections import Counter
 
 import pandas as pd
 from constants import (
+    CHOICES_MAPPING,
     MAX_NUM_CHARS_IN_INSTRUCTION,
     MAX_NUM_CHARS_IN_OPTION,
     MAX_REPETITIONS,
@@ -104,7 +104,7 @@ def main() -> None:
         )
         instruction = str(instruction).replace("\n", " ").strip()
 
-        text = instruction + "\nSvarsalternativ:\n"
+        text = instruction + f"\n{CHOICES_MAPPING['sv']}:\n"
         text += "a. " + str(row.option_a).replace("\n", " ").strip() + "\n"
         text += "b. " + str(row.option_b).replace("\n", " ").strip() + "\n"
         text += "c. " + str(row.option_c).replace("\n", " ").strip() + "\n"

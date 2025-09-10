@@ -490,9 +490,9 @@ $ euroeval --model <model-id> --dataset exam-et
 
 ## Common-sense Reasoning
 
-### WinoGrande-ET
+### Winogrande-et
 
-The dataset includes the [WinoGrande](https://doi.org/10.48550/arXiv.1907.10641) test
+The dataset includes the [Winogrande](https://doi.org/10.48550/arXiv.1907.10641) test
 set translated and culturally adapted by hand by a professional translator (citation
 TBA). The structure of the dataset is identical to the original. Since train and dev
 splits were not translated manually, we employ the GPT-4o model to translate the

@@ -1,6 +1,7 @@
 """All Norwegian dataset configurations used in EuroEval."""
 
 from ..data_models import DatasetConfig
+from ..enums import ModelType
 from ..languages import NB, NN, NO
 from ..tasks import COMMON_SENSE, EUROPEAN_VALUES, KNOW, LA, MCRC, NER, RC, SENT, SUMM
 
@@ -213,6 +214,19 @@ MULTI_WIKI_QA_NN_CONFIG = DatasetConfig(
     huggingface_id="EuroEval/multi-wiki-qa-nn-mini",
     task=RC,
     languages=[NN],
+    unofficial=True,
+)
+
+WINOGRANDE_NO_CONFIG = DatasetConfig(
+    name="winogrande-no",
+    pretty_name="the Norwegian common-sense reasoning dataset Winogrande-no, "
+    "translated from the English Winogrande dataset",
+    huggingface_id="EuroEval/winogrande-no",
+    task=COMMON_SENSE,
+    languages=[NB, NN, NO],
+    splits=["train", "test"],
+    _labels=["a", "b"],
+    _allowed_model_types=[ModelType.GENERATIVE],
     unofficial=True,
 )
 

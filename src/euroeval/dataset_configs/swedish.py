@@ -131,6 +131,19 @@ GOLDENSWAG_SV_CONFIG = DatasetConfig(
     unofficial=True,
 )
 
+WINOGRANDE_SV_CONFIG = DatasetConfig(
+    name="winogrande-sv",
+    pretty_name="the Swedish common-sense reasoning dataset Winogrande-sv, translated "
+    "from the English Winogrande dataset",
+    huggingface_id="EuroEval/winogrande-sv",
+    task=COMMON_SENSE,
+    languages=[SV],
+    splits=["train", "test"],
+    _labels=["a", "b"],
+    _allowed_model_types=[ModelType.GENERATIVE],
+    unofficial=True,
+)
+
 EUROPEAN_VALUES_SITUATIONAL_SV_CONFIG = DatasetConfig(
     name="european-values-situational-sv",
     pretty_name="the Swedish version of the European values evaluation dataset, where "

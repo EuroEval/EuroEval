@@ -864,7 +864,7 @@ $ euroeval --model <model-id> --dataset mmlu-is
 
 This dataset was published in [this paper](https://aclanthology.org/2022.lrec-1.464/)
 and is a manually translated and adapted version of the English [WinoGrande
-dataset](https://arxiv.org/abs/1907.10641). The samples are sentences containing two
+dataset](https://doi.org/10.1145/3474381). The samples are sentences containing two
 nouns and an ambiguous pronoun, and the task is to determine which of the two nouns the
 pronoun refers to.
 

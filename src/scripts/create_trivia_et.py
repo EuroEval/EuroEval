@@ -10,6 +10,7 @@
 
 from typing import MutableMapping
 
+from constants import CHOICES_MAPPING
 from datasets import DatasetDict, concatenate_datasets, load_dataset
 from huggingface_hub import HfApi
 
@@ -59,7 +60,7 @@ def add_options_and_label(row: MutableMapping) -> MutableMapping:
     options = [f"{letters[i]}. {options[i]}" for i in range(len(options))]
     options = "\n".join(options)
 
-    text = f"{question}\nVastusevariandid:\n{options}"
+    text = f"{question}\n{CHOICES_MAPPING['et']}:\n{options}"
     label = letters[answer]
 
     return {"text": text, "label": label}

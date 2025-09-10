@@ -15,6 +15,7 @@ from collections import Counter
 
 import pandas as pd
 from constants import (
+    CHOICES_MAPPING,
     MAX_NUM_CHARS_IN_INSTRUCTION,
     MAX_REPETITIONS,
     MIN_NUM_CHARS_IN_INSTRUCTION,
@@ -67,7 +68,7 @@ def main() -> None:
     # Make a `text` column with all the options in it
     df["text"] = [
         row.instruction.replace("\n", " ").strip() + "\n"
-        "Svaralternativer:\n"
+        f"{CHOICES_MAPPING['no']}:\n"
         + "\n".join(
             [
                 f"{char}. {clean_text(text=option)}"

@@ -1,6 +1,7 @@
 """All Latvian dataset configurations used in EuroEval."""
 
 from ..data_models import DatasetConfig
+from ..enums import ModelType
 from ..languages import LV
 from ..tasks import COMMON_SENSE, KNOW, LA, NER, RC, SENT, SUMM
 
@@ -77,5 +78,18 @@ WIKIANN_LV_CONFIG = DatasetConfig(
     huggingface_id="EuroEval/wikiann-lv-mini",
     task=NER,
     languages=[LV],
+    unofficial=True,
+)
+
+WINOGRANDE_LV_CONFIG = DatasetConfig(
+    name="winogrande-lv",
+    pretty_name="the Latvian common-sense reasoning dataset Winogrande-lv, translated "
+    "from the English Winogrande dataset",
+    huggingface_id="EuroEval/winogrande-lv",
+    task=COMMON_SENSE,
+    languages=[LV],
+    splits=["train", "test"],
+    _labels=["a", "b"],
+    _allowed_model_types=[ModelType.GENERATIVE],
     unofficial=True,
 )

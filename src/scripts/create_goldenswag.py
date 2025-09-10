@@ -15,6 +15,7 @@ from collections import Counter
 
 import pandas as pd
 from constants import (
+    CHOICES_MAPPING,
     MAX_NUM_CHARS_IN_INSTRUCTION,
     MAX_NUM_CHARS_IN_OPTION,
     MAX_REPETITIONS,
@@ -24,18 +25,6 @@ from constants import (
 from datasets import Dataset, DatasetDict, Split, load_dataset
 from huggingface_hub import HfApi
 from sklearn.model_selection import train_test_split
-
-OPTIONS_MAPPING = {
-    "da": "Svarmuligheder",
-    "de": "Antwortmöglichkeiten",
-    "es": "Opciones",
-    "fi": "Vastausvaihtoehdot",
-    "fr": "Choix",
-    "it": "Scelte",
-    "nl": "Antwoordopties",
-    "sv": "Svarsalternativ",
-    "pt": "Opções",
-}
 
 
 def main() -> None:
@@ -52,6 +41,7 @@ def main() -> None:
         "IT": "it",
         "NL": "nl",
         "SV": "sv",
+        "PL": "pl",
         "PT-PT": "pt",
     }
 
@@ -146,7 +136,7 @@ def process_(dataset: Dataset, language_code: str) -> pd.DataFrame:
     # Make a `text` column with all the options in it
     df["text"] = [
         row.ctx.replace("\n", " ").strip() + "\n"
-        f"{OPTIONS_MAPPING[language_code]}:\n"
+        f"{CHOICES_MAPPING[language_code]}:\n"
         "a. " + row.endings[0].replace("\n", " ").strip() + "\n"
         "b. " + row.endings[1].replace("\n", " ").strip() + "\n"
         "c. " + row.endings[2].replace("\n", " ").strip() + "\n"

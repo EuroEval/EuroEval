@@ -1,6 +1,7 @@
 """All German dataset configurations used in EuroEval."""
 
 from ..data_models import DatasetConfig
+from ..enums import ModelType
 from ..languages import DE
 from ..tasks import COMMON_SENSE, EUROPEAN_VALUES, KNOW, LA, MCRC, NER, RC, SENT, SUMM
 
@@ -127,6 +128,19 @@ GOLDENSWAG_DE_CONFIG = DatasetConfig(
     huggingface_id="EuroEval/goldenswag-de-mini",
     task=COMMON_SENSE,
     languages=[DE],
+    unofficial=True,
+)
+
+WINOGRANDE_DE_CONFIG = DatasetConfig(
+    name="winogrande-de",
+    pretty_name="the German common-sense reasoning dataset Winogrande-de, translated "
+    "from the English Winogrande dataset",
+    huggingface_id="EuroEval/winogrande-de",
+    task=COMMON_SENSE,
+    languages=[DE],
+    splits=["train", "test"],
+    _labels=["a", "b"],
+    _allowed_model_types=[ModelType.GENERATIVE],
     unofficial=True,
 )
 

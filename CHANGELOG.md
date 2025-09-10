@@ -11,7 +11,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Added support for Polish 🇵🇱! This includes the reading comprehension dataset PoQuAD,
   the sentiment classification dataset PolEmo 2.0, the linguistic acceptability dataset
   ScaLA-pl, the named entity recognition dataset KPWr-NER, the summarisation dataset
-  PSC, and the knowledge dataset LLMzSzŁ. This was contributed by @oliverkinch ✨
+  PSC, the knowledge dataset LLMzSzŁ and the common-sense reasoning dataset
+  Winogrande-pl. Also added MultiWikiQA-pl and GoldenSwag-pl as unofficial reading
+  comprehension and common-sense reasoning datasets, respectively. This was contributed
+  by @oliverkinch ✨
 - Added the Swedish knowledge dataset Skolprov. It is unofficial for now. This was
   contributed by @oliverkinch ✨
 - Added the knowledge dataset Trivia-et for Estonian. The dataset contains 800 trivia
@@ -21,6 +24,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   by @slowwavesleep ✨
 - Added the English and German versions of XQuAD as unofficial reading comprehension
   datasets.
+- Added the English common-sense reasoning dataset Winogrande and its translated
+  versions of Winogrande for Danish, German, Spanish, Finnish, French, Italian, Latvian,
+  Dutch, Norwegian, Polish, Portuguese and Swedish.
 - Added new `--generative-type` argument, which can be used to override the automatic
   detection of the generative type (base decoder, instruction-tuned decoder, or
   reasoning decoder) of a decoder model. This can be useful if the automatic detection
