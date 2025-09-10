@@ -742,7 +742,6 @@ def get_model_repo_info(
                         f"Could not access the model {model_id} with the revision "
                         f"{revision}. The error was {str(e)!r}."
                     )
-                    return None
                 except LocalTokenNotFoundError:
                     logger.debug(
                         f"Could not access the model {model_id} with the revision "
@@ -750,11 +749,14 @@ def get_model_repo_info(
                         "`HUGGINGFACE_API_KEY` environment variable or use the "
                         "`--api-key` argument."
                     )
+                finally:
                     return None
             except (RepositoryNotFoundError, HFValidationError):
                 return None
             except (OSError, RequestException) as e:
-                if internet_connection_available():
+                if "unauthorized" in str(e).lower():
+                    return None
+                elif internet_connection_available():
                     errors.append(e)
                     continue
                 logger.debug(
