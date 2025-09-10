@@ -5,6 +5,7 @@ import re
 import typing as t
 
 import torch
+from jinja2.exceptions import SecurityError
 from transformers import MistralCommonTokenizer
 
 from .enums import GenerativeType
@@ -588,12 +589,16 @@ def apply_chat_template(
             conversation=conversation, tokenize=tokenise
         )
     else:
-        breakpoint()
-        templated_prompt = tokeniser.apply_chat_template(
-            conversation=conversation,
-            add_generation_prompt=add_generation_prompt,
-            tokenize=tokenise,
-            enable_thinking=enable_thinking,
-            **extra_kwargs,
-        )
+        try:
+            templated_prompt = tokeniser.apply_chat_template(
+                conversation=conversation,
+                add_generation_prompt=add_generation_prompt,
+                tokenize=tokenise,
+                enable_thinking=enable_thinking,
+                **extra_kwargs,
+            )
+        except SecurityError as e:
+            logger.error(str(e))
+            breakpoint()
+            pass
     return templated_prompt
