@@ -10,7 +10,7 @@ from transformers.tokenization_utils_base import PreTrainedTokenizerBase
 from transformers.trainer import Trainer
 
 from ..exceptions import InvalidBenchmark
-from ..tokenization_utils import get_special_token_metadata
+from ..tokenisation_utils import get_special_token_metadata
 from ..utils import raise_if_model_output_contains_nan_values
 
 if t.TYPE_CHECKING:
