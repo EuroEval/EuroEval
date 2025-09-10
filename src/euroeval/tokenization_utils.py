@@ -1,4 +1,4 @@
-"""Utility functions related to tokenization."""
+"""Utility functions related to tokenisation."""
 
 import logging
 import re
@@ -79,8 +79,8 @@ def should_prompts_be_stripped(
     """Determine if we should strip the prompts for few-shot evaluation.
 
     This is the case if the tokeniser needs to include the space as part of the label
-    token. The strategy is thus to tokenize a label with a preceeding colon (as in the
-    prompts), i.e., ": positive", and check if the tokenization starts with the tokens
+    token. The strategy is thus to tokenise a label with a preceeding colon (as in the
+    prompts), i.e., ": positive", and check if the tokenisation starts with the tokens
     of ": ". If this is the case, then we should not strip the prompts, since the
     tokeniser produces the whitespace token separately.
 
@@ -88,7 +88,7 @@ def should_prompts_be_stripped(
         labels_to_be_generated:
             The labels that are to be generated.
         tokeniser:
-            The tokeniser used to tokenize the labels.
+            The tokeniser used to tokenise the labels.
 
     Returns:
         Whether we should strip the prompts.
@@ -124,7 +124,7 @@ def should_prefix_space_be_added_to_labels(
         labels_to_be_generated:
             The labels that are to be generated.
         tokeniser:
-            The tokeniser used to tokenize the labels.
+            The tokeniser used to tokenise the labels.
 
     Returns:
         Whether we should add a prefix space to the labels.
@@ -425,7 +425,7 @@ def get_first_label_token_mapping(
         for label in dataset_config.labels
     ]
 
-    # Tokenize some text containing each label, which we will use to extract the
+    # Tokenise some text containing each label, which we will use to extract the
     # first token of each label
     all_tokens: list[list[str]]
     if not has_chat_template(tokeniser=tokeniser):
