@@ -33,11 +33,11 @@ jobs:
           enable-cache: false
           python-version: "3.11"
 
+      - name: Remove pre-commit cache
+        run: rm -rf ~/.cache/pre-commit || true
+
       - name: Run pre-commit hooks
         uses: pre-commit/action@v3.0.1
-
-      - name: Remove pre-commit cache
-        run: rm -rf ~/.cache/pre-commit
 
   pytest-linux:
     if: github.event.pull_request.draft == false
