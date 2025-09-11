@@ -719,7 +719,8 @@ class LiteLLMModel(BenchmarkModule):
         if "response_format" in generation_kwargs:
             responses = [
                 RuntimeError("The model outputs empty dictionaries.")
-                if any(choice.message.content == "{}" for choice in response.choices)
+                if not isinstance(response, Exception)
+                and any(choice.message.content == "{}" for choice in response.choices)
                 else response
                 for response in responses
             ]
