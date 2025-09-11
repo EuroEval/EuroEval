@@ -637,6 +637,8 @@
       
         
       
+        
+      
     
     
     
@@ -1000,19 +1002,28 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#unofficial-winogrande-fi" class="md-nav__link">
+    <span class="md-ellipsis">
+      Unofficial: Winogrande-fi
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#summarization" class="md-nav__link">
+  <a href="#summarisation" class="md-nav__link">
     <span class="md-ellipsis">
-      Summarization
+      Summarisation
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Summarization">
+    <nav class="md-nav" aria-label="Summarisation">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -1166,6 +1177,29 @@
   
   <span class="md-ellipsis">
     🇳🇴 Norwegian
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../polish/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    🇵🇱 Polish
     
   </span>
   
@@ -1544,19 +1578,28 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#unofficial-winogrande-fi" class="md-nav__link">
+    <span class="md-ellipsis">
+      Unofficial: Winogrande-fi
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#summarization" class="md-nav__link">
+  <a href="#summarisation" class="md-nav__link">
     <span class="md-ellipsis">
-      Summarization
+      Summarisation
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Summarization">
+    <nav class="md-nav" aria-label="Summarisation">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -1874,8 +1917,9 @@ Vastaa yllä olevaan kysymykseen käyttämällä &#39;a&#39;, &#39;b&#39;, &#39;
 <div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>belebele-fi
 </code></pre></div>
 <h3 id="unofficial-multiwikiqa-fi">Unofficial: MultiWikiQA-fi</h3>
-<p>This dataset will be published in an upcoming paper, and contains Finnish Wikipedia
-articles with generated questions and answers, using the LLM Gemini-1.5-pro.</p>
+<p>This dataset was published in <a href="https://doi.org/10.48550/arXiv.2509.04111">this paper</a>
+and contains Wikipedia articles with LLM-generated questions and answers in 300+
+languages.</p>
 <p>The original full dataset consists of 5,000 samples in a single split. We use a 1,024 /
 256 / 2,048 split for training, validation and testing, respectively, sampled randomly.</p>
 <p>Here are a few examples from the training split:</p>
@@ -1984,8 +2028,16 @@ Vastaa yllä olevaan kysymykseen käyttämällä &#39;a&#39;, &#39;b&#39;, &#39;
 <div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>hellaswag-fi
 </code></pre></div>
 <h3 id="unofficial-goldenswag-fi">Unofficial: GoldenSwag-fi</h3>
-<p>This dataset is a filtered and machine translated version of the English <a href="https://aclanthology.org/P19-1472/">HellaSwag dataset</a>, featuring both video descriptions from ActivityNet as well as how-to articles from WikiHow. The machine translated version was published in <a href="https://doi.org/10.48550/arXiv.2410.08928">this paper</a> and was done using DeepL, and the filtering was published in <a href="https://doi.org/10.48550/arXiv.2504.07825">this paper</a>, which resulted in higher quality samples.</p>
-<p>The original full dataset consists of 1530 / 1530 samples for training and validation, respectively. However, they are exactly equal. We use a split of 660 / 256 / 2,048 samples for training, validation, and testing, respectively.</p>
+<p>This dataset is a filtered and machine translated version of the English <a href="https://aclanthology.org/P19-1472/">HellaSwag
+dataset</a>, featuring both video descriptions from
+ActivityNet as well as how-to articles from WikiHow. The machine translated version was
+published in <a href="https://doi.org/10.48550/arXiv.2410.08928">this paper</a> and was done using
+DeepL, and the filtering was published in <a href="https://doi.org/10.48550/arXiv.2504.07825">this
+paper</a>, which resulted in higher quality
+samples.</p>
+<p>The original full dataset consists of 1530 / 1530 samples for training and validation,
+respectively. However, they are exactly equal. We use a split of 660 / 256 / 2,048
+samples for training, validation, and testing, respectively.</p>
 <p>Here are a few examples from the training split:</p>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Miten auton ulkoinen pesu tehdään oikein. Ensimmäinen asia, joka sinun on tehtävä kunnolla, on pestä autosi tehokkaasti. Ei ole mitään järkeä yrittää tehdä auton ulkoista detaljointia, jos päädyt vain naarmuttamaan ducosi entistä enemmän, koska jätit autoosi likaa. Sinun on ensin huuhdeltava autosi letkulla kovalla paineella.\nVastausvaihtoehdot:\na. Tämä poistaa suurimman osan liasta moottoristasi ja pitää moottorin moitteettomana. Käytä autosi pesemiseen korkeapainepesukoneita.\nb. Sitten sinun on alettava imuroida likaa pois. Kun olet poistanut mahdollisimman paljon likaa, voit palata ajoneuvon luokse keräämään roskia.\nc. Vie letku kaasuttimesta moottorilohkon yläosaan, odota viisi minuuttia, sulje sitten vesi ja päästä ilma ulos jäähdyttimestä. Irrota vanhat tiivisteet ja aloita vedellä pesu moottorin kannesta alas.\nd. Älä käytä letkusta lasertyyppistä pesua, vaan mieluummin pientä suppiloa. Aloita aina ylhäältä ja etene alaspäin.&quot;</span><span class="p">,</span>
@@ -2032,7 +2084,55 @@ Vastaa yllä olevaan kysymykseen käyttämällä &#39;a&#39;, &#39;b&#39;, &#39;
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>goldenswag-fi
 </code></pre></div>
-<h2 id="summarization">Summarization</h2>
+<h3 id="unofficial-winogrande-fi">Unofficial: Winogrande-fi</h3>
+<p>This dataset was published in <a href="https://doi.org/10.48550/arXiv.2506.19468">this paper</a>
+and is a translated and filtered version of the English <a href="https://doi.org/10.1145/3474381">Winogrande
+dataset</a>.</p>
+<p>The original full dataset consists of 47 / 1,210 samples for training and testing, and
+we use the same splits.</p>
+<p>Here are a few examples from the training split:</p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Kun Dennis oli Puolassa, hän nautti matkasta enemmän kuin Jason, koska _ ymmärsi puolaa syvällisemmin. Mihin tyhjä _ viittaa?\nVastausvaihtoehdot:\na. Vaihtoehto A: Dennis\nb. Vaihtoehto B: Jason&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;a&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Michael halusi viedä Craigin vesille uudella veneellään. _ sanoi, että olisi hauskaa näyttää hänelle köysiä. Mihin tyhjä _ viittaa?\nVastausvaihtoehdot:\na. Vaihtoehto A: Michael\nb. Vaihtoehto B: Craig&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;a&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Voittaaksemme käyttäytymisharhan, meidän täytyy keskittyä enemmän tietoisten toimien muuttamiseen kuin tiedostamattomien toimien muuttamiseen, koska _ toimet ovat vapaaehtoisia. Mihin tyhjä _ viittaa?\nVastausvaihtoehdot:\na. Vaihtoehto A: tiedostamattomat\nb. Vaihtoehto B: tietoiset&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;b&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>When evaluating generative models, we use the following setup (see the
+<a href="/methodology">methodology</a> for more information on how these are used):</p>
+<ul>
+<li>Number of few-shot examples: 5</li>
+<li>Prefix prompt:
+  <div class="highlight"><pre><span></span><code>Seuraavat ovat monivalintakysymyksiä (vastauksineen).
+</code></pre></div></li>
+<li>Base prompt template:
+  <div class="highlight"><pre><span></span><code>Kysymys: {text}
+Vastausvaihtoehdot:
+a. {option_a}
+b. {option_b}
+Vastaus: {label}
+</code></pre></div></li>
+<li>Instruction-tuned prompt template:
+  <div class="highlight"><pre><span></span><code>Kysymys: {text}
+Vastausvaihtoehdot:
+a. {option_a}
+b. {option_b}
+
+Vastaa yllä olevaan kysymykseen käyttämällä &#39;a&#39; tai &#39;b&#39;, äläkä mitään muuta.
+</code></pre></div></li>
+</ul>
+<p>You can evaluate this dataset directly as follows:</p>
+<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>winogrande-fi
+</code></pre></div>
+<h2 id="summarisation">Summarisation</h2>
 <h3 id="xlsum-fi">XLSum-fi</h3>
 <p>This dataset is a machine translation of the XL-Sum dataset, which was published in
 <a href="https://aclanthology.org/2021.findings-acl.413/">this paper</a>.

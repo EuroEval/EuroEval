@@ -637,6 +637,8 @@
       
         
       
+        
+      
     
     
     
@@ -996,6 +998,15 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#unofficial-xquad-de" class="md-nav__link">
+    <span class="md-ellipsis">
+      Unofficial: XQuAD-de
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#unofficial-belebele-de" class="md-nav__link">
     <span class="md-ellipsis">
       Unofficial: BeleBele-de
@@ -1008,6 +1019,30 @@
   <a href="#unofficial-multiwikiqa-de" class="md-nav__link">
     <span class="md-ellipsis">
       Unofficial: MultiWikiQA-de
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#knowledge" class="md-nav__link">
+    <span class="md-ellipsis">
+      Knowledge
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Knowledge">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#mmlu-de" class="md-nav__link">
+    <span class="md-ellipsis">
+      MMLU-de
     </span>
   </a>
   
@@ -1055,19 +1090,28 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#unofficial-winogrande-de" class="md-nav__link">
+    <span class="md-ellipsis">
+      Unofficial: Winogrande-de
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#summarization" class="md-nav__link">
+  <a href="#summarisation" class="md-nav__link">
     <span class="md-ellipsis">
-      Summarization
+      Summarisation
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Summarization">
+    <nav class="md-nav" aria-label="Summarisation">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -1175,6 +1219,29 @@
   
   <span class="md-ellipsis">
     🇳🇴 Norwegian
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../polish/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    🇵🇱 Polish
     
   </span>
   
@@ -1503,6 +1570,15 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#unofficial-xquad-de" class="md-nav__link">
+    <span class="md-ellipsis">
+      Unofficial: XQuAD-de
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#unofficial-belebele-de" class="md-nav__link">
     <span class="md-ellipsis">
       Unofficial: BeleBele-de
@@ -1515,6 +1591,30 @@
   <a href="#unofficial-multiwikiqa-de" class="md-nav__link">
     <span class="md-ellipsis">
       Unofficial: MultiWikiQA-de
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#knowledge" class="md-nav__link">
+    <span class="md-ellipsis">
+      Knowledge
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Knowledge">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#mmlu-de" class="md-nav__link">
+    <span class="md-ellipsis">
+      MMLU-de
     </span>
   </a>
   
@@ -1562,19 +1662,28 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#unofficial-winogrande-de" class="md-nav__link">
+    <span class="md-ellipsis">
+      Unofficial: Winogrande-de
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#summarization" class="md-nav__link">
+  <a href="#summarisation" class="md-nav__link">
     <span class="md-ellipsis">
-      Summarization
+      Summarisation
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Summarization">
+    <nav class="md-nav" aria-label="Summarisation">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -1835,6 +1944,64 @@ Frage: {question}
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>germanquad
 </code></pre></div>
+<h3 id="unofficial-xquad-de">Unofficial: XQuAD-de</h3>
+<p>This dataset was published in <a href="https://aclanthology.org/2020.acl-main.421/">this paper</a>
+and contains 1190 question-answer pairs from <a href="https://rajpurkar.github.io/SQuAD-explorer/">SQuAD
+v1.1</a> translated into ten languages by
+professional translators.</p>
+<p>The dataset is split intro 550 / 128 / 512 question-answer pairs for training,
+validation, and testing, respectively.</p>
+<p>Here are a few examples from the training split:</p>
+<p><div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;context&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Irgendwann vor etwa einer Milliarde Jahren drang ein freilebendes Cyanobakterium in eine frühe eukaryotische Zelle ein, entweder als Nahrung oder als interner Parasit, schaffte es aber, aus der phagozytischen Vakuole zu entkommen, in der es enthalten war. Die innersten Lipiddoppelschicht-Membranen, die alle Chloroplasten umgeben, entsprechen der äußeren und inneren Membran der gramnegativen Zellwand des anzestralen Cyanobakteriums und nicht der phagosomalen Membran des Wirts, die wahrscheinlich verloren ging. Der neue Zellenbewohner wurde schnell zu einem Vorteil, indem er dem eukaryotischen Wirt, welcher ihm erlaubte, in ihm zu leben, Nahrung zur Verfügung stellte. Mit der Zeit wurde das Cyanobakterium assimiliert und viele seiner Gene gingen verloren oder in den Nukleus des Wirts übertragen. Einige seiner Proteine wurden dann im Zellplasma der Wirtzelle synthetisiert und zurück in den Chloroplasten (das ehemalige Cyanobakterium) importiert.&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;question&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;In welche Art von Zell drangen vor langer Zeit Cynaobakterien ein?&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;answers&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;answer_start&quot;</span><span class="p">:</span><span class="w"> </span><span class="err">array(</span><span class="p">[</span><span class="mi">95</span><span class="p">],</span><span class="w"> </span><span class="err">d</span><span class="kc">t</span><span class="err">ype=i</span><span class="kc">nt</span><span class="mi">32</span><span class="err">)</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="err">array(</span><span class="p">[</span><span class="s2">&quot;eukaryotische&quot;</span><span class="p">],</span><span class="w"> </span><span class="err">d</span><span class="kc">t</span><span class="err">ype=objec</span><span class="kc">t</span><span class="err">)</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;context&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Im tibetischen Buddhismus werden die Dharma-Lehrer/innen gewöhnlich als Lama bezeichnet. Ein Lama, der sich durch Phowa und Siddhi bewusst zur Wiedergeburt, häufig mehrere Male, entschlossen hat, um sein Bodhisattva-Gelübte fortsetzen zu können, wird Tulku genannt.&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;question&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Zu wie vielen Wiedergeburten hat sich ein Lama bereiterklärt?&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;answers&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;answer_start&quot;</span><span class="p">:</span><span class="w"> </span><span class="err">array(</span><span class="p">[</span><span class="mi">164</span><span class="p">],</span><span class="w"> </span><span class="err">d</span><span class="kc">t</span><span class="err">ype=i</span><span class="kc">nt</span><span class="mi">32</span><span class="err">)</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="err">array(</span><span class="p">[</span><span class="s2">&quot;mehrere Male&quot;</span><span class="p">],</span><span class="w"> </span><span class="err">d</span><span class="kc">t</span><span class="err">ype=objec</span><span class="kc">t</span><span class="err">)</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;context&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Trotz ihrer weichen, gallertartigen Körper wurden Fossilien in Lagerstätten gefunden, die bis ins frühe Kambrium vor etwa 515 Millionen Jahren zurückreichen und von denen man annimmt, dass sie Rippenquallen darstellen. Die Fossilien verfügen nicht über Tentakel, haben aber viel mehr Kammreihen als moderne Formen. Die Position der Rippenquallen im evolutionären Stammbaum der Tiere ist seit langem umstritten. Die heutigen Mehrheitsmeinung, die auf der molekularen Phylogenese basiert, geht davon aus, dass Nesseltiere und Bilateria enger miteinander verwandt sind als die Rippenquallen selbst. Eine kürzlich durchgeführte Analyse der molekularen Phylogenese kam zu dem Schluss, dass der gemeinsame Vorfahre aller modernen Rippenquallen cydippida-ähnlich war und alle modernen Gruppen erst relativ spät auftauchten, wahrscheinlich nach der Kreide-Paläogen-Grenze vor 66 Millionen Jahren. Die seit den 1980er Jahren ansammelnden Beweise deuten darauf hin, dass „Cydippida“ nicht monophyletisch sind. Mit anderen Worten, sie beinhalten nicht alle Nachkommen, sondern nur die Nachkommen eines einzigen gemeinsamen Vorfahren. Dies wird angenommen, da alle anderen traditionellen Gruppen von Rippenquallen Nachkommen verschiedener Cydippida sind.&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;question&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Was fehlte den Rippenquallen-Fossilien, über das heutige Rippenquallen verfügen?&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;answers&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;answer_start&quot;</span><span class="p">:</span><span class="w"> </span><span class="err">array(</span><span class="p">[</span><span class="mi">253</span><span class="p">],</span><span class="w"> </span><span class="err">d</span><span class="kc">t</span><span class="err">ype=i</span><span class="kc">nt</span><span class="mi">32</span><span class="err">)</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="err">array(</span><span class="p">[</span><span class="s2">&quot;Tentakel&quot;</span><span class="p">],</span><span class="w"> </span><span class="err">d</span><span class="kc">t</span><span class="err">ype=objec</span><span class="kc">t</span><span class="err">)</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></p>
+<p>When evaluating generative models, we use the following setup (see the
+<a href="/methodology">methodology</a> for more information on how these are used):</p>
+<ul>
+<li>Number of few-shot examples: 4</li>
+<li>Prefix prompt:
+  <div class="highlight"><pre><span></span><code>Im Folgenden finden Sie Texte mit den dazugehörigen Fragen und Antworten.
+</code></pre></div></li>
+<li>Base prompt template:
+  <div class="highlight"><pre><span></span><code>Text: {text}
+Fragen: {question}
+Fragen Antwort in maximal 3 Wörtern: {label}
+</code></pre></div></li>
+<li>Instruction-tuned prompt template:
+  <div class="highlight"><pre><span></span><code>Text: {text}
+
+Beantworten Sie die folgende Frage zum obigen Text in höchstens 3 Wörtern.
+
+Frage: {question}
+</code></pre></div></li>
+</ul>
+<p>You can evaluate this dataset directly as follows:</p>
+<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>xquad-de
+</code></pre></div>
 <h3 id="unofficial-belebele-de">Unofficial: BeleBele-de</h3>
 <p>This dataset was published in <a href="https://aclanthology.org/2024.acl-long.44/">this paper</a>
 and features multiple-choice reading comprehension questions across 122 languages.</p>
@@ -1883,8 +2050,9 @@ Beantworten Sie die obige Frage mit &#39;a&#39;, &#39;b&#39;, &#39;c&#39; oder &
 <div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>belebele-de
 </code></pre></div>
 <h3 id="unofficial-multiwikiqa-de">Unofficial: MultiWikiQA-de</h3>
-<p>This dataset will be published in an upcoming paper, and contains German Wikipedia
-articles with generated questions and answers, using the LLM Gemini-1.5-pro.</p>
+<p>This dataset was published in <a href="https://doi.org/10.48550/arXiv.2509.04111">this paper</a>
+and contains Wikipedia articles with LLM-generated questions and answers in 300+
+languages.</p>
 <p>The original full dataset consists of 5,000 samples in a single split. We use a 1,024 /
 256 / 2,048 split for training, validation and testing, respectively, sampled randomly.</p>
 <p>Here are a few examples from the training split:</p>
@@ -1936,32 +2104,25 @@ Frage: {question}
 </code></pre></div></li>
 </ul>
 <p>You can evaluate this dataset directly as follows:</p>
-<p><div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>multi-wiki-qa-de
-
-
-<span class="c1">## Knowledge</span>
-
-<span class="c1">### MMLU-de</span>
-
-This<span class="w"> </span>dataset<span class="w"> </span>is<span class="w"> </span>a<span class="w"> </span>machine<span class="w"> </span>translated<span class="w"> </span>version<span class="w"> </span>of<span class="w"> </span>the<span class="w"> </span>English<span class="w"> </span><span class="o">[</span>MMLU
-dataset<span class="o">](</span>https://openreview.net/forum?id<span class="o">=</span>d7KBjmI3GmQ<span class="o">)</span><span class="w"> </span>and<span class="w"> </span>features<span class="w"> </span>questions<span class="w"> </span>within<span class="w"> </span><span class="m">57</span>
-different<span class="w"> </span>topics,<span class="w"> </span>such<span class="w"> </span>as<span class="w"> </span>elementary<span class="w"> </span>mathematics,<span class="w"> </span>US<span class="w"> </span><span class="nb">history</span><span class="w"> </span>and<span class="w"> </span>law.<span class="w"> </span>The<span class="w"> </span>translation<span class="w"> </span>to
-German<span class="w"> </span>was<span class="w"> </span><span class="k">done</span><span class="w"> </span>by<span class="w"> </span>the<span class="w"> </span>University<span class="w"> </span>of<span class="w"> </span>Oregon<span class="w"> </span>as<span class="w"> </span>part<span class="w"> </span>of<span class="w"> </span><span class="o">[</span>this
-paper<span class="o">](</span>https://aclanthology.org/2023.emnlp-demo.28/<span class="o">)</span>,<span class="w"> </span>using<span class="w"> </span>GPT-3.5-turbo.
-
-The<span class="w"> </span>original<span class="w"> </span>full<span class="w"> </span>dataset<span class="w"> </span>consists<span class="w"> </span>of<span class="w"> </span><span class="m">269</span><span class="w"> </span>/<span class="w"> </span><span class="m">1</span>,410<span class="w"> </span>/<span class="w"> </span><span class="m">13</span>,200<span class="w"> </span>samples<span class="w"> </span><span class="k">for</span><span class="w"> </span>training,
-validation<span class="w"> </span>and<span class="w"> </span>testing,<span class="w"> </span>respectively.<span class="w"> </span>We<span class="w"> </span>use<span class="w"> </span>a<span class="w"> </span><span class="m">1</span>,024<span class="w"> </span>/<span class="w"> </span><span class="m">256</span><span class="w"> </span>/<span class="w"> </span><span class="m">2</span>,048<span class="w"> </span>split<span class="w"> </span><span class="k">for</span><span class="w"> </span>training,
-validation<span class="w"> </span>and<span class="w"> </span>testing,<span class="w"> </span>respectively<span class="w"> </span><span class="o">(</span>so<span class="w"> </span><span class="m">3</span>,328<span class="w"> </span>samples<span class="w"> </span>used<span class="w"> </span><span class="k">in</span><span class="w"> </span>total<span class="o">)</span>.<span class="w"> </span>These<span class="w"> </span>splits<span class="w"> </span>are
-new<span class="w"> </span>and<span class="w"> </span>there<span class="w"> </span>can<span class="w"> </span>thus<span class="w"> </span>be<span class="w"> </span>some<span class="w"> </span>overlap<span class="w"> </span>between<span class="w"> </span>the<span class="w"> </span>original<span class="w"> </span>validation<span class="w"> </span>and<span class="w"> </span><span class="nb">test</span><span class="w"> </span>sets<span class="w"> </span>and
-our<span class="w"> </span>validation<span class="w"> </span>and<span class="w"> </span><span class="nb">test</span><span class="w"> </span>sets.
-
-Here<span class="w"> </span>are<span class="w"> </span>a<span class="w"> </span>few<span class="w"> </span>examples<span class="w"> </span>from<span class="w"> </span>the<span class="w"> </span>training<span class="w"> </span>split:
-
-<span class="sb">```</span>json
-<span class="o">{</span>
-<span class="w">  </span><span class="s2">&quot;text&quot;</span>:<span class="w"> </span><span class="s2">&quot;Teotihuacán wurde im Becken von Mexiko bekannt, nachdem sein Rivale Cuicuilco,\nAntwortmöglichkeiten:\na. von einem Vulkanausbruch gelähmt wurde.\nb. einem Bürgerkrieg unter seinen herrschenden Familien erlag.\nc. unter einer Ernteplage litt.\nd. von einem Hurrikan an der Golfküste überschwemmt wurde.&quot;</span>,
-<span class="w">  </span><span class="s2">&quot;label&quot;</span>:<span class="w"> </span><span class="s2">&quot;a&quot;</span>
-<span class="o">}</span>
+<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>multi-wiki-qa-de
+</code></pre></div>
+<h2 id="knowledge">Knowledge</h2>
+<h3 id="mmlu-de">MMLU-de</h3>
+<p>This dataset is a machine translated version of the English <a href="https://openreview.net/forum?id=d7KBjmI3GmQ">MMLU
+dataset</a> and features questions within 57
+different topics, such as elementary mathematics, US history and law. The translation to
+German was done by the University of Oregon as part of <a href="https://aclanthology.org/2023.emnlp-demo.28/">this
+paper</a>, using GPT-3.5-turbo.</p>
+<p>The original full dataset consists of 269 / 1,410 / 13,200 samples for training,
+validation and testing, respectively. We use a 1,024 / 256 / 2,048 split for training,
+validation and testing, respectively (so 3,328 samples used in total). These splits are
+new and there can thus be some overlap between the original validation and test sets and
+our validation and test sets.</p>
+<p>Here are a few examples from the training split:</p>
+<p><div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Teotihuacán wurde im Becken von Mexiko bekannt, nachdem sein Rivale Cuicuilco,\nAntwortmöglichkeiten:\na. von einem Vulkanausbruch gelähmt wurde.\nb. einem Bürgerkrieg unter seinen herrschenden Familien erlag.\nc. unter einer Ernteplage litt.\nd. von einem Hurrikan an der Golfküste überschwemmt wurde.&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;a&quot;</span>
+<span class="p">}</span>
 </code></pre></div>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Wer von den folgenden ist der industrielle Philanthrop?\nAntwortmöglichkeiten:\na. Frederick Taylor\nb. Seebohm Rowntree\nc. Henry Ford\nd. Max Weber&quot;</span><span class="p">,</span>
@@ -2141,7 +2302,52 @@ Beantworten Sie die obige Frage mit &#39;a&#39;, &#39;b&#39;, &#39;c&#39; oder &
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>goldenswag-de
 </code></pre></div>
-<h2 id="summarization">Summarization</h2>
+<h3 id="unofficial-winogrande-de">Unofficial: Winogrande-de</h3>
+<p>This dataset was published in <a href="https://doi.org/10.48550/arXiv.2506.19468">this paper</a>
+and is a translated and filtered version of the English <a href="https://doi.org/10.1145/3474381">Winogrande
+dataset</a>.</p>
+<p>The original full dataset consists of 47 / 1,210 samples for training and testing, and
+we use the same splits.</p>
+<p>Here are a few examples from the training split:</p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Einmal in Polen genoss Dennis die Reise mehr als Jason, weil _ ein tieferes Verständnis der polnischen Sprache hatte. Worauf bezieht sich der leere _?\nAntwortmöglichkeiten:\na. Dennis\nb. Jason&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;a&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Johns Zertifizierung war weniger wichtig als Jims Abschluss, weil die _ von einer unbedeutenden Universität war. Worauf bezieht sich der leere _?\nAntwortmöglichkeiten:\na. Zertifizierung\nb. Abschluss&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;a&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Um Verhaltensverzerrungen zu überwinden, müssen wir uns mehr darauf konzentrieren, die bewussten Handlungen zu ändern, anstatt die unbewussten Handlungen, weil die _ Handlungen freiwillig sind. Worauf bezieht sich der leere _?\nAntwortmöglichkeiten:\na. unbewusst\nb. bewusst&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;b&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>When evaluating generative models, we use the following setup (see the
+<a href="/methodology">methodology</a> for more information on how these are used):</p>
+<ul>
+<li>Number of few-shot examples: 5</li>
+<li>Prefix prompt:
+  <div class="highlight"><pre><span></span><code>Die folgenden Fragen sind Multiple-Choice-Fragen (mit Antworten).
+</code></pre></div></li>
+<li>Base prompt template:
+  <div class="highlight"><pre><span></span><code>Frage: {text}
+Antwort: {label}
+</code></pre></div></li>
+<li>Instruction-tuned prompt template:
+  <div class="highlight"><pre><span></span><code>Frage: {text}
+Antwortmöglichkeiten:
+a. {option_a}
+b. {option_b}
+
+Beantworten Sie die obige Frage mit &#39;a&#39; oder &#39;b&#39;, und nichts anderes.
+</code></pre></div></li>
+</ul>
+<p>You can evaluate this dataset directly as follows:</p>
+<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>winogrande-de
+</code></pre></div>
+<h2 id="summarisation">Summarisation</h2>
 <h3 id="mlsum-de">MLSum-de</h3>
 <p>This dataset was published in <a href="https://aclanthology.org/2020.emnlp-main.647/">this
 paper</a> and features news articles and

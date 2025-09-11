@@ -637,6 +637,8 @@
       
         
       
+        
+      
     
     
     
@@ -970,6 +972,29 @@
   
   
     <li class="md-nav__item">
+      <a href="../polish/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    🇵🇱 Polish
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../portuguese/" class="md-nav__link">
         
   
@@ -1207,6 +1232,15 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#unofficial-skolprov" class="md-nav__link">
+    <span class="md-ellipsis">
+      Unofficial: Skolprov
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1240,19 +1274,28 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#unofficial-winogrande-sv" class="md-nav__link">
+    <span class="md-ellipsis">
+      Unofficial: Winogrande-sv
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#summarization" class="md-nav__link">
+  <a href="#summarisation" class="md-nav__link">
     <span class="md-ellipsis">
-      Summarization
+      Summarisation
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Summarization">
+    <nav class="md-nav" aria-label="Summarisation">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -1586,6 +1629,15 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#unofficial-skolprov" class="md-nav__link">
+    <span class="md-ellipsis">
+      Unofficial: Skolprov
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1619,19 +1671,28 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#unofficial-winogrande-sv" class="md-nav__link">
+    <span class="md-ellipsis">
+      Unofficial: Winogrande-sv
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#summarization" class="md-nav__link">
+  <a href="#summarisation" class="md-nav__link">
     <span class="md-ellipsis">
-      Summarization
+      Summarisation
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Summarization">
+    <nav class="md-nav" aria-label="Summarisation">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -1970,8 +2031,9 @@ Besvara följande fråga med &#39;a&#39;, &#39;b&#39;, &#39;c&#39; eller &#39;d&
 <div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>belebele-sv
 </code></pre></div>
 <h3 id="unofficial-multiwikiqa-sv">Unofficial: MultiWikiQA-sv</h3>
-<p>This dataset will be published in an upcoming paper, and contains Swedish Wikipedia
-articles with generated questions and answers, using the LLM Gemini-1.5-pro.</p>
+<p>This dataset was published in <a href="https://doi.org/10.48550/arXiv.2509.04111">this paper</a>
+and contains Wikipedia articles with LLM-generated questions and answers in 300+
+languages.</p>
 <p>The original full dataset consists of 5,000 samples in a single split. We use a 1,024 /
 256 / 2,048 split for training, validation and testing, respectively, sampled randomly.</p>
 <p>Here are a few examples from the training split:</p>
@@ -2128,6 +2190,55 @@ Besvara följande fråga med &#39;a&#39;, &#39;b&#39;, &#39;c&#39; eller &#39;d&
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>arc-sv
 </code></pre></div>
+<h3 id="unofficial-skolprov">Unofficial: Skolprov</h3>
+<p>This dataset contains data from six Swedish knowledge tests and was published at <a href="https://huggingface.co/datasets/Ekgren/swedish_skolprov">this HuggingFace repository</a>. The dataset features multiple-choice questions from official Swedish examinations including the Swedish Scholastic Aptitude Test (högskoleprovet), medical doctor test (kunskapsprov läkare), dentist test (kunskapsprov tandläkare), audiologist test (kunskapsprov audionom), pharmacist test (kunskapsprov apotekare), and mathematics and physics test (matematik och fysikprovet).</p>
+<p>The original dataset consists of 545 samples, which we filter down to 512 samples. We use a 32 / 480 split for training and testing, respectively.</p>
+<p>Here are a few examples from the training split:</p>
+<p><div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;En man, 63 år, har en skelett-, lymfkörtel-, och levermetastaserad prostatacancer där aktiv onkologisk behandling är avslutad. Han är inskriven i ett specialiserat palliativt hemsjukvårdsteam. Han har en långverkande smärtlindring med T. oxykodon 20 mg morgon och kväll. Nu söker han akut vård på grund av buksmärta och ihållande kräkningar. Vad bör du ordinera mot mannens smärtor?\nSvarsalternativ:\na. Tablett kortverkande oxykodon 5 mg peroralt\nb. Tablett ibuprofen 400 mg peroralt\nc. Tablett kortverkande oxykodon 20 mg peroralt\nd. Inj. 5 mg kortverkande oxykodon subkutant\ne. Paracetamol 1 g intravenöst&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;d&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Vilken typ av hörapparat är att föredra för barn under 3 år med en permenent sensorineural hörselnedsättning?\nSvarsalternativ:\na. RIC (reciever in the canal) med öppen dome\nb. benledd hörapparat\nc. bakom-örat-apparat med individuellt anpassad insats\nd. endast mikrofonsystem för att förbättra signal/brus förhållandet&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;c&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Varför är det viktigt med utredande samtal?\nSvarsalternativ:\na. Det kan etablera ett ömsesidigt förtroende mellan audionom och patient som underlag inför utförandet av en individuell, kvalitativ rehabilitering.\nb. Det ger audionomen möjlighet att observera patientens kommunikation som underlag inför utförandet av en individuell, kvalitativ rehabilitering.\nc. Det kan förbättra taluppfattningen som en del i utförandet av en individuell, kvalitativ rehabilitering.\nd. Det samlar nödvändig information om patienten, som underlag inför utförandet av en individuell, kvalitativ rehabilitering.&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;d&quot;</span>
+<span class="p">}</span>
+</code></pre></div></p>
+<p>When evaluating generative models, we use the following setup (see the
+<a href="/methodology">methodology</a> for more information on how these are used):</p>
+<ul>
+<li>Number of few-shot examples: 5</li>
+<li>Prefix prompt:
+  <div class="highlight"><pre><span></span><code>Följande är flervalsfrågor (med svar).
+</code></pre></div></li>
+<li>Base prompt template:
+  <div class="highlight"><pre><span></span><code>Fråga: {text}
+Svarsalternativ:
+a. {option_a}
+b. {option_b}
+c. {option_c}
+d. {option_d}
+Svar: {label}
+</code></pre></div></li>
+<li>Instruction-tuned prompt template:
+  <div class="highlight"><pre><span></span><code>Fråga: {text}
+Svarsalternativ:
+a. {option_a}
+b. {option_b}
+c. {option_c}
+d. {option_d}
+
+Besvara följande fråga med &#39;a&#39;, &#39;b&#39;, &#39;c&#39; eller &#39;d&#39;, och inget annat.
+</code></pre></div></li>
+</ul>
+<p>You can evaluate this dataset directly as follows:</p>
+<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>skolprov
+</code></pre></div>
 <h2 id="common-sense-reasoning">Common-sense Reasoning</h2>
 <h3 id="hellaswag-sv">HellaSwag-sv</h3>
 <p>This dataset is a machine translated version of the English <a href="https://aclanthology.org/P19-1472/">HellaSwag
@@ -2232,7 +2343,55 @@ Besvara följande fråga med &#39;a&#39;, &#39;b&#39;, &#39;c&#39; eller &#39;d&
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>goldenswag-sv
 </code></pre></div>
-<h2 id="summarization">Summarization</h2>
+<h3 id="unofficial-winogrande-sv">Unofficial: Winogrande-sv</h3>
+<p>This dataset was published in <a href="https://doi.org/10.48550/arXiv.2506.19468">this paper</a>
+and is a translated and filtered version of the English <a href="https://doi.org/10.1145/3474381">Winogrande
+dataset</a>.</p>
+<p>The original full dataset consists of 47 / 1,210 samples for training and testing, and
+we use the same splits.</p>
+<p>Here are a few examples from the training split:</p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Sushin ruttnade på disken om den inte placerades i kylen, eftersom _ utsatte den för kontaminering. Vad syftar tomrummet _ på?\nSvarsalternativ:\na. Alternativ A: disken\nb. Alternativ B: kylen&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;a&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Elena skulle ta deras lager i butikens baksida för Megan att sälja varje gång eftersom _ var en affärsperson. Vad syftar tomrummet _ på?\nSvarsalternativ:\na. Alternativ A: Elena\nb. Alternativ B: Megan&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;a&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Att hantera nödsituationer var aldrig särskilt svårt för Kevin men det var det för Nelson eftersom _ inte kunde förbli lugn under press. Vad syftar tomrummet _ på?\nSvarsalternativ:\na. Alternativ A: Kevin\nb. Alternativ B: Nelson&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;b&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>When evaluating generative models, we use the following setup (see the
+<a href="/methodology">methodology</a> for more information on how these are used):</p>
+<ul>
+<li>Number of few-shot examples: 5</li>
+<li>Prefix prompt:
+  <div class="highlight"><pre><span></span><code>Følgende er multiple choice spørgsmål (med svar).
+</code></pre></div></li>
+<li>Base prompt template:
+  <div class="highlight"><pre><span></span><code>Spørgsmål: {text}
+Svarmuligheder:
+a. {option_a}
+b. {option_b}
+Svar: {label}
+</code></pre></div></li>
+<li>Instruction-tuned prompt template:
+  <div class="highlight"><pre><span></span><code>Spørgsmål: {text}
+Svarmuligheder:
+a. {option_a}
+b. {option_b}
+
+Besvar ovenstående spørgsmål ved at svare med &#39;a&#39; eller &#39;b&#39;, og intet andet.
+</code></pre></div></li>
+</ul>
+<p>You can evaluate this dataset directly as follows:</p>
+<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>winogrande-sv
+</code></pre></div>
+<h2 id="summarisation">Summarisation</h2>
 <h3 id="swedn">SweDN</h3>
 <p>This dataset was published in <a href="https://aclanthology.org/2023.emnlp-main.506/">this
 paper</a> and are based on news articles

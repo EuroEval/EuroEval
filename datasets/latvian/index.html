@@ -637,6 +637,8 @@
       
         
       
+        
+      
     
     
     
@@ -1121,6 +1123,15 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#unofficial-winogrande-lv" class="md-nav__link">
+    <span class="md-ellipsis">
+      Unofficial: Winogrande-lv
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1172,6 +1183,29 @@
   
   <span class="md-ellipsis">
     🇳🇴 Norwegian
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../polish/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    🇵🇱 Polish
     
   </span>
   
@@ -1556,6 +1590,15 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#unofficial-winogrande-lv" class="md-nav__link">
+    <span class="md-ellipsis">
+      Unofficial: Winogrande-lv
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1610,8 +1653,15 @@ datasets are grouped by their task - see the <a href="/tasks">task overview</a> 
 information about what these constitute.</p>
 <h2 id="sentiment-classification">Sentiment Classification</h2>
 <h3 id="latvian-twitter-sentiment">Latvian Twitter Sentiment</h3>
-<p>This dataset was published in <a href="https://arxiv.org/abs/2007.05194">this paper</a> and consists of sentiment-annotated Latvian tweets from the food and drinks domain, collected over an 8-year period.</p>
-<p>The original dataset contains 5,059 / 743 samples for the training and test splits, respectively. We use 1,024 / 256 / 2,048 samples for our training, validation and test splits, respectively. Our test split includes all 743 original test samples plus 1,305 additional samples drawn from the original training data to reach 2,048 total test samples. Both the validation split and final training split are sampled exclusively from the original training data.</p>
+<p>This dataset was published in <a href="https://arxiv.org/abs/2007.05194">this paper</a> and
+consists of sentiment-annotated Latvian tweets from the food and drinks domain,
+collected over an 8-year period.</p>
+<p>The original dataset contains 5,059 / 743 samples for the training and test splits,
+respectively. We use 1,024 / 256 / 2,048 samples for our training, validation and test
+splits, respectively. Our test split includes all 743 original test samples plus 1,305
+additional samples drawn from the original training data to reach 2,048 total test
+samples. Both the validation split and final training split are sampled exclusively from
+the original training data.</p>
 <p>Here are a few examples from the training split:</p>
 <p><div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;@ChiuljuPussala @nahimovs Tu ēd savus konservatīvos draugus?&quot;</span><span class="p">,</span>
@@ -1656,8 +1706,13 @@ Klasificējiet noskaņojumu dokumentā. Atbildiet ar &#39;pozitīvs&#39;, &#39;n
 </code></pre></div>
 <h2 id="named-entity-recognition">Named Entity Recognition</h2>
 <h3 id="fullstack-ner-lv">FullStack-NER-lv</h3>
-<p>This dataset was published in <a href="https://aclanthology.org/L18-1714/">this paper</a> and is part of a multilayered syntactically and semantically annotated text corpus for Latvian. The corpus text sources include approximately 60% news, 20% fiction, 10% legal texts, 5% spoken language transcripts, and 5% miscellaneous content from a balanced 10-million-word corpus.</p>
-<p>The original full dataset consists of 11,425 samples. We use 1,024 / 256 / 2,048 samples for our
+<p>This dataset was published in <a href="https://aclanthology.org/L18-1714/">this paper</a> and is
+part of a multilayered syntactically and semantically annotated text corpus for Latvian.
+The corpus text sources include approximately 60% news, 20% fiction, 10% legal texts, 5%
+spoken language transcripts, and 5% miscellaneous content from a balanced
+10-million-word corpus.</p>
+<p>The original full dataset consists of 11,425 samples. We use 1,024 / 256 / 2,048 samples
+for our
 training, validation and test splits, respectively.</p>
 <p>Here are a few examples from the training split:</p>
 <p><div class="highlight"><pre><span></span><code><span class="p">{</span>
@@ -1707,7 +1762,11 @@ Identificējiet nosauktos objektus teikumā. Jums jāizvada šī informācija k�
 <div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>fullstack-ner-lv
 </code></pre></div>
 <h3 id="unofficial-wikiann-lv">Unofficial: WikiANN-lv</h3>
-<p>This dataset was published in <a href="https://aclanthology.org/P17-1178/">this paper</a> and is part of a cross-lingual named entity recognition framework for 282 languages from Wikipedia. It uses silver-standard annotations transferred from English through cross-lingual links and performs both name tagging and linking to an english Knowledge Base.</p>
+<p>This dataset was published in <a href="https://aclanthology.org/P17-1178/">this paper</a> and is
+part of a cross-lingual named entity recognition framework for 282 languages from
+Wikipedia. It uses silver-standard annotations transferred from English through
+cross-lingual links and performs both name tagging and linking to an english Knowledge
+Base.</p>
 <p>The original full dataset consists of 10,000 / 10,000 / 10,000 samples for the training,
 validation and test splits, respectively. We use 1,024 / 256 / 2,048 samples for our
 training, validation and test splits, respectively. All the new splits are subsets of
@@ -1819,9 +1878,10 @@ Noteiciet, vai teikums ir gramatiski pareizs vai nē. Atbildiet ar &#39;jā&#39;
 </code></pre></div>
 <h2 id="reading-comprehension">Reading Comprehension</h2>
 <h3 id="multiwikiqa-lv">MultiWikiQA-lv</h3>
-<p>This dataset will be published in an upcoming paper, and contains Latvian Wikipedia
-articles with generated questions and answers, using the LLM <a href="https://ai.google.dev/gemini-api/docs/models#gemini-1.5-pro">Gemini-1.5-pro</a>.
-The original full dataset consists of 5,000 samples in a single split. We use a 1,024 /
+<p>This dataset was published in <a href="https://doi.org/10.48550/arXiv.2509.04111">this paper</a>
+and contains Wikipedia articles with LLM-generated questions and answers in 300+
+languages.</p>
+<p>The original full dataset consists of 5,000 samples in a single split. We use a 1,024 /
 256 / 2,048 split for training, validation and testing, respectively, sampled randomly.</p>
 <p>Here are a few examples from the training split:</p>
 <p><div class="highlight"><pre><span></span><code><span class="p">{</span>
@@ -1879,7 +1939,8 @@ Jautājums: {question}
 <p>This dataset is a machine translated version of the English <a href="https://openreview.net/forum?id=d7KBjmI3GmQ">MMLU
 dataset</a> and features questions within 57
 different topics, such as elementary mathematics, US history and law. The translation to
-Latvian was done by the Latvian Language Technology Initiative and is available in the <a href="https://github.com/LUMII-AILab/VTI-Data/tree/refs/heads/main/mmlu">VTI-Data
+Latvian was done by the Latvian Language Technology Initiative and is available in the
+<a href="https://github.com/LUMII-AILab/VTI-Data/tree/refs/heads/main/mmlu">VTI-Data
 repository</a>.</p>
 <p>The full Latvian MMLU dataset consists of 13,941 samples. We use a 1,024 /
 256 / 2,048 split for training, validation and testing, respectively, sampled randomly.</p>
@@ -1981,10 +2042,61 @@ Atbildiet uz iepriekšējo jautājumu, atbildot ar &#39;a&#39; vai &#39;b&#39;, 
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>copa-lv
 </code></pre></div>
+<h3 id="unofficial-winogrande-lv">Unofficial: Winogrande-lv</h3>
+<p>This dataset was published in <a href="https://doi.org/10.48550/arXiv.2506.19468">this paper</a>
+and is a translated and filtered version of the English <a href="https://doi.org/10.1145/3474381">Winogrande
+dataset</a>.</p>
+<p>The original full dataset consists of 47 / 1,210 samples for training and testing, and
+we use the same splits.</p>
+<p>Here are a few examples from the training split:</p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Pērkot māju, Patrīcijai nav tik daudz naudas, ko tērēt kā Tanjai, tāpēc _ nopērk vienas guļamistabas māju. Ko norāda tukšums _?\nIzvēles:\na. Opcija A: Patrīcija\nb. Opcija B: Tanja&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;a&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Es nevarēju kontrolēt mitrumu, kā es kontrolēju lietu, jo _ nāca no visām pusēm. Ko norāda tukšums _?\nIzvēles:\na. Opcija A: mitrums\nb. Opcija B: lietus&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;a&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Derriks nespēja koncentrēties darbā, atšķirībā no Džastina, jo _ bija jautrs darbs. Ko norāda tukšums _?\nIzvēles:\na. Opcija A: Derriks\nb. Opcija B: Džastins&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;b&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>When evaluating generative models, we use the following setup (see the
+<a href="/methodology">methodology</a> for more information on how these are used):</p>
+<ul>
+<li>Number of few-shot examples: 5</li>
+<li>Prefix prompt:
+  <div class="highlight"><pre><span></span><code>Tālāk seko jautājumi ar vairākām atbilžu izvēlēm (ar atbildēm).
+</code></pre></div></li>
+<li>Base prompt template:
+  <div class="highlight"><pre><span></span><code>Jautājums: {text}
+Izvēles:
+a. {option_a}
+b. {option_b}
+Atbilde: {label}
+</code></pre></div></li>
+<li>Instruction-tuned prompt template:
+  <div class="highlight"><pre><span></span><code>Jautājums: {text}
+Izvēles:
+a. {option_a}
+b. {option_b}
+
+Atbildiet uz iepriekšējo jautājumu, atbildot ar &#39;a&#39; vai &#39;b&#39;, un nekas cits.
+</code></pre></div></li>
+</ul>
+<p>You can evaluate this dataset directly as follows:</p>
+<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>winogrande-lv
+</code></pre></div>
 <h2 id="summarisation">Summarisation</h2>
 <h3 id="lsm">LSM</h3>
-<p>This dataset contains news articles and their corresponding summaries from the Latvian public media news portal <a href="https://www.lsm.lv/">LSM.lv</a>.</p>
-<p>Samples were collected using the <a href="https://github.com/alexandrainst/lsm_scraper">lsm_scraper</a>. We use 1,024 / 256 / 2,048 samples for training, validation and testing, respectively.</p>
+<p>This dataset contains news articles and their corresponding summaries from the Latvian
+public media news portal <a href="https://www.lsm.lv/">LSM.lv</a>.</p>
+<p>Samples were collected using the
+<a href="https://github.com/alexandrainst/lsm_scraper">lsm_scraper</a>. We use 1,024 / 256 / 2,048
+samples for training, validation and testing, respectively.</p>
 <p>Here are a few examples from the training split:</p>
 <p><div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;FOTO: Raimonda Paula un Elīnas Garančas satikšanās koncertā «Ja tevis nebūtu...»\n\nIdeja svinēt apaļo jubileju uz vienas skatuves ar izcilo operdziedātāju Elīnu Garanču Maestro radusies, kopā uzstājoties jau pirms pieciem gadiem. Maestro neslēpj gandarījumu, ka pandēmijas dēļ pārceltais koncerts beidzot notiks. Raimonds Pauls koncertprogrammā “Ja tevis nebūtu...” dziedātājai veltījis divus jaunus dziesmu ciklus ar kopīgi atlasītu Vizmas Belševicas un Ojāra Vācieša dzeju. Savukārt koncerta otrajā daļā iekļautas Paula dziesmas no kinofilmām un teātra izrādēm. Kamerorķestra “Simfonietta Rīga” pavadījumā populāras melodijas atšķirīgās noskaņās izskanēs jaunos aranžējumos, ko veidojuši tādi izcili komponisti kā Lolita Ritmane, Rihards Dubra, Jēkabs Jančevskis un Raimonds Macats. “Man šī otrā daļa ar kino un teātra mūziku ir tāds sapnis, kas ir piepildījies. Jo šis žanrs mani vienmēr ir ļoti interesējis. Varētu teikt, ka es operas žanrā esmu nokļuvusi faktiski nejauši, jo sirds aicinājums no paša sākuma bija tieši teātris,” atklāj Elīna Garanča. Ojārs Rubenis atzīst: “Es varu tikai apbrīnot gan Maestro 85 gados – izturību un to darbu, ko viņš var izdarīt. Un, protams, arī Elīnu Garanču, kura vienkārši ir apbrīnojama savā neambiciozitātē pret visu pārējo un ambiciozitātē pret mākslu. Tas ir tas lielmākslinieku kods!” Maestro un Elīnas Garančas atkalsatikšanās Nacionālajā teātrī būs skatāma piektdien un sestdien, savukārt Latvijas Televīzijā šo koncertu varēs vērot šī gada rudenī.&quot;</span><span class="p">,</span>

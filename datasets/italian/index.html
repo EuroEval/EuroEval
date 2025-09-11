@@ -637,6 +637,8 @@
       
         
       
+        
+      
     
     
     
@@ -1125,19 +1127,28 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#unofficial-winogrande-it" class="md-nav__link">
+    <span class="md-ellipsis">
+      Unofficial: Winogrande-it
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#summarization" class="md-nav__link">
+  <a href="#summarisation" class="md-nav__link">
     <span class="md-ellipsis">
-      Summarization
+      Summarisation
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Summarization">
+    <nav class="md-nav" aria-label="Summarisation">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -1199,6 +1210,29 @@
   
   <span class="md-ellipsis">
     🇳🇴 Norwegian
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../polish/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    🇵🇱 Polish
     
   </span>
   
@@ -1610,19 +1644,28 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#unofficial-winogrande-it" class="md-nav__link">
+    <span class="md-ellipsis">
+      Unofficial: Winogrande-it
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#summarization" class="md-nav__link">
+  <a href="#summarisation" class="md-nav__link">
     <span class="md-ellipsis">
-      Summarization
+      Summarisation
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Summarization">
+    <nav class="md-nav" aria-label="Summarisation">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -2011,8 +2054,9 @@ Rispondete alla domanda precedente con &#39;a&#39;, &#39;b&#39;, &#39;c&#39; o &
 <div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>belebele-it
 </code></pre></div>
 <h3 id="unofficial-multiwikiqa-it">Unofficial: MultiWikiQA-it</h3>
-<p>This dataset will be published in an upcoming paper, and contains Italian Wikipedia
-articles with generated questions and answers, using the LLM Gemini-1.5-pro.</p>
+<p>This dataset was published in <a href="https://doi.org/10.48550/arXiv.2509.04111">this paper</a>
+and contains Wikipedia articles with LLM-generated questions and answers in 300+
+languages.</p>
 <p>The original full dataset consists of 5,000 samples in a single split. We use a 1,024 /
 256 / 2,048 split for training, validation and testing, respectively, sampled randomly.</p>
 <p>Here are a few examples from the training split:</p>
@@ -2180,8 +2224,16 @@ Rispondete alla domanda precedente con &#39;a&#39;, &#39;b&#39;, &#39;c&#39; o &
 <div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>hellaswag-it
 </code></pre></div>
 <h3 id="unofficial-goldenswag-it">Unofficial: GoldenSwag-it</h3>
-<p>This dataset is a filtered and machine translated version of the English <a href="https://aclanthology.org/P19-1472/">HellaSwag dataset</a>, featuring both video descriptions from ActivityNet as well as how-to articles from WikiHow. The machine translated version was published in <a href="https://doi.org/10.48550/arXiv.2410.08928">this paper</a> and was done using DeepL, and the filtering was published in <a href="https://doi.org/10.48550/arXiv.2504.07825">this paper</a>, which resulted in higher quality samples.</p>
-<p>The original full dataset consists of 1530 / 1530 samples for training and validation, respectively. However, they are exactly equal. We use a split of 660 / 256 / 2,048 samples for training, validation, and testing, respectively.</p>
+<p>This dataset is a filtered and machine translated version of the English <a href="https://aclanthology.org/P19-1472/">HellaSwag
+dataset</a>, featuring both video descriptions from
+ActivityNet as well as how-to articles from WikiHow. The machine translated version was
+published in <a href="https://doi.org/10.48550/arXiv.2410.08928">this paper</a> and was done using
+DeepL, and the filtering was published in <a href="https://doi.org/10.48550/arXiv.2504.07825">this
+paper</a>, which resulted in higher quality
+samples.</p>
+<p>The original full dataset consists of 1530 / 1530 samples for training and validation,
+respectively. However, they are exactly equal. We use a split of 660 / 256 / 2,048
+samples for training, validation, and testing, respectively.</p>
 <p>Here are a few examples from the training split:</p>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Come sapere cosa indossare. Identificate la vostra tonalità di pelle. Ci sono molti termini usati per descrivere la tonalità della pelle, da quella chiara o scura, a quella pallida o olivastra. Il modo più accurato per capire quali colori vi stanno bene è capire il sottotono della vostra pelle.\nScelte:\na. Questa è la chiave numero uno per identificare il colore della vostra pelle. Se avete un misto di pelle olivastra e sottotono caldo (come una pelle avorio), il vostro tono di pelle è probabilmente a metà tra il caldo e il freddo.\nb. Se avete una corporatura media o calda, in genere avete sottotoni evidenti. Ecco alcuni sottotoni comuni: la pelle calda e i sottotoni caldi comprendono tutti e tre i toni medi, tutti e tre i toni freddi, tutti e quattro i toni caldi e tutti e quattro i toni caldi.\nc. La vostra pelle sarà del colore delle vostre spalle, dal collo alle dita, alle unghie dei piedi. Il sottotono è un colore di base per il vostro aspetto generale, come espressione primaria della vostra carnagione.\nd. Ne esistono tre tipi: caldo, freddo e neutro. Poiché si cercano i sottotoni della pelle, non basta guardarsi allo specchio per averne conferma.&quot;</span><span class="p">,</span>
@@ -2228,7 +2280,55 @@ Rispondete alla domanda precedente con &#39;a&#39;, &#39;b&#39;, &#39;c&#39; o &
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>goldenswag-it
 </code></pre></div>
-<h2 id="summarization">Summarization</h2>
+<h3 id="unofficial-winogrande-it">Unofficial: Winogrande-it</h3>
+<p>This dataset was published in <a href="https://doi.org/10.48550/arXiv.2506.19468">this paper</a>
+and is a translated and filtered version of the English <a href="https://doi.org/10.1145/3474381">Winogrande
+dataset</a>.</p>
+<p>The original full dataset consists of 47 / 1,210 samples for training and testing, and
+we use the same splits.</p>
+<p>Here are a few examples from the training split:</p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Il sushi marciva sul bancone a meno che non venisse messo nel frigorifero, poiché il _ lo esponeva alla contaminazione. A cosa si riferisce il vuoto _?\nScelte:\na. Opzione A: bancone\nb. Opzione B: frigorifero&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;a&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Rebecca ha preso Amy per fare il carpooling al lavoro ogni giorno, quindi _ ha chiesto dei soldi per la benzina. A cosa si riferisce il vuoto _?\nScelte:\na. Opzione A: Rebecca\nb. Opzione B: Amy&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;a&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Laura aveva sempre più motivazione nella vita e nel raggiungere obiettivi rispetto a Katrina, poiché _ era pigra. A cosa si riferisce il vuoto _?\nScelte:\na. Opzione A: Laura\nb. Opzione B: Katrina&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;b&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>When evaluating generative models, we use the following setup (see the
+<a href="/methodology">methodology</a> for more information on how these are used):</p>
+<ul>
+<li>Number of few-shot examples: 5</li>
+<li>Prefix prompt:
+  <div class="highlight"><pre><span></span><code>Le seguenti sono domande a scelta multipla (con relative risposte).
+</code></pre></div></li>
+<li>Base prompt template:
+  <div class="highlight"><pre><span></span><code>Domanda: {text}
+Scelte:
+a. {option_a}
+b. {option_b}
+Risposta: {label}
+</code></pre></div></li>
+<li>Instruction-tuned prompt template:
+  <div class="highlight"><pre><span></span><code>Domanda: {text}
+Scelte:
+a. {option_a}
+b. {option_b}
+
+Rispondete alla domanda precedente con &#39;a&#39; o &#39;b&#39; e nient&#39;altro.
+</code></pre></div></li>
+</ul>
+<p>You can evaluate this dataset directly as follows:</p>
+<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>winogrande-it
+</code></pre></div>
+<h2 id="summarisation">Summarisation</h2>
 <h3 id="ilpost-sum">IlPost-Sum</h3>
 <p>This dataset was published in <a href="https://www.mdpi.com/2078-2489/13/5/228">this paper</a> and
 consists of news articles from <a href="https://www.ilpost.it/">Il Post</a>. The summaries were

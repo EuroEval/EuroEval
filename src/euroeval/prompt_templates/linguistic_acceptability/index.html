@@ -629,6 +629,8 @@
       
         
       
+        
+      
     
     
     
@@ -1004,7 +1006,16 @@
 <span class="normal">163</span>
 <span class="normal">164</span>
 <span class="normal">165</span>
-<span class="normal">166</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Templates for the Linguistic Acceptability task.&quot;&quot;&quot;</span>
+<span class="normal">166</span>
+<span class="normal">167</span>
+<span class="normal">168</span>
+<span class="normal">169</span>
+<span class="normal">170</span>
+<span class="normal">171</span>
+<span class="normal">172</span>
+<span class="normal">173</span>
+<span class="normal">174</span>
+<span class="normal">175</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Templates for the Linguistic Acceptability task.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">t</span>
 
@@ -1025,6 +1036,7 @@
     <span class="n">NL</span><span class="p">,</span>
     <span class="n">NN</span><span class="p">,</span>
     <span class="n">NO</span><span class="p">,</span>
+    <span class="n">PL</span><span class="p">,</span>
     <span class="n">PT</span><span class="p">,</span>
     <span class="n">SV</span><span class="p">,</span>
 <span class="p">)</span>
@@ -1072,6 +1084,14 @@
         <span class="n">default_prompt_template</span><span class="o">=</span><span class="s2">&quot;Lause: </span><span class="si">{text}</span><span class="se">\n</span><span class="s2">Grammatikaliselt õige: </span><span class="si">{label}</span><span class="s2">&quot;</span><span class="p">,</span>
         <span class="n">default_instruction_prompt</span><span class="o">=</span><span class="s2">&quot;Lause: </span><span class="si">{text}</span><span class="se">\n\n</span><span class="s2">Otsusta, kas lause on &quot;</span>
         <span class="s2">&quot;grammatiliselt õige või mitte. Vasta </span><span class="si">{labels_str}</span><span class="s2">, ja mitte midagi muud.&quot;</span><span class="p">,</span>
+    <span class="p">),</span>
+    <span class="n">PL</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
+        <span class="n">default_prompt_label_mapping</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">correct</span><span class="o">=</span><span class="s2">&quot;tak&quot;</span><span class="p">,</span> <span class="n">incorrect</span><span class="o">=</span><span class="s2">&quot;nie&quot;</span><span class="p">),</span>
+        <span class="n">default_prompt_prefix</span><span class="o">=</span><span class="s2">&quot;Poniżej znajdują się teksty i czy są &quot;</span>
+        <span class="s2">&quot;gramatycznie poprawne.&quot;</span><span class="p">,</span>
+        <span class="n">default_prompt_template</span><span class="o">=</span><span class="s2">&quot;Tekst: </span><span class="si">{text}</span><span class="se">\n</span><span class="s2">Gramatycznie poprawny: </span><span class="si">{label}</span><span class="s2">&quot;</span><span class="p">,</span>
+        <span class="n">default_instruction_prompt</span><span class="o">=</span><span class="s2">&quot;Tekst: </span><span class="si">{text}</span><span class="se">\n\n</span><span class="s2">Określ czy tekst jest &quot;</span>
+        <span class="s2">&quot;gramatycznie poprawny czy nie. Odpowiedz </span><span class="si">{labels_str}</span><span class="s2">, i nic więcej.&quot;</span><span class="p">,</span>
     <span class="p">),</span>
     <span class="n">PT</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
         <span class="n">default_prompt_label_mapping</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">correct</span><span class="o">=</span><span class="s2">&quot;sim&quot;</span><span class="p">,</span> <span class="n">incorrect</span><span class="o">=</span><span class="s2">&quot;não&quot;</span><span class="p">),</span>

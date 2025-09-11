@@ -637,6 +637,8 @@
       
         
       
+        
+      
     
     
     
@@ -970,6 +972,29 @@
   
   
     <li class="md-nav__item">
+      <a href="../polish/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    🇵🇱 Polish
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../portuguese/" class="md-nav__link">
         
   
@@ -1217,19 +1242,28 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#unofficial-winogrande-es" class="md-nav__link">
+    <span class="md-ellipsis">
+      Unofficial: Winogrande-es
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#summarization" class="md-nav__link">
+  <a href="#summarisation" class="md-nav__link">
     <span class="md-ellipsis">
-      Summarization
+      Summarisation
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Summarization">
+    <nav class="md-nav" aria-label="Summarisation">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -1610,19 +1644,28 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#unofficial-winogrande-es" class="md-nav__link">
+    <span class="md-ellipsis">
+      Unofficial: Winogrande-es
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#summarization" class="md-nav__link">
+  <a href="#summarisation" class="md-nav__link">
     <span class="md-ellipsis">
-      Summarization
+      Summarisation
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Summarization">
+    <nav class="md-nav" aria-label="Summarisation">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -2023,8 +2066,9 @@ Responda la pregunta anterior usando solo &#39;a&#39;, &#39;b&#39;, &#39;c&#39; 
 <div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>belebele-es
 </code></pre></div>
 <h3 id="unofficial-multiwikiqa-es">Unofficial: MultiWikiQA-es</h3>
-<p>This dataset will be published in an upcoming paper, and contains Spanish Wikipedia
-articles with generated questions and answers, using the LLM Gemini-1.5-pro.</p>
+<p>This dataset was published in <a href="https://doi.org/10.48550/arXiv.2509.04111">this paper</a>
+and contains Wikipedia articles with LLM-generated questions and answers in 300+
+languages.</p>
 <p>The original full dataset consists of 5,000 samples in a single split. We use a 1,024 /
 256 / 2,048 split for training, validation and testing, respectively, sampled randomly.</p>
 <p>Here are a few examples from the training split:</p>
@@ -2240,7 +2284,55 @@ Responda la pregunta anterior usando solo &#39;a&#39;, &#39;b&#39;, &#39;c&#39; 
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>goldenswag-es
 </code></pre></div>
-<h2 id="summarization">Summarization</h2>
+<h3 id="unofficial-winogrande-es">Unofficial: Winogrande-es</h3>
+<p>This dataset was published in <a href="https://doi.org/10.48550/arXiv.2506.19468">this paper</a>
+and is a translated and filtered version of the English <a href="https://doi.org/10.1145/3474381">Winogrande
+dataset</a>.</p>
+<p>The original full dataset consists of 47 / 1,210 samples for training and testing, and
+we use the same splits.</p>
+<p>Here are a few examples from the training split:</p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Joseph tenía que tener las uñas bien cuidadas para el trabajo, pero no Kevin, porque _ trabajaba en un banco. ¿A qué se refiere el espacio en blanco _?\nOpciones:\na. Opción A: Joseph\nb. Opción B: Kevin&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;a&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Craig realmente ama limpiar todo el tiempo pero Derrick no porque _ es muy ordenado. ¿A qué se refiere el espacio en blanco _?\nOpciones:\na. Opción A: Craig\nb. Opción B: Derrick&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;a&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Una vez en Polonia, Dennis disfrutó del viaje más que Jason porque _ tenía un conocimiento superficial del idioma polaco. ¿A qué se refiere el espacio en blanco _?\nOpciones:\na. Opción A: Dennis\nb. Opción B: Jason&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;b&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>When evaluating generative models, we use the following setup (see the
+<a href="/methodology">methodology</a> for more information on how these are used):</p>
+<ul>
+<li>Number of few-shot examples: 5</li>
+<li>Prefix prompt:
+  <div class="highlight"><pre><span></span><code>Følgende er multiple choice spørgsmål (med svar).
+</code></pre></div></li>
+<li>Base prompt template:
+  <div class="highlight"><pre><span></span><code>Spørgsmål: {text}
+Svarmuligheder:
+a. {option_a}
+b. {option_b}
+Svar: {label}
+</code></pre></div></li>
+<li>Instruction-tuned prompt template:
+  <div class="highlight"><pre><span></span><code>Spørgsmål: {text}
+Svarmuligheder:
+a. {option_a}
+b. {option_b}
+
+Besvar ovenstående spørgsmål ved at svare med &#39;a&#39; eller &#39;b&#39;, og intet andet.
+</code></pre></div></li>
+</ul>
+<p>You can evaluate this dataset directly as follows:</p>
+<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>winogrande-es
+</code></pre></div>
+<h2 id="summarisation">Summarisation</h2>
 <h3 id="mlsum-es">MLSum-es</h3>
 <p>The dataset was published in <a href="https://aclanthology.org/2020.emnlp-main.647/">this paper</a>
 and is obtained from online newspapers.</p>

@@ -637,6 +637,8 @@
       
         
       
+        
+      
     
     
     
@@ -950,19 +952,28 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#unofficial-winogrande-nl" class="md-nav__link">
+    <span class="md-ellipsis">
+      Unofficial: Winogrande-nl
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#summarization" class="md-nav__link">
+  <a href="#summarisation" class="md-nav__link">
     <span class="md-ellipsis">
-      Summarization
+      Summarisation
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Summarization">
+    <nav class="md-nav" aria-label="Summarisation">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -1208,6 +1219,29 @@
   
   <span class="md-ellipsis">
     🇳🇴 Norwegian
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../polish/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    🇵🇱 Polish
     
   </span>
   
@@ -1628,19 +1662,28 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#unofficial-winogrande-nl" class="md-nav__link">
+    <span class="md-ellipsis">
+      Unofficial: Winogrande-nl
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#summarization" class="md-nav__link">
+  <a href="#summarisation" class="md-nav__link">
     <span class="md-ellipsis">
-      Summarization
+      Summarisation
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Summarization">
+    <nav class="md-nav" aria-label="Summarisation">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -1797,9 +1840,9 @@ grammatically incorrect samples. The corruptions were done by either removing a 
 from a sentence, or by swapping two neighbouring words in a sentence. To ensure that
 this does indeed break the grammaticality of the sentence, a set of rules were used on
 the part-of-speech tags of the words in the sentence.</p>
-<p>The original dataset consists of 13,603 samples, from which we use 1,024 / 256 / 2,048 samples for training,
-validation and testing, respectively (so 3,328 samples used in total). These splits are
-used as-is in the framework.</p>
+<p>The original dataset consists of 13,603 samples, from which we use 1,024 / 256 / 2,048
+samples for training, validation and testing, respectively (so 3,328 samples used in
+total). These splits are used as-is in the framework.</p>
 <p>Here are a few examples from the training split:</p>
 <p><div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Met het toepassen van zelfbestuur wordt ook al op de lagere school begonnen.&quot;</span><span class="p">,</span>
@@ -1982,8 +2025,9 @@ Beantwoord de bovenstaande vraag met &#39;a&#39;, &#39;b&#39;, &#39;c&#39; of &#
 <div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>belebele-nl
 </code></pre></div>
 <h3 id="unofficial-multiwikiqa-nl">Unofficial: MultiWikiQA-nl</h3>
-<p>This dataset will be published in an upcoming paper, and contains Dutch Wikipedia
-articles with generated questions and answers, using the LLM Gemini-1.5-pro.</p>
+<p>This dataset was published in <a href="https://doi.org/10.48550/arXiv.2509.04111">this paper</a>
+and contains Wikipedia articles with LLM-generated questions and answers in 300+
+languages.</p>
 <p>The original full dataset consists of 5,000 samples in a single split. We use a 1,024 /
 256 / 2,048 split for training, validation and testing, respectively, sampled randomly.</p>
 <p>Here are a few examples from the training split:</p>
@@ -2206,8 +2250,16 @@ Beantwoord de bovenstaande vraag met &#39;a&#39;, &#39;b&#39;, &#39;c&#39; of &#
 <div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>hellaswag-nl
 </code></pre></div>
 <h3 id="unofficial-goldenswag-nl">Unofficial: GoldenSwag-nl</h3>
-<p>This dataset is a filtered and machine translated version of the English <a href="https://aclanthology.org/P19-1472/">HellaSwag dataset</a>, featuring both video descriptions from ActivityNet as well as how-to articles from WikiHow. The machine translated version was published in <a href="https://doi.org/10.48550/arXiv.2410.08928">this paper</a> and was done using DeepL, and the filtering was published in <a href="https://doi.org/10.48550/arXiv.2504.07825">this paper</a>, which resulted in higher quality samples.</p>
-<p>The original full dataset consists of 1530 / 1530 samples for training and validation, respectively. However, they are exactly equal. We use a split of 660 / 256 / 2,048 samples for training, validation, and testing, respectively.</p>
+<p>This dataset is a filtered and machine translated version of the English <a href="https://aclanthology.org/P19-1472/">HellaSwag
+dataset</a>, featuring both video descriptions from
+ActivityNet as well as how-to articles from WikiHow. The machine translated version was
+published in <a href="https://doi.org/10.48550/arXiv.2410.08928">this paper</a> and was done using
+DeepL, and the filtering was published in <a href="https://doi.org/10.48550/arXiv.2504.07825">this
+paper</a>, which resulted in higher quality
+samples.</p>
+<p>The original full dataset consists of 1530 / 1530 samples for training and validation,
+respectively. However, they are exactly equal. We use a split of 660 / 256 / 2,048
+samples for training, validation, and testing, respectively.</p>
 <p>Here are a few examples from the training split:</p>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Hoe leer je je kind een potlood vasthouden? Koop het juiste potlood voor je kind. Het gebruik van korte potloden, zoals golfpotloden of gewone potloden die doormidden zijn gebroken, kan kinderen helpen om zelf de juiste greep te vinden. Korte potloden hebben minder ruimte voor overbodige vingers, dus je kind heeft weinig keus dan de juiste drievingerige greep te gebruiken.\nAntwoordopties:\na. Je kunt korte potloden kopen bij de meeste hobby- en kantoorboekhandels. Help je kind met een potloodgreep.\nb. Goede potloden om mee te beginnen zijn de &quot;</span><span class="err">p</span><span class="s2">&quot; en &quot;</span><span class="err">g</span><span class="s2">&quot; potloden. Begin in de onderste potloodhouder in het midden en let goed op hoe je kind het potlood op zijn plaats probeert te houden.\nc. Ga voor meer informatie over het hanteren van een potlood naar. Maak onderscheid tussen potloden die met de handen worden aangedreven en potloden die met beide handen worden gebruikt.\nd. Met een vinger met een langere potloodpunt kunnen kinderen potloden met veel meer controle vasthouden. Met een vinger met een lagere punt kun je proberen om zowat elke vingerpositie onder controle te houden.&quot;</span><span class="p">,</span>
@@ -2254,7 +2306,55 @@ Beantwoord de bovenstaande vraag met &#39;a&#39;, &#39;b&#39;, &#39;c&#39; of &#
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>goldenswag-nl
 </code></pre></div>
-<h2 id="summarization">Summarization</h2>
+<h3 id="unofficial-winogrande-nl">Unofficial: Winogrande-nl</h3>
+<p>This dataset was published in <a href="https://doi.org/10.48550/arXiv.2506.19468">this paper</a>
+and is a translated and filtered version of the English <a href="https://doi.org/10.1145/3474381">Winogrande
+dataset</a>.</p>
+<p>The original full dataset consists of 47 / 1,210 samples for training and testing, and
+we use the same splits.</p>
+<p>Here are a few examples from the training split:</p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Emily vroeg haar zus Sarah of ze tampons of maandverband nodig had uit de winkel, hoewel _ dat niet nodig had omdat ze was overgestapt op het gebruik van menstruatiecups. Waar verwijst de lege _ naar?\nAntwoordopties:\na. Optie A: Emily\nb. Optie B: Sarah&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;a&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Bij het kopen van een huis heeft Patricia niet zoveel geld te besteden als Tanya, dus _ koopt een huis met 1 slaapkamer. Waar verwijst de lege _ naar?\nAntwoordopties:\na. Optie A: Patricia\nb. Optie B: Tanya&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;a&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Eenmaal in Polen genoot Dennis meer van de reis dan Jason omdat _ een oppervlakkige kennis van de Poolse taal had. Waar verwijst de lege _ naar?\nAntwoordopties:\na. Optie A: Dennis\nb. Optie B: Jason&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;b&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>When evaluating generative models, we use the following setup (see the
+<a href="/methodology">methodology</a> for more information on how these are used):</p>
+<ul>
+<li>Number of few-shot examples: 5</li>
+<li>Prefix prompt:
+  <div class="highlight"><pre><span></span><code>Hieronder staan meerkeuzevragen (met antwoorden).
+</code></pre></div></li>
+<li>Base prompt template:
+  <div class="highlight"><pre><span></span><code>Vraag: {text}
+Antwoordopties:
+a. {option_a}
+b. {option_b}
+Antwoord: {label}
+</code></pre></div></li>
+<li>Instruction-tuned prompt template:
+  <div class="highlight"><pre><span></span><code>Vraag: {text}
+Antwoordopties:
+a. {option_a}
+b. {option_b}
+
+Beantwoord de bovenstaande vraag met &#39;a&#39; of &#39;b&#39;, en niets anders.
+</code></pre></div></li>
+</ul>
+<p>You can evaluate this dataset directly as follows:</p>
+<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>winogrande-nl
+</code></pre></div>
+<h2 id="summarisation">Summarisation</h2>
 <h3 id="wikilingua-nl">WikiLingua-nl</h3>
 <p>This dataset was published <a href="https://aclanthology.org/2020.findings-emnlp.360/">here</a> and
 consists of Dutch WikiHow articles and their summaries, where a summary consists of the

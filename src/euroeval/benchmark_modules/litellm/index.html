@@ -629,6 +629,8 @@
       
         
       
+        
+      
     
     
     
@@ -940,15 +942,6 @@
         
       </ul>
     </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#euroeval.benchmark_modules.litellm.raise_if_wrong_params" class="md-nav__link">
-    <span class="md-ellipsis">
-      raise_if_wrong_params
-    </span>
-  </a>
   
 </li>
       
@@ -2481,7 +2474,134 @@
 <span class="normal">1491</span>
 <span class="normal">1492</span>
 <span class="normal">1493</span>
-<span class="normal">1494</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Generative models from an inference API, using the LiteLLM framework.&quot;&quot;&quot;</span>
+<span class="normal">1494</span>
+<span class="normal">1495</span>
+<span class="normal">1496</span>
+<span class="normal">1497</span>
+<span class="normal">1498</span>
+<span class="normal">1499</span>
+<span class="normal">1500</span>
+<span class="normal">1501</span>
+<span class="normal">1502</span>
+<span class="normal">1503</span>
+<span class="normal">1504</span>
+<span class="normal">1505</span>
+<span class="normal">1506</span>
+<span class="normal">1507</span>
+<span class="normal">1508</span>
+<span class="normal">1509</span>
+<span class="normal">1510</span>
+<span class="normal">1511</span>
+<span class="normal">1512</span>
+<span class="normal">1513</span>
+<span class="normal">1514</span>
+<span class="normal">1515</span>
+<span class="normal">1516</span>
+<span class="normal">1517</span>
+<span class="normal">1518</span>
+<span class="normal">1519</span>
+<span class="normal">1520</span>
+<span class="normal">1521</span>
+<span class="normal">1522</span>
+<span class="normal">1523</span>
+<span class="normal">1524</span>
+<span class="normal">1525</span>
+<span class="normal">1526</span>
+<span class="normal">1527</span>
+<span class="normal">1528</span>
+<span class="normal">1529</span>
+<span class="normal">1530</span>
+<span class="normal">1531</span>
+<span class="normal">1532</span>
+<span class="normal">1533</span>
+<span class="normal">1534</span>
+<span class="normal">1535</span>
+<span class="normal">1536</span>
+<span class="normal">1537</span>
+<span class="normal">1538</span>
+<span class="normal">1539</span>
+<span class="normal">1540</span>
+<span class="normal">1541</span>
+<span class="normal">1542</span>
+<span class="normal">1543</span>
+<span class="normal">1544</span>
+<span class="normal">1545</span>
+<span class="normal">1546</span>
+<span class="normal">1547</span>
+<span class="normal">1548</span>
+<span class="normal">1549</span>
+<span class="normal">1550</span>
+<span class="normal">1551</span>
+<span class="normal">1552</span>
+<span class="normal">1553</span>
+<span class="normal">1554</span>
+<span class="normal">1555</span>
+<span class="normal">1556</span>
+<span class="normal">1557</span>
+<span class="normal">1558</span>
+<span class="normal">1559</span>
+<span class="normal">1560</span>
+<span class="normal">1561</span>
+<span class="normal">1562</span>
+<span class="normal">1563</span>
+<span class="normal">1564</span>
+<span class="normal">1565</span>
+<span class="normal">1566</span>
+<span class="normal">1567</span>
+<span class="normal">1568</span>
+<span class="normal">1569</span>
+<span class="normal">1570</span>
+<span class="normal">1571</span>
+<span class="normal">1572</span>
+<span class="normal">1573</span>
+<span class="normal">1574</span>
+<span class="normal">1575</span>
+<span class="normal">1576</span>
+<span class="normal">1577</span>
+<span class="normal">1578</span>
+<span class="normal">1579</span>
+<span class="normal">1580</span>
+<span class="normal">1581</span>
+<span class="normal">1582</span>
+<span class="normal">1583</span>
+<span class="normal">1584</span>
+<span class="normal">1585</span>
+<span class="normal">1586</span>
+<span class="normal">1587</span>
+<span class="normal">1588</span>
+<span class="normal">1589</span>
+<span class="normal">1590</span>
+<span class="normal">1591</span>
+<span class="normal">1592</span>
+<span class="normal">1593</span>
+<span class="normal">1594</span>
+<span class="normal">1595</span>
+<span class="normal">1596</span>
+<span class="normal">1597</span>
+<span class="normal">1598</span>
+<span class="normal">1599</span>
+<span class="normal">1600</span>
+<span class="normal">1601</span>
+<span class="normal">1602</span>
+<span class="normal">1603</span>
+<span class="normal">1604</span>
+<span class="normal">1605</span>
+<span class="normal">1606</span>
+<span class="normal">1607</span>
+<span class="normal">1608</span>
+<span class="normal">1609</span>
+<span class="normal">1610</span>
+<span class="normal">1611</span>
+<span class="normal">1612</span>
+<span class="normal">1613</span>
+<span class="normal">1614</span>
+<span class="normal">1615</span>
+<span class="normal">1616</span>
+<span class="normal">1617</span>
+<span class="normal">1618</span>
+<span class="normal">1619</span>
+<span class="normal">1620</span>
+<span class="normal">1621</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Generative models from an inference API, using the LiteLLM framework.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">asyncio</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">c</span>
@@ -2514,7 +2634,7 @@
 <span class="p">)</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">litellm.llms.vertex_ai.common_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">VertexAIError</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">litellm.router</span><span class="w"> </span><span class="kn">import</span> <span class="n">Router</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">litellm.types.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">ChoiceLogprobs</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">litellm.types.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">ChoiceLogprobs</span><span class="p">,</span> <span class="n">Logprobs</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">litellm.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">supports_reasoning</span><span class="p">,</span> <span class="n">supports_response_schema</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">pydantic</span><span class="w"> </span><span class="kn">import</span> <span class="n">conlist</span><span class="p">,</span> <span class="n">create_model</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">requests.exceptions</span><span class="w"> </span><span class="kn">import</span> <span class="n">RequestException</span>
@@ -2548,7 +2668,11 @@
     <span class="n">NeedsEnvironmentVariable</span><span class="p">,</span>
     <span class="n">NeedsExtraInstalled</span><span class="p">,</span>
 <span class="p">)</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">..generation_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">apply_prompt</span><span class="p">,</span> <span class="n">extract_few_shot_examples</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..generation_utils</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">apply_prompt</span><span class="p">,</span>
+    <span class="n">extract_few_shot_examples</span><span class="p">,</span>
+    <span class="n">raise_if_wrong_params</span><span class="p">,</span>
+<span class="p">)</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..task_group_utils</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">question_answering</span><span class="p">,</span>
     <span class="n">sequence_classification</span><span class="p">,</span>
@@ -2556,7 +2680,7 @@
     <span class="n">token_classification</span><span class="p">,</span>
 <span class="p">)</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..tasks</span><span class="w"> </span><span class="kn">import</span> <span class="n">NER</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">..tokenization_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_first_label_token_mapping</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..tokenisation_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_first_label_token_mapping</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..types</span><span class="w"> </span><span class="kn">import</span> <span class="n">ExtractLabelsFunction</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..utils</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">add_semaphore_and_catch_exception</span><span class="p">,</span>
@@ -2564,6 +2688,7 @@
     <span class="n">get_hf_token</span><span class="p">,</span>
     <span class="n">log_once</span><span class="p">,</span>
     <span class="n">safe_run</span><span class="p">,</span>
+    <span class="n">split_model_id</span><span class="p">,</span>
 <span class="p">)</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">BenchmarkModule</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.hf</span><span class="w"> </span><span class="kn">import</span> <span class="n">HuggingFaceEncoderModel</span><span class="p">,</span> <span class="n">load_hf_model_config</span><span class="p">,</span> <span class="n">load_tokeniser</span>
@@ -2636,26 +2761,20 @@
 <span class="p">}</span>
 
 
-<span class="n">ALLOWED_PARAMS</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="c1"># OpenAI models</span>
-    <span class="sa">r</span><span class="s2">&quot;gpt-5-.*&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;minimal&quot;</span><span class="p">,</span> <span class="s2">&quot;low&quot;</span><span class="p">,</span> <span class="s2">&quot;medium&quot;</span><span class="p">,</span> <span class="s2">&quot;high&quot;</span><span class="p">],</span>
-    <span class="sa">r</span><span class="s2">&quot;o[1-9](-mini|-preview)?(-[0-9]</span><span class="si">{4}</span><span class="s2">-[0-9]</span><span class="si">{2}</span><span class="s2">-[0-9]</span><span class="si">{2}</span><span class="s2">)?&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;low&quot;</span><span class="p">,</span> <span class="s2">&quot;medium&quot;</span><span class="p">,</span> <span class="s2">&quot;high&quot;</span><span class="p">],</span>
-    <span class="c1"># Anthropic models</span>
-    <span class="sa">r</span><span class="s2">&quot;(anthropic/)?claude-3-7-sonnet.*&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;no-thinking&quot;</span><span class="p">,</span> <span class="s2">&quot;thinking&quot;</span><span class="p">],</span>
-    <span class="sa">r</span><span class="s2">&quot;(anthropic/)?claude-(sonnet|opus)-4.*&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;no-thinking&quot;</span><span class="p">,</span> <span class="s2">&quot;thinking&quot;</span><span class="p">],</span>
-    <span class="c1"># Gemini models</span>
-    <span class="sa">r</span><span class="s2">&quot;(gemini/)?gemini-2.5-flash-lite.*&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;no-thinking&quot;</span><span class="p">,</span> <span class="s2">&quot;thinking&quot;</span><span class="p">],</span>
-    <span class="sa">r</span><span class="s2">&quot;(gemini/)?gemini-2.5-flash.*&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;no-thinking&quot;</span><span class="p">,</span> <span class="s2">&quot;thinking&quot;</span><span class="p">],</span>
-    <span class="c1"># xAI models</span>
-    <span class="sa">r</span><span class="s2">&quot;(xai/)?grok-3-mini(-fast)?(-beta)?&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;low&quot;</span><span class="p">,</span> <span class="s2">&quot;medium&quot;</span><span class="p">,</span> <span class="s2">&quot;high&quot;</span><span class="p">],</span>
-<span class="p">}</span>
-
-
 <span class="n">REASONING_MODELS</span> <span class="o">=</span> <span class="p">[</span>
     <span class="sa">r</span><span class="s2">&quot;o[1-9](-mini|-preview)?(-[0-9]</span><span class="si">{4}</span><span class="s2">-[0-9]</span><span class="si">{2}</span><span class="s2">-[0-9]</span><span class="si">{2}</span><span class="s2">)?&quot;</span><span class="p">,</span>
     <span class="sa">r</span><span class="s2">&quot;(gemini/)?gemini.*thinking.*&quot;</span><span class="p">,</span>
     <span class="sa">r</span><span class="s2">&quot;(gemini/)?gemini-2.5.*&quot;</span><span class="p">,</span>
     <span class="sa">r</span><span class="s2">&quot;(xai/)?grok-3-mini.*&quot;</span><span class="p">,</span>
+<span class="p">]</span>
+
+<span class="n">BASE_DECODER_MODELS</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="sa">r</span><span class="s2">&quot;gpt-3.5-turbo-instruct.*&quot;</span><span class="p">,</span>
+    <span class="sa">r</span><span class="s2">&quot;ada-[0-9]</span><span class="si">{3}</span><span class="s2">&quot;</span><span class="p">,</span>
+    <span class="sa">r</span><span class="s2">&quot;babbage-[0-9]</span><span class="si">{3}</span><span class="s2">&quot;</span><span class="p">,</span>
+    <span class="sa">r</span><span class="s2">&quot;curie-[0-9]</span><span class="si">{3}</span><span class="s2">&quot;</span><span class="p">,</span>
+    <span class="sa">r</span><span class="s2">&quot;davinci-[0-9]</span><span class="si">{3}</span><span class="s2">&quot;</span><span class="p">,</span>
+    <span class="sa">r</span><span class="s2">&quot;text-davinci-[0-9]</span><span class="si">{3}</span><span class="s2">&quot;</span><span class="p">,</span>
 <span class="p">]</span>
 
 
@@ -2665,6 +2784,26 @@
     <span class="n">fresh_model</span> <span class="o">=</span> <span class="kc">False</span>
     <span class="n">batching_preference</span> <span class="o">=</span> <span class="n">BatchingPreference</span><span class="o">.</span><span class="n">ALL_AT_ONCE</span>
     <span class="n">high_priority</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">allowed_params</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="c1"># OpenAI models</span>
+        <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;gpt-5-.*&quot;</span><span class="p">):</span> <span class="p">[</span><span class="s2">&quot;minimal&quot;</span><span class="p">,</span> <span class="s2">&quot;low&quot;</span><span class="p">,</span> <span class="s2">&quot;medium&quot;</span><span class="p">,</span> <span class="s2">&quot;high&quot;</span><span class="p">],</span>
+        <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;o[1-9](-mini|-preview)?(-[0-9]</span><span class="si">{4}</span><span class="s2">-[0-9]</span><span class="si">{2}</span><span class="s2">-[0-9]</span><span class="si">{2}</span><span class="s2">)?&quot;</span><span class="p">):</span> <span class="p">[</span>
+            <span class="s2">&quot;low&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;medium&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;high&quot;</span><span class="p">,</span>
+        <span class="p">],</span>
+        <span class="c1"># Anthropic models</span>
+        <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;(anthropic/)?claude-3-7-sonnet.*&quot;</span><span class="p">):</span> <span class="p">[</span><span class="s2">&quot;no-thinking&quot;</span><span class="p">,</span> <span class="s2">&quot;thinking&quot;</span><span class="p">],</span>
+        <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;(anthropic/)?claude-(sonnet|opus)-4.*&quot;</span><span class="p">):</span> <span class="p">[</span>
+            <span class="s2">&quot;no-thinking&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;thinking&quot;</span><span class="p">,</span>
+        <span class="p">],</span>
+        <span class="c1"># Gemini models</span>
+        <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;(gemini/)?gemini-2.5-flash-lite.*&quot;</span><span class="p">):</span> <span class="p">[</span><span class="s2">&quot;no-thinking&quot;</span><span class="p">,</span> <span class="s2">&quot;thinking&quot;</span><span class="p">],</span>
+        <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;(gemini/)?gemini-2.5-flash.*&quot;</span><span class="p">):</span> <span class="p">[</span><span class="s2">&quot;no-thinking&quot;</span><span class="p">,</span> <span class="s2">&quot;thinking&quot;</span><span class="p">],</span>
+        <span class="c1"># xAI models</span>
+        <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;(xai/)?grok-3-mini(-fast)?(-beta)?&quot;</span><span class="p">):</span> <span class="p">[</span><span class="s2">&quot;low&quot;</span><span class="p">,</span> <span class="s2">&quot;medium&quot;</span><span class="p">,</span> <span class="s2">&quot;high&quot;</span><span class="p">],</span>
+    <span class="p">}</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
@@ -2689,6 +2828,10 @@
 <span class="sd">                The generation kwargs to pass to the model. If None, default values will</span>
 <span class="sd">                be used.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">raise_if_wrong_params</span><span class="p">(</span>
+            <span class="n">model_config</span><span class="o">=</span><span class="n">model_config</span><span class="p">,</span> <span class="n">allowed_params</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">allowed_params</span>
+        <span class="p">)</span>
+
         <span class="c1"># Detect whether the model is an Ollama model, as we need to extract metadata</span>
         <span class="c1"># differently for these models</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">is_ollama</span> <span class="o">=</span> <span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span>
@@ -2699,8 +2842,6 @@
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_ollama</span>
             <span class="k">else</span> <span class="n">ollama</span><span class="o">.</span><span class="n">ShowResponse</span><span class="p">(</span><span class="n">model_info</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
         <span class="p">)</span>
-
-        <span class="n">raise_if_wrong_params</span><span class="p">(</span><span class="n">model_config</span><span class="o">=</span><span class="n">model_config</span><span class="p">,</span> <span class="n">allowed_params</span><span class="o">=</span><span class="n">ALLOWED_PARAMS</span><span class="p">)</span>
 
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
             <span class="n">model_config</span><span class="o">=</span><span class="n">model_config</span><span class="p">,</span>
@@ -2725,21 +2866,27 @@
 <span class="sd">        Returns:</span>
 <span class="sd">            The generative type of the model, or None if it has not been set yet.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_ollama</span><span class="p">:</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">benchmark_config</span><span class="o">.</span><span class="n">generative_type</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">type_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">benchmark_config</span><span class="o">.</span><span class="n">generative_type</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_ollama</span><span class="p">:</span>
             <span class="n">reasoning_model</span> <span class="o">=</span> <span class="s2">&quot;thinking&quot;</span> <span class="ow">in</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_ollama_show</span><span class="o">.</span><span class="n">capabilities</span> <span class="ow">or</span> <span class="p">[])</span>
             <span class="n">type_</span> <span class="o">=</span> <span class="p">(</span>
                 <span class="n">GenerativeType</span><span class="o">.</span><span class="n">REASONING</span>
                 <span class="k">if</span> <span class="n">reasoning_model</span>
                 <span class="k">else</span> <span class="n">GenerativeType</span><span class="o">.</span><span class="n">INSTRUCTION_TUNED</span>
             <span class="p">)</span>
-        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">revision</span> <span class="ow">in</span> <span class="p">{</span><span class="s2">&quot;thinking&quot;</span><span class="p">}:</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">param</span> <span class="ow">in</span> <span class="p">{</span><span class="s2">&quot;thinking&quot;</span><span class="p">}:</span>
             <span class="n">type_</span> <span class="o">=</span> <span class="n">GenerativeType</span><span class="o">.</span><span class="n">REASONING</span>
-        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">revision</span> <span class="ow">in</span> <span class="p">{</span><span class="s2">&quot;no-thinking&quot;</span><span class="p">}:</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">param</span> <span class="ow">in</span> <span class="p">{</span><span class="s2">&quot;no-thinking&quot;</span><span class="p">}:</span>
             <span class="n">type_</span> <span class="o">=</span> <span class="n">GenerativeType</span><span class="o">.</span><span class="n">INSTRUCTION_TUNED</span>
         <span class="k">elif</span> <span class="n">re</span><span class="o">.</span><span class="n">fullmatch</span><span class="p">(</span>
             <span class="n">pattern</span><span class="o">=</span><span class="s2">&quot;|&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">REASONING_MODELS</span><span class="p">),</span> <span class="n">string</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span>
         <span class="p">):</span>
             <span class="n">type_</span> <span class="o">=</span> <span class="n">GenerativeType</span><span class="o">.</span><span class="n">REASONING</span>
+        <span class="k">elif</span> <span class="n">re</span><span class="o">.</span><span class="n">fullmatch</span><span class="p">(</span>
+            <span class="n">pattern</span><span class="o">=</span><span class="s2">&quot;|&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">BASE_DECODER_MODELS</span><span class="p">),</span> <span class="n">string</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span>
+        <span class="p">):</span>
+            <span class="n">type_</span> <span class="o">=</span> <span class="n">GenerativeType</span><span class="o">.</span><span class="n">BASE</span>
         <span class="k">elif</span> <span class="n">supports_reasoning</span><span class="p">(</span><span class="n">model</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span><span class="p">):</span>
             <span class="n">type_</span> <span class="o">=</span> <span class="n">GenerativeType</span><span class="o">.</span><span class="n">REASONING</span>
         <span class="k">else</span><span class="p">:</span>
@@ -2762,9 +2909,20 @@
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The generated model outputs.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            InvalidBenchmark:</span>
+<span class="sd">                If the inputs do not contain either &#39;messages&#39; or &#39;text&#39; keys.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">assert</span> <span class="s2">&quot;messages&quot;</span> <span class="ow">in</span> <span class="n">inputs</span><span class="p">,</span> <span class="s2">&quot;The input must contain a &#39;messages&#39; key.&quot;</span>
-        <span class="n">conversations</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="n">litellm</span><span class="o">.</span><span class="n">AllMessageValues</span><span class="p">]]</span> <span class="o">=</span> <span class="n">inputs</span><span class="p">[</span><span class="s2">&quot;messages&quot;</span><span class="p">]</span>
+        <span class="n">model_inputs</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="n">litellm</span><span class="o">.</span><span class="n">AllMessageValues</span><span class="p">]</span> <span class="o">|</span> <span class="nb">str</span><span class="p">]</span>
+        <span class="k">if</span> <span class="s2">&quot;messages&quot;</span> <span class="ow">in</span> <span class="n">inputs</span><span class="p">:</span>
+            <span class="n">model_inputs</span> <span class="o">=</span> <span class="n">inputs</span><span class="p">[</span><span class="s2">&quot;messages&quot;</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="s2">&quot;text&quot;</span> <span class="ow">in</span> <span class="n">inputs</span><span class="p">:</span>
+            <span class="n">model_inputs</span> <span class="o">=</span> <span class="n">inputs</span><span class="p">[</span><span class="s2">&quot;text&quot;</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">InvalidBenchmark</span><span class="p">(</span>
+                <span class="s2">&quot;The inputs must contain either &#39;messages&#39; or &#39;text&#39; keys.&quot;</span>
+            <span class="p">)</span>
 
         <span class="c1"># Get the mapping from labels to the first token in the label. We call this each</span>
         <span class="c1"># time we generate a new dataset since the dataset config can change</span>
@@ -2777,22 +2935,22 @@
         <span class="p">)</span>
 
         <span class="n">all_responses</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="s2">&quot;ModelResponse&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
-        <span class="n">conversations_to_run</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="n">litellm</span><span class="o">.</span><span class="n">AllMessageValues</span><span class="p">]]]</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span>
-            <span class="nb">enumerate</span><span class="p">(</span><span class="n">conversations</span><span class="p">)</span>
+        <span class="n">inputs_to_run</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="n">litellm</span><span class="o">.</span><span class="n">AllMessageValues</span><span class="p">]</span> <span class="o">|</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span>
+            <span class="nb">enumerate</span><span class="p">(</span><span class="n">model_inputs</span><span class="p">)</span>
         <span class="p">)</span>
         <span class="k">for</span> <span class="n">attempt</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_attempts</span> <span class="o">:=</span> <span class="mi">10</span><span class="p">):</span>
-            <span class="k">if</span> <span class="ow">not</span> <span class="n">conversations_to_run</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">inputs_to_run</span><span class="p">:</span>
                 <span class="k">break</span>
 
             <span class="n">generation_kwargs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">generation_kwargs</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_generation_kwargs</span><span class="p">(</span>
                 <span class="n">dataset_config</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dataset_config</span>
             <span class="p">)</span>
 
-            <span class="n">batch_indices</span><span class="p">,</span> <span class="n">batch_conversations</span> <span class="o">=</span> <span class="nb">zip</span><span class="p">(</span><span class="o">*</span><span class="n">conversations_to_run</span><span class="p">)</span>
+            <span class="n">batch_indices</span><span class="p">,</span> <span class="n">batch_inputs</span> <span class="o">=</span> <span class="nb">zip</span><span class="p">(</span><span class="o">*</span><span class="n">inputs_to_run</span><span class="p">)</span>
             <span class="n">successes</span><span class="p">,</span> <span class="n">failures</span> <span class="o">=</span> <span class="n">safe_run</span><span class="p">(</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_generate_async</span><span class="p">(</span>
                     <span class="n">model_id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span><span class="p">,</span>
-                    <span class="n">conversations</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="n">batch_conversations</span><span class="p">),</span>
+                    <span class="n">inputs</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="n">batch_inputs</span><span class="p">),</span>
                     <span class="o">**</span><span class="n">generation_kwargs</span><span class="p">,</span>
                 <span class="p">)</span>
             <span class="p">)</span>
@@ -2804,17 +2962,17 @@
 
             <span class="c1"># If all requests were successful, break</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="n">failures</span><span class="p">:</span>
-                <span class="n">conversations_to_run</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="n">inputs_to_run</span> <span class="o">=</span> <span class="p">[]</span>
                 <span class="k">break</span>
 
             <span class="c1"># Put the failed requests back in the queue to try again</span>
-            <span class="n">conversations_to_run</span> <span class="o">=</span> <span class="p">[</span>
-                <span class="p">(</span><span class="n">batch_indices</span><span class="p">[</span><span class="n">idx</span><span class="p">],</span> <span class="n">conversations</span><span class="p">[</span><span class="n">batch_indices</span><span class="p">[</span><span class="n">idx</span><span class="p">]])</span>
+            <span class="n">inputs_to_run</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="p">(</span><span class="n">batch_indices</span><span class="p">[</span><span class="n">idx</span><span class="p">],</span> <span class="n">model_inputs</span><span class="p">[</span><span class="n">batch_indices</span><span class="p">[</span><span class="n">idx</span><span class="p">]])</span>
                 <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">failures</span>
             <span class="p">]</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
                 <span class="sa">f</span><span class="s2">&quot;Attempt </span><span class="si">{</span><span class="n">attempt</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">num_attempts</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2">: retrying &quot;</span>
-                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">conversations_to_run</span><span class="p">)</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2"> failed message(s)&quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">inputs_to_run</span><span class="p">)</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2"> failed message(s)&quot;</span>
             <span class="p">)</span>
 
             <span class="c1"># Attempt to handle the exceptions, to improve the chance of getting</span>
@@ -2832,14 +2990,14 @@
             <span class="p">)</span>
 
         <span class="c1"># Extract the generations from the model output</span>
-        <span class="n">ordered_responses</span> <span class="o">=</span> <span class="p">[</span><span class="n">all_responses</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">conversations</span><span class="p">))]</span>
+        <span class="n">ordered_responses</span> <span class="o">=</span> <span class="p">[</span><span class="n">all_responses</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">model_inputs</span><span class="p">))]</span>
         <span class="n">model_output</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_create_model_output</span><span class="p">(</span>
             <span class="n">model_responses</span><span class="o">=</span><span class="n">ordered_responses</span><span class="p">,</span> <span class="n">model_id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span>
         <span class="p">)</span>
 
-        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">conversations</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">model_output</span><span class="o">.</span><span class="n">sequences</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">model_inputs</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">model_output</span><span class="o">.</span><span class="n">sequences</span><span class="p">):</span>
             <span class="k">raise</span> <span class="n">InvalidBenchmark</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;Number of model inputs (</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">conversations</span><span class="p">)</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2">) does not match the &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;Number of model inputs (</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">model_inputs</span><span class="p">)</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2">) does not match the &quot;</span>
                 <span class="sa">f</span><span class="s2">&quot;number of model outputs (</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">model_output</span><span class="o">.</span><span class="n">sequences</span><span class="p">)</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2">).&quot;</span>
             <span class="p">)</span>
 
@@ -2861,15 +3019,23 @@
         <span class="n">model_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span>
 
         <span class="c1"># Error messages that we want to catch and handle</span>
-        <span class="n">stop_messages</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;stop_sequences&quot;</span><span class="p">,</span> <span class="s2">&quot;&#39;stop&#39; is not supported with this model&quot;</span><span class="p">]</span>
+        <span class="n">stop_messages</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="s2">&quot;stop_sequences&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;&#39;stop&#39; is not supported with this model&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;&#39;$.stop&#39; is invalid&quot;</span><span class="p">,</span>
+        <span class="p">]</span>
         <span class="n">logprobs_messages</span> <span class="o">=</span> <span class="p">[</span>
             <span class="s2">&quot;you are not allowed to request logprobs&quot;</span><span class="p">,</span>
             <span class="s2">&quot;you&#39;ve reached the maximum number of requests with logprobs&quot;</span><span class="p">,</span>
             <span class="s2">&quot;logprobs is not supported&quot;</span><span class="p">,</span>
             <span class="s2">&quot;logprobs is not enabled&quot;</span><span class="p">,</span>
         <span class="p">]</span>
+        <span class="n">top_logprobs_messages</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;got an unexpected keyword argument &#39;top_logprobs&#39;&quot;</span><span class="p">]</span>
         <span class="n">logprobs_pattern</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span>
             <span class="sa">r</span><span class="s2">&quot;does not support parameters: \[.*&#39;top_logprobs&#39;.*\]&quot;</span>
+        <span class="p">)</span>
+        <span class="n">max_completion_tokens_pattern</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span>
+            <span class="sa">r</span><span class="s2">&quot;does not support parameters: \[.*&#39;max_completion_tokens&#39;.*\]&quot;</span>
         <span class="p">)</span>
         <span class="n">temperature_messages</span> <span class="o">=</span> <span class="p">[</span>
             <span class="s2">&quot;&#39;temperature&#39; is not supported with this model.&quot;</span><span class="p">,</span>
@@ -2889,6 +3055,10 @@
         <span class="p">)</span>
         <span class="n">requires_thinking_disabled_messages</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;thinking.type: Field required&quot;</span><span class="p">]</span>
         <span class="n">seed_pattern</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;does not support parameters: \[.*&#39;seed&#39;.*\]&quot;</span><span class="p">)</span>
+        <span class="n">response_format_messages</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="s2">&quot;got an unexpected keyword argument &#39;response_format&#39;&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;The model outputs empty dictionaries.&quot;</span><span class="p">,</span>
+        <span class="p">]</span>
 
         <span class="k">if</span> <span class="nb">any</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="ow">in</span> <span class="n">error_msg</span> <span class="k">for</span> <span class="n">msg</span> <span class="ow">in</span> <span class="n">stop_messages</span><span class="p">):</span>
             <span class="n">log_once</span><span class="p">(</span>
@@ -2912,6 +3082,24 @@
             <span class="p">)</span>
             <span class="n">generation_kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;logprobs&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
             <span class="n">generation_kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;top_logprobs&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">generation_kwargs</span>
+        <span class="k">elif</span> <span class="nb">any</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="ow">in</span> <span class="n">error_msg</span> <span class="k">for</span> <span class="n">msg</span> <span class="ow">in</span> <span class="n">top_logprobs_messages</span><span class="p">):</span>
+            <span class="n">log_once</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;The model </span><span class="si">{</span><span class="n">model_id</span><span class="si">!r}</span><span class="s2"> does not support the `top_logprobs` argument, &quot;</span>
+                <span class="s2">&quot;so moving the value to `logprobs`.&quot;</span><span class="p">,</span>
+                <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="n">generation_kwargs</span><span class="p">[</span><span class="s2">&quot;logprobs&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">generation_kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;top_logprobs&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">generation_kwargs</span>
+        <span class="k">elif</span> <span class="n">max_completion_tokens_pattern</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">string</span><span class="o">=</span><span class="n">error_msg</span><span class="p">):</span>
+            <span class="n">log_once</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;The model </span><span class="si">{</span><span class="n">model_id</span><span class="si">!r}</span><span class="s2"> does not support max_completion_tokens, so &quot;</span>
+                <span class="s2">&quot;disabling it.&quot;</span><span class="p">,</span>
+                <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="n">generation_kwargs</span><span class="p">[</span><span class="s2">&quot;max_tokens&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">generation_kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span>
+                <span class="s2">&quot;max_completion_tokens&quot;</span><span class="p">,</span> <span class="kc">None</span>
+            <span class="p">)</span>
             <span class="k">return</span> <span class="n">generation_kwargs</span>
         <span class="k">elif</span> <span class="nb">any</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="ow">in</span> <span class="n">error_msg</span> <span class="k">for</span> <span class="n">msg</span> <span class="ow">in</span> <span class="n">temperature_messages</span><span class="p">):</span>
             <span class="n">log_once</span><span class="p">(</span>
@@ -2993,6 +3181,14 @@
             <span class="p">)</span>
             <span class="n">generation_kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;seed&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
             <span class="k">return</span> <span class="n">generation_kwargs</span>
+        <span class="k">elif</span> <span class="nb">any</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="ow">in</span> <span class="n">error_msg</span> <span class="k">for</span> <span class="n">msg</span> <span class="ow">in</span> <span class="n">response_format_messages</span><span class="p">):</span>
+            <span class="n">log_once</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;The model </span><span class="si">{</span><span class="n">model_id</span><span class="si">!r}</span><span class="s2"> does not support the `response_format` &quot;</span>
+                <span class="s2">&quot;parameter, so disabling it.&quot;</span><span class="p">,</span>
+                <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="n">generation_kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;response_format&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">generation_kwargs</span>
         <span class="c1"># If there are too many I/O connections, we increase the number of allowed file</span>
         <span class="c1"># descriptors</span>
         <span class="k">elif</span> <span class="s2">&quot;too many open files&quot;</span> <span class="ow">in</span> <span class="n">error_msg</span><span class="p">:</span>
@@ -3055,7 +3251,7 @@
     <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_generate_async</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">model_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-        <span class="n">conversations</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="n">litellm</span><span class="o">.</span><span class="n">AllMessageValues</span><span class="p">]],</span>
+        <span class="n">inputs</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="n">litellm</span><span class="o">.</span><span class="n">AllMessageValues</span><span class="p">]</span> <span class="o">|</span> <span class="nb">str</span><span class="p">],</span>
         <span class="o">**</span><span class="n">generation_kwargs</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="s2">&quot;ModelResponse&quot;</span><span class="p">]],</span> <span class="nb">list</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="ne">Exception</span><span class="p">]]]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Generate outputs from the model asynchronously.</span>
@@ -3063,8 +3259,8 @@
 <span class="sd">        Args:</span>
 <span class="sd">            model_id:</span>
 <span class="sd">                The ID of the model to use for generation.</span>
-<span class="sd">            conversations:</span>
-<span class="sd">                The conversations to pass to the model.</span>
+<span class="sd">            inputs:</span>
+<span class="sd">                The inputs to pass to the model.</span>
 <span class="sd">            **generation_kwargs:</span>
 <span class="sd">                Additional generation arguments to pass to the model.</span>
 
@@ -3087,16 +3283,50 @@
         <span class="c1"># Get the LLM generations asynchronously</span>
         <span class="n">max_concurrent_calls</span> <span class="o">=</span> <span class="mi">20</span>
         <span class="n">semaphore</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">Semaphore</span><span class="p">(</span><span class="n">max_concurrent_calls</span><span class="p">)</span>
-        <span class="n">requests</span> <span class="o">=</span> <span class="p">[</span>
-            <span class="n">add_semaphore_and_catch_exception</span><span class="p">(</span>
-                <span class="n">router</span><span class="o">.</span><span class="n">acompletion</span><span class="p">(</span>
-                    <span class="n">model</span><span class="o">=</span><span class="n">model_id</span><span class="p">,</span> <span class="n">messages</span><span class="o">=</span><span class="n">conversation</span><span class="p">,</span> <span class="o">**</span><span class="n">generation_kwargs</span>
-                <span class="p">),</span>
-                <span class="n">semaphore</span><span class="o">=</span><span class="n">semaphore</span><span class="p">,</span>
-            <span class="p">)</span>
-            <span class="k">for</span> <span class="n">conversation</span> <span class="ow">in</span> <span class="n">conversations</span>
-        <span class="p">]</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">generative_type</span> <span class="o">==</span> <span class="n">GenerativeType</span><span class="o">.</span><span class="n">BASE</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">input_</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">for</span> <span class="n">input_</span> <span class="ow">in</span> <span class="n">inputs</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="n">InvalidBenchmark</span><span class="p">(</span>
+                    <span class="s2">&quot;For base generative models, all inputs must be strings.&quot;</span>
+                <span class="p">)</span>
+            <span class="n">requests</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="n">add_semaphore_and_catch_exception</span><span class="p">(</span>
+                    <span class="n">router</span><span class="o">.</span><span class="n">atext_completion</span><span class="p">(</span>
+                        <span class="n">model</span><span class="o">=</span><span class="n">model_id</span><span class="p">,</span> <span class="n">prompt</span><span class="o">=</span><span class="n">input_</span><span class="p">,</span> <span class="o">**</span><span class="n">generation_kwargs</span>
+                    <span class="p">),</span>
+                    <span class="n">semaphore</span><span class="o">=</span><span class="n">semaphore</span><span class="p">,</span>
+                <span class="p">)</span>
+                <span class="k">for</span> <span class="n">input_</span> <span class="ow">in</span> <span class="n">inputs</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">input_</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span>
+            <span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">input_</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span> <span class="k">for</span> <span class="n">input_</span> <span class="ow">in</span> <span class="n">inputs</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="n">InvalidBenchmark</span><span class="p">(</span>
+                    <span class="s2">&quot;For instruction-tuned and reasoning generative models, all &quot;</span>
+                    <span class="s2">&quot;inputs must be lists of messages.&quot;</span>
+                <span class="p">)</span>
+            <span class="n">requests</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="n">add_semaphore_and_catch_exception</span><span class="p">(</span>
+                    <span class="n">router</span><span class="o">.</span><span class="n">acompletion</span><span class="p">(</span>
+                        <span class="n">model</span><span class="o">=</span><span class="n">model_id</span><span class="p">,</span> <span class="n">messages</span><span class="o">=</span><span class="n">input_</span><span class="p">,</span> <span class="o">**</span><span class="n">generation_kwargs</span>
+                    <span class="p">),</span>
+                    <span class="n">semaphore</span><span class="o">=</span><span class="n">semaphore</span><span class="p">,</span>
+                <span class="p">)</span>
+                <span class="k">for</span> <span class="n">input_</span> <span class="ow">in</span> <span class="n">inputs</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">input_</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span>
+            <span class="p">]</span>
         <span class="n">responses</span> <span class="o">=</span> <span class="k">await</span> <span class="n">tqdm_async</span><span class="o">.</span><span class="n">gather</span><span class="p">(</span><span class="o">*</span><span class="n">requests</span><span class="p">,</span> <span class="n">leave</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+        <span class="c1"># If we are performing structured generation and the model just outputs an empty</span>
+        <span class="c1"># dictionary, then we convert those to exceptions, to disable structured</span>
+        <span class="c1"># generation</span>
+        <span class="k">if</span> <span class="s2">&quot;response_format&quot;</span> <span class="ow">in</span> <span class="n">generation_kwargs</span><span class="p">:</span>
+            <span class="n">responses</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;The model outputs empty dictionaries.&quot;</span><span class="p">)</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">response</span><span class="p">,</span> <span class="ne">Exception</span><span class="p">)</span>
+                <span class="ow">and</span> <span class="nb">any</span><span class="p">(</span><span class="n">choice</span><span class="o">.</span><span class="n">message</span><span class="o">.</span><span class="n">content</span> <span class="o">==</span> <span class="s2">&quot;</span><span class="si">{}</span><span class="s2">&quot;</span> <span class="k">for</span> <span class="n">choice</span> <span class="ow">in</span> <span class="n">response</span><span class="o">.</span><span class="n">choices</span><span class="p">)</span>
+                <span class="k">else</span> <span class="n">response</span>
+                <span class="k">for</span> <span class="n">response</span> <span class="ow">in</span> <span class="n">responses</span>
+            <span class="p">]</span>
 
         <span class="c1"># Separate the successful responses from the failed ones</span>
         <span class="n">successes</span> <span class="o">=</span> <span class="p">[</span>
@@ -3113,7 +3343,10 @@
         <span class="c1"># Close connections</span>
         <span class="k">for</span> <span class="n">request</span> <span class="ow">in</span> <span class="n">requests</span><span class="p">:</span>
             <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="s2">&quot;close&quot;</span><span class="p">):</span>
-                <span class="n">request</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">request</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+                <span class="k">except</span> <span class="ne">RuntimeError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;RuntimeError during request.close(): </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="n">successes</span><span class="p">,</span> <span class="n">failures</span>
 
@@ -3146,10 +3379,18 @@
                 <span class="k">continue</span>
 
             <span class="n">model_response_choices</span> <span class="o">=</span> <span class="n">model_response</span><span class="o">.</span><span class="n">choices</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-            <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">model_response_choices</span><span class="p">,</span> <span class="n">litellm</span><span class="o">.</span><span class="n">Choices</span><span class="p">)</span>
-            <span class="n">generated_message</span><span class="p">:</span> <span class="n">litellm</span><span class="o">.</span><span class="n">Message</span> <span class="o">=</span> <span class="n">model_response_choices</span><span class="o">.</span><span class="n">message</span>
-            <span class="n">generation_output</span> <span class="o">=</span> <span class="n">generated_message</span><span class="o">.</span><span class="n">content</span> <span class="ow">or</span> <span class="s2">&quot;&quot;</span>
-            <span class="n">generation_output</span> <span class="o">=</span> <span class="n">generation_output</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">model_response_choices</span><span class="p">,</span> <span class="n">litellm</span><span class="o">.</span><span class="n">Choices</span><span class="p">):</span>
+                <span class="n">generated_message</span><span class="p">:</span> <span class="n">litellm</span><span class="o">.</span><span class="n">Message</span> <span class="o">=</span> <span class="n">model_response_choices</span><span class="o">.</span><span class="n">message</span>
+                <span class="n">generation_output</span> <span class="o">=</span> <span class="n">generated_message</span><span class="o">.</span><span class="n">content</span> <span class="ow">or</span> <span class="s2">&quot;&quot;</span>
+                <span class="n">generation_output</span> <span class="o">=</span> <span class="n">generation_output</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">model_response_choices</span><span class="p">,</span> <span class="n">litellm</span><span class="o">.</span><span class="n">litellm</span><span class="o">.</span><span class="n">TextChoices</span><span class="p">):</span>
+                <span class="n">generation_output</span> <span class="o">=</span> <span class="n">model_response_choices</span><span class="o">.</span><span class="n">text</span> <span class="ow">or</span> <span class="s2">&quot;&quot;</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">InvalidBenchmark</span><span class="p">(</span>
+                    <span class="s2">&quot;The model response choices must be of type Choices or &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;TextChoices. Got </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">model_response_choices</span><span class="p">)</span><span class="si">}</span><span class="s2">.&quot;</span>
+                <span class="p">)</span>
 
             <span class="c1"># In the case where we&#39;re dealing with a classification task, the model is</span>
             <span class="c1"># outputting a JSON dictionary, so we will extract the generated text from</span>
@@ -3170,40 +3411,55 @@
 
             <span class="c1"># Structure the model output as a GenerativeModelOutput object</span>
             <span class="n">sequences</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">generation_output</span><span class="p">)</span>
-            <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">model_response_choices</span><span class="p">,</span> <span class="s2">&quot;logprobs&quot;</span><span class="p">):</span>
+            <span class="k">if</span> <span class="p">(</span>
+                <span class="nb">hasattr</span><span class="p">(</span><span class="n">model_response_choices</span><span class="p">,</span> <span class="s2">&quot;logprobs&quot;</span><span class="p">)</span>
+                <span class="ow">and</span> <span class="n">model_response_choices</span><span class="o">.</span><span class="n">logprobs</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+            <span class="p">):</span>
                 <span class="n">logprobs_obj</span> <span class="o">=</span> <span class="n">model_response_choices</span><span class="o">.</span><span class="n">logprobs</span>
-                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">logprobs_obj</span><span class="p">,</span> <span class="n">ChoiceLogprobs</span><span class="p">):</span>
-                    <span class="n">logprobs_list</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]]]</span> <span class="o">=</span> <span class="p">[</span>
-                        <span class="p">[</span>
-                            <span class="p">(</span><span class="n">top_logprob</span><span class="o">.</span><span class="n">token</span><span class="p">,</span> <span class="n">top_logprob</span><span class="o">.</span><span class="n">logprob</span><span class="p">)</span>
-                            <span class="k">for</span> <span class="n">top_logprob</span> <span class="ow">in</span> <span class="n">content</span><span class="o">.</span><span class="n">top_logprobs</span>
-                        <span class="p">]</span>
-                        <span class="k">for</span> <span class="n">content</span> <span class="ow">in</span> <span class="n">model_response_choices</span><span class="o">.</span><span class="n">logprobs</span><span class="o">.</span><span class="n">content</span> <span class="ow">or</span> <span class="nb">list</span><span class="p">()</span>
-                    <span class="p">]</span>
 
-                    <span class="c1"># If the model outputted a JSON dictionary, we need to find the</span>
-                    <span class="c1"># token index of the value within the dictionary, rather than the</span>
-                    <span class="c1"># first token of the entire output</span>
-                    <span class="k">if</span> <span class="n">generation_dct</span><span class="p">:</span>
-                        <span class="n">key_name</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="nb">iter</span><span class="p">(</span><span class="n">generation_dct</span><span class="o">.</span><span class="n">keys</span><span class="p">()))</span>
-                        <span class="n">logprobs_list</span> <span class="o">=</span> <span class="p">[</span>
-                            <span class="n">lst</span>
-                            <span class="k">for</span> <span class="n">lst</span> <span class="ow">in</span> <span class="n">logprobs_list</span>
-                            <span class="k">if</span> <span class="p">(</span>
-                                <span class="n">lst</span>
-                                <span class="ow">and</span> <span class="n">lst</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-                                <span class="ow">and</span> <span class="p">(</span><span class="n">token</span> <span class="o">:=</span> <span class="n">lst</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span><span class="n">JSON_STRIP_CHARACTERS</span><span class="p">))</span>
-                                <span class="ow">and</span> <span class="ow">not</span> <span class="n">key_name</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">token</span><span class="p">)</span>
-                            <span class="p">)</span>
-                        <span class="p">]</span>
-
-                    <span class="n">scores</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">logprobs_list</span><span class="p">)</span>
-                <span class="k">else</span><span class="p">:</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">logprobs_obj</span><span class="p">,</span> <span class="p">(</span><span class="n">Logprobs</span><span class="p">,</span> <span class="n">ChoiceLogprobs</span><span class="p">)):</span>
                     <span class="n">log_once</span><span class="p">(</span>
                         <span class="s2">&quot;The logprobs object is malformed, so we won&#39;t use logprobs to &quot;</span>
                         <span class="s2">&quot;determine the labels.&quot;</span><span class="p">,</span>
                         <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">,</span>
                     <span class="p">)</span>
+                    <span class="k">continue</span>
+
+                <span class="n">logprobs_list</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]]]</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">logprobs_obj</span><span class="p">,</span> <span class="n">ChoiceLogprobs</span><span class="p">):</span>
+                    <span class="n">logprobs_list</span> <span class="o">=</span> <span class="p">[</span>
+                        <span class="p">[</span>
+                            <span class="p">(</span><span class="n">top_logprob</span><span class="o">.</span><span class="n">token</span><span class="p">,</span> <span class="n">top_logprob</span><span class="o">.</span><span class="n">logprob</span><span class="p">)</span>
+                            <span class="k">for</span> <span class="n">top_logprob</span> <span class="ow">in</span> <span class="n">content</span><span class="o">.</span><span class="n">top_logprobs</span>
+                        <span class="p">]</span>
+                        <span class="k">for</span> <span class="n">content</span> <span class="ow">in</span> <span class="n">logprobs_obj</span><span class="o">.</span><span class="n">content</span> <span class="ow">or</span> <span class="nb">list</span><span class="p">()</span>
+                    <span class="p">]</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">logprobs_list</span> <span class="o">=</span> <span class="p">[</span>
+                        <span class="p">[</span>
+                            <span class="p">(</span><span class="n">token</span><span class="p">,</span> <span class="n">logprob</span><span class="p">)</span>
+                            <span class="k">for</span> <span class="n">token</span><span class="p">,</span> <span class="n">logprob</span> <span class="ow">in</span> <span class="p">(</span><span class="n">top_logprobs_dct</span> <span class="ow">or</span> <span class="nb">dict</span><span class="p">())</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+                        <span class="p">]</span>
+                        <span class="k">for</span> <span class="n">top_logprobs_dct</span> <span class="ow">in</span> <span class="n">logprobs_obj</span><span class="o">.</span><span class="n">top_logprobs</span> <span class="ow">or</span> <span class="nb">list</span><span class="p">()</span>
+                    <span class="p">]</span>
+
+                <span class="c1"># If the model outputted a JSON dictionary, we need to find the</span>
+                <span class="c1"># token index of the value within the dictionary, rather than the</span>
+                <span class="c1"># first token of the entire output</span>
+                <span class="k">if</span> <span class="n">generation_dct</span><span class="p">:</span>
+                    <span class="n">key_name</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="nb">iter</span><span class="p">(</span><span class="n">generation_dct</span><span class="o">.</span><span class="n">keys</span><span class="p">()))</span>
+                    <span class="n">logprobs_list</span> <span class="o">=</span> <span class="p">[</span>
+                        <span class="n">lst</span>
+                        <span class="k">for</span> <span class="n">lst</span> <span class="ow">in</span> <span class="n">logprobs_list</span>
+                        <span class="k">if</span> <span class="p">(</span>
+                            <span class="n">lst</span>
+                            <span class="ow">and</span> <span class="n">lst</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+                            <span class="ow">and</span> <span class="p">(</span><span class="n">token</span> <span class="o">:=</span> <span class="n">lst</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span><span class="n">JSON_STRIP_CHARACTERS</span><span class="p">))</span>
+                            <span class="ow">and</span> <span class="ow">not</span> <span class="n">key_name</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">token</span><span class="p">)</span>
+                        <span class="p">)</span>
+                    <span class="p">]</span>
+
+                <span class="n">scores</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">logprobs_list</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="ow">not</span> <span class="n">sequences</span><span class="p">:</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
@@ -3530,7 +3786,7 @@
 <span class="sd">            Whether the model exists, or an error describing why we cannot check</span>
 <span class="sd">            whether the model exists.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">model_id</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">model_id</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;@&quot;</span><span class="p">)</span> <span class="k">if</span> <span class="s2">&quot;@&quot;</span> <span class="ow">in</span> <span class="n">model_id</span> <span class="k">else</span> <span class="p">(</span><span class="n">model_id</span><span class="p">,</span> <span class="s2">&quot;main&quot;</span><span class="p">)</span>
+        <span class="n">model_id</span> <span class="o">=</span> <span class="n">split_model_id</span><span class="p">(</span><span class="n">model_id</span><span class="o">=</span><span class="n">model_id</span><span class="p">)</span><span class="o">.</span><span class="n">model_id</span>
         <span class="k">if</span> <span class="n">model_id</span> <span class="ow">in</span> <span class="n">litellm</span><span class="o">.</span><span class="n">model_list</span><span class="p">:</span>
             <span class="k">return</span> <span class="kc">True</span>
 
@@ -3618,10 +3874,29 @@
 <span class="sd">        Returns:</span>
 <span class="sd">            The model configuration.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">model_id</span><span class="p">,</span> <span class="n">revision</span> <span class="o">=</span> <span class="n">model_id</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;@&quot;</span><span class="p">)</span> <span class="k">if</span> <span class="s2">&quot;@&quot;</span> <span class="ow">in</span> <span class="n">model_id</span> <span class="k">else</span> <span class="p">(</span><span class="n">model_id</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+        <span class="n">model_id_components</span> <span class="o">=</span> <span class="n">split_model_id</span><span class="p">(</span><span class="n">model_id</span><span class="o">=</span><span class="n">model_id</span><span class="p">)</span>
+
+        <span class="c1"># Backwards compatibility: If the revision is set but not the parameter, we</span>
+        <span class="c1"># assume that the revision is actually the parameter and log this as a warning.</span>
+        <span class="k">if</span> <span class="n">model_id_components</span><span class="o">.</span><span class="n">revision</span> <span class="o">!=</span> <span class="s2">&quot;main&quot;</span> <span class="ow">and</span> <span class="n">model_id_components</span><span class="o">.</span><span class="n">param</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">proper_model_id</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">model_id_components</span><span class="o">.</span><span class="n">model_id</span><span class="si">}</span><span class="s2">#</span><span class="si">{</span><span class="n">model_id_components</span><span class="o">.</span><span class="n">revision</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span>
+            <span class="n">log_once</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;The model ID </span><span class="si">{</span><span class="n">model_id</span><span class="si">!r}</span><span class="s2"> specifies a revision &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">model_id_components</span><span class="o">.</span><span class="n">revision</span><span class="si">!r}</span><span class="s2"> but not a parameter. We assume &quot;</span>
+                <span class="s2">&quot;that the revision is actually the parameter and set the revision &quot;</span>
+                <span class="s2">&quot;to &#39;main&#39;. In the future, use the new &#39;#&#39; syntax to specify the &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;parameter (in this case, this would be </span><span class="si">{</span><span class="n">proper_model_id</span><span class="si">!r}</span><span class="s2">), as this &quot;</span>
+                <span class="s2">&quot;will be an error in future versions of EuroEval.&quot;</span>
+            <span class="p">)</span>
+            <span class="n">model_id_components</span><span class="o">.</span><span class="n">param</span> <span class="o">=</span> <span class="n">model_id_components</span><span class="o">.</span><span class="n">revision</span>
+            <span class="n">model_id_components</span><span class="o">.</span><span class="n">revision</span> <span class="o">=</span> <span class="s2">&quot;main&quot;</span>
+
         <span class="k">return</span> <span class="n">ModelConfig</span><span class="p">(</span>
-            <span class="n">model_id</span><span class="o">=</span><span class="n">model_id</span><span class="p">,</span>
-            <span class="n">revision</span><span class="o">=</span><span class="n">revision</span><span class="p">,</span>
+            <span class="n">model_id</span><span class="o">=</span><span class="n">model_id_components</span><span class="o">.</span><span class="n">model_id</span><span class="p">,</span>
+            <span class="n">revision</span><span class="o">=</span><span class="n">model_id_components</span><span class="o">.</span><span class="n">revision</span><span class="p">,</span>
+            <span class="n">param</span><span class="o">=</span><span class="n">model_id_components</span><span class="o">.</span><span class="n">param</span><span class="p">,</span>
             <span class="n">task</span><span class="o">=</span><span class="s2">&quot;text-generation&quot;</span><span class="p">,</span>
             <span class="n">languages</span><span class="o">=</span><span class="nb">list</span><span class="p">(),</span>
             <span class="n">merge</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
@@ -3690,7 +3965,7 @@
                 <span class="n">few_shot_examples</span><span class="o">=</span><span class="n">few_shot_examples</span><span class="p">,</span>
                 <span class="n">model_config</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="p">,</span>
                 <span class="n">dataset_config</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dataset_config</span><span class="p">,</span>
-                <span class="n">instruction_model</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                <span class="n">generative_type</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">generative_type</span><span class="p">,</span>
                 <span class="n">always_populate_text_field</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                 <span class="n">tokeniser</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
             <span class="p">),</span>
@@ -3796,7 +4071,7 @@
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">buffer</span><span class="p">[</span><span class="s2">&quot;first_label_token_mapping&quot;</span><span class="p">]:</span>
             <span class="n">generation_kwargs</span><span class="p">[</span><span class="s2">&quot;logprobs&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
             <span class="n">generation_kwargs</span><span class="p">[</span><span class="s2">&quot;top_logprobs&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">MAX_LITELLM_LOGPROBS</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">revision</span> <span class="o">==</span> <span class="s2">&quot;thinking&quot;</span><span class="p">:</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">param</span> <span class="o">==</span> <span class="s2">&quot;thinking&quot;</span><span class="p">:</span>
             <span class="n">generation_kwargs</span><span class="p">[</span><span class="s2">&quot;thinking&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
                 <span class="nb">type</span><span class="o">=</span><span class="s2">&quot;enabled&quot;</span><span class="p">,</span> <span class="n">budget_tokens</span><span class="o">=</span><span class="n">REASONING_MAX_TOKENS</span> <span class="o">-</span> <span class="mi">1</span>
             <span class="p">)</span>
@@ -3804,16 +4079,16 @@
                 <span class="sa">f</span><span class="s2">&quot;Enabling thinking mode for model </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span><span class="si">!r}</span><span class="s2">&quot;</span><span class="p">,</span>
                 <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
             <span class="p">)</span>
-        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">revision</span> <span class="o">==</span> <span class="s2">&quot;no-thinking&quot;</span><span class="p">:</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">param</span> <span class="o">==</span> <span class="s2">&quot;no-thinking&quot;</span><span class="p">:</span>
             <span class="n">generation_kwargs</span><span class="p">[</span><span class="s2">&quot;thinking&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">budget_tokens</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
             <span class="n">log_once</span><span class="p">(</span>
                 <span class="sa">f</span><span class="s2">&quot;Disabling thinking mode for model </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span><span class="si">!r}</span><span class="s2">&quot;</span><span class="p">,</span>
                 <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
             <span class="p">)</span>
-        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">revision</span> <span class="ow">in</span> <span class="p">{</span><span class="s2">&quot;minimal&quot;</span><span class="p">,</span> <span class="s2">&quot;low&quot;</span><span class="p">,</span> <span class="s2">&quot;medium&quot;</span><span class="p">,</span> <span class="s2">&quot;high&quot;</span><span class="p">}:</span>
-            <span class="n">generation_kwargs</span><span class="p">[</span><span class="s2">&quot;reasoning_effort&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">revision</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">param</span> <span class="ow">in</span> <span class="p">{</span><span class="s2">&quot;minimal&quot;</span><span class="p">,</span> <span class="s2">&quot;low&quot;</span><span class="p">,</span> <span class="s2">&quot;medium&quot;</span><span class="p">,</span> <span class="s2">&quot;high&quot;</span><span class="p">}:</span>
+            <span class="n">generation_kwargs</span><span class="p">[</span><span class="s2">&quot;reasoning_effort&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">param</span>
             <span class="n">log_once</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;Enabling reasoning effort </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">revision</span><span class="si">!r}</span><span class="s2"> for model &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;Enabling reasoning effort </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">param</span><span class="si">!r}</span><span class="s2"> for model &quot;</span>
                 <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span><span class="si">!r}</span><span class="s2">&quot;</span><span class="p">,</span>
                 <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
             <span class="p">)</span>
@@ -3821,14 +4096,18 @@
         <span class="c1"># First attempt is a test run with a single conversation to handle errors</span>
         <span class="c1"># quickly. We repeat this multiple times to deal with different types of</span>
         <span class="c1"># errors, and stop if we get a successful response.</span>
-        <span class="n">test_conversation</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">litellm</span><span class="o">.</span><span class="n">AllMessageValues</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span>
-            <span class="n">litellm</span><span class="o">.</span><span class="n">ChatCompletionUserMessage</span><span class="p">(</span><span class="n">role</span><span class="o">=</span><span class="s2">&quot;user&quot;</span><span class="p">,</span> <span class="n">content</span><span class="o">=</span><span class="s2">&quot;Test message&quot;</span><span class="p">)</span>
-        <span class="p">]</span>
-        <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">5</span><span class="p">):</span>
+        <span class="n">test_input</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">litellm</span><span class="o">.</span><span class="n">AllMessageValues</span><span class="p">]</span> <span class="o">|</span> <span class="nb">str</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">generative_type</span> <span class="o">==</span> <span class="n">GenerativeType</span><span class="o">.</span><span class="n">BASE</span><span class="p">:</span>
+            <span class="n">test_input</span> <span class="o">=</span> <span class="s2">&quot;Test message&quot;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">test_input</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="n">litellm</span><span class="o">.</span><span class="n">ChatCompletionUserMessage</span><span class="p">(</span><span class="n">role</span><span class="o">=</span><span class="s2">&quot;user&quot;</span><span class="p">,</span> <span class="n">content</span><span class="o">=</span><span class="s2">&quot;Test message&quot;</span><span class="p">)</span>
+            <span class="p">]</span>
+        <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_attempts</span> <span class="o">:=</span> <span class="mi">10</span><span class="p">):</span>
             <span class="n">_</span><span class="p">,</span> <span class="n">failures</span> <span class="o">=</span> <span class="n">safe_run</span><span class="p">(</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_generate_async</span><span class="p">(</span>
                     <span class="n">model_id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span><span class="p">,</span>
-                    <span class="n">conversations</span><span class="o">=</span><span class="p">[</span><span class="n">test_conversation</span><span class="p">],</span>
+                    <span class="n">inputs</span><span class="o">=</span><span class="p">[</span><span class="n">test_input</span><span class="p">],</span>
                     <span class="o">**</span><span class="n">generation_kwargs</span><span class="p">,</span>
                 <span class="p">)</span>
             <span class="p">)</span>
@@ -3838,45 +4117,13 @@
                 <span class="n">generation_kwargs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_handle_exception</span><span class="p">(</span>
                     <span class="n">error</span><span class="o">=</span><span class="n">error</span><span class="p">,</span> <span class="o">**</span><span class="n">generation_kwargs</span>
                 <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">InvalidModel</span><span class="p">(</span>
+                <span class="s2">&quot;Failed to get a successful response from the model &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span><span class="si">!r}</span><span class="s2"> after </span><span class="si">{</span><span class="n">num_attempts</span><span class="si">}</span><span class="s2"> attempts.&quot;</span>
+            <span class="p">)</span>
 
         <span class="k">return</span> <span class="n">generation_kwargs</span>
-
-
-<span class="k">def</span><span class="w"> </span><span class="nf">raise_if_wrong_params</span><span class="p">(</span><div class="mkapi-source-link" id="euroeval.benchmark_modules.litellm.raise_if_wrong_params"><a href="../../../../api/euroeval/benchmark_modules/litellm/#euroeval.benchmark_modules.litellm.raise_if_wrong_params" title="Go to docs">[docs]</a></div>
-    <span class="n">model_config</span><span class="p">:</span> <span class="n">ModelConfig</span><span class="p">,</span> <span class="n">allowed_params</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Raise an error if the model configuration has invalid parameters.</span>
-
-<span class="sd">    Args:</span>
-<span class="sd">        model_config:</span>
-<span class="sd">            The model configuration.</span>
-<span class="sd">        allowed_params:</span>
-<span class="sd">            The allowed parameters for the model.</span>
-
-<span class="sd">    Raises:</span>
-<span class="sd">        InvalidModel:</span>
-<span class="sd">            If the model configuration has invalid parameters.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">param</span> <span class="o">=</span> <span class="n">model_config</span><span class="o">.</span><span class="n">revision</span>
-    <span class="k">if</span> <span class="n">param</span> <span class="o">==</span> <span class="s2">&quot;&quot;</span><span class="p">:</span>
-        <span class="k">return</span>
-    <span class="k">for</span> <span class="n">model_regex</span><span class="p">,</span> <span class="n">allowed_params_list</span> <span class="ow">in</span> <span class="n">allowed_params</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-        <span class="k">if</span> <span class="n">re</span><span class="o">.</span><span class="n">fullmatch</span><span class="p">(</span><span class="n">pattern</span><span class="o">=</span><span class="n">model_regex</span><span class="p">,</span> <span class="n">string</span><span class="o">=</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span><span class="p">):</span>
-            <span class="k">if</span> <span class="n">param</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">allowed_params_list</span><span class="p">:</span>
-                <span class="n">msg</span> <span class="o">=</span> <span class="p">(</span>
-                    <span class="sa">f</span><span class="s2">&quot;Invalid parameter </span><span class="si">{</span><span class="n">param</span><span class="si">!r}</span><span class="s2"> for model </span><span class="si">{</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span><span class="si">!r}</span><span class="s2">.&quot;</span>
-                <span class="p">)</span>
-                <span class="k">if</span> <span class="n">allowed_params_list</span><span class="p">:</span>
-                    <span class="n">msg</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot; Allowed parameters are: </span><span class="si">{</span><span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">allowed_params_list</span><span class="p">)</span><span class="si">}</span><span class="s2">.&quot;</span>
-                <span class="k">else</span><span class="p">:</span>
-                    <span class="n">msg</span> <span class="o">+=</span> <span class="s2">&quot; No parameters are allowed.&quot;</span>
-                <span class="k">raise</span> <span class="n">InvalidModel</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
-            <span class="k">return</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="n">InvalidModel</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;The parameter </span><span class="si">{</span><span class="n">param</span><span class="si">!r}</span><span class="s2"> is not supported for the model &quot;</span>
-            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span><span class="si">!r}</span><span class="s2">.&quot;</span>
-        <span class="p">)</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">try_download_ollama_model</span><span class="p">(</span><span class="n">model_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span><div class="mkapi-source-link" id="euroeval.benchmark_modules.litellm.try_download_ollama_model"><a href="../../../../api/euroeval/benchmark_modules/litellm/#euroeval.benchmark_modules.litellm.try_download_ollama_model" title="Go to docs">[docs]</a></div>

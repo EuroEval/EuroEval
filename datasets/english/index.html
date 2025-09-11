@@ -637,6 +637,8 @@
       
         
       
+        
+      
     
     
     
@@ -881,6 +883,15 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#unofficial-xquad-en" class="md-nav__link">
+    <span class="md-ellipsis">
+      Unofficial: XQuAD-en
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#unofficial-belebele-en" class="md-nav__link">
     <span class="md-ellipsis">
       Unofficial: BeleBele-en
@@ -964,19 +975,28 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#unofficial-winogrande" class="md-nav__link">
+    <span class="md-ellipsis">
+      Unofficial: Winogrande
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#summarization" class="md-nav__link">
+  <a href="#summarisation" class="md-nav__link">
     <span class="md-ellipsis">
-      Summarization
+      Summarisation
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Summarization">
+    <nav class="md-nav" aria-label="Summarisation">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -1199,6 +1219,29 @@
   
   <span class="md-ellipsis">
     🇳🇴 Norwegian
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../polish/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    🇵🇱 Polish
     
   </span>
   
@@ -1527,6 +1570,15 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#unofficial-xquad-en" class="md-nav__link">
+    <span class="md-ellipsis">
+      Unofficial: XQuAD-en
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#unofficial-belebele-en" class="md-nav__link">
     <span class="md-ellipsis">
       Unofficial: BeleBele-en
@@ -1610,19 +1662,28 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#unofficial-winogrande" class="md-nav__link">
+    <span class="md-ellipsis">
+      Unofficial: Winogrande
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#summarization" class="md-nav__link">
+  <a href="#summarisation" class="md-nav__link">
     <span class="md-ellipsis">
-      Summarization
+      Summarisation
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Summarization">
+    <nav class="md-nav" aria-label="Summarisation">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -1894,6 +1955,64 @@ Question: {question}
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>squad
 </code></pre></div>
+<h3 id="unofficial-xquad-en">Unofficial: XQuAD-en</h3>
+<p>This dataset was published in <a href="https://aclanthology.org/2020.acl-main.421/">this paper</a>
+and contains 1190 question-answer pairs from <a href="https://rajpurkar.github.io/SQuAD-explorer/">SQuAD
+v1.1</a> translated into ten languages by
+professional translators.</p>
+<p>The dataset is split intro 550 / 128 / 512 question-answer pairs for training,
+validation, and testing, respectively.</p>
+<p>Here are a few examples from the training split:</p>
+<p><div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;context&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Newcastle replaced him in January 1756 with Lord Loudoun, with Major General James Abercrombie as his second in command. Neither of these men had as much campaign experience as the trio of officers France sent to North America. French regular army reinforcements arrived in New France in May 1756, led by Major General Louis-Joseph de Montcalm and seconded by the Chevalier de Lévis and Colonel François-Charles de Bourlamaque, all experienced veterans from the War of the Austrian Succession. During that time in Europe, on May 18, 1756, England formally declared war on France, which expanded the war into Europe, which was later to be known as the Seven Years&quot;</span><span class="w"> </span><span class="err">War.</span><span class="s2">&quot;,</span>
+<span class="s2">    &quot;</span><span class="err">ques</span><span class="kc">t</span><span class="err">io</span><span class="kc">n</span><span class="s2">&quot;: &quot;</span><span class="err">Who</span><span class="w"> </span><span class="err">led</span><span class="w"> </span><span class="err">New</span><span class="w"> </span><span class="err">Fra</span><span class="kc">n</span><span class="err">ce</span><span class="w"> </span><span class="err">rei</span><span class="kc">nf</span><span class="err">orceme</span><span class="kc">nts</span><span class="w"> </span><span class="err">i</span><span class="kc">n</span><span class="w"> </span><span class="mi">1756</span><span class="err">?</span><span class="s2">&quot;,</span>
+<span class="s2">    &quot;</span><span class="err">a</span><span class="kc">ns</span><span class="err">wers</span><span class="s2">&quot;: {</span>
+<span class="s2">        &quot;</span><span class="err">a</span><span class="kc">ns</span><span class="err">wer_s</span><span class="kc">tart</span><span class="s2">&quot;: array([305], dtype=int32),</span>
+<span class="s2">        &quot;</span><span class="kc">te</span><span class="err">x</span><span class="kc">t</span><span class="s2">&quot;: array([&quot;</span><span class="err">Major</span><span class="w"> </span><span class="err">Ge</span><span class="kc">neral</span><span class="w"> </span><span class="err">Louis</span><span class="mi">-</span><span class="err">Joseph</span><span class="w"> </span><span class="err">de</span><span class="w"> </span><span class="err">Mo</span><span class="kc">nt</span><span class="err">calm&quot;], dtype=object)</span>
+<span class="err">    }</span>
+<span class="err">}</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;context&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Jacksonville is in the First Coast region of northeast Florida and is centered on the banks of the St. Johns River, about 25 miles (40 km) south of the Georgia state line and about 340 miles (550 km) north of Miami. The Jacksonville Beaches communities are along the adjacent Atlantic coast. The area was originally inhabited by the Timucua people, and in 1564 was the site of the French colony of Fort Caroline, one of the earliest European settlements in what is now the continental United States. Under British rule, settlement grew at the narrow point in the river where cattle crossed, known as Wacca Pilatka to the Seminole and the Cow Ford to the British. A platted town was established there in 1822, a year after the United States gained Florida from Spain; it was named after Andrew Jackson, the first military governor of the Florida Territory and seventh President of the United States.&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;question&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Prior to the arrival of the French, the area now known as Jacksonville was previously inhabited by what people?&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;answers&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;answer_start&quot;</span><span class="p">:</span><span class="w"> </span><span class="err">array(</span><span class="p">[</span><span class="mi">329</span><span class="p">],</span><span class="w"> </span><span class="err">d</span><span class="kc">t</span><span class="err">ype=i</span><span class="kc">nt</span><span class="mi">32</span><span class="err">)</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="err">array(</span><span class="p">[</span><span class="s2">&quot;the Timucua&quot;</span><span class="p">],</span><span class="w"> </span><span class="err">d</span><span class="kc">t</span><span class="err">ype=objec</span><span class="kc">t</span><span class="err">)</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;context&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Luther\&quot;s hymns were frequently evoked by particular events in his life and the unfolding Reformation. This behavior started with his learning of the execution of Johann Esch and Heinrich Voes, the first individuals to be martyred by the Roman Catholic Church for Lutheran views, prompting Luther to write the hymn &quot;</span><span class="err">Ei</span><span class="kc">n</span><span class="w"> </span><span class="kc">neues</span><span class="w"> </span><span class="err">Lied</span><span class="w"> </span><span class="err">wir</span><span class="w"> </span><span class="err">hebe</span><span class="kc">n</span><span class="w"> </span><span class="err">a</span><span class="kc">n</span><span class="s2">&quot; (&quot;</span><span class="err">A</span><span class="w"> </span><span class="kc">ne</span><span class="err">w</span><span class="w"> </span><span class="err">so</span><span class="kc">n</span><span class="err">g</span><span class="w"> </span><span class="err">we</span><span class="w"> </span><span class="err">raise</span><span class="s2">&quot;), which is generally known in English by John C. Messenger\&quot;s translation by the title and first line &quot;</span><span class="err">Flu</span><span class="kc">n</span><span class="err">g</span><span class="w"> </span><span class="kc">t</span><span class="err">o</span><span class="w"> </span><span class="kc">t</span><span class="err">he</span><span class="w"> </span><span class="err">Heedless</span><span class="w"> </span><span class="err">Wi</span><span class="kc">n</span><span class="err">ds</span><span class="s2">&quot; and sung to the tune Ibstone composed in 1875 by Maria C. Tiddeman.&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;question&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;What is the hymn known as in English?&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;answers&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;answer_start&quot;</span><span class="p">:</span><span class="w"> </span><span class="err">array(</span><span class="p">[</span><span class="mi">469</span><span class="p">],</span><span class="w"> </span><span class="err">d</span><span class="kc">t</span><span class="err">ype=i</span><span class="kc">nt</span><span class="mi">32</span><span class="err">)</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="err">array(</span><span class="p">[</span><span class="s2">&quot;Flung to the Heedless Winds&quot;</span><span class="p">],</span><span class="w"> </span><span class="err">d</span><span class="kc">t</span><span class="err">ype=objec</span><span class="kc">t</span><span class="err">)</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></p>
+<p>When evaluating generative models, we use the following setup (see the
+<a href="/methodology">methodology</a> for more information on how these are used):</p>
+<ul>
+<li>Number of few-shot examples: 4</li>
+<li>Prefix prompt:
+  <div class="highlight"><pre><span></span><code>The following are texts with accompanying questions and answers.
+</code></pre></div></li>
+<li>Base prompt template:
+  <div class="highlight"><pre><span></span><code>Text: {text}
+Question: {question}
+Answer in max 3 words:
+</code></pre></div></li>
+<li>Instruction-tuned prompt template:
+  <div class="highlight"><pre><span></span><code>Text: {text}
+
+Answer the following question about the above text in at most 3 words.
+
+Question: {question}
+</code></pre></div></li>
+</ul>
+<p>You can evaluate this dataset directly as follows:</p>
+<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>xquad-en
+</code></pre></div>
 <h3 id="unofficial-belebele-en">Unofficial: BeleBele-en</h3>
 <p>This dataset was published in <a href="https://aclanthology.org/2024.acl-long.44/">this paper</a>
 and features reading comprehension questions across 122 languages. The dataset was
@@ -1941,8 +2060,9 @@ Question: {question}
 <div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>belebele-en
 </code></pre></div>
 <h3 id="unofficial-multiwikiqa-en">Unofficial: MultiWikiQA-en</h3>
-<p>This dataset will be published in an upcoming paper, and contains English Wikipedia
-articles with generated questions and answers, using the LLM Gemini-1.5-pro.</p>
+<p>This dataset was published in <a href="https://doi.org/10.48550/arXiv.2509.04111">this paper</a>
+and contains Wikipedia articles with LLM-generated questions and answers in 300+
+languages.</p>
 <p>The original full dataset consists of 5,000 samples in a single split. We use a 1,024 /
 256 / 2,048 split for training, validation and testing, respectively, sampled randomly.</p>
 <p>Here are a few examples from the training split:</p>
@@ -2215,7 +2335,53 @@ Answer the above question by replying with &#39;a&#39;, &#39;b&#39;, &#39;c&#39;
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>hellaswag
 </code></pre></div>
-<h2 id="summarization">Summarization</h2>
+<h3 id="unofficial-winogrande">Unofficial: Winogrande</h3>
+<p>This dataset was published in <a href="https://doi.org/10.1145/3474381">this paper</a>. The
+original full dataset consists of 47 / 1,210 samples for training and testing, and we
+use the same splits.</p>
+<p>Here are a few examples from the training split:</p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Elena would grab their inventory in the back of the store for Megan to sell each time because _ was a businessperson. What does the blank _ refer to?\nChoices:\na. Elena\nb. Megan&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;a&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Once in Poland, Dennis enjoyed the trip more than Jason because _ had a deeper understanding of the Polish language. What does the blank _ refer to?\nChoices:\na. Dennis\nb. Jason&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;a&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Handling emergencies was never very difficult for Kevin but it was for Nelson because _ wasn&#39;t able to remain calm under pressure. What does the blank _ refer to?\nChoices:\na. Kevin\nb. Nelson&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;b&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>When evaluating generative models, we use the following setup (see the
+<a href="/methodology">methodology</a> for more information on how these are used):</p>
+<ul>
+<li>Number of few-shot examples: 5</li>
+<li>Prefix prompt:
+  <div class="highlight"><pre><span></span><code>The following are multiple choice questions (with answers).
+</code></pre></div></li>
+<li>Base prompt template:
+  <div class="highlight"><pre><span></span><code>Question: {text}
+Options:
+a. {option_a}
+b. {option_b}
+Answer: {label}
+</code></pre></div></li>
+<li>Instruction-tuned prompt template:
+  <div class="highlight"><pre><span></span><code>Question: {text}
+Options:
+a. {option_a}
+b. {option_b}
+
+Answer the above question by replying with &#39;a&#39; or &#39;b&#39;, and nothing else.
+</code></pre></div></li>
+</ul>
+<p>You can evaluate this dataset directly as follows:</p>
+<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>winogrande
+</code></pre></div>
+<h2 id="summarisation">Summarisation</h2>
 <h3 id="cnndailymail">CNN/DailyMail</h3>
 <p>This dataset was published in <a href="https://doi.org/10.48550/arXiv.1506.03340">this paper</a>
 and is based on news articles from CNN and DailyMail, with the summaries derived from

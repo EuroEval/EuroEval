@@ -637,6 +637,8 @@
       
         
       
+        
+      
     
     
     
@@ -993,6 +995,8 @@
       
         
           
+        
+      
         
       
         
@@ -1768,12 +1772,12 @@
   
   
     <li class="md-nav__item">
-      <a href="../tokenization_utils/" class="md-nav__link">
+      <a href="../tokenisation_utils/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
-    euroeval.tokenization_utils
+    euroeval.tokenisation_utils
     
   </span>
   
@@ -1950,7 +1954,7 @@ Helper function to compute the mean with confidence intervals.</p>
 <i class="fa-regular fa-square-minus"></i>
 </span>
 </span>
-<span class="mkapi-object-name"><a href="./#euroeval.scores.log_scores" title="euroeval.scores.log_scores">log_scores</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">dataset_name</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str</span><span class="mkapi-comma">, </span><span class="mkapi-arg">metrics</span><span class="mkapi-colon">: </span><span class="mkapi-ann">list['Metric']</span><span class="mkapi-comma">, </span><span class="mkapi-arg">scores</span><span class="mkapi-colon">: </span><span class="mkapi-ann">list[dict[str, float]]</span><span class="mkapi-comma">, </span><span class="mkapi-arg">model_id</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str</span><span class="mkapi-comma">, </span><span class="mkapi-arg">model_revision</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str</span><span class="mkapi-paren">)</span><span class="mkapi-arrow"> → </span><span class="mkapi-return"><span class="mkapi-tooltip" title="euroeval.types.ScoreDict">ScoreDict</span></span></span>
+<span class="mkapi-object-name"><a href="./#euroeval.scores.log_scores" title="euroeval.scores.log_scores">log_scores</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">dataset_name</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str</span><span class="mkapi-comma">, </span><span class="mkapi-arg">metrics</span><span class="mkapi-colon">: </span><span class="mkapi-ann">list['Metric']</span><span class="mkapi-comma">, </span><span class="mkapi-arg">scores</span><span class="mkapi-colon">: </span><span class="mkapi-ann">list[dict[str, float]]</span><span class="mkapi-comma">, </span><span class="mkapi-arg">model_id</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str</span><span class="mkapi-comma">, </span><span class="mkapi-arg">model_revision</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str</span><span class="mkapi-comma">, </span><span class="mkapi-arg">model_param</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str | None</span><span class="mkapi-paren">)</span><span class="mkapi-arrow"> → </span><span class="mkapi-return"><span class="mkapi-tooltip" title="euroeval.types.ScoreDict">ScoreDict</span></span></span>
 </p>
 <div class="mkapi-document">
 <p>Log the scores.</p>
@@ -1989,6 +1993,11 @@ The model ID of the model that was evaluated.</p>
 <p><span class="mkapi-item-name">model_revision</span> : 
 <span class="mkapi-item-type">str</span> <span class="mkapi-dash">&mdash;</span>
 The revision of the model.</p>
+</li>
+<li>
+<p><span class="mkapi-item-name">model_param</span> : 
+<span class="mkapi-item-type">str | None</span> <span class="mkapi-dash">&mdash;</span>
+The model parameter, if any.</p>
 </li>
 </ul>
 </div>

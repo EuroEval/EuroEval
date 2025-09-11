@@ -629,6 +629,8 @@
       
         
       
+        
+      
     
     
     
@@ -2257,7 +2259,12 @@
 <span class="normal">1222</span>
 <span class="normal">1223</span>
 <span class="normal">1224</span>
-<span class="normal">1225</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Encoder models from the Hugging Face Hub.&quot;&quot;&quot;</span>
+<span class="normal">1225</span>
+<span class="normal">1226</span>
+<span class="normal">1227</span>
+<span class="normal">1228</span>
+<span class="normal">1229</span>
+<span class="normal">1230</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Encoder models from the Hugging Face Hub.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">c</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
@@ -2273,6 +2280,7 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">huggingface_hub</span><span class="w"> </span><span class="kn">import</span> <span class="n">whoami</span> <span class="k">as</span> <span class="n">hf_whoami</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">huggingface_hub.errors</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">GatedRepoError</span><span class="p">,</span>
+    <span class="n">HfHubHTTPError</span><span class="p">,</span>
     <span class="n">HFValidationError</span><span class="p">,</span>
     <span class="n">LocalTokenNotFoundError</span><span class="p">,</span>
     <span class="n">RepositoryNotFoundError</span><span class="p">,</span>
@@ -2315,13 +2323,14 @@
     <span class="n">NeedsEnvironmentVariable</span><span class="p">,</span>
     <span class="n">NeedsExtraInstalled</span><span class="p">,</span>
 <span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..generation_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">raise_if_wrong_params</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..languages</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_all_languages</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..task_group_utils</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">multiple_choice_classification</span><span class="p">,</span>
     <span class="n">question_answering</span><span class="p">,</span>
     <span class="n">token_classification</span><span class="p">,</span>
 <span class="p">)</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">..tokenization_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_bos_token</span><span class="p">,</span> <span class="n">get_eos_token</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..tokenisation_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_bos_token</span><span class="p">,</span> <span class="n">get_eos_token</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..utils</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">block_terminal_output</span><span class="p">,</span>
     <span class="n">create_model_cache_dir</span><span class="p">,</span>
@@ -2329,6 +2338,7 @@
     <span class="n">get_hf_token</span><span class="p">,</span>
     <span class="n">internet_connection_available</span><span class="p">,</span>
     <span class="n">log_once</span><span class="p">,</span>
+    <span class="n">split_model_id</span><span class="p">,</span>
 <span class="p">)</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">BenchmarkModule</span>
 
@@ -2369,6 +2379,10 @@
 <span class="sd">            log_metadata:</span>
 <span class="sd">                Whether to log the model metadata.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">raise_if_wrong_params</span><span class="p">(</span>
+            <span class="n">model_config</span><span class="o">=</span><span class="n">model_config</span><span class="p">,</span> <span class="n">allowed_params</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">allowed_params</span>
+        <span class="p">)</span>
+
         <span class="n">model</span><span class="p">,</span> <span class="n">tokeniser</span> <span class="o">=</span> <span class="n">load_model_and_tokeniser</span><span class="p">(</span>
             <span class="n">model_config</span><span class="o">=</span><span class="n">model_config</span><span class="p">,</span>
             <span class="n">dataset_config</span><span class="o">=</span><span class="n">dataset_config</span><span class="p">,</span>
@@ -2504,15 +2518,6 @@
         <span class="c1"># that are less than 128</span>
         <span class="n">all_max_lengths</span> <span class="o">=</span> <span class="p">[</span>
             <span class="n">max_length</span> <span class="k">for</span> <span class="n">max_length</span> <span class="ow">in</span> <span class="n">all_max_lengths</span> <span class="k">if</span> <span class="n">max_length</span> <span class="o">&gt;=</span> <span class="mi">128</span>
-        <span class="p">]</span>
-
-        <span class="c1"># We remove the upper cap of maximum context length for the model, as it is</span>
-        <span class="c1"># highly unlikely that this is the model&#39;s actual maximum context length - we</span>
-        <span class="c1"># would rather not report a value than report an incorrect one.</span>
-        <span class="n">all_max_lengths</span> <span class="o">=</span> <span class="p">[</span>
-            <span class="n">max_length</span>
-            <span class="k">for</span> <span class="n">max_length</span> <span class="ow">in</span> <span class="n">all_max_lengths</span>
-            <span class="k">if</span> <span class="n">max_length</span> <span class="o">!=</span> <span class="n">MAX_CONTEXT_LENGTH</span>
         <span class="p">]</span>
 
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">all_max_lengths</span><span class="p">))</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
@@ -2742,11 +2747,11 @@
 <span class="sd">            Whether the model exists, or an error describing why we cannot check</span>
 <span class="sd">            whether the model exists.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">model_id</span><span class="p">,</span> <span class="n">revision</span> <span class="o">=</span> <span class="p">(</span>
-            <span class="n">model_id</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;@&quot;</span><span class="p">)</span> <span class="k">if</span> <span class="s2">&quot;@&quot;</span> <span class="ow">in</span> <span class="n">model_id</span> <span class="k">else</span> <span class="p">(</span><span class="n">model_id</span><span class="p">,</span> <span class="s2">&quot;main&quot;</span><span class="p">)</span>
-        <span class="p">)</span>
+        <span class="n">model_id_components</span> <span class="o">=</span> <span class="n">split_model_id</span><span class="p">(</span><span class="n">model_id</span><span class="o">=</span><span class="n">model_id</span><span class="p">)</span>
         <span class="n">model_info</span> <span class="o">=</span> <span class="n">get_model_repo_info</span><span class="p">(</span>
-            <span class="n">model_id</span><span class="o">=</span><span class="n">model_id</span><span class="p">,</span> <span class="n">revision</span><span class="o">=</span><span class="n">revision</span><span class="p">,</span> <span class="n">benchmark_config</span><span class="o">=</span><span class="n">benchmark_config</span>
+            <span class="n">model_id</span><span class="o">=</span><span class="n">model_id_components</span><span class="o">.</span><span class="n">model_id</span><span class="p">,</span>
+            <span class="n">revision</span><span class="o">=</span><span class="n">model_id_components</span><span class="o">.</span><span class="n">revision</span><span class="p">,</span>
+            <span class="n">benchmark_config</span><span class="o">=</span><span class="n">benchmark_config</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="k">return</span> <span class="p">(</span>
             <span class="n">model_info</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
@@ -2768,11 +2773,11 @@
 <span class="sd">        Returns:</span>
 <span class="sd">            The model configuration.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">model_id</span><span class="p">,</span> <span class="n">revision</span> <span class="o">=</span> <span class="p">(</span>
-            <span class="n">model_id</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;@&quot;</span><span class="p">)</span> <span class="k">if</span> <span class="s2">&quot;@&quot;</span> <span class="ow">in</span> <span class="n">model_id</span> <span class="k">else</span> <span class="p">(</span><span class="n">model_id</span><span class="p">,</span> <span class="s2">&quot;main&quot;</span><span class="p">)</span>
-        <span class="p">)</span>
+        <span class="n">model_id_components</span> <span class="o">=</span> <span class="n">split_model_id</span><span class="p">(</span><span class="n">model_id</span><span class="o">=</span><span class="n">model_id</span><span class="p">)</span>
         <span class="n">model_info</span> <span class="o">=</span> <span class="n">get_model_repo_info</span><span class="p">(</span>
-            <span class="n">model_id</span><span class="o">=</span><span class="n">model_id</span><span class="p">,</span> <span class="n">revision</span><span class="o">=</span><span class="n">revision</span><span class="p">,</span> <span class="n">benchmark_config</span><span class="o">=</span><span class="n">benchmark_config</span>
+            <span class="n">model_id</span><span class="o">=</span><span class="n">model_id_components</span><span class="o">.</span><span class="n">model_id</span><span class="p">,</span>
+            <span class="n">revision</span><span class="o">=</span><span class="n">model_id_components</span><span class="o">.</span><span class="n">revision</span><span class="p">,</span>
+            <span class="n">benchmark_config</span><span class="o">=</span><span class="n">benchmark_config</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="k">if</span> <span class="n">model_info</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">raise</span> <span class="n">InvalidModel</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;The model </span><span class="si">{</span><span class="n">model_id</span><span class="si">!r}</span><span class="s2"> could not be found.&quot;</span><span class="p">)</span>
@@ -2781,8 +2786,9 @@
         <span class="n">language_codes</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">language_mapping</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
 
         <span class="n">model_config</span> <span class="o">=</span> <span class="n">ModelConfig</span><span class="p">(</span>
-            <span class="n">model_id</span><span class="o">=</span><span class="n">model_id</span><span class="p">,</span>
-            <span class="n">revision</span><span class="o">=</span><span class="n">revision</span><span class="p">,</span>
+            <span class="n">model_id</span><span class="o">=</span><span class="n">model_id_components</span><span class="o">.</span><span class="n">model_id</span><span class="p">,</span>
+            <span class="n">revision</span><span class="o">=</span><span class="n">model_id_components</span><span class="o">.</span><span class="n">revision</span><span class="p">,</span>
+            <span class="n">param</span><span class="o">=</span><span class="n">model_id_components</span><span class="o">.</span><span class="n">param</span><span class="p">,</span>
             <span class="n">task</span><span class="o">=</span><span class="n">model_info</span><span class="o">.</span><span class="n">pipeline_tag</span><span class="p">,</span>
             <span class="n">languages</span><span class="o">=</span><span class="p">[</span>
                 <span class="n">language_mapping</span><span class="p">[</span><span class="n">tag</span><span class="p">]</span>
@@ -2969,7 +2975,6 @@
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">token</span> <span class="o">=</span> <span class="n">get_hf_token</span><span class="p">(</span><span class="n">api_key</span><span class="o">=</span><span class="n">benchmark_config</span><span class="o">.</span><span class="n">api_key</span><span class="p">)</span>
     <span class="n">hf_api</span> <span class="o">=</span> <span class="n">HfApi</span><span class="p">(</span><span class="n">token</span><span class="o">=</span><span class="n">token</span><span class="p">)</span>
-    <span class="n">model_id</span><span class="p">,</span> <span class="n">revision</span> <span class="o">=</span> <span class="n">model_id</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;@&quot;</span><span class="p">)</span> <span class="k">if</span> <span class="s2">&quot;@&quot;</span> <span class="ow">in</span> <span class="n">model_id</span> <span class="k">else</span> <span class="p">(</span><span class="n">model_id</span><span class="p">,</span> <span class="s2">&quot;main&quot;</span><span class="p">)</span>
 
     <span class="c1"># Get information on the model.</span>
     <span class="c1"># The first case is when the model is a local model, in which case we create a dummy</span>
@@ -3012,6 +3017,13 @@
                     <span class="k">return</span> <span class="kc">None</span>
             <span class="k">except</span> <span class="p">(</span><span class="n">RepositoryNotFoundError</span><span class="p">,</span> <span class="n">HFValidationError</span><span class="p">):</span>
                 <span class="k">return</span> <span class="kc">None</span>
+            <span class="k">except</span> <span class="n">HfHubHTTPError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="k">if</span> <span class="s2">&quot;unauthorized&quot;</span> <span class="ow">in</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">():</span>
+                    <span class="k">raise</span> <span class="n">InvalidModel</span><span class="p">(</span>
+                        <span class="s2">&quot;It seems like your specified Hugging Face API key is invalid. &quot;</span>
+                        <span class="s2">&quot;Please double-check your API key.&quot;</span>
+                    <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
+                <span class="k">raise</span> <span class="n">InvalidModel</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">))</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
             <span class="k">except</span> <span class="p">(</span><span class="ne">OSError</span><span class="p">,</span> <span class="n">RequestException</span><span class="p">)</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
                 <span class="k">if</span> <span class="n">internet_connection_available</span><span class="p">():</span>
                     <span class="n">errors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>

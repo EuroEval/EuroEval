@@ -637,6 +637,8 @@
       
         
       
+        
+      
     
     
     
@@ -1144,13 +1146,13 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#summarization" class="md-nav__link">
+  <a href="#summarisation" class="md-nav__link">
     <span class="md-ellipsis">
-      Summarization
+      Summarisation
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Summarization">
+    <nav class="md-nav" aria-label="Summarisation">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -1235,6 +1237,29 @@
   
   <span class="md-ellipsis">
     🇳🇴 Norwegian
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../polish/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    🇵🇱 Polish
     
   </span>
   
@@ -1688,13 +1713,13 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#summarization" class="md-nav__link">
+  <a href="#summarisation" class="md-nav__link">
     <span class="md-ellipsis">
-      Summarization
+      Summarisation
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Summarization">
+    <nav class="md-nav" aria-label="Summarisation">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -2171,8 +2196,9 @@ Svaraðu eftirfarandi spurningum með &#39;a&#39;, &#39;b&#39;, &#39;c&#39; eða
 <div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>belebele-is
 </code></pre></div>
 <h3 id="unofficial-multiwikiqa-is">Unofficial: MultiWikiQA-is</h3>
-<p>This dataset will be published in an upcoming paper, and contains Icelandic Wikipedia
-articles with generated questions and answers, using the LLM Gemini-1.5-pro.</p>
+<p>This dataset was published in <a href="https://doi.org/10.48550/arXiv.2509.04111">this paper</a>
+and contains Wikipedia articles with LLM-generated questions and answers in 300+
+languages.</p>
 <p>The original full dataset consists of 5,000 samples in a single split. We use a 1,024 /
 256 / 2,048 split for training, validation and testing, respectively, sampled randomly.</p>
 <p>Here are a few examples from the training split:</p>
@@ -2410,7 +2436,7 @@ Svaraðu eftirfarandi spurningum með &#39;a&#39;, &#39;b&#39;, &#39;c&#39; eða
 <h2 id="common-sense-reasoning">Common-sense Reasoning</h2>
 <h3 id="winogrande-is">Winogrande-is</h3>
 <p>This dataset was published in <a href="https://aclanthology.org/2022.lrec-1.464/">this paper</a>
-and is a manually translated and adapted version of the English <a href="https://arxiv.org/abs/1907.10641">WinoGrande
+and is a manually translated and adapted version of the English <a href="https://doi.org/10.1145/3474381">WinoGrande
 dataset</a>. The samples are sentences containing two
 nouns and an ambiguous pronoun, and the task is to determine which of the two nouns the
 pronoun refers to.</p>
@@ -2516,7 +2542,7 @@ Svaraðu eftirfarandi spurningum með &#39;a&#39;, &#39;b&#39;, &#39;c&#39; eða
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>hellaswag-is
 </code></pre></div>
-<h2 id="summarization">Summarization</h2>
+<h2 id="summarisation">Summarisation</h2>
 <h3 id="rrn">RRN</h3>
 <p>This dataset was published in <a href="https://aclanthology.org/2023.nodalida-1.3/">this paper</a>
 and consists of news articles and their summaries from RÚV, the Icelandic National

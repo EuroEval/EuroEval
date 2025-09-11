@@ -637,6 +637,8 @@
       
         
       
+        
+      
     
     
     
@@ -1306,6 +1308,8 @@
       
         
           
+        
+      
         
       
         
@@ -2021,12 +2025,12 @@
   
   
     <li class="md-nav__item">
-      <a href="../../tokenization_utils/" class="md-nav__link">
+      <a href="../../tokenisation_utils/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
-    euroeval.tokenization_utils
+    euroeval.tokenisation_utils
     
   </span>
   
@@ -3117,7 +3121,7 @@ The end of reasoning token, or None if it could not be found.</p>
 <i class="fa-regular fa-square-minus"></i>
 </span>
 </span>
-<span class="mkapi-object-name"><a href="./#euroeval.benchmark_modules.vllm.get_custom_stop_tokens" title="euroeval.benchmark_modules.vllm.get_custom_stop_tokens">get_custom_stop_tokens</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">model</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="vllm.LLM">LLM</span></span><span class="mkapi-comma">, </span><span class="mkapi-arg">tokeniser</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="transformers.tokenization_utils.PreTrainedTokenizer">PreTrainedTokenizer</span></span><span class="mkapi-comma">, </span><span class="mkapi-arg">model_id</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str</span><span class="mkapi-comma">, </span><span class="mkapi-arg">is_reasoning_model</span><span class="mkapi-colon">: </span><span class="mkapi-ann">bool</span><span class="mkapi-paren">)</span><span class="mkapi-arrow"> → </span><span class="mkapi-return">list[str]</span></span>
+<span class="mkapi-object-name"><a href="./#euroeval.benchmark_modules.vllm.get_custom_stop_tokens" title="euroeval.benchmark_modules.vllm.get_custom_stop_tokens">get_custom_stop_tokens</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">model</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="vllm.LLM">LLM</span></span><span class="mkapi-comma">, </span><span class="mkapi-arg">tokeniser</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="transformers.tokenization_utils.PreTrainedTokenizer">PreTrainedTokenizer</span></span><span class="mkapi-comma">, </span><span class="mkapi-arg">model_id</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str</span><span class="mkapi-comma">, </span><span class="mkapi-arg">generative_type</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><a href="../../enums/#euroeval.enums.GenerativeType" title="euroeval.enums.GenerativeType">GenerativeType</a> | None</span><span class="mkapi-paren">)</span><span class="mkapi-arrow"> → </span><span class="mkapi-return">list[str]</span></span>
 </p>
 <div class="mkapi-document">
 <p>Get the stop tokens for a generative model.</p>
@@ -3147,10 +3151,9 @@ The tokeniser.</p>
 The model ID.</p>
 </li>
 <li>
-<p><span class="mkapi-item-name">is_reasoning_model</span> : 
-<span class="mkapi-item-type">bool</span> <span class="mkapi-dash">&mdash;</span>
-Whether the model is a reasoning model. This is used to determine the number
-of generated tokens to allow before stopping the generation.</p>
+<p><span class="mkapi-item-name">generative_type</span> : 
+<span class="mkapi-item-type"><a href="../../enums/#euroeval.enums.GenerativeType" title="euroeval.enums.GenerativeType">GenerativeType</a> | None</span> <span class="mkapi-dash">&mdash;</span>
+The generative type of the model.</p>
 </li>
 </ul>
 </div>
