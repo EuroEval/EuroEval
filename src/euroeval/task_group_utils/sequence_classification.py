@@ -199,7 +199,6 @@ def extract_labels_from_generation(
         # word edit distance to the predicted label (if invalid model outputs are
         # allowed), or we raise an error
         if min(edit_distances) > 100:
-            breakpoint()
             if dataset_config.allow_invalid_model_outputs:
                 logger.warning(
                     "No candidate labels found for the predicted label "
