@@ -20,7 +20,7 @@ from datasets import Dataset, DatasetDict, Split
 from huggingface_hub import HfApi
 from tqdm.auto import tqdm
 
-NUM_SAMPLES = 10
+NUM_SAMPLES = 512
 COMPLETE_CONTRACT_PROBABILITY = 0.3
 MAX_REQUIRED_ELEMENTS_TO_REMOVE = 3
 NICE_TO_HAVE_ELEMENT_REMOVAL_PROBABILITY = 0.3
