@@ -739,6 +739,7 @@ def get_model_repo_info(
                         "It seems like your specified Hugging Face API key is invalid. "
                         "Please double-check your API key."
                     ) from e
+                breakpoint()
                 raise InvalidModel(str(e)) from e
             except (GatedRepoError, LocalTokenNotFoundError) as e:
                 try:
