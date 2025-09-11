@@ -49,6 +49,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   reaching the full 32,768 tokens were because they ended up repeating themselves,
   making the evaluation slower without any benefit.
 
+### Fixed
+- Some generative models consistently generated empty dictionaries when using structured
+  generation. We now catch this and retry the evaluation without structured generation.
+
 
 ## [v16.0.1] - 2025-09-07
 ### Fixed

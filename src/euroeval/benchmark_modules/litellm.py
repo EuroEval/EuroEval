@@ -453,7 +453,8 @@ class LiteLLMModel(BenchmarkModule):
         requires_thinking_disabled_messages = ["thinking.type: Field required"]
         seed_pattern = re.compile(r"does not support parameters: \[.*'seed'.*\]")
         response_format_messages = [
-            "got an unexpected keyword argument 'response_format'"
+            "got an unexpected keyword argument 'response_format'",
+            "The model outputs empty dictionaries.",
         ]
 
         if any(msg.lower() in error_msg for msg in stop_messages):
@@ -711,7 +712,17 @@ class LiteLLMModel(BenchmarkModule):
                 if isinstance(input_, list)
             ]
         responses = await tqdm_async.gather(*requests, leave=False)
-        breakpoint()
+
+        # If we are performing structured generation and the model just outputs an empty
+        # dictionary, then we convert those to exceptions, to disable structured
+        # generation
+        if "response_format" in generation_kwargs:
+            responses = [
+                RuntimeError("The model outputs empty dictionaries.")
+                if any(choice.message.content == "{}" for choice in response.choices)
+                else response
+                for response in responses
+            ]
 
         # Separate the successful responses from the failed ones
         successes = [
@@ -1441,7 +1452,6 @@ class LiteLLMModel(BenchmarkModule):
                 LITELLM_CLASSIFICATION_OUTPUT_KEY: (t.Literal[*localised_labels], ...)
             }
             pydantic_class = create_model("AnswerFormat", **keys_and_their_types)
-            breakpoint()
             generation_kwargs["response_format"] = pydantic_class
 
         # If the model is an Ollama reasoning model, we ensure that thinking is enabled
