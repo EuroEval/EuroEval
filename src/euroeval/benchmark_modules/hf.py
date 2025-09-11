@@ -733,14 +733,6 @@ def get_model_repo_info(
                     repo_id=model_id, revision=revision, token=token
                 )
                 break
-            except HfHubHTTPError as e:
-                if "unauthorized" in str(e).lower():
-                    raise InvalidModel(
-                        "It seems like your specified Hugging Face API key is invalid. "
-                        "Please double-check your API key."
-                    ) from e
-                breakpoint()
-                raise InvalidModel(str(e)) from e
             except (GatedRepoError, LocalTokenNotFoundError) as e:
                 try:
                     hf_whoami(token=token)
@@ -759,6 +751,13 @@ def get_model_repo_info(
                     return None
             except (RepositoryNotFoundError, HFValidationError):
                 return None
+            except HfHubHTTPError as e:
+                if "unauthorized" in str(e).lower():
+                    raise InvalidModel(
+                        "It seems like your specified Hugging Face API key is invalid. "
+                        "Please double-check your API key."
+                    ) from e
+                raise InvalidModel(str(e)) from e
             except (OSError, RequestException) as e:
                 if internet_connection_available():
                     errors.append(e)
