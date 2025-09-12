@@ -196,6 +196,7 @@ class VLLMModel(HuggingFaceEncoderModel):
         Returns:
             The generative type of the model, or None if it has not been set yet.
         """
+        breakpoint()
         if not hasattr(self, "_tokeniser"):
             log_once(
                 "The generative type of the model has not been set yet as the "
