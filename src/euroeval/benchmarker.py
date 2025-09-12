@@ -231,7 +231,14 @@ class Benchmarker:
                         result_dict = json.loads(line.strip())
 
                         # Fix for older records
-                        if "test" in result_dict["results"]["raw"]:
+                        has_old_raw_results = (
+                            "results" in result_dict
+                            and isinstance(result_dict["results"], dict)
+                            and "raw" in result_dict["results"]
+                            and isinstance(result_dict["results"]["raw"], dict)
+                            and "test" in result_dict["results"]["raw"]
+                        )
+                        if has_old_raw_results:
                             result_dict["results"]["raw"] = result_dict["results"][
                                 "raw"
                             ]["test"]
