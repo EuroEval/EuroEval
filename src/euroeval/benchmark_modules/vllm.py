@@ -196,7 +196,6 @@ class VLLMModel(HuggingFaceEncoderModel):
         Returns:
             The generative type of the model, or None if it has not been set yet.
         """
-        breakpoint()
         if not hasattr(self, "_tokeniser"):
             log_once(
                 "The generative type of the model has not been set yet as the "
@@ -558,6 +557,7 @@ class VLLMModel(HuggingFaceEncoderModel):
                 torch.LongTensor(completion_id) for completion_id in completion_ids
             ]
         )
+        breakpoint()
         if self.end_of_reasoning_token is not None:
             completions = [
                 completion.split(self.end_of_reasoning_token)[-1]
