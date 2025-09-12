@@ -72,7 +72,9 @@ from ..utils import (
     create_model_cache_dir,
     get_hf_token,
     get_min_cuda_compute_capability,
+    internet_connection_available,
     log_once,
+    resolve_model_path,
     split_model_id,
 )
 from .hf import HuggingFaceEncoderModel, get_model_repo_info, load_hf_model_config
@@ -834,10 +836,15 @@ def load_model_and_tokeniser(
 
     clear_vllm()
 
+    # if we do not have an internet connection we need to give the path to the folder
+    # that contains the model weights and config files, otherwise vLLM will try to
+    # download them regardless if they are already present in the download_dir
+    model_path = resolve_model_path(download_dir)
+
     try:
         model = LLM(
-            model=model_id,
-            tokenizer=model_id,
+            model=model_id if internet_connection_available() else model_path,
+            tokenizer=model_id if internet_connection_available() else model_path,
             gpu_memory_utilization=benchmark_config.gpu_memory_utilization,
             max_model_len=min(true_max_model_len, MAX_CONTEXT_LENGTH),
             download_dir=download_dir,
@@ -925,6 +932,7 @@ def load_tokeniser(
         cache_dir=model_cache_dir,
         token=token,
         trust_remote_code=trust_remote_code,
+        local_files_only=not internet_connection_available(),
     )
     num_retries = 5
     for _ in range(num_retries):
@@ -937,8 +945,10 @@ def load_tokeniser(
                 padding_side="left",
                 truncation_side="left",
                 model_max_length=model_max_length,
+                cache_dir=model_cache_dir,
                 config=config,
                 token=token,
+                local_files_only=not internet_connection_available(),
             )
             break
         except (json.JSONDecodeError, OSError, TypeError) as e:

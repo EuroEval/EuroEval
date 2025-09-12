@@ -146,21 +146,25 @@ class HuggingFaceEncoderModel(BenchmarkModule):
         Returns:
             The number of parameters in the model.
         """
-        token = get_hf_token(api_key=self.benchmark_config.api_key)
-        hf_api = HfApi(token=token)
-        try:
-            repo_info = hf_api.model_info(
-                repo_id=self.model_config.adapter_base_model_id
-                or self.model_config.model_id,
-                revision=self.model_config.revision,
-            )
-        except (
-            RepositoryNotFoundError,
-            RevisionNotFoundError,
-            RequestException,
-            HFValidationError,
-        ):
+        # No need to try to use the API if we have no internet.
+        if not internet_connection_available():
             repo_info = None
+        else:
+            token = get_hf_token(api_key=self.benchmark_config.api_key)
+            hf_api = HfApi(token=token)
+            try:
+                repo_info = hf_api.model_info(
+                    repo_id=self.model_config.adapter_base_model_id
+                    or self.model_config.model_id,
+                    revision=self.model_config.revision,
+                )
+            except (
+                RepositoryNotFoundError,
+                RevisionNotFoundError,
+                RequestException,
+                HFValidationError,
+            ):
+                repo_info = None
 
         if (
             repo_info is not None
@@ -558,7 +562,7 @@ def load_model_and_tokeniser(
             The benchmark configuration
 
     Returns:
-        The loaded model and tokeniser.
+        A pair (model, tokeniser), with the loaded model and tokeniser
     """
     config: "PretrainedConfig"
     block_terminal_output()
@@ -686,6 +690,7 @@ def load_model_and_tokeniser(
         model=model,
         model_id=model_id,
         trust_remote_code=benchmark_config.trust_remote_code,
+        model_cache_dir=model_config.model_cache_dir,
     )
 
     return model, tokeniser
@@ -721,6 +726,11 @@ def get_model_repo_info(
             for required_file in LOCAL_MODELS_REQUIRED_FILES
         ):
             model_info = HfApiModelInfo(id=model_id, tags=None, pipeline_tag=None)
+
+    # If we have not internet, and the model_id is not a directory for a local model
+    # we also just create a dummy model info object.
+    elif not internet_connection_available():
+        model_info = HfApiModelInfo(id=model_id, tags=None, pipeline_tag=None)
 
     # If the model does not exist locally, then we get the model info from the Hugging
     # Face Hub, if possible
@@ -867,7 +877,10 @@ def get_model_repo_info(
 
 
 def load_tokeniser(
-    model: "PreTrainedModel | None", model_id: str, trust_remote_code: bool
+    model: "PreTrainedModel | None",
+    model_id: str,
+    trust_remote_code: bool,
+    model_cache_dir: str,
 ) -> "PreTrainedTokenizer":
     """Load the tokeniser.
 
@@ -889,6 +902,7 @@ def load_tokeniser(
         trust_remote_code=trust_remote_code,
         padding_side="right",
         truncation_side="right",
+        cache_dir=model_cache_dir,
     )
 
     # If the model is a subclass of a certain model types then we have to add a prefix
@@ -999,6 +1013,7 @@ def load_hf_model_config(
                 token=get_hf_token(api_key=api_key),
                 trust_remote_code=trust_remote_code,
                 cache_dir=model_cache_dir,
+                local_files_only=not internet_connection_available(),
             )
             if config.eos_token_id is not None and config.pad_token_id is None:
                 if isinstance(config.eos_token_id, list):

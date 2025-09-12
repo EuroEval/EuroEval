@@ -3,9 +3,11 @@
 import collections.abc as c
 import logging
 import typing as t
+from pathlib import Path
 
 import evaluate
 import numpy as np
+from datasets import DownloadConfig
 
 from ..utils import HiddenPrints
 from .base import Metric
@@ -76,6 +78,23 @@ class HuggingFaceMetric(Metric):
         )
         self.metric: "EvaluationModule | None" = None
 
+    def download(self, cache_dir: str) -> "HuggingFaceMetric":
+        """Initiates the download of the metric if needed.
+
+        Args:
+            cache_dir:
+                The directory where the metric will be downloaded to.
+
+        Returns:
+            The metric object itself.
+        """
+        # Annoying but needed to make the metric download to a different cache dir
+        download_config = DownloadConfig(cache_dir=Path(cache_dir, "evaluate"))
+        self.metric = evaluate.load(
+            path=self.huggingface_id, download_config=download_config
+        )
+        return self
+
     def __call__(
         self,
         predictions: c.Sequence,
@@ -103,7 +122,9 @@ class HuggingFaceMetric(Metric):
             The calculated metric score, or None if the score should be ignored.
         """
         if self.metric is None:
-            self.metric = evaluate.load(path=self.huggingface_id)
+            self.download(cache_dir=benchmark_config.cache_dir)
+
+        assert self.metric is not None
 
         with HiddenPrints():
             results = self.metric.compute(

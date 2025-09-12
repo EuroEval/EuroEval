@@ -228,6 +228,9 @@ class BenchmarkConfig:
         generative_type:
             The type of generative model to benchmark. Only relevant if the model is
             generative.
+        download_only:
+            Whether to only download the models, metrics and datasets without
+            evaluating.
     """
 
     model_languages: list[Language]
@@ -255,6 +258,7 @@ class BenchmarkConfig:
     run_with_cli: bool
     requires_safetensors: bool
     generative_type: GenerativeType | None
+    download_only: bool
 
 
 class BenchmarkConfigParams(pydantic.BaseModel):

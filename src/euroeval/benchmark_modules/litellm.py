@@ -984,6 +984,7 @@ class LiteLLMModel(BenchmarkModule):
                     model=None,
                     model_id=model_id,
                     trust_remote_code=self.benchmark_config.trust_remote_code,
+                    model_cache_dir=self.model_config.model_cache_dir,
                 )
 
                 if (
@@ -1066,6 +1067,7 @@ class LiteLLMModel(BenchmarkModule):
                     model=None,
                     model_id=model_id,
                     trust_remote_code=self.benchmark_config.trust_remote_code,
+                    model_cache_dir=self.model_config.model_cache_dir,
                 )
 
                 all_max_lengths: list[int] = list()
