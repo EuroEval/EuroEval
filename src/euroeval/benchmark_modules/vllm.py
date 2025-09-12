@@ -557,7 +557,6 @@ class VLLMModel(HuggingFaceEncoderModel):
                 torch.LongTensor(completion_id) for completion_id in completion_ids
             ]
         )
-        breakpoint()
         if self.end_of_reasoning_token is not None:
             completions = [
                 completion.split(self.end_of_reasoning_token)[-1]

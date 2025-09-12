@@ -355,7 +355,7 @@ def apply_prompt(
                 f"Unsupported task group: {dataset_config.task.task_group}."
             )
 
-    if generative_type == GenerativeType.INSTRUCTION_TUNED:
+    if generative_type in {GenerativeType.INSTRUCTION_TUNED, GenerativeType.REASONING}:
         few_shot_messages = [
             dict(role=role, content=content)
             for prompt, label in few_shot_sections
