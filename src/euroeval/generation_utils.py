@@ -202,7 +202,7 @@ def apply_prompt(
     """
     # Sanity check
     if (
-        generative_type == GenerativeType.INSTRUCTION_TUNED
+        generative_type in {GenerativeType.INSTRUCTION_TUNED, GenerativeType.REASONING}
         and always_populate_text_field
         and tokeniser is None
     ):
@@ -229,7 +229,10 @@ def apply_prompt(
         )
         label_mapping = dataset_config.prompt_label_mapping
         label = label_mapping.get(label, label)
-        if generative_type == GenerativeType.INSTRUCTION_TUNED:
+        if generative_type in {
+            GenerativeType.INSTRUCTION_TUNED,
+            GenerativeType.REASONING,
+        }:
             prompt = dataset_config.instruction_prompt.format(**kwargs)
             return prompt, label
         else:
