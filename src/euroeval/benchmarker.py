@@ -229,6 +229,13 @@ class Benchmarker:
                 for line in f:
                     if line.strip():
                         result_dict = json.loads(line)
+
+                        # Fix for older records
+                        if "test" in result_dict["results"]["raw"]:
+                            result_dict["results"]["raw"] = result_dict["results"][
+                                "raw"
+                            ]["test"]
+
                         try:
                             result = BenchmarkResult.from_dict(result_dict)
                             benchmark_results.append(result)
