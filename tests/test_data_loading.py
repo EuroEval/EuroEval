@@ -81,7 +81,7 @@ def test_examples_in_official_datasets_are_not_too_long(
 ) -> None:
     """Test that the examples are not too long in official datasets."""
     dummy_model_config = LiteLLMModel.get_model_config(
-        model_id="", benchmark_config=benchmark_config
+        model_id="model", benchmark_config=benchmark_config
     )
     tokeniser = AutoTokenizer.from_pretrained(tokeniser_id)
     dataset = load_raw_data(
