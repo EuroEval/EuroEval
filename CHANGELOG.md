@@ -8,8 +8,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 ### Fixed
-- Fixed an issue from vX, where reasoning models were not using the tokeniser's chat
-  template.
+- Fixed an issue from v16.1.0, where reasoning models were not using the tokeniser's
+  chat template.
 - Fixed an issue with some of the prompts for base decoders, that the list of possible
   labels for sequence classification tasks was not included in the prompt.
 
