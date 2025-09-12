@@ -176,7 +176,7 @@ bert_score_metric = HuggingFaceMetric(
     huggingface_id="bertscore",
     results_key="f1",
     compute_kwargs=dict(
-        model_type="microsoft/mdeberta-v3-base", device="auto", batch_size=1
+        model_type="microsoft/mdeberta-v3-base", device="cpu", batch_size=16
     ),
 )
 
