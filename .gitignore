@@ -121,3 +121,6 @@ gfx/euroeval-*.png
 gfx/euroeval-*.jpeg
 gfx/euroeval-*.jpg
 gfx/euroeval-*.xcf
+
+# Contracts
+generated_contracts/
