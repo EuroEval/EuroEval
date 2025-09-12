@@ -339,13 +339,18 @@ def get_end_of_chat_token_ids(
         return None
 
     user_message: dict[str, str] = dict(role="user", content="X")
-    token_ids = apply_chat_template(
-        conversation=[user_message],
-        tokeniser=tokeniser,
-        tokenise=True,
-        add_generation_prompt=False,
-        enable_thinking=generative_type == GenerativeType.REASONING,
-    )
+    try:
+        token_ids = apply_chat_template(
+            conversation=[user_message],
+            tokeniser=tokeniser,
+            tokenise=True,
+            add_generation_prompt=False,
+            enable_thinking=generative_type == GenerativeType.REASONING,
+        )
+    except InvalidModel as e:
+        if "does not have a chat template" in str(e):
+            return None
+        raise e
     assert isinstance(token_ids, list)
 
     for idx, token in enumerate(tokeniser.convert_ids_to_tokens(token_ids)):
