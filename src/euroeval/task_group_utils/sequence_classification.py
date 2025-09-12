@@ -226,6 +226,7 @@ def extract_labels_from_generation(
                 )
 
         new_predicted_labels.append(best_candidate_label)
+        breakpoint()
 
     return new_predicted_labels
 
