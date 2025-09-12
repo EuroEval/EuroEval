@@ -224,12 +224,18 @@ class Benchmarker:
     def benchmark_results(self) -> list[BenchmarkResult]:
         """The benchmark results."""
         if self.results_path.exists():
+            benchmark_results: list[BenchmarkResult] = list()
             with self.results_path.open() as f:
-                return [
-                    BenchmarkResult.from_dict(json.loads(line))
-                    for line in f
-                    if line.strip()
-                ]
+                for line in f:
+                    if line.strip():
+                        result_dict = json.loads(line)
+                        try:
+                            result = BenchmarkResult.from_dict(result_dict)
+                        except Exception:
+                            breakpoint()
+                            pass
+                        benchmark_results.append(result)
+            return benchmark_results
         else:
             return list()
 
