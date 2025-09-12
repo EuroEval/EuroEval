@@ -228,7 +228,7 @@ class Benchmarker:
             with self.results_path.open() as f:
                 for line in f:
                     if line.strip():
-                        result_dict = json.loads(line)
+                        result_dict = json.loads(line.strip())
 
                         # Fix for older records
                         if "test" in result_dict["results"]["raw"]:
@@ -236,14 +236,8 @@ class Benchmarker:
                                 "raw"
                             ]["test"]
 
-                        try:
-                            result = BenchmarkResult.from_dict(result_dict)
-                            benchmark_results.append(result)
-                        except Exception as e:
-                            logger.error(
-                                "Error loading benchmark result from JSON line:\n"
-                                f"{line}\nError: {e}\nSkipping this line."
-                            )
+                        result = BenchmarkResult.from_dict(result_dict)
+                        benchmark_results.append(result)
             return benchmark_results
         else:
             return list()
