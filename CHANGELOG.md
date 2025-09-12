@@ -7,7 +7,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 
 ## [Unreleased]
-
+### Fixed
+- Fixed an issue with some of the prompts for base decoders, that the list of possible
+  labels for sequence classification tasks was not included in the prompt. This has been
+  included properly now.
 
 
 ## [v16.1.0] - 2025-09-11

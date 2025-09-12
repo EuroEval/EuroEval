@@ -408,7 +408,10 @@ def apply_prompt(
     else:
         prompt_prefix = ""
         if dataset_config.prompt_prefix:
-            prompt_prefix = dataset_config.prompt_prefix + "\n\n"
+            labels_str = dataset_config.get_labels_str()
+            prompt_prefix = (
+                dataset_config.prompt_prefix.format(labels_str=labels_str) + "\n\n"
+            )
 
         few_shot_prompt = "\n\n".join([prompt for prompt, _ in few_shot_sections])
         if few_shot_prompt:
