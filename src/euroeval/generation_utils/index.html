@@ -1339,7 +1339,13 @@
 <span class="normal">461</span>
 <span class="normal">462</span>
 <span class="normal">463</span>
-<span class="normal">464</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Utility functions related to generative models.&quot;&quot;&quot;</span>
+<span class="normal">464</span>
+<span class="normal">465</span>
+<span class="normal">466</span>
+<span class="normal">467</span>
+<span class="normal">468</span>
+<span class="normal">469</span>
+<span class="normal">470</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Utility functions related to generative models.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">itertools</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">it</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
@@ -1543,7 +1549,7 @@
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="c1"># Sanity check</span>
     <span class="k">if</span> <span class="p">(</span>
-        <span class="n">generative_type</span> <span class="o">==</span> <span class="n">GenerativeType</span><span class="o">.</span><span class="n">INSTRUCTION_TUNED</span>
+        <span class="n">generative_type</span> <span class="ow">in</span> <span class="p">{</span><span class="n">GenerativeType</span><span class="o">.</span><span class="n">INSTRUCTION_TUNED</span><span class="p">,</span> <span class="n">GenerativeType</span><span class="o">.</span><span class="n">REASONING</span><span class="p">}</span>
         <span class="ow">and</span> <span class="n">always_populate_text_field</span>
         <span class="ow">and</span> <span class="n">tokeniser</span> <span class="ow">is</span> <span class="kc">None</span>
     <span class="p">):</span>
@@ -1570,7 +1576,10 @@
         <span class="p">)</span>
         <span class="n">label_mapping</span> <span class="o">=</span> <span class="n">dataset_config</span><span class="o">.</span><span class="n">prompt_label_mapping</span>
         <span class="n">label</span> <span class="o">=</span> <span class="n">label_mapping</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">label</span><span class="p">,</span> <span class="n">label</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">generative_type</span> <span class="o">==</span> <span class="n">GenerativeType</span><span class="o">.</span><span class="n">INSTRUCTION_TUNED</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">generative_type</span> <span class="ow">in</span> <span class="p">{</span>
+            <span class="n">GenerativeType</span><span class="o">.</span><span class="n">INSTRUCTION_TUNED</span><span class="p">,</span>
+            <span class="n">GenerativeType</span><span class="o">.</span><span class="n">REASONING</span><span class="p">,</span>
+        <span class="p">}:</span>
             <span class="n">prompt</span> <span class="o">=</span> <span class="n">dataset_config</span><span class="o">.</span><span class="n">instruction_prompt</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
             <span class="k">return</span> <span class="n">prompt</span><span class="p">,</span> <span class="n">label</span>
         <span class="k">else</span><span class="p">:</span>
@@ -1696,7 +1705,7 @@
                 <span class="sa">f</span><span class="s2">&quot;Unsupported task group: </span><span class="si">{</span><span class="n">dataset_config</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">task_group</span><span class="si">}</span><span class="s2">.&quot;</span>
             <span class="p">)</span>
 
-    <span class="k">if</span> <span class="n">generative_type</span> <span class="o">==</span> <span class="n">GenerativeType</span><span class="o">.</span><span class="n">INSTRUCTION_TUNED</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">generative_type</span> <span class="ow">in</span> <span class="p">{</span><span class="n">GenerativeType</span><span class="o">.</span><span class="n">INSTRUCTION_TUNED</span><span class="p">,</span> <span class="n">GenerativeType</span><span class="o">.</span><span class="n">REASONING</span><span class="p">}:</span>
         <span class="n">few_shot_messages</span> <span class="o">=</span> <span class="p">[</span>
             <span class="nb">dict</span><span class="p">(</span><span class="n">role</span><span class="o">=</span><span class="n">role</span><span class="p">,</span> <span class="n">content</span><span class="o">=</span><span class="n">content</span><span class="p">)</span>
             <span class="k">for</span> <span class="n">prompt</span><span class="p">,</span> <span class="n">label</span> <span class="ow">in</span> <span class="n">few_shot_sections</span>
@@ -1749,7 +1758,10 @@
     <span class="k">else</span><span class="p">:</span>
         <span class="n">prompt_prefix</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
         <span class="k">if</span> <span class="n">dataset_config</span><span class="o">.</span><span class="n">prompt_prefix</span><span class="p">:</span>
-            <span class="n">prompt_prefix</span> <span class="o">=</span> <span class="n">dataset_config</span><span class="o">.</span><span class="n">prompt_prefix</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n\n</span><span class="s2">&quot;</span>
+            <span class="n">labels_str</span> <span class="o">=</span> <span class="n">dataset_config</span><span class="o">.</span><span class="n">get_labels_str</span><span class="p">()</span>
+            <span class="n">prompt_prefix</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="n">dataset_config</span><span class="o">.</span><span class="n">prompt_prefix</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">labels_str</span><span class="o">=</span><span class="n">labels_str</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n\n</span><span class="s2">&quot;</span>
+            <span class="p">)</span>
 
         <span class="n">few_shot_prompt</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\n\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">prompt</span> <span class="k">for</span> <span class="n">prompt</span><span class="p">,</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">few_shot_sections</span><span class="p">])</span>
         <span class="k">if</span> <span class="n">few_shot_prompt</span><span class="p">:</span>

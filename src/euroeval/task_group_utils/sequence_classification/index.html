@@ -1446,7 +1446,7 @@
         <span class="c1"># If no candidate labels were found, we either pick the label with the smallest</span>
         <span class="c1"># word edit distance to the predicted label (if invalid model outputs are</span>
         <span class="c1"># allowed), or we raise an error</span>
-        <span class="k">if</span> <span class="nb">min</span><span class="p">(</span><span class="n">edit_distances</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">100</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">min</span><span class="p">(</span><span class="n">edit_distances</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">1000</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">dataset_config</span><span class="o">.</span><span class="n">allow_invalid_model_outputs</span><span class="p">:</span>
                 <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
                     <span class="s2">&quot;No candidate labels found for the predicted label &quot;</span>
