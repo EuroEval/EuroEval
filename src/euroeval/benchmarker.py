@@ -231,10 +231,12 @@ class Benchmarker:
                         result_dict = json.loads(line)
                         try:
                             result = BenchmarkResult.from_dict(result_dict)
-                        except Exception:
-                            breakpoint()
-                            pass
-                        benchmark_results.append(result)
+                            benchmark_results.append(result)
+                        except Exception as e:
+                            logger.error(
+                                "Error loading benchmark result from JSON line:\n"
+                                f"{line}\nError: {e}\nSkipping this line."
+                            )
             return benchmark_results
         else:
             return list()
