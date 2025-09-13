@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Fixed
 - Fixed an issue where old evaluation records could not be loaded, as the format had
   changed. We are now able to load old records again.
+- Fixed some grammatical errors in the Icelandic prompts.
 
 
 ## [v16.1.1] - 2025-09-12
