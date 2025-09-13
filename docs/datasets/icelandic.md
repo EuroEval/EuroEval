@@ -44,11 +44,11 @@ When evaluating generative models, we use the following setup (see the
 - Number of few-shot examples: 12
 - Prefix prompt:
   ```
-  Eftirfarandi eru yfirferðir ásamt lyndisgildi þeirra, sem getur verið 'jákvætt', 'hlutlaust' eða 'neikvætt'.
+  Hér fyrir neðan eru textabrot ásamt lyndisgildi þeirra sem getur verið 'jákvætt', 'hlutlaust' eða 'neikvætt'.
   ```
 - Base prompt template:
   ```
-  Yfirferð: {text}
+  Textabrot: {text}
   Lyndi: {label}
   ```
 - Instruction-tuned prompt template:
@@ -117,13 +117,13 @@ When evaluating generative models, we use the following setup (see the
 - Base prompt template:
   ```
   Setning: {text}
-  Nefndar einingar: {label}
+  Nafneiningar: {label}
   ```
 - Instruction-tuned prompt template:
   ```
   Setning: {text}
 
-  Greinið nefndu einingarnar í setningunni. Þú ættir að skila þessu sem JSON orðabók með lyklunum 'einstaklingur', 'staðsetning', 'stofnun' og 'ýmislegt'. Gildin ættu að vera listi yfir nefndu einingarnar af þeirri gerð, nákvæmlega eins og þær koma fram í setningunni.
+  Greindu nefndu einingarnar í setningunni. Þú ættir að skila þessu sem JSON orðabók með lyklunum 'einstaklingur', 'staðsetning', 'stofnun' og 'ýmislegt'. Gildin ættu að vera listi yfir nefndu einingarnar af þeirri gerð, nákvæmlega eins og þær koma fram í setningunni.
   ```
 - Label mapping:
     - `B-PER` ➡️ `einstaklingur`
@@ -186,7 +186,7 @@ When evaluating generative models, we use the following setup (see the
 - Number of few-shot examples: 12
 - Prefix prompt:
   ```
-  Eftirfarandi eru setningar og hvort þær eru málfræðilega réttar.
+  Hér fyrir neðan eru setningar ásamt mati á því hvort þær eru málfræðilega réttar.
   ```
 - Base prompt template:
   ```
@@ -197,7 +197,7 @@ When evaluating generative models, we use the following setup (see the
   ```
   Setning: {text}
 
-  Greinið hvort setningin er málfræðilega rétt eða ekki. Svarið skal vera 'já' ef setningin er rétt og 'nei' ef hún er ekki.
+  Greindu hvort setningin er málfræðilega rétt. Svaraðu með 'já' ef setningin er rétt og 'nei' ef hún er það ekki.
   ```
 - Label mapping:
     - `correct` ➡️ `já`
@@ -249,7 +249,7 @@ When evaluating generative models, we use the following setup (see the
 - Number of few-shot examples: 12
 - Prefix prompt:
   ```
-  Eftirfarandi eru setningar og hvort þær eru málfræðilega réttar.
+  Hér fyrir neðan eru setningar ásamt mati á því hvort þær eru málfræðilega réttar.
   ```
 - Base prompt template:
   ```
@@ -260,7 +260,7 @@ When evaluating generative models, we use the following setup (see the
   ```
   Setning: {text}
 
-  Greinið hvort setningin er málfræðilega rétt eða ekki. Svarið skal vera 'já' ef setningin er rétt og 'nei' ef hún er ekki.
+  Greindu hvort setningin er málfræðilega rétt. Svaraðu með 'já' ef setningin er rétt og 'nei' ef hún er það ekki.
   ```
 - Label mapping:
     - `correct` ➡️ `já`
@@ -310,7 +310,7 @@ When evaluating generative models, we use the following setup (see the
 - Number of few-shot examples: 12
 - Prefix prompt:
   ```
-  Eftirfarandi eru setningar og hvort þær eru málfræðilega réttar.
+  Hér fyrir neðan eru setningar ásamt mati á því hvort þær eru málfræðilega réttar.
   ```
 - Base prompt template:
   ```
@@ -321,7 +321,7 @@ When evaluating generative models, we use the following setup (see the
   ```
   Setning: {text}
 
-  Greinið hvort setningin er málfræðilega rétt eða ekki. Svarið skal vera 'já' ef setningin er rétt og 'nei' ef hún er ekki.
+  Greindu hvort setningin er málfræðilega rétt. Svaraðu með 'já' ef setningin er rétt og 'nei' ef hún er það ekki.
   ```
 - Label mapping:
     - `correct` ➡️ `já`

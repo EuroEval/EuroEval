@@ -176,7 +176,7 @@ NER_TEMPLATES: dict["Language", PromptConfig] = {
         default_prompt_prefix="Her eru nakrir setningar og nakrar JSON orðabøkur við "
         "nevndar eindir, sum eru í setningunum.",
         default_prompt_template="Setningur: {text}\nNevndar eindir: {label}",
-        default_instruction_prompt="Setningur: {text}\n\nGreinið nevndu einingarnar í "
+        default_instruction_prompt="Setningur: {text}\n\nGreindu nevndu einingarnar í "
         "setningunni. Þú ættir að skila þessu sem JSON orðabók með lyklunum "
         "{labels_str}. Gildin ættu að vera listi yfir nevndu einingarnar af "
         "þeirri gerð, nákvæmlega eins og þær koma fram í setningunni.",
@@ -215,8 +215,8 @@ NER_TEMPLATES: dict["Language", PromptConfig] = {
         },
         default_prompt_prefix="Eftirfarandi eru setningar ásamt JSON lyklum með "
         "nefndum einingum sem koma fyrir í setningunum.",
-        default_prompt_template="Setning: {text}\nNefndar einingar: {label}",
-        default_instruction_prompt="Setning: {text}\n\nGreinið nefndu einingarnar í "
+        default_prompt_template="Setning: {text}\nNafneiningar: {label}",
+        default_instruction_prompt="Setning: {text}\n\nGreindu nefndu einingarnar í "
         "setningunni. Þú ættir að skila þessu sem JSON orðabók með lyklunum "
         "{labels_str}. Gildin ættu að vera listi yfir nefndu "
         "einingarnar af þeirri gerð, nákvæmlega eins og þær koma fram í "
