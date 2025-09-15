@@ -230,7 +230,7 @@ class Benchmarker:
         )
 
         self.benchmark_config = build_benchmark_config(
-            **self.benchmark_config_default_params.model_dump()
+            benchmark_config_params=self.benchmark_config_default_params
         )
 
         # Initialise variable storing model lists, so we only have to fetch it once
@@ -822,7 +822,7 @@ class Benchmarker:
         if download_only is not None:
             benchmark_config_params.download_only = download_only
 
-        return build_benchmark_config(**benchmark_config_params.model_dump())
+        return build_benchmark_config(benchmark_config_params=benchmark_config_params)
 
     def _prepare_model_ids(self, model_id: list[str] | str) -> list[str]:
         """Prepare the model ID(s) to be benchmarked.

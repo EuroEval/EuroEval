@@ -6,9 +6,9 @@ import typing as t
 
 import torch
 
-from .data_models import BenchmarkConfig
+from .data_models import BenchmarkConfig, BenchmarkConfigParams
 from .dataset_configs import get_all_dataset_configs
-from .enums import Device, GenerativeType
+from .enums import Device
 from .exceptions import InvalidBenchmark
 from .languages import get_all_languages
 from .tasks import SPEED, get_all_tasks
@@ -21,154 +21,66 @@ logger = logging.getLogger("euroeval")
 
 
 def build_benchmark_config(
-    progress_bar: bool,
-    save_results: bool,
-    task: str | list[str] | None,
-    dataset: str | list[str] | None,
-    language: str | list[str],
-    model_language: str | list[str] | None,
-    dataset_language: str | list[str] | None,
-    device: Device | None,
-    batch_size: int,
-    raise_errors: bool,
-    cache_dir: str,
-    api_key: str | None,
-    force: bool,
-    verbose: bool,
-    trust_remote_code: bool,
-    clear_model_cache: bool,
-    evaluate_test_split: bool,
-    few_shot: bool,
-    num_iterations: int,
-    api_base: str | None,
-    api_version: str | None,
-    gpu_memory_utilization: float,
-    generative_type: GenerativeType | None,
-    debug: bool,
-    run_with_cli: bool,
-    requires_safetensors: bool,
-    download_only: bool,
+    benchmark_config_params: BenchmarkConfigParams,
 ) -> BenchmarkConfig:
     """Create a benchmark configuration.
 
     Args:
-        progress_bar:
-            Whether to show a progress bar when running the benchmark.
-        save_results:
-            Whether to save the benchmark results to a file.
-        task:
-            The tasks to include for dataset. If None then datasets will not be
-            filtered based on their task.
-        dataset:
-            The datasets to include for task. If None then all datasets will be
-            included, limited by the `task` parameter.
-        language:
-            The language codes of the languages to include, both for models and
-            datasets. Here 'no' means both Bokmål (nb) and Nynorsk (nn). Set this
-            to 'all' if all languages should be considered.
-        model_language:
-            The language codes of the languages to include for models. If None then
-            the `language` parameter will be used.
-        dataset_language:
-            The language codes of the languages to include for datasets. If None then
-            the `language` parameter will be used.
-        device:
-            The device to use for running the models. If None then the device will be
-            set automatically.
-        batch_size:
-            The batch size to use for running the models.
-        raise_errors:
-            Whether to raise errors when running the benchmark.
-        cache_dir:
-            The directory to use for caching the models.
-        api_key:
-            The API key to use for a given inference server.
-        force:
-            Whether to force the benchmark to run even if the results are already
-            cached.
-        verbose:
-            Whether to print verbose output when running the benchmark. This is
-            automatically set if `debug` is True.
-        trust_remote_code:
-            Whether to trust remote code when running the benchmark.
-        clear_model_cache:
-            Whether to clear the model cache before running the benchmark.
-        evaluate_test_split:
-            Whether to use the test split for the datasets.
-        few_shot:
-            Whether to use few-shot learning for the models.
-        num_iterations:
-            The number of iterations each model should be evaluated for.
-        api_base:
-            The base URL for a given inference API. Only relevant if `model` refers to a
-            model on an inference API.
-        api_version:
-            The version of the API to use for a given inference API.
-        gpu_memory_utilization:
-            The GPU memory utilization to use for vLLM. A larger value will result in
-            faster evaluation, but at the risk of running out of GPU memory. Only reduce
-            this if you are running out of GPU memory. Only relevant if the model is
-            generative.
-        generative_type:
-            The type of generative model. Only relevant if the model is generative. If
-            not specified, the type will be inferred automatically.
-        debug:
-            Whether to run the benchmark in debug mode.
-        run_with_cli:
-            Whether the benchmark is being run with the CLI.
-        requires_safetensors:
-            Whether to only allow evaluations of models stored as safetensors.
-        download_only:
-            Whether to only download the requested model weights and datasets.
+        benchmark_config_params:
+            The parameters for creating the benchmark configuration.
 
     Returns:
         The benchmark configuration.
     """
-    language_codes = get_correct_language_codes(language_codes=language)
+    language_codes = get_correct_language_codes(
+        language_codes=benchmark_config_params.language
+    )
     model_languages = prepare_languages(
-        language_codes=model_language, default_language_codes=language_codes
+        language_codes=benchmark_config_params.model_language,
+        default_language_codes=language_codes,
     )
     dataset_languages = prepare_languages(
-        language_codes=dataset_language, default_language_codes=language_codes
+        language_codes=benchmark_config_params.dataset_language,
+        default_language_codes=language_codes,
     )
 
     tasks, datasets = prepare_tasks_and_datasets(
-        task=task, dataset=dataset, dataset_languages=dataset_languages
+        task=benchmark_config_params.task,
+        dataset=benchmark_config_params.dataset,
+        dataset_languages=dataset_languages,
     )
-
-    torch_device = prepare_device(device=device)
-
-    # Set variable with number of iterations
-    if hasattr(sys, "_called_from_test"):
-        num_iterations = 1
 
     return BenchmarkConfig(
         model_languages=model_languages,
         dataset_languages=dataset_languages,
         tasks=tasks,
         datasets=datasets,
-        batch_size=batch_size,
-        raise_errors=raise_errors,
-        cache_dir=cache_dir,
-        api_key=api_key,
-        force=force,
-        progress_bar=progress_bar,
-        save_results=save_results,
-        verbose=verbose or debug,
-        device=torch_device,
-        trust_remote_code=trust_remote_code,
-        clear_model_cache=clear_model_cache,
-        evaluate_test_split=evaluate_test_split,
-        few_shot=few_shot,
-        num_iterations=num_iterations,
-        api_base=api_base,
-        api_version=api_version,
-        gpu_memory_utilization=gpu_memory_utilization,
-        generative_type=generative_type,
-        debug=debug,
-        run_with_cli=run_with_cli,
-        requires_safetensors=requires_safetensors,
-        download_only=download_only,
+        batch_size=benchmark_config_params.batch_size,
+        raise_errors=benchmark_config_params.raise_errors,
+        cache_dir=benchmark_config_params.cache_dir,
+        api_key=benchmark_config_params.api_key,
+        force=benchmark_config_params.force,
+        progress_bar=benchmark_config_params.progress_bar,
+        save_results=benchmark_config_params.save_results,
+        verbose=benchmark_config_params.verbose or benchmark_config_params.debug,
+        device=prepare_device(device=benchmark_config_params.device),
+        trust_remote_code=benchmark_config_params.trust_remote_code,
+        clear_model_cache=benchmark_config_params.clear_model_cache,
+        evaluate_test_split=benchmark_config_params.evaluate_test_split,
+        few_shot=benchmark_config_params.few_shot,
+        num_iterations=(
+            1
+            if hasattr(sys, "_called_from_test")
+            else benchmark_config_params.num_iterations
+        ),
+        api_base=benchmark_config_params.api_base,
+        api_version=benchmark_config_params.api_version,
+        gpu_memory_utilization=benchmark_config_params.gpu_memory_utilization,
+        generative_type=benchmark_config_params.generative_type,
+        debug=benchmark_config_params.debug,
+        run_with_cli=benchmark_config_params.run_with_cli,
+        requires_safetensors=benchmark_config_params.requires_safetensors,
+        download_only=benchmark_config_params.download_only,
     )
 
 
