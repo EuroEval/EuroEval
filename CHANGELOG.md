@@ -12,9 +12,6 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Fixed another issue related to the `download_only` mode, causing model evaluations to
   fail, as it could not find the model locally. This has been fixed now.
 
-### Removed
-- Removed the deprecated `Benchmarker.__call__` method.
-
 
 ## [v16.2.1] - 2025-09-15
 ### Fixed

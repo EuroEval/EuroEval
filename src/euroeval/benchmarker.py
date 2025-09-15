@@ -959,6 +959,14 @@ class Benchmarker:
                     raise e
                 return e
 
+    def __call__(self, *args: t.Any, **kwds: t.Any) -> t.Any:  # noqa: ANN401
+        """Alias for `self.benchmark()`."""
+        logger.warning(
+            "Calling the `Benchmarker` class directly is deprecated. Please use the "
+            "`benchmark` function instead. This will be removed in a future version."
+        )
+        return self.benchmark(*args, **kwds)
+
 
 def model_has_been_benchmarked(
     model_id: str,
