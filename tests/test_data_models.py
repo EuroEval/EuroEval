@@ -10,7 +10,7 @@ from click import ParamType
 
 from euroeval import __version__, data_models, enums
 from euroeval.benchmarker import Benchmarker
-from euroeval.data_models import BenchmarkConfigParams, BenchmarkResult
+from euroeval.data_models import BenchmarkConfig, BenchmarkConfigParams, BenchmarkResult
 from euroeval.metrics import HuggingFaceMetric, Metric
 
 
@@ -316,3 +316,13 @@ class TestBenchmarkParametersAreConsistent:
         ) - {"run_with_cli"}
         cli_benchmark_params = set(cli_params.keys()) - {"model", "help"}
         assert benchmark_config_params == cli_benchmark_params
+
+    def test_config_params_is_the_same_as_benchmark_config(self) -> None:
+        """Test that `BenchmarkConfigParams` agrees with `benchmark_config`."""
+        benchmark_config_params = set(
+            inspect.signature(BenchmarkConfigParams).parameters.keys()
+        ) - {"dataset", "task", "language", "dataset_language", "model_language"}
+        benchmark_config_fields = set(
+            inspect.signature(BenchmarkConfig).parameters.keys()
+        ) - {"datasets", "tasks", "dataset_languages", "model_languages"}
+        assert benchmark_config_params == benchmark_config_fields

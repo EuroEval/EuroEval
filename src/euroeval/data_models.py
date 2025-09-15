@@ -170,14 +170,16 @@ class BenchmarkConfig:
     """General benchmarking configuration, across datasets and models.
 
     Attributes:
-        model_languages:
-            The languages of the models to benchmark.
-        dataset_languages:
-            The languages of the datasets in the benchmark.
         tasks:
             The tasks benchmark the model(s) on.
         datasets:
             The datasets to benchmark on.
+        model_languages:
+            The languages of the models to benchmark.
+        dataset_languages:
+            The languages of the datasets in the benchmark.
+        device:
+            The device to use for benchmarking.
         batch_size:
             The batch size to use.
         raise_errors:
@@ -186,17 +188,16 @@ class BenchmarkConfig:
             Directory to store cached models and datasets.
         api_key:
             The API key to use for a given inference API.
-        force:
-            Whether to force the benchmark to run even if the results are already
-            cached.
+        api_base:
+            The base URL for a given inference API. Only relevant if `model` refers to a
+            model on an inference API.
+        api_version:
+            The version of the API to use. Only relevant if `model` refers to a model on
+            an inference API.
         progress_bar:
             Whether to show a progress bar.
         save_results:
             Whether to save the benchmark results to 'euroeval_benchmark_results.json'.
-        device:
-            The device to use for benchmarking.
-        verbose:
-            Whether to print verbose output.
         trust_remote_code:
             Whether to trust remote code when loading models from the Hugging Face Hub.
         clear_model_cache:
@@ -208,21 +209,11 @@ class BenchmarkConfig:
             if the model is generative.
         num_iterations:
             The number of iterations each model should be evaluated for.
-        api_base:
-            The base URL for a given inference API. Only relevant if `model` refers to a
-            model on an inference API.
-        api_version:
-            The version of the API to use. Only relevant if `model` refers to a model on
-            an inference API.
         gpu_memory_utilization:
             The GPU memory utilization to use for vLLM. A larger value will result in
             faster evaluation, but at the risk of running out of GPU memory. Only reduce
             this if you are running out of GPU memory. Only relevant if the model is
             generative.
-        debug:
-            Whether to run the benchmark in debug mode.
-        run_with_cli:
-            Whether the benchmark is being run with the CLI.
         requires_safetensors:
             Whether to only allow models that use the safetensors format.
         generative_type:
@@ -231,6 +222,15 @@ class BenchmarkConfig:
         download_only:
             Whether to only download the models, metrics and datasets without
             evaluating.
+        force:
+            Whether to force the benchmark to run even if the results are already
+            cached.
+        verbose:
+            Whether to print verbose output.
+        debug:
+            Whether to run the benchmark in debug mode.
+        run_with_cli:
+            Whether the benchmark is being run with the CLI.
     """
 
     model_languages: list[Language]
@@ -241,24 +241,24 @@ class BenchmarkConfig:
     raise_errors: bool
     cache_dir: str
     api_key: str | None
-    force: bool
+    api_base: str | None
+    api_version: str | None
     progress_bar: bool
     save_results: bool
     device: torch.device
-    verbose: bool
     trust_remote_code: bool
     clear_model_cache: bool
     evaluate_test_split: bool
     few_shot: bool
     num_iterations: int
-    api_base: str | None
-    api_version: str | None
     gpu_memory_utilization: float
-    debug: bool
-    run_with_cli: bool
     requires_safetensors: bool
     generative_type: GenerativeType | None
     download_only: bool
+    force: bool
+    verbose: bool
+    debug: bool
+    run_with_cli: bool
 
 
 class BenchmarkConfigParams(pydantic.BaseModel):
@@ -278,13 +278,13 @@ class BenchmarkConfigParams(pydantic.BaseModel):
     raise_errors: bool
     cache_dir: str
     api_key: str | None
+    api_base: str | None
+    api_version: str | None
     trust_remote_code: bool
     clear_model_cache: bool
     evaluate_test_split: bool
     few_shot: bool
     num_iterations: int
-    api_base: str | None
-    api_version: str | None
     requires_safetensors: bool
     download_only: bool
     gpu_memory_utilization: float
