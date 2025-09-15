@@ -829,17 +829,19 @@ class Benchmarker:
                     model_param=model_config.param,
                 )
 
+                model_id_to_be_stored = model_config.model_id
+                if model_config.revision != "main":
+                    model_id_to_be_stored += f"@{model_config.revision}"
+                if model_config.param is not None:
+                    model_id_to_be_stored += f"#{model_config.param}"
+
                 record = BenchmarkResult(
                     dataset=dataset_config.name,
                     task=dataset_config.task.name,
                     dataset_languages=[
                         language.code for language in dataset_config.languages
                     ],
-                    model=(
-                        f"{model_config.model_id}@{model_config.revision}"
-                        if model_config.revision and model_config.revision != "main"
-                        else model_config.model_id
-                    ),
+                    model=model_id_to_be_stored,
                     results=results,
                     num_model_parameters=model.num_params,
                     max_sequence_length=model.model_max_length,

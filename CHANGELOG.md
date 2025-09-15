@@ -24,6 +24,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Fixed an issue where old evaluation records could not be loaded, as the format had
   changed. We are now able to load old records again.
 - Fixed some grammatical errors in the Icelandic prompts.
+- Now stores model IDs with parameters (e.g., `o3#low`) correctly in the benchmark
+  results, rather than just the base model ID (e.g., `o3`).
 
 
 ## [v16.1.1] - 2025-09-12
