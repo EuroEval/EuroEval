@@ -463,64 +463,134 @@ class Benchmarker:
         # Get a new updated benchmark configuration, based on any changes to the
         # parameters
         benchmark_config_params = BenchmarkConfigParams(
-            task=task or self.benchmark_config_default_params.task,
-            dataset=dataset or self.benchmark_config_default_params.dataset,
+            task=(
+                task if task is not None else self.benchmark_config_default_params.task
+            ),
+            dataset=(
+                dataset
+                if dataset is not None
+                else self.benchmark_config_default_params.dataset
+            ),
             progress_bar=(
-                progress_bar or self.benchmark_config_default_params.progress_bar
+                progress_bar
+                if progress_bar is not None
+                else self.benchmark_config_default_params.progress_bar
             ),
             save_results=(
-                save_results or self.benchmark_config_default_params.save_results
+                save_results
+                if save_results is not None
+                else self.benchmark_config_default_params.save_results
             ),
-            language=language or self.benchmark_config_default_params.language,
+            language=(
+                language
+                if language is not None
+                else self.benchmark_config_default_params.language
+            ),
             model_language=(
-                model_language or self.benchmark_config_default_params.model_language
+                model_language
+                if model_language is not None
+                else self.benchmark_config_default_params.model_language
             ),
             dataset_language=(
                 dataset_language
-                or self.benchmark_config_default_params.dataset_language
+                if dataset_language is not None
+                else self.benchmark_config_default_params.dataset_language
             ),
-            device=device or self.benchmark_config_default_params.device,
-            batch_size=batch_size or self.benchmark_config_default_params.batch_size,
+            device=(
+                device
+                if device is not None
+                else self.benchmark_config_default_params.device
+            ),
+            batch_size=(
+                batch_size
+                if batch_size is not None
+                else self.benchmark_config_default_params.batch_size
+            ),
             raise_errors=(
-                raise_errors or self.benchmark_config_default_params.raise_errors
+                raise_errors
+                if raise_errors is not None
+                else self.benchmark_config_default_params.raise_errors
             ),
-            cache_dir=cache_dir or self.benchmark_config_default_params.cache_dir,
-            api_key=api_key or self.benchmark_config_default_params.api_key,
-            api_base=api_base or self.benchmark_config_default_params.api_base,
-            api_version=api_version or self.benchmark_config_default_params.api_version,
+            cache_dir=(
+                cache_dir
+                if cache_dir is not None
+                else self.benchmark_config_default_params.cache_dir
+            ),
+            api_key=(
+                api_key
+                if api_key is not None
+                else self.benchmark_config_default_params.api_key
+            ),
+            api_base=(
+                api_base
+                if api_base is not None
+                else self.benchmark_config_default_params.api_base
+            ),
+            api_version=(
+                api_version
+                if api_version is not None
+                else self.benchmark_config_default_params.api_version
+            ),
             trust_remote_code=(
                 trust_remote_code
-                or self.benchmark_config_default_params.trust_remote_code
+                if trust_remote_code is not None
+                else self.benchmark_config_default_params.trust_remote_code
             ),
             clear_model_cache=(
                 clear_model_cache
-                or self.benchmark_config_default_params.clear_model_cache
+                if clear_model_cache is not None
+                else self.benchmark_config_default_params.clear_model_cache
             ),
             evaluate_test_split=(
                 evaluate_test_split
-                or self.benchmark_config_default_params.evaluate_test_split
+                if evaluate_test_split is not None
+                else self.benchmark_config_default_params.evaluate_test_split
             ),
-            few_shot=few_shot or self.benchmark_config_default_params.few_shot,
+            few_shot=(
+                few_shot
+                if few_shot is not None
+                else self.benchmark_config_default_params.few_shot
+            ),
             num_iterations=(
-                num_iterations or self.benchmark_config_default_params.num_iterations
+                num_iterations
+                if num_iterations is not None
+                else self.benchmark_config_default_params.num_iterations
             ),
             requires_safetensors=(
                 requires_safetensors
-                or self.benchmark_config_default_params.requires_safetensors
+                if requires_safetensors is not None
+                else self.benchmark_config_default_params.requires_safetensors
             ),
             download_only=(
-                download_only or self.benchmark_config_default_params.download_only
+                download_only
+                if download_only is not None
+                else self.benchmark_config_default_params.download_only
             ),
             gpu_memory_utilization=(
                 gpu_memory_utilization
-                or self.benchmark_config_default_params.gpu_memory_utilization
+                if gpu_memory_utilization is not None
+                else self.benchmark_config_default_params.gpu_memory_utilization
             ),
             generative_type=(
-                generative_type or self.benchmark_config_default_params.generative_type
+                generative_type
+                if generative_type is not None
+                else self.benchmark_config_default_params.generative_type
             ),
-            force=force or self.benchmark_config_default_params.force,
-            verbose=verbose or self.benchmark_config_default_params.verbose,
-            debug=debug or self.benchmark_config_default_params.debug,
+            force=(
+                force
+                if force is not None
+                else self.benchmark_config_default_params.force
+            ),
+            verbose=(
+                verbose
+                if verbose is not None
+                else self.benchmark_config_default_params.verbose
+            ),
+            debug=(
+                debug
+                if debug is not None
+                else self.benchmark_config_default_params.debug
+            ),
             run_with_cli=self.benchmark_config_default_params.run_with_cli,
         )
         benchmark_config = build_benchmark_config(
