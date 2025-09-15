@@ -14,7 +14,7 @@
       
       
       <link rel="icon" href="../../../gfx/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.18">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.19">
     
     
       
@@ -1815,6 +1815,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#euroeval.utils.resolve_model_path" class="md-nav__link">
+    <span class="md-ellipsis">
+      resolve_model_path
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#euroeval.utils.clear_memory" class="md-nav__link">
     <span class="md-ellipsis">
       clear_memory
@@ -2030,6 +2039,15 @@
   <a href="#euroeval.utils.create_model_cache_dir" class="md-nav__link">
     <span class="md-ellipsis">
       create_model_cache_dir
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#euroeval.utils.resolve_model_path" class="md-nav__link">
+    <span class="md-ellipsis">
+      resolve_model_path
     </span>
   </a>
   
@@ -2259,6 +2277,11 @@ Context manager which removes all terminal output.</p>
 Create cache directory for a model.</p>
 </li>
 <li>
+<p><span class="mkapi-item-name"><a href="./#euroeval.utils.resolve_model_path" title="euroeval.utils.resolve_model_path">resolve_model_path</a></span>
+ <span class="mkapi-dash">&mdash;</span>
+Resolve the path to the directory containing the model config files and weights.</p>
+</li>
+<li>
 <p><span class="mkapi-item-name"><a href="./#euroeval.utils.clear_memory" title="euroeval.utils.clear_memory">clear_memory</a></span>
  <span class="mkapi-dash">&mdash;</span>
 Clears the memory of unused items.</p>
@@ -2394,6 +2417,68 @@ The model ID.</p>
 <li>
 <p><span class="mkapi-item-type">str</span> <span class="mkapi-dash">&mdash;</span>
 The path to the cache directory.</p>
+</li>
+</ul>
+</div>
+</div>
+<p class="mkapi-object mkapi-page-source" id="euroeval.utils.resolve_model_path">
+<span class="mkapi-object-link">
+
+
+<a href="../../../src/euroeval/utils/#euroeval.utils.resolve_model_path" title="Go to source">source</a>
+<span class="mkapi-document-toggle" title="Toggle all docs">
+<i class="fa-regular fa-square-minus"></i>
+</span>
+</span>
+<span class="mkapi-object-name"><a href="./#euroeval.utils.resolve_model_path" title="euroeval.utils.resolve_model_path">resolve_model_path</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">download_dir</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str</span><span class="mkapi-paren">)</span><span class="mkapi-arrow"> → </span><span class="mkapi-return">str</span></span>
+</p>
+<div class="mkapi-document">
+<p>Resolve the path to the directory containing the model config files and weights.</p>
+<p class="mkapi-section">
+<span class="mkapi-object-link">
+<span class="mkapi-section-toggle" title="Toggle parameters">
+<i class="fa-regular fa-square-minus"></i>
+</span>
+</span>
+<span class="mkapi-section-name">Parameters</span>
+</p>
+<div class="mkapi-section-content">
+<ul class="mkapi-item-list">
+<li>
+<p><span class="mkapi-item-name">download_dir</span> : 
+<span class="mkapi-item-type">str</span> <span class="mkapi-dash">&mdash;</span>
+The download directory</p>
+</li>
+</ul>
+</div>
+<p class="mkapi-section">
+<span class="mkapi-object-link">
+<span class="mkapi-section-toggle" title="Toggle returns">
+<i class="fa-regular fa-square-minus"></i>
+</span>
+</span>
+<span class="mkapi-section-name">Returns</span>
+</p>
+<div class="mkapi-section-content">
+<ul class="mkapi-item-list">
+<li>
+<p><span class="mkapi-item-type">str</span> <span class="mkapi-dash">&mdash;</span>
+The path to the model.</p>
+</li>
+</ul>
+</div>
+<p class="mkapi-section">
+<span class="mkapi-object-link">
+<span class="mkapi-section-toggle" title="Toggle raises">
+<i class="fa-regular fa-square-minus"></i>
+</span>
+</span>
+<span class="mkapi-section-name">Raises</span>
+</p>
+<div class="mkapi-section-content">
+<ul class="mkapi-item-list">
+<li>
+<p><span class="mkapi-item-type"><a href="../exceptions/#euroeval.exceptions.InvalidModel" title="euroeval.exceptions.InvalidModel">InvalidModel</a></span></p>
 </li>
 </ul>
 </div>
@@ -2571,6 +2656,21 @@ Device capability as float, or None if CUDA is not available.</p>
 <li>
 <p><span class="mkapi-item-type">bool</span> <span class="mkapi-dash">&mdash;</span>
 Whether or not internet connection is available.</p>
+</li>
+</ul>
+</div>
+<p class="mkapi-section">
+<span class="mkapi-object-link">
+<span class="mkapi-section-toggle" title="Toggle raises">
+<i class="fa-regular fa-square-minus"></i>
+</span>
+</span>
+<span class="mkapi-section-name">Raises</span>
+</p>
+<div class="mkapi-section-content">
+<ul class="mkapi-item-list">
+<li>
+<p><span class="mkapi-item-type">e</span></p>
 </li>
 </ul>
 </div>

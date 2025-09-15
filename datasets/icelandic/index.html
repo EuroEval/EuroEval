@@ -16,7 +16,7 @@
       
       
       <link rel="icon" href="../../gfx/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.18">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.19">
     
     
       
@@ -1788,10 +1788,10 @@ total).</p>
 <ul>
 <li>Number of few-shot examples: 12</li>
 <li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>Eftirfarandi eru yfirferðir ásamt lyndisgildi þeirra, sem getur verið &#39;jákvætt&#39;, &#39;hlutlaust&#39; eða &#39;neikvætt&#39;.
+  <div class="highlight"><pre><span></span><code>Hér fyrir neðan eru textabrot ásamt lyndisgildi þeirra sem getur verið &#39;jákvætt&#39;, &#39;hlutlaust&#39; eða &#39;neikvætt&#39;.
 </code></pre></div></li>
 <li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>Yfirferð: {text}
+  <div class="highlight"><pre><span></span><code>Textabrot: {text}
 Lyndi: {label}
 </code></pre></div></li>
 <li>Instruction-tuned prompt template:
@@ -1846,12 +1846,12 @@ split for training, validation and testing, respectively.</p>
 </code></pre></div></li>
 <li>Base prompt template:
   <div class="highlight"><pre><span></span><code>Setning: {text}
-Nefndar einingar: {label}
+Nafneiningar: {label}
 </code></pre></div></li>
 <li>Instruction-tuned prompt template:
   <div class="highlight"><pre><span></span><code>Setning: {text}
 
-Greinið nefndu einingarnar í setningunni. Þú ættir að skila þessu sem JSON orðabók með lyklunum &#39;einstaklingur&#39;, &#39;staðsetning&#39;, &#39;stofnun&#39; og &#39;ýmislegt&#39;. Gildin ættu að vera listi yfir nefndu einingarnar af þeirri gerð, nákvæmlega eins og þær koma fram í setningunni.
+Greindu nefndu einingarnar í setningunni. Þú ættir að skila þessu sem JSON orðabók með lyklunum &#39;einstaklingur&#39;, &#39;staðsetning&#39;, &#39;stofnun&#39; og &#39;ýmislegt&#39;. Gildin ættu að vera listi yfir nefndu einingarnar af þeirri gerð, nákvæmlega eins og þær koma fram í setningunni.
 </code></pre></div></li>
 <li>Label mapping:<ul>
 <li><code>B-PER</code> ➡️ <code>einstaklingur</code></li>
@@ -1902,7 +1902,7 @@ total). These splits are used as-is in the framework.</p>
 <ul>
 <li>Number of few-shot examples: 12</li>
 <li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>Eftirfarandi eru setningar og hvort þær eru málfræðilega réttar.
+  <div class="highlight"><pre><span></span><code>Hér fyrir neðan eru setningar ásamt mati á því hvort þær eru málfræðilega réttar.
 </code></pre></div></li>
 <li>Base prompt template:
   <div class="highlight"><pre><span></span><code>Setning: {text}
@@ -1911,7 +1911,7 @@ Málfræðilega rétt: {label}
 <li>Instruction-tuned prompt template:
   <div class="highlight"><pre><span></span><code>Setning: {text}
 
-Greinið hvort setningin er málfræðilega rétt eða ekki. Svarið skal vera &#39;já&#39; ef setningin er rétt og &#39;nei&#39; ef hún er ekki.
+Greindu hvort setningin er málfræðilega rétt. Svaraðu með &#39;já&#39; ef setningin er rétt og &#39;nei&#39; ef hún er það ekki.
 </code></pre></div></li>
 <li>Label mapping:<ul>
 <li><code>correct</code> ➡️ <code>já</code></li>
@@ -1952,7 +1952,7 @@ splits, and the validation split is a disjoint subset of the training split.</p>
 <ul>
 <li>Number of few-shot examples: 12</li>
 <li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>Eftirfarandi eru setningar og hvort þær eru málfræðilega réttar.
+  <div class="highlight"><pre><span></span><code>Hér fyrir neðan eru setningar ásamt mati á því hvort þær eru málfræðilega réttar.
 </code></pre></div></li>
 <li>Base prompt template:
   <div class="highlight"><pre><span></span><code>Setning: {text}
@@ -1961,7 +1961,7 @@ Málfræðilega rétt: {label}
 <li>Instruction-tuned prompt template:
   <div class="highlight"><pre><span></span><code>Setning: {text}
 
-Greinið hvort setningin er málfræðilega rétt eða ekki. Svarið skal vera &#39;já&#39; ef setningin er rétt og &#39;nei&#39; ef hún er ekki.
+Greindu hvort setningin er málfræðilega rétt. Svaraðu með &#39;já&#39; ef setningin er rétt og &#39;nei&#39; ef hún er það ekki.
 </code></pre></div></li>
 <li>Label mapping:<ul>
 <li><code>correct</code> ➡️ <code>já</code></li>
@@ -2000,7 +2000,7 @@ training, validation and testing, respectively.</p>
 <ul>
 <li>Number of few-shot examples: 12</li>
 <li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>Eftirfarandi eru setningar og hvort þær eru málfræðilega réttar.
+  <div class="highlight"><pre><span></span><code>Hér fyrir neðan eru setningar ásamt mati á því hvort þær eru málfræðilega réttar.
 </code></pre></div></li>
 <li>Base prompt template:
   <div class="highlight"><pre><span></span><code>Setning: {text}
@@ -2009,7 +2009,7 @@ Málfræðilega rétt: {label}
 <li>Instruction-tuned prompt template:
   <div class="highlight"><pre><span></span><code>Setning: {text}
 
-Greinið hvort setningin er málfræðilega rétt eða ekki. Svarið skal vera &#39;já&#39; ef setningin er rétt og &#39;nei&#39; ef hún er ekki.
+Greindu hvort setningin er málfræðilega rétt. Svaraðu með &#39;já&#39; ef setningin er rétt og &#39;nei&#39; ef hún er það ekki.
 </code></pre></div></li>
 <li>Label mapping:<ul>
 <li><code>correct</code> ➡️ <code>já</code></li>

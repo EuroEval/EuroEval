@@ -12,7 +12,7 @@
       
       
       <link rel="icon" href="../../../../gfx/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.18">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.19">
     
     
       
@@ -2264,7 +2264,22 @@
 <span class="normal">1227</span>
 <span class="normal">1228</span>
 <span class="normal">1229</span>
-<span class="normal">1230</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Encoder models from the Hugging Face Hub.&quot;&quot;&quot;</span>
+<span class="normal">1230</span>
+<span class="normal">1231</span>
+<span class="normal">1232</span>
+<span class="normal">1233</span>
+<span class="normal">1234</span>
+<span class="normal">1235</span>
+<span class="normal">1236</span>
+<span class="normal">1237</span>
+<span class="normal">1238</span>
+<span class="normal">1239</span>
+<span class="normal">1240</span>
+<span class="normal">1241</span>
+<span class="normal">1242</span>
+<span class="normal">1243</span>
+<span class="normal">1244</span>
+<span class="normal">1245</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Encoder models from the Hugging Face Hub.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">c</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
@@ -2412,21 +2427,25 @@
 <span class="sd">        Returns:</span>
 <span class="sd">            The number of parameters in the model.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">token</span> <span class="o">=</span> <span class="n">get_hf_token</span><span class="p">(</span><span class="n">api_key</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">benchmark_config</span><span class="o">.</span><span class="n">api_key</span><span class="p">)</span>
-        <span class="n">hf_api</span> <span class="o">=</span> <span class="n">HfApi</span><span class="p">(</span><span class="n">token</span><span class="o">=</span><span class="n">token</span><span class="p">)</span>
-        <span class="k">try</span><span class="p">:</span>
-            <span class="n">repo_info</span> <span class="o">=</span> <span class="n">hf_api</span><span class="o">.</span><span class="n">model_info</span><span class="p">(</span>
-                <span class="n">repo_id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">adapter_base_model_id</span>
-                <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span><span class="p">,</span>
-                <span class="n">revision</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">revision</span><span class="p">,</span>
-            <span class="p">)</span>
-        <span class="k">except</span> <span class="p">(</span>
-            <span class="n">RepositoryNotFoundError</span><span class="p">,</span>
-            <span class="n">RevisionNotFoundError</span><span class="p">,</span>
-            <span class="n">RequestException</span><span class="p">,</span>
-            <span class="n">HFValidationError</span><span class="p">,</span>
-        <span class="p">):</span>
+        <span class="c1"># No need to try to use the API if we have no internet.</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">internet_connection_available</span><span class="p">():</span>
             <span class="n">repo_info</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">token</span> <span class="o">=</span> <span class="n">get_hf_token</span><span class="p">(</span><span class="n">api_key</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">benchmark_config</span><span class="o">.</span><span class="n">api_key</span><span class="p">)</span>
+            <span class="n">hf_api</span> <span class="o">=</span> <span class="n">HfApi</span><span class="p">(</span><span class="n">token</span><span class="o">=</span><span class="n">token</span><span class="p">)</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">repo_info</span> <span class="o">=</span> <span class="n">hf_api</span><span class="o">.</span><span class="n">model_info</span><span class="p">(</span>
+                    <span class="n">repo_id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">adapter_base_model_id</span>
+                    <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span><span class="p">,</span>
+                    <span class="n">revision</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">revision</span><span class="p">,</span>
+                <span class="p">)</span>
+            <span class="k">except</span> <span class="p">(</span>
+                <span class="n">RepositoryNotFoundError</span><span class="p">,</span>
+                <span class="n">RevisionNotFoundError</span><span class="p">,</span>
+                <span class="n">RequestException</span><span class="p">,</span>
+                <span class="n">HFValidationError</span><span class="p">,</span>
+            <span class="p">):</span>
+                <span class="n">repo_info</span> <span class="o">=</span> <span class="kc">None</span>
 
         <span class="k">if</span> <span class="p">(</span>
             <span class="n">repo_info</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
@@ -2824,7 +2843,7 @@
 <span class="sd">            The benchmark configuration</span>
 
 <span class="sd">    Returns:</span>
-<span class="sd">        The loaded model and tokeniser.</span>
+<span class="sd">        A pair (model, tokeniser), with the loaded model and tokeniser</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">config</span><span class="p">:</span> <span class="s2">&quot;PretrainedConfig&quot;</span>
     <span class="n">block_terminal_output</span><span class="p">()</span>
@@ -2952,6 +2971,7 @@
         <span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span>
         <span class="n">model_id</span><span class="o">=</span><span class="n">model_id</span><span class="p">,</span>
         <span class="n">trust_remote_code</span><span class="o">=</span><span class="n">benchmark_config</span><span class="o">.</span><span class="n">trust_remote_code</span><span class="p">,</span>
+        <span class="n">model_cache_dir</span><span class="o">=</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_cache_dir</span><span class="p">,</span>
     <span class="p">)</span>
 
     <span class="k">return</span> <span class="n">model</span><span class="p">,</span> <span class="n">tokeniser</span>
@@ -2987,6 +3007,11 @@
             <span class="k">for</span> <span class="n">required_file</span> <span class="ow">in</span> <span class="n">LOCAL_MODELS_REQUIRED_FILES</span>
         <span class="p">):</span>
             <span class="n">model_info</span> <span class="o">=</span> <span class="n">HfApiModelInfo</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="n">model_id</span><span class="p">,</span> <span class="n">tags</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">pipeline_tag</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+
+    <span class="c1"># If we have not internet, and the model_id is not a directory for a local model</span>
+    <span class="c1"># we also just create a dummy model info object.</span>
+    <span class="k">elif</span> <span class="ow">not</span> <span class="n">internet_connection_available</span><span class="p">():</span>
+        <span class="n">model_info</span> <span class="o">=</span> <span class="n">HfApiModelInfo</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="n">model_id</span><span class="p">,</span> <span class="n">tags</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">pipeline_tag</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
 
     <span class="c1"># If the model does not exist locally, then we get the model info from the Hugging</span>
     <span class="c1"># Face Hub, if possible</span>
@@ -3133,7 +3158,10 @@
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">load_tokeniser</span><span class="p">(</span><div class="mkapi-source-link" id="euroeval.benchmark_modules.hf.load_tokeniser"><a href="../../../../api/euroeval/benchmark_modules/hf/#euroeval.benchmark_modules.hf.load_tokeniser" title="Go to docs">[docs]</a></div>
-    <span class="n">model</span><span class="p">:</span> <span class="s2">&quot;PreTrainedModel | None&quot;</span><span class="p">,</span> <span class="n">model_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">trust_remote_code</span><span class="p">:</span> <span class="nb">bool</span>
+    <span class="n">model</span><span class="p">:</span> <span class="s2">&quot;PreTrainedModel | None&quot;</span><span class="p">,</span>
+    <span class="n">model_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">trust_remote_code</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+    <span class="n">model_cache_dir</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;PreTrainedTokenizer&quot;</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Load the tokeniser.</span>
 
@@ -3155,6 +3183,7 @@
         <span class="n">trust_remote_code</span><span class="o">=</span><span class="n">trust_remote_code</span><span class="p">,</span>
         <span class="n">padding_side</span><span class="o">=</span><span class="s2">&quot;right&quot;</span><span class="p">,</span>
         <span class="n">truncation_side</span><span class="o">=</span><span class="s2">&quot;right&quot;</span><span class="p">,</span>
+        <span class="n">cache_dir</span><span class="o">=</span><span class="n">model_cache_dir</span><span class="p">,</span>
     <span class="p">)</span>
 
     <span class="c1"># If the model is a subclass of a certain model types then we have to add a prefix</span>
@@ -3265,6 +3294,7 @@
                 <span class="n">token</span><span class="o">=</span><span class="n">get_hf_token</span><span class="p">(</span><span class="n">api_key</span><span class="o">=</span><span class="n">api_key</span><span class="p">),</span>
                 <span class="n">trust_remote_code</span><span class="o">=</span><span class="n">trust_remote_code</span><span class="p">,</span>
                 <span class="n">cache_dir</span><span class="o">=</span><span class="n">model_cache_dir</span><span class="p">,</span>
+                <span class="n">local_files_only</span><span class="o">=</span><span class="ow">not</span> <span class="n">internet_connection_available</span><span class="p">(),</span>
             <span class="p">)</span>
             <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">eos_token_id</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">config</span><span class="o">.</span><span class="n">pad_token_id</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">eos_token_id</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>

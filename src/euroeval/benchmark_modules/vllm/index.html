@@ -12,7 +12,7 @@
       
       
       <link rel="icon" href="../../../../gfx/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.18">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.19">
     
     
       
@@ -2162,7 +2162,22 @@
 <span class="normal">1170</span>
 <span class="normal">1171</span>
 <span class="normal">1172</span>
-<span class="normal">1173</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Generative models using the vLLM inference framework.&quot;&quot;&quot;</span>
+<span class="normal">1173</span>
+<span class="normal">1174</span>
+<span class="normal">1175</span>
+<span class="normal">1176</span>
+<span class="normal">1177</span>
+<span class="normal">1178</span>
+<span class="normal">1179</span>
+<span class="normal">1180</span>
+<span class="normal">1181</span>
+<span class="normal">1182</span>
+<span class="normal">1183</span>
+<span class="normal">1184</span>
+<span class="normal">1185</span>
+<span class="normal">1186</span>
+<span class="normal">1187</span>
+<span class="normal">1188</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Generative models using the vLLM inference framework.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">c</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">contextlib</span>
@@ -2236,7 +2251,9 @@
     <span class="n">create_model_cache_dir</span><span class="p">,</span>
     <span class="n">get_hf_token</span><span class="p">,</span>
     <span class="n">get_min_cuda_compute_capability</span><span class="p">,</span>
+    <span class="n">internet_connection_available</span><span class="p">,</span>
     <span class="n">log_once</span><span class="p">,</span>
+    <span class="n">resolve_model_path</span><span class="p">,</span>
     <span class="n">split_model_id</span><span class="p">,</span>
 <span class="p">)</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.hf</span><span class="w"> </span><span class="kn">import</span> <span class="n">HuggingFaceEncoderModel</span><span class="p">,</span> <span class="n">get_model_repo_info</span><span class="p">,</span> <span class="n">load_hf_model_config</span>
@@ -2310,7 +2327,7 @@
         <span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">end_of_reasoning_token</span> <span class="o">=</span> <span class="n">get_end_of_reasoning_token</span><span class="p">(</span>
-            <span class="n">model</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_model</span><span class="p">,</span> <span class="n">tokeniser</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_tokeniser</span><span class="p">,</span> <span class="n">model_id</span><span class="o">=</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span>
+            <span class="n">model</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_model</span><span class="p">,</span> <span class="n">tokeniser</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_tokeniser</span><span class="p">,</span> <span class="n">model_config</span><span class="o">=</span><span class="n">model_config</span>
         <span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">end_of_chat_token_ids</span> <span class="o">=</span> <span class="n">get_end_of_chat_token_ids</span><span class="p">(</span>
             <span class="n">tokeniser</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_tokeniser</span><span class="p">,</span> <span class="n">generative_type</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">generative_type</span>
@@ -2998,10 +3015,15 @@
 
     <span class="n">clear_vllm</span><span class="p">()</span>
 
+    <span class="c1"># if we do not have an internet connection we need to give the path to the folder</span>
+    <span class="c1"># that contains the model weights and config files, otherwise vLLM will try to</span>
+    <span class="c1"># download them regardless if they are already present in the download_dir</span>
+    <span class="n">model_path</span> <span class="o">=</span> <span class="n">resolve_model_path</span><span class="p">(</span><span class="n">download_dir</span><span class="p">)</span>
+
     <span class="k">try</span><span class="p">:</span>
         <span class="n">model</span> <span class="o">=</span> <span class="n">LLM</span><span class="p">(</span>
-            <span class="n">model</span><span class="o">=</span><span class="n">model_id</span><span class="p">,</span>
-            <span class="n">tokenizer</span><span class="o">=</span><span class="n">model_id</span><span class="p">,</span>
+            <span class="n">model</span><span class="o">=</span><span class="n">model_id</span> <span class="k">if</span> <span class="n">internet_connection_available</span><span class="p">()</span> <span class="k">else</span> <span class="n">model_path</span><span class="p">,</span>
+            <span class="n">tokenizer</span><span class="o">=</span><span class="n">model_id</span> <span class="k">if</span> <span class="n">internet_connection_available</span><span class="p">()</span> <span class="k">else</span> <span class="n">model_path</span><span class="p">,</span>
             <span class="n">gpu_memory_utilization</span><span class="o">=</span><span class="n">benchmark_config</span><span class="o">.</span><span class="n">gpu_memory_utilization</span><span class="p">,</span>
             <span class="n">max_model_len</span><span class="o">=</span><span class="nb">min</span><span class="p">(</span><span class="n">true_max_model_len</span><span class="p">,</span> <span class="n">MAX_CONTEXT_LENGTH</span><span class="p">),</span>
             <span class="n">download_dir</span><span class="o">=</span><span class="n">download_dir</span><span class="p">,</span>
@@ -3089,6 +3111,7 @@
         <span class="n">cache_dir</span><span class="o">=</span><span class="n">model_cache_dir</span><span class="p">,</span>
         <span class="n">token</span><span class="o">=</span><span class="n">token</span><span class="p">,</span>
         <span class="n">trust_remote_code</span><span class="o">=</span><span class="n">trust_remote_code</span><span class="p">,</span>
+        <span class="n">local_files_only</span><span class="o">=</span><span class="ow">not</span> <span class="n">internet_connection_available</span><span class="p">(),</span>
     <span class="p">)</span>
     <span class="n">num_retries</span> <span class="o">=</span> <span class="mi">5</span>
     <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_retries</span><span class="p">):</span>
@@ -3101,8 +3124,10 @@
                 <span class="n">padding_side</span><span class="o">=</span><span class="s2">&quot;left&quot;</span><span class="p">,</span>
                 <span class="n">truncation_side</span><span class="o">=</span><span class="s2">&quot;left&quot;</span><span class="p">,</span>
                 <span class="n">model_max_length</span><span class="o">=</span><span class="n">model_max_length</span><span class="p">,</span>
+                <span class="n">cache_dir</span><span class="o">=</span><span class="n">model_cache_dir</span><span class="p">,</span>
                 <span class="n">config</span><span class="o">=</span><span class="n">config</span><span class="p">,</span>
                 <span class="n">token</span><span class="o">=</span><span class="n">token</span><span class="p">,</span>
+                <span class="n">local_files_only</span><span class="o">=</span><span class="ow">not</span> <span class="n">internet_connection_available</span><span class="p">(),</span>
             <span class="p">)</span>
             <span class="k">break</span>
         <span class="k">except</span> <span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">JSONDecodeError</span><span class="p">,</span> <span class="ne">OSError</span><span class="p">,</span> <span class="ne">TypeError</span><span class="p">)</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
@@ -3160,7 +3185,7 @@
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">get_end_of_reasoning_token</span><span class="p">(</span><div class="mkapi-source-link" id="euroeval.benchmark_modules.vllm.get_end_of_reasoning_token"><a href="../../../../api/euroeval/benchmark_modules/vllm/#euroeval.benchmark_modules.vllm.get_end_of_reasoning_token" title="Go to docs">[docs]</a></div>
-    <span class="n">model</span><span class="p">:</span> <span class="s2">&quot;LLM&quot;</span><span class="p">,</span> <span class="n">tokeniser</span><span class="p">:</span> <span class="s2">&quot;PreTrainedTokenizer&quot;</span><span class="p">,</span> <span class="n">model_id</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">model</span><span class="p">:</span> <span class="s2">&quot;LLM&quot;</span><span class="p">,</span> <span class="n">tokeniser</span><span class="p">:</span> <span class="s2">&quot;PreTrainedTokenizer&quot;</span><span class="p">,</span> <span class="n">model_config</span><span class="p">:</span> <span class="s2">&quot;ModelConfig&quot;</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the end-of-reasoning token for a generative model.</span>
 
@@ -3169,21 +3194,26 @@
 <span class="sd">            The vLLM model.</span>
 <span class="sd">        tokeniser:</span>
 <span class="sd">            The tokeniser.</span>
-<span class="sd">        model_id:</span>
-<span class="sd">            The model ID.</span>
+<span class="sd">        model_config:</span>
+<span class="sd">            The model configuration.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The end of reasoning token, or None if it could not be found.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">model_id</span> <span class="o">=</span> <span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span>
+
     <span class="c1"># Create a prompt to check if the model uses the reasoning tokens</span>
     <span class="n">prompt</span> <span class="o">=</span> <span class="s2">&quot;What is your name?&quot;</span>
     <span class="k">if</span> <span class="n">has_chat_template</span><span class="p">(</span><span class="n">tokeniser</span><span class="o">=</span><span class="n">tokeniser</span><span class="p">):</span>
+        <span class="n">extra_kwargs</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">model_config</span><span class="o">.</span><span class="n">param</span> <span class="ow">in</span> <span class="p">{</span><span class="s2">&quot;thinking&quot;</span><span class="p">,</span> <span class="s2">&quot;no-thinking&quot;</span><span class="p">}:</span>
+            <span class="n">extra_kwargs</span><span class="p">[</span><span class="s2">&quot;enable_thinking&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">model_config</span><span class="o">.</span><span class="n">param</span> <span class="o">==</span> <span class="s2">&quot;thinking&quot;</span>
         <span class="n">templated_prompt</span> <span class="o">=</span> <span class="n">apply_chat_template</span><span class="p">(</span>
             <span class="n">conversation</span><span class="o">=</span><span class="p">[</span><span class="nb">dict</span><span class="p">(</span><span class="n">role</span><span class="o">=</span><span class="s2">&quot;user&quot;</span><span class="p">,</span> <span class="n">content</span><span class="o">=</span><span class="n">prompt</span><span class="p">)],</span>
             <span class="n">tokeniser</span><span class="o">=</span><span class="n">tokeniser</span><span class="p">,</span>
             <span class="n">tokenise</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
             <span class="n">add_generation_prompt</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-            <span class="n">enable_thinking</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="o">**</span><span class="n">extra_kwargs</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">templated_prompt</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span>
         <span class="n">prompt</span> <span class="o">=</span> <span class="n">templated_prompt</span>
@@ -3206,8 +3236,8 @@
     <span class="k">if</span> <span class="ow">not</span> <span class="n">bor_reasoning_matches</span><span class="p">:</span>
         <span class="n">log_once</span><span class="p">(</span>
             <span class="sa">f</span><span class="s2">&quot;The model </span><span class="si">{</span><span class="n">model_id</span><span class="si">!r}</span><span class="s2"> did not generate any beginning-of-reasoning &quot;</span>
-            <span class="s2">&quot;tokens in the prompt or the completion. Assuming the model is not &quot;</span>
-            <span class="s2">&quot;a reasoning model.&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;tokens in the prompt or the completion. Assuming the model is not a &quot;</span>
+            <span class="s2">&quot;reasoning model.&quot;</span><span class="p">,</span>
             <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="k">return</span> <span class="kc">None</span>

@@ -12,7 +12,7 @@
       
       
       <link rel="icon" href="../../../gfx/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.18">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.19">
     
     
       
@@ -1151,7 +1151,15 @@
 <span class="normal">291</span>
 <span class="normal">292</span>
 <span class="normal">293</span>
-<span class="normal">294</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Command-line interface for benchmarking.&quot;&quot;&quot;</span>
+<span class="normal">294</span>
+<span class="normal">295</span>
+<span class="normal">296</span>
+<span class="normal">297</span>
+<span class="normal">298</span>
+<span class="normal">299</span>
+<span class="normal">300</span>
+<span class="normal">301</span>
+<span class="normal">302</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Command-line interface for benchmarking.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">click</span>
 
@@ -1369,6 +1377,12 @@
     <span class="n">help</span><span class="o">=</span><span class="s2">&quot;The type of generative model. Only relevant if the model is generative. If &quot;</span>
     <span class="s2">&quot;not specified, the type will be inferred automatically.&quot;</span><span class="p">,</span>
 <span class="p">)</span>
+<span class="nd">@click</span><span class="o">.</span><span class="n">option</span><span class="p">(</span>
+    <span class="s2">&quot;--download-only&quot;</span><span class="p">,</span>
+    <span class="n">is_flag</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Only download the requested model weights and datasets, and exit.&quot;</span><span class="p">,</span>
+    <span class="n">default</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+<span class="p">)</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">benchmark</span><span class="p">(</span><div class="mkapi-source-link" id="euroeval.cli.benchmark"><a href="../../../api/euroeval/cli/#euroeval.cli.benchmark" title="Go to docs">[docs]</a></div>
     <span class="n">model</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
     <span class="n">dataset</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
@@ -1396,6 +1410,7 @@
     <span class="n">debug</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
     <span class="n">requires_safetensors</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
     <span class="n">generative_type</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">download_only</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Benchmark pretrained language models on language tasks.&quot;&quot;&quot;</span>
     <span class="n">models</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
@@ -1437,6 +1452,7 @@
         <span class="n">debug</span><span class="o">=</span><span class="n">debug</span><span class="p">,</span>
         <span class="n">run_with_cli</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
         <span class="n">requires_safetensors</span><span class="o">=</span><span class="n">requires_safetensors</span><span class="p">,</span>
+        <span class="n">download_only</span><span class="o">=</span><span class="n">download_only</span><span class="p">,</span>
     <span class="p">)</span>
 
     <span class="c1"># Perform the benchmark evaluation</span>

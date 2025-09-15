@@ -12,7 +12,7 @@
       
       
       <link rel="icon" href="../../../gfx/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.18">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.19">
     
     
       
@@ -832,6 +832,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#euroeval.utils.resolve_model_path" class="md-nav__link">
+    <span class="md-ellipsis">
+      resolve_model_path
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#euroeval.utils.clear_memory" class="md-nav__link">
     <span class="md-ellipsis">
       clear_memory
@@ -1542,7 +1551,79 @@
 <span class="normal">520</span>
 <span class="normal">521</span>
 <span class="normal">522</span>
-<span class="normal">523</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Utility functions to be used in other scripts.&quot;&quot;&quot;</span>
+<span class="normal">523</span>
+<span class="normal">524</span>
+<span class="normal">525</span>
+<span class="normal">526</span>
+<span class="normal">527</span>
+<span class="normal">528</span>
+<span class="normal">529</span>
+<span class="normal">530</span>
+<span class="normal">531</span>
+<span class="normal">532</span>
+<span class="normal">533</span>
+<span class="normal">534</span>
+<span class="normal">535</span>
+<span class="normal">536</span>
+<span class="normal">537</span>
+<span class="normal">538</span>
+<span class="normal">539</span>
+<span class="normal">540</span>
+<span class="normal">541</span>
+<span class="normal">542</span>
+<span class="normal">543</span>
+<span class="normal">544</span>
+<span class="normal">545</span>
+<span class="normal">546</span>
+<span class="normal">547</span>
+<span class="normal">548</span>
+<span class="normal">549</span>
+<span class="normal">550</span>
+<span class="normal">551</span>
+<span class="normal">552</span>
+<span class="normal">553</span>
+<span class="normal">554</span>
+<span class="normal">555</span>
+<span class="normal">556</span>
+<span class="normal">557</span>
+<span class="normal">558</span>
+<span class="normal">559</span>
+<span class="normal">560</span>
+<span class="normal">561</span>
+<span class="normal">562</span>
+<span class="normal">563</span>
+<span class="normal">564</span>
+<span class="normal">565</span>
+<span class="normal">566</span>
+<span class="normal">567</span>
+<span class="normal">568</span>
+<span class="normal">569</span>
+<span class="normal">570</span>
+<span class="normal">571</span>
+<span class="normal">572</span>
+<span class="normal">573</span>
+<span class="normal">574</span>
+<span class="normal">575</span>
+<span class="normal">576</span>
+<span class="normal">577</span>
+<span class="normal">578</span>
+<span class="normal">579</span>
+<span class="normal">580</span>
+<span class="normal">581</span>
+<span class="normal">582</span>
+<span class="normal">583</span>
+<span class="normal">584</span>
+<span class="normal">585</span>
+<span class="normal">586</span>
+<span class="normal">587</span>
+<span class="normal">588</span>
+<span class="normal">589</span>
+<span class="normal">590</span>
+<span class="normal">591</span>
+<span class="normal">592</span>
+<span class="normal">593</span>
+<span class="normal">594</span>
+<span class="normal">595</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Utility functions to be used in other scripts.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">asyncio</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">gc</span>
@@ -1552,6 +1633,7 @@
 <span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">random</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">socket</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">t</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
@@ -1562,10 +1644,8 @@
 <span class="kn">import</span><span class="w"> </span><span class="nn">huggingface_hub</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">hf_hub</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">litellm</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">requests</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">datasets.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">disable_progress_bar</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">requests.exceptions</span><span class="w"> </span><span class="kn">import</span> <span class="n">RequestException</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">logging</span> <span class="k">as</span> <span class="n">tf_logging</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">.exceptions</span><span class="w"> </span><span class="kn">import</span> <span class="n">InvalidBenchmark</span><span class="p">,</span> <span class="n">InvalidModel</span><span class="p">,</span> <span class="n">NaNValueInModelOutput</span>
@@ -1596,6 +1676,68 @@
     <span class="n">_model_id</span> <span class="o">=</span> <span class="n">model_id</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;/&quot;</span><span class="p">,</span> <span class="s2">&quot;--&quot;</span><span class="p">)</span>
     <span class="n">cache_dir_path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">cache_dir</span><span class="p">)</span> <span class="o">/</span> <span class="s2">&quot;model_cache&quot;</span> <span class="o">/</span> <span class="n">_model_id</span>
     <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">cache_dir_path</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">resolve_model_path</span><span class="p">(</span><span class="n">download_dir</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span><div class="mkapi-source-link" id="euroeval.utils.resolve_model_path"><a href="../../../api/euroeval/utils/#euroeval.utils.resolve_model_path" title="Go to docs">[docs]</a></div>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Resolve the path to the directory containing the model config files and weights.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        download_dir:</span>
+<span class="sd">            The download directory</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        The path to the model.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">model_path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">download_dir</span><span class="p">)</span>
+    <span class="c1"># Get the &#39;path safe&#39; version of the model id, which is the last dir in the path</span>
+    <span class="n">model_id_path</span> <span class="o">=</span> <span class="n">model_path</span><span class="o">.</span><span class="n">name</span>
+    <span class="c1"># Hf hub `cache_dir` puts the files in models--`model_id_path`/snapshots</span>
+    <span class="n">model_path</span> <span class="o">=</span> <span class="n">model_path</span> <span class="o">/</span> <span class="sa">f</span><span class="s2">&quot;models--</span><span class="si">{</span><span class="n">model_id_path</span><span class="si">}</span><span class="s2">&quot;</span> <span class="o">/</span> <span class="s2">&quot;snapshots&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">model_path</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+        <span class="k">raise</span> <span class="n">InvalidModel</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;Attempted to load models from the </span><span class="si">{</span><span class="n">model_path</span><span class="si">}</span><span class="s2"> directory, &quot;</span>
+            <span class="s2">&quot;but it does not exist.&quot;</span>
+        <span class="p">)</span>
+
+    <span class="c1"># Get all files in the model path</span>
+    <span class="n">found_files</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="n">found_file</span> <span class="k">for</span> <span class="n">found_file</span> <span class="ow">in</span> <span class="n">model_path</span><span class="o">.</span><span class="n">rglob</span><span class="p">(</span><span class="s2">&quot;*&quot;</span><span class="p">)</span> <span class="k">if</span> <span class="n">found_file</span><span class="o">.</span><span class="n">is_file</span><span class="p">()</span>
+    <span class="p">]</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">found_files</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">InvalidModel</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;No model files found at </span><span class="si">{</span><span class="n">model_path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="c1"># Make sure that there arent multiples of the files found</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">found_files</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">found_files</span><span class="p">)):</span>
+        <span class="k">raise</span> <span class="n">InvalidModel</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;Found multiple model config files for </span><span class="si">{</span><span class="n">model_id_path</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span><span class="s1">&#39;models--&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;at </span><span class="si">{</span><span class="n">model_path</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="p">)</span>
+
+    <span class="c1"># Check that found_files contains at least a &#39;config.json&#39;</span>
+    <span class="n">config_file</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span>
+        <span class="p">(</span><span class="n">file</span> <span class="k">for</span> <span class="n">file</span> <span class="ow">in</span> <span class="n">found_files</span> <span class="k">if</span> <span class="n">file</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="s2">&quot;config.json&quot;</span><span class="p">),</span> <span class="kc">None</span>
+    <span class="p">)</span>
+    <span class="k">if</span> <span class="n">config_file</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">InvalidModel</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;Missing required file &#39;config.json&#39; for </span><span class="si">{</span><span class="n">model_id_path</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span><span class="s1">&#39;models--&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;at </span><span class="si">{</span><span class="n">model_path</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="p">)</span>
+    <span class="n">model_path</span> <span class="o">=</span> <span class="n">config_file</span><span class="o">.</span><span class="n">parent</span>
+
+    <span class="c1"># As a precaution we also check that all of the files are in the same directory</span>
+    <span class="c1"># if not we create a new dir with symlinks to all of the files from all snapshots</span>
+    <span class="c1"># this is especially useful for vllm where we can only specify one folder and e.g.,</span>
+    <span class="c1"># the safetensors version of the weights was added in an unmerged PR</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">(</span>
+        <span class="p">[</span><span class="n">found_file</span><span class="o">.</span><span class="n">parent</span> <span class="o">==</span> <span class="n">found_files</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">parent</span> <span class="k">for</span> <span class="n">found_file</span> <span class="ow">in</span> <span class="n">found_files</span><span class="p">]</span>
+    <span class="p">):</span>
+        <span class="n">new_model_path</span> <span class="o">=</span> <span class="n">model_path</span><span class="o">.</span><span class="n">parent</span> <span class="o">/</span> <span class="s2">&quot;model_files&quot;</span>
+        <span class="n">new_model_path</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">found_file</span> <span class="ow">in</span> <span class="n">found_files</span><span class="p">:</span>
+            <span class="n">Path</span><span class="p">(</span><span class="n">new_model_path</span> <span class="o">/</span> <span class="n">found_file</span><span class="o">.</span><span class="n">name</span><span class="p">)</span><span class="o">.</span><span class="n">symlink_to</span><span class="p">(</span><span class="n">found_file</span><span class="p">)</span>
+        <span class="n">model_path</span> <span class="o">=</span> <span class="n">new_model_path</span>
+
+    <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">model_path</span><span class="p">)</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">clear_memory</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span><div class="mkapi-source-link" id="euroeval.utils.clear_memory"><a href="../../../api/euroeval/utils/#euroeval.utils.clear_memory" title="Go to docs">[docs]</a></div>
@@ -1635,6 +1777,9 @@
 <span class="sd">    libraries, disabled tokeniser progress bars when using Hugging Face tokenisers, and</span>
 <span class="sd">    disables most of the logging from the `transformers` library.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;FULL_LOG&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="s2">&quot;1&quot;</span><span class="p">:</span>
+        <span class="k">return</span>
+
     <span class="c1"># Ignore miscellaneous warnings</span>
     <span class="n">warnings</span><span class="o">.</span><span class="n">filterwarnings</span><span class="p">(</span><span class="s2">&quot;ignore&quot;</span><span class="p">,</span> <span class="n">category</span><span class="o">=</span><span class="ne">UserWarning</span><span class="p">)</span>
     <span class="n">warnings</span><span class="o">.</span><span class="n">filterwarnings</span><span class="p">(</span><span class="s2">&quot;ignore&quot;</span><span class="p">,</span> <span class="n">category</span><span class="o">=</span><span class="ne">FutureWarning</span><span class="p">)</span>
@@ -1740,6 +1885,7 @@
     <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">major</span><span class="si">}</span><span class="s2">.</span><span class="si">{</span><span class="n">minor</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
 
+<span class="nd">@cache</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">internet_connection_available</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span><div class="mkapi-source-link" id="euroeval.utils.internet_connection_available"><a href="../../../api/euroeval/utils/#euroeval.utils.internet_connection_available" title="Go to docs">[docs]</a></div>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Checks if internet connection is available by pinging google.com.</span>
 
@@ -1747,10 +1893,17 @@
 <span class="sd">        Whether or not internet connection is available.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">try</span><span class="p">:</span>
-        <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;https://www.google.com&quot;</span><span class="p">)</span>
+        <span class="n">s</span> <span class="o">=</span> <span class="n">socket</span><span class="o">.</span><span class="n">create_connection</span><span class="p">((</span><span class="s2">&quot;1.1.1.1&quot;</span><span class="p">,</span> <span class="mi">80</span><span class="p">))</span>
+        <span class="n">s</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
         <span class="k">return</span> <span class="kc">True</span>
-    <span class="k">except</span> <span class="n">RequestException</span><span class="p">:</span>
-        <span class="k">return</span> <span class="kc">False</span>
+    <span class="c1"># a bit ugly but we dont want to actually import the pytest-socket exceptions</span>
+    <span class="c1"># we catch all exceptions and check if the name matches any known errors</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="n">pytest_socket_errors</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;SocketConnectBlockedError&quot;</span><span class="p">,</span> <span class="s2">&quot;SocketBlockedError&quot;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span> <span class="ow">in</span> <span class="n">pytest_socket_errors</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">e</span><span class="p">,</span> <span class="ne">OSError</span><span class="p">):</span>
+            <span class="k">return</span> <span class="kc">False</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">e</span>
 
 
 <span class="k">class</span><span class="w"> </span><span class="nc">HiddenPrints</span><span class="p">:</span><div class="mkapi-source-link" id="euroeval.utils.HiddenPrints"><a href="../../../api/euroeval/utils/#euroeval.utils.HiddenPrints" title="Go to docs">[docs]</a></div>

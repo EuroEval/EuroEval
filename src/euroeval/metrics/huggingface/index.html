@@ -12,7 +12,7 @@
       
       
       <link rel="icon" href="../../../../gfx/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.18">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.19">
     
     
       
@@ -829,6 +829,21 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="HuggingFaceMetric">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#euroeval.metrics.huggingface.HuggingFaceMetric.download" class="md-nav__link">
+    <span class="md-ellipsis">
+      download
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
     </ul>
@@ -1049,14 +1064,37 @@
 <span class="normal">189</span>
 <span class="normal">190</span>
 <span class="normal">191</span>
-<span class="normal">192</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;All the Hugging Face metrics used in EuroEval.&quot;&quot;&quot;</span>
+<span class="normal">192</span>
+<span class="normal">193</span>
+<span class="normal">194</span>
+<span class="normal">195</span>
+<span class="normal">196</span>
+<span class="normal">197</span>
+<span class="normal">198</span>
+<span class="normal">199</span>
+<span class="normal">200</span>
+<span class="normal">201</span>
+<span class="normal">202</span>
+<span class="normal">203</span>
+<span class="normal">204</span>
+<span class="normal">205</span>
+<span class="normal">206</span>
+<span class="normal">207</span>
+<span class="normal">208</span>
+<span class="normal">209</span>
+<span class="normal">210</span>
+<span class="normal">211</span>
+<span class="normal">212</span>
+<span class="normal">213</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;All the Hugging Face metrics used in EuroEval.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">c</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">t</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">evaluate</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">datasets</span><span class="w"> </span><span class="kn">import</span> <span class="n">DownloadConfig</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">..utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">HiddenPrints</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">Metric</span>
@@ -1127,6 +1165,23 @@
         <span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">metric</span><span class="p">:</span> <span class="s2">&quot;EvaluationModule | None&quot;</span> <span class="o">=</span> <span class="kc">None</span>
 
+    <span class="k">def</span><span class="w"> </span><span class="nf">download</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cache_dir</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;HuggingFaceMetric&quot;</span><span class="p">:</span><div class="mkapi-source-link" id="euroeval.metrics.huggingface.HuggingFaceMetric.download"><a href="../../../../api/euroeval/metrics/huggingface/#euroeval.metrics.huggingface.HuggingFaceMetric.download" title="Go to docs">[docs]</a></div>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initiates the download of the metric if needed.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            cache_dir:</span>
+<span class="sd">                The directory where the metric will be downloaded to.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            The metric object itself.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Annoying but needed to make the metric download to a different cache dir</span>
+        <span class="n">download_config</span> <span class="o">=</span> <span class="n">DownloadConfig</span><span class="p">(</span><span class="n">cache_dir</span><span class="o">=</span><span class="n">Path</span><span class="p">(</span><span class="n">cache_dir</span><span class="p">,</span> <span class="s2">&quot;evaluate&quot;</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">metric</span> <span class="o">=</span> <span class="n">evaluate</span><span class="o">.</span><span class="n">load</span><span class="p">(</span>
+            <span class="n">path</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">huggingface_id</span><span class="p">,</span> <span class="n">download_config</span><span class="o">=</span><span class="n">download_config</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span>
+
     <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">predictions</span><span class="p">:</span> <span class="n">c</span><span class="o">.</span><span class="n">Sequence</span><span class="p">,</span>
@@ -1154,7 +1209,9 @@
 <span class="sd">            The calculated metric score, or None if the score should be ignored.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">metric</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">metric</span> <span class="o">=</span> <span class="n">evaluate</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">huggingface_id</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">download</span><span class="p">(</span><span class="n">cache_dir</span><span class="o">=</span><span class="n">benchmark_config</span><span class="o">.</span><span class="n">cache_dir</span><span class="p">)</span>
+
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">metric</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
 
         <span class="k">with</span> <span class="n">HiddenPrints</span><span class="p">():</span>
             <span class="n">results</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">metric</span><span class="o">.</span><span class="n">compute</span><span class="p">(</span>
@@ -1227,7 +1284,7 @@
     <span class="n">huggingface_id</span><span class="o">=</span><span class="s2">&quot;bertscore&quot;</span><span class="p">,</span>
     <span class="n">results_key</span><span class="o">=</span><span class="s2">&quot;f1&quot;</span><span class="p">,</span>
     <span class="n">compute_kwargs</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span>
-        <span class="n">model_type</span><span class="o">=</span><span class="s2">&quot;microsoft/mdeberta-v3-base&quot;</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="s2">&quot;auto&quot;</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="mi">1</span>
+        <span class="n">model_type</span><span class="o">=</span><span class="s2">&quot;microsoft/mdeberta-v3-base&quot;</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="s2">&quot;cpu&quot;</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="mi">16</span>
     <span class="p">),</span>
 <span class="p">)</span>
 

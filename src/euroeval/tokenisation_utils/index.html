@@ -12,7 +12,7 @@
       
       
       <link rel="icon" href="../../../gfx/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.18">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.19">
     
     
       
@@ -1539,13 +1539,7 @@
 <span class="normal">598</span>
 <span class="normal">599</span>
 <span class="normal">600</span>
-<span class="normal">601</span>
-<span class="normal">602</span>
-<span class="normal">603</span>
-<span class="normal">604</span>
-<span class="normal">605</span>
-<span class="normal">606</span>
-<span class="normal">607</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Utility functions related to tokenisation.&quot;&quot;&quot;</span>
+<span class="normal">601</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Utility functions related to tokenisation.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
@@ -2098,7 +2092,6 @@
     <span class="n">tokeniser</span><span class="p">:</span> <span class="s2">&quot;PreTrainedTokenizer&quot;</span><span class="p">,</span>
     <span class="n">tokenise</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
     <span class="n">add_generation_prompt</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
-    <span class="n">enable_thinking</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
     <span class="o">**</span><span class="n">extra_kwargs</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Apply the chat template to a prompt.</span>
@@ -2115,10 +2108,6 @@
 <span class="sd">            Whether to add a generation prompt at the end of the conversation. This is</span>
 <span class="sd">            only relevant for regular Hugging Face tokenisers, as Mistral tokenisers</span>
 <span class="sd">            always add a generation prompt.</span>
-<span class="sd">        enable_thinking:</span>
-<span class="sd">            Whether to enable special handling for reasoning models, such as adding</span>
-<span class="sd">            special tokens for thinking. This is only relevant for regular Hugging</span>
-<span class="sd">            Face tokenisers, as Mistral tokenisers always handle reasoning models.</span>
 <span class="sd">        **extra_kwargs:</span>
 <span class="sd">            Extra keyword arguments to pass to the tokeniser&#39;s `apply_chat_template`</span>
 <span class="sd">            method. Only relevant for regular Hugging Face tokenisers.</span>
@@ -2148,7 +2137,6 @@
             <span class="n">conversation</span><span class="o">=</span><span class="n">conversation</span><span class="p">,</span>
             <span class="n">add_generation_prompt</span><span class="o">=</span><span class="n">add_generation_prompt</span><span class="p">,</span>
             <span class="n">tokenize</span><span class="o">=</span><span class="n">tokenise</span><span class="p">,</span>
-            <span class="n">enable_thinking</span><span class="o">=</span><span class="n">enable_thinking</span><span class="p">,</span>
             <span class="o">**</span><span class="n">extra_kwargs</span><span class="p">,</span>
         <span class="p">)</span>
     <span class="k">return</span> <span class="n">templated_prompt</span>

@@ -12,7 +12,7 @@
       
       
       <link rel="icon" href="../../../gfx/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.18">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.19">
     
     
       
@@ -1015,7 +1015,10 @@
 <span class="normal">155</span>
 <span class="normal">156</span>
 <span class="normal">157</span>
-<span class="normal">158</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;All benchmarks tasks used in EuroEval.&quot;&quot;&quot;</span>
+<span class="normal">158</span>
+<span class="normal">159</span>
+<span class="normal">160</span>
+<span class="normal">161</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;All benchmarks tasks used in EuroEval.&quot;&quot;&quot;</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">.</span><span class="w"> </span><span class="kn">import</span> <span class="n">metrics</span> <span class="k">as</span> <span class="n">m</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.constants</span><span class="w"> </span><span class="kn">import</span> <span class="n">NUM_GENERATION_TOKENS_FOR_CLASSIFICATION</span>
@@ -1117,6 +1120,7 @@
     <span class="n">default_num_few_shot_examples</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
     <span class="n">default_max_generated_tokens</span><span class="o">=</span><span class="n">NUM_GENERATION_TOKENS_FOR_CLASSIFICATION</span><span class="p">,</span>
     <span class="n">default_labels</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;a&quot;</span><span class="p">,</span> <span class="s2">&quot;b&quot;</span><span class="p">,</span> <span class="s2">&quot;c&quot;</span><span class="p">,</span> <span class="s2">&quot;d&quot;</span><span class="p">],</span>
+    <span class="n">default_allowed_model_types</span><span class="o">=</span><span class="p">[</span><span class="n">ModelType</span><span class="o">.</span><span class="n">GENERATIVE</span><span class="p">],</span>
     <span class="n">uses_logprobs</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
 <span class="p">)</span>
 
@@ -1129,6 +1133,7 @@
     <span class="n">default_num_few_shot_examples</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
     <span class="n">default_max_generated_tokens</span><span class="o">=</span><span class="n">NUM_GENERATION_TOKENS_FOR_CLASSIFICATION</span><span class="p">,</span>
     <span class="n">default_labels</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;a&quot;</span><span class="p">,</span> <span class="s2">&quot;b&quot;</span><span class="p">,</span> <span class="s2">&quot;c&quot;</span><span class="p">,</span> <span class="s2">&quot;d&quot;</span><span class="p">],</span>
+    <span class="n">default_allowed_model_types</span><span class="o">=</span><span class="p">[</span><span class="n">ModelType</span><span class="o">.</span><span class="n">GENERATIVE</span><span class="p">],</span>
     <span class="n">uses_logprobs</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
 <span class="p">)</span>
 
@@ -1141,6 +1146,7 @@
     <span class="n">default_num_few_shot_examples</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
     <span class="n">default_max_generated_tokens</span><span class="o">=</span><span class="n">NUM_GENERATION_TOKENS_FOR_CLASSIFICATION</span><span class="p">,</span>
     <span class="n">default_labels</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;a&quot;</span><span class="p">,</span> <span class="s2">&quot;b&quot;</span><span class="p">,</span> <span class="s2">&quot;c&quot;</span><span class="p">,</span> <span class="s2">&quot;d&quot;</span><span class="p">],</span>
+    <span class="n">default_allowed_model_types</span><span class="o">=</span><span class="p">[</span><span class="n">ModelType</span><span class="o">.</span><span class="n">GENERATIVE</span><span class="p">],</span>
     <span class="n">uses_logprobs</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
 <span class="p">)</span>
 

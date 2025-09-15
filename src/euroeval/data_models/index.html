@@ -12,7 +12,7 @@
       
       
       <link rel="icon" href="../../../gfx/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.18">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.19">
     
     
       
@@ -1925,7 +1925,11 @@
 <span class="normal">777</span>
 <span class="normal">778</span>
 <span class="normal">779</span>
-<span class="normal">780</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Data models used in EuroEval.&quot;&quot;&quot;</span>
+<span class="normal">780</span>
+<span class="normal">781</span>
+<span class="normal">782</span>
+<span class="normal">783</span>
+<span class="normal">784</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Data models used in EuroEval.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">pathlib</span>
@@ -2155,6 +2159,9 @@
 <span class="sd">        generative_type:</span>
 <span class="sd">            The type of generative model to benchmark. Only relevant if the model is</span>
 <span class="sd">            generative.</span>
+<span class="sd">        download_only:</span>
+<span class="sd">            Whether to only download the models, metrics and datasets without</span>
+<span class="sd">            evaluating.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="n">model_languages</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Language</span><span class="p">]</span>
@@ -2182,6 +2189,7 @@
     <span class="n">run_with_cli</span><span class="p">:</span> <span class="nb">bool</span>
     <span class="n">requires_safetensors</span><span class="p">:</span> <span class="nb">bool</span>
     <span class="n">generative_type</span><span class="p">:</span> <span class="n">GenerativeType</span> <span class="o">|</span> <span class="kc">None</span>
+    <span class="n">download_only</span><span class="p">:</span> <span class="nb">bool</span>
 
 
 <span class="k">class</span><span class="w"> </span><span class="nc">BenchmarkConfigParams</span><span class="p">(</span><span class="n">pydantic</span><span class="o">.</span><span class="n">BaseModel</span><span class="p">):</span><div class="mkapi-source-link" id="euroeval.data_models.BenchmarkConfigParams"><a href="../../../api/euroeval/data_models/#euroeval.data_models.BenchmarkConfigParams" title="Go to docs">[docs]</a></div>

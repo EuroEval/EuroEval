@@ -12,7 +12,7 @@
       
       
       <link rel="icon" href="../../../gfx/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.18">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.19">
     
     
       
@@ -1228,7 +1228,11 @@
 <span class="normal">332</span>
 <span class="normal">333</span>
 <span class="normal">334</span>
-<span class="normal">335</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Factory class for creating dataset configurations.&quot;&quot;&quot;</span>
+<span class="normal">335</span>
+<span class="normal">336</span>
+<span class="normal">337</span>
+<span class="normal">338</span>
+<span class="normal">339</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Factory class for creating dataset configurations.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
@@ -1277,6 +1281,7 @@
     <span class="n">debug</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
     <span class="n">run_with_cli</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
     <span class="n">requires_safetensors</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+    <span class="n">download_only</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BenchmarkConfig</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Create a benchmark configuration.</span>
 
@@ -1347,6 +1352,8 @@
 <span class="sd">            Whether the benchmark is being run with the CLI.</span>
 <span class="sd">        requires_safetensors:</span>
 <span class="sd">            Whether to only allow evaluations of models stored as safetensors.</span>
+<span class="sd">        download_only:</span>
+<span class="sd">            Whether to only download the requested model weights and datasets.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The benchmark configuration.</span>
@@ -1395,6 +1402,7 @@
         <span class="n">debug</span><span class="o">=</span><span class="n">debug</span><span class="p">,</span>
         <span class="n">run_with_cli</span><span class="o">=</span><span class="n">run_with_cli</span><span class="p">,</span>
         <span class="n">requires_safetensors</span><span class="o">=</span><span class="n">requires_safetensors</span><span class="p">,</span>
+        <span class="n">download_only</span><span class="o">=</span><span class="n">download_only</span><span class="p">,</span>
     <span class="p">)</span>
 
 <div class="mkapi-source-link" id="euroeval.benchmark_config_factory.get_correct_language_codes"><a href="../../../api/euroeval/benchmark_config_factory/#euroeval.benchmark_config_factory.get_correct_language_codes" title="Go to docs">[docs]</a></div>

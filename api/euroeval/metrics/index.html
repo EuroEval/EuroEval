@@ -16,7 +16,7 @@
       
       
       <link rel="icon" href="../../../gfx/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.18">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.19">
     
     
       
@@ -1952,6 +1952,21 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Metric">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#euroeval.metrics.Metric.download" class="md-nav__link">
+    <span class="md-ellipsis">
+      download
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -1960,6 +1975,21 @@
       HuggingFaceMetric
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="HuggingFaceMetric">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#euroeval.metrics.HuggingFaceMetric.download" class="md-nav__link">
+    <span class="md-ellipsis">
+      download
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -2170,6 +2200,73 @@ representation. Defaults to x -&gt; (100 * x, f"{x:.2%}").</p>
 </li>
 </ul>
 </div>
+<p class="mkapi-section">
+<span class="mkapi-object-link">
+<span class="mkapi-section-toggle" title="Toggle methods">
+<i class="fa-regular fa-square-minus"></i>
+</span>
+</span>
+<span class="mkapi-section-name">Methods</span>
+</p>
+<div class="mkapi-section-content">
+<ul class="mkapi-item-list">
+<li>
+<p><span class="mkapi-item-name"><a href="./#euroeval.metrics.Metric.download" title="euroeval.metrics.Metric.download">download</a></span>
+ <span class="mkapi-dash">&mdash;</span>
+Initiates the download of the metric if needed.</p>
+</li>
+</ul>
+</div>
+</div>
+<p class="mkapi-object mkapi-page-source" id="euroeval.metrics.Metric.download">
+<span class="mkapi-object-link">
+<span class="mkapi-parent-toggle" title="Toggle class names">
+<i class="fa-solid fa-square-plus"></i>
+</span>
+<span class="mkapi-definition-link"><a href="base/#euroeval.metrics.base.Metric.download" title="Go to definition"><i class="fa-solid fa-square-arrow-up-right"></i></a></span>
+<a href="../../../src/euroeval/metrics/base/#euroeval.metrics.base.Metric.download" title="Go to source">source</a>
+<span class="mkapi-document-toggle" title="Toggle all docs">
+<i class="fa-regular fa-square-minus"></i>
+</span>
+</span><span class="mkapi-object-kind">method</span>
+<span class="mkapi-object-parent">
+<a href="./#euroeval.metrics.Metric" title="euroeval.metrics.Metric">Metric</a><span class="mkapi-dot">.</span></span><span class="mkapi-object-name"><a href="./#euroeval.metrics.Metric.download" title="euroeval.metrics.Metric.download">download</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">cache_dir</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str</span><span class="mkapi-paren">)</span><span class="mkapi-arrow"> → </span><span class="mkapi-return"><a href="base/#euroeval.metrics.base.Metric" title="euroeval.metrics.base.Metric">Metric</a></span></span>
+</p>
+<div class="mkapi-document">
+<p>Initiates the download of the metric if needed.</p>
+<p class="mkapi-section">
+<span class="mkapi-object-link">
+<span class="mkapi-section-toggle" title="Toggle parameters">
+<i class="fa-regular fa-square-minus"></i>
+</span>
+</span>
+<span class="mkapi-section-name">Parameters</span>
+</p>
+<div class="mkapi-section-content">
+<ul class="mkapi-item-list">
+<li>
+<p><span class="mkapi-item-name">cache_dir</span> : 
+<span class="mkapi-item-type">str</span> <span class="mkapi-dash">&mdash;</span>
+The directory where the metric will be downloaded to.</p>
+</li>
+</ul>
+</div>
+<p class="mkapi-section">
+<span class="mkapi-object-link">
+<span class="mkapi-section-toggle" title="Toggle returns">
+<i class="fa-regular fa-square-minus"></i>
+</span>
+</span>
+<span class="mkapi-section-name">Returns</span>
+</p>
+<div class="mkapi-section-content">
+<ul class="mkapi-item-list">
+<li>
+<p><span class="mkapi-item-type"><a href="base/#euroeval.metrics.base.Metric" title="euroeval.metrics.base.Metric">Metric</a></span> <span class="mkapi-dash">&mdash;</span>
+The metric object itself.</p>
+</li>
+</ul>
+</div>
 </div>
 <p class="mkapi-object mkapi-page-source" id="euroeval.metrics.HuggingFaceMetric">
 <span class="mkapi-object-link">
@@ -2269,6 +2366,73 @@ an empty dictionary.</p>
 A function to apply to the metric scores after they are computed, taking
 the score to the postprocessed score along with its string
 representation. Defaults to x -&gt; (100 * x, f"{x:.2%}").</p>
+</li>
+</ul>
+</div>
+<p class="mkapi-section">
+<span class="mkapi-object-link">
+<span class="mkapi-section-toggle" title="Toggle methods">
+<i class="fa-regular fa-square-minus"></i>
+</span>
+</span>
+<span class="mkapi-section-name">Methods</span>
+</p>
+<div class="mkapi-section-content">
+<ul class="mkapi-item-list">
+<li>
+<p><span class="mkapi-item-name"><a href="./#euroeval.metrics.HuggingFaceMetric.download" title="euroeval.metrics.HuggingFaceMetric.download">download</a></span>
+ <span class="mkapi-dash">&mdash;</span>
+Initiates the download of the metric if needed.</p>
+</li>
+</ul>
+</div>
+</div>
+<p class="mkapi-object mkapi-page-source" id="euroeval.metrics.HuggingFaceMetric.download">
+<span class="mkapi-object-link">
+<span class="mkapi-parent-toggle" title="Toggle class names">
+<i class="fa-solid fa-square-plus"></i>
+</span>
+<span class="mkapi-definition-link"><a href="huggingface/#euroeval.metrics.huggingface.HuggingFaceMetric.download" title="Go to definition"><i class="fa-solid fa-square-arrow-up-right"></i></a></span>
+<a href="../../../src/euroeval/metrics/huggingface/#euroeval.metrics.huggingface.HuggingFaceMetric.download" title="Go to source">source</a>
+<span class="mkapi-document-toggle" title="Toggle all docs">
+<i class="fa-regular fa-square-minus"></i>
+</span>
+</span><span class="mkapi-object-kind">method</span>
+<span class="mkapi-object-parent">
+<a href="./#euroeval.metrics.HuggingFaceMetric" title="euroeval.metrics.HuggingFaceMetric">HuggingFaceMetric</a><span class="mkapi-dot">.</span></span><span class="mkapi-object-name"><a href="./#euroeval.metrics.HuggingFaceMetric.download" title="euroeval.metrics.HuggingFaceMetric.download">download</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">cache_dir</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str</span><span class="mkapi-paren">)</span><span class="mkapi-arrow"> → </span><span class="mkapi-return"><a href="huggingface/#euroeval.metrics.huggingface.HuggingFaceMetric" title="euroeval.metrics.huggingface.HuggingFaceMetric">HuggingFaceMetric</a></span></span>
+</p>
+<div class="mkapi-document">
+<p>Initiates the download of the metric if needed.</p>
+<p class="mkapi-section">
+<span class="mkapi-object-link">
+<span class="mkapi-section-toggle" title="Toggle parameters">
+<i class="fa-regular fa-square-minus"></i>
+</span>
+</span>
+<span class="mkapi-section-name">Parameters</span>
+</p>
+<div class="mkapi-section-content">
+<ul class="mkapi-item-list">
+<li>
+<p><span class="mkapi-item-name">cache_dir</span> : 
+<span class="mkapi-item-type">str</span> <span class="mkapi-dash">&mdash;</span>
+The directory where the metric will be downloaded to.</p>
+</li>
+</ul>
+</div>
+<p class="mkapi-section">
+<span class="mkapi-object-link">
+<span class="mkapi-section-toggle" title="Toggle returns">
+<i class="fa-regular fa-square-minus"></i>
+</span>
+</span>
+<span class="mkapi-section-name">Returns</span>
+</p>
+<div class="mkapi-section-content">
+<ul class="mkapi-item-list">
+<li>
+<p><span class="mkapi-item-type"><a href="huggingface/#euroeval.metrics.huggingface.HuggingFaceMetric" title="euroeval.metrics.huggingface.HuggingFaceMetric">HuggingFaceMetric</a></span> <span class="mkapi-dash">&mdash;</span>
+The metric object itself.</p>
 </li>
 </ul>
 </div>

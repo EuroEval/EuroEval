@@ -12,7 +12,7 @@
       
       
       <link rel="icon" href="../../../../gfx/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.18">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.19">
     
     
       
@@ -1015,7 +1015,8 @@
 <span class="normal">172</span>
 <span class="normal">173</span>
 <span class="normal">174</span>
-<span class="normal">175</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Templates for the Linguistic Acceptability task.&quot;&quot;&quot;</span>
+<span class="normal">175</span>
+<span class="normal">176</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Templates for the Linguistic Acceptability task.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">t</span>
 
@@ -1114,7 +1115,7 @@
         <span class="n">default_prompt_prefix</span><span class="o">=</span><span class="s2">&quot;Hetta eru nakrir setningar og um teir eru mállæruliga &quot;</span>
         <span class="s2">&quot;rættir.&quot;</span><span class="p">,</span>
         <span class="n">default_prompt_template</span><span class="o">=</span><span class="s2">&quot;Setningur: </span><span class="si">{text}</span><span class="se">\n</span><span class="s2">Mállæruliga rættur: </span><span class="si">{label}</span><span class="s2">&quot;</span><span class="p">,</span>
-        <span class="n">default_instruction_prompt</span><span class="o">=</span><span class="s2">&quot;Setningur: </span><span class="si">{text}</span><span class="se">\n\n</span><span class="s2">Greinið hvort setningurin er &quot;</span>
+        <span class="n">default_instruction_prompt</span><span class="o">=</span><span class="s2">&quot;Setningur: </span><span class="si">{text}</span><span class="se">\n\n</span><span class="s2">Greindu hvort setningurin er &quot;</span>
         <span class="s2">&quot;mállæruliga rættur ella ikki. Svara við </span><span class="si">{labels_str}</span><span class="s2">, og einki annað.&quot;</span><span class="p">,</span>
     <span class="p">),</span>
     <span class="n">FR</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
@@ -1128,11 +1129,12 @@
     <span class="p">),</span>
     <span class="n">IS</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
         <span class="n">default_prompt_label_mapping</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">correct</span><span class="o">=</span><span class="s2">&quot;já&quot;</span><span class="p">,</span> <span class="n">incorrect</span><span class="o">=</span><span class="s2">&quot;nei&quot;</span><span class="p">),</span>
-        <span class="n">default_prompt_prefix</span><span class="o">=</span><span class="s2">&quot;Eftirfarandi eru setningar og hvort þær eru &quot;</span>
-        <span class="s2">&quot;málfræðilega réttar.&quot;</span><span class="p">,</span>
+        <span class="n">default_prompt_prefix</span><span class="o">=</span><span class="s2">&quot;Hér fyrir neðan eru setningar ásamt mati á því hvort &quot;</span>
+        <span class="s2">&quot;þær eru málfræðilega réttar.&quot;</span><span class="p">,</span>
         <span class="n">default_prompt_template</span><span class="o">=</span><span class="s2">&quot;Setning: </span><span class="si">{text}</span><span class="se">\n</span><span class="s2">Málfræðilega rétt: </span><span class="si">{label}</span><span class="s2">&quot;</span><span class="p">,</span>
-        <span class="n">default_instruction_prompt</span><span class="o">=</span><span class="s2">&quot;Setning: </span><span class="si">{text}</span><span class="se">\n\n</span><span class="s2">Greinið hvort setningin er &quot;</span>
-        <span class="s2">&quot;málfræðilega rétt eða ekki. Svaraðu með </span><span class="si">{labels_str}</span><span class="s2">, og ekkert annað.&quot;</span><span class="p">,</span>
+        <span class="n">default_instruction_prompt</span><span class="o">=</span><span class="s2">&quot;Setning: </span><span class="si">{text}</span><span class="se">\n\n</span><span class="s2">Greindu hvort setningin er &quot;</span>
+        <span class="s2">&quot;málfræðilega rétt. Svaraðu með &#39;já&#39; ef setningin er rétt og &#39;nei&#39; ef hún &quot;</span>
+        <span class="s2">&quot;er það ekki.&quot;</span><span class="p">,</span>
     <span class="p">),</span>
     <span class="n">IT</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
         <span class="n">default_prompt_label_mapping</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">correct</span><span class="o">=</span><span class="s2">&quot;si&quot;</span><span class="p">,</span> <span class="n">incorrect</span><span class="o">=</span><span class="s2">&quot;no&quot;</span><span class="p">),</span>

@@ -12,7 +12,7 @@
       
       
       <link rel="icon" href="../../../gfx/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.18">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.19">
     
     
       
@@ -2073,7 +2073,120 @@
 <span class="normal">1144</span>
 <span class="normal">1145</span>
 <span class="normal">1146</span>
-<span class="normal">1147</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Class that benchmarks language models.&quot;&quot;&quot;</span>
+<span class="normal">1147</span>
+<span class="normal">1148</span>
+<span class="normal">1149</span>
+<span class="normal">1150</span>
+<span class="normal">1151</span>
+<span class="normal">1152</span>
+<span class="normal">1153</span>
+<span class="normal">1154</span>
+<span class="normal">1155</span>
+<span class="normal">1156</span>
+<span class="normal">1157</span>
+<span class="normal">1158</span>
+<span class="normal">1159</span>
+<span class="normal">1160</span>
+<span class="normal">1161</span>
+<span class="normal">1162</span>
+<span class="normal">1163</span>
+<span class="normal">1164</span>
+<span class="normal">1165</span>
+<span class="normal">1166</span>
+<span class="normal">1167</span>
+<span class="normal">1168</span>
+<span class="normal">1169</span>
+<span class="normal">1170</span>
+<span class="normal">1171</span>
+<span class="normal">1172</span>
+<span class="normal">1173</span>
+<span class="normal">1174</span>
+<span class="normal">1175</span>
+<span class="normal">1176</span>
+<span class="normal">1177</span>
+<span class="normal">1178</span>
+<span class="normal">1179</span>
+<span class="normal">1180</span>
+<span class="normal">1181</span>
+<span class="normal">1182</span>
+<span class="normal">1183</span>
+<span class="normal">1184</span>
+<span class="normal">1185</span>
+<span class="normal">1186</span>
+<span class="normal">1187</span>
+<span class="normal">1188</span>
+<span class="normal">1189</span>
+<span class="normal">1190</span>
+<span class="normal">1191</span>
+<span class="normal">1192</span>
+<span class="normal">1193</span>
+<span class="normal">1194</span>
+<span class="normal">1195</span>
+<span class="normal">1196</span>
+<span class="normal">1197</span>
+<span class="normal">1198</span>
+<span class="normal">1199</span>
+<span class="normal">1200</span>
+<span class="normal">1201</span>
+<span class="normal">1202</span>
+<span class="normal">1203</span>
+<span class="normal">1204</span>
+<span class="normal">1205</span>
+<span class="normal">1206</span>
+<span class="normal">1207</span>
+<span class="normal">1208</span>
+<span class="normal">1209</span>
+<span class="normal">1210</span>
+<span class="normal">1211</span>
+<span class="normal">1212</span>
+<span class="normal">1213</span>
+<span class="normal">1214</span>
+<span class="normal">1215</span>
+<span class="normal">1216</span>
+<span class="normal">1217</span>
+<span class="normal">1218</span>
+<span class="normal">1219</span>
+<span class="normal">1220</span>
+<span class="normal">1221</span>
+<span class="normal">1222</span>
+<span class="normal">1223</span>
+<span class="normal">1224</span>
+<span class="normal">1225</span>
+<span class="normal">1226</span>
+<span class="normal">1227</span>
+<span class="normal">1228</span>
+<span class="normal">1229</span>
+<span class="normal">1230</span>
+<span class="normal">1231</span>
+<span class="normal">1232</span>
+<span class="normal">1233</span>
+<span class="normal">1234</span>
+<span class="normal">1235</span>
+<span class="normal">1236</span>
+<span class="normal">1237</span>
+<span class="normal">1238</span>
+<span class="normal">1239</span>
+<span class="normal">1240</span>
+<span class="normal">1241</span>
+<span class="normal">1242</span>
+<span class="normal">1243</span>
+<span class="normal">1244</span>
+<span class="normal">1245</span>
+<span class="normal">1246</span>
+<span class="normal">1247</span>
+<span class="normal">1248</span>
+<span class="normal">1249</span>
+<span class="normal">1250</span>
+<span class="normal">1251</span>
+<span class="normal">1252</span>
+<span class="normal">1253</span>
+<span class="normal">1254</span>
+<span class="normal">1255</span>
+<span class="normal">1256</span>
+<span class="normal">1257</span>
+<span class="normal">1258</span>
+<span class="normal">1259</span>
+<span class="normal">1260</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Class that benchmarks language models.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">contextlib</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
@@ -2091,7 +2204,7 @@
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">.benchmark_config_factory</span><span class="w"> </span><span class="kn">import</span> <span class="n">build_benchmark_config</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.constants</span><span class="w"> </span><span class="kn">import</span> <span class="n">GENERATIVE_PIPELINE_TAGS</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">.data_loading</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_data</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.data_loading</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_data</span><span class="p">,</span> <span class="n">load_raw_data</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.data_models</span><span class="w"> </span><span class="kn">import</span> <span class="n">BenchmarkConfigParams</span><span class="p">,</span> <span class="n">BenchmarkResult</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.dataset_configs</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_all_dataset_configs</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.enums</span><span class="w"> </span><span class="kn">import</span> <span class="n">Device</span><span class="p">,</span> <span class="n">GenerativeType</span><span class="p">,</span> <span class="n">ModelType</span>
@@ -2103,7 +2216,12 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">.scores</span><span class="w"> </span><span class="kn">import</span> <span class="n">log_scores</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.speed_benchmark</span><span class="w"> </span><span class="kn">import</span> <span class="n">benchmark_speed</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.tasks</span><span class="w"> </span><span class="kn">import</span> <span class="n">SPEED</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">enforce_reproducibility</span><span class="p">,</span> <span class="n">get_package_version</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.utils</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">enforce_reproducibility</span><span class="p">,</span>
+    <span class="n">get_package_version</span><span class="p">,</span>
+    <span class="n">internet_connection_available</span><span class="p">,</span>
+    <span class="n">log_once</span><span class="p">,</span>
+<span class="p">)</span>
 
 <span class="k">if</span> <span class="n">t</span><span class="o">.</span><span class="n">TYPE_CHECKING</span><span class="p">:</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">.benchmark_modules</span><span class="w"> </span><span class="kn">import</span> <span class="n">BenchmarkModule</span>
@@ -2158,6 +2276,7 @@
         <span class="n">debug</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
         <span class="n">run_with_cli</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
         <span class="n">requires_safetensors</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">download_only</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialise the benchmarker.</span>
 
@@ -2239,13 +2358,25 @@
 <span class="sd">            requires_safetensors:</span>
 <span class="sd">                Whether to only allow models that use the safetensors format. Defaults</span>
 <span class="sd">                to False.</span>
+<span class="sd">            download_only:</span>
+<span class="sd">                Whether to only download models and datasets without performing any</span>
+<span class="sd">                benchmarking. Defaults to False.</span>
 
 <span class="sd">        Raises:</span>
 <span class="sd">            ValueError:</span>
-<span class="sd">                If both `task` and `dataset` are specified.</span>
+<span class="sd">                If both `task` and `dataset` are specified, or if `download_only`</span>
+<span class="sd">                is True and we have no internet connection.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="n">task</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">dataset</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Only one of `task` and `dataset` can be specified.&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">internet_connection_available</span><span class="p">()</span> <span class="ow">and</span> <span class="n">download_only</span><span class="p">:</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="s2">&quot;It appears you do not have an internet connection, but &quot;</span>
+            <span class="k">if</span> <span class="n">run_with_cli</span><span class="p">:</span>
+                <span class="n">msg</span> <span class="o">+=</span> <span class="s2">&quot;the --download-only flag was set.&quot;</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">msg</span> <span class="o">+=</span> <span class="s2">&quot;the argument `download_only` was set to True.&quot;</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
 
         <span class="c1"># Bail early if hf_transfer is enabled but not installed.</span>
         <span class="k">if</span> <span class="n">HF_HUB_ENABLE_HF_TRANSFER</span> <span class="ow">and</span> <span class="n">get_package_version</span><span class="p">(</span><span class="s2">&quot;hf_transfer&quot;</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
@@ -2297,16 +2428,81 @@
 
     <span class="nd">@property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">benchmark_results</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">BenchmarkResult</span><span class="p">]:</span><div class="mkapi-source-link" id="euroeval.benchmarker.Benchmarker.benchmark_results"><a href="../../../api/euroeval/benchmarker/#euroeval.benchmarker.Benchmarker.benchmark_results" title="Go to docs">[docs]</a></div>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;The benchmark results.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;The benchmark results.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            A list of benchmark results.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            ValueError:</span>
+<span class="sd">                If there is an error decoding a line in the results file.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">results_path</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+            <span class="n">benchmark_results</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">BenchmarkResult</span><span class="p">]</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
             <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">results_path</span><span class="o">.</span><span class="n">open</span><span class="p">()</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
-                <span class="k">return</span> <span class="p">[</span>
-                    <span class="n">BenchmarkResult</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">line</span><span class="p">))</span>
-                    <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">f</span>
-                    <span class="k">if</span> <span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
-                <span class="p">]</span>
+                <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">f</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">():</span>
+                        <span class="k">try</span><span class="p">:</span>
+                            <span class="n">result_dict</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span>
+                        <span class="k">except</span> <span class="n">json</span><span class="o">.</span><span class="n">JSONDecodeError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                                <span class="sa">f</span><span class="s2">&quot;Error decoding JSON line: </span><span class="si">{</span><span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span>
+                            <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
+
+                        <span class="c1"># Fix for older records</span>
+                        <span class="n">has_old_raw_results</span> <span class="o">=</span> <span class="p">(</span>
+                            <span class="s2">&quot;results&quot;</span> <span class="ow">in</span> <span class="n">result_dict</span>
+                            <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">result_dict</span><span class="p">[</span><span class="s2">&quot;results&quot;</span><span class="p">],</span> <span class="nb">dict</span><span class="p">)</span>
+                            <span class="ow">and</span> <span class="s2">&quot;raw&quot;</span> <span class="ow">in</span> <span class="n">result_dict</span><span class="p">[</span><span class="s2">&quot;results&quot;</span><span class="p">]</span>
+                            <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">result_dict</span><span class="p">[</span><span class="s2">&quot;results&quot;</span><span class="p">][</span><span class="s2">&quot;raw&quot;</span><span class="p">],</span> <span class="nb">dict</span><span class="p">)</span>
+                            <span class="ow">and</span> <span class="s2">&quot;test&quot;</span> <span class="ow">in</span> <span class="n">result_dict</span><span class="p">[</span><span class="s2">&quot;results&quot;</span><span class="p">][</span><span class="s2">&quot;raw&quot;</span><span class="p">]</span>
+                        <span class="p">)</span>
+                        <span class="k">if</span> <span class="n">has_old_raw_results</span><span class="p">:</span>
+                            <span class="n">result_dict</span><span class="p">[</span><span class="s2">&quot;results&quot;</span><span class="p">][</span><span class="s2">&quot;raw&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">result_dict</span><span class="p">[</span><span class="s2">&quot;results&quot;</span><span class="p">][</span>
+                                <span class="s2">&quot;raw&quot;</span>
+                            <span class="p">][</span><span class="s2">&quot;test&quot;</span><span class="p">]</span>
+
+                        <span class="n">result</span> <span class="o">=</span> <span class="n">BenchmarkResult</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span><span class="n">result_dict</span><span class="p">)</span>
+                        <span class="n">benchmark_results</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">benchmark_results</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">return</span> <span class="nb">list</span><span class="p">()</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_download</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">dataset_config</span><span class="p">:</span> <span class="s2">&quot;DatasetConfig&quot;</span><span class="p">,</span>
+        <span class="n">model_config</span><span class="p">:</span> <span class="s2">&quot;ModelConfig&quot;</span><span class="p">,</span>
+        <span class="n">benchmark_config</span><span class="p">:</span> <span class="s2">&quot;BenchmarkConfig&quot;</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Download data, metrics, and model for the given dataset, and model.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            dataset_config: The configuration for the dataset.</span>
+<span class="sd">            model_config: The configuration for the model.</span>
+<span class="sd">            benchmark_config: The configuration for the benchmark.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">log_once</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Loading data for </span><span class="si">{</span><span class="n">dataset_config</span><span class="o">.</span><span class="n">pretty_name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">)</span>
+        <span class="n">dataset</span> <span class="o">=</span> <span class="n">load_raw_data</span><span class="p">(</span>
+            <span class="n">dataset_config</span><span class="o">=</span><span class="n">dataset_config</span><span class="p">,</span> <span class="n">cache_dir</span><span class="o">=</span><span class="n">benchmark_config</span><span class="o">.</span><span class="n">cache_dir</span>
+        <span class="p">)</span>
+        <span class="k">del</span> <span class="n">dataset</span>
+
+        <span class="n">log_once</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Loading model </span><span class="si">{</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">)</span>
+        <span class="n">model</span> <span class="o">=</span> <span class="n">load_model</span><span class="p">(</span>
+            <span class="n">model_config</span><span class="o">=</span><span class="n">model_config</span><span class="p">,</span>
+            <span class="n">dataset_config</span><span class="o">=</span><span class="n">dataset_config</span><span class="p">,</span>
+            <span class="n">benchmark_config</span><span class="o">=</span><span class="n">benchmark_config</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">del</span> <span class="n">model</span>
+
+        <span class="n">log_once</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;Loading metrics for the &#39;</span><span class="si">{</span><span class="n">dataset_config</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39; task&quot;</span><span class="p">,</span>
+            <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">for</span> <span class="n">metric_name</span> <span class="ow">in</span> <span class="n">dataset_config</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">metrics</span><span class="p">:</span>
+            <span class="n">log_once</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Loading metric </span><span class="si">{</span><span class="n">metric_name</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">)</span>
+            <span class="n">metric</span> <span class="o">=</span> <span class="n">metric_name</span><span class="o">.</span><span class="n">download</span><span class="p">(</span><span class="n">cache_dir</span><span class="o">=</span><span class="n">benchmark_config</span><span class="o">.</span><span class="n">cache_dir</span><span class="p">)</span>
+            <span class="k">del</span> <span class="n">metric</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">benchmark</span><span class="p">(</span><div class="mkapi-source-link" id="euroeval.benchmarker.Benchmarker.benchmark"><a href="../../../api/euroeval/benchmarker/#euroeval.benchmarker.Benchmarker.benchmark" title="Go to docs">[docs]</a></div>
         <span class="bp">self</span><span class="p">,</span>
@@ -2411,6 +2607,9 @@
 <span class="sd">            requires_safetensors:</span>
 <span class="sd">                Whether to only allow models that use the safetensors format. Defaults</span>
 <span class="sd">                to the value specified when initialising the benchmarker.</span>
+<span class="sd">            download_only:</span>
+<span class="sd">                Whether to only download the models without evaluating them. Defaults</span>
+<span class="sd">                to the value specified when initialising the benchmarker.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            A list of benchmark results.</span>
@@ -2469,6 +2668,28 @@
                 <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">message</span><span class="p">)</span>
                 <span class="n">num_finished_benchmarks</span> <span class="o">+=</span> <span class="nb">len</span><span class="p">(</span><span class="n">dataset_configs</span><span class="p">)</span>
                 <span class="k">continue</span>
+
+            <span class="k">if</span> <span class="n">model_config</span><span class="o">.</span><span class="n">adapter_base_model_id</span><span class="p">:</span>
+                <span class="n">open_issue_msg</span> <span class="o">=</span> <span class="p">(</span>
+                    <span class="s2">&quot;If offline support is important to you, please &quot;</span>
+                    <span class="s2">&quot;consider opening an issue at https://github.com/EuroEval/EuroEval/issues.&quot;</span>
+                <span class="p">)</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">internet_connection_available</span><span class="p">():</span>
+                    <span class="k">raise</span> <span class="n">InvalidModel</span><span class="p">(</span>
+                        <span class="s2">&quot;Offline benchmarking of models with adapters is not currently &quot;</span>
+                        <span class="s2">&quot;supported. &quot;</span>
+                        <span class="sa">f</span><span class="s2">&quot;An active internet connection is required. </span><span class="si">{</span><span class="n">open_issue_msg</span><span class="si">}</span><span class="s2">&quot;</span>
+                    <span class="p">)</span>
+                <span class="k">elif</span> <span class="n">benchmark_config</span><span class="o">.</span><span class="n">download_only</span><span class="p">:</span>
+                    <span class="n">log_once</span><span class="p">(</span>
+                        <span class="s2">&quot;You are using download only mode with a model that includes &quot;</span>
+                        <span class="s2">&quot;an adapter. &quot;</span>
+                        <span class="s2">&quot;Please note: Offline benchmarking of adapter models is not &quot;</span>
+                        <span class="s2">&quot;currently supported. &quot;</span>
+                        <span class="s2">&quot;An internet connection will be required during evaluation. &quot;</span>
+                        <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">open_issue_msg</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                        <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">,</span>
+                    <span class="p">)</span>
 
             <span class="n">loaded_model</span><span class="p">:</span> <span class="n">BenchmarkModule</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
             <span class="n">benchmark_params_to_revert</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">t</span><span class="o">.</span><span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
@@ -2720,6 +2941,9 @@
 <span class="sd">            requires_safetensors:</span>
 <span class="sd">                Whether to only allow models that use the safetensors format. If None,</span>
 <span class="sd">                then this value will not be updated.</span>
+<span class="sd">            download_only:</span>
+<span class="sd">                Whether to only download the models without evaluating them. If None,</span>
+<span class="sd">                then this value will not be updated.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The updated benchmark configuration.</span>
@@ -2888,17 +3112,19 @@
                     <span class="n">model_param</span><span class="o">=</span><span class="n">model_config</span><span class="o">.</span><span class="n">param</span><span class="p">,</span>
                 <span class="p">)</span>
 
+                <span class="n">model_id_to_be_stored</span> <span class="o">=</span> <span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span>
+                <span class="k">if</span> <span class="n">model_config</span><span class="o">.</span><span class="n">revision</span> <span class="o">!=</span> <span class="s2">&quot;main&quot;</span><span class="p">:</span>
+                    <span class="n">model_id_to_be_stored</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot;@</span><span class="si">{</span><span class="n">model_config</span><span class="o">.</span><span class="n">revision</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="k">if</span> <span class="n">model_config</span><span class="o">.</span><span class="n">param</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="n">model_id_to_be_stored</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot;#</span><span class="si">{</span><span class="n">model_config</span><span class="o">.</span><span class="n">param</span><span class="si">}</span><span class="s2">&quot;</span>
+
                 <span class="n">record</span> <span class="o">=</span> <span class="n">BenchmarkResult</span><span class="p">(</span>
                     <span class="n">dataset</span><span class="o">=</span><span class="n">dataset_config</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
                     <span class="n">task</span><span class="o">=</span><span class="n">dataset_config</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
                     <span class="n">dataset_languages</span><span class="o">=</span><span class="p">[</span>
                         <span class="n">language</span><span class="o">.</span><span class="n">code</span> <span class="k">for</span> <span class="n">language</span> <span class="ow">in</span> <span class="n">dataset_config</span><span class="o">.</span><span class="n">languages</span>
                     <span class="p">],</span>
-                    <span class="n">model</span><span class="o">=</span><span class="p">(</span>
-                        <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span><span class="si">}</span><span class="s2">@</span><span class="si">{</span><span class="n">model_config</span><span class="o">.</span><span class="n">revision</span><span class="si">}</span><span class="s2">&quot;</span>
-                        <span class="k">if</span> <span class="n">model_config</span><span class="o">.</span><span class="n">revision</span> <span class="ow">and</span> <span class="n">model_config</span><span class="o">.</span><span class="n">revision</span> <span class="o">!=</span> <span class="s2">&quot;main&quot;</span>
-                        <span class="k">else</span> <span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span>
-                    <span class="p">),</span>
+                    <span class="n">model</span><span class="o">=</span><span class="n">model_id_to_be_stored</span><span class="p">,</span>
                     <span class="n">results</span><span class="o">=</span><span class="n">results</span><span class="p">,</span>
                     <span class="n">num_model_parameters</span><span class="o">=</span><span class="n">model</span><span class="o">.</span><span class="n">num_params</span><span class="p">,</span>
                     <span class="n">max_sequence_length</span><span class="o">=</span><span class="n">model</span><span class="o">.</span><span class="n">model_max_length</span><span class="p">,</span>

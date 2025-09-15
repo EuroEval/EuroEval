@@ -16,7 +16,7 @@
       
       
       <link rel="icon" href="../../../../gfx/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.18">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.19">
     
     
       
@@ -3064,7 +3064,7 @@ The loaded tokeniser.</p>
 <i class="fa-regular fa-square-minus"></i>
 </span>
 </span>
-<span class="mkapi-object-name"><a href="./#euroeval.benchmark_modules.vllm.get_end_of_reasoning_token" title="euroeval.benchmark_modules.vllm.get_end_of_reasoning_token">get_end_of_reasoning_token</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">model</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="vllm.LLM">LLM</span></span><span class="mkapi-comma">, </span><span class="mkapi-arg">tokeniser</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="transformers.tokenization_utils.PreTrainedTokenizer">PreTrainedTokenizer</span></span><span class="mkapi-comma">, </span><span class="mkapi-arg">model_id</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str</span><span class="mkapi-paren">)</span><span class="mkapi-arrow"> → </span><span class="mkapi-return">str | None</span></span>
+<span class="mkapi-object-name"><a href="./#euroeval.benchmark_modules.vllm.get_end_of_reasoning_token" title="euroeval.benchmark_modules.vllm.get_end_of_reasoning_token">get_end_of_reasoning_token</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">model</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="vllm.LLM">LLM</span></span><span class="mkapi-comma">, </span><span class="mkapi-arg">tokeniser</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="transformers.tokenization_utils.PreTrainedTokenizer">PreTrainedTokenizer</span></span><span class="mkapi-comma">, </span><span class="mkapi-arg">model_config</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><a href="../../data_models/#euroeval.data_models.ModelConfig" title="euroeval.data_models.ModelConfig">ModelConfig</a></span><span class="mkapi-paren">)</span><span class="mkapi-arrow"> → </span><span class="mkapi-return">str | None</span></span>
 </p>
 <div class="mkapi-document">
 <p>Get the end-of-reasoning token for a generative model.</p>
@@ -3089,9 +3089,9 @@ The vLLM model.</p>
 The tokeniser.</p>
 </li>
 <li>
-<p><span class="mkapi-item-name">model_id</span> : 
-<span class="mkapi-item-type">str</span> <span class="mkapi-dash">&mdash;</span>
-The model ID.</p>
+<p><span class="mkapi-item-name">model_config</span> : 
+<span class="mkapi-item-type"><a href="../../data_models/#euroeval.data_models.ModelConfig" title="euroeval.data_models.ModelConfig">ModelConfig</a></span> <span class="mkapi-dash">&mdash;</span>
+The model configuration.</p>
 </li>
 </ul>
 </div>

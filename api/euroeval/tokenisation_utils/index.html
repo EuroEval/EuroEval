@@ -16,7 +16,7 @@
       
       
       <link rel="icon" href="../../../gfx/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.18">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.19">
     
     
       
@@ -2625,7 +2625,7 @@ Whether the tokeniser has a chat template.</p>
 <i class="fa-regular fa-square-minus"></i>
 </span>
 </span>
-<span class="mkapi-object-name"><a href="./#euroeval.tokenisation_utils.apply_chat_template" title="euroeval.tokenisation_utils.apply_chat_template">apply_chat_template</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">conversation</span><span class="mkapi-colon">: </span><span class="mkapi-ann">list[dict[str, str]]</span><span class="mkapi-comma">, </span><span class="mkapi-arg">tokeniser</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="transformers.tokenization_utils.PreTrainedTokenizer">PreTrainedTokenizer</span></span><span class="mkapi-comma">, </span><span class="mkapi-arg">tokenise</span><span class="mkapi-colon">: </span><span class="mkapi-ann">bool</span><span class="mkapi-comma">, </span><span class="mkapi-arg">add_generation_prompt</span><span class="mkapi-colon">: </span><span class="mkapi-ann">bool</span><span class="mkapi-comma">, </span><span class="mkapi-arg">enable_thinking</span><span class="mkapi-colon">: </span><span class="mkapi-ann">bool</span><span class="mkapi-comma">, </span><span class="mkapi-star">**</span><span class="mkapi-arg">extra_kwargs</span><span class="mkapi-paren">)</span><span class="mkapi-arrow"> → </span><span class="mkapi-return">str | list[int]</span></span>
+<span class="mkapi-object-name"><a href="./#euroeval.tokenisation_utils.apply_chat_template" title="euroeval.tokenisation_utils.apply_chat_template">apply_chat_template</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">conversation</span><span class="mkapi-colon">: </span><span class="mkapi-ann">list[dict[str, str]]</span><span class="mkapi-comma">, </span><span class="mkapi-arg">tokeniser</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="transformers.tokenization_utils.PreTrainedTokenizer">PreTrainedTokenizer</span></span><span class="mkapi-comma">, </span><span class="mkapi-arg">tokenise</span><span class="mkapi-colon">: </span><span class="mkapi-ann">bool</span><span class="mkapi-comma">, </span><span class="mkapi-arg">add_generation_prompt</span><span class="mkapi-colon">: </span><span class="mkapi-ann">bool</span><span class="mkapi-comma">, </span><span class="mkapi-star">**</span><span class="mkapi-arg">extra_kwargs</span><span class="mkapi-paren">)</span><span class="mkapi-arrow"> → </span><span class="mkapi-return">str | list[int]</span></span>
 </p>
 <div class="mkapi-document">
 <p>Apply the chat template to a prompt.</p>
@@ -2661,13 +2661,6 @@ instead of a string.</p>
 Whether to add a generation prompt at the end of the conversation. This is
 only relevant for regular Hugging Face tokenisers, as Mistral tokenisers
 always add a generation prompt.</p>
-</li>
-<li>
-<p><span class="mkapi-item-name">enable_thinking</span> : 
-<span class="mkapi-item-type">bool</span> <span class="mkapi-dash">&mdash;</span>
-Whether to enable special handling for reasoning models, such as adding
-special tokens for thinking. This is only relevant for regular Hugging
-Face tokenisers, as Mistral tokenisers always handle reasoning models.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">**extra_kwargs</span>
