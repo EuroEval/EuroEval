@@ -7,7 +7,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 
 ## [Unreleased]
-
+### Fixed
+- Added missing benchmark arguments to the `Benchmarker.benchmark` method.
 
 
 ## [v16.2.1] - 2025-09-15
