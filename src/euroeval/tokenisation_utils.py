@@ -551,7 +551,6 @@ def apply_chat_template(
     tokeniser: "PreTrainedTokenizer",
     tokenise: bool,
     add_generation_prompt: bool,
-    enable_thinking: bool,
     **extra_kwargs,
 ) -> str | list[int]:
     """Apply the chat template to a prompt.
@@ -568,10 +567,6 @@ def apply_chat_template(
             Whether to add a generation prompt at the end of the conversation. This is
             only relevant for regular Hugging Face tokenisers, as Mistral tokenisers
             always add a generation prompt.
-        enable_thinking:
-            Whether to enable special handling for reasoning models, such as adding
-            special tokens for thinking. This is only relevant for regular Hugging
-            Face tokenisers, as Mistral tokenisers always handle reasoning models.
         **extra_kwargs:
             Extra keyword arguments to pass to the tokeniser's `apply_chat_template`
             method. Only relevant for regular Hugging Face tokenisers.
@@ -601,7 +596,6 @@ def apply_chat_template(
             conversation=conversation,
             add_generation_prompt=add_generation_prompt,
             tokenize=tokenise,
-            enable_thinking=enable_thinking,
             **extra_kwargs,
         )
     return templated_prompt

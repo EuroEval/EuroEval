@@ -146,7 +146,7 @@ class VLLMModel(HuggingFaceEncoderModel):
         )
 
         self.end_of_reasoning_token = get_end_of_reasoning_token(
-            model=self._model, tokeniser=self._tokeniser, model_id=model_config.model_id
+            model=self._model, tokeniser=self._tokeniser, model_config=model_config
         )
         self.end_of_chat_token_ids = get_end_of_chat_token_ids(
             tokeniser=self._tokeniser, generative_type=self.generative_type
@@ -996,7 +996,7 @@ def clear_vllm() -> None:
 
 
 def get_end_of_reasoning_token(
-    model: "LLM", tokeniser: "PreTrainedTokenizer", model_id: str
+    model: "LLM", tokeniser: "PreTrainedTokenizer", model_config: "ModelConfig"
 ) -> str | None:
     """Get the end-of-reasoning token for a generative model.
 
@@ -1005,21 +1005,26 @@ def get_end_of_reasoning_token(
             The vLLM model.
         tokeniser:
             The tokeniser.
-        model_id:
-            The model ID.
+        model_config:
+            The model configuration.
 
     Returns:
         The end of reasoning token, or None if it could not be found.
     """
+    model_id = model_config.model_id
+
     # Create a prompt to check if the model uses the reasoning tokens
     prompt = "What is your name?"
     if has_chat_template(tokeniser=tokeniser):
+        extra_kwargs = dict()
+        if model_config.param in {"thinking", "no-thinking"}:
+            extra_kwargs["enable_thinking"] = model_config.param == "thinking"
         templated_prompt = apply_chat_template(
             conversation=[dict(role="user", content=prompt)],
             tokeniser=tokeniser,
             tokenise=False,
             add_generation_prompt=True,
-            enable_thinking=True,
+            **extra_kwargs,
         )
         assert isinstance(templated_prompt, str)
         prompt = templated_prompt
@@ -1042,8 +1047,8 @@ def get_end_of_reasoning_token(
     if not bor_reasoning_matches:
         log_once(
             f"The model {model_id!r} did not generate any beginning-of-reasoning "
-            "tokens in the prompt or the completion. Assuming the model is not "
-            "a reasoning model.",
+            "tokens in the prompt or the completion. Assuming the model is not a "
+            "reasoning model.",
             level=logging.DEBUG,
         )
         return None

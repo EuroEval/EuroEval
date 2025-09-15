@@ -16,6 +16,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   get near-random performance and these scores are not used in the leaderboards. We can
   change this in the future if we find a way to make encoder models work better on these
   tasks.
+- For generative vLLM models that can swap between reasoning and non-reasoning modes,
+  we previously defaulted to reasoning. We now default to what the model uses by
+  default, which is non-reasoning for most models.
 
 ### Fixed
 - Fixed an issue where old evaluation records could not be loaded, as the format had
