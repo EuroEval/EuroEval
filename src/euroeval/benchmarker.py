@@ -223,6 +223,7 @@ class Benchmarker:
             api_version=api_version,
             gpu_memory_utilization=gpu_memory_utilization,
             generative_type=generative_type,
+            download_only=download_only,
             debug=debug,
             run_with_cli=run_with_cli,
             requires_safetensors=requires_safetensors,
@@ -339,6 +340,7 @@ class Benchmarker:
         few_shot: bool | None = None,
         num_iterations: int | None = None,
         requires_safetensors: bool | None = None,
+        download_only: bool | None = None,
     ) -> list[BenchmarkResult]:
         """Benchmarks models on datasets.
 
@@ -454,6 +456,7 @@ class Benchmarker:
             few_shot=few_shot,
             num_iterations=num_iterations,
             requires_safetensors=requires_safetensors,
+            download_only=download_only,
         )
 
         adjust_logging_level(verbose=benchmark_config.verbose)
@@ -677,6 +680,7 @@ class Benchmarker:
         debug: bool | None = None,
         run_with_cli: bool | None = None,
         requires_safetensors: bool | None = None,
+        download_only: bool | None = None,
     ) -> "BenchmarkConfig":
         """Get an updated benchmark configuration.
 
@@ -756,6 +760,9 @@ class Benchmarker:
             download_only:
                 Whether to only download the models without evaluating them. If None,
                 then this value will not be updated.
+            download_only:
+                Whether to only download models and datasets without performing any
+                benchmarking. If None, then this value will not be updated.
 
         Returns:
             The updated benchmark configuration.
@@ -812,6 +819,8 @@ class Benchmarker:
             benchmark_config_params.run_with_cli = run_with_cli
         if requires_safetensors is not None:
             benchmark_config_params.requires_safetensors = requires_safetensors
+        if download_only is not None:
+            benchmark_config_params.download_only = download_only
 
         return build_benchmark_config(**benchmark_config_params.model_dump())
 

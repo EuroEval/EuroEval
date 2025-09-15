@@ -7,7 +7,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 
 ## [Unreleased]
-
+### Fixed
+- Some of the `download_only` arguments were missing in the code, and have now been
+  added.
 
 
 ## [v16.2.0] - 2025-09-15

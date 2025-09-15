@@ -289,6 +289,7 @@ class BenchmarkConfigParams(pydantic.BaseModel):
     api_version: str | None
     gpu_memory_utilization: float
     generative_type: GenerativeType | None
+    download_only: bool
     debug: bool
     run_with_cli: bool
     requires_safetensors: bool
