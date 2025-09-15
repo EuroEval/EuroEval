@@ -266,10 +266,10 @@ class BenchmarkConfigParams(pydantic.BaseModel):
 
     model_config = pydantic.ConfigDict(protected_namespaces=())
 
-    progress_bar: bool
-    save_results: bool
     task: str | list[str] | None
     dataset: str | list[str] | None
+    progress_bar: bool
+    save_results: bool
     language: str | list[str]
     model_language: str | list[str] | None
     dataset_language: str | list[str] | None
@@ -278,8 +278,6 @@ class BenchmarkConfigParams(pydantic.BaseModel):
     raise_errors: bool
     cache_dir: str
     api_key: str | None
-    force: bool
-    verbose: bool
     trust_remote_code: bool
     clear_model_cache: bool
     evaluate_test_split: bool
@@ -287,12 +285,14 @@ class BenchmarkConfigParams(pydantic.BaseModel):
     num_iterations: int
     api_base: str | None
     api_version: str | None
+    requires_safetensors: bool
+    download_only: bool
     gpu_memory_utilization: float
     generative_type: GenerativeType | None
-    download_only: bool
+    force: bool
+    verbose: bool
     debug: bool
     run_with_cli: bool
-    requires_safetensors: bool
 
 
 class BenchmarkResult(pydantic.BaseModel):
