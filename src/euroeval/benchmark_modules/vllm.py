@@ -836,15 +836,18 @@ def load_model_and_tokeniser(
 
     clear_vllm()
 
-    # if we do not have an internet connection we need to give the path to the folder
-    # that contains the model weights and config files, otherwise vLLM will try to
-    # download them regardless if they are already present in the download_dir
-    model_path = resolve_model_path(download_dir)
-
     try:
         model = LLM(
-            model=model_id if internet_connection_available() else model_path,
-            tokenizer=model_id if internet_connection_available() else model_path,
+            model=(
+                model_id
+                if internet_connection_available()
+                else resolve_model_path(download_dir=download_dir)
+            ),
+            tokenizer=(
+                model_id
+                if internet_connection_available()
+                else resolve_model_path(download_dir=download_dir)
+            ),
             gpu_memory_utilization=benchmark_config.gpu_memory_utilization,
             max_model_len=min(true_max_model_len, MAX_CONTEXT_LENGTH),
             download_dir=download_dir,

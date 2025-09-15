@@ -62,6 +62,10 @@ def resolve_model_path(download_dir: str) -> str:
 
     Returns:
         The path to the model.
+
+    Raises:
+        InvalidModel:
+            If the model path is not valid, or if required files are missing.
     """
     model_path = Path(download_dir)
     # Get the 'path safe' version of the model id, which is the last dir in the path
