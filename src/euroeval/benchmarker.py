@@ -222,13 +222,26 @@ class Benchmarker:
 
     @property
     def benchmark_results(self) -> list[BenchmarkResult]:
-        """The benchmark results."""
+        """The benchmark results.
+
+        Returns:
+            A list of benchmark results.
+
+        Raises:
+            ValueError:
+                If there is an error decoding a line in the results file.
+        """
         if self.results_path.exists():
             benchmark_results: list[BenchmarkResult] = list()
             with self.results_path.open() as f:
                 for line in f:
                     if line.strip():
-                        result_dict = json.loads(line.strip())
+                        try:
+                            result_dict = json.loads(line.strip())
+                        except json.JSONDecodeError as e:
+                            raise ValueError(
+                                f"Error decoding JSON line: {line.strip()}"
+                            ) from e
 
                         # Fix for older records
                         has_old_raw_results = (
