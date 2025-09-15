@@ -2186,7 +2186,16 @@
 <span class="normal">1257</span>
 <span class="normal">1258</span>
 <span class="normal">1259</span>
-<span class="normal">1260</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Class that benchmarks language models.&quot;&quot;&quot;</span>
+<span class="normal">1260</span>
+<span class="normal">1261</span>
+<span class="normal">1262</span>
+<span class="normal">1263</span>
+<span class="normal">1264</span>
+<span class="normal">1265</span>
+<span class="normal">1266</span>
+<span class="normal">1267</span>
+<span class="normal">1268</span>
+<span class="normal">1269</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Class that benchmarks language models.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">contextlib</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
@@ -2411,13 +2420,14 @@
             <span class="n">api_version</span><span class="o">=</span><span class="n">api_version</span><span class="p">,</span>
             <span class="n">gpu_memory_utilization</span><span class="o">=</span><span class="n">gpu_memory_utilization</span><span class="p">,</span>
             <span class="n">generative_type</span><span class="o">=</span><span class="n">generative_type</span><span class="p">,</span>
+            <span class="n">download_only</span><span class="o">=</span><span class="n">download_only</span><span class="p">,</span>
             <span class="n">debug</span><span class="o">=</span><span class="n">debug</span><span class="p">,</span>
             <span class="n">run_with_cli</span><span class="o">=</span><span class="n">run_with_cli</span><span class="p">,</span>
             <span class="n">requires_safetensors</span><span class="o">=</span><span class="n">requires_safetensors</span><span class="p">,</span>
         <span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">benchmark_config</span> <span class="o">=</span> <span class="n">build_benchmark_config</span><span class="p">(</span>
-            <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">benchmark_config_default_params</span><span class="o">.</span><span class="n">model_dump</span><span class="p">()</span>
+            <span class="n">benchmark_config_params</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">benchmark_config_default_params</span>
         <span class="p">)</span>
 
         <span class="c1"># Initialise variable storing model lists, so we only have to fetch it once</span>
@@ -2527,6 +2537,7 @@
         <span class="n">few_shot</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">num_iterations</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">requires_safetensors</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">download_only</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">BenchmarkResult</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Benchmarks models on datasets.</span>
 
@@ -2642,6 +2653,7 @@
             <span class="n">few_shot</span><span class="o">=</span><span class="n">few_shot</span><span class="p">,</span>
             <span class="n">num_iterations</span><span class="o">=</span><span class="n">num_iterations</span><span class="p">,</span>
             <span class="n">requires_safetensors</span><span class="o">=</span><span class="n">requires_safetensors</span><span class="p">,</span>
+            <span class="n">download_only</span><span class="o">=</span><span class="n">download_only</span><span class="p">,</span>
         <span class="p">)</span>
 
         <span class="n">adjust_logging_level</span><span class="p">(</span><span class="n">verbose</span><span class="o">=</span><span class="n">benchmark_config</span><span class="o">.</span><span class="n">verbose</span><span class="p">)</span>
@@ -2865,6 +2877,7 @@
         <span class="n">debug</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">run_with_cli</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">requires_safetensors</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">download_only</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;BenchmarkConfig&quot;</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get an updated benchmark configuration.</span>
 
@@ -2944,6 +2957,9 @@
 <span class="sd">            download_only:</span>
 <span class="sd">                Whether to only download the models without evaluating them. If None,</span>
 <span class="sd">                then this value will not be updated.</span>
+<span class="sd">            download_only:</span>
+<span class="sd">                Whether to only download models and datasets without performing any</span>
+<span class="sd">                benchmarking. If None, then this value will not be updated.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The updated benchmark configuration.</span>
@@ -3000,8 +3016,10 @@
             <span class="n">benchmark_config_params</span><span class="o">.</span><span class="n">run_with_cli</span> <span class="o">=</span> <span class="n">run_with_cli</span>
         <span class="k">if</span> <span class="n">requires_safetensors</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">benchmark_config_params</span><span class="o">.</span><span class="n">requires_safetensors</span> <span class="o">=</span> <span class="n">requires_safetensors</span>
+        <span class="k">if</span> <span class="n">download_only</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">benchmark_config_params</span><span class="o">.</span><span class="n">download_only</span> <span class="o">=</span> <span class="n">download_only</span>
 
-        <span class="k">return</span> <span class="n">build_benchmark_config</span><span class="p">(</span><span class="o">**</span><span class="n">benchmark_config_params</span><span class="o">.</span><span class="n">model_dump</span><span class="p">())</span>
+        <span class="k">return</span> <span class="n">build_benchmark_config</span><span class="p">(</span><span class="n">benchmark_config_params</span><span class="o">=</span><span class="n">benchmark_config_params</span><span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_prepare_model_ids</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_id</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Prepare the model ID(s) to be benchmarked.</span>
