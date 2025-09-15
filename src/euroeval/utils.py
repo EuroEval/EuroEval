@@ -271,14 +271,15 @@ def internet_connection_available() -> bool:
         s = socket.create_connection(("1.1.1.1", 80))
         s.close()
         return True
-    # a bit ugly but we dont want to actually import the pytest-socket exceptions
-    # we catch all exceptions and check if the name matches any known errors
+
+    # We want to only catch exceptions related to socket connections, but as we cannot
+    # import these here as they're developer dependencies, we check the exception name
+    # instead. If the exception is not related to socket connections, we reraise it.
     except Exception as e:
         pytest_socket_errors = ["SocketConnectBlockedError", "SocketBlockedError"]
         if type(e).__name__ in pytest_socket_errors or isinstance(e, OSError):
             return False
-        else:
-            raise e
+        raise e
 
 
 class HiddenPrints:
