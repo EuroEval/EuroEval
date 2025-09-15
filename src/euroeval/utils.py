@@ -8,6 +8,7 @@ import logging
 import os
 import random
 import re
+import socket
 import sys
 import typing as t
 import warnings
@@ -18,10 +19,8 @@ import demjson3
 import huggingface_hub as hf_hub
 import litellm
 import numpy as np
-import requests
 import torch
 from datasets.utils import disable_progress_bar
-from requests.exceptions import RequestException
 from transformers import logging as tf_logging
 
 from .exceptions import InvalidBenchmark, InvalidModel, NaNValueInModelOutput
@@ -52,6 +51,68 @@ def create_model_cache_dir(cache_dir: str, model_id: str) -> str:
     _model_id = model_id.replace("/", "--")
     cache_dir_path = Path(cache_dir) / "model_cache" / _model_id
     return str(cache_dir_path)
+
+
+def resolve_model_path(download_dir: str) -> str:
+    """Resolve the path to the directory containing the model config files and weights.
+
+    Args:
+        download_dir:
+            The download directory
+
+    Returns:
+        The path to the model.
+    """
+    model_path = Path(download_dir)
+    # Get the 'path safe' version of the model id, which is the last dir in the path
+    model_id_path = model_path.name
+    # Hf hub `cache_dir` puts the files in models--`model_id_path`/snapshots
+    model_path = model_path / f"models--{model_id_path}" / "snapshots"
+    if not model_path.exists():
+        raise InvalidModel(
+            f"Attempted to load models from the {model_path} directory, "
+            "but it does not exist."
+        )
+
+    # Get all files in the model path
+    found_files = [
+        found_file for found_file in model_path.rglob("*") if found_file.is_file()
+    ]
+    if not found_files:
+        raise InvalidModel(f"No model files found at {model_path}")
+
+    # Make sure that there arent multiples of the files found
+    if len(found_files) == len(set(found_files)):
+        raise InvalidModel(
+            f"Found multiple model config files for {model_id_path.strip('models--')}"
+            f"at {model_path}"
+        )
+
+    # Check that found_files contains at least a 'config.json'
+    config_file = next(
+        (file for file in found_files if file.name == "config.json"), None
+    )
+    if config_file is None:
+        raise InvalidModel(
+            f"Missing required file 'config.json' for {model_id_path.strip('models--')}"
+            f"at {model_path}"
+        )
+    model_path = config_file.parent
+
+    # As a precaution we also check that all of the files are in the same directory
+    # if not we create a new dir with symlinks to all of the files from all snapshots
+    # this is especially useful for vllm where we can only specify one folder and e.g.,
+    # the safetensors version of the weights was added in an unmerged PR
+    if not all(
+        [found_file.parent == found_files[0].parent for found_file in found_files]
+    ):
+        new_model_path = model_path.parent / "model_files"
+        new_model_path.mkdir(exist_ok=True)
+        for found_file in found_files:
+            Path(new_model_path / found_file.name).symlink_to(found_file)
+        model_path = new_model_path
+
+    return str(model_path)
 
 
 def clear_memory() -> None:
@@ -199,6 +260,7 @@ def get_min_cuda_compute_capability() -> float | None:
     return float(f"{major}.{minor}")
 
 
+@cache
 def internet_connection_available() -> bool:
     """Checks if internet connection is available by pinging google.com.
 
@@ -206,10 +268,17 @@ def internet_connection_available() -> bool:
         Whether or not internet connection is available.
     """
     try:
-        requests.get("https://www.google.com")
+        s = socket.create_connection(("1.1.1.1", 80))
+        s.close()
         return True
-    except RequestException:
-        return False
+    # a bit ugly but we dont want to actually import the pytest-socket exceptions
+    # we catch all exceptions and check if the name matches any known errors
+    except Exception as e:
+        pytest_socket_errors = ["SocketConnectBlockedError", "SocketBlockedError"]
+        if type(e).__name__ in pytest_socket_errors or isinstance(e, OSError):
+            return False
+        else:
+            raise e
 
 
 class HiddenPrints:

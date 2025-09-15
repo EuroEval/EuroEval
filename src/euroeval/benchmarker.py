@@ -16,7 +16,7 @@ from torch.distributed import destroy_process_group
 
 from .benchmark_config_factory import build_benchmark_config
 from .constants import GENERATIVE_PIPELINE_TAGS
-from .data_loading import load_data
+from .data_loading import load_data, load_raw_data
 from .data_models import BenchmarkConfigParams, BenchmarkResult
 from .dataset_configs import get_all_dataset_configs
 from .enums import Device, GenerativeType, ModelType
@@ -28,7 +28,12 @@ from .model_loading import load_model
 from .scores import log_scores
 from .speed_benchmark import benchmark_speed
 from .tasks import SPEED
-from .utils import enforce_reproducibility, get_package_version
+from .utils import (
+    enforce_reproducibility,
+    get_package_version,
+    internet_connection_available,
+    log_once,
+)
 
 if t.TYPE_CHECKING:
     from .benchmark_modules import BenchmarkModule
@@ -83,6 +88,7 @@ class Benchmarker:
         debug: bool = False,
         run_with_cli: bool = False,
         requires_safetensors: bool = False,
+        download_only: bool = False,
     ) -> None:
         """Initialise the benchmarker.
 
@@ -164,13 +170,25 @@ class Benchmarker:
             requires_safetensors:
                 Whether to only allow models that use the safetensors format. Defaults
                 to False.
+            download_only:
+                Whether to only download models and datasets without performing any
+                benchmarking. Defaults to False.
 
         Raises:
             ValueError:
-                If both `task` and `dataset` are specified.
+                If both `task` and `dataset` are specified, or if `download_only`
+                is True and we have no internet connection.
         """
         if task is not None and dataset is not None:
             raise ValueError("Only one of `task` and `dataset` can be specified.")
+
+        if not internet_connection_available() and download_only:
+            msg = "It appears you do not have an internet connection, but "
+            if run_with_cli:
+                msg += "the --download-only flag was set."
+            else:
+                msg += "the argument `download_only` was set to True."
+            raise ValueError(msg)
 
         # Bail early if hf_transfer is enabled but not installed.
         if HF_HUB_ENABLE_HF_TRANSFER and get_package_version("hf_transfer") is None:
@@ -261,6 +279,42 @@ class Benchmarker:
             return benchmark_results
         else:
             return list()
+
+    def _download(
+        self,
+        dataset_config: "DatasetConfig",
+        model_config: "ModelConfig",
+        benchmark_config: "BenchmarkConfig",
+    ) -> None:
+        """Download data, metrics, and model for the given dataset, and model.
+
+        Args:
+            dataset_config: The configuration for the dataset.
+            model_config: The configuration for the model.
+            benchmark_config: The configuration for the benchmark.
+        """
+        log_once(f"Loading data for {dataset_config.pretty_name}", level=logging.INFO)
+        dataset = load_raw_data(
+            dataset_config=dataset_config, cache_dir=benchmark_config.cache_dir
+        )
+        del dataset
+
+        log_once(f"Loading model {model_config.model_id}", level=logging.INFO)
+        model = load_model(
+            model_config=model_config,
+            dataset_config=dataset_config,
+            benchmark_config=benchmark_config,
+        )
+        del model
+
+        log_once(
+            f"Loading metrics for the '{dataset_config.task.name}' task",
+            level=logging.INFO,
+        )
+        for metric_name in dataset_config.task.metrics:
+            log_once(f"Loading metric {metric_name.name}", level=logging.DEBUG)
+            metric = metric_name.download(cache_dir=benchmark_config.cache_dir)
+            del metric
 
     def benchmark(
         self,
@@ -365,6 +419,9 @@ class Benchmarker:
             requires_safetensors:
                 Whether to only allow models that use the safetensors format. Defaults
                 to the value specified when initialising the benchmarker.
+            download_only:
+                Whether to only download the models without evaluating them. Defaults
+                to the value specified when initialising the benchmarker.
 
         Returns:
             A list of benchmark results.
@@ -423,6 +480,28 @@ class Benchmarker:
                 logger.info(e.message)
                 num_finished_benchmarks += len(dataset_configs)
                 continue
+
+            if model_config.adapter_base_model_id:
+                open_issue_msg = (
+                    "If offline support is important to you, please "
+                    "consider opening an issue at https://github.com/EuroEval/EuroEval/issues."
+                )
+                if not internet_connection_available():
+                    raise InvalidModel(
+                        "Offline benchmarking of models with adapters is not currently "
+                        "supported. "
+                        f"An active internet connection is required. {open_issue_msg}"
+                    )
+                elif benchmark_config.download_only:
+                    log_once(
+                        "You are using download only mode with a model that includes "
+                        "an adapter. "
+                        "Please note: Offline benchmarking of adapter models is not "
+                        "currently supported. "
+                        "An internet connection will be required during evaluation. "
+                        f"{open_issue_msg}",
+                        level=logging.WARNING,
+                    )
 
             loaded_model: BenchmarkModule | None = None
             benchmark_params_to_revert: dict[str, t.Any] = dict()
@@ -673,6 +752,9 @@ class Benchmarker:
                 If None, then this value will not be updated.
             requires_safetensors:
                 Whether to only allow models that use the safetensors format. If None,
+                then this value will not be updated.
+            download_only:
+                Whether to only download the models without evaluating them. If None,
                 then this value will not be updated.
 
         Returns:

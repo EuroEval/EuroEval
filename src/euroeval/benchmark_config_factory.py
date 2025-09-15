@@ -47,6 +47,7 @@ def build_benchmark_config(
     debug: bool,
     run_with_cli: bool,
     requires_safetensors: bool,
+    download_only: bool,
 ) -> BenchmarkConfig:
     """Create a benchmark configuration.
 
@@ -117,6 +118,8 @@ def build_benchmark_config(
             Whether the benchmark is being run with the CLI.
         requires_safetensors:
             Whether to only allow evaluations of models stored as safetensors.
+        download_only:
+            Whether to only download the requested model weights and datasets.
 
     Returns:
         The benchmark configuration.
@@ -165,6 +168,7 @@ def build_benchmark_config(
         debug=debug,
         run_with_cli=run_with_cli,
         requires_safetensors=requires_safetensors,
+        download_only=download_only,
     )
 
 

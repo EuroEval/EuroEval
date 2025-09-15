@@ -42,6 +42,18 @@ class Metric(abc.ABC):
             else lambda x: (100 * x, f"{x:.2%}")
         )
 
+    def download(self, cache_dir: str) -> "Metric":
+        """Initiates the download of the metric if needed.
+
+        Args:
+            cache_dir:
+                The directory where the metric will be downloaded to.
+
+        Returns:
+            The metric object itself.
+        """
+        return self
+
     @abc.abstractmethod
     def __call__(
         self,

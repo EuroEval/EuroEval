@@ -45,6 +45,7 @@ def test_cli_param_names(params: dict[str, ParamType]) -> None:
         "help",
         "requires_safetensors",
         "generative_type",
+        "download_only",
     }
 
 
@@ -77,3 +78,4 @@ def test_cli_param_types(params: dict[str, ParamType]) -> None:
     assert params["help"] == BOOL
     assert params["requires_safetensors"] == BOOL
     assert isinstance(params["generative_type"], Choice)
+    assert params["download_only"] == BOOL

@@ -8,6 +8,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 ### Added
+- Now supports evaluating models in an offline environment. This is done by first
+  downloading all necessary models, datasets, metrics and other artifacts while online,
+  using the new `--download-only` flag (or `download_only=True` in the `Benchmarker`
+  API). Then you can safely disable internet access and run the evaluation as normal,
+  and it will use the cached models, datasets and metrics. This was contributed by
+  @viggo-gascou ✨
 - Added the `timm` package to the set of `generative` extra dependencies, as it is
   required to load some multimodal models, such as Gemma-3n.
 

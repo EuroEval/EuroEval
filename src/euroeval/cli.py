@@ -216,6 +216,12 @@ from .tasks import get_all_tasks
     help="The type of generative model. Only relevant if the model is generative. If "
     "not specified, the type will be inferred automatically.",
 )
+@click.option(
+    "--download-only",
+    is_flag=True,
+    help="Only download the requested model weights and datasets, and exit.",
+    default=False,
+)
 def benchmark(
     model: tuple[str],
     dataset: tuple[str],
@@ -243,6 +249,7 @@ def benchmark(
     debug: bool,
     requires_safetensors: bool,
     generative_type: str | None,
+    download_only: bool,
 ) -> None:
     """Benchmark pretrained language models on language tasks."""
     models = list(model)
@@ -284,6 +291,7 @@ def benchmark(
         debug=debug,
         run_with_cli=True,
         requires_safetensors=requires_safetensors,
+        download_only=download_only,
     )
 
     # Perform the benchmark evaluation
