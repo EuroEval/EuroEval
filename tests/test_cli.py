@@ -1,23 +1,11 @@
 """Tests for the `cli` module."""
 
-from typing import Generator
-
-import pytest
 from click.types import BOOL, FLOAT, INT, STRING, Choice, ParamType
 
-from euroeval.cli import benchmark
 
-
-@pytest.fixture(scope="module")
-def params() -> Generator[dict[str | None, ParamType], None, None]:
-    """Yields a dictionary of the CLI parameters."""
-    ctx = benchmark.make_context(info_name="testing", args=["--model", "test-model"])
-    yield {p.name: p.type for p in benchmark.get_params(ctx)}
-
-
-def test_cli_param_names(params: dict[str, ParamType]) -> None:
+def test_cli_param_names(cli_params: dict[str, ParamType]) -> None:
     """Test that the CLI parameters have the correct names."""
-    assert set(params.keys()) == {
+    assert set(cli_params.keys()) == {
         "model",
         "task",
         "language",
@@ -49,33 +37,33 @@ def test_cli_param_names(params: dict[str, ParamType]) -> None:
     }
 
 
-def test_cli_param_types(params: dict[str, ParamType]) -> None:
+def test_cli_param_types(cli_params: dict[str, ParamType]) -> None:
     """Test that the CLI parameters have the correct types."""
-    assert params["model"] == STRING
-    assert isinstance(params["dataset"], Choice)
-    assert isinstance(params["language"], Choice)
-    assert isinstance(params["model_language"], Choice)
-    assert isinstance(params["dataset_language"], Choice)
-    assert isinstance(params["task"], Choice)
-    assert isinstance(params["batch_size"], Choice)
-    assert params["progress_bar"] == BOOL
-    assert params["raise_errors"] == BOOL
-    assert params["verbose"] == BOOL
-    assert params["save_results"] == BOOL
-    assert params["cache_dir"] == STRING
-    assert params["api_key"] == STRING
-    assert params["force"] == BOOL
-    assert isinstance(params["device"], Choice)
-    assert params["trust_remote_code"] == BOOL
-    assert params["clear_model_cache"] == BOOL
-    assert params["evaluate_test_split"] == BOOL
-    assert params["few_shot"] == BOOL
-    assert params["num_iterations"] == INT
-    assert params["api_base"] == STRING
-    assert params["api_version"] == STRING
-    assert params["gpu_memory_utilization"] == FLOAT
-    assert params["debug"] == BOOL
-    assert params["help"] == BOOL
-    assert params["requires_safetensors"] == BOOL
-    assert isinstance(params["generative_type"], Choice)
-    assert params["download_only"] == BOOL
+    assert cli_params["model"] == STRING
+    assert isinstance(cli_params["dataset"], Choice)
+    assert isinstance(cli_params["language"], Choice)
+    assert isinstance(cli_params["model_language"], Choice)
+    assert isinstance(cli_params["dataset_language"], Choice)
+    assert isinstance(cli_params["task"], Choice)
+    assert isinstance(cli_params["batch_size"], Choice)
+    assert cli_params["progress_bar"] == BOOL
+    assert cli_params["raise_errors"] == BOOL
+    assert cli_params["verbose"] == BOOL
+    assert cli_params["save_results"] == BOOL
+    assert cli_params["cache_dir"] == STRING
+    assert cli_params["api_key"] == STRING
+    assert cli_params["force"] == BOOL
+    assert isinstance(cli_params["device"], Choice)
+    assert cli_params["trust_remote_code"] == BOOL
+    assert cli_params["clear_model_cache"] == BOOL
+    assert cli_params["evaluate_test_split"] == BOOL
+    assert cli_params["few_shot"] == BOOL
+    assert cli_params["num_iterations"] == INT
+    assert cli_params["api_base"] == STRING
+    assert cli_params["api_version"] == STRING
+    assert cli_params["gpu_memory_utilization"] == FLOAT
+    assert cli_params["debug"] == BOOL
+    assert cli_params["help"] == BOOL
+    assert cli_params["requires_safetensors"] == BOOL
+    assert isinstance(cli_params["generative_type"], Choice)
+    assert cli_params["download_only"] == BOOL

@@ -6,7 +6,9 @@ from typing import Generator
 
 import pytest
 import torch
+from click import ParamType
 
+from euroeval.cli import benchmark
 from euroeval.data_models import BenchmarkConfig, ModelConfig, Task
 from euroeval.dataset_configs import SPEED_CONFIG, get_all_dataset_configs
 from euroeval.enums import InferenceBackend, ModelType
@@ -174,3 +176,10 @@ def model_config() -> Generator[ModelConfig, None, None]:
         model_cache_dir="cache_dir",
         adapter_base_model_id=None,
     )
+
+
+@pytest.fixture(scope="module")
+def cli_params() -> Generator[dict[str | None, ParamType], None, None]:
+    """Yields a dictionary of the CLI parameters."""
+    ctx = benchmark.make_context(info_name="testing", args=["--model", "test-model"])
+    yield {p.name: p.type for p in benchmark.get_params(ctx)}
