@@ -2177,7 +2177,10 @@
 <span class="normal">1185</span>
 <span class="normal">1186</span>
 <span class="normal">1187</span>
-<span class="normal">1188</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Generative models using the vLLM inference framework.&quot;&quot;&quot;</span>
+<span class="normal">1188</span>
+<span class="normal">1189</span>
+<span class="normal">1190</span>
+<span class="normal">1191</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Generative models using the vLLM inference framework.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">c</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">contextlib</span>
@@ -3015,15 +3018,18 @@
 
     <span class="n">clear_vllm</span><span class="p">()</span>
 
-    <span class="c1"># if we do not have an internet connection we need to give the path to the folder</span>
-    <span class="c1"># that contains the model weights and config files, otherwise vLLM will try to</span>
-    <span class="c1"># download them regardless if they are already present in the download_dir</span>
-    <span class="n">model_path</span> <span class="o">=</span> <span class="n">resolve_model_path</span><span class="p">(</span><span class="n">download_dir</span><span class="p">)</span>
-
     <span class="k">try</span><span class="p">:</span>
         <span class="n">model</span> <span class="o">=</span> <span class="n">LLM</span><span class="p">(</span>
-            <span class="n">model</span><span class="o">=</span><span class="n">model_id</span> <span class="k">if</span> <span class="n">internet_connection_available</span><span class="p">()</span> <span class="k">else</span> <span class="n">model_path</span><span class="p">,</span>
-            <span class="n">tokenizer</span><span class="o">=</span><span class="n">model_id</span> <span class="k">if</span> <span class="n">internet_connection_available</span><span class="p">()</span> <span class="k">else</span> <span class="n">model_path</span><span class="p">,</span>
+            <span class="n">model</span><span class="o">=</span><span class="p">(</span>
+                <span class="n">model_id</span>
+                <span class="k">if</span> <span class="n">internet_connection_available</span><span class="p">()</span>
+                <span class="k">else</span> <span class="n">resolve_model_path</span><span class="p">(</span><span class="n">download_dir</span><span class="o">=</span><span class="n">download_dir</span><span class="p">)</span>
+            <span class="p">),</span>
+            <span class="n">tokenizer</span><span class="o">=</span><span class="p">(</span>
+                <span class="n">model_id</span>
+                <span class="k">if</span> <span class="n">internet_connection_available</span><span class="p">()</span>
+                <span class="k">else</span> <span class="n">resolve_model_path</span><span class="p">(</span><span class="n">download_dir</span><span class="o">=</span><span class="n">download_dir</span><span class="p">)</span>
+            <span class="p">),</span>
             <span class="n">gpu_memory_utilization</span><span class="o">=</span><span class="n">benchmark_config</span><span class="o">.</span><span class="n">gpu_memory_utilization</span><span class="p">,</span>
             <span class="n">max_model_len</span><span class="o">=</span><span class="nb">min</span><span class="p">(</span><span class="n">true_max_model_len</span><span class="p">,</span> <span class="n">MAX_CONTEXT_LENGTH</span><span class="p">),</span>
             <span class="n">download_dir</span><span class="o">=</span><span class="n">download_dir</span><span class="p">,</span>

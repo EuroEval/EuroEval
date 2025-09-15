@@ -2102,14 +2102,16 @@
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;General benchmarking configuration, across datasets and models.</span>
 
 <span class="sd">    Attributes:</span>
-<span class="sd">        model_languages:</span>
-<span class="sd">            The languages of the models to benchmark.</span>
-<span class="sd">        dataset_languages:</span>
-<span class="sd">            The languages of the datasets in the benchmark.</span>
 <span class="sd">        tasks:</span>
 <span class="sd">            The tasks benchmark the model(s) on.</span>
 <span class="sd">        datasets:</span>
 <span class="sd">            The datasets to benchmark on.</span>
+<span class="sd">        model_languages:</span>
+<span class="sd">            The languages of the models to benchmark.</span>
+<span class="sd">        dataset_languages:</span>
+<span class="sd">            The languages of the datasets in the benchmark.</span>
+<span class="sd">        device:</span>
+<span class="sd">            The device to use for benchmarking.</span>
 <span class="sd">        batch_size:</span>
 <span class="sd">            The batch size to use.</span>
 <span class="sd">        raise_errors:</span>
@@ -2118,17 +2120,16 @@
 <span class="sd">            Directory to store cached models and datasets.</span>
 <span class="sd">        api_key:</span>
 <span class="sd">            The API key to use for a given inference API.</span>
-<span class="sd">        force:</span>
-<span class="sd">            Whether to force the benchmark to run even if the results are already</span>
-<span class="sd">            cached.</span>
+<span class="sd">        api_base:</span>
+<span class="sd">            The base URL for a given inference API. Only relevant if `model` refers to a</span>
+<span class="sd">            model on an inference API.</span>
+<span class="sd">        api_version:</span>
+<span class="sd">            The version of the API to use. Only relevant if `model` refers to a model on</span>
+<span class="sd">            an inference API.</span>
 <span class="sd">        progress_bar:</span>
 <span class="sd">            Whether to show a progress bar.</span>
 <span class="sd">        save_results:</span>
 <span class="sd">            Whether to save the benchmark results to &#39;euroeval_benchmark_results.json&#39;.</span>
-<span class="sd">        device:</span>
-<span class="sd">            The device to use for benchmarking.</span>
-<span class="sd">        verbose:</span>
-<span class="sd">            Whether to print verbose output.</span>
 <span class="sd">        trust_remote_code:</span>
 <span class="sd">            Whether to trust remote code when loading models from the Hugging Face Hub.</span>
 <span class="sd">        clear_model_cache:</span>
@@ -2140,21 +2141,11 @@
 <span class="sd">            if the model is generative.</span>
 <span class="sd">        num_iterations:</span>
 <span class="sd">            The number of iterations each model should be evaluated for.</span>
-<span class="sd">        api_base:</span>
-<span class="sd">            The base URL for a given inference API. Only relevant if `model` refers to a</span>
-<span class="sd">            model on an inference API.</span>
-<span class="sd">        api_version:</span>
-<span class="sd">            The version of the API to use. Only relevant if `model` refers to a model on</span>
-<span class="sd">            an inference API.</span>
 <span class="sd">        gpu_memory_utilization:</span>
 <span class="sd">            The GPU memory utilization to use for vLLM. A larger value will result in</span>
 <span class="sd">            faster evaluation, but at the risk of running out of GPU memory. Only reduce</span>
 <span class="sd">            this if you are running out of GPU memory. Only relevant if the model is</span>
 <span class="sd">            generative.</span>
-<span class="sd">        debug:</span>
-<span class="sd">            Whether to run the benchmark in debug mode.</span>
-<span class="sd">        run_with_cli:</span>
-<span class="sd">            Whether the benchmark is being run with the CLI.</span>
 <span class="sd">        requires_safetensors:</span>
 <span class="sd">            Whether to only allow models that use the safetensors format.</span>
 <span class="sd">        generative_type:</span>
@@ -2163,6 +2154,15 @@
 <span class="sd">        download_only:</span>
 <span class="sd">            Whether to only download the models, metrics and datasets without</span>
 <span class="sd">            evaluating.</span>
+<span class="sd">        force:</span>
+<span class="sd">            Whether to force the benchmark to run even if the results are already</span>
+<span class="sd">            cached.</span>
+<span class="sd">        verbose:</span>
+<span class="sd">            Whether to print verbose output.</span>
+<span class="sd">        debug:</span>
+<span class="sd">            Whether to run the benchmark in debug mode.</span>
+<span class="sd">        run_with_cli:</span>
+<span class="sd">            Whether the benchmark is being run with the CLI.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="n">model_languages</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Language</span><span class="p">]</span>
@@ -2173,24 +2173,24 @@
     <span class="n">raise_errors</span><span class="p">:</span> <span class="nb">bool</span>
     <span class="n">cache_dir</span><span class="p">:</span> <span class="nb">str</span>
     <span class="n">api_key</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span>
-    <span class="n">force</span><span class="p">:</span> <span class="nb">bool</span>
+    <span class="n">api_base</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span>
+    <span class="n">api_version</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span>
     <span class="n">progress_bar</span><span class="p">:</span> <span class="nb">bool</span>
     <span class="n">save_results</span><span class="p">:</span> <span class="nb">bool</span>
     <span class="n">device</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">device</span>
-    <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span>
     <span class="n">trust_remote_code</span><span class="p">:</span> <span class="nb">bool</span>
     <span class="n">clear_model_cache</span><span class="p">:</span> <span class="nb">bool</span>
     <span class="n">evaluate_test_split</span><span class="p">:</span> <span class="nb">bool</span>
     <span class="n">few_shot</span><span class="p">:</span> <span class="nb">bool</span>
     <span class="n">num_iterations</span><span class="p">:</span> <span class="nb">int</span>
-    <span class="n">api_base</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span>
-    <span class="n">api_version</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span>
     <span class="n">gpu_memory_utilization</span><span class="p">:</span> <span class="nb">float</span>
-    <span class="n">debug</span><span class="p">:</span> <span class="nb">bool</span>
-    <span class="n">run_with_cli</span><span class="p">:</span> <span class="nb">bool</span>
     <span class="n">requires_safetensors</span><span class="p">:</span> <span class="nb">bool</span>
     <span class="n">generative_type</span><span class="p">:</span> <span class="n">GenerativeType</span> <span class="o">|</span> <span class="kc">None</span>
     <span class="n">download_only</span><span class="p">:</span> <span class="nb">bool</span>
+    <span class="n">force</span><span class="p">:</span> <span class="nb">bool</span>
+    <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span>
+    <span class="n">debug</span><span class="p">:</span> <span class="nb">bool</span>
+    <span class="n">run_with_cli</span><span class="p">:</span> <span class="nb">bool</span>
 
 
 <span class="k">class</span><span class="w"> </span><span class="nc">BenchmarkConfigParams</span><span class="p">(</span><span class="n">pydantic</span><span class="o">.</span><span class="n">BaseModel</span><span class="p">):</span><div class="mkapi-source-link" id="euroeval.data_models.BenchmarkConfigParams"><a href="../../../api/euroeval/data_models/#euroeval.data_models.BenchmarkConfigParams" title="Go to docs">[docs]</a></div>
@@ -2198,10 +2198,10 @@
 
     <span class="n">model_config</span> <span class="o">=</span> <span class="n">pydantic</span><span class="o">.</span><span class="n">ConfigDict</span><span class="p">(</span><span class="n">protected_namespaces</span><span class="o">=</span><span class="p">())</span>
 
-    <span class="n">progress_bar</span><span class="p">:</span> <span class="nb">bool</span>
-    <span class="n">save_results</span><span class="p">:</span> <span class="nb">bool</span>
     <span class="n">task</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span>
     <span class="n">dataset</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span>
+    <span class="n">progress_bar</span><span class="p">:</span> <span class="nb">bool</span>
+    <span class="n">save_results</span><span class="p">:</span> <span class="nb">bool</span>
     <span class="n">language</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
     <span class="n">model_language</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span>
     <span class="n">dataset_language</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span>
@@ -2210,21 +2210,21 @@
     <span class="n">raise_errors</span><span class="p">:</span> <span class="nb">bool</span>
     <span class="n">cache_dir</span><span class="p">:</span> <span class="nb">str</span>
     <span class="n">api_key</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span>
-    <span class="n">force</span><span class="p">:</span> <span class="nb">bool</span>
-    <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span>
+    <span class="n">api_base</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span>
+    <span class="n">api_version</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span>
     <span class="n">trust_remote_code</span><span class="p">:</span> <span class="nb">bool</span>
     <span class="n">clear_model_cache</span><span class="p">:</span> <span class="nb">bool</span>
     <span class="n">evaluate_test_split</span><span class="p">:</span> <span class="nb">bool</span>
     <span class="n">few_shot</span><span class="p">:</span> <span class="nb">bool</span>
     <span class="n">num_iterations</span><span class="p">:</span> <span class="nb">int</span>
-    <span class="n">api_base</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span>
-    <span class="n">api_version</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span>
+    <span class="n">requires_safetensors</span><span class="p">:</span> <span class="nb">bool</span>
+    <span class="n">download_only</span><span class="p">:</span> <span class="nb">bool</span>
     <span class="n">gpu_memory_utilization</span><span class="p">:</span> <span class="nb">float</span>
     <span class="n">generative_type</span><span class="p">:</span> <span class="n">GenerativeType</span> <span class="o">|</span> <span class="kc">None</span>
-    <span class="n">download_only</span><span class="p">:</span> <span class="nb">bool</span>
+    <span class="n">force</span><span class="p">:</span> <span class="nb">bool</span>
+    <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span>
     <span class="n">debug</span><span class="p">:</span> <span class="nb">bool</span>
     <span class="n">run_with_cli</span><span class="p">:</span> <span class="nb">bool</span>
-    <span class="n">requires_safetensors</span><span class="p">:</span> <span class="nb">bool</span>
 
 
 <span class="k">class</span><span class="w"> </span><span class="nc">BenchmarkResult</span><span class="p">(</span><span class="n">pydantic</span><span class="o">.</span><span class="n">BaseModel</span><span class="p">):</span><div class="mkapi-source-link" id="euroeval.data_models.BenchmarkResult"><a href="../../../api/euroeval/data_models/#euroeval.data_models.BenchmarkResult" title="Go to docs">[docs]</a></div>
