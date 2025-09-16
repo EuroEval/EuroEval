@@ -1,6 +1,7 @@
 """Class that benchmarks language models."""
 
 import contextlib
+import itertools as it
 import json
 import logging
 import re
@@ -622,7 +623,9 @@ class Benchmarker:
         # ones or the ones that we've already run previously)
         total_benchmarks = sum(
             1
-            for model_config, dataset_config in zip(model_configs, dataset_configs)
+            for model_config, dataset_config in it.product(
+                model_configs, dataset_configs
+            )
             if (
                 benchmark_config.force
                 or not model_has_been_benchmarked(
