@@ -1,5 +1,6 @@
 """Freshly initialised encoder models."""
 
+import re
 import typing as t
 from functools import cached_property
 from json import JSONDecodeError
@@ -45,6 +46,7 @@ class FreshEncoderModel(HuggingFaceEncoderModel):
     """A freshly initialised encoder model."""
 
     fresh_model = True
+    allowed_params = {re.compile(r".*"): ["slow-tokenizer"]}
 
     def __init__(
         self,
@@ -294,7 +296,7 @@ def load_model_and_tokeniser(
             token=get_hf_token(api_key=benchmark_config.api_key),
             add_prefix_space=prefix,
             cache_dir=model_config.model_cache_dir,
-            use_fast=True,
+            use_fast=False if model_config.param == "slow-tokenizer" else True,
             verbose=False,
             trust_remote_code=benchmark_config.trust_remote_code,
         )

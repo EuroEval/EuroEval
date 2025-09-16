@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 ### Added
+- Added "slow-tokenizer" model parameter, which can be used to force the use of a slow
+  tokenizer when loading it. Use this by replacing your model ID with
+  `<model-id>#slow-tokenizer`.
 - Now gives a warning when a reasoning model does not get to finish its reasoning due to
   running out of the 8,192 reasoning tokens. In this case, we use an empty string as the
   model output, which will lead to lower scores.

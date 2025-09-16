@@ -104,7 +104,7 @@ class VLLMModel(HuggingFaceEncoderModel):
     fresh_model = False
     batching_preference = BatchingPreference.ALL_AT_ONCE
     high_priority = True
-    allowed_params = {re.compile(r".*"): ["thinking", "no-thinking"]}
+    allowed_params = {re.compile(r".*"): ["thinking", "no-thinking", "slow-tokenizer"]}
 
     def __init__(
         self,
@@ -843,8 +843,11 @@ def load_model_and_tokeniser(
         adapter_base_model_id=model_config.adapter_base_model_id,
         trust_remote_code=benchmark_config.trust_remote_code,
         model_max_length=true_max_model_len,
-        model_cache_dir=model_config.model_cache_dir,
+        model_config=model_config,
         token=get_hf_token(api_key=benchmark_config.api_key),
+    )
+    vllm_tokenisation_params = get_vllm_tokenisation_params(
+        tokeniser=tokeniser, model_config=model_config
     )
 
     clear_vllm()
@@ -861,6 +864,7 @@ def load_model_and_tokeniser(
                 if internet_connection_available()
                 else resolve_model_path(download_dir=download_dir)
             ),
+            tokenizer_mode="slow" if model_config.param == "slow-tokenizer" else "auto",
             gpu_memory_utilization=benchmark_config.gpu_memory_utilization,
             max_model_len=min(true_max_model_len, MAX_CONTEXT_LENGTH),
             download_dir=download_dir,
@@ -878,16 +882,7 @@ def load_model_and_tokeniser(
             enable_prefix_caching=False,
             enable_lora=model_config.adapter_base_model_id is not None,
             max_lora_rank=256,
-            # Special arguments in case we are dealing with a Mistral model
-            tokenizer_mode="mistral"
-            if isinstance(tokeniser, MistralCommonTokenizer)
-            else "auto",
-            config_format="mistral"
-            if isinstance(tokeniser, MistralCommonTokenizer)
-            else "auto",
-            load_format="mistral"
-            if isinstance(tokeniser, MistralCommonTokenizer)
-            else "auto",
+            **vllm_tokenisation_params,
         )
     except (RuntimeError, ValueError, OSError) as e:
         if "awaiting a review from the repo authors" in str(e):
@@ -916,7 +911,7 @@ def load_tokeniser(
     adapter_base_model_id: str | None,
     trust_remote_code: bool,
     model_max_length: int,
-    model_cache_dir: str,
+    model_config: "ModelConfig",
     token: str | bool,
 ) -> "PreTrainedTokenizer":
     """Load the tokeniser.
@@ -933,8 +928,8 @@ def load_tokeniser(
             Whether to trust remote code.
         model_max_length:
             The maximum length of the model.
-        model_cache_dir:
-            The cache directory for the model.
+        model_config:
+            The model configuration.
         token:
             The Hugging Face API token.
 
@@ -945,7 +940,7 @@ def load_tokeniser(
     config = AutoConfig.from_pretrained(
         adapter_base_model_id or model_id,
         revision=revision,
-        cache_dir=model_cache_dir,
+        cache_dir=model_config.model_cache_dir,
         token=token,
         trust_remote_code=trust_remote_code,
         local_files_only=not internet_connection_available(),
@@ -955,13 +950,13 @@ def load_tokeniser(
         try:
             tokeniser = AutoTokenizer.from_pretrained(
                 model_id,
-                use_fast=True,
+                use_fast=False if model_config.param == "slow-tokenizer" else True,
                 verbose=False,
                 trust_remote_code=trust_remote_code,
                 padding_side="left",
                 truncation_side="left",
                 model_max_length=model_max_length,
-                cache_dir=model_cache_dir,
+                cache_dir=model_config.model_cache_dir,
                 config=config,
                 token=token,
                 local_files_only=not internet_connection_available(),
@@ -1202,3 +1197,41 @@ def get_pbar_without_leave(*tqdm_args, **tqdm_kwargs) -> tqdm:
     """
     tqdm_kwargs.pop("leave", None)  # Remove the 'leave' key if it exists
     return tqdm(*tqdm_args, leave=False, **tqdm_kwargs)
+
+
+def get_vllm_tokenisation_params(
+    tokeniser: "PreTrainedTokenizer", model_config: "ModelConfig"
+) -> dict[str, t.Any]:
+    """Get the tokenisation parameters for vLLM.
+
+    Args:
+        tokeniser:
+            The tokeniser.
+        model_config:
+            The model configuration.
+
+    Returns:
+        A dictionary of tokenisation parameters to pass to vLLM.
+    """
+    if isinstance(tokeniser, MistralCommonTokenizer):
+        tokeniser_mode = "mistral"
+    elif model_config.param == "slow-tokenizer":
+        tokeniser_mode = "slow"
+    else:
+        tokeniser_mode = "auto"
+
+    if isinstance(tokeniser, MistralCommonTokenizer):
+        config_format = "mistral"
+    else:
+        config_format = "auto"
+
+    if isinstance(tokeniser, MistralCommonTokenizer):
+        load_format = "mistral"
+    else:
+        load_format = "auto"
+
+    return dict(
+        tokenizer_mode=tokeniser_mode,
+        config_format=config_format,
+        load_format=load_format,
+    )

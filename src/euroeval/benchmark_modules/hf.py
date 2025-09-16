@@ -2,6 +2,7 @@
 
 import collections.abc as c
 import logging
+import re
 import typing as t
 from functools import cached_property, partial
 from json import JSONDecodeError
@@ -93,6 +94,7 @@ class HuggingFaceEncoderModel(BenchmarkModule):
     fresh_model = False
     batching_preference = BatchingPreference.NO_PREFERENCE
     high_priority = True
+    allowed_params = {re.compile(r".*"): ["slow-tokenizer"]}
 
     def __init__(
         self,
@@ -690,7 +692,7 @@ def load_model_and_tokeniser(
         model=model,
         model_id=model_id,
         trust_remote_code=benchmark_config.trust_remote_code,
-        model_cache_dir=model_config.model_cache_dir,
+        model_config=model_config,
     )
 
     return model, tokeniser
@@ -880,7 +882,7 @@ def load_tokeniser(
     model: "PreTrainedModel | None",
     model_id: str,
     trust_remote_code: bool,
-    model_cache_dir: str,
+    model_config: "ModelConfig",
 ) -> "PreTrainedTokenizer":
     """Load the tokeniser.
 
@@ -892,17 +894,19 @@ def load_tokeniser(
             The model identifier. Used for logging.
         trust_remote_code:
             Whether to trust remote code.
+        model_config:
+            The model configuration.
 
     Returns:
         The loaded tokeniser.
     """
     loading_kwargs: dict[str, bool | str] = dict(
-        use_fast=True,
+        use_fast=False if model_config.param == "slow-tokenizer" else True,
         verbose=False,
         trust_remote_code=trust_remote_code,
         padding_side="right",
         truncation_side="right",
-        cache_dir=model_cache_dir,
+        cache_dir=model_config.model_cache_dir,
     )
 
     # If the model is a subclass of a certain model types then we have to add a prefix
