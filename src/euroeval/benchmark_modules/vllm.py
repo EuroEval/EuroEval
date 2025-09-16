@@ -559,11 +559,23 @@ class VLLMModel(HuggingFaceEncoderModel):
                 torch.LongTensor(completion_id) for completion_id in completion_ids
             ]
         )
-        if self.end_of_reasoning_token is not None:
-            completions = [
-                completion.split(self.end_of_reasoning_token)[-1]
-                for completion in completions
-            ]
+        if (
+            self.end_of_reasoning_token is not None
+            and self.generative_type == GenerativeType.REASONING
+        ):
+            for idx in range(len(completions)):
+                if self.end_of_reasoning_token in completions[idx]:
+                    completions[idx] = completions[idx].split(
+                        self.end_of_reasoning_token
+                    )[-1]
+                else:
+                    logger.warning(
+                        f"The model {self.model_config.model_id!r} is a reasoning "
+                        "model, but the generated output does not contain the end of "
+                        f"reasoning token ({self.end_of_reasoning_token!r}). Using "
+                        "an empty string as the prediction instead."
+                    )
+                    logger.debug(f"The generated output was: {completions[idx]!r}.")
         stop_token_pattern = re.compile(
             "|".join(re.escape(stop_token) for stop_token in stop_tokens)
         )
