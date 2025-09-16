@@ -576,6 +576,7 @@ class VLLMModel(HuggingFaceEncoderModel):
                         "an empty string as the prediction instead."
                     )
                     logger.debug(f"The generated output was: {completions[idx]!r}.")
+                    completions[idx] = ""
         stop_token_pattern = re.compile(
             "|".join(re.escape(stop_token) for stop_token in stop_tokens)
         )
