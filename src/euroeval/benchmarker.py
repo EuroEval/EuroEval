@@ -1,7 +1,6 @@
 """Class that benchmarks language models."""
 
 import contextlib
-import itertools as it
 import json
 import logging
 import re
@@ -13,6 +12,7 @@ from time import sleep
 
 from huggingface_hub.constants import HF_HUB_ENABLE_HF_TRANSFER
 from torch.distributed import destroy_process_group
+from tqdm.auto import tqdm
 
 from .benchmark_config_factory import build_benchmark_config
 from .constants import GENERATIVE_PIPELINE_TAGS
@@ -610,7 +610,7 @@ class Benchmarker:
 
         # Get all the model configs
         model_configs: list[ModelConfig] = list()
-        for model_id in model_ids:
+        for model_id in tqdm(iterable=model_ids, desc="Fetching model configurations"):
             try:
                 model_config = get_model_config(
                     model_id=model_id, benchmark_config=benchmark_config
@@ -619,25 +619,34 @@ class Benchmarker:
             except InvalidModel as e:
                 logger.info(e.message)
 
-        # Get the total number of actual benchmarks to run (not including the invalid
-        # ones or the ones that we've already run previously)
-        total_benchmarks = sum(
-            1
-            for model_config, dataset_config in it.product(
-                model_configs, dataset_configs
-            )
-            if (
-                benchmark_config.force
-                or not model_has_been_benchmarked(
-                    model_id=model_config.model_id,
-                    dataset=dataset_config.name,
-                    few_shot=benchmark_config.few_shot,
-                    validation_split=not benchmark_config.evaluate_test_split,
-                    benchmark_results=self.benchmark_results,
+        # Create a dictionary that takes each model config to the dataset configs that
+        # we need to benchmark the model on. Here we remove the datasets that the model
+        # has already been benchmarked on, or datasets that the model cannot be
+        # benchmarked on.
+        model_config_to_dataset_configs: dict[ModelConfig, list[DatasetConfig]] = {
+            model_config: [
+                dataset_config
+                for dataset_config in dataset_configs
+                if (
+                    benchmark_config.force
+                    or not model_has_been_benchmarked(
+                        model_id=model_config.model_id,
+                        dataset=dataset_config.name,
+                        few_shot=benchmark_config.few_shot,
+                        validation_split=not benchmark_config.evaluate_test_split,
+                        benchmark_results=self.benchmark_results,
+                    )
                 )
-            )
-            and model_config.model_type in dataset_config.allowed_model_types
+                and model_config.model_type in dataset_config.allowed_model_types
+            ]
+            for model_config in model_configs
+        }
+
+        total_benchmarks = sum(
+            len(dataset_configs)
+            for dataset_configs in model_config_to_dataset_configs.values()
         )
+        logger.info(f"Initiated evaluation of {total_benchmarks:,} benchmarks.")
 
         num_finished_benchmarks = 0
         current_benchmark_results: list[BenchmarkResult] = list()
@@ -693,35 +702,6 @@ class Benchmarker:
                     benchmark_params_to_revert["few_shot"] = True
                     benchmark_config.few_shot = False
 
-                # Skip if we have already benchmarked this model on this dataset and
-                # we are not forcing the benchmark
-                if not benchmark_config.force and model_has_been_benchmarked(
-                    model_id=model_config.model_id,
-                    dataset=dataset_config.name,
-                    few_shot=benchmark_config.few_shot,
-                    validation_split=not benchmark_config.evaluate_test_split,
-                    benchmark_results=self.benchmark_results,
-                ):
-                    logger.debug(
-                        f"Skipping benchmarking {model_config.model_id} on "
-                        f"{dataset_config.pretty_name}, as it has already been "
-                        "benchmarked."
-                    )
-                    num_finished_benchmarks += 1
-                    continue
-
-                # Skip if the model type should not be benchmarked on this dataset
-                model_type = model_config.model_type
-                allowed_model_types = dataset_config.allowed_model_types
-                if model_type not in allowed_model_types:
-                    logger.debug(
-                        f"Skipping benchmarking {model_config.model_id} on "
-                        f"{dataset_config.pretty_name}, as it is of type {model_type}, "
-                        f"and the only allowed model types are {allowed_model_types}."
-                    )
-                    num_finished_benchmarks += 1
-                    continue
-
                 # We do not re-initialise generative models as their architecture is not
                 # customised to specific datasets
                 if model_config.model_type == ModelType.GENERATIVE:
@@ -754,6 +734,22 @@ class Benchmarker:
                             break
                     else:
                         loaded_model.dataset_config = dataset_config
+
+                    # Skip the benchmark if the model is not of the correct
+                    # generative type
+                    if (
+                        loaded_model.generative_type
+                        not in dataset_config.allowed_generative_types
+                    ):
+                        logger.info(
+                            f"Skipping the benchmark of model "
+                            f"{model_config.model_id!r}on dataset "
+                            f"{dataset_config.name!r} because the model has generative "
+                            f"type {loaded_model.generative_type} and the dataset "
+                            f"only allows {dataset_config.allowed_generative_types}."
+                        )
+                        num_finished_benchmarks += 1
+                        continue
 
                 # Benchmark a single model on a single dataset
                 benchmark_output_or_err = self._benchmark_single(
