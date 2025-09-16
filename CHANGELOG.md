@@ -15,6 +15,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   running out of the 8,192 reasoning tokens. In this case, we use an empty string as the
   model output, which will lead to lower scores.
 
+### Fixed
+- We now take invalid (model, dataset) combinations into account when computing the
+  total number of benchmarks to run. This only affects logging.
+
 
 ## [v16.2.2] - 2025-09-15
 ### Fixed

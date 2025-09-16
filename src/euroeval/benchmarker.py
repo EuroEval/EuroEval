@@ -607,39 +607,55 @@ class Benchmarker:
             dataset_names=benchmark_config.datasets
         )
 
-        total_benchmarks = len(model_ids) * len(dataset_configs)
-        num_finished_benchmarks = 0
-
-        current_benchmark_results: list[BenchmarkResult] = list()
+        # Get all the model configs
+        model_configs: list[ModelConfig] = list()
         for model_id in model_ids:
-            # Load the model configuration, or skip the model if it is invalid
             try:
                 model_config = get_model_config(
                     model_id=model_id, benchmark_config=benchmark_config
                 )
+                model_configs.append(model_config)
             except InvalidModel as e:
                 logger.info(e.message)
-                num_finished_benchmarks += len(dataset_configs)
-                continue
 
+        # Get the total number of actual benchmarks to run (not including the invalid
+        # ones or the ones that we've already run previously)
+        total_benchmarks = sum(
+            1
+            for model_config, dataset_config in zip(model_configs, dataset_configs)
+            if (
+                benchmark_config.force
+                or not model_has_been_benchmarked(
+                    model_id=model_config.model_id,
+                    dataset=dataset_config.name,
+                    few_shot=benchmark_config.few_shot,
+                    validation_split=not benchmark_config.evaluate_test_split,
+                    benchmark_results=self.benchmark_results,
+                )
+            )
+            and model_config.model_type in dataset_config.allowed_model_types
+        )
+
+        num_finished_benchmarks = 0
+        current_benchmark_results: list[BenchmarkResult] = list()
+        for model_config in model_configs:
             if model_config.adapter_base_model_id:
                 open_issue_msg = (
-                    "If offline support is important to you, please "
-                    "consider opening an issue at https://github.com/EuroEval/EuroEval/issues."
+                    "If offline support is important to you, please consider opening "
+                    "an issue at https://github.com/EuroEval/EuroEval/issues."
                 )
                 if not internet_connection_available():
                     raise InvalidModel(
                         "Offline benchmarking of models with adapters is not currently "
-                        "supported. "
-                        f"An active internet connection is required. {open_issue_msg}"
+                        "supported. An active internet connection is required. "
+                        "{open_issue_msg}"
                     )
                 elif benchmark_config.download_only:
                     log_once(
                         "You are using download only mode with a model that includes "
-                        "an adapter. "
-                        "Please note: Offline benchmarking of adapter models is not "
-                        "currently supported. "
-                        "An internet connection will be required during evaluation. "
+                        "an adapter. Please note that offline benchmarking of "
+                        "adapter models is not currently supported - an internet "
+                        "connection will be required during evaluation in this case. "
                         f"{open_issue_msg}",
                         level=logging.WARNING,
                     )
@@ -677,14 +693,14 @@ class Benchmarker:
                 # Skip if we have already benchmarked this model on this dataset and
                 # we are not forcing the benchmark
                 if not benchmark_config.force and model_has_been_benchmarked(
-                    model_id=model_id,
+                    model_id=model_config.model_id,
                     dataset=dataset_config.name,
                     few_shot=benchmark_config.few_shot,
                     validation_split=not benchmark_config.evaluate_test_split,
                     benchmark_results=self.benchmark_results,
                 ):
                     logger.debug(
-                        f"Skipping benchmarking {model_id} on "
+                        f"Skipping benchmarking {model_config.model_id} on "
                         f"{dataset_config.pretty_name}, as it has already been "
                         "benchmarked."
                     )
@@ -696,10 +712,11 @@ class Benchmarker:
                 allowed_model_types = dataset_config.allowed_model_types
                 if model_type not in allowed_model_types:
                     logger.debug(
-                        f"Skipping benchmarking {model_id} on "
+                        f"Skipping benchmarking {model_config.model_id} on "
                         f"{dataset_config.pretty_name}, as it is of type {model_type}, "
                         f"and the only allowed model types are {allowed_model_types}."
                     )
+                    num_finished_benchmarks += 1
                     continue
 
                 # We do not re-initialise generative models as their architecture is not
