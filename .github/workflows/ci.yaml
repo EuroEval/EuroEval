@@ -22,9 +22,6 @@ jobs:
       pull-requests: write
     runs-on: ubuntu-latest
     steps:
-      - name: Delete EuroEval cache
-        run: rm -rf .euroeval_cache
-
       - uses: actions/checkout@v5
         with:
           persist-credentials: false
