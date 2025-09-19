@@ -453,12 +453,6 @@ contract_completeness_metric = LLMAsAJudgeMetric(
 )
 
 
-class AnswerCorrectnessResponse(BaseModel):
-    """Represents the response structure for answer correctness evaluation."""
-
-    is_correct: bool
-
-
 def compute_answer_correctness(
     output: BaseModel, dataset_sample: dict[str, t.Any]
 ) -> float:
