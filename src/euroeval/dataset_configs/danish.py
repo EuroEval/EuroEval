@@ -6,6 +6,7 @@ from ..languages import DA
 from ..tasks import (
     COMMON_SENSE,
     COMPLETENESS_DETECTION,
+    DOCUMENT_SEARCH,
     EUROPEAN_VALUES,
     KNOW,
     LA,
@@ -230,4 +231,14 @@ CONTRACT_COMPLETENESS_DETECTION_CONFIG = DatasetConfig(
         Beskriv maksimalt 3 manglende elementer, eller skriv "Kontrakten er
         fuldstændig." hvis kontrakten ikke mangler noget.
     """,
+)
+
+DOCUMENT_SEARCH_CONFIG = DatasetConfig(
+    name="document-search",
+    pretty_name="the Danish legal benchmark dataset Document Search",
+    huggingface_id="EuroEval/legal-document-search",
+    task=DOCUMENT_SEARCH,
+    languages=[DA],
+    splits=["test"],
+    unofficial=True,
 )

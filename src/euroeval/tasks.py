@@ -185,3 +185,14 @@ COMPLETENESS_DETECTION = Task(
     default_labels=[],
     requires_zero_shot=True,
 )
+
+DOCUMENT_SEARCH = Task(
+    name="document-search",
+    task_group=TaskGroup.TEXT_TO_TEXT,
+    template_dict=LLM_AS_A_JUDGE_TEMPLATES,
+    metrics=[m.document_search_metric],
+    default_num_few_shot_examples=0,
+    default_max_generated_tokens=512,
+    default_labels=[],
+    requires_zero_shot=True,
+)

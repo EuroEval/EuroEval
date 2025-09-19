@@ -451,3 +451,47 @@ contract_completeness_metric = LLMAsAJudgeMetric(
     ),
     scoring_fn=compute_contract_completeness_f1,
 )
+
+
+class AnswerCorrectnessResponse(BaseModel):
+    """Represents the response structure for answer correctness evaluation."""
+
+    is_correct: bool
+
+
+def compute_answer_correctness(
+    output: BaseModel, dataset_sample: dict[str, t.Any]
+) -> float:
+    """Compute the answer correctness for a single output."""
+    return 1.0 if output.is_correct else 0.0
+
+
+document_search_metric = LLMAsAJudgeMetric(
+    name="answer_correctness",
+    pretty_name="Answer Correctness",
+    judge_id="gpt-4.1",
+    judge_kwargs=dict(temperature=0.0),
+    user_prompt=(
+        """
+        You are evaluating a language model's response to a question about a contract.
+        You will be provided with the actual answer to the question and the model's
+        predicted answer.
+
+        <actual-answer>
+        {condition}
+        </actual-answer>
+
+        <model-predicted-answer>
+        {prediction}
+        </model-predicted-answer>
+
+        Determine if the model's predicted answer is correct. Output your result as a
+        JSON object with the following key:
+
+        - "is_correct": A boolean indicating whether the model's predicted answer is
+          correct.
+        """
+    ),
+    response_format_kwargs=dict(is_correct=bool),
+    scoring_fn=compute_answer_correctness,
+)
