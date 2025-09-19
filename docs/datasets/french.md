@@ -366,8 +366,9 @@ $ euroeval --model <model-id> --dataset belebele-fr
 
 ### Unofficial: MultiWikiQA-fr
 
-This dataset will be published in an upcoming paper, and contains French Wikipedia
-articles with generated questions and answers, using the LLM Gemini-1.5-pro.
+This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2509.04111)
+and contains Wikipedia articles with LLM-generated questions and answers in 300+
+languages.
 
 The original full dataset consists of 5,000 samples in a single split. We use a 1,024 /
 256 / 2,048 split for training, validation and testing, respectively, sampled randomly.
@@ -582,9 +583,17 @@ $ euroeval --model <model-id> --dataset hellaswag-fr
 
 ### Unofficial: GoldenSwag-fr
 
-This dataset is a filtered and machine translated version of the English [HellaSwag dataset](https://aclanthology.org/P19-1472/), featuring both video descriptions from ActivityNet as well as how-to articles from WikiHow. The machine translated version was published in [this paper](https://doi.org/10.48550/arXiv.2410.08928) and was done using DeepL, and the filtering was published in [this paper](https://doi.org/10.48550/arXiv.2504.07825), which resulted in higher quality samples.
+This dataset is a filtered and machine translated version of the English [HellaSwag
+dataset](https://aclanthology.org/P19-1472/), featuring both video descriptions from
+ActivityNet as well as how-to articles from WikiHow. The machine translated version was
+published in [this paper](https://doi.org/10.48550/arXiv.2410.08928) and was done using
+DeepL, and the filtering was published in [this
+paper](https://doi.org/10.48550/arXiv.2504.07825), which resulted in higher quality
+samples.
 
-The original full dataset consists of 1530 / 1530 samples for training and validation, respectively. However, they are exactly equal. We use a split of 660 / 256 / 2,048 samples for training, validation, and testing, respectively.
+The original full dataset consists of 1530 / 1530 samples for training and validation,
+respectively. However, they are exactly equal. We use a split of 660 / 256 / 2,048
+samples for training, validation, and testing, respectively.
 
 Here are a few examples from the training split:
 
@@ -645,8 +654,72 @@ You can evaluate this dataset directly as follows:
 $ euroeval --model <model-id> --dataset goldenswag-fr
 ```
 
+### Unofficial: Winogrande-fr
 
-## Summarization
+This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2506.19468)
+and is a translated and filtered version of the English [Winogrande
+dataset](https://doi.org/10.1145/3474381).
+
+The original full dataset consists of 47 / 1,210 samples for training and testing, and
+we use the same splits.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Dennis a donné son marteau à Robert pour qu'il puisse enfoncer les clous. _ avait beaucoup de marteaux. À quoi se réfère le blanc _ ?\nChoix:\na. Dennis\nb. Robert",
+  "label": "a"
+}
+```
+
+```json
+{
+  "text": "Samantha a apporté une carte de rétablissement à l'hôpital mais Emily a oublié parce que _ était attentionnée. À quoi se réfère le blanc _ ?\nChoix:\na. Samantha\nb. Emily",
+  "label": "a"
+}
+```
+
+```json
+{
+  "text": "Lindsey aimait le goût du canard mais Megan préférait le poulet. _ a commandé le poulet kung pao pour le dîner. À quoi se réfère le blanc _ ?\nChoix:\na. Lindsey\nb. Megan",
+  "label": "b"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+  ```
+  Les questions suivantes sont des questions à choix multiples (avec réponses).
+  ```
+- Base prompt template:
+  ```
+  Question: {text}
+  Choix:
+  a. {option_a}
+  b. {option_b}
+  Réponse: {label}
+  ```
+- Instruction-tuned prompt template:
+  ```
+  Question: {text}
+  Choix:
+  a. {option_a}
+  b. {option_b}
+
+  Répondez à la question ci-dessus par 'a' ou 'b', et rien d'autre.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+$ euroeval --model <model-id> --dataset winogrande-fr
+```
+
+
+## Summarisation
 
 ### Orange Sum
 

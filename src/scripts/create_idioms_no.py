@@ -21,6 +21,7 @@ import random
 import re
 
 import pandas as pd
+from constants import CHOICES_MAPPING
 from datasets import Dataset, DatasetDict, Split, load_dataset
 from dotenv import load_dotenv
 from huggingface_hub import HfApi
@@ -215,7 +216,7 @@ def build_dataset_with_llm(dataset: Dataset) -> pd.DataFrame:
         language_display = "Bokmål" if row.language == "nob" else "Nynorsk"
         text = (
             f"Complete the {language_display} idiom:\n{row.idiom_start} _____\n\n"
-            f"Svaralternativer:\na. {options['a']}\nb. {options['b']}\n"
+            f"{CHOICES_MAPPING['no']}:\na. {options['a']}\nb. {options['b']}\n"
             f"c. {options['c']}\nd. {options['d']}"
         )
 

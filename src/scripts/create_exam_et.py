@@ -15,6 +15,7 @@ from collections import Counter
 
 import pandas as pd
 from constants import (
+    CHOICES_MAPPING,
     MAX_NUM_CHARS_IN_INSTRUCTION,
     MAX_NUM_CHARS_IN_OPTION,
     MAX_REPETITIONS,
@@ -83,7 +84,7 @@ def main() -> None:
     df["text"] = [
         row.instruction.replace("\n", " ").strip()
         + "\n"
-        + "Vastusevariandid:\n"
+        + f"{CHOICES_MAPPING['et']}:\n"
         + "\n".join(
             f"{char}. {option.strip()}" for char, option in zip(label_str, row.choices)
         )

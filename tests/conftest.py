@@ -6,8 +6,10 @@ from typing import Generator
 
 import pytest
 import torch
+from click import ParamType
 
-from euroeval.data_models import BenchmarkConfig, ModelConfig, Task
+from euroeval.cli import benchmark
+from euroeval.data_models import BenchmarkConfig, DatasetConfig, ModelConfig, Task
 from euroeval.dataset_configs import SPEED_CONFIG, get_all_dataset_configs
 from euroeval.enums import InferenceBackend, ModelType
 from euroeval.languages import DA, get_all_languages
@@ -93,6 +95,7 @@ def benchmark_config(
         debug=False,
         run_with_cli=True,
         requires_safetensors=False,
+        download_only=False,
     )
 
 
@@ -163,6 +166,7 @@ def model_config() -> Generator[ModelConfig, None, None]:
     yield ModelConfig(
         model_id="model_id",
         revision="revision",
+        param=None,
         task="task",
         languages=[DA],
         merge=False,
@@ -171,4 +175,23 @@ def model_config() -> Generator[ModelConfig, None, None]:
         fresh=True,
         model_cache_dir="cache_dir",
         adapter_base_model_id=None,
+    )
+
+
+@pytest.fixture(scope="module")
+def cli_params() -> Generator[dict[str | None, ParamType], None, None]:
+    """Yields a dictionary of the CLI parameters."""
+    ctx = benchmark.make_context(info_name="testing", args=["--model", "test-model"])
+    yield {p.name: p.type for p in benchmark.get_params(ctx)}
+
+
+@pytest.fixture(scope="session")
+def dataset_config() -> DatasetConfig:
+    """Yields a dataset configuration used in tests."""
+    yield DatasetConfig(
+        name="dataset",
+        pretty_name="Dataset",
+        huggingface_id="dataset_id",
+        task="task",
+        languages=["da"],
     )

@@ -65,7 +65,11 @@ from ..exceptions import (
     NeedsEnvironmentVariable,
     NeedsExtraInstalled,
 )
-from ..generation_utils import apply_prompt, extract_few_shot_examples
+from ..generation_utils import (
+    apply_prompt,
+    extract_few_shot_examples,
+    raise_if_wrong_params,
+)
 from ..task_group_utils import (
     question_answering,
     sequence_classification,
@@ -73,7 +77,7 @@ from ..task_group_utils import (
     token_classification,
 )
 from ..tasks import NER
-from ..tokenization_utils import get_first_label_token_mapping
+from ..tokenisation_utils import get_first_label_token_mapping
 from ..types import ExtractLabelsFunction
 from ..utils import (
     add_semaphore_and_catch_exception,
@@ -81,6 +85,7 @@ from ..utils import (
     get_hf_token,
     log_once,
     safe_run,
+    split_model_id,
 )
 from .base import BenchmarkModule
 from .hf import HuggingFaceEncoderModel, load_hf_model_config, load_tokeniser
@@ -153,21 +158,6 @@ NUM_PARAMS_MAPPING = {
 }
 
 
-ALLOWED_PARAMS = {
-    # OpenAI models
-    r"gpt-5-.*": ["minimal", "low", "medium", "high"],
-    r"o[1-9](-mini|-preview)?(-[0-9]{4}-[0-9]{2}-[0-9]{2})?": ["low", "medium", "high"],
-    # Anthropic models
-    r"(anthropic/)?claude-3-7-sonnet.*": ["no-thinking", "thinking"],
-    r"(anthropic/)?claude-(sonnet|opus)-4.*": ["no-thinking", "thinking"],
-    # Gemini models
-    r"(gemini/)?gemini-2.5-flash-lite.*": ["no-thinking", "thinking"],
-    r"(gemini/)?gemini-2.5-flash.*": ["no-thinking", "thinking"],
-    # xAI models
-    r"(xai/)?grok-3-mini(-fast)?(-beta)?": ["low", "medium", "high"],
-}
-
-
 REASONING_MODELS = [
     r"o[1-9](-mini|-preview)?(-[0-9]{4}-[0-9]{2}-[0-9]{2})?",
     r"(gemini/)?gemini.*thinking.*",
@@ -191,6 +181,26 @@ class LiteLLMModel(BenchmarkModule):
     fresh_model = False
     batching_preference = BatchingPreference.ALL_AT_ONCE
     high_priority = False
+    allowed_params = {
+        # OpenAI models
+        re.compile(r"gpt-5-.*"): ["minimal", "low", "medium", "high"],
+        re.compile(r"o[1-9](-mini|-preview)?(-[0-9]{4}-[0-9]{2}-[0-9]{2})?"): [
+            "low",
+            "medium",
+            "high",
+        ],
+        # Anthropic models
+        re.compile(r"(anthropic/)?claude-3-7-sonnet.*"): ["no-thinking", "thinking"],
+        re.compile(r"(anthropic/)?claude-(sonnet|opus)-4.*"): [
+            "no-thinking",
+            "thinking",
+        ],
+        # Gemini models
+        re.compile(r"(gemini/)?gemini-2.5-flash-lite.*"): ["no-thinking", "thinking"],
+        re.compile(r"(gemini/)?gemini-2.5-flash.*"): ["no-thinking", "thinking"],
+        # xAI models
+        re.compile(r"(xai/)?grok-3-mini(-fast)?(-beta)?"): ["low", "medium", "high"],
+    }
 
     def __init__(
         self,
@@ -215,6 +225,10 @@ class LiteLLMModel(BenchmarkModule):
                 The generation kwargs to pass to the model. If None, default values will
                 be used.
         """
+        raise_if_wrong_params(
+            model_config=model_config, allowed_params=self.allowed_params
+        )
+
         # Detect whether the model is an Ollama model, as we need to extract metadata
         # differently for these models
         self.is_ollama = model_config.model_id.startswith(
@@ -225,8 +239,6 @@ class LiteLLMModel(BenchmarkModule):
             if self.is_ollama
             else ollama.ShowResponse(model_info=None)
         )
-
-        raise_if_wrong_params(model_config=model_config, allowed_params=ALLOWED_PARAMS)
 
         super().__init__(
             model_config=model_config,
@@ -260,9 +272,9 @@ class LiteLLMModel(BenchmarkModule):
                 if reasoning_model
                 else GenerativeType.INSTRUCTION_TUNED
             )
-        elif self.model_config.revision in {"thinking"}:
+        elif self.model_config.param in {"thinking"}:
             type_ = GenerativeType.REASONING
-        elif self.model_config.revision in {"no-thinking"}:
+        elif self.model_config.param in {"no-thinking"}:
             type_ = GenerativeType.INSTRUCTION_TUNED
         elif re.fullmatch(
             pattern="|".join(REASONING_MODELS), string=self.model_config.model_id
@@ -441,7 +453,8 @@ class LiteLLMModel(BenchmarkModule):
         requires_thinking_disabled_messages = ["thinking.type: Field required"]
         seed_pattern = re.compile(r"does not support parameters: \[.*'seed'.*\]")
         response_format_messages = [
-            "got an unexpected keyword argument 'response_format'"
+            "got an unexpected keyword argument 'response_format'",
+            "The model outputs empty dictionaries.",
         ]
 
         if any(msg.lower() in error_msg for msg in stop_messages):
@@ -699,6 +712,18 @@ class LiteLLMModel(BenchmarkModule):
                 if isinstance(input_, list)
             ]
         responses = await tqdm_async.gather(*requests, leave=False)
+
+        # If we are performing structured generation and the model just outputs an empty
+        # dictionary, then we convert those to exceptions, to disable structured
+        # generation
+        if "response_format" in generation_kwargs:
+            responses = [
+                RuntimeError("The model outputs empty dictionaries.")
+                if not isinstance(response, Exception)
+                and any(choice.message.content == "{}" for choice in response.choices)
+                else response
+                for response in responses
+            ]
 
         # Separate the successful responses from the failed ones
         successes = [
@@ -959,6 +984,7 @@ class LiteLLMModel(BenchmarkModule):
                     model=None,
                     model_id=model_id,
                     trust_remote_code=self.benchmark_config.trust_remote_code,
+                    model_config=self.model_config,
                 )
 
                 if (
@@ -1041,6 +1067,7 @@ class LiteLLMModel(BenchmarkModule):
                     model=None,
                     model_id=model_id,
                     trust_remote_code=self.benchmark_config.trust_remote_code,
+                    model_config=self.model_config,
                 )
 
                 all_max_lengths: list[int] = list()
@@ -1158,7 +1185,7 @@ class LiteLLMModel(BenchmarkModule):
             Whether the model exists, or an error describing why we cannot check
             whether the model exists.
         """
-        model_id, _ = model_id.split("@") if "@" in model_id else (model_id, "main")
+        model_id = split_model_id(model_id=model_id).model_id
         if model_id in litellm.model_list:
             return True
 
@@ -1246,10 +1273,29 @@ class LiteLLMModel(BenchmarkModule):
         Returns:
             The model configuration.
         """
-        model_id, revision = model_id.split("@") if "@" in model_id else (model_id, "")
+        model_id_components = split_model_id(model_id=model_id)
+
+        # Backwards compatibility: If the revision is set but not the parameter, we
+        # assume that the revision is actually the parameter and log this as a warning.
+        if model_id_components.revision != "main" and model_id_components.param is None:
+            proper_model_id = (
+                f"{model_id_components.model_id}#{model_id_components.revision}"
+            )
+            log_once(
+                f"The model ID {model_id!r} specifies a revision "
+                f"{model_id_components.revision!r} but not a parameter. We assume "
+                "that the revision is actually the parameter and set the revision "
+                "to 'main'. In the future, use the new '#' syntax to specify the "
+                f"parameter (in this case, this would be {proper_model_id!r}), as this "
+                "will be an error in future versions of EuroEval."
+            )
+            model_id_components.param = model_id_components.revision
+            model_id_components.revision = "main"
+
         return ModelConfig(
-            model_id=model_id,
-            revision=revision,
+            model_id=model_id_components.model_id,
+            revision=model_id_components.revision,
+            param=model_id_components.param,
             task="text-generation",
             languages=list(),
             merge=False,
@@ -1318,7 +1364,7 @@ class LiteLLMModel(BenchmarkModule):
                 few_shot_examples=few_shot_examples,
                 model_config=self.model_config,
                 dataset_config=self.dataset_config,
-                instruction_model=self.generative_type != GenerativeType.BASE,
+                generative_type=self.generative_type,
                 always_populate_text_field=False,
                 tokeniser=None,
             ),
@@ -1424,7 +1470,7 @@ class LiteLLMModel(BenchmarkModule):
         if self.buffer["first_label_token_mapping"]:
             generation_kwargs["logprobs"] = True
             generation_kwargs["top_logprobs"] = MAX_LITELLM_LOGPROBS
-        if self.model_config.revision == "thinking":
+        if self.model_config.param == "thinking":
             generation_kwargs["thinking"] = dict(
                 type="enabled", budget_tokens=REASONING_MAX_TOKENS - 1
             )
@@ -1432,16 +1478,16 @@ class LiteLLMModel(BenchmarkModule):
                 f"Enabling thinking mode for model {self.model_config.model_id!r}",
                 level=logging.DEBUG,
             )
-        elif self.model_config.revision == "no-thinking":
+        elif self.model_config.param == "no-thinking":
             generation_kwargs["thinking"] = dict(budget_tokens=0)
             log_once(
                 f"Disabling thinking mode for model {self.model_config.model_id!r}",
                 level=logging.DEBUG,
             )
-        elif self.model_config.revision in {"minimal", "low", "medium", "high"}:
-            generation_kwargs["reasoning_effort"] = self.model_config.revision
+        elif self.model_config.param in {"minimal", "low", "medium", "high"}:
+            generation_kwargs["reasoning_effort"] = self.model_config.param
             log_once(
-                f"Enabling reasoning effort {self.model_config.revision!r} for model "
+                f"Enabling reasoning effort {self.model_config.param!r} for model "
                 f"{self.model_config.model_id!r}",
                 level=logging.DEBUG,
             )
@@ -1477,43 +1523,6 @@ class LiteLLMModel(BenchmarkModule):
             )
 
         return generation_kwargs
-
-
-def raise_if_wrong_params(
-    model_config: ModelConfig, allowed_params: dict[str, list[str]]
-) -> None:
-    """Raise an error if the model configuration has invalid parameters.
-
-    Args:
-        model_config:
-            The model configuration.
-        allowed_params:
-            The allowed parameters for the model.
-
-    Raises:
-        InvalidModel:
-            If the model configuration has invalid parameters.
-    """
-    param = model_config.revision
-    if param == "":
-        return
-    for model_regex, allowed_params_list in allowed_params.items():
-        if re.fullmatch(pattern=model_regex, string=model_config.model_id):
-            if param not in allowed_params_list:
-                msg = (
-                    f"Invalid parameter {param!r} for model {model_config.model_id!r}."
-                )
-                if allowed_params_list:
-                    msg += f" Allowed parameters are: {', '.join(allowed_params_list)}."
-                else:
-                    msg += " No parameters are allowed."
-                raise InvalidModel(msg)
-            return
-    else:
-        raise InvalidModel(
-            f"The parameter {param!r} is not supported for the model "
-            f"{model_config.model_id!r}."
-        )
 
 
 def try_download_ollama_model(model_id: str) -> bool:

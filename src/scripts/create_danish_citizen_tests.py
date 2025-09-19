@@ -14,6 +14,7 @@
 import warnings
 
 import pandas as pd
+from constants import CHOICES_MAPPING
 from datasets import Dataset, DatasetDict, Split, load_dataset
 from dotenv import load_dotenv
 from huggingface_hub import HfApi
@@ -50,7 +51,7 @@ def main() -> None:
     for _, row in df.iterrows():
         text = (
             clean_text(text=row.instruction)
-            + "\nSvarmuligheder:\n"
+            + f"\n{CHOICES_MAPPING['da']}:\n"
             + "\n".join(
                 [
                     f"{letter}. {clean_text(text=option)}"

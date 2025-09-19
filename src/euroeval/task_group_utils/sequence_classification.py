@@ -198,8 +198,8 @@ def extract_labels_from_generation(
         # If no candidate labels were found, we either pick the label with the smallest
         # word edit distance to the predicted label (if invalid model outputs are
         # allowed), or we raise an error
-        if min(edit_distances) > 100:
-            if dataset_config.task.allow_invalid_model_outputs:
+        if min(edit_distances) >= 1000:
+            if dataset_config.allow_invalid_model_outputs:
                 logger.warning(
                     "No candidate labels found for the predicted label "
                     f"{predicted_label!r}, out of the candidate labels "

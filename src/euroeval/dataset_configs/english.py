@@ -1,6 +1,7 @@
 """All English dataset configurations used in EuroEval."""
 
 from ..data_models import DatasetConfig
+from ..enums import ModelType
 from ..languages import EN
 from ..tasks import COMMON_SENSE, EUROPEAN_VALUES, KNOW, LA, MCRC, NER, RC, SENT, SUMM
 
@@ -123,6 +124,18 @@ MULTI_WIKI_QA_EN_CONFIG = DatasetConfig(
     huggingface_id="EuroEval/multi-wiki-qa-en-mini",
     task=RC,
     languages=[EN],
+    unofficial=True,
+)
+
+WINOGRANDE_CONFIG = DatasetConfig(
+    name="winogrande",
+    pretty_name="the English common-sense reasoning dataset Winogrande",
+    huggingface_id="EuroEval/winogrande-en",
+    task=COMMON_SENSE,
+    languages=[EN],
+    splits=["train", "test"],
+    _labels=["a", "b"],
+    _allowed_model_types=[ModelType.GENERATIVE],
     unofficial=True,
 )
 

@@ -273,7 +273,7 @@ def tokenize_and_align_labels(
     Returns:
         A dictionary containing the tokenized data as well as labels.
     """
-    # Tokenize the texts. We use the `is_split_into_words` argument here because
+    # Tokenise the texts. We use the `is_split_into_words` argument here because
     # the texts in our dataset are lists of words (with a label for each word)
     tokenized_inputs = tokeniser(
         examples["tokens"], is_split_into_words=True, truncation=True, padding=True
@@ -396,7 +396,7 @@ def handle_unk_tokens(
 
     Args:
         tokeniser:
-            The tokeniser used to tokenize the words.
+            The tokeniser used to tokenise the words.
         tokens:
             The list of tokens.
         words:
@@ -423,7 +423,7 @@ def handle_unk_tokens(
         # Fetch the word
         word = words[word_idx]
 
-        # Tokenize the word, which is now a list containing at least one UNK token
+        # Tokenise the word, which is now a list containing at least one UNK token
         tokens_with_unk = tokeniser.convert_ids_to_tokens(
             tokeniser.encode(word, add_special_tokens=False)
         )

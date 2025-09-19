@@ -16,6 +16,7 @@ from collections import Counter
 
 import pandas as pd
 from constants import (
+    CHOICES_MAPPING,
     MAX_NUM_CHARS_IN_INSTRUCTION,
     MAX_NUM_CHARS_IN_OPTION,
     MAX_REPETITIONS,
@@ -70,21 +71,8 @@ def main() -> None:
         "it": "Domanda",
         "es": "Pregunta",
     }
-    choices_mapping = {
-        "da": "Svarmuligheder",
-        "no": "Svaralternativer",
-        "sv": "Svarsalternativ",
-        "is": "Svarmöguleikar",
-        "de": "Antwortmöglichkeiten",
-        "nl": "Antwoordopties",
-        "en": "Choices",
-        "fr": "Choix",
-        "fi": "Vaihtoehdot",
-        "it": "Opzioni",
-        "es": "Opciones",
-    }
 
-    for language in choices_mapping.keys():
+    for language in CHOICES_MAPPING.keys():
         # Download the dataset
         dataset = load_dataset(
             path=repo_id, name=language_mapping[language], split="test", token=True
@@ -153,7 +141,7 @@ def main() -> None:
         # Make a `text` column with all the options in it
         df["text"] = [
             re.sub(r"\n+", "\n", row.instruction).strip() + "\n"
-            f"{choices_mapping[language]}:\n"
+            f"{CHOICES_MAPPING[language]}:\n"
             "a. " + re.sub(r"\n+", "\n", row.option_a).strip() + "\n"
             "b. " + re.sub(r"\n+", "\n", row.option_b).strip() + "\n"
             "c. " + re.sub(r"\n+", "\n", row.option_c).strip() + "\n"

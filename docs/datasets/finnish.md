@@ -356,8 +356,9 @@ $ euroeval --model <model-id> --dataset belebele-fi
 
 ### Unofficial: MultiWikiQA-fi
 
-This dataset will be published in an upcoming paper, and contains Finnish Wikipedia
-articles with generated questions and answers, using the LLM Gemini-1.5-pro.
+This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2509.04111)
+and contains Wikipedia articles with LLM-generated questions and answers in 300+
+languages.
 
 The original full dataset consists of 5,000 samples in a single split. We use a 1,024 /
 256 / 2,048 split for training, validation and testing, respectively, sampled randomly.
@@ -496,9 +497,17 @@ $ euroeval --model <model-id> --dataset hellaswag-fi
 
 ### Unofficial: GoldenSwag-fi
 
-This dataset is a filtered and machine translated version of the English [HellaSwag dataset](https://aclanthology.org/P19-1472/), featuring both video descriptions from ActivityNet as well as how-to articles from WikiHow. The machine translated version was published in [this paper](https://doi.org/10.48550/arXiv.2410.08928) and was done using DeepL, and the filtering was published in [this paper](https://doi.org/10.48550/arXiv.2504.07825), which resulted in higher quality samples.
+This dataset is a filtered and machine translated version of the English [HellaSwag
+dataset](https://aclanthology.org/P19-1472/), featuring both video descriptions from
+ActivityNet as well as how-to articles from WikiHow. The machine translated version was
+published in [this paper](https://doi.org/10.48550/arXiv.2410.08928) and was done using
+DeepL, and the filtering was published in [this
+paper](https://doi.org/10.48550/arXiv.2504.07825), which resulted in higher quality
+samples.
 
-The original full dataset consists of 1530 / 1530 samples for training and validation, respectively. However, they are exactly equal. We use a split of 660 / 256 / 2,048 samples for training, validation, and testing, respectively.
+The original full dataset consists of 1530 / 1530 samples for training and validation,
+respectively. However, they are exactly equal. We use a split of 660 / 256 / 2,048
+samples for training, validation, and testing, respectively.
 
 Here are a few examples from the training split:
 
@@ -559,8 +568,72 @@ You can evaluate this dataset directly as follows:
 $ euroeval --model <model-id> --dataset goldenswag-fi
 ```
 
+### Unofficial: Winogrande-fi
 
-## Summarization
+This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2506.19468)
+and is a translated and filtered version of the English [Winogrande
+dataset](https://doi.org/10.1145/3474381).
+
+The original full dataset consists of 47 / 1,210 samples for training and testing, and
+we use the same splits.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Kun Dennis oli Puolassa, hän nautti matkasta enemmän kuin Jason, koska _ ymmärsi puolaa syvällisemmin. Mihin tyhjä _ viittaa?\nVastausvaihtoehdot:\na. Vaihtoehto A: Dennis\nb. Vaihtoehto B: Jason",
+  "label": "a"
+}
+```
+
+```json
+{
+  "text": "Michael halusi viedä Craigin vesille uudella veneellään. _ sanoi, että olisi hauskaa näyttää hänelle köysiä. Mihin tyhjä _ viittaa?\nVastausvaihtoehdot:\na. Vaihtoehto A: Michael\nb. Vaihtoehto B: Craig",
+  "label": "a"
+}
+```
+
+```json
+{
+  "text": "Voittaaksemme käyttäytymisharhan, meidän täytyy keskittyä enemmän tietoisten toimien muuttamiseen kuin tiedostamattomien toimien muuttamiseen, koska _ toimet ovat vapaaehtoisia. Mihin tyhjä _ viittaa?\nVastausvaihtoehdot:\na. Vaihtoehto A: tiedostamattomat\nb. Vaihtoehto B: tietoiset",
+  "label": "b"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+  ```
+  Seuraavat ovat monivalintakysymyksiä (vastauksineen).
+  ```
+- Base prompt template:
+  ```
+  Kysymys: {text}
+  Vastausvaihtoehdot:
+  a. {option_a}
+  b. {option_b}
+  Vastaus: {label}
+  ```
+- Instruction-tuned prompt template:
+  ```
+  Kysymys: {text}
+  Vastausvaihtoehdot:
+  a. {option_a}
+  b. {option_b}
+
+  Vastaa yllä olevaan kysymykseen käyttämällä 'a' tai 'b', äläkä mitään muuta.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+$ euroeval --model <model-id> --dataset winogrande-fi
+```
+
+
+## Summarisation
 
 ### XLSum-fi
 

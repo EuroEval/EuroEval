@@ -2,6 +2,7 @@
 
 import collections.abc as c
 import logging
+import re
 import typing as t
 from functools import cached_property, partial
 from json import JSONDecodeError
@@ -14,6 +15,7 @@ from huggingface_hub import HfApi
 from huggingface_hub import whoami as hf_whoami
 from huggingface_hub.errors import (
     GatedRepoError,
+    HfHubHTTPError,
     HFValidationError,
     LocalTokenNotFoundError,
     RepositoryNotFoundError,
@@ -56,13 +58,14 @@ from ..exceptions import (
     NeedsEnvironmentVariable,
     NeedsExtraInstalled,
 )
+from ..generation_utils import raise_if_wrong_params
 from ..languages import get_all_languages
 from ..task_group_utils import (
     multiple_choice_classification,
     question_answering,
     token_classification,
 )
-from ..tokenization_utils import get_bos_token, get_eos_token
+from ..tokenisation_utils import get_bos_token, get_eos_token
 from ..utils import (
     block_terminal_output,
     create_model_cache_dir,
@@ -70,6 +73,7 @@ from ..utils import (
     get_hf_token,
     internet_connection_available,
     log_once,
+    split_model_id,
 )
 from .base import BenchmarkModule
 
@@ -90,6 +94,7 @@ class HuggingFaceEncoderModel(BenchmarkModule):
     fresh_model = False
     batching_preference = BatchingPreference.NO_PREFERENCE
     high_priority = True
+    allowed_params = {re.compile(r".*"): ["slow-tokenizer"]}
 
     def __init__(
         self,
@@ -110,6 +115,10 @@ class HuggingFaceEncoderModel(BenchmarkModule):
             log_metadata:
                 Whether to log the model metadata.
         """
+        raise_if_wrong_params(
+            model_config=model_config, allowed_params=self.allowed_params
+        )
+
         model, tokeniser = load_model_and_tokeniser(
             model_config=model_config,
             dataset_config=dataset_config,
@@ -139,21 +148,25 @@ class HuggingFaceEncoderModel(BenchmarkModule):
         Returns:
             The number of parameters in the model.
         """
-        token = get_hf_token(api_key=self.benchmark_config.api_key)
-        hf_api = HfApi(token=token)
-        try:
-            repo_info = hf_api.model_info(
-                repo_id=self.model_config.adapter_base_model_id
-                or self.model_config.model_id,
-                revision=self.model_config.revision,
-            )
-        except (
-            RepositoryNotFoundError,
-            RevisionNotFoundError,
-            RequestException,
-            HFValidationError,
-        ):
+        # No need to try to use the API if we have no internet.
+        if not internet_connection_available():
             repo_info = None
+        else:
+            token = get_hf_token(api_key=self.benchmark_config.api_key)
+            hf_api = HfApi(token=token)
+            try:
+                repo_info = hf_api.model_info(
+                    repo_id=self.model_config.adapter_base_model_id
+                    or self.model_config.model_id,
+                    revision=self.model_config.revision,
+                )
+            except (
+                RepositoryNotFoundError,
+                RevisionNotFoundError,
+                RequestException,
+                HFValidationError,
+            ):
+                repo_info = None
 
         if (
             repo_info is not None
@@ -245,15 +258,6 @@ class HuggingFaceEncoderModel(BenchmarkModule):
         # that are less than 128
         all_max_lengths = [
             max_length for max_length in all_max_lengths if max_length >= 128
-        ]
-
-        # We remove the upper cap of maximum context length for the model, as it is
-        # highly unlikely that this is the model's actual maximum context length - we
-        # would rather not report a value than report an incorrect one.
-        all_max_lengths = [
-            max_length
-            for max_length in all_max_lengths
-            if max_length != MAX_CONTEXT_LENGTH
         ]
 
         if len(list(all_max_lengths)) > 0:
@@ -483,11 +487,11 @@ class HuggingFaceEncoderModel(BenchmarkModule):
             Whether the model exists, or an error describing why we cannot check
             whether the model exists.
         """
-        model_id, revision = (
-            model_id.split("@") if "@" in model_id else (model_id, "main")
-        )
+        model_id_components = split_model_id(model_id=model_id)
         model_info = get_model_repo_info(
-            model_id=model_id, revision=revision, benchmark_config=benchmark_config
+            model_id=model_id_components.model_id,
+            revision=model_id_components.revision,
+            benchmark_config=benchmark_config,
         )
         return (
             model_info is not None
@@ -509,11 +513,11 @@ class HuggingFaceEncoderModel(BenchmarkModule):
         Returns:
             The model configuration.
         """
-        model_id, revision = (
-            model_id.split("@") if "@" in model_id else (model_id, "main")
-        )
+        model_id_components = split_model_id(model_id=model_id)
         model_info = get_model_repo_info(
-            model_id=model_id, revision=revision, benchmark_config=benchmark_config
+            model_id=model_id_components.model_id,
+            revision=model_id_components.revision,
+            benchmark_config=benchmark_config,
         )
         if model_info is None:
             raise InvalidModel(f"The model {model_id!r} could not be found.")
@@ -522,8 +526,9 @@ class HuggingFaceEncoderModel(BenchmarkModule):
         language_codes = list(language_mapping.keys())
 
         model_config = ModelConfig(
-            model_id=model_id,
-            revision=revision,
+            model_id=model_id_components.model_id,
+            revision=model_id_components.revision,
+            param=model_id_components.param,
             task=model_info.pipeline_tag,
             languages=[
                 language_mapping[tag]
@@ -559,7 +564,7 @@ def load_model_and_tokeniser(
             The benchmark configuration
 
     Returns:
-        The loaded model and tokeniser.
+        A pair (model, tokeniser), with the loaded model and tokeniser
     """
     config: "PretrainedConfig"
     block_terminal_output()
@@ -687,6 +692,7 @@ def load_model_and_tokeniser(
         model=model,
         model_id=model_id,
         trust_remote_code=benchmark_config.trust_remote_code,
+        model_config=model_config,
     )
 
     return model, tokeniser
@@ -710,7 +716,6 @@ def get_model_repo_info(
     """
     token = get_hf_token(api_key=benchmark_config.api_key)
     hf_api = HfApi(token=token)
-    model_id, revision = model_id.split("@") if "@" in model_id else (model_id, "main")
 
     # Get information on the model.
     # The first case is when the model is a local model, in which case we create a dummy
@@ -723,6 +728,11 @@ def get_model_repo_info(
             for required_file in LOCAL_MODELS_REQUIRED_FILES
         ):
             model_info = HfApiModelInfo(id=model_id, tags=None, pipeline_tag=None)
+
+    # If we have not internet, and the model_id is not a directory for a local model
+    # we also just create a dummy model info object.
+    elif not internet_connection_available():
+        model_info = HfApiModelInfo(id=model_id, tags=None, pipeline_tag=None)
 
     # If the model does not exist locally, then we get the model info from the Hugging
     # Face Hub, if possible
@@ -753,6 +763,13 @@ def get_model_repo_info(
                     return None
             except (RepositoryNotFoundError, HFValidationError):
                 return None
+            except HfHubHTTPError as e:
+                if "unauthorized" in str(e).lower():
+                    raise InvalidModel(
+                        "It seems like your specified Hugging Face API key is invalid. "
+                        "Please double-check your API key."
+                    ) from e
+                raise InvalidModel(str(e)) from e
             except (OSError, RequestException) as e:
                 if "unauthorized" in str(e).lower():
                     return None
@@ -864,7 +881,10 @@ def get_model_repo_info(
 
 
 def load_tokeniser(
-    model: "PreTrainedModel | None", model_id: str, trust_remote_code: bool
+    model: "PreTrainedModel | None",
+    model_id: str,
+    trust_remote_code: bool,
+    model_config: "ModelConfig",
 ) -> "PreTrainedTokenizer":
     """Load the tokeniser.
 
@@ -876,16 +896,19 @@ def load_tokeniser(
             The model identifier. Used for logging.
         trust_remote_code:
             Whether to trust remote code.
+        model_config:
+            The model configuration.
 
     Returns:
         The loaded tokeniser.
     """
     loading_kwargs: dict[str, bool | str] = dict(
-        use_fast=True,
+        use_fast=False if model_config.param == "slow-tokenizer" else True,
         verbose=False,
         trust_remote_code=trust_remote_code,
         padding_side="right",
         truncation_side="right",
+        cache_dir=model_config.model_cache_dir,
     )
 
     # If the model is a subclass of a certain model types then we have to add a prefix
@@ -996,6 +1019,7 @@ def load_hf_model_config(
                 token=get_hf_token(api_key=api_key),
                 trust_remote_code=trust_remote_code,
                 cache_dir=model_cache_dir,
+                local_files_only=not internet_connection_available(),
             )
             if config.eos_token_id is not None and config.pad_token_id is None:
                 if isinstance(config.eos_token_id, list):

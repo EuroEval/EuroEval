@@ -23,6 +23,7 @@ body:
       - label: West Germanic languages (Dutch, English, German)
       - label: Finnic languages (Estonian, Finnish)
       - label: Latvian
+      - label: Polish
   validations:
     required: true
 - type: dropdown

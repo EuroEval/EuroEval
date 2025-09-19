@@ -16,6 +16,7 @@ from collections import Counter
 
 import pandas as pd
 from constants import (
+    CHOICES_MAPPING,
     MAX_NUM_CHARS_IN_INSTRUCTION,
     MAX_NUM_CHARS_IN_OPTION,
     MAX_REPETITIONS,
@@ -172,7 +173,7 @@ def process_split(df: pd.DataFrame, split: str) -> pd.DataFrame:
     # Make a `text` column with all the options in it
     df["text"] = [
         row.ctx.replace("\n", " ").strip()
-        + "\nVastausvaihtoehdot:\n"
+        + f"\n{CHOICES_MAPPING['fi']}:\n"
         + "\n".join(
             f"{letter}. " + ending.replace("\n", " ").strip()
             for letter, ending in zip("abcd", row.endings)

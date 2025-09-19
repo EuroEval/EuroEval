@@ -89,7 +89,7 @@ SUMM = Task(
     default_num_few_shot_examples=1,
     default_max_generated_tokens=256,
     default_labels=[],
-    allowed_model_types=[ModelType.GENERATIVE],
+    default_allowed_model_types=[ModelType.GENERATIVE],
 )
 
 
@@ -101,6 +101,7 @@ KNOW = Task(
     default_num_few_shot_examples=5,
     default_max_generated_tokens=NUM_GENERATION_TOKENS_FOR_CLASSIFICATION,
     default_labels=["a", "b", "c", "d"],
+    default_allowed_model_types=[ModelType.GENERATIVE],
     uses_logprobs=True,
 )
 
@@ -113,6 +114,7 @@ MCRC = Task(
     default_num_few_shot_examples=5,
     default_max_generated_tokens=NUM_GENERATION_TOKENS_FOR_CLASSIFICATION,
     default_labels=["a", "b", "c", "d"],
+    default_allowed_model_types=[ModelType.GENERATIVE],
     uses_logprobs=True,
 )
 
@@ -125,6 +127,7 @@ COMMON_SENSE = Task(
     default_num_few_shot_examples=5,
     default_max_generated_tokens=NUM_GENERATION_TOKENS_FOR_CLASSIFICATION,
     default_labels=["a", "b", "c", "d"],
+    default_allowed_model_types=[ModelType.GENERATIVE],
     uses_logprobs=True,
 )
 
@@ -137,14 +140,14 @@ EUROPEAN_VALUES = Task(
     default_num_few_shot_examples=0,
     default_max_generated_tokens=NUM_GENERATION_TOKENS_FOR_CLASSIFICATION,
     default_labels=["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k"],
-    allowed_model_types=[ModelType.GENERATIVE],
-    allowed_generative_types=[
+    default_allowed_model_types=[ModelType.GENERATIVE],
+    default_allowed_generative_types=[
         GenerativeType.INSTRUCTION_TUNED,
         GenerativeType.REASONING,
     ],
     requires_zero_shot=True,
     uses_logprobs=True,
-    allow_invalid_model_outputs=False,
+    default_allow_invalid_model_outputs=False,
 )
 
 

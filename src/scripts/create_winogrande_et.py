@@ -11,6 +11,7 @@
 
 from typing import MutableMapping
 
+from constants import CHOICES_MAPPING
 from datasets import DatasetDict, load_dataset
 from huggingface_hub import HfApi
 
@@ -69,7 +70,9 @@ def add_options_and_label(row: MutableMapping) -> MutableMapping:
     option_1 = row["option1"]
     option_2 = row["option2"]
 
-    new_text = f"{original_text}\nVastusevariandid:\na. {option_1}\nb. {option_2}"
+    new_text = (
+        f"{original_text}\n{CHOICES_MAPPING['et']}:\na. {option_1}\nb. {option_2}"
+    )
 
     answer = row["answer"]
     if answer not in letter_mapping.keys():

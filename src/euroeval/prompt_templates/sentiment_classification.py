@@ -19,6 +19,7 @@ from ..languages import (
     NL,
     NN,
     NO,
+    PL,
     PT,
     SV,
 )
@@ -78,6 +79,20 @@ SENT_TEMPLATES: dict["Language", PromptConfig] = {
         "meelestatuse järgi. Võimalikud vastused: {labels_str}. Muud vastused "
         "ei ole lubatud.",
     ),
+    PL: PromptConfig(
+        default_prompt_label_mapping=dict(
+            positive="pozytywny", neutral="neutralny", negative="negatywny"
+        ),
+        default_prompt_prefix=(
+            "Poniżej znajdują się dokumenty i ich sentyment, który może być "
+            "{labels_str}."
+        ),
+        default_prompt_template="Dokument: {text}\nSentyment: {label}",
+        default_instruction_prompt=(
+            "Dokument: {text}\n\nKlasyfikuj sentyment w dokumencie. "
+            "Odpowiedz z {labels_str}, i nic więcej."
+        ),
+    ),
     PT: PromptConfig(
         default_prompt_label_mapping=dict(
             positive="positivo", neutral="neutro", negative="negativo"
@@ -122,11 +137,11 @@ SENT_TEMPLATES: dict["Language", PromptConfig] = {
         default_prompt_label_mapping=dict(
             positive="jákvætt", neutral="hlutlaust", negative="neikvætt"
         ),
-        default_prompt_prefix="Eftirfarandi eru skjöl og viðhorf þeirra, sem geta "
-        "verið {labels_str}.",
-        default_prompt_template="Skjal: {text}\nViðhorf: {label}",
-        default_instruction_prompt="Skjal: {text}\n\nFlokkaðu viðhorfið í skjalinu. "
-        "Svaraðu með {labels_str}, og ekkert annað.",
+        default_prompt_prefix="Hér fyrir neðan eru textabrot ásamt lyndisgildi þeirra "
+        "sem getur verið 'jákvætt', 'hlutlaust' eða 'neikvætt'.",
+        default_prompt_template="Textabrot: {text}\nViðhorf: {label}",
+        default_instruction_prompt="Textabrot: {text}\n\nGreindu lyndið í "
+        "textabrotinu. Svaraðu með {labels_str}, og ekkert annað.",
     ),
     IT: PromptConfig(
         default_prompt_label_mapping=dict(

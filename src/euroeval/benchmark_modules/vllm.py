@@ -44,7 +44,11 @@ from ..exceptions import (
     NeedsEnvironmentVariable,
     NeedsExtraInstalled,
 )
-from ..generation_utils import apply_prompt, extract_few_shot_examples
+from ..generation_utils import (
+    apply_prompt,
+    extract_few_shot_examples,
+    raise_if_wrong_params,
+)
 from ..languages import get_all_languages
 from ..task_group_utils import (
     question_answering,
@@ -52,7 +56,7 @@ from ..task_group_utils import (
     text_to_text,
     token_classification,
 )
-from ..tokenization_utils import (
+from ..tokenisation_utils import (
     apply_chat_template,
     get_bos_token,
     get_end_of_chat_token_ids,
@@ -68,7 +72,10 @@ from ..utils import (
     create_model_cache_dir,
     get_hf_token,
     get_min_cuda_compute_capability,
+    internet_connection_available,
     log_once,
+    resolve_model_path,
+    split_model_id,
 )
 from .hf import HuggingFaceEncoderModel, get_model_repo_info, load_hf_model_config
 
@@ -97,6 +104,7 @@ class VLLMModel(HuggingFaceEncoderModel):
     fresh_model = False
     batching_preference = BatchingPreference.ALL_AT_ONCE
     high_priority = True
+    allowed_params = {re.compile(r".*"): ["thinking", "no-thinking", "slow-tokenizer"]}
 
     def __init__(
         self,
@@ -120,23 +128,15 @@ class VLLMModel(HuggingFaceEncoderModel):
         if importlib.util.find_spec("vllm") is None:
             raise NeedsExtraInstalled(extra="generative")
 
+        raise_if_wrong_params(
+            model_config=model_config, allowed_params=self.allowed_params
+        )
+
         model, tokeniser = load_model_and_tokeniser(
             model_config=model_config, benchmark_config=benchmark_config
         )
         self._model: "LLM" = model
         self._tokeniser: "PreTrainedTokenizer" = tokeniser
-        self.end_of_reasoning_token = get_end_of_reasoning_token(
-            model=self._model, tokeniser=self._tokeniser, model_id=model_config.model_id
-        )
-        self.end_of_chat_token_ids = get_end_of_chat_token_ids(
-            tokeniser=self._tokeniser
-        )
-        self.custom_stop_tokens = get_custom_stop_tokens(
-            model=self._model,
-            tokeniser=self._tokeniser,
-            model_id=model_config.model_id,
-            is_reasoning_model=self.end_of_reasoning_token is not None,
-        )
 
         # We specify `HuggingFaceEncoderModel` here instead of `VLLMModel`, as we want
         # to call the `__init__` method of the `BenchmarkModule` class.
@@ -147,15 +147,27 @@ class VLLMModel(HuggingFaceEncoderModel):
             log_metadata=log_metadata,
         )
 
+        self.end_of_reasoning_token = get_end_of_reasoning_token(
+            model=self._model, tokeniser=self._tokeniser, model_config=model_config
+        )
+        self.end_of_chat_token_ids = get_end_of_chat_token_ids(
+            tokeniser=self._tokeniser, generative_type=self.generative_type
+        )
+        self.custom_stop_tokens = get_custom_stop_tokens(
+            model=self._model,
+            tokeniser=self._tokeniser,
+            model_id=model_config.model_id,
+            generative_type=self.generative_type,
+        )
+
         self.buffer |= dict(
-            instruction_model=has_chat_template(tokeniser=self._tokeniser),
             first_label_token_mapping=get_first_label_token_mapping(
                 dataset_config=self.dataset_config,
                 model_config=self.model_config,
                 tokeniser=self._tokeniser,
                 generative_type=self.generative_type,
                 log_metadata=self.log_metadata,
-            ),
+            )
         )
         if self.model_config.adapter_base_model_id is not None:
             adapter_path = snapshot_download(
@@ -195,7 +207,14 @@ class VLLMModel(HuggingFaceEncoderModel):
             return None
         elif self.benchmark_config.generative_type is not None:
             type_ = self.benchmark_config.generative_type
-        elif self.end_of_reasoning_token is not None:
+        elif self.model_config.param in {"thinking"}:
+            type_ = GenerativeType.REASONING
+        elif self.model_config.param in {"no-thinking"}:
+            type_ = GenerativeType.INSTRUCTION_TUNED
+        elif (
+            hasattr(self, "end_of_reasoning_token")
+            and self.end_of_reasoning_token is not None
+        ):
             type_ = GenerativeType.REASONING
         elif (
             has_chat_template(tokeniser=self._tokeniser)
@@ -298,7 +317,7 @@ class VLLMModel(HuggingFaceEncoderModel):
                 few_shot_examples=few_shot_examples,
                 model_config=self.model_config,
                 dataset_config=self.dataset_config,
-                instruction_model=self.buffer["instruction_model"],
+                generative_type=self.generative_type,
                 always_populate_text_field=True,
                 tokeniser=self._tokeniser,
             ),
@@ -326,7 +345,7 @@ class VLLMModel(HuggingFaceEncoderModel):
         """
         # Get stopping tokens
         stop_tokens: list[str] = self.custom_stop_tokens.copy()
-        if self.buffer["instruction_model"] is False:
+        if self.generative_type == GenerativeType.BASE:
             stop_tokens.append("\n\n")
         if self._tokeniser.pad_token_id is not None:
             assert isinstance(self._tokeniser.pad_token, str), (
@@ -443,9 +462,7 @@ class VLLMModel(HuggingFaceEncoderModel):
         labels_to_be_generated = list(self.dataset_config.prompt_label_mapping.values())
         if len(labels_to_be_generated) == 0:
             labels_to_be_generated = ["negative", "positive"]
-        if not self.buffer.get(
-            "instruction_model", False
-        ) and should_prompts_be_stripped(
+        if self.generative_type == GenerativeType.BASE and should_prompts_be_stripped(
             labels_to_be_generated=labels_to_be_generated, tokeniser=self._tokeniser
         ):
             log_once(
@@ -542,11 +559,24 @@ class VLLMModel(HuggingFaceEncoderModel):
                 torch.LongTensor(completion_id) for completion_id in completion_ids
             ]
         )
-        if self.end_of_reasoning_token is not None:
-            completions = [
-                completion.split(self.end_of_reasoning_token)[-1]
-                for completion in completions
-            ]
+        if (
+            self.end_of_reasoning_token is not None
+            and self.generative_type == GenerativeType.REASONING
+        ):
+            for idx in range(len(completions)):
+                if self.end_of_reasoning_token in completions[idx]:
+                    completions[idx] = completions[idx].split(
+                        self.end_of_reasoning_token
+                    )[-1]
+                else:
+                    logger.warning(
+                        f"The model {self.model_config.model_id!r} is a reasoning "
+                        "model, but the generated output does not contain the end of "
+                        f"reasoning token ({self.end_of_reasoning_token!r}). Using "
+                        "an empty string as the prediction instead."
+                    )
+                    logger.debug(f"The generated output was: {completions[idx]!r}.")
+                    completions[idx] = ""
         stop_token_pattern = re.compile(
             "|".join(re.escape(stop_token) for stop_token in stop_tokens)
         )
@@ -603,9 +633,10 @@ class VLLMModel(HuggingFaceEncoderModel):
         if using_api:
             return False
 
-        model_id, revision = (
-            model_id.split("@") if "@" in model_id else (model_id, "main")
-        )
+        model_id_components = split_model_id(model_id=model_id)
+        model_id = model_id_components.model_id
+        revision = model_id_components.revision
+
         model_info = get_model_repo_info(
             model_id=model_id, revision=revision, benchmark_config=benchmark_config
         )
@@ -629,11 +660,11 @@ class VLLMModel(HuggingFaceEncoderModel):
         Returns:
             The model configuration.
         """
-        model_id, revision = (
-            model_id.split("@") if "@" in model_id else (model_id, "main")
-        )
+        model_id_components = split_model_id(model_id=model_id)
         model_info = get_model_repo_info(
-            model_id=model_id, revision=revision, benchmark_config=benchmark_config
+            model_id=model_id_components.model_id,
+            revision=model_id_components.revision,
+            benchmark_config=benchmark_config,
         )
         if model_info is None:
             raise InvalidModel(f"The model {model_id!r} could not be found.")
@@ -642,8 +673,9 @@ class VLLMModel(HuggingFaceEncoderModel):
         language_codes = list(language_mapping.keys())
 
         model_config = ModelConfig(
-            model_id=model_id,
-            revision=revision,
+            model_id=model_id_components.model_id,
+            revision=model_id_components.revision,
+            param=model_id_components.param,
             task=model_info.pipeline_tag,
             languages=[
                 language_mapping[tag]
@@ -811,16 +843,27 @@ def load_model_and_tokeniser(
         adapter_base_model_id=model_config.adapter_base_model_id,
         trust_remote_code=benchmark_config.trust_remote_code,
         model_max_length=true_max_model_len,
-        model_cache_dir=model_config.model_cache_dir,
+        model_config=model_config,
         token=get_hf_token(api_key=benchmark_config.api_key),
+    )
+    vllm_tokenisation_params = get_vllm_tokenisation_params(
+        tokeniser=tokeniser, model_config=model_config
     )
 
     clear_vllm()
 
     try:
         model = LLM(
-            model=model_id,
-            tokenizer=model_id,
+            model=(
+                model_id
+                if internet_connection_available()
+                else resolve_model_path(download_dir=download_dir)
+            ),
+            tokenizer=(
+                model_id
+                if internet_connection_available()
+                else resolve_model_path(download_dir=download_dir)
+            ),
             gpu_memory_utilization=benchmark_config.gpu_memory_utilization,
             max_model_len=min(true_max_model_len, MAX_CONTEXT_LENGTH),
             download_dir=download_dir,
@@ -838,16 +881,7 @@ def load_model_and_tokeniser(
             enable_prefix_caching=False,
             enable_lora=model_config.adapter_base_model_id is not None,
             max_lora_rank=256,
-            # Special arguments in case we are dealing with a Mistral model
-            tokenizer_mode="mistral"
-            if isinstance(tokeniser, MistralCommonTokenizer)
-            else "auto",
-            config_format="mistral"
-            if isinstance(tokeniser, MistralCommonTokenizer)
-            else "auto",
-            load_format="mistral"
-            if isinstance(tokeniser, MistralCommonTokenizer)
-            else "auto",
+            **vllm_tokenisation_params,
         )
     except (RuntimeError, ValueError, OSError) as e:
         if "awaiting a review from the repo authors" in str(e):
@@ -876,7 +910,7 @@ def load_tokeniser(
     adapter_base_model_id: str | None,
     trust_remote_code: bool,
     model_max_length: int,
-    model_cache_dir: str,
+    model_config: "ModelConfig",
     token: str | bool,
 ) -> "PreTrainedTokenizer":
     """Load the tokeniser.
@@ -893,8 +927,8 @@ def load_tokeniser(
             Whether to trust remote code.
         model_max_length:
             The maximum length of the model.
-        model_cache_dir:
-            The cache directory for the model.
+        model_config:
+            The model configuration.
         token:
             The Hugging Face API token.
 
@@ -905,23 +939,26 @@ def load_tokeniser(
     config = AutoConfig.from_pretrained(
         adapter_base_model_id or model_id,
         revision=revision,
-        cache_dir=model_cache_dir,
+        cache_dir=model_config.model_cache_dir,
         token=token,
         trust_remote_code=trust_remote_code,
+        local_files_only=not internet_connection_available(),
     )
     num_retries = 5
     for _ in range(num_retries):
         try:
             tokeniser = AutoTokenizer.from_pretrained(
                 model_id,
-                use_fast=True,
+                use_fast=False if model_config.param == "slow-tokenizer" else True,
                 verbose=False,
                 trust_remote_code=trust_remote_code,
                 padding_side="left",
                 truncation_side="left",
                 model_max_length=model_max_length,
+                cache_dir=model_config.model_cache_dir,
                 config=config,
                 token=token,
+                local_files_only=not internet_connection_available(),
             )
             break
         except (json.JSONDecodeError, OSError, TypeError) as e:
@@ -979,7 +1016,7 @@ def clear_vllm() -> None:
 
 
 def get_end_of_reasoning_token(
-    model: "LLM", tokeniser: "PreTrainedTokenizer", model_id: str
+    model: "LLM", tokeniser: "PreTrainedTokenizer", model_config: "ModelConfig"
 ) -> str | None:
     """Get the end-of-reasoning token for a generative model.
 
@@ -988,17 +1025,26 @@ def get_end_of_reasoning_token(
             The vLLM model.
         tokeniser:
             The tokeniser.
-        model_id:
-            The model ID.
+        model_config:
+            The model configuration.
 
     Returns:
         The end of reasoning token, or None if it could not be found.
     """
+    model_id = model_config.model_id
+
     # Create a prompt to check if the model uses the reasoning tokens
     prompt = "What is your name?"
     if has_chat_template(tokeniser=tokeniser):
+        extra_kwargs = dict()
+        if model_config.param in {"thinking", "no-thinking"}:
+            extra_kwargs["enable_thinking"] = model_config.param == "thinking"
         templated_prompt = apply_chat_template(
-            conversation=[dict(role="user", content=prompt)], tokeniser=tokeniser
+            conversation=[dict(role="user", content=prompt)],
+            tokeniser=tokeniser,
+            tokenise=False,
+            add_generation_prompt=True,
+            **extra_kwargs,
         )
         assert isinstance(templated_prompt, str)
         prompt = templated_prompt
@@ -1021,8 +1067,8 @@ def get_end_of_reasoning_token(
     if not bor_reasoning_matches:
         log_once(
             f"The model {model_id!r} did not generate any beginning-of-reasoning "
-            "tokens in the prompt or the completion. Assuming the model is not "
-            "a reasoning model.",
+            "tokens in the prompt or the completion. Assuming the model is not a "
+            "reasoning model.",
             level=logging.DEBUG,
         )
         return None
@@ -1076,7 +1122,7 @@ def get_custom_stop_tokens(
     model: "LLM",
     tokeniser: "PreTrainedTokenizer",
     model_id: str,
-    is_reasoning_model: bool,
+    generative_type: GenerativeType | None,
 ) -> list[str]:
     """Get the stop tokens for a generative model.
 
@@ -1087,9 +1133,8 @@ def get_custom_stop_tokens(
             The tokeniser.
         model_id:
             The model ID.
-        is_reasoning_model:
-            Whether the model is a reasoning model. This is used to determine the number
-            of generated tokens to allow before stopping the generation.
+        generative_type:
+            The generative type of the model.
 
     Returns:
         A list of stop tokens.
@@ -1099,12 +1144,18 @@ def get_custom_stop_tokens(
     prompt = "Hello"
     if has_chat_template(tokeniser=tokeniser):
         templated_prompt = apply_chat_template(
-            conversation=[dict(role="user", content=prompt)], tokeniser=tokeniser
+            conversation=[dict(role="user", content=prompt)],
+            tokeniser=tokeniser,
+            tokenise=False,
+            add_generation_prompt=True,
+            enable_thinking=generative_type == GenerativeType.REASONING,
         )
         assert isinstance(templated_prompt, str)
         prompt = templated_prompt
 
-    max_tokens = REASONING_MAX_TOKENS if is_reasoning_model else 10
+    max_tokens = (
+        REASONING_MAX_TOKENS if generative_type == GenerativeType.REASONING else 10
+    )
     completion = (
         model.generate(
             prompts=[prompt],
@@ -1145,3 +1196,41 @@ def get_pbar_without_leave(*tqdm_args, **tqdm_kwargs) -> tqdm:
     """
     tqdm_kwargs.pop("leave", None)  # Remove the 'leave' key if it exists
     return tqdm(*tqdm_args, leave=False, **tqdm_kwargs)
+
+
+def get_vllm_tokenisation_params(
+    tokeniser: "PreTrainedTokenizer", model_config: "ModelConfig"
+) -> dict[str, t.Any]:
+    """Get the tokenisation parameters for vLLM.
+
+    Args:
+        tokeniser:
+            The tokeniser.
+        model_config:
+            The model configuration.
+
+    Returns:
+        A dictionary of tokenisation parameters to pass to vLLM.
+    """
+    if isinstance(tokeniser, MistralCommonTokenizer):
+        tokeniser_mode = "mistral"
+    elif model_config.param == "slow-tokenizer":
+        tokeniser_mode = "slow"
+    else:
+        tokeniser_mode = "auto"
+
+    if isinstance(tokeniser, MistralCommonTokenizer):
+        config_format = "mistral"
+    else:
+        config_format = "auto"
+
+    if isinstance(tokeniser, MistralCommonTokenizer):
+        load_format = "mistral"
+    else:
+        load_format = "auto"
+
+    return dict(
+        tokenizer_mode=tokeniser_mode,
+        config_format=config_format,
+        load_format=load_format,
+    )

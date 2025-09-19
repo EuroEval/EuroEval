@@ -366,8 +366,9 @@ $ euroeval --model <model-id> --dataset belebele-sv
 
 ### Unofficial: MultiWikiQA-sv
 
-This dataset will be published in an upcoming paper, and contains Swedish Wikipedia
-articles with generated questions and answers, using the LLM Gemini-1.5-pro.
+This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2509.04111)
+and contains Wikipedia articles with LLM-generated questions and answers in 300+
+languages.
 
 The original full dataset consists of 5,000 samples in a single split. We use a 1,024 /
 256 / 2,048 split for training, validation and testing, respectively, sampled randomly.
@@ -569,6 +570,70 @@ $ euroeval --model <model-id> --dataset arc-sv
 ```
 
 
+### Unofficial: Skolprov
+
+This dataset contains data from six Swedish knowledge tests and was published at [this HuggingFace repository](https://huggingface.co/datasets/Ekgren/swedish_skolprov). The dataset features multiple-choice questions from official Swedish examinations including the Swedish Scholastic Aptitude Test (högskoleprovet), medical doctor test (kunskapsprov läkare), dentist test (kunskapsprov tandläkare), audiologist test (kunskapsprov audionom), pharmacist test (kunskapsprov apotekare), and mathematics and physics test (matematik och fysikprovet).
+
+The original dataset consists of 545 samples, which we filter down to 512 samples. We use a 32 / 480 split for training and testing, respectively.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "En man, 63 år, har en skelett-, lymfkörtel-, och levermetastaserad prostatacancer där aktiv onkologisk behandling är avslutad. Han är inskriven i ett specialiserat palliativt hemsjukvårdsteam. Han har en långverkande smärtlindring med T. oxykodon 20 mg morgon och kväll. Nu söker han akut vård på grund av buksmärta och ihållande kräkningar. Vad bör du ordinera mot mannens smärtor?\nSvarsalternativ:\na. Tablett kortverkande oxykodon 5 mg peroralt\nb. Tablett ibuprofen 400 mg peroralt\nc. Tablett kortverkande oxykodon 20 mg peroralt\nd. Inj. 5 mg kortverkande oxykodon subkutant\ne. Paracetamol 1 g intravenöst",
+  "label": "d"
+}
+```
+```json
+{
+  "text": "Vilken typ av hörapparat är att föredra för barn under 3 år med en permenent sensorineural hörselnedsättning?\nSvarsalternativ:\na. RIC (reciever in the canal) med öppen dome\nb. benledd hörapparat\nc. bakom-örat-apparat med individuellt anpassad insats\nd. endast mikrofonsystem för att förbättra signal/brus förhållandet",
+  "label": "c"
+}
+```
+```json
+{
+  "text": "Varför är det viktigt med utredande samtal?\nSvarsalternativ:\na. Det kan etablera ett ömsesidigt förtroende mellan audionom och patient som underlag inför utförandet av en individuell, kvalitativ rehabilitering.\nb. Det ger audionomen möjlighet att observera patientens kommunikation som underlag inför utförandet av en individuell, kvalitativ rehabilitering.\nc. Det kan förbättra taluppfattningen som en del i utförandet av en individuell, kvalitativ rehabilitering.\nd. Det samlar nödvändig information om patienten, som underlag inför utförandet av en individuell, kvalitativ rehabilitering.",
+  "label": "d"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+  ```
+  Följande är flervalsfrågor (med svar).
+  ```
+- Base prompt template:
+  ```
+  Fråga: {text}
+  Svarsalternativ:
+  a. {option_a}
+  b. {option_b}
+  c. {option_c}
+  d. {option_d}
+  Svar: {label}
+  ```
+- Instruction-tuned prompt template:
+  ```
+  Fråga: {text}
+  Svarsalternativ:
+  a. {option_a}
+  b. {option_b}
+  c. {option_c}
+  d. {option_d}
+
+  Besvara följande fråga med 'a', 'b', 'c' eller 'd', och inget annat.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+$ euroeval --model <model-id> --dataset skolprov
+```
+
+
 ## Common-sense Reasoning
 
 ### HellaSwag-sv
@@ -705,8 +770,72 @@ You can evaluate this dataset directly as follows:
 $ euroeval --model <model-id> --dataset goldenswag-sv
 ```
 
+### Unofficial: Winogrande-sv
 
-## Summarization
+This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2506.19468)
+and is a translated and filtered version of the English [Winogrande
+dataset](https://doi.org/10.1145/3474381).
+
+The original full dataset consists of 47 / 1,210 samples for training and testing, and
+we use the same splits.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Sushin ruttnade på disken om den inte placerades i kylen, eftersom _ utsatte den för kontaminering. Vad syftar tomrummet _ på?\nSvarsalternativ:\na. Alternativ A: disken\nb. Alternativ B: kylen",
+  "label": "a"
+}
+```
+
+```json
+{
+  "text": "Elena skulle ta deras lager i butikens baksida för Megan att sälja varje gång eftersom _ var en affärsperson. Vad syftar tomrummet _ på?\nSvarsalternativ:\na. Alternativ A: Elena\nb. Alternativ B: Megan",
+  "label": "a"
+}
+```
+
+```json
+{
+  "text": "Att hantera nödsituationer var aldrig särskilt svårt för Kevin men det var det för Nelson eftersom _ inte kunde förbli lugn under press. Vad syftar tomrummet _ på?\nSvarsalternativ:\na. Alternativ A: Kevin\nb. Alternativ B: Nelson",
+  "label": "b"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+  ```
+  Følgende er multiple choice spørgsmål (med svar).
+  ```
+- Base prompt template:
+  ```
+  Spørgsmål: {text}
+  Svarmuligheder:
+  a. {option_a}
+  b. {option_b}
+  Svar: {label}
+  ```
+- Instruction-tuned prompt template:
+  ```
+  Spørgsmål: {text}
+  Svarmuligheder:
+  a. {option_a}
+  b. {option_b}
+
+  Besvar ovenstående spørgsmål ved at svare med 'a' eller 'b', og intet andet.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+$ euroeval --model <model-id> --dataset winogrande-sv
+```
+
+
+## Summarisation
 
 ### SweDN
 

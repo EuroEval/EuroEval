@@ -19,14 +19,14 @@ from datasets.splits import Split
 from huggingface_hub.hf_api import HfApi
 from tqdm.auto import tqdm
 
-LANGUAGES_TO_INCLUDE = ["de", "en", "es"]
+LANGUAGES = ["de", "en", "es"]
 
 
 def main() -> None:
     """Create the XQuAD datasets and upload it to the HF Hub."""
     dataset_id = "google/xquad"
 
-    for lang in tqdm(LANGUAGES_TO_INCLUDE):
+    for lang in tqdm(LANGUAGES):
         target_dataset_id = f"EuroEval/xquad-{lang}"
 
         dataset = load_dataset(

@@ -4,6 +4,7 @@ import logging
 import os
 import time
 from collections.abc import Generator
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
@@ -17,7 +18,14 @@ from euroeval.benchmarker import (
     model_has_been_benchmarked,
     prepare_dataset_configs,
 )
-from euroeval.data_models import BenchmarkResult, DatasetConfig, Language, Task
+from euroeval.data_models import (
+    BenchmarkConfig,
+    BenchmarkResult,
+    DatasetConfig,
+    Language,
+    ModelConfig,
+    Task,
+)
 from euroeval.dataset_configs import get_dataset_config
 from euroeval.exceptions import HuggingFaceHubDown
 
@@ -33,6 +41,7 @@ def test_benchmark_results_is_a_list(benchmarker: Benchmarker) -> None:
     assert isinstance(benchmarker.benchmark_results, list)
 
 
+@pytest.mark.dependency(name="encoder_benchmark")
 def test_benchmark_encoder(
     benchmarker: Benchmarker, task: Task, language: Language, encoder_model_id: str
 ) -> None:
@@ -54,6 +63,7 @@ def test_benchmark_encoder(
 @pytest.mark.skipif(
     condition=not torch.cuda.is_available(), reason="CUDA is not available."
 )
+@pytest.mark.dependency(name="generative_benchmark")
 def test_benchmark_generative(
     benchmarker: Benchmarker, task: Task, language: Language, generative_model_id: str
 ) -> None:
@@ -68,6 +78,7 @@ def test_benchmark_generative(
 @pytest.mark.skipif(
     condition=not torch.cuda.is_available(), reason="CUDA is not available."
 )
+@pytest.mark.dependency(name="generative_adapter_benchmark")
 def test_benchmark_generative_adapter(
     benchmarker: Benchmarker,
     task: Task,
@@ -112,24 +123,15 @@ def test_benchmark_ollama(
 
 
 @pytest.mark.parametrize(
-    argnames=[
-        "model_id",
-        "dataset",
-        "few_shot",
-        "validation_split",
-        "benchmark_results",
-        "expected",
-    ],
+    argnames=["few_shot", "evaluate_test_split", "benchmark_results", "expected"],
     argvalues=[
-        ("model", "dataset", False, False, [], False),
+        (False, True, [], False),
         (
-            "model",
-            "dataset",
             False,
-            False,
+            True,
             [
                 BenchmarkResult(
-                    model="model",
+                    model="model_id@revision",
                     dataset="dataset",
                     generative=False,
                     generative_type=None,
@@ -147,13 +149,11 @@ def test_benchmark_ollama(
             True,
         ),
         (
-            "model",
-            "dataset",
-            False,
-            False,
+            True,
+            True,
             [
                 BenchmarkResult(
-                    model="model",
+                    model="model_id@revision",
                     dataset="another-dataset",
                     generative=False,
                     generative_type=None,
@@ -171,13 +171,11 @@ def test_benchmark_ollama(
             False,
         ),
         (
-            "model",
-            "dataset",
             True,
-            False,
+            True,
             [
                 BenchmarkResult(
-                    model="model",
+                    model="model_id@revision",
                     dataset="dataset",
                     generative=True,
                     generative_type=None,
@@ -195,13 +193,11 @@ def test_benchmark_ollama(
             False,
         ),
         (
-            "model",
-            "dataset",
             True,
-            False,
+            True,
             [
                 BenchmarkResult(
-                    model="model",
+                    model="model_id@revision",
                     dataset="dataset",
                     generative=True,
                     generative_type=None,
@@ -219,13 +215,11 @@ def test_benchmark_ollama(
             True,
         ),
         (
-            "model",
-            "dataset",
             True,
-            False,
+            True,
             [
                 BenchmarkResult(
-                    model="model",
+                    model="model_id@revision",
                     dataset="dataset",
                     generative=False,
                     generative_type=None,
@@ -243,13 +237,11 @@ def test_benchmark_ollama(
             True,
         ),
         (
-            "model",
-            "dataset",
             False,
-            True,
+            False,
             [
                 BenchmarkResult(
-                    model="model",
+                    model="model_id@revision",
                     dataset="dataset",
                     generative=False,
                     generative_type=None,
@@ -267,13 +259,11 @@ def test_benchmark_ollama(
             False,
         ),
         (
-            "model",
-            "dataset",
             False,
-            True,
+            False,
             [
                 BenchmarkResult(
-                    model="model",
+                    model="model_id@revision",
                     dataset="dataset",
                     generative=False,
                     generative_type=None,
@@ -291,13 +281,11 @@ def test_benchmark_ollama(
             True,
         ),
         (
-            "model",
-            "dataset",
             False,
-            False,
+            True,
             [
                 BenchmarkResult(
-                    model="model",
+                    model="model_id@revision",
                     dataset="dataset",
                     generative=False,
                     generative_type=None,
@@ -312,7 +300,7 @@ def test_benchmark_ollama(
                     results=dict(),
                 ),
                 BenchmarkResult(
-                    model="model",
+                    model="model_id@revision",
                     dataset="dataset",
                     generative=False,
                     generative_type=None,
@@ -343,19 +331,22 @@ def test_benchmark_ollama(
     ],
 )
 def test_model_has_been_benchmarked(
-    model_id: str,
-    dataset: str,
+    model_config: ModelConfig,
+    dataset_config: DatasetConfig,
+    benchmark_config: BenchmarkConfig,
     few_shot: bool,
-    validation_split: bool,
+    evaluate_test_split: bool,
     benchmark_results: list[BenchmarkResult],
     expected: bool,
 ) -> None:
     """Test whether we can correctly check if a model has been benchmarked."""
+    benchmark_config = replace(
+        benchmark_config, few_shot=few_shot, evaluate_test_split=evaluate_test_split
+    )
     benchmarked = model_has_been_benchmarked(
-        model_id=model_id,
-        dataset=dataset,
-        few_shot=few_shot,
-        validation_split=validation_split,
+        model_config=model_config,
+        dataset_config=dataset_config,
+        benchmark_config=benchmark_config,
         benchmark_results=benchmark_results,
     )
     assert benchmarked == expected
@@ -409,3 +400,56 @@ def test_prepare_dataset_configs(
 ) -> None:
     """Test that the `prepare_dataset_configs` function works as expected."""
     assert prepare_dataset_configs(dataset_names=dataset_names) == dataset_configs
+
+
+@pytest.mark.disable_socket
+@pytest.mark.dependency(depends=["encoder_benchmark"])
+def test_benchmark_encoder_no_internet(
+    task: Task, language: Language, encoder_model_id: str
+) -> None:
+    """Test that encoder models can be benchmarked without internet."""
+    # need a new benchmarker since we only check for internet once per instance
+    benchmarker = Benchmarker(progress_bar=False, save_results=False, num_iterations=1)
+    benchmark_result = benchmarker.benchmark(
+        model=encoder_model_id, task=task.name, language=language.code
+    )
+    assert isinstance(benchmark_result, list)
+    assert all(isinstance(result, BenchmarkResult) for result in benchmark_result)
+
+
+# allow localhost since vllm uses it for some things
+@pytest.mark.allow_hosts(["127.0.0.1"])
+@pytest.mark.skipif(
+    condition=not torch.cuda.is_available(), reason="CUDA is not available."
+)
+@pytest.mark.dependency(depends=["generative_benchmark"])
+def test_benchmark_generative_no_internet(
+    task: Task, language: Language, generative_model_id: str
+) -> None:
+    """Test that generative models can be benchmarked without internet."""
+    # need a new benchmarker since we only check for internet once per instance
+    benchmarker = Benchmarker(progress_bar=False, save_results=False, num_iterations=1)
+    benchmark_result = benchmarker.benchmark(
+        model=generative_model_id, task=task.name, language=language.code
+    )
+    assert isinstance(benchmark_result, list)
+    assert all(isinstance(result, BenchmarkResult) for result in benchmark_result)
+
+
+# allow localhost since vllm uses it for some things
+@pytest.mark.allow_hosts(["127.0.0.1"])
+@pytest.mark.skip(
+    "Benchmarking adapter models without internet access are not implemented yet."
+)
+@pytest.mark.dependency(depends=["generative_adapter_benchmark"])
+def test_benchmark_generative_adapter_no_internet(
+    task: Task, language: Language, generative_adapter_model_id: str
+) -> None:
+    """Test that generative adapter models can be benchmarked without internet."""
+    # need a new benchmarker since we only check for internet once per instance
+    benchmarker = Benchmarker(progress_bar=False, save_results=False, num_iterations=1)
+    benchmark_result = benchmarker.benchmark(
+        model=generative_adapter_model_id, task=task.name, language=language.code
+    )
+    assert isinstance(benchmark_result, list)
+    assert all(isinstance(result, BenchmarkResult) for result in benchmark_result)

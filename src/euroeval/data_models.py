@@ -118,14 +118,14 @@ class Task:
             log probabilities for the generated tokens. Defaults to False.
         requires_logprobs (optional):
             Whether the task requires log probabilities. Implies `uses_logprobs`.
-        allowed_model_types (optional):
+        default_allowed_model_types (optional):
             A list of model types that are allowed to be evaluated on this task.
             Defaults to all model types being allowed.
-        allowed_generative_types (optional):
+        default_allowed_generative_types (optional):
             A list of generative model types that are allowed to be evaluated on this
             task. If None, all generative model types are allowed. Only relevant if
             `allowed_model_types` includes generative models.
-        allow_invalid_model_outputs (optional):
+        default_allow_invalid_model_outputs (optional):
             Whether to allow invalid model outputs. This is only relevant for generative
             models on classification tasks, where the model may generate an output
             which is not one of the allowed labels. If True, the model output will be
@@ -144,17 +144,17 @@ class Task:
     uses_structured_output: bool = False
     uses_logprobs: bool = False
     requires_logprobs: bool = False
-    allowed_model_types: list[ModelType] = field(
+    default_allowed_model_types: list[ModelType] = field(
         default_factory=lambda: [ModelType.ENCODER, ModelType.GENERATIVE]
     )
-    allowed_generative_types: list[GenerativeType] = field(
+    default_allowed_generative_types: list[GenerativeType] = field(
         default_factory=lambda: [
             GenerativeType.BASE,
             GenerativeType.INSTRUCTION_TUNED,
             GenerativeType.REASONING,
         ]
     )
-    allow_invalid_model_outputs: bool = True
+    default_allow_invalid_model_outputs: bool = True
 
     def __post_init__(self) -> None:
         """Post-initialisation checks."""
@@ -170,14 +170,16 @@ class BenchmarkConfig:
     """General benchmarking configuration, across datasets and models.
 
     Attributes:
-        model_languages:
-            The languages of the models to benchmark.
-        dataset_languages:
-            The languages of the datasets in the benchmark.
         tasks:
             The tasks benchmark the model(s) on.
         datasets:
             The datasets to benchmark on.
+        model_languages:
+            The languages of the models to benchmark.
+        dataset_languages:
+            The languages of the datasets in the benchmark.
+        device:
+            The device to use for benchmarking.
         batch_size:
             The batch size to use.
         raise_errors:
@@ -186,17 +188,16 @@ class BenchmarkConfig:
             Directory to store cached models and datasets.
         api_key:
             The API key to use for a given inference API.
-        force:
-            Whether to force the benchmark to run even if the results are already
-            cached.
+        api_base:
+            The base URL for a given inference API. Only relevant if `model` refers to a
+            model on an inference API.
+        api_version:
+            The version of the API to use. Only relevant if `model` refers to a model on
+            an inference API.
         progress_bar:
             Whether to show a progress bar.
         save_results:
             Whether to save the benchmark results to 'euroeval_benchmark_results.json'.
-        device:
-            The device to use for benchmarking.
-        verbose:
-            Whether to print verbose output.
         trust_remote_code:
             Whether to trust remote code when loading models from the Hugging Face Hub.
         clear_model_cache:
@@ -208,26 +209,28 @@ class BenchmarkConfig:
             if the model is generative.
         num_iterations:
             The number of iterations each model should be evaluated for.
-        api_base:
-            The base URL for a given inference API. Only relevant if `model` refers to a
-            model on an inference API.
-        api_version:
-            The version of the API to use. Only relevant if `model` refers to a model on
-            an inference API.
         gpu_memory_utilization:
             The GPU memory utilization to use for vLLM. A larger value will result in
             faster evaluation, but at the risk of running out of GPU memory. Only reduce
             this if you are running out of GPU memory. Only relevant if the model is
             generative.
-        debug:
-            Whether to run the benchmark in debug mode.
-        run_with_cli:
-            Whether the benchmark is being run with the CLI.
         requires_safetensors:
             Whether to only allow models that use the safetensors format.
         generative_type:
             The type of generative model to benchmark. Only relevant if the model is
             generative.
+        download_only:
+            Whether to only download the models, metrics and datasets without
+            evaluating.
+        force:
+            Whether to force the benchmark to run even if the results are already
+            cached.
+        verbose:
+            Whether to print verbose output.
+        debug:
+            Whether to run the benchmark in debug mode.
+        run_with_cli:
+            Whether the benchmark is being run with the CLI.
     """
 
     model_languages: list[Language]
@@ -238,23 +241,24 @@ class BenchmarkConfig:
     raise_errors: bool
     cache_dir: str
     api_key: str | None
-    force: bool
+    api_base: str | None
+    api_version: str | None
     progress_bar: bool
     save_results: bool
     device: torch.device
-    verbose: bool
     trust_remote_code: bool
     clear_model_cache: bool
     evaluate_test_split: bool
     few_shot: bool
     num_iterations: int
-    api_base: str | None
-    api_version: str | None
     gpu_memory_utilization: float
-    debug: bool
-    run_with_cli: bool
     requires_safetensors: bool
     generative_type: GenerativeType | None
+    download_only: bool
+    force: bool
+    verbose: bool
+    debug: bool
+    run_with_cli: bool
 
 
 class BenchmarkConfigParams(pydantic.BaseModel):
@@ -262,10 +266,10 @@ class BenchmarkConfigParams(pydantic.BaseModel):
 
     model_config = pydantic.ConfigDict(protected_namespaces=())
 
-    progress_bar: bool
-    save_results: bool
     task: str | list[str] | None
     dataset: str | list[str] | None
+    progress_bar: bool
+    save_results: bool
     language: str | list[str]
     model_language: str | list[str] | None
     dataset_language: str | list[str] | None
@@ -274,20 +278,21 @@ class BenchmarkConfigParams(pydantic.BaseModel):
     raise_errors: bool
     cache_dir: str
     api_key: str | None
-    force: bool
-    verbose: bool
+    api_base: str | None
+    api_version: str | None
     trust_remote_code: bool
     clear_model_cache: bool
     evaluate_test_split: bool
     few_shot: bool
     num_iterations: int
-    api_base: str | None
-    api_version: str | None
+    requires_safetensors: bool
+    download_only: bool
     gpu_memory_utilization: float
     generative_type: GenerativeType | None
+    force: bool
+    verbose: bool
     debug: bool
     run_with_cli: bool
-    requires_safetensors: bool
 
 
 class BenchmarkResult(pydantic.BaseModel):
@@ -407,6 +412,21 @@ class DatasetConfig:
             to a 1:1 mapping between the labels and themselves. If None then the mapping
             will be set to the default mapping for the task and language. Defaults to
             None.
+        _allowed_model_types (optional):
+            A list of model types that are allowed to be evaluated on this dataset.
+            Defaults to the one for the task.
+        _allowed_generative_types (optional):
+            A list of generative model types that are allowed to be evaluated on this
+            dataset. If None, all generative model types are allowed. Only relevant if
+            `allowed_model_types` includes generative models. Defaults to the one for
+            the task.
+        _allow_invalid_model_outputs (optional):
+            Whether to allow invalid model outputs. This is only relevant for
+            generative models on classification tasks, where the model may generate an
+            output which is not one of the allowed labels. If True, the model output
+            will be mapped to the closest valid label. If False, the model output will
+            be considered incorrect and the evaluation will be aborted. Defaults to
+            the one for the task.
         splits (optional):
             The names of the splits in the dataset. If not provided, defaults to
             ["train", "val", "test"].
@@ -428,6 +448,9 @@ class DatasetConfig:
     _max_generated_tokens: int | None = None
     _labels: list[str] | None = None
     _prompt_label_mapping: dict[str, str] | t.Literal["auto"] | None = None
+    _allowed_model_types: list[ModelType] | None = None
+    _allowed_generative_types: list[GenerativeType] | None = None
+    _allow_invalid_model_outputs: bool | None = None
     splits: list[str] = field(default_factory=lambda: ["train", "val", "test"])
     bootstrap_samples: bool = True
     unofficial: bool = False
@@ -508,6 +531,33 @@ class DatasetConfig:
             return prompt_config.default_prompt_label_mapping
 
     @property
+    def allowed_model_types(self) -> list[ModelType]:
+        """A list of model types that are allowed to be evaluated on this dataset."""
+        return (
+            self._allowed_model_types
+            if self._allowed_model_types is not None
+            else self.task.default_allowed_model_types
+        )
+
+    @property
+    def allowed_generative_types(self) -> list[GenerativeType]:
+        """A list of generative model types that are allowed on this dataset."""
+        return (
+            self._allowed_generative_types
+            if self._allowed_generative_types is not None
+            else self.task.default_allowed_generative_types
+        )
+
+    @property
+    def allow_invalid_model_outputs(self) -> bool:
+        """Whether to allow invalid model outputs."""
+        return (
+            self._allow_invalid_model_outputs
+            if self._allow_invalid_model_outputs is not None
+            else self.task.default_allow_invalid_model_outputs
+        )
+
+    @property
     def id2label(self) -> dict[int, str]:
         """The mapping from ID to label."""
         return {idx: label for idx, label in enumerate(self.labels)}
@@ -578,6 +628,8 @@ class ModelConfig:
             The ID of the model.
         revision:
             The revision of the model.
+        param:
+            The parameter of the model, or None if the model has no parameters.
         task:
             The task that the model was trained on.
         languages:
@@ -599,6 +651,7 @@ class ModelConfig:
 
     model_id: str
     revision: str
+    param: str | None
     task: str
     languages: list[Language]
     inference_backend: "InferenceBackend"
@@ -712,3 +765,21 @@ class PromptConfig:
     default_prompt_template: str
     default_instruction_prompt: str
     default_prompt_label_mapping: dict[str, str] | t.Literal["auto"]
+
+
+@dataclass
+class ModelIdComponents:
+    """A model ID split into its components.
+
+    Attributes:
+        model_id:
+            The main model ID without revision or parameters.
+        revision:
+            The revision of the model, if any.
+        param:
+            The parameter of the model, if any.
+    """
+
+    model_id: str
+    revision: str
+    param: str | None

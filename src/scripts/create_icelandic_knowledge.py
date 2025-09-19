@@ -21,6 +21,7 @@ import random
 import re
 
 import pandas as pd
+from constants import CHOICES_MAPPING
 from datasets import Dataset, DatasetDict, Split, load_dataset
 from dotenv import load_dotenv
 from huggingface_hub import HfApi
@@ -197,8 +198,12 @@ def build_dataset_with_llm(dataset: Dataset) -> pd.DataFrame:
         correct_label = [k for k, v in options.items() if v == row.answer][0]
 
         text = (
-            f"{row.question}\nSvarmöguleikar:\na. {options['a']}\nb. {options['b']}\n"
-            f"c. {options['c']}\nd. {options['d']}"
+            f"{row.question}\n"
+            f"{CHOICES_MAPPING['is']}:\n"
+            f"a. {options['a']}\n"
+            f"b. {options['b']}\n"
+            f"c. {options['c']}\n"
+            f"d. {options['d']}"
         )
 
         # Sanity check that the texts are formatted correctly

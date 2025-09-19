@@ -25,7 +25,7 @@ from datasets.splits import Split
 from huggingface_hub import HfApi
 from tqdm.auto import tqdm
 
-ALL_LANGUAGES = [
+LANGUAGES = [
     "da",
     "nl",
     "en",
@@ -39,6 +39,7 @@ ALL_LANGUAGES = [
     "nn",
     "es",
     "sv",
+    "pl",
     "pt-pt",
     "lv",
 ]
@@ -48,7 +49,7 @@ def main() -> None:
     """Create the MultiWikiQA-mini datasets and upload them to the HF Hub."""
     dataset_id = "alexandrainst/multi-wiki-qa"
 
-    for language in tqdm(ALL_LANGUAGES, desc="Generating datasets"):
+    for language in tqdm(LANGUAGES, desc="Generating datasets"):
         # Load the dataset
         dataset = load_dataset(dataset_id, name=language, token=True, split="train")
         assert isinstance(dataset, Dataset)

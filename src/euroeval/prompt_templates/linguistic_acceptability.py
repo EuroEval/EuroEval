@@ -19,6 +19,7 @@ from ..languages import (
     NL,
     NN,
     NO,
+    PL,
     PT,
     SV,
 )
@@ -67,6 +68,14 @@ LA_TEMPLATES: dict["Language", PromptConfig] = {
         default_instruction_prompt="Lause: {text}\n\nOtsusta, kas lause on "
         "grammatiliselt õige või mitte. Vasta {labels_str}, ja mitte midagi muud.",
     ),
+    PL: PromptConfig(
+        default_prompt_label_mapping=dict(correct="tak", incorrect="nie"),
+        default_prompt_prefix="Poniżej znajdują się teksty i czy są "
+        "gramatycznie poprawne.",
+        default_prompt_template="Tekst: {text}\nGramatycznie poprawny: {label}",
+        default_instruction_prompt="Tekst: {text}\n\nOkreśl czy tekst jest "
+        "gramatycznie poprawny czy nie. Odpowiedz {labels_str}, i nic więcej.",
+    ),
     PT: PromptConfig(
         default_prompt_label_mapping=dict(correct="sim", incorrect="não"),
         default_prompt_prefix="Seguem-se abaixo textos e se são "
@@ -88,7 +97,7 @@ LA_TEMPLATES: dict["Language", PromptConfig] = {
         default_prompt_prefix="Hetta eru nakrir setningar og um teir eru mállæruliga "
         "rættir.",
         default_prompt_template="Setningur: {text}\nMállæruliga rættur: {label}",
-        default_instruction_prompt="Setningur: {text}\n\nGreinið hvort setningurin er "
+        default_instruction_prompt="Setningur: {text}\n\nGreindu hvort setningurin er "
         "mállæruliga rættur ella ikki. Svara við {labels_str}, og einki annað.",
     ),
     FR: PromptConfig(
@@ -102,11 +111,12 @@ LA_TEMPLATES: dict["Language", PromptConfig] = {
     ),
     IS: PromptConfig(
         default_prompt_label_mapping=dict(correct="já", incorrect="nei"),
-        default_prompt_prefix="Eftirfarandi eru setningar og hvort þær eru "
-        "málfræðilega réttar.",
+        default_prompt_prefix="Hér fyrir neðan eru setningar ásamt mati á því hvort "
+        "þær eru málfræðilega réttar.",
         default_prompt_template="Setning: {text}\nMálfræðilega rétt: {label}",
-        default_instruction_prompt="Setning: {text}\n\nGreinið hvort setningin er "
-        "málfræðilega rétt eða ekki. Svaraðu með {labels_str}, og ekkert annað.",
+        default_instruction_prompt="Setning: {text}\n\nGreindu hvort setningin er "
+        "málfræðilega rétt. Svaraðu með 'já' ef setningin er rétt og 'nei' ef hún "
+        "er það ekki.",
     ),
     IT: PromptConfig(
         default_prompt_label_mapping=dict(correct="si", incorrect="no"),

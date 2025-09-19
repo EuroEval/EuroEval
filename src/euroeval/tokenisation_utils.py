@@ -1,4 +1,4 @@
-"""Utility functions related to tokenization."""
+"""Utility functions related to tokenisation."""
 
 import logging
 import re
@@ -79,8 +79,8 @@ def should_prompts_be_stripped(
     """Determine if we should strip the prompts for few-shot evaluation.
 
     This is the case if the tokeniser needs to include the space as part of the label
-    token. The strategy is thus to tokenize a label with a preceeding colon (as in the
-    prompts), i.e., ": positive", and check if the tokenization starts with the tokens
+    token. The strategy is thus to tokenise a label with a preceeding colon (as in the
+    prompts), i.e., ": positive", and check if the tokenisation starts with the tokens
     of ": ". If this is the case, then we should not strip the prompts, since the
     tokeniser produces the whitespace token separately.
 
@@ -88,7 +88,7 @@ def should_prompts_be_stripped(
         labels_to_be_generated:
             The labels that are to be generated.
         tokeniser:
-            The tokeniser used to tokenize the labels.
+            The tokeniser used to tokenise the labels.
 
     Returns:
         Whether we should strip the prompts.
@@ -124,7 +124,7 @@ def should_prefix_space_be_added_to_labels(
         labels_to_be_generated:
             The labels that are to be generated.
         tokeniser:
-            The tokeniser used to tokenize the labels.
+            The tokeniser used to tokenise the labels.
 
     Returns:
         Whether we should add a prefix space to the labels.
@@ -318,7 +318,9 @@ def get_pad_token(
     return pad_token, pad_token_id
 
 
-def get_end_of_chat_token_ids(tokeniser: "PreTrainedTokenizer") -> list[int] | None:
+def get_end_of_chat_token_ids(
+    tokeniser: "PreTrainedTokenizer", generative_type: GenerativeType | None
+) -> list[int] | None:
     """Get the end token ID for chat models.
 
     This is only relevant for tokenisers with a chat template.
@@ -326,21 +328,29 @@ def get_end_of_chat_token_ids(tokeniser: "PreTrainedTokenizer") -> list[int] | N
     Args:
         tokeniser:
             The tokeniser.
+        generative_type:
+            The generative type, or None if not available.
 
     Returns:
         The token IDs used to end chats, or None if the tokeniser does not have a chat
         template or if no end-of-chat token could be found.
     """
-    if not has_chat_template(tokeniser=tokeniser):
+    if generative_type == GenerativeType.BASE:
         return None
 
     user_message: dict[str, str] = dict(role="user", content="X")
-    token_ids = apply_chat_template(
-        conversation=[user_message],
-        tokeniser=tokeniser,
-        tokenize=True,
-        add_generation_prompt=False,
-    )
+    try:
+        token_ids = apply_chat_template(
+            conversation=[user_message],
+            tokeniser=tokeniser,
+            tokenise=True,
+            add_generation_prompt=False,
+            enable_thinking=generative_type == GenerativeType.REASONING,
+        )
+    except InvalidModel as e:
+        if "does not have a chat template" in str(e):
+            return None
+        raise e
     assert isinstance(token_ids, list)
 
     for idx, token in enumerate(tokeniser.convert_ids_to_tokens(token_ids)):
@@ -420,7 +430,7 @@ def get_first_label_token_mapping(
         for label in dataset_config.labels
     ]
 
-    # Tokenize some text containing each label, which we will use to extract the
+    # Tokenise some text containing each label, which we will use to extract the
     # first token of each label
     all_tokens: list[list[str]]
     if not has_chat_template(tokeniser=tokeniser):
@@ -439,11 +449,13 @@ def get_first_label_token_mapping(
                         dict(role="user", content=""),
                         dict(role="assistant", content=label),
                         # Adding extra user message as Mistral tokenisers require
-                        # conversamtions to end with a user message
+                        # conversations to end with a user message
                         dict(role="user", content=""),
                     ],
                     tokeniser=tokeniser,
-                    tokenize=True,
+                    tokenise=True,
+                    add_generation_prompt=True,
+                    enable_thinking=generative_type == GenerativeType.REASONING,
                 )
             )
             for label in local_labels
@@ -537,9 +549,9 @@ def has_chat_template(tokeniser: "PreTrainedTokenizer") -> bool:
 def apply_chat_template(
     conversation: list[dict[str, str]],
     tokeniser: "PreTrainedTokenizer",
-    tokenize: bool = False,
-    add_generation_prompt: bool = True,
-    **transformers_tokeniser_kwargs,
+    tokenise: bool,
+    add_generation_prompt: bool,
+    **extra_kwargs,
 ) -> str | list[int]:
     """Apply the chat template to a prompt.
 
@@ -548,38 +560,42 @@ def apply_chat_template(
             The conversation to apply the chat template to.
         tokeniser:
             The tokeniser.
-        tokenize:
-            Whether to tokenize the resulting prompt, returning a list of token IDs
+        tokenise:
+            Whether to tokenise the resulting prompt, returning a list of token IDs
             instead of a string.
         add_generation_prompt:
             Whether to add a generation prompt at the end of the conversation. This is
             only relevant for regular Hugging Face tokenisers, as Mistral tokenisers
             always add a generation prompt.
-        **transformers_tokeniser_kwargs:
-            Additional keyword arguments to pass to the tokeniser, in case the tokeniser
-            is a regular Hugging Face tokeniser.
+        **extra_kwargs:
+            Extra keyword arguments to pass to the tokeniser's `apply_chat_template`
+            method. Only relevant for regular Hugging Face tokenisers.
 
     Returns:
         The prompt with the chat template applied, either as a string or a list of
-        token IDs, depending on the value of `tokenize`.
+        token IDs, depending on the value of `tokenise`.
 
     Raises:
         InvalidModel:
             If the tokeniser does not have a chat template.
     """
+    # Ensure that the first user message is not empty, as this can cause issues with
+    # Jinja2
+    conversation[0]["content"] = conversation[0]["content"] or " "
+
     if not has_chat_template(tokeniser=tokeniser):
         raise InvalidModel(
             "The tokeniser does not have a chat template, so cannot apply it."
         )
     elif isinstance(tokeniser, MistralCommonTokenizer):
         templated_prompt = tokeniser.apply_chat_template(
-            conversation=conversation, tokenize=tokenize
+            conversation=conversation, tokenize=tokenise
         )
     else:
         templated_prompt = tokeniser.apply_chat_template(
             conversation=conversation,
             add_generation_prompt=add_generation_prompt,
-            tokenize=tokenize,
-            **transformers_tokeniser_kwargs,
+            tokenize=tokenise,
+            **extra_kwargs,
         )
     return templated_prompt

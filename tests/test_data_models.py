@@ -6,9 +6,11 @@ from collections.abc import Generator
 from pathlib import Path
 
 import pytest
+from click import ParamType
 
 from euroeval import __version__, data_models, enums
-from euroeval.data_models import BenchmarkResult
+from euroeval.benchmarker import Benchmarker
+from euroeval.data_models import BenchmarkConfig, BenchmarkConfigParams, BenchmarkResult
 from euroeval.metrics import HuggingFaceMetric, Metric
 
 
@@ -67,14 +69,6 @@ class TestMetric:
     ) -> None:
         """Test that the default value of `postprocessing_fn` is correct."""
         assert metric.postprocessing_fn(inputs) == expected
-
-
-# TODO
-@pytest.mark.skip("Not implemented")
-class TestBenchmarkConfigParams:
-    """Tests for the `BenchmarkConfigParams` class."""
-
-    pass
 
 
 class TestBenchmarkResult:
@@ -288,3 +282,47 @@ class TestBenchmarkResult:
         assert results_path.read_text() == f"\n{json_str}\n{json_str}"
 
         results_path.unlink(missing_ok=True)
+
+
+class TestBenchmarkParametersAreConsistent:
+    """Test that the same benchmark parameters are used everywhere."""
+
+    def test_config_params_is_the_same_as_benchmarker_init(self) -> None:
+        """Test that `BenchmarkConfigParams` agrees with `Benchmarker.__init__`."""
+        benchmark_config_params = set(
+            inspect.signature(BenchmarkConfigParams).parameters.keys()
+        )
+        benchmarker_init_params = set(
+            inspect.signature(Benchmarker.__init__).parameters.keys()
+        ) - {"self"}
+        assert benchmark_config_params == benchmarker_init_params
+
+    def test_config_params_is_the_same_as_benchmark_method(self) -> None:
+        """Test that `BenchmarkConfigParams` agrees with `Benchmarker.benchmark`."""
+        benchmark_config_params = set(
+            inspect.signature(BenchmarkConfigParams).parameters.keys()
+        ) - {"run_with_cli"}
+        benchmark_method_params = set(
+            inspect.signature(Benchmarker.benchmark).parameters.keys()
+        ) - {"self", "model"}
+        assert benchmark_config_params == benchmark_method_params
+
+    def test_config_params_is_the_same_as_cli(
+        self, cli_params: dict[str, ParamType]
+    ) -> None:
+        """Test that `BenchmarkConfigParams` agrees with the CLI."""
+        benchmark_config_params = set(
+            inspect.signature(BenchmarkConfigParams).parameters.keys()
+        ) - {"run_with_cli"}
+        cli_benchmark_params = set(cli_params.keys()) - {"model", "help"}
+        assert benchmark_config_params == cli_benchmark_params
+
+    def test_config_params_is_the_same_as_benchmark_config(self) -> None:
+        """Test that `BenchmarkConfigParams` agrees with `BenchmarkConfig`."""
+        benchmark_config_params = set(
+            inspect.signature(BenchmarkConfigParams).parameters.keys()
+        ) - {"dataset", "task", "language", "dataset_language", "model_language"}
+        benchmark_config_fields = set(
+            inspect.signature(BenchmarkConfig).parameters.keys()
+        ) - {"datasets", "tasks", "dataset_languages", "model_languages"}
+        assert benchmark_config_params == benchmark_config_fields

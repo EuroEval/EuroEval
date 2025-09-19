@@ -50,8 +50,10 @@ METRIC_ATTRIBUTES_TAKING_UP_MEMORY = ["cached_bertscorer"]
 # Hugging Face Hub tags used to classify models as merge models
 MERGE_TAGS = ["merge", "mergekit"]
 
+
 # The minimum required CUDA compute capability for using bfloat16 in vLLM
 VLLM_BF16_MIN_CUDA_COMPUTE_CAPABILITY = 8.0
+
 
 # Used to detect whether a model is a reasoning model
 REASONING_TOKENS = [
@@ -59,6 +61,7 @@ REASONING_TOKENS = [
     ("<reason>", "</reason>"),
     ("<reasoning>", "</reasoning>"),
 ]
+
 
 # These tokens are sometimes used by models to indicate the end of a generated
 # response, but they do not use them as a proper EOS token, so we have to deal with them

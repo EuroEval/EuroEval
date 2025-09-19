@@ -10,7 +10,7 @@ from transformers.tokenization_utils_base import PreTrainedTokenizerBase
 from transformers.trainer import Trainer
 
 from ..exceptions import InvalidBenchmark
-from ..tokenization_utils import get_special_token_metadata
+from ..tokenisation_utils import get_special_token_metadata
 from ..utils import raise_if_model_output_contains_nan_values
 
 if t.TYPE_CHECKING:
@@ -261,7 +261,7 @@ def prepare_train_examples(
         ]
         examples["context"] = [f"{c}{sep_token}" for c in examples["context"]]
 
-    # Set the stride used during tokenization, when the context is long enough to be
+    # Set the stride used during tokenisation, when the context is long enough to be
     # split into several features. Since we are always keeping the question tokens, we
     # need to make sure that the stride does not exceed the resulting maximum context
     # length.
@@ -272,11 +272,11 @@ def prepare_train_examples(
     stride = min(stride, max_length - max_question_tokens - num_special_tokens)
     max_length = tokeniser.model_max_length - stride
 
-    # Tokenize our examples with truncation and padding, but keep the overflows using a
+    # Tokenise our examples with truncation and padding, but keep the overflows using a
     # stride. This results in one example possible giving several features when a
     # context is long, each of those features having a context that overlaps a bit the
     # context of the previous feature.
-    tokenized_examples = tokeniser(
+    tokenised_examples = tokeniser(
         text=examples["question"],
         text_pair=examples["context"],
         truncation="only_second",
@@ -290,27 +290,27 @@ def prepare_train_examples(
     # Since one example might give us several features if it has a long context, we
     # need a map from a feature to its corresponding example. This key gives us just
     # that
-    sample_mapping = tokenized_examples.pop("overflow_to_sample_mapping")
+    sample_mapping = tokenised_examples.pop("overflow_to_sample_mapping")
 
     # The offset mappings will give us a map from token to character position in the
     # original context. This will help us compute the start_positions and
     # end_positions.
-    offset_mapping = tokenized_examples.pop("offset_mapping")
+    offset_mapping = tokenised_examples.pop("offset_mapping")
 
     # Initialise the start- and end positions of the answers
-    tokenized_examples["start_positions"] = list()
-    tokenized_examples["end_positions"] = list()
+    tokenised_examples["start_positions"] = list()
+    tokenised_examples["end_positions"] = list()
 
     for i, offsets in enumerate(offset_mapping):
         # Get the input IDs for the current example
-        input_ids = tokenized_examples.input_ids[i]
+        input_ids = tokenised_examples.input_ids[i]
 
         # We will label impossible answers with the index of the CLS token
         cls_index = input_ids.index(cls_token_id)
 
         # Grab the sequence corresponding to that example (to know what is the context
         # and what is the question).
-        sequence_ids = tokenized_examples.sequence_ids(i)
+        sequence_ids = tokenised_examples.sequence_ids(i)
 
         # Manually ensure that the special tokens are set to None in `sequence_ids`
         for special_token in tokeniser.special_tokens_map.keys():
@@ -329,8 +329,8 @@ def prepare_train_examples(
 
         # If no answers are given, set the cls_index as answer.
         if len(answers["answer_start"]) == 0:
-            tokenized_examples.start_positions.append(cls_index)
-            tokenized_examples.end_positions.append(cls_index)
+            tokenised_examples.start_positions.append(cls_index)
+            tokenised_examples.end_positions.append(cls_index)
 
         else:
             # Start/end character index of the answer in the text.
@@ -353,8 +353,8 @@ def prepare_train_examples(
                 offsets[token_start_index][0] <= start_char
                 and offsets[token_end_index][1] >= end_char
             ):
-                tokenized_examples.start_positions.append(cls_index)
-                tokenized_examples.end_positions.append(cls_index)
+                tokenised_examples.start_positions.append(cls_index)
+                tokenised_examples.end_positions.append(cls_index)
 
             # Otherwise move the token_start_index and token_end_index to the two ends
             # of the answer. Note: we could go after the last offset if the answer is
@@ -366,17 +366,17 @@ def prepare_train_examples(
                 ):
                     token_start_index += 1
                 token_start_index -= 1
-                tokenized_examples.start_positions.append(token_start_index)
+                tokenised_examples.start_positions.append(token_start_index)
                 while (
                     token_start_index <= token_end_index
                     and offsets[token_end_index][1] >= end_char
                 ):
                     token_end_index -= 1
                 token_end_index += 1
-                tokenized_examples.end_positions.append(token_end_index)
+                tokenised_examples.end_positions.append(token_end_index)
                 assert token_end_index >= token_start_index
 
-    return tokenized_examples
+    return tokenised_examples
 
 
 def prepare_test_examples(
@@ -394,7 +394,7 @@ def prepare_test_examples(
         The prepared test examples.
     """
     # Some of the questions have lots of whitespace on the left, which is not useful
-    # and will make the truncation of the context fail (the tokenized question will
+    # and will make the truncation of the context fail (the tokenised question will
     # take a lots of space). So we remove that left whitespace
     examples["question"] = [q.lstrip() for q in examples["question"]]
 
@@ -412,7 +412,7 @@ def prepare_test_examples(
         ]
         examples["context"] = [f"{c}{sep_token}" for c in examples["context"]]
 
-    # Set the stride used during tokenization, when the context is long enough to be
+    # Set the stride used during tokenisation, when the context is long enough to be
     # split into several features. Since we are always keeping the question tokens, we
     # need to make sure that the stride does not exceed the resulting maximum context
     # length.
@@ -423,11 +423,11 @@ def prepare_test_examples(
     stride = min(stride, max_length - max_question_tokens - num_special_tokens)
     max_length = tokeniser.model_max_length - stride
 
-    # Tokenize our examples with truncation and maybe padding, but keep the overflows
+    # Tokenise our examples with truncation and maybe padding, but keep the overflows
     # using a stride. This results in one example possible giving several features when
     # a context is long, each of those features having a context that overlaps a bit
     # the context of the previous feature.
-    tokenized_examples = tokeniser(
+    tokenised_examples = tokeniser(
         text=examples["question"],
         text_pair=examples["context"],
         truncation="only_second",
@@ -441,30 +441,30 @@ def prepare_test_examples(
     # Since one example might give us several features if it has a long context, we
     # need a map from a feature to its corresponding example. This key gives us just
     # that.
-    sample_mapping = tokenized_examples.pop("overflow_to_sample_mapping")
+    sample_mapping = tokenised_examples.pop("overflow_to_sample_mapping")
 
     # We keep the id that gave us this feature and we will store the offset mappings.
-    tokenized_examples["id"] = list()
+    tokenised_examples["id"] = list()
 
-    for i in range(len(tokenized_examples.input_ids)):
+    for i in range(len(tokenised_examples.input_ids)):
         # Grab the sequence corresponding to that example (to know what is the context
         # and what is the question).
-        sequence_ids = tokenized_examples.sequence_ids(i)
+        sequence_ids = tokenised_examples.sequence_ids(i)
         context_index = 1
 
         # One example can give several spans, this is the index of the example
         # containing this span of text.
         sample_index = sample_mapping[i]
-        tokenized_examples.id.append(examples["id"][sample_index])
+        tokenised_examples.id.append(examples["id"][sample_index])
 
         # Set to (-1, -1) the offset_mapping that are not part of the context so it's
         # easy to determine if a token position is part of the context or not.
-        tokenized_examples.offset_mapping[i] = [
+        tokenised_examples.offset_mapping[i] = [
             (o if sequence_ids[k] == context_index else (-1, -1))
-            for k, o in enumerate(tokenized_examples.offset_mapping[i])
+            for k, o in enumerate(tokenised_examples.offset_mapping[i])
         ]
 
-    return tokenized_examples
+    return tokenised_examples
 
 
 def postprocess_predictions_and_labels(

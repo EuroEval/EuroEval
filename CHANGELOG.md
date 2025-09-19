@@ -8,6 +8,80 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 ### Added
+- Added "slow-tokenizer" model parameter, which can be used to force the use of a slow
+  tokenizer when loading it. Use this by replacing your model ID with
+  `<model-id>#slow-tokenizer`.
+- Now gives a warning when a reasoning model does not get to finish its reasoning due to
+  running out of the 8,192 reasoning tokens. In this case, we use an empty string as the
+  model output, which will lead to lower scores.
+
+### Fixed
+- We now take invalid (model, dataset) combinations into account when computing the
+  total number of benchmarks to run. This only affects logging.
+- We now correctly skip evaluations if the model's generative type (base decoder,
+  instruction-tuned decoder, reasoning decoder) is not allowed for the given dataset.
+
+
+## [v16.2.2] - 2025-09-15
+### Fixed
+- Added missing benchmark arguments to the `Benchmarker.benchmark` method.
+- Fixed another issue related to the `download_only` mode, causing model evaluations to
+  fail, as it could not find the model locally. This has been fixed now.
+
+
+## [v16.2.1] - 2025-09-15
+### Fixed
+- Some of the `download_only` arguments were missing in the code, and have now been
+  added.
+
+
+## [v16.2.0] - 2025-09-15
+### Added
+- Now supports evaluating models in an offline environment. This is done by first
+  downloading all necessary models, datasets, metrics and other artifacts while online,
+  using the new `--download-only` flag (or `download_only=True` in the `Benchmarker`
+  API). Then you can safely disable internet access and run the evaluation as normal,
+  and it will use the cached models, datasets and metrics. This was contributed by
+  @viggo-gascou ✨
+- Added the `timm` package to the set of `generative` extra dependencies, as it is
+  required to load some multimodal models, such as Gemma-3n.
+
+### Changed
+- Now does not benchmark encoder models on multiple-choice classification tasks, as they
+  get near-random performance and these scores are not used in the leaderboards. We can
+  change this in the future if we find a way to make encoder models work better on these
+  tasks.
+- For generative vLLM models that can swap between reasoning and non-reasoning modes,
+  we previously defaulted to reasoning. We now default to what the model uses by
+  default, which is non-reasoning for most models.
+
+### Fixed
+- Fixed an issue where old evaluation records could not be loaded, as the format had
+  changed. We are now able to load old records again.
+- Fixed some grammatical errors in the Icelandic prompts.
+- Now stores model IDs with parameters (e.g., `o3#low`) correctly in the benchmark
+  results, rather than just the base model ID (e.g., `o3`).
+
+
+## [v16.1.1] - 2025-09-12
+### Fixed
+- Fixed an issue from v16.1.0, where reasoning models were not using the tokeniser's
+  chat template.
+- Fixed an issue with some of the prompts for base decoders, that the list of possible
+  labels for sequence classification tasks was not included in the prompt.
+
+
+## [v16.1.0] - 2025-09-11
+### Added
+- Added support for Polish 🇵🇱! This includes the reading comprehension dataset PoQuAD,
+  the sentiment classification dataset PolEmo 2.0, the linguistic acceptability dataset
+  ScaLA-pl, the named entity recognition dataset KPWr-NER, the summarisation dataset
+  PSC, the knowledge dataset LLMzSzŁ and the common-sense reasoning dataset
+  Winogrande-pl. Also added MultiWikiQA-pl and GoldenSwag-pl as unofficial reading
+  comprehension and common-sense reasoning datasets, respectively. This was contributed
+  by @oliverkinch ✨
+- Added the Swedish knowledge dataset Skolprov. It is unofficial for now. This was
+  contributed by @oliverkinch ✨
 - Added the knowledge dataset Trivia-et for Estonian. The dataset contains 800 trivia
   questions about Estonia. In this version we rearrange the examples in
   240 / 60 / 500 samples for training, validation and test splits, respectively.
@@ -15,6 +89,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   by @slowwavesleep ✨
 - Added the English and German versions of XQuAD as unofficial reading comprehension
   datasets.
+- Added the English common-sense reasoning dataset Winogrande and its translated
+  versions of Winogrande for Danish, German, Spanish, Finnish, French, Italian, Latvian,
+  Dutch, Norwegian, Polish, Portuguese and Swedish. These are unofficial for now.
 - Added new `--generative-type` argument, which can be used to override the automatic
   detection of the generative type (base decoder, instruction-tuned decoder, or
   reasoning decoder) of a decoder model. This can be useful if the automatic detection
@@ -24,9 +101,22 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   for these models.
 
 ### Changed
+- Changed the model ID syntax, where we now use `#` to indicate parameters and still use
+  `@` to indicate revision. For instance, `o3#low` indicates the `o3` model with the
+  low reasoning effort, and `tencent/Hunyuan-1.8B-Instruct@v1#no-thinking` indicates the
+  Hunyuan model from the `v1` branch and with the `enable_thinking=False` parameter set.
+  This is fully backwards compatible, in the sense that API models still support using
+  `@` for parameters as well, just like previously, but you will get a warning that this
+  syntax is deprecated.
+- Added `thinking` and `no-thinking` parameters for all open-weight models now. Of
+  course, it only makes a difference for models that supports this flag.
 - Reduced the number of tokens used for reasoning models from 32,768 to 8,192, as models
   reaching the full 32,768 tokens were because they ended up repeating themselves,
   making the evaluation slower without any benefit.
+
+### Fixed
+- Some generative models consistently generated empty dictionaries when using structured
+  generation. We now catch this and retry the evaluation without structured generation.
 
 
 ## [v16.0.1] - 2025-09-07

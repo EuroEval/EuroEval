@@ -4,11 +4,12 @@ import itertools as it
 import json
 import logging
 import random
+import re
 import typing as t
 
-from .enums import TaskGroup
-from .exceptions import InvalidBenchmark
-from .tokenization_utils import apply_chat_template
+from .enums import GenerativeType, TaskGroup
+from .exceptions import InvalidBenchmark, InvalidModel
+from .tokenisation_utils import apply_chat_template
 from .utils import extract_multiple_choice_labels, log_once
 
 if t.TYPE_CHECKING:
@@ -173,7 +174,7 @@ def apply_prompt(
     few_shot_examples: list[dict[str, t.Any]],
     model_config: "ModelConfig",
     dataset_config: "DatasetConfig",
-    instruction_model: bool,
+    generative_type: GenerativeType | None,
     always_populate_text_field: bool,
     tokeniser: "PreTrainedTokenizer | None",
 ) -> dict[str, t.Any]:
@@ -184,10 +185,12 @@ def apply_prompt(
             The examples to apply the few-shot examples to.
         few_shot_examples:
             The few-shot examples to apply.
+        model_config:
+            The model configuration.
         dataset_config:
             The dataset configuration.
-        instruction_model:
-            Whether the model is instruction-tuned.
+        generative_type:
+            The generative type of the model.
         always_populate_text_field:
             Whether to always populate the 'text' field in the examples, as opposed to
             the 'messages' field.
@@ -198,7 +201,11 @@ def apply_prompt(
         The example with the few-shot examples applied.
     """
     # Sanity check
-    if instruction_model and always_populate_text_field and tokeniser is None:
+    if (
+        generative_type in {GenerativeType.INSTRUCTION_TUNED, GenerativeType.REASONING}
+        and always_populate_text_field
+        and tokeniser is None
+    ):
         raise ValueError(
             "The `tokeniser` argument must be provided when the model is instruction "
             "tuned and when we are not just returning the raw messages."
@@ -222,7 +229,10 @@ def apply_prompt(
         )
         label_mapping = dataset_config.prompt_label_mapping
         label = label_mapping.get(label, label)
-        if instruction_model:
+        if generative_type in {
+            GenerativeType.INSTRUCTION_TUNED,
+            GenerativeType.REASONING,
+        }:
             prompt = dataset_config.instruction_prompt.format(**kwargs)
             return prompt, label
         else:
@@ -348,7 +358,7 @@ def apply_prompt(
                 f"Unsupported task group: {dataset_config.task.task_group}."
             )
 
-    if instruction_model:
+    if generative_type in {GenerativeType.INSTRUCTION_TUNED, GenerativeType.REASONING}:
         few_shot_messages = [
             dict(role=role, content=content)
             for prompt, label in few_shot_sections
@@ -362,7 +372,6 @@ def apply_prompt(
 
         if not always_populate_text_field:
             examples["messages"] = messages_list
-
         else:
             assert tokeniser is not None
 
@@ -389,6 +398,9 @@ def apply_prompt(
                 apply_chat_template(
                     conversation=messages,
                     tokeniser=tokeniser,
+                    tokenise=False,
+                    add_generation_prompt=True,
+                    enable_thinking=(generative_type == GenerativeType.REASONING),
                     chat_template=chat_template,
                 )
                 for messages in messages_list
@@ -399,7 +411,10 @@ def apply_prompt(
     else:
         prompt_prefix = ""
         if dataset_config.prompt_prefix:
-            prompt_prefix = dataset_config.prompt_prefix + "\n\n"
+            labels_str = dataset_config.get_labels_str()
+            prompt_prefix = (
+                dataset_config.prompt_prefix.format(labels_str=labels_str) + "\n\n"
+            )
 
         few_shot_prompt = "\n\n".join([prompt for prompt, _ in few_shot_sections])
         if few_shot_prompt:
@@ -414,3 +429,42 @@ def apply_prompt(
     examples["prompt"] = [new_prompt for new_prompt, _ in new_sections]
 
     return examples
+
+
+def raise_if_wrong_params(
+    model_config: "ModelConfig", allowed_params: dict[re.Pattern, list[str]]
+) -> None:
+    """Raise an error if the model configuration has invalid parameters.
+
+    Args:
+        model_config:
+            The model configuration.
+        allowed_params:
+            The allowed parameters for the model, being a dictionary mapping a regex
+            pattern matching the model ID to a list of allowed parameters for those
+            models.
+
+    Raises:
+        InvalidModel:
+            If the model configuration has invalid parameters.
+    """
+    if model_config.param is None:
+        return
+    for model_regex, allowed_params_list in allowed_params.items():
+        if re.fullmatch(pattern=model_regex, string=model_config.model_id):
+            if model_config.param not in allowed_params_list:
+                msg = (
+                    f"Invalid parameter {model_config.param!r} for model "
+                    f"{model_config.model_id!r}."
+                )
+                if allowed_params_list:
+                    msg += f" Allowed parameters are: {', '.join(allowed_params_list)}."
+                else:
+                    msg += " No parameters are allowed."
+                raise InvalidModel(msg)
+            return
+    else:
+        raise InvalidModel(
+            f"The parameter {model_config.param!r} is not supported for the model "
+            f"{model_config.model_id!r}."
+        )

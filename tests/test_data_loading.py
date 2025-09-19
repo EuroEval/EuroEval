@@ -1,5 +1,6 @@
 """Tests for the `data_loading` module."""
 
+import os
 from collections.abc import Generator
 from functools import partial
 
@@ -13,6 +14,7 @@ from euroeval.constants import MAX_CONTEXT_LENGTH
 from euroeval.data_loading import load_data, load_raw_data
 from euroeval.data_models import BenchmarkConfig, DatasetConfig
 from euroeval.dataset_configs import get_all_dataset_configs, get_dataset_config
+from euroeval.enums import GenerativeType
 from euroeval.generation_utils import apply_prompt, extract_few_shot_examples
 
 
@@ -79,8 +81,16 @@ def test_examples_in_official_datasets_are_not_too_long(
     dataset_config: DatasetConfig, benchmark_config: BenchmarkConfig, tokeniser_id: str
 ) -> None:
     """Test that the examples are not too long in official datasets."""
+    # Skip unless we've manually chosen to run this test with a given dataset, since it
+    # is quite slow to run on all datasets
+    if os.getenv("CHECK_DATASET") != dataset_config.name:
+        pytest.skip(
+            reason=f"Skipping test for dataset {dataset_config.name!r}, as it was not "
+            "explicitly requested with the `CHECK_DATASET` environment variable."
+        )
+
     dummy_model_config = LiteLLMModel.get_model_config(
-        model_id="", benchmark_config=benchmark_config
+        model_id="model", benchmark_config=benchmark_config
     )
     tokeniser = AutoTokenizer.from_pretrained(tokeniser_id)
     dataset = load_raw_data(
@@ -105,7 +115,11 @@ def test_examples_in_official_datasets_are_not_too_long(
                     few_shot_examples=few_shot_examples,
                     model_config=dummy_model_config,
                     dataset_config=dataset_config,
-                    instruction_model=instruction_model,
+                    generative_type=(
+                        GenerativeType.INSTRUCTION_TUNED
+                        if instruction_model
+                        else GenerativeType.BASE
+                    ),
                     always_populate_text_field=True,
                     tokeniser=tokeniser,
                 ),

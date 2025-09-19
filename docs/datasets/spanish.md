@@ -415,8 +415,9 @@ $ euroeval --model <model-id> --dataset belebele-es
 
 ### Unofficial: MultiWikiQA-es
 
-This dataset will be published in an upcoming paper, and contains Spanish Wikipedia
-articles with generated questions and answers, using the LLM Gemini-1.5-pro.
+This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2509.04111)
+and contains Wikipedia articles with LLM-generated questions and answers in 300+
+languages.
 
 The original full dataset consists of 5,000 samples in a single split. We use a 1,024 /
 256 / 2,048 split for training, validation and testing, respectively, sampled randomly.
@@ -693,8 +694,72 @@ You can evaluate this dataset directly as follows:
 $ euroeval --model <model-id> --dataset goldenswag-es
 ```
 
+### Unofficial: Winogrande-es
 
-## Summarization
+This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2506.19468)
+and is a translated and filtered version of the English [Winogrande
+dataset](https://doi.org/10.1145/3474381).
+
+The original full dataset consists of 47 / 1,210 samples for training and testing, and
+we use the same splits.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Joseph tenía que tener las uñas bien cuidadas para el trabajo, pero no Kevin, porque _ trabajaba en un banco. ¿A qué se refiere el espacio en blanco _?\nOpciones:\na. Opción A: Joseph\nb. Opción B: Kevin",
+  "label": "a"
+}
+```
+
+```json
+{
+  "text": "Craig realmente ama limpiar todo el tiempo pero Derrick no porque _ es muy ordenado. ¿A qué se refiere el espacio en blanco _?\nOpciones:\na. Opción A: Craig\nb. Opción B: Derrick",
+  "label": "a"
+}
+```
+
+```json
+{
+  "text": "Una vez en Polonia, Dennis disfrutó del viaje más que Jason porque _ tenía un conocimiento superficial del idioma polaco. ¿A qué se refiere el espacio en blanco _?\nOpciones:\na. Opción A: Dennis\nb. Opción B: Jason",
+  "label": "b"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+  ```
+  Følgende er multiple choice spørgsmål (med svar).
+  ```
+- Base prompt template:
+  ```
+  Spørgsmål: {text}
+  Svarmuligheder:
+  a. {option_a}
+  b. {option_b}
+  Svar: {label}
+  ```
+- Instruction-tuned prompt template:
+  ```
+  Spørgsmål: {text}
+  Svarmuligheder:
+  a. {option_a}
+  b. {option_b}
+
+  Besvar ovenstående spørgsmål ved at svare med 'a' eller 'b', og intet andet.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+$ euroeval --model <model-id> --dataset winogrande-es
+```
+
+
+## Summarisation
 
 ### MLSum-es
 

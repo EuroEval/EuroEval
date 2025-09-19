@@ -16,6 +16,7 @@ import logging
 from collections import defaultdict
 
 import pandas as pd
+from constants import CHOICES_MAPPING
 from datasets import (
     Dataset,
     DatasetDict,
@@ -29,6 +30,24 @@ from tqdm.auto import tqdm
 
 logging.basicConfig(format="%(asctime)s ⋅ %(message)s", level=logging.INFO)
 logger = logging.getLogger("create_european_values")
+
+LANGUAGES = [
+    "da",
+    "de",
+    "en",
+    "es",
+    "et",
+    "fi",
+    "fr",
+    "is",
+    "it",
+    "lv",
+    "nl",
+    "no",
+    "pl",
+    "pt",
+    "sv",
+]
 
 QUESTIONS_TO_INCLUDE = [
     "F025:1",
@@ -97,21 +116,6 @@ def main() -> None:
     situational_dataset_id = "EuropeanValuesProject/za7505-situational"
     completions_dataset_id = "EuropeanValuesProject/za7505-completions"
 
-    choices_mapping = {
-        "da": "Svarmuligheder",
-        "no": "Svaralternativer",
-        "sv": "Svarsalternativ",
-        "is": "Svarmöguleikar",
-        "de": "Antwortmöglichkeiten",
-        "nl": "Antwoordopties",
-        "en": "Choices",
-        "fr": "Choix",
-        "it": "Scelte",
-        "es": "Opciones",
-        "pt": "Opções",
-        "fi": "Vastausvaihtoehdot",
-        "et": "Vastusevariandid",
-    }
     subset_mapping = {
         "da": "da-dk",
         "no": "no-no",
@@ -123,6 +127,7 @@ def main() -> None:
         "fr": "fr-fr",
         "it": "it-it",
         "es": "es-es",
+        "pl": "pl-pl",
         "pt": "pt-pt",
         "fi": "fi-fi",
         "et": "et-ee",
@@ -138,6 +143,7 @@ def main() -> None:
         "fr": {"0": "Non", "1": "Oui"},
         "it": {"0": "No", "1": "Sì"},
         "es": {"0": "No", "1": "Sí"},
+        "pl": {"0": "Nie", "1": "Tak"},
         "pt": {"0": "Não", "1": "Sim"},
         "fi": {"0": "Ei", "1": "Kyllä"},
         "et": {"0": "Ei", "1": "Jah"},
@@ -153,6 +159,7 @@ def main() -> None:
         "fr": "Complétez la phrase suivante",
         "it": "Completa la seguente frase",
         "es": "Completa la siguiente frase",
+        "pl": "Uzupełnij następujące zdanie",
         "pt": "Complete a seguinte frase",
         "fi": "Täydennä seuraava lause",
         "et": "Täiendage järgmine lause",
@@ -167,11 +174,8 @@ def main() -> None:
         ],
     ):
         question_id: str | None = None
-        for language, choices_str in tqdm(
-            choices_mapping.items(),
-            desc="Generating datasets",
-            total=len(choices_mapping),
-        ):
+        for language in tqdm(iterable=LANGUAGES, desc="Generating datasets"):
+            choices_str = CHOICES_MAPPING[language]
             dataset = load_dataset(
                 path=dataset_id,
                 name=(

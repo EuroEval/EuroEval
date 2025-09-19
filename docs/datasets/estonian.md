@@ -280,8 +280,9 @@ $ euroeval --model <model-id> --dataset scala-et
 
 ### MultiWikiQA-et
 
-This dataset will be published in an upcoming paper, and contains Estonian Wikipedia
-articles with generated questions and answers, using the LLM Gemini-1.5-pro.
+This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2509.04111)
+and contains Wikipedia articles with LLM-generated questions and answers in 300+
+languages.
 
 The original full dataset consists of 5,000 samples in a single split. We use a 1,024 /
 256 / 2,048 split for training, validation and testing, respectively, sampled randomly.
@@ -490,9 +491,9 @@ $ euroeval --model <model-id> --dataset exam-et
 
 ## Common-sense Reasoning
 
-### WinoGrande-ET
+### Winogrande-et
 
-The dataset includes the [WinoGrande](https://doi.org/10.48550/arXiv.1907.10641) test
+The dataset includes the [Winogrande](https://doi.org/10.48550/arXiv.1907.10641) test
 set translated and culturally adapted by hand by a professional translator (citation
 TBA). The structure of the dataset is identical to the original. Since train and dev
 splits were not translated manually, we employ the GPT-4o model to translate the
@@ -555,7 +556,7 @@ $ euroeval --model <model-id> --dataset winogrande-et
 ```
 
 
-## Summarization
+## Summarisation
 
 ### ERRNews
 

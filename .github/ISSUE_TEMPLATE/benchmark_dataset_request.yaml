@@ -34,6 +34,7 @@ body:
       - label: Italian
       - label: Latvian
       - label: Norwegian (Bokmål or Nynorsk)
+      - label: Polish
       - label: Portuguese
       - label: Spanish
       - label: Swedish

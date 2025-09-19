@@ -1,10 +1,10 @@
-"""Tests for the `tokenization_utils` module."""
+"""Tests for the `tokenisation_utils` module."""
 
 import pytest
 from transformers.models.auto.tokenization_auto import AutoTokenizer
 
 from euroeval.benchmark_modules.hf import load_hf_model_config
-from euroeval.tokenization_utils import (
+from euroeval.tokenisation_utils import (
     get_end_of_chat_token_ids,
     should_prefix_space_be_added_to_labels,
     should_prompts_be_stripped,
@@ -80,7 +80,9 @@ def test_get_end_of_chat_token_ids(
     tokeniser = AutoTokenizer.from_pretrained(
         model_id, token=auth, trust_remote_code=True
     )
-    end_of_chat_token_ids = get_end_of_chat_token_ids(tokeniser=tokeniser)
+    end_of_chat_token_ids = get_end_of_chat_token_ids(
+        tokeniser=tokeniser, generative_type=None
+    )
     assert end_of_chat_token_ids == expected_token_ids
     if expected_string is not None:
         end_of_chat_string = tokeniser.decode(end_of_chat_token_ids).strip()

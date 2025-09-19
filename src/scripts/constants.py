@@ -23,3 +23,23 @@ MAX_NUM_CHARS_IN_INSTRUCTION = 2000
 MIN_NUM_CHARS_IN_OPTION = 1
 MAX_NUM_CHARS_IN_OPTION = 1000
 MAX_REPETITIONS = 50
+
+
+CHOICES_MAPPING = {
+    "da": "Svarmuligheder",
+    "de": "Antwortmöglichkeiten",
+    "en": "Choices",
+    "es": "Opciones",
+    "et": "Vastusevariandid",
+    "fi": "Vastausvaihtoehdot",
+    "fo": "Svarmøguleikar",
+    "fr": "Choix",
+    "is": "Svarmöguleikar",
+    "it": "Scelte",
+    "lv": "Izvēles",
+    "nl": "Antwoordopties",
+    "no": "Svaralternativer",
+    "pl": "Opcje",
+    "pt": "Opções",
+    "sv": "Svarsalternativ",
+}

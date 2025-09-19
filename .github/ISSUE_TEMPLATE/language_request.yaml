@@ -1,0 +1,49 @@
+name: 🌍 Language Request
+description: Is there a European language missing in EuroEval?
+title: "[LANGUAGE REQUEST] <language-name>"
+labels: "new language"
+type: task
+
+body:
+- type: input
+  attributes:
+    label: Language name and code
+    description: What is the name and ISO 639 code of the language?
+  validations:
+    required: true
+- type: markdown
+  attributes:
+    value: >
+      Here are some existing evaluation datasets in the language, that could be used:
+- type: textarea
+  attributes:
+    label: Sentiment classification dataset
+    description: Link to one or more datasets in the language (leave blank if unknown)
+- type: textarea
+  attributes:
+    label: Linguistic acceptability dataset
+    description: Link to one or more datasets in the language (leave blank if unknown)
+- type: textarea
+  attributes:
+    label: Named entity recognition dataset
+    description: Link to one or more datasets in the language (leave blank if unknown)
+- type: textarea
+  attributes:
+    label: Reading comprehension dataset
+    description: Link to one or more datasets in the language (leave blank if unknown)
+- type: textarea
+  attributes:
+    label: Summarisation dataset
+    description: Link to one or more datasets in the language (leave blank if unknown)
+- type: textarea
+  attributes:
+    label: Knowledge dataset
+    description: Link to one or more datasets in the language (leave blank if unknown)
+- type: textarea
+  attributes:
+    label: Common-sense reasoning dataset
+    description: Link to one or more datasets in the language (leave blank if unknown)
+- type: markdown
+  attributes:
+    value: >
+      Thanks for contributing 🎉!

@@ -12,12 +12,13 @@ import warnings
 from termcolor import colored
 
 # Block specific warnings before importing anything else, as they can be noisy
-warnings.filterwarnings("ignore", category=UserWarning)
-warnings.filterwarnings("ignore", category=FutureWarning)
-logging.getLogger("httpx").setLevel(logging.CRITICAL)
-logging.getLogger("datasets").setLevel(logging.CRITICAL)
-logging.getLogger("vllm").setLevel(logging.CRITICAL)
-os.environ["VLLM_CONFIGURE_LOGGING"] = "0"
+if os.getenv("FULL_LOG") != "1":
+    warnings.filterwarnings("ignore", category=UserWarning)
+    warnings.filterwarnings("ignore", category=FutureWarning)
+    logging.getLogger("httpx").setLevel(logging.CRITICAL)
+    logging.getLogger("datasets").setLevel(logging.CRITICAL)
+    logging.getLogger("vllm").setLevel(logging.CRITICAL)
+    os.environ["VLLM_CONFIGURE_LOGGING"] = "0"
 
 # Set up logging
 fmt = colored("%(asctime)s", "light_blue") + " ⋅ " + colored("%(message)s", "green")

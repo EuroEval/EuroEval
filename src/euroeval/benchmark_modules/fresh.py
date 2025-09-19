@@ -1,5 +1,6 @@
 """Freshly initialised encoder models."""
 
+import re
 import typing as t
 from functools import cached_property
 from json import JSONDecodeError
@@ -25,6 +26,7 @@ from ..exceptions import (
     NeedsEnvironmentVariable,
     NeedsExtraInstalled,
 )
+from ..generation_utils import raise_if_wrong_params
 from ..utils import block_terminal_output, create_model_cache_dir, get_hf_token
 from .hf import (
     HuggingFaceEncoderModel,
@@ -44,6 +46,7 @@ class FreshEncoderModel(HuggingFaceEncoderModel):
     """A freshly initialised encoder model."""
 
     fresh_model = True
+    allowed_params = {re.compile(r".*"): ["slow-tokenizer"]}
 
     def __init__(
         self,
@@ -64,6 +67,10 @@ class FreshEncoderModel(HuggingFaceEncoderModel):
             log_metadata:
                 Whether to log metadata about the model and the benchmark.
         """
+        raise_if_wrong_params(
+            model_config=model_config, allowed_params=self.allowed_params
+        )
+
         # This is already set when calling `super.__init__`, but we need it to get a
         # value from `self.model_max_length`, so we set it here as well.
         self.model_config = model_config
@@ -183,9 +190,10 @@ class FreshEncoderModel(HuggingFaceEncoderModel):
         """
         return ModelConfig(
             model_id=model_id,
+            revision="main",
+            param=None,
             task="fill-mask",
             languages=list(),
-            revision="main",
             merge=False,
             inference_backend=InferenceBackend.TRANSFORMERS,
             model_type=ModelType.ENCODER,
@@ -288,7 +296,7 @@ def load_model_and_tokeniser(
             token=get_hf_token(api_key=benchmark_config.api_key),
             add_prefix_space=prefix,
             cache_dir=model_config.model_cache_dir,
-            use_fast=True,
+            use_fast=False if model_config.param == "slow-tokenizer" else True,
             verbose=False,
             trust_remote_code=benchmark_config.trust_remote_code,
         )

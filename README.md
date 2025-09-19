@@ -80,13 +80,13 @@ model:
 ```
 >>> from euroeval import Benchmarker
 >>> benchmark = Benchmarker()
->>> benchmark(model="<model>")
+>>> benchmark(model="<model-id>")
 ```
 
 To benchmark on a specific task and/or language, you simply specify the `task` or
 `language` arguments, shown here with same example as above:
 ```
->>> benchmark(model="<model>", task="sentiment-classification", language="da")
+>>> benchmark(model="<model-id>", task="sentiment-classification", language="da")
 ```
 
 If you want to benchmark a subset of all the models on the Hugging Face Hub, you can
@@ -95,6 +95,30 @@ models on the Danish sentiment classification task:
 ```
 >>> benchmark(task="sentiment-classification", language="da")
 ```
+
+### Benchmarking in an Offline Environment
+If you need to benchmark in an offline environment, you need to download the models,
+datasets and metrics beforehand. This can be done by adding the `--download-only`
+argument, from the command line, or the `download_only` argument, if benchmarking from a
+script. For example to download the model you want and all of the Danish sentiment
+classification datasets:
+```
+$ euroeval --model <model-id> --task sentiment-classification --language da --download-only
+```
+
+Or from a script:
+```
+>>> benchmark(
+... model="<model-id>",
+... task="sentiment-classification",
+... language="da",
+... download_only=True,
+... )
+```
+
+Please note: Offline benchmarking of adapter models is not currently supported. An
+internet connection will be required during evaluation. If offline support is important
+to you, please consider [opening an issue](https://github.com/EuroEval/EuroEval/issues).
 
 ### Benchmarking from Docker
 A Dockerfile is provided in the repo, which can be downloaded and run, without needing

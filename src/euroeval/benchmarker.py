@@ -6,17 +6,17 @@ import logging
 import re
 import sys
 import typing as t
-from copy import deepcopy
 from pathlib import Path
 from shutil import rmtree
 from time import sleep
 
 from huggingface_hub.constants import HF_HUB_ENABLE_HF_TRANSFER
 from torch.distributed import destroy_process_group
+from tqdm.auto import tqdm
 
 from .benchmark_config_factory import build_benchmark_config
 from .constants import GENERATIVE_PIPELINE_TAGS
-from .data_loading import load_data
+from .data_loading import load_data, load_raw_data
 from .data_models import BenchmarkConfigParams, BenchmarkResult
 from .dataset_configs import get_all_dataset_configs
 from .enums import Device, GenerativeType, ModelType
@@ -28,7 +28,13 @@ from .model_loading import load_model
 from .scores import log_scores
 from .speed_benchmark import benchmark_speed
 from .tasks import SPEED
-from .utils import enforce_reproducibility, get_package_version
+from .utils import (
+    enforce_reproducibility,
+    get_package_version,
+    internet_connection_available,
+    log_once,
+    split_model_id,
+)
 
 if t.TYPE_CHECKING:
     from .benchmark_modules import BenchmarkModule
@@ -83,6 +89,7 @@ class Benchmarker:
         debug: bool = False,
         run_with_cli: bool = False,
         requires_safetensors: bool = False,
+        download_only: bool = False,
     ) -> None:
         """Initialise the benchmarker.
 
@@ -164,13 +171,25 @@ class Benchmarker:
             requires_safetensors:
                 Whether to only allow models that use the safetensors format. Defaults
                 to False.
+            download_only:
+                Whether to only download models and datasets without performing any
+                benchmarking. Defaults to False.
 
         Raises:
             ValueError:
-                If both `task` and `dataset` are specified.
+                If both `task` and `dataset` are specified, or if `download_only`
+                is True and we have no internet connection.
         """
         if task is not None and dataset is not None:
             raise ValueError("Only one of `task` and `dataset` can be specified.")
+
+        if not internet_connection_available() and download_only:
+            msg = "It appears you do not have an internet connection, but "
+            if run_with_cli:
+                msg += "the --download-only flag was set."
+            else:
+                msg += "the argument `download_only` was set to True."
+            raise ValueError(msg)
 
         # Bail early if hf_transfer is enabled but not installed.
         if HF_HUB_ENABLE_HF_TRANSFER and get_package_version("hf_transfer") is None:
@@ -182,10 +201,10 @@ class Benchmarker:
             )
 
         self.benchmark_config_default_params = BenchmarkConfigParams(
-            progress_bar=progress_bar,
-            save_results=save_results,
             task=task,
             dataset=dataset,
+            progress_bar=progress_bar,
+            save_results=save_results,
             language=language,
             model_language=model_language,
             dataset_language=dataset_language,
@@ -194,24 +213,25 @@ class Benchmarker:
             raise_errors=raise_errors,
             cache_dir=cache_dir,
             api_key=api_key,
-            force=force,
-            verbose=verbose,
+            api_base=api_base,
+            api_version=api_version,
             trust_remote_code=trust_remote_code,
             clear_model_cache=clear_model_cache,
             evaluate_test_split=evaluate_test_split,
             few_shot=few_shot,
             num_iterations=num_iterations,
-            api_base=api_base,
-            api_version=api_version,
+            requires_safetensors=requires_safetensors,
+            download_only=download_only,
             gpu_memory_utilization=gpu_memory_utilization,
             generative_type=generative_type,
+            verbose=verbose,
+            force=force,
             debug=debug,
             run_with_cli=run_with_cli,
-            requires_safetensors=requires_safetensors,
         )
 
         self.benchmark_config = build_benchmark_config(
-            **self.benchmark_config_default_params.model_dump()
+            benchmark_config_params=self.benchmark_config_default_params
         )
 
         # Initialise variable storing model lists, so we only have to fetch it once
@@ -222,16 +242,81 @@ class Benchmarker:
 
     @property
     def benchmark_results(self) -> list[BenchmarkResult]:
-        """The benchmark results."""
+        """The benchmark results.
+
+        Returns:
+            A list of benchmark results.
+
+        Raises:
+            ValueError:
+                If there is an error decoding a line in the results file.
+        """
         if self.results_path.exists():
+            benchmark_results: list[BenchmarkResult] = list()
             with self.results_path.open() as f:
-                return [
-                    BenchmarkResult.from_dict(json.loads(line))
-                    for line in f
-                    if line.strip()
-                ]
+                for line in f:
+                    if line.strip():
+                        try:
+                            result_dict = json.loads(line.strip())
+                        except json.JSONDecodeError as e:
+                            raise ValueError(
+                                f"Error decoding JSON line: {line.strip()}"
+                            ) from e
+
+                        # Fix for older records
+                        has_old_raw_results = (
+                            "results" in result_dict
+                            and isinstance(result_dict["results"], dict)
+                            and "raw" in result_dict["results"]
+                            and isinstance(result_dict["results"]["raw"], dict)
+                            and "test" in result_dict["results"]["raw"]
+                        )
+                        if has_old_raw_results:
+                            result_dict["results"]["raw"] = result_dict["results"][
+                                "raw"
+                            ]["test"]
+
+                        result = BenchmarkResult.from_dict(result_dict)
+                        benchmark_results.append(result)
+            return benchmark_results
         else:
             return list()
+
+    def _download(
+        self,
+        dataset_config: "DatasetConfig",
+        model_config: "ModelConfig",
+        benchmark_config: "BenchmarkConfig",
+    ) -> None:
+        """Download data, metrics, and model for the given dataset, and model.
+
+        Args:
+            dataset_config: The configuration for the dataset.
+            model_config: The configuration for the model.
+            benchmark_config: The configuration for the benchmark.
+        """
+        log_once(f"Loading data for {dataset_config.pretty_name}", level=logging.INFO)
+        dataset = load_raw_data(
+            dataset_config=dataset_config, cache_dir=benchmark_config.cache_dir
+        )
+        del dataset
+
+        log_once(f"Loading model {model_config.model_id}", level=logging.INFO)
+        model = load_model(
+            model_config=model_config,
+            dataset_config=dataset_config,
+            benchmark_config=benchmark_config,
+        )
+        del model
+
+        log_once(
+            f"Loading metrics for the '{dataset_config.task.name}' task",
+            level=logging.INFO,
+        )
+        for metric_name in dataset_config.task.metrics:
+            log_once(f"Loading metric {metric_name.name}", level=logging.DEBUG)
+            metric = metric_name.download(cache_dir=benchmark_config.cache_dir)
+            del metric
 
     def benchmark(
         self,
@@ -248,14 +333,20 @@ class Benchmarker:
         raise_errors: bool | None = None,
         cache_dir: str | None = None,
         api_key: str | None = None,
-        force: bool | None = None,
-        verbose: bool | None = None,
+        api_base: str | None = None,
+        api_version: str | None = None,
         trust_remote_code: bool | None = None,
         clear_model_cache: bool | None = None,
         evaluate_test_split: bool | None = None,
         few_shot: bool | None = None,
         num_iterations: int | None = None,
         requires_safetensors: bool | None = None,
+        download_only: bool | None = None,
+        gpu_memory_utilization: float | None = None,
+        generative_type: GenerativeType | None = None,
+        force: bool | None = None,
+        verbose: bool | None = None,
+        debug: bool | None = None,
     ) -> list[BenchmarkResult]:
         """Benchmarks models on datasets.
 
@@ -308,13 +399,13 @@ class Benchmarker:
             api_key:
                 The API key to use for a given inference server. Defaults to the value
                 specified when initialising the benchmarker.
-            force:
-                Whether to force evaluations of models, even if they have been
-                benchmarked already. Defaults to the value specified when initialising
-                the benchmarker.
-            verbose:
-                Whether to output additional output. Defaults to the value specified
-                when initialising the benchmarker.
+            api_base:
+                The base URL for a given inference API. Only relevant if `model` refers
+                to a model on an inference API. Defaults to the value specified when
+                initialising the benchmarker.
+            api_version:
+                The version of the API to use. Defaults to the value specified when
+                initialising the benchmarker.
             trust_remote_code:
                 Whether to trust remote code when loading models. Defaults to the value
                 specified when initialising the benchmarker.
@@ -336,6 +427,30 @@ class Benchmarker:
             requires_safetensors:
                 Whether to only allow models that use the safetensors format. Defaults
                 to the value specified when initialising the benchmarker.
+            download_only:
+                Whether to only download the models without evaluating them. Defaults
+                to the value specified when initialising the benchmarker.
+            gpu_memory_utilization:
+                The GPU memory utilization to use for vLLM. Only relevant if the model
+                is generative. A larger value will result in faster evaluation, but at
+                the risk of running out of GPU memory. Only reduce this if you are
+                running out of GPU memory. Defaults to the value specified when
+                initialising the benchmarker.
+            generative_type:
+                The type of generative model to benchmark. Only relevant if the model is
+                generative. If not specified, then the type will be inferred based on
+                the tags of the model. Defaults to the value specified when initialising
+                the benchmarker.
+            force:
+                Whether to force evaluations of models, even if they have been
+                benchmarked already. Defaults to the value specified when initialising
+                the benchmarker.
+            verbose:
+                Whether to output additional output. Defaults to the value specified
+                when initialising the benchmarker.
+            debug:
+                Whether to output debug information. Defaults to the value specified
+                when initialising the benchmarker.
 
         Returns:
             A list of benchmark results.
@@ -347,27 +462,141 @@ class Benchmarker:
         if task is not None and dataset is not None:
             raise ValueError("Only one of `task` and `dataset` can be specified.")
 
-        benchmark_config = self._get_updated_benchmark_config(
-            task=task,
-            dataset=dataset,
-            progress_bar=progress_bar,
-            save_results=save_results,
-            language=language,
-            model_language=model_language,
-            dataset_language=dataset_language,
-            device=device,
-            batch_size=batch_size,
-            raise_errors=raise_errors,
-            cache_dir=cache_dir,
-            api_key=api_key,
-            force=force,
-            verbose=verbose,
-            trust_remote_code=trust_remote_code,
-            clear_model_cache=clear_model_cache,
-            evaluate_test_split=evaluate_test_split,
-            few_shot=few_shot,
-            num_iterations=num_iterations,
-            requires_safetensors=requires_safetensors,
+        # Get a new updated benchmark configuration, based on any changes to the
+        # parameters
+        benchmark_config_params = BenchmarkConfigParams(
+            task=(
+                task if task is not None else self.benchmark_config_default_params.task
+            ),
+            dataset=(
+                dataset
+                if dataset is not None
+                else self.benchmark_config_default_params.dataset
+            ),
+            progress_bar=(
+                progress_bar
+                if progress_bar is not None
+                else self.benchmark_config_default_params.progress_bar
+            ),
+            save_results=(
+                save_results
+                if save_results is not None
+                else self.benchmark_config_default_params.save_results
+            ),
+            language=(
+                language
+                if language is not None
+                else self.benchmark_config_default_params.language
+            ),
+            model_language=(
+                model_language
+                if model_language is not None
+                else self.benchmark_config_default_params.model_language
+            ),
+            dataset_language=(
+                dataset_language
+                if dataset_language is not None
+                else self.benchmark_config_default_params.dataset_language
+            ),
+            device=(
+                device
+                if device is not None
+                else self.benchmark_config_default_params.device
+            ),
+            batch_size=(
+                batch_size
+                if batch_size is not None
+                else self.benchmark_config_default_params.batch_size
+            ),
+            raise_errors=(
+                raise_errors
+                if raise_errors is not None
+                else self.benchmark_config_default_params.raise_errors
+            ),
+            cache_dir=(
+                cache_dir
+                if cache_dir is not None
+                else self.benchmark_config_default_params.cache_dir
+            ),
+            api_key=(
+                api_key
+                if api_key is not None
+                else self.benchmark_config_default_params.api_key
+            ),
+            api_base=(
+                api_base
+                if api_base is not None
+                else self.benchmark_config_default_params.api_base
+            ),
+            api_version=(
+                api_version
+                if api_version is not None
+                else self.benchmark_config_default_params.api_version
+            ),
+            trust_remote_code=(
+                trust_remote_code
+                if trust_remote_code is not None
+                else self.benchmark_config_default_params.trust_remote_code
+            ),
+            clear_model_cache=(
+                clear_model_cache
+                if clear_model_cache is not None
+                else self.benchmark_config_default_params.clear_model_cache
+            ),
+            evaluate_test_split=(
+                evaluate_test_split
+                if evaluate_test_split is not None
+                else self.benchmark_config_default_params.evaluate_test_split
+            ),
+            few_shot=(
+                few_shot
+                if few_shot is not None
+                else self.benchmark_config_default_params.few_shot
+            ),
+            num_iterations=(
+                num_iterations
+                if num_iterations is not None
+                else self.benchmark_config_default_params.num_iterations
+            ),
+            requires_safetensors=(
+                requires_safetensors
+                if requires_safetensors is not None
+                else self.benchmark_config_default_params.requires_safetensors
+            ),
+            download_only=(
+                download_only
+                if download_only is not None
+                else self.benchmark_config_default_params.download_only
+            ),
+            gpu_memory_utilization=(
+                gpu_memory_utilization
+                if gpu_memory_utilization is not None
+                else self.benchmark_config_default_params.gpu_memory_utilization
+            ),
+            generative_type=(
+                generative_type
+                if generative_type is not None
+                else self.benchmark_config_default_params.generative_type
+            ),
+            force=(
+                force
+                if force is not None
+                else self.benchmark_config_default_params.force
+            ),
+            verbose=(
+                verbose
+                if verbose is not None
+                else self.benchmark_config_default_params.verbose
+            ),
+            debug=(
+                debug
+                if debug is not None
+                else self.benchmark_config_default_params.debug
+            ),
+            run_with_cli=self.benchmark_config_default_params.run_with_cli,
+        )
+        benchmark_config = build_benchmark_config(
+            benchmark_config_params=benchmark_config_params
         )
 
         adjust_logging_level(verbose=benchmark_config.verbose)
@@ -380,24 +609,86 @@ class Benchmarker:
             dataset_names=benchmark_config.datasets
         )
 
-        total_benchmarks = len(model_ids) * len(dataset_configs)
-        num_finished_benchmarks = 0
-
-        current_benchmark_results: list[BenchmarkResult] = list()
-        for model_id in model_ids:
-            # Load the model configuration, or skip the model if it is invalid
+        # Get all the model configs
+        model_configs: list[ModelConfig] = list()
+        for model_id in tqdm(iterable=model_ids, desc="Fetching model configurations"):
             try:
                 model_config = get_model_config(
                     model_id=model_id, benchmark_config=benchmark_config
                 )
+                model_configs.append(model_config)
             except InvalidModel as e:
                 logger.info(e.message)
-                num_finished_benchmarks += len(dataset_configs)
+
+        # Create a dictionary that takes each model config to the dataset configs that
+        # we need to benchmark the model on. Here we remove the datasets that the model
+        # has already been benchmarked on, or datasets that the model cannot be
+        # benchmarked on.
+        model_config_to_dataset_configs: dict[ModelConfig, list[DatasetConfig]] = {
+            model_config: [
+                dataset_config
+                for dataset_config in dataset_configs
+                if (
+                    benchmark_config.force
+                    or not model_has_been_benchmarked(
+                        model_config=model_config,
+                        dataset_config=dataset_config,
+                        benchmark_config=benchmark_config,
+                        benchmark_results=self.benchmark_results,
+                    )
+                )
+                and model_config.model_type in dataset_config.allowed_model_types
+            ]
+            for model_config in model_configs
+        }
+
+        total_benchmarks = sum(
+            len(dataset_configs)
+            for dataset_configs in model_config_to_dataset_configs.values()
+        )
+        if total_benchmarks == 0:
+            logger.info(
+                "No benchmarks to run, as all the selected models have already been "
+                "benchmarked on all the selected datasets."
+            )
+            sys.exit(0)
+
+        logger.info(f"Initiated evaluation of {total_benchmarks:,} benchmarks.")
+
+        num_finished_benchmarks = 0
+        current_benchmark_results: list[BenchmarkResult] = list()
+        for model_config in model_configs:
+            if not model_config_to_dataset_configs[model_config]:
+                logger.debug(
+                    f"Skipping model {model_config.model_id!r} because it has "
+                    "already been benchmarked on all valid datasets."
+                )
                 continue
+
+            if model_config.adapter_base_model_id:
+                open_issue_msg = (
+                    "If offline support is important to you, please consider opening "
+                    "an issue at https://github.com/EuroEval/EuroEval/issues."
+                )
+                if not internet_connection_available():
+                    raise InvalidModel(
+                        "Offline benchmarking of models with adapters is not currently "
+                        "supported. An active internet connection is required. "
+                        "{open_issue_msg}"
+                    )
+                elif benchmark_config.download_only:
+                    log_once(
+                        "You are using download only mode with a model that includes "
+                        "an adapter. Please note that offline benchmarking of "
+                        "adapter models is not currently supported - an internet "
+                        "connection will be required during evaluation in this case. "
+                        f"{open_issue_msg}",
+                        level=logging.WARNING,
+                    )
 
             loaded_model: BenchmarkModule | None = None
             benchmark_params_to_revert: dict[str, t.Any] = dict()
-            for dataset_config in dataset_configs:
+            for dataset_config in model_config_to_dataset_configs[model_config]:
                 # Revert any changes to the benchmark configuration made for the
                 # previous dataset
                 for param, value in benchmark_params_to_revert.items():
@@ -424,34 +715,6 @@ class Benchmarker:
                     )
                     benchmark_params_to_revert["few_shot"] = True
                     benchmark_config.few_shot = False
-
-                # Skip if we have already benchmarked this model on this dataset and
-                # we are not forcing the benchmark
-                if not benchmark_config.force and model_has_been_benchmarked(
-                    model_id=model_id,
-                    dataset=dataset_config.name,
-                    few_shot=benchmark_config.few_shot,
-                    validation_split=not benchmark_config.evaluate_test_split,
-                    benchmark_results=self.benchmark_results,
-                ):
-                    logger.debug(
-                        f"Skipping benchmarking {model_id} on "
-                        f"{dataset_config.pretty_name}, as it has already been "
-                        "benchmarked."
-                    )
-                    num_finished_benchmarks += 1
-                    continue
-
-                # Skip if the model type should not be benchmarked on this dataset
-                model_type = model_config.model_type
-                allowed_model_types = dataset_config.task.allowed_model_types
-                if model_type not in allowed_model_types:
-                    logger.debug(
-                        f"Skipping benchmarking {model_id} on "
-                        f"{dataset_config.pretty_name}, as it is of type {model_type}, "
-                        f"and the only allowed model types are {allowed_model_types}."
-                    )
-                    continue
 
                 # We do not re-initialise generative models as their architecture is not
                 # customised to specific datasets
@@ -485,6 +748,22 @@ class Benchmarker:
                             break
                     else:
                         loaded_model.dataset_config = dataset_config
+
+                    # Skip the benchmark if the model is not of the correct
+                    # generative type
+                    if (
+                        loaded_model.generative_type
+                        not in dataset_config.allowed_generative_types
+                    ):
+                        logger.debug(
+                            f"Skipping the benchmark of model "
+                            f"{model_config.model_id!r}on dataset "
+                            f"{dataset_config.name!r} because the model has generative "
+                            f"type {loaded_model.generative_type} and the dataset "
+                            f"only allows {dataset_config.allowed_generative_types}."
+                        )
+                        num_finished_benchmarks += 1
+                        continue
 
                 # Benchmark a single model on a single dataset
                 benchmark_output_or_err = self._benchmark_single(
@@ -542,167 +821,6 @@ class Benchmarker:
         with contextlib.suppress(AssertionError):
             destroy_process_group()
         return current_benchmark_results
-
-    def _get_updated_benchmark_config(
-        self,
-        progress_bar: bool | None = None,
-        save_results: bool | None = None,
-        task: str | list[str] | None | None = None,
-        dataset: str | list[str] | None | None = None,
-        language: str | list[str] | None = None,
-        model_language: str | list[str] | None | None = None,
-        dataset_language: str | list[str] | None | None = None,
-        device: Device | None | None = None,
-        batch_size: int | None = None,
-        raise_errors: bool | None = None,
-        cache_dir: str | None = None,
-        api_key: str | None | None = None,
-        force: bool | None = None,
-        verbose: bool | None = None,
-        trust_remote_code: bool | None = None,
-        clear_model_cache: bool | None = None,
-        evaluate_test_split: bool | None = None,
-        few_shot: bool | None = None,
-        num_iterations: int | None = None,
-        api_base: str | None | None = None,
-        api_version: str | None | None = None,
-        debug: bool | None = None,
-        run_with_cli: bool | None = None,
-        requires_safetensors: bool | None = None,
-    ) -> "BenchmarkConfig":
-        """Get an updated benchmark configuration.
-
-        Args:
-            progress_bar:
-                Whether progress bars should be shown. If None, then this value will not
-                be updated.
-            save_results:
-                Whether to save the benchmark results to
-                'euroeval_benchmark_results.jsonl'. If None, then this value will not
-                be updated.
-            task:
-                The tasks benchmark the model(s) on. If None, then this value will not
-                be updated.
-            dataset:
-                The datasets to benchmark on. If None, then this value will not be
-                updated.
-            language:
-                The language codes of the languages to include, both for models and
-                datasets. If None, then this value will not be updated.
-            model_language:
-                The language codes of the languages to include for models. If None, then
-                this value will not be updated.
-            dataset_language:
-                The language codes of the languages to include for datasets. If None,
-                then this value will not be updated.
-            device:
-                The device to use for benchmarking. If None, then this value will not be
-                updated.
-            batch_size:
-                The batch size to use. If None, then this value will not be updated.
-            raise_errors:
-                Whether to raise errors instead of skipping the model evaluation. If
-                None, then this value will not be updated.
-            cache_dir:
-                Directory to store cached models. If None, then this value will not be
-                updated.
-            api_key:
-                The API key to use for a given inference server. If None, then this
-                value will not be updated.
-            force:
-                Whether to force evaluations of models, even if they have been
-                benchmarked already. If None, then this value will not be updated.
-            verbose:
-                Whether to output additional output. If None, then this value will not
-                be updated.
-            trust_remote_code:
-                Whether to trust remote code when loading models. If None, then this
-                value will not be updated.
-            clear_model_cache:
-                Whether to clear the model cache after benchmarking each model. If None,
-                then this value will not be updated.
-            evaluate_test_split:
-                Whether to evaluate the test split of the datasets. If None, then this
-                value will not be updated.
-            few_shot:
-                Whether to only evaluate the model using few-shot evaluation. If None,
-                then this value will not be updated.
-            num_iterations:
-                The number of times each model should be evaluated. If None, then this
-                value will not be updated.
-            api_base:
-                The base URL for a given inference API. If None, then this value will
-                not be updated.
-            api_version:
-                The version of the API to use. If None, then this value will not be
-                updated.
-            debug:
-                Whether to output debug information. If None, then this value will not
-                be updated.
-            run_with_cli:
-                Whether the benchmarker is being run from the command-line interface.
-                If None, then this value will not be updated.
-            requires_safetensors:
-                Whether to only allow models that use the safetensors format. If None,
-                then this value will not be updated.
-
-        Returns:
-            The updated benchmark configuration.
-        """
-        benchmark_config_params = deepcopy(self.benchmark_config_default_params)
-
-        if progress_bar is not None:
-            benchmark_config_params.progress_bar = progress_bar
-        if save_results is not None:
-            benchmark_config_params.save_results = save_results
-        if task is not None:
-            benchmark_config_params.task = task
-            benchmark_config_params.dataset = None
-        if dataset is not None:
-            benchmark_config_params.dataset = dataset
-            benchmark_config_params.task = None
-        if language is not None:
-            benchmark_config_params.language = language
-        if model_language is not None:
-            benchmark_config_params.model_language = model_language
-        if dataset_language is not None:
-            benchmark_config_params.dataset_language = dataset_language
-        if device is not None:
-            benchmark_config_params.device = device
-        if batch_size is not None:
-            benchmark_config_params.batch_size = batch_size
-        if raise_errors is not None:
-            benchmark_config_params.raise_errors = raise_errors
-        if cache_dir is not None:
-            benchmark_config_params.cache_dir = cache_dir
-        if api_key is not None:
-            benchmark_config_params.api_key = api_key
-        if force is not None:
-            benchmark_config_params.force = force
-        if verbose is not None:
-            benchmark_config_params.verbose = verbose
-        if trust_remote_code is not None:
-            benchmark_config_params.trust_remote_code = trust_remote_code
-        if clear_model_cache is not None:
-            benchmark_config_params.clear_model_cache = clear_model_cache
-        if evaluate_test_split is not None:
-            benchmark_config_params.evaluate_test_split = evaluate_test_split
-        if few_shot is not None:
-            benchmark_config_params.few_shot = few_shot
-        if num_iterations is not None:
-            benchmark_config_params.num_iterations = num_iterations
-        if api_base is not None:
-            benchmark_config_params.api_base = api_base
-        if api_version is not None:
-            benchmark_config_params.api_version = api_version
-        if debug is not None:
-            benchmark_config_params.debug = debug
-        if run_with_cli is not None:
-            benchmark_config_params.run_with_cli = run_with_cli
-        if requires_safetensors is not None:
-            benchmark_config_params.requires_safetensors = requires_safetensors
-
-        return build_benchmark_config(**benchmark_config_params.model_dump())
 
     def _prepare_model_ids(self, model_id: list[str] | str) -> list[str]:
         """Prepare the model ID(s) to be benchmarked.
@@ -810,7 +928,14 @@ class Benchmarker:
                     scores=scores,
                     model_id=model_config.model_id,
                     model_revision=model_config.revision,
+                    model_param=model_config.param,
                 )
+
+                model_id_to_be_stored = model_config.model_id
+                if model_config.revision != "main":
+                    model_id_to_be_stored += f"@{model_config.revision}"
+                if model_config.param is not None:
+                    model_id_to_be_stored += f"#{model_config.param}"
 
                 record = BenchmarkResult(
                     dataset=dataset_config.name,
@@ -818,11 +943,7 @@ class Benchmarker:
                     dataset_languages=[
                         language.code for language in dataset_config.languages
                     ],
-                    model=(
-                        f"{model_config.model_id}@{model_config.revision}"
-                        if model_config.revision and model_config.revision != "main"
-                        else model_config.model_id
-                    ),
+                    model=model_id_to_be_stored,
                     results=results,
                     num_model_parameters=model.num_params,
                     max_sequence_length=model.model_max_length,
@@ -868,164 +989,30 @@ class Benchmarker:
                     raise e
                 return e
 
-    def __call__(
-        self,
-        model: list[str] | str,
-        task: str | list[str] | None = None,
-        dataset: list[str] | str | None = None,
-        progress_bar: bool | None = None,
-        save_results: bool | None = None,
-        language: str | list[str] | None = None,
-        model_language: str | list[str] | None = None,
-        dataset_language: str | list[str] | None = None,
-        device: Device | None = None,
-        batch_size: int | None = None,
-        raise_errors: bool | None = None,
-        cache_dir: str | None = None,
-        api_key: str | None = None,
-        force: bool | None = None,
-        verbose: bool | None = None,
-        trust_remote_code: bool | None = None,
-        clear_model_cache: bool | None = None,
-        evaluate_test_split: bool | None = None,
-        few_shot: bool | None = None,
-        num_iterations: int | None = None,
-        requires_safetensors: bool | None = None,
-    ) -> list[BenchmarkResult]:
-        """Benchmarks models on datasets.
-
-        Args:
-            model:
-                The full Hugging Face Hub path(s) to the pretrained transformer model.
-                The specific model version to use can be added after the suffix '@':
-                "model@v1.0.0". It can be a branch name, a tag name, or a commit id,
-                and defaults to the latest version if not specified.
-            task:
-                The tasks benchmark the model(s) on. Mutually exclusive with `dataset`.
-                If both `task` and `dataset` are None then all datasets will be
-                benchmarked. Defaults to None.
-            dataset:
-                The datasets to benchmark on. Mutually exclusive with `task`. If both
-                `task` and `dataset` are None then all datasets will be benchmarked.
-                Defaults to None.
-            progress_bar:
-                Whether progress bars should be shown. Defaults to the value specified
-                when initialising the benchmarker.
-            save_results:
-                Whether to save the benchmark results to
-                'euroeval_benchmark_results.jsonl'. Defaults to the value specified
-                when initialising the benchmarker.
-            language:
-                The language codes of the languages to include, both for models and
-                datasets. Here 'no' means both Bokmål (nb) and Nynorsk (nn). Set this to
-                'all' if all languages should be considered. Defaults to the value
-                specified when initialising the benchmarker.
-            model_language:
-                The language codes of the languages to include for models. If specified
-                then this overrides the `language` parameter for model languages.
-                Defaults to the value specified when initialising the benchmarker.
-            dataset_language:
-                The language codes of the languages to include for datasets. If
-                specified then this overrides the `language` parameter for dataset
-                languages. Defaults to the value specified when initialising the
-                benchmarker.
-            device:
-                The device to use for benchmarking. Defaults to the value specified when
-                initialising the benchmarker.
-            batch_size:
-                The batch size to use. Defaults to the value specified when initialising
-                the benchmarker.
-            raise_errors:
-                Whether to raise errors instead of skipping the model evaluation.
-            cache_dir:
-                Directory to store cached models. Defaults to the value specified when
-                initialising the benchmarker.
-            api_key:
-                The API key to use for a given inference server. Defaults to the value
-                specified when initialising the benchmarker.
-            force:
-                Whether to force evaluations of models, even if they have been
-                benchmarked already. Defaults to the value specified when initialising
-                the benchmarker.
-            verbose:
-                Whether to output additional output. Defaults to the value specified
-                when initialising the benchmarker.
-            trust_remote_code:
-                Whether to trust remote code when loading models. Defaults to the value
-                specified when initialising the benchmarker.
-            clear_model_cache:
-                Whether to clear the model cache after benchmarking each model. Defaults
-                to the value specified when initialising the benchmarker.
-            evaluate_test_split:
-                Whether to evaluate the test split of the datasets. Defaults to the
-                value specified when initialising the benchmarker.
-            few_shot:
-                Whether to only evaluate the model using few-shot evaluation. Only
-                relevant if the model is generative. Defaults to the value specified
-                when initialising the benchmarker.
-            num_iterations:
-                The number of times each model should be evaluated. This is only meant
-                to be used for power users, and scores will not be allowed on the
-                leaderboards if this is changed. Defaults to the value specified when
-                initialising the benchmarker.
-            requires_safetensors:
-                Whether to only allow models that use the safetensors format. Defaults
-                to the value specified when initialising the benchmarker.
-
-        Returns:
-            A list of benchmark results.
-
-        Raises:
-            ValueError:
-                If both `task` and `dataset` are specified.
-        """
+    def __call__(self, *args: t.Any, **kwds: t.Any) -> t.Any:  # noqa: ANN401
+        """Alias for `self.benchmark()`."""
         logger.warning(
             "Calling the `Benchmarker` class directly is deprecated. Please use the "
             "`benchmark` function instead. This will be removed in a future version."
         )
-        return self.benchmark(
-            model=model,
-            task=task,
-            dataset=dataset,
-            progress_bar=progress_bar,
-            save_results=save_results,
-            language=language,
-            model_language=model_language,
-            dataset_language=dataset_language,
-            device=device,
-            batch_size=batch_size,
-            raise_errors=raise_errors,
-            cache_dir=cache_dir,
-            api_key=api_key,
-            force=force,
-            verbose=verbose,
-            trust_remote_code=trust_remote_code,
-            clear_model_cache=clear_model_cache,
-            evaluate_test_split=evaluate_test_split,
-            few_shot=few_shot,
-            num_iterations=num_iterations,
-            requires_safetensors=requires_safetensors,
-        )
+        return self.benchmark(*args, **kwds)
 
 
 def model_has_been_benchmarked(
-    model_id: str,
-    dataset: str,
-    few_shot: bool,
-    validation_split: bool,
+    model_config: "ModelConfig",
+    dataset_config: "DatasetConfig",
+    benchmark_config: "BenchmarkConfig",
     benchmark_results: list[BenchmarkResult],
 ) -> bool:
     """Checks whether a model has already been benchmarked on a dataset.
 
     Args:
-        model_id:
-            The model ID.
-        dataset:
-            The dataset.
-        few_shot:
-            Whether the model was evaluated using few-shot evaluation.
-        validation_split:
-            Whether the model was evaluated on the validation split.
+        model_config:
+            The configuration of the model we are evaluating.
+        dataset_config:
+            The configuration of the dataset we are evaluating on.
+        benchmark_config:
+            The general benchmark configuration.
         benchmark_results:
             The benchmark results.
 
@@ -1033,10 +1020,23 @@ def model_has_been_benchmarked(
         Whether the model has already been evaluated on the dataset.
     """
     for record in benchmark_results:
-        same_evaluation = record.model == model_id and record.dataset == dataset
-        same_validation_split_setting = record.validation_split == validation_split
-        same_few_shot_setting = record.few_shot == few_shot or not record.generative
-        if same_evaluation and same_validation_split_setting and same_few_shot_setting:
+        model_id_components = split_model_id(model_id=record.model)
+        same_model_id = model_id_components.model_id == model_config.model_id
+        same_revision = model_id_components.revision == model_config.revision
+        same_param = model_id_components.param == model_config.param
+        same_dataset = record.dataset == dataset_config.name
+        same_split = record.validation_split != benchmark_config.evaluate_test_split
+        same_num_shots = (
+            record.few_shot == benchmark_config.few_shot or not record.generative
+        )
+        if (
+            same_model_id
+            and same_revision
+            and same_param
+            and same_dataset
+            and same_split
+            and same_num_shots
+        ):
             return True
     return False
 
@@ -1114,6 +1114,8 @@ def initial_logging(
     model_id = model_config.model_id
     if model_config.revision and model_config.revision != "main":
         model_id += f"@{model_config.revision}"
+    if model_config.param is not None:
+        model_id += f"#{model_config.param}"
 
     split_type = "validation" if not benchmark_config.evaluate_test_split else "test"
     if model_config.task in GENERATIVE_PIPELINE_TAGS:

@@ -9,9 +9,16 @@ information about what these constitute.
 
 ### Latvian Twitter Sentiment
 
-This dataset was published in [this paper](https://arxiv.org/abs/2007.05194) and consists of sentiment-annotated Latvian tweets from the food and drinks domain, collected over an 8-year period.
+This dataset was published in [this paper](https://arxiv.org/abs/2007.05194) and
+consists of sentiment-annotated Latvian tweets from the food and drinks domain,
+collected over an 8-year period.
 
-The original dataset contains 5,059 / 743 samples for the training and test splits, respectively. We use 1,024 / 256 / 2,048 samples for our training, validation and test splits, respectively. Our test split includes all 743 original test samples plus 1,305 additional samples drawn from the original training data to reach 2,048 total test samples. Both the validation split and final training split are sampled exclusively from the original training data.
+The original dataset contains 5,059 / 743 samples for the training and test splits,
+respectively. We use 1,024 / 256 / 2,048 samples for our training, validation and test
+splits, respectively. Our test split includes all 743 original test samples plus 1,305
+additional samples drawn from the original training data to reach 2,048 total test
+samples. Both the validation split and final training split are sampled exclusively from
+the original training data.
 
 Here are a few examples from the training split:
 
@@ -69,9 +76,14 @@ $ euroeval --model <model-id> --dataset latvian-twitter-sentiment
 
 ### FullStack-NER-lv
 
-This dataset was published in [this paper](https://aclanthology.org/L18-1714/) and is part of a multilayered syntactically and semantically annotated text corpus for Latvian. The corpus text sources include approximately 60% news, 20% fiction, 10% legal texts, 5% spoken language transcripts, and 5% miscellaneous content from a balanced 10-million-word corpus.
+This dataset was published in [this paper](https://aclanthology.org/L18-1714/) and is
+part of a multilayered syntactically and semantically annotated text corpus for Latvian.
+The corpus text sources include approximately 60% news, 20% fiction, 10% legal texts, 5%
+spoken language transcripts, and 5% miscellaneous content from a balanced
+10-million-word corpus.
 
-The original full dataset consists of 11,425 samples. We use 1,024 / 256 / 2,048 samples for our
+The original full dataset consists of 11,425 samples. We use 1,024 / 256 / 2,048 samples
+for our
 training, validation and test splits, respectively.
 
 Here are a few examples from the training split:
@@ -133,7 +145,11 @@ $ euroeval --model <model-id> --dataset fullstack-ner-lv
 
 ### Unofficial: WikiANN-lv
 
-This dataset was published in [this paper](https://aclanthology.org/P17-1178/) and is part of a cross-lingual named entity recognition framework for 282 languages from Wikipedia. It uses silver-standard annotations transferred from English through cross-lingual links and performs both name tagging and linking to an english Knowledge Base.
+This dataset was published in [this paper](https://aclanthology.org/P17-1178/) and is
+part of a cross-lingual named entity recognition framework for 282 languages from
+Wikipedia. It uses silver-standard annotations transferred from English through
+cross-lingual links and performs both name tagging and linking to an english Knowledge
+Base.
 
 The original full dataset consists of 10,000 / 10,000 / 10,000 samples for the training,
 validation and test splits, respectively. We use 1,024 / 256 / 2,048 samples for our
@@ -273,8 +289,10 @@ $ euroeval --model <model-id> --dataset scala-lv
 
 ### MultiWikiQA-lv
 
-This dataset will be published in an upcoming paper, and contains Latvian Wikipedia
-articles with generated questions and answers, using the LLM [Gemini-1.5-pro](https://ai.google.dev/gemini-api/docs/models#gemini-1.5-pro).
+This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2509.04111)
+and contains Wikipedia articles with LLM-generated questions and answers in 300+
+languages.
+
 The original full dataset consists of 5,000 samples in a single split. We use a 1,024 /
 256 / 2,048 split for training, validation and testing, respectively, sampled randomly.
 
@@ -348,7 +366,8 @@ $ euroeval --model <model-id> --dataset multi-wiki-qa-lv
 This dataset is a machine translated version of the English [MMLU
 dataset](https://openreview.net/forum?id=d7KBjmI3GmQ) and features questions within 57
 different topics, such as elementary mathematics, US history and law. The translation to
-Latvian was done by the Latvian Language Technology Initiative and is available in the [VTI-Data
+Latvian was done by the Latvian Language Technology Initiative and is available in the
+[VTI-Data
 repository](https://github.com/LUMII-AILab/VTI-Data/tree/refs/heads/main/mmlu).
 
 The full Latvian MMLU dataset consists of 13,941 samples. We use a 1,024 /
@@ -479,13 +498,81 @@ You can evaluate this dataset directly as follows:
 $ euroeval --model <model-id> --dataset copa-lv
 ```
 
+### Unofficial: Winogrande-lv
+
+This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2506.19468)
+and is a translated and filtered version of the English [Winogrande
+dataset](https://doi.org/10.1145/3474381).
+
+The original full dataset consists of 47 / 1,210 samples for training and testing, and
+we use the same splits.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Pērkot māju, Patrīcijai nav tik daudz naudas, ko tērēt kā Tanjai, tāpēc _ nopērk vienas guļamistabas māju. Ko norāda tukšums _?\nIzvēles:\na. Opcija A: Patrīcija\nb. Opcija B: Tanja",
+  "label": "a"
+}
+```
+
+```json
+{
+  "text": "Es nevarēju kontrolēt mitrumu, kā es kontrolēju lietu, jo _ nāca no visām pusēm. Ko norāda tukšums _?\nIzvēles:\na. Opcija A: mitrums\nb. Opcija B: lietus",
+  "label": "a"
+}
+```
+
+```json
+{
+  "text": "Derriks nespēja koncentrēties darbā, atšķirībā no Džastina, jo _ bija jautrs darbs. Ko norāda tukšums _?\nIzvēles:\na. Opcija A: Derriks\nb. Opcija B: Džastins",
+  "label": "b"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+  ```
+  Tālāk seko jautājumi ar vairākām atbilžu izvēlēm (ar atbildēm).
+  ```
+- Base prompt template:
+  ```
+  Jautājums: {text}
+  Izvēles:
+  a. {option_a}
+  b. {option_b}
+  Atbilde: {label}
+  ```
+- Instruction-tuned prompt template:
+  ```
+  Jautājums: {text}
+  Izvēles:
+  a. {option_a}
+  b. {option_b}
+
+  Atbildiet uz iepriekšējo jautājumu, atbildot ar 'a' vai 'b', un nekas cits.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+$ euroeval --model <model-id> --dataset winogrande-lv
+```
+
+
 ## Summarisation
 
 ### LSM
 
-This dataset contains news articles and their corresponding summaries from the Latvian public media news portal [LSM.lv](https://www.lsm.lv/).
+This dataset contains news articles and their corresponding summaries from the Latvian
+public media news portal [LSM.lv](https://www.lsm.lv/).
 
-Samples were collected using the [lsm_scraper](https://github.com/alexandrainst/lsm_scraper). We use 1,024 / 256 / 2,048 samples for training, validation and testing, respectively.
+Samples were collected using the
+[lsm_scraper](https://github.com/alexandrainst/lsm_scraper). We use 1,024 / 256 / 2,048
+samples for training, validation and testing, respectively.
 
 Here are a few examples from the training split:
 

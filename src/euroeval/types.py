@@ -9,8 +9,7 @@ if t.TYPE_CHECKING:
     from numpy.typing import NDArray
     from pydantic import BaseModel
 
-    from .data_models import GenerativeModelOutput
-
+    from .data_models import BenchmarkConfig, GenerativeModelOutput
 
 ScoreDict: t.TypeAlias = dict[str, dict[str, float] | list[dict[str, float]]]
 Predictions: t.TypeAlias = "NDArray | list[str] | list[list[str]]"
@@ -28,6 +27,7 @@ class ComputeMetricsFunction(t.Protocol):
             "NDArray | list[str] | list[list[str]]",
         ],
         dataset: "Dataset",
+        benchmark_config: "BenchmarkConfig",
     ) -> dict[str, float]:
         """Compute the metrics.
 

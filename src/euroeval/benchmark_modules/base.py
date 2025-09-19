@@ -2,6 +2,7 @@
 
 import collections.abc as c
 import logging
+import re
 import sys
 import typing as t
 from abc import ABC, abstractmethod
@@ -55,6 +56,7 @@ class BenchmarkModule(ABC):
     fresh_model: bool
     batching_preference: "BatchingPreference"
     high_priority: bool
+    allowed_params: dict[re.Pattern, list[str]] = {re.compile(r".*"): []}
 
     def __init__(
         self,

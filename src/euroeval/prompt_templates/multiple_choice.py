@@ -3,7 +3,25 @@
 import typing as t
 
 from ..data_models import PromptConfig
-from ..languages import DA, DE, EN, ES, ET, FI, FR, IS, IT, LV, NB, NL, NN, NO, PT, SV
+from ..languages import (
+    DA,
+    DE,
+    EN,
+    ES,
+    ET,
+    FI,
+    FR,
+    IS,
+    IT,
+    LV,
+    NB,
+    NL,
+    NN,
+    NO,
+    PL,
+    PT,
+    SV,
+)
 
 if t.TYPE_CHECKING:
     from ..data_models import Language
@@ -121,6 +139,14 @@ MULTIPLE_CHOICE_TEMPLATES: dict["Language", PromptConfig] = {
         default_prompt_template="Spørsmål: {text}\nSvar: {label}",
         default_instruction_prompt="Spørsmål: {text}\n\nBesvar følgende spørsmål med "
         "{labels_str}, og ikke noe annet.",
+        default_prompt_label_mapping="auto",
+    ),
+    PL: PromptConfig(
+        default_prompt_prefix="Poniżej znajdują się pytania wielokrotnego wyboru "
+        "(z odpowiedziami).",
+        default_prompt_template="Pytanie: {text}\nOdpowiedź: {label}",
+        default_instruction_prompt="Pytanie: {text}\n\nOdpowiedz na powyższe pytanie, "
+        "odpowiadając {labels_str}, i nic więcej.",
         default_prompt_label_mapping="auto",
     ),
     SV: PromptConfig(

@@ -44,11 +44,11 @@ When evaluating generative models, we use the following setup (see the
 - Number of few-shot examples: 12
 - Prefix prompt:
   ```
-  Eftirfarandi eru yfirferðir ásamt lyndisgildi þeirra, sem getur verið 'jákvætt', 'hlutlaust' eða 'neikvætt'.
+  Hér fyrir neðan eru textabrot ásamt lyndisgildi þeirra sem getur verið 'jákvætt', 'hlutlaust' eða 'neikvætt'.
   ```
 - Base prompt template:
   ```
-  Yfirferð: {text}
+  Textabrot: {text}
   Lyndi: {label}
   ```
 - Instruction-tuned prompt template:
@@ -117,13 +117,13 @@ When evaluating generative models, we use the following setup (see the
 - Base prompt template:
   ```
   Setning: {text}
-  Nefndar einingar: {label}
+  Nafneiningar: {label}
   ```
 - Instruction-tuned prompt template:
   ```
   Setning: {text}
 
-  Greinið nefndu einingarnar í setningunni. Þú ættir að skila þessu sem JSON orðabók með lyklunum 'einstaklingur', 'staðsetning', 'stofnun' og 'ýmislegt'. Gildin ættu að vera listi yfir nefndu einingarnar af þeirri gerð, nákvæmlega eins og þær koma fram í setningunni.
+  Greindu nefndu einingarnar í setningunni. Þú ættir að skila þessu sem JSON orðabók með lyklunum 'einstaklingur', 'staðsetning', 'stofnun' og 'ýmislegt'. Gildin ættu að vera listi yfir nefndu einingarnar af þeirri gerð, nákvæmlega eins og þær koma fram í setningunni.
   ```
 - Label mapping:
     - `B-PER` ➡️ `einstaklingur`
@@ -186,7 +186,7 @@ When evaluating generative models, we use the following setup (see the
 - Number of few-shot examples: 12
 - Prefix prompt:
   ```
-  Eftirfarandi eru setningar og hvort þær eru málfræðilega réttar.
+  Hér fyrir neðan eru setningar ásamt mati á því hvort þær eru málfræðilega réttar.
   ```
 - Base prompt template:
   ```
@@ -197,7 +197,7 @@ When evaluating generative models, we use the following setup (see the
   ```
   Setning: {text}
 
-  Greinið hvort setningin er málfræðilega rétt eða ekki. Svarið skal vera 'já' ef setningin er rétt og 'nei' ef hún er ekki.
+  Greindu hvort setningin er málfræðilega rétt. Svaraðu með 'já' ef setningin er rétt og 'nei' ef hún er það ekki.
   ```
 - Label mapping:
     - `correct` ➡️ `já`
@@ -249,7 +249,7 @@ When evaluating generative models, we use the following setup (see the
 - Number of few-shot examples: 12
 - Prefix prompt:
   ```
-  Eftirfarandi eru setningar og hvort þær eru málfræðilega réttar.
+  Hér fyrir neðan eru setningar ásamt mati á því hvort þær eru málfræðilega réttar.
   ```
 - Base prompt template:
   ```
@@ -260,7 +260,7 @@ When evaluating generative models, we use the following setup (see the
   ```
   Setning: {text}
 
-  Greinið hvort setningin er málfræðilega rétt eða ekki. Svarið skal vera 'já' ef setningin er rétt og 'nei' ef hún er ekki.
+  Greindu hvort setningin er málfræðilega rétt. Svaraðu með 'já' ef setningin er rétt og 'nei' ef hún er það ekki.
   ```
 - Label mapping:
     - `correct` ➡️ `já`
@@ -310,7 +310,7 @@ When evaluating generative models, we use the following setup (see the
 - Number of few-shot examples: 12
 - Prefix prompt:
   ```
-  Eftirfarandi eru setningar og hvort þær eru málfræðilega réttar.
+  Hér fyrir neðan eru setningar ásamt mati á því hvort þær eru málfræðilega réttar.
   ```
 - Base prompt template:
   ```
@@ -321,7 +321,7 @@ When evaluating generative models, we use the following setup (see the
   ```
   Setning: {text}
 
-  Greinið hvort setningin er málfræðilega rétt eða ekki. Svarið skal vera 'já' ef setningin er rétt og 'nei' ef hún er ekki.
+  Greindu hvort setningin er málfræðilega rétt. Svaraðu með 'já' ef setningin er rétt og 'nei' ef hún er það ekki.
   ```
 - Label mapping:
     - `correct` ➡️ `já`
@@ -558,8 +558,9 @@ $ euroeval --model <model-id> --dataset belebele-is
 
 ### Unofficial: MultiWikiQA-is
 
-This dataset will be published in an upcoming paper, and contains Icelandic Wikipedia
-articles with generated questions and answers, using the LLM Gemini-1.5-pro.
+This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2509.04111)
+and contains Wikipedia articles with LLM-generated questions and answers in 300+
+languages.
 
 The original full dataset consists of 5,000 samples in a single split. We use a 1,024 /
 256 / 2,048 split for training, validation and testing, respectively, sampled randomly.
@@ -864,7 +865,7 @@ $ euroeval --model <model-id> --dataset mmlu-is
 
 This dataset was published in [this paper](https://aclanthology.org/2022.lrec-1.464/)
 and is a manually translated and adapted version of the English [WinoGrande
-dataset](https://arxiv.org/abs/1907.10641). The samples are sentences containing two
+dataset](https://doi.org/10.1145/3474381). The samples are sentences containing two
 nouns and an ambiguous pronoun, and the task is to determine which of the two nouns the
 pronoun refers to.
 
@@ -998,7 +999,7 @@ $ euroeval --model <model-id> --dataset hellaswag-is
 ```
 
 
-## Summarization
+## Summarisation
 
 ### RRN
 
