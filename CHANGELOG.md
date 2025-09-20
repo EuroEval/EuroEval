@@ -14,6 +14,15 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Now gives a warning when a reasoning model does not get to finish its reasoning due to
   running out of the 8,192 reasoning tokens. In this case, we use an empty string as the
   model output, which will lead to lower scores.
+- Now allows changing the attention backend with vLLM, with the `VLLM_ATTENTION_BACKEND`
+  environment variable, which was previously hardcoded. Only relevant for generative
+  models running with vLLM.
+
+### Changed
+- Changed the default value of `gpu_memory_utilization` from 0.9 to 0.8, as the new
+  change to flex-attention needs a bit more buffer memory to avoid OOM errors. This can
+  always be changed with the `--gpu-memory-utilization` argument (or
+  `gpu_memory_utilization` in the `Benchmarker` API).
 
 ### Fixed
 - We now take invalid (model, dataset) combinations into account when computing the
@@ -28,6 +37,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   has been fixed now.
 - We're now allowing generative models to output empty dictionaries for the NER task, as
   this is a valid output (no entities found). Previously this caused an error.
+- Changed the default vLLM attention backend to flex-attention (previously flashinfer),
+  as flex-attention supports all model head sizes, whereas flashinfer only supports
+  head sizes of size 64, 128 and 256, causing some models not to work with flashinfer.
 
 
 ## [v16.2.2] - 2025-09-15
