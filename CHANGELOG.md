@@ -26,6 +26,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Previously we did not detect that a model was already evaluated on a dataset if the
   dataset did not have a validation split (such as the European values dataset). This
   has been fixed now.
+- We're now allowing generative models to output empty dictionaries for the NER task, as
+  this is a valid output (no entities found). Previously this caused an error.
 
 
 ## [v16.2.2] - 2025-09-15
