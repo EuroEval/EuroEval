@@ -521,7 +521,14 @@ def has_chat_template(tokeniser: "PreTrainedTokenizer") -> bool:
     Returns:
         Whether the tokeniser has a chat template.
     """
-    if hasattr(tokeniser, "chat_template"):
+    if isinstance(tokeniser, MistralCommonTokenizer):
+        log_once(
+            "The tokeniser is a Mistral tokeniser, so assuming that the model is "
+            "instruction tuned.",
+            level=logging.DEBUG,
+        )
+        return True
+    elif hasattr(tokeniser, "chat_template"):
         has_template = tokeniser.chat_template is not None
         if has_template:
             log_once(
@@ -530,13 +537,6 @@ def has_chat_template(tokeniser: "PreTrainedTokenizer") -> bool:
                 level=logging.DEBUG,
             )
         return has_template
-    elif isinstance(tokeniser, MistralCommonTokenizer):
-        log_once(
-            "The tokeniser is a Mistral tokeniser, so assuming that the model is "
-            "instruction tuned.",
-            level=logging.DEBUG,
-        )
-        return True
     else:
         log_once(
             "We cannot find a chat template for the tokeniser, so assuming that the "
