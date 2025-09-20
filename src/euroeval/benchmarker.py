@@ -84,7 +84,7 @@ class Benchmarker:
         num_iterations: int = 10,
         api_base: str | None = None,
         api_version: str | None = None,
-        gpu_memory_utilization: float = 0.9,
+        gpu_memory_utilization: float = 0.8,
         generative_type: GenerativeType | None = None,
         debug: bool = False,
         run_with_cli: bool = False,

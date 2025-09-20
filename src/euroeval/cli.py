@@ -188,7 +188,7 @@ from .tasks import get_all_tasks
 )
 @click.option(
     "--gpu-memory-utilization",
-    default=0.9,
+    default=0.8,
     show_default=True,
     help="The GPU memory utilization to use for vLLM. A larger value will result in "
     "faster evaluation, but at the risk of running out of GPU memory. Only reduce this "
