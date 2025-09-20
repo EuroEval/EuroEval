@@ -462,7 +462,7 @@ def extract_json_dict_from_string(s: str) -> dict | None:
     Returns:
         The extracted JSON dictionary, or None if no JSON dictionary could be found.
     """
-    json_regex = r"\{[^{}]+?\}"
+    json_regex = r"\{[^{}]*?\}"
     if (json_match := re.search(pattern=json_regex, string=s, flags=re.DOTALL)) is None:
         logger.debug(
             "The model output does not contain any JSON dictionary, so cannot parse "
