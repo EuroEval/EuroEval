@@ -104,6 +104,7 @@ os.environ["VLLM_USE_V1"] = "1"
 
 
 # Use the FlashInfer flash-attention backend for vLLM
+breakpoint()
 os.environ["VLLM_ATTENTION_BACKEND"] = "FLASHINFER"
 
 
