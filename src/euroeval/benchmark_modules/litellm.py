@@ -718,8 +718,9 @@ class LiteLLMModel(BenchmarkModule):
         # dictionary, then we convert those to exceptions, to disable structured
         # generation
         if "response_format" in generation_kwargs:
+            breakpoint()
             responses = [
-                RuntimeError("The model outputs empty dictionaries.")
+                ValueError("The model outputs empty dictionaries.")
                 if not isinstance(response, Exception)
                 and any(choice.message.content == "{}" for choice in response.choices)
                 else response
