@@ -611,7 +611,11 @@ class Benchmarker:
 
         # Get all the model configs
         model_configs: list[ModelConfig] = list()
-        for model_id in tqdm(iterable=model_ids, desc="Fetching model configurations"):
+        for model_id in tqdm(
+            iterable=model_ids,
+            desc="Fetching model configurations",
+            disable=not benchmark_config.verbose or not benchmark_config.progress_bar,
+        ):
             try:
                 model_config = get_model_config(
                     model_id=model_id, benchmark_config=benchmark_config
