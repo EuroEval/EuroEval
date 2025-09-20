@@ -947,7 +947,7 @@ def load_tokeniser(
     num_retries = 5
     for _ in range(num_retries):
         try:
-            # Mistral models need a custom tokeniser
+            # Mistral instruction-tuned models need a custom tokeniser
             if model_id.startswith("mistralai/") and "base" not in model_id.lower():
                 tokeniser = MistralCommonTokenizer.from_pretrained(
                     model_id,
