@@ -1,5 +1,6 @@
 """General fixtures used throughout test modules."""
 
+import collections.abc as c
 import os
 import sys
 from typing import Generator
@@ -186,12 +187,12 @@ def cli_params() -> Generator[dict[str | None, ParamType], None, None]:
 
 
 @pytest.fixture(scope="session")
-def dataset_config() -> DatasetConfig:
+def dataset_config() -> c.Generator[DatasetConfig, None, None]:
     """Yields a dataset configuration used in tests."""
     yield DatasetConfig(
         name="dataset",
         pretty_name="Dataset",
         huggingface_id="dataset_id",
-        task="task",
-        languages=["da"],
+        task=SENT,
+        languages=[DA],
     )
