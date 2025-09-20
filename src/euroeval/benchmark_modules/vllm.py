@@ -947,6 +947,16 @@ def load_tokeniser(
     num_retries = 5
     for _ in range(num_retries):
         try:
+            # Mistral models need a custom tokeniser
+            if model_id.startswith("mistralai/") and "base" not in model_id.lower():
+                tokeniser = MistralCommonTokenizer.from_pretrained(
+                    model_id,
+                    padding_side="left",
+                    truncation_side="left",
+                    model_max_length=model_max_length,
+                    token=token,
+                )
+                break
             tokeniser = AutoTokenizer.from_pretrained(
                 model_id,
                 use_fast=False if model_config.param == "slow-tokenizer" else True,
