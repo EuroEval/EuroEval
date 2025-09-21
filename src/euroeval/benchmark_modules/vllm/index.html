@@ -963,6 +963,15 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#euroeval.benchmark_modules.vllm.get_vllm_tokenisation_params" class="md-nav__link">
+    <span class="md-ellipsis">
+      get_vllm_tokenisation_params
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -2180,7 +2189,62 @@
 <span class="normal">1188</span>
 <span class="normal">1189</span>
 <span class="normal">1190</span>
-<span class="normal">1191</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Generative models using the vLLM inference framework.&quot;&quot;&quot;</span>
+<span class="normal">1191</span>
+<span class="normal">1192</span>
+<span class="normal">1193</span>
+<span class="normal">1194</span>
+<span class="normal">1195</span>
+<span class="normal">1196</span>
+<span class="normal">1197</span>
+<span class="normal">1198</span>
+<span class="normal">1199</span>
+<span class="normal">1200</span>
+<span class="normal">1201</span>
+<span class="normal">1202</span>
+<span class="normal">1203</span>
+<span class="normal">1204</span>
+<span class="normal">1205</span>
+<span class="normal">1206</span>
+<span class="normal">1207</span>
+<span class="normal">1208</span>
+<span class="normal">1209</span>
+<span class="normal">1210</span>
+<span class="normal">1211</span>
+<span class="normal">1212</span>
+<span class="normal">1213</span>
+<span class="normal">1214</span>
+<span class="normal">1215</span>
+<span class="normal">1216</span>
+<span class="normal">1217</span>
+<span class="normal">1218</span>
+<span class="normal">1219</span>
+<span class="normal">1220</span>
+<span class="normal">1221</span>
+<span class="normal">1222</span>
+<span class="normal">1223</span>
+<span class="normal">1224</span>
+<span class="normal">1225</span>
+<span class="normal">1226</span>
+<span class="normal">1227</span>
+<span class="normal">1228</span>
+<span class="normal">1229</span>
+<span class="normal">1230</span>
+<span class="normal">1231</span>
+<span class="normal">1232</span>
+<span class="normal">1233</span>
+<span class="normal">1234</span>
+<span class="normal">1235</span>
+<span class="normal">1236</span>
+<span class="normal">1237</span>
+<span class="normal">1238</span>
+<span class="normal">1239</span>
+<span class="normal">1240</span>
+<span class="normal">1241</span>
+<span class="normal">1242</span>
+<span class="normal">1243</span>
+<span class="normal">1244</span>
+<span class="normal">1245</span>
+<span class="normal">1246</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Generative models using the vLLM inference framework.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">c</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">contextlib</span>
@@ -2286,7 +2350,7 @@
     <span class="n">fresh_model</span> <span class="o">=</span> <span class="kc">False</span>
     <span class="n">batching_preference</span> <span class="o">=</span> <span class="n">BatchingPreference</span><span class="o">.</span><span class="n">ALL_AT_ONCE</span>
     <span class="n">high_priority</span> <span class="o">=</span> <span class="kc">True</span>
-    <span class="n">allowed_params</span> <span class="o">=</span> <span class="p">{</span><span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;.*&quot;</span><span class="p">):</span> <span class="p">[</span><span class="s2">&quot;thinking&quot;</span><span class="p">,</span> <span class="s2">&quot;no-thinking&quot;</span><span class="p">]}</span>
+    <span class="n">allowed_params</span> <span class="o">=</span> <span class="p">{</span><span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;.*&quot;</span><span class="p">):</span> <span class="p">[</span><span class="s2">&quot;thinking&quot;</span><span class="p">,</span> <span class="s2">&quot;no-thinking&quot;</span><span class="p">,</span> <span class="s2">&quot;slow-tokenizer&quot;</span><span class="p">]}</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
@@ -2741,11 +2805,24 @@
                 <span class="n">torch</span><span class="o">.</span><span class="n">LongTensor</span><span class="p">(</span><span class="n">completion_id</span><span class="p">)</span> <span class="k">for</span> <span class="n">completion_id</span> <span class="ow">in</span> <span class="n">completion_ids</span>
             <span class="p">]</span>
         <span class="p">)</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">end_of_reasoning_token</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">completions</span> <span class="o">=</span> <span class="p">[</span>
-                <span class="n">completion</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">end_of_reasoning_token</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
-                <span class="k">for</span> <span class="n">completion</span> <span class="ow">in</span> <span class="n">completions</span>
-            <span class="p">]</span>
+        <span class="k">if</span> <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">end_of_reasoning_token</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+            <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">generative_type</span> <span class="o">==</span> <span class="n">GenerativeType</span><span class="o">.</span><span class="n">REASONING</span>
+        <span class="p">):</span>
+            <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">completions</span><span class="p">)):</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">end_of_reasoning_token</span> <span class="ow">in</span> <span class="n">completions</span><span class="p">[</span><span class="n">idx</span><span class="p">]:</span>
+                    <span class="n">completions</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">=</span> <span class="n">completions</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">end_of_reasoning_token</span>
+                    <span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">&quot;The model </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span><span class="si">!r}</span><span class="s2"> is a reasoning &quot;</span>
+                        <span class="s2">&quot;model, but the generated output does not contain the end of &quot;</span>
+                        <span class="sa">f</span><span class="s2">&quot;reasoning token (</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">end_of_reasoning_token</span><span class="si">!r}</span><span class="s2">). Using &quot;</span>
+                        <span class="s2">&quot;an empty string as the prediction instead.&quot;</span>
+                    <span class="p">)</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;The generated output was: </span><span class="si">{</span><span class="n">completions</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span><span class="si">!r}</span><span class="s2">.&quot;</span><span class="p">)</span>
+                    <span class="n">completions</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
         <span class="n">stop_token_pattern</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span>
             <span class="s2">&quot;|&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">re</span><span class="o">.</span><span class="n">escape</span><span class="p">(</span><span class="n">stop_token</span><span class="p">)</span> <span class="k">for</span> <span class="n">stop_token</span> <span class="ow">in</span> <span class="n">stop_tokens</span><span class="p">)</span>
         <span class="p">)</span>
@@ -3012,8 +3089,11 @@
         <span class="n">adapter_base_model_id</span><span class="o">=</span><span class="n">model_config</span><span class="o">.</span><span class="n">adapter_base_model_id</span><span class="p">,</span>
         <span class="n">trust_remote_code</span><span class="o">=</span><span class="n">benchmark_config</span><span class="o">.</span><span class="n">trust_remote_code</span><span class="p">,</span>
         <span class="n">model_max_length</span><span class="o">=</span><span class="n">true_max_model_len</span><span class="p">,</span>
-        <span class="n">model_cache_dir</span><span class="o">=</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_cache_dir</span><span class="p">,</span>
+        <span class="n">model_config</span><span class="o">=</span><span class="n">model_config</span><span class="p">,</span>
         <span class="n">token</span><span class="o">=</span><span class="n">get_hf_token</span><span class="p">(</span><span class="n">api_key</span><span class="o">=</span><span class="n">benchmark_config</span><span class="o">.</span><span class="n">api_key</span><span class="p">),</span>
+    <span class="p">)</span>
+    <span class="n">vllm_tokenisation_params</span> <span class="o">=</span> <span class="n">get_vllm_tokenisation_params</span><span class="p">(</span>
+        <span class="n">tokeniser</span><span class="o">=</span><span class="n">tokeniser</span><span class="p">,</span> <span class="n">model_config</span><span class="o">=</span><span class="n">model_config</span>
     <span class="p">)</span>
 
     <span class="n">clear_vllm</span><span class="p">()</span>
@@ -3047,16 +3127,7 @@
             <span class="n">enable_prefix_caching</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
             <span class="n">enable_lora</span><span class="o">=</span><span class="n">model_config</span><span class="o">.</span><span class="n">adapter_base_model_id</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span>
             <span class="n">max_lora_rank</span><span class="o">=</span><span class="mi">256</span><span class="p">,</span>
-            <span class="c1"># Special arguments in case we are dealing with a Mistral model</span>
-            <span class="n">tokenizer_mode</span><span class="o">=</span><span class="s2">&quot;mistral&quot;</span>
-            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">tokeniser</span><span class="p">,</span> <span class="n">MistralCommonTokenizer</span><span class="p">)</span>
-            <span class="k">else</span> <span class="s2">&quot;auto&quot;</span><span class="p">,</span>
-            <span class="n">config_format</span><span class="o">=</span><span class="s2">&quot;mistral&quot;</span>
-            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">tokeniser</span><span class="p">,</span> <span class="n">MistralCommonTokenizer</span><span class="p">)</span>
-            <span class="k">else</span> <span class="s2">&quot;auto&quot;</span><span class="p">,</span>
-            <span class="n">load_format</span><span class="o">=</span><span class="s2">&quot;mistral&quot;</span>
-            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">tokeniser</span><span class="p">,</span> <span class="n">MistralCommonTokenizer</span><span class="p">)</span>
-            <span class="k">else</span> <span class="s2">&quot;auto&quot;</span><span class="p">,</span>
+            <span class="o">**</span><span class="n">vllm_tokenisation_params</span><span class="p">,</span>
         <span class="p">)</span>
     <span class="k">except</span> <span class="p">(</span><span class="ne">RuntimeError</span><span class="p">,</span> <span class="ne">ValueError</span><span class="p">,</span> <span class="ne">OSError</span><span class="p">)</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
         <span class="k">if</span> <span class="s2">&quot;awaiting a review from the repo authors&quot;</span> <span class="ow">in</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">):</span>
@@ -3085,7 +3156,7 @@
     <span class="n">adapter_base_model_id</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">trust_remote_code</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
     <span class="n">model_max_length</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
-    <span class="n">model_cache_dir</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">model_config</span><span class="p">:</span> <span class="s2">&quot;ModelConfig&quot;</span><span class="p">,</span>
     <span class="n">token</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">bool</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;PreTrainedTokenizer&quot;</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Load the tokeniser.</span>
@@ -3102,8 +3173,8 @@
 <span class="sd">            Whether to trust remote code.</span>
 <span class="sd">        model_max_length:</span>
 <span class="sd">            The maximum length of the model.</span>
-<span class="sd">        model_cache_dir:</span>
-<span class="sd">            The cache directory for the model.</span>
+<span class="sd">        model_config:</span>
+<span class="sd">            The model configuration.</span>
 <span class="sd">        token:</span>
 <span class="sd">            The Hugging Face API token.</span>
 
@@ -3114,7 +3185,7 @@
     <span class="n">config</span> <span class="o">=</span> <span class="n">AutoConfig</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span>
         <span class="n">adapter_base_model_id</span> <span class="ow">or</span> <span class="n">model_id</span><span class="p">,</span>
         <span class="n">revision</span><span class="o">=</span><span class="n">revision</span><span class="p">,</span>
-        <span class="n">cache_dir</span><span class="o">=</span><span class="n">model_cache_dir</span><span class="p">,</span>
+        <span class="n">cache_dir</span><span class="o">=</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_cache_dir</span><span class="p">,</span>
         <span class="n">token</span><span class="o">=</span><span class="n">token</span><span class="p">,</span>
         <span class="n">trust_remote_code</span><span class="o">=</span><span class="n">trust_remote_code</span><span class="p">,</span>
         <span class="n">local_files_only</span><span class="o">=</span><span class="ow">not</span> <span class="n">internet_connection_available</span><span class="p">(),</span>
@@ -3122,15 +3193,25 @@
     <span class="n">num_retries</span> <span class="o">=</span> <span class="mi">5</span>
     <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_retries</span><span class="p">):</span>
         <span class="k">try</span><span class="p">:</span>
+            <span class="c1"># Mistral instruction-tuned models need a custom tokeniser</span>
+            <span class="k">if</span> <span class="n">model_id</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;mistralai/&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="s2">&quot;base&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">model_id</span><span class="o">.</span><span class="n">lower</span><span class="p">():</span>
+                <span class="n">tokeniser</span> <span class="o">=</span> <span class="n">MistralCommonTokenizer</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span>
+                    <span class="n">model_id</span><span class="p">,</span>
+                    <span class="n">padding_side</span><span class="o">=</span><span class="s2">&quot;left&quot;</span><span class="p">,</span>
+                    <span class="n">truncation_side</span><span class="o">=</span><span class="s2">&quot;left&quot;</span><span class="p">,</span>
+                    <span class="n">model_max_length</span><span class="o">=</span><span class="n">model_max_length</span><span class="p">,</span>
+                    <span class="n">token</span><span class="o">=</span><span class="n">token</span><span class="p">,</span>
+                <span class="p">)</span>
+                <span class="k">break</span>
             <span class="n">tokeniser</span> <span class="o">=</span> <span class="n">AutoTokenizer</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span>
                 <span class="n">model_id</span><span class="p">,</span>
-                <span class="n">use_fast</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                <span class="n">use_fast</span><span class="o">=</span><span class="kc">False</span> <span class="k">if</span> <span class="n">model_config</span><span class="o">.</span><span class="n">param</span> <span class="o">==</span> <span class="s2">&quot;slow-tokenizer&quot;</span> <span class="k">else</span> <span class="kc">True</span><span class="p">,</span>
                 <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                 <span class="n">trust_remote_code</span><span class="o">=</span><span class="n">trust_remote_code</span><span class="p">,</span>
                 <span class="n">padding_side</span><span class="o">=</span><span class="s2">&quot;left&quot;</span><span class="p">,</span>
                 <span class="n">truncation_side</span><span class="o">=</span><span class="s2">&quot;left&quot;</span><span class="p">,</span>
                 <span class="n">model_max_length</span><span class="o">=</span><span class="n">model_max_length</span><span class="p">,</span>
-                <span class="n">cache_dir</span><span class="o">=</span><span class="n">model_cache_dir</span><span class="p">,</span>
+                <span class="n">cache_dir</span><span class="o">=</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_cache_dir</span><span class="p">,</span>
                 <span class="n">config</span><span class="o">=</span><span class="n">config</span><span class="p">,</span>
                 <span class="n">token</span><span class="o">=</span><span class="n">token</span><span class="p">,</span>
                 <span class="n">local_files_only</span><span class="o">=</span><span class="ow">not</span> <span class="n">internet_connection_available</span><span class="p">(),</span>
@@ -3371,6 +3452,44 @@
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">tqdm_kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;leave&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>  <span class="c1"># Remove the &#39;leave&#39; key if it exists</span>
     <span class="k">return</span> <span class="n">tqdm</span><span class="p">(</span><span class="o">*</span><span class="n">tqdm_args</span><span class="p">,</span> <span class="n">leave</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">tqdm_kwargs</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">get_vllm_tokenisation_params</span><span class="p">(</span><div class="mkapi-source-link" id="euroeval.benchmark_modules.vllm.get_vllm_tokenisation_params"><a href="../../../../api/euroeval/benchmark_modules/vllm/#euroeval.benchmark_modules.vllm.get_vllm_tokenisation_params" title="Go to docs">[docs]</a></div>
+    <span class="n">tokeniser</span><span class="p">:</span> <span class="s2">&quot;PreTrainedTokenizer&quot;</span><span class="p">,</span> <span class="n">model_config</span><span class="p">:</span> <span class="s2">&quot;ModelConfig&quot;</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">t</span><span class="o">.</span><span class="n">Any</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the tokenisation parameters for vLLM.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        tokeniser:</span>
+<span class="sd">            The tokeniser.</span>
+<span class="sd">        model_config:</span>
+<span class="sd">            The model configuration.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        A dictionary of tokenisation parameters to pass to vLLM.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">tokeniser</span><span class="p">,</span> <span class="n">MistralCommonTokenizer</span><span class="p">):</span>
+        <span class="n">tokeniser_mode</span> <span class="o">=</span> <span class="s2">&quot;mistral&quot;</span>
+    <span class="k">elif</span> <span class="n">model_config</span><span class="o">.</span><span class="n">param</span> <span class="o">==</span> <span class="s2">&quot;slow-tokenizer&quot;</span><span class="p">:</span>
+        <span class="n">tokeniser_mode</span> <span class="o">=</span> <span class="s2">&quot;slow&quot;</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">tokeniser_mode</span> <span class="o">=</span> <span class="s2">&quot;auto&quot;</span>
+
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">tokeniser</span><span class="p">,</span> <span class="n">MistralCommonTokenizer</span><span class="p">):</span>
+        <span class="n">config_format</span> <span class="o">=</span> <span class="s2">&quot;mistral&quot;</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">config_format</span> <span class="o">=</span> <span class="s2">&quot;auto&quot;</span>
+
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">tokeniser</span><span class="p">,</span> <span class="n">MistralCommonTokenizer</span><span class="p">):</span>
+        <span class="n">load_format</span> <span class="o">=</span> <span class="s2">&quot;mistral&quot;</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">load_format</span> <span class="o">=</span> <span class="s2">&quot;auto&quot;</span>
+
+    <span class="k">return</span> <span class="nb">dict</span><span class="p">(</span>
+        <span class="n">tokenizer_mode</span><span class="o">=</span><span class="n">tokeniser_mode</span><span class="p">,</span>
+        <span class="n">config_format</span><span class="o">=</span><span class="n">config_format</span><span class="p">,</span>
+        <span class="n">load_format</span><span class="o">=</span><span class="n">load_format</span><span class="p">,</span>
+    <span class="p">)</span>
 </code></pre></div></td></tr></table></div>
 
 

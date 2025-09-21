@@ -2279,10 +2279,15 @@
 <span class="normal">1242</span>
 <span class="normal">1243</span>
 <span class="normal">1244</span>
-<span class="normal">1245</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Encoder models from the Hugging Face Hub.&quot;&quot;&quot;</span>
+<span class="normal">1245</span>
+<span class="normal">1246</span>
+<span class="normal">1247</span>
+<span class="normal">1248</span>
+<span class="normal">1249</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Encoder models from the Hugging Face Hub.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">c</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">t</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">functools</span><span class="w"> </span><span class="kn">import</span> <span class="n">cached_property</span><span class="p">,</span> <span class="n">partial</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">json</span><span class="w"> </span><span class="kn">import</span> <span class="n">JSONDecodeError</span>
@@ -2374,6 +2379,7 @@
     <span class="n">fresh_model</span> <span class="o">=</span> <span class="kc">False</span>
     <span class="n">batching_preference</span> <span class="o">=</span> <span class="n">BatchingPreference</span><span class="o">.</span><span class="n">NO_PREFERENCE</span>
     <span class="n">high_priority</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="n">allowed_params</span> <span class="o">=</span> <span class="p">{</span><span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;.*&quot;</span><span class="p">):</span> <span class="p">[</span><span class="s2">&quot;slow-tokenizer&quot;</span><span class="p">]}</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
@@ -2971,7 +2977,7 @@
         <span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span>
         <span class="n">model_id</span><span class="o">=</span><span class="n">model_id</span><span class="p">,</span>
         <span class="n">trust_remote_code</span><span class="o">=</span><span class="n">benchmark_config</span><span class="o">.</span><span class="n">trust_remote_code</span><span class="p">,</span>
-        <span class="n">model_cache_dir</span><span class="o">=</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_cache_dir</span><span class="p">,</span>
+        <span class="n">model_config</span><span class="o">=</span><span class="n">model_config</span><span class="p">,</span>
     <span class="p">)</span>
 
     <span class="k">return</span> <span class="n">model</span><span class="p">,</span> <span class="n">tokeniser</span>
@@ -3161,7 +3167,7 @@
     <span class="n">model</span><span class="p">:</span> <span class="s2">&quot;PreTrainedModel | None&quot;</span><span class="p">,</span>
     <span class="n">model_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">trust_remote_code</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
-    <span class="n">model_cache_dir</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">model_config</span><span class="p">:</span> <span class="s2">&quot;ModelConfig&quot;</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;PreTrainedTokenizer&quot;</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Load the tokeniser.</span>
 
@@ -3173,17 +3179,19 @@
 <span class="sd">            The model identifier. Used for logging.</span>
 <span class="sd">        trust_remote_code:</span>
 <span class="sd">            Whether to trust remote code.</span>
+<span class="sd">        model_config:</span>
+<span class="sd">            The model configuration.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The loaded tokeniser.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">loading_kwargs</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">bool</span> <span class="o">|</span> <span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
-        <span class="n">use_fast</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">use_fast</span><span class="o">=</span><span class="kc">False</span> <span class="k">if</span> <span class="n">model_config</span><span class="o">.</span><span class="n">param</span> <span class="o">==</span> <span class="s2">&quot;slow-tokenizer&quot;</span> <span class="k">else</span> <span class="kc">True</span><span class="p">,</span>
         <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
         <span class="n">trust_remote_code</span><span class="o">=</span><span class="n">trust_remote_code</span><span class="p">,</span>
         <span class="n">padding_side</span><span class="o">=</span><span class="s2">&quot;right&quot;</span><span class="p">,</span>
         <span class="n">truncation_side</span><span class="o">=</span><span class="s2">&quot;right&quot;</span><span class="p">,</span>
-        <span class="n">cache_dir</span><span class="o">=</span><span class="n">model_cache_dir</span><span class="p">,</span>
+        <span class="n">cache_dir</span><span class="o">=</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_cache_dir</span><span class="p">,</span>
     <span class="p">)</span>
 
     <span class="c1"># If the model is a subclass of a certain model types then we have to add a prefix</span>

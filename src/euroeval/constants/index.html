@@ -923,7 +923,10 @@
 <span class="normal">80</span>
 <span class="normal">81</span>
 <span class="normal">82</span>
-<span class="normal">83</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Constants used throughout the project.&quot;&quot;&quot;</span>
+<span class="normal">83</span>
+<span class="normal">84</span>
+<span class="normal">85</span>
+<span class="normal">86</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Constants used throughout the project.&quot;&quot;&quot;</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">.enums</span><span class="w"> </span><span class="kn">import</span> <span class="n">TaskGroup</span>
 
@@ -975,8 +978,10 @@
 <span class="c1"># Hugging Face Hub tags used to classify models as merge models</span>
 <span class="n">MERGE_TAGS</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;merge&quot;</span><span class="p">,</span> <span class="s2">&quot;mergekit&quot;</span><span class="p">]</span>
 
+
 <span class="c1"># The minimum required CUDA compute capability for using bfloat16 in vLLM</span>
 <span class="n">VLLM_BF16_MIN_CUDA_COMPUTE_CAPABILITY</span> <span class="o">=</span> <span class="mf">8.0</span>
+
 
 <span class="c1"># Used to detect whether a model is a reasoning model</span>
 <span class="n">REASONING_TOKENS</span> <span class="o">=</span> <span class="p">[</span>
@@ -984,6 +989,7 @@
     <span class="p">(</span><span class="s2">&quot;&lt;reason&gt;&quot;</span><span class="p">,</span> <span class="s2">&quot;&lt;/reason&gt;&quot;</span><span class="p">),</span>
     <span class="p">(</span><span class="s2">&quot;&lt;reasoning&gt;&quot;</span><span class="p">,</span> <span class="s2">&quot;&lt;/reasoning&gt;&quot;</span><span class="p">),</span>
 <span class="p">]</span>
+
 
 <span class="c1"># These tokens are sometimes used by models to indicate the end of a generated</span>
 <span class="c1"># response, but they do not use them as a proper EOS token, so we have to deal with them</span>

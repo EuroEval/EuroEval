@@ -2032,7 +2032,56 @@
 <span class="normal">1103</span>
 <span class="normal">1104</span>
 <span class="normal">1105</span>
-<span class="normal">1106</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Class that benchmarks language models.&quot;&quot;&quot;</span>
+<span class="normal">1106</span>
+<span class="normal">1107</span>
+<span class="normal">1108</span>
+<span class="normal">1109</span>
+<span class="normal">1110</span>
+<span class="normal">1111</span>
+<span class="normal">1112</span>
+<span class="normal">1113</span>
+<span class="normal">1114</span>
+<span class="normal">1115</span>
+<span class="normal">1116</span>
+<span class="normal">1117</span>
+<span class="normal">1118</span>
+<span class="normal">1119</span>
+<span class="normal">1120</span>
+<span class="normal">1121</span>
+<span class="normal">1122</span>
+<span class="normal">1123</span>
+<span class="normal">1124</span>
+<span class="normal">1125</span>
+<span class="normal">1126</span>
+<span class="normal">1127</span>
+<span class="normal">1128</span>
+<span class="normal">1129</span>
+<span class="normal">1130</span>
+<span class="normal">1131</span>
+<span class="normal">1132</span>
+<span class="normal">1133</span>
+<span class="normal">1134</span>
+<span class="normal">1135</span>
+<span class="normal">1136</span>
+<span class="normal">1137</span>
+<span class="normal">1138</span>
+<span class="normal">1139</span>
+<span class="normal">1140</span>
+<span class="normal">1141</span>
+<span class="normal">1142</span>
+<span class="normal">1143</span>
+<span class="normal">1144</span>
+<span class="normal">1145</span>
+<span class="normal">1146</span>
+<span class="normal">1147</span>
+<span class="normal">1148</span>
+<span class="normal">1149</span>
+<span class="normal">1150</span>
+<span class="normal">1151</span>
+<span class="normal">1152</span>
+<span class="normal">1153</span>
+<span class="normal">1154</span>
+<span class="normal">1155</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Class that benchmarks language models.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">contextlib</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
@@ -2046,6 +2095,7 @@
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">huggingface_hub.constants</span><span class="w"> </span><span class="kn">import</span> <span class="n">HF_HUB_ENABLE_HF_TRANSFER</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">torch.distributed</span><span class="w"> </span><span class="kn">import</span> <span class="n">destroy_process_group</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">tqdm.auto</span><span class="w"> </span><span class="kn">import</span> <span class="n">tqdm</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">.benchmark_config_factory</span><span class="w"> </span><span class="kn">import</span> <span class="n">build_benchmark_config</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.constants</span><span class="w"> </span><span class="kn">import</span> <span class="n">GENERATIVE_PIPELINE_TAGS</span>
@@ -2066,6 +2116,7 @@
     <span class="n">get_package_version</span><span class="p">,</span>
     <span class="n">internet_connection_available</span><span class="p">,</span>
     <span class="n">log_once</span><span class="p">,</span>
+    <span class="n">split_model_id</span><span class="p">,</span>
 <span class="p">)</span>
 
 <span class="k">if</span> <span class="n">t</span><span class="o">.</span><span class="n">TYPE_CHECKING</span><span class="p">:</span>
@@ -2116,7 +2167,7 @@
         <span class="n">num_iterations</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span>
         <span class="n">api_base</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">api_version</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">gpu_memory_utilization</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.9</span><span class="p">,</span>
+        <span class="n">gpu_memory_utilization</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.8</span><span class="p">,</span>
         <span class="n">generative_type</span><span class="p">:</span> <span class="n">GenerativeType</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">debug</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
         <span class="n">run_with_cli</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
@@ -2641,46 +2692,90 @@
             <span class="n">dataset_names</span><span class="o">=</span><span class="n">benchmark_config</span><span class="o">.</span><span class="n">datasets</span>
         <span class="p">)</span>
 
-        <span class="n">total_benchmarks</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">model_ids</span><span class="p">)</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">dataset_configs</span><span class="p">)</span>
-        <span class="n">num_finished_benchmarks</span> <span class="o">=</span> <span class="mi">0</span>
-
-        <span class="n">current_benchmark_results</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">BenchmarkResult</span><span class="p">]</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
-        <span class="k">for</span> <span class="n">model_id</span> <span class="ow">in</span> <span class="n">model_ids</span><span class="p">:</span>
-            <span class="c1"># Load the model configuration, or skip the model if it is invalid</span>
+        <span class="c1"># Get all the model configs</span>
+        <span class="n">model_configs</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">ModelConfig</span><span class="p">]</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">model_id</span> <span class="ow">in</span> <span class="n">tqdm</span><span class="p">(</span>
+            <span class="n">iterable</span><span class="o">=</span><span class="n">model_ids</span><span class="p">,</span>
+            <span class="n">desc</span><span class="o">=</span><span class="s2">&quot;Fetching model configurations&quot;</span><span class="p">,</span>
+            <span class="n">disable</span><span class="o">=</span><span class="ow">not</span> <span class="n">benchmark_config</span><span class="o">.</span><span class="n">verbose</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">benchmark_config</span><span class="o">.</span><span class="n">progress_bar</span><span class="p">,</span>
+        <span class="p">):</span>
             <span class="k">try</span><span class="p">:</span>
                 <span class="n">model_config</span> <span class="o">=</span> <span class="n">get_model_config</span><span class="p">(</span>
                     <span class="n">model_id</span><span class="o">=</span><span class="n">model_id</span><span class="p">,</span> <span class="n">benchmark_config</span><span class="o">=</span><span class="n">benchmark_config</span>
                 <span class="p">)</span>
+                <span class="n">model_configs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">model_config</span><span class="p">)</span>
             <span class="k">except</span> <span class="n">InvalidModel</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
                 <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">message</span><span class="p">)</span>
-                <span class="n">num_finished_benchmarks</span> <span class="o">+=</span> <span class="nb">len</span><span class="p">(</span><span class="n">dataset_configs</span><span class="p">)</span>
+
+        <span class="c1"># Create a dictionary that takes each model config to the dataset configs that</span>
+        <span class="c1"># we need to benchmark the model on. Here we remove the datasets that the model</span>
+        <span class="c1"># has already been benchmarked on, or datasets that the model cannot be</span>
+        <span class="c1"># benchmarked on.</span>
+        <span class="n">model_config_to_dataset_configs</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="n">ModelConfig</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="n">DatasetConfig</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">model_config</span><span class="p">:</span> <span class="p">[</span>
+                <span class="n">dataset_config</span>
+                <span class="k">for</span> <span class="n">dataset_config</span> <span class="ow">in</span> <span class="n">dataset_configs</span>
+                <span class="k">if</span> <span class="p">(</span>
+                    <span class="n">benchmark_config</span><span class="o">.</span><span class="n">force</span>
+                    <span class="ow">or</span> <span class="ow">not</span> <span class="n">model_has_been_benchmarked</span><span class="p">(</span>
+                        <span class="n">model_config</span><span class="o">=</span><span class="n">model_config</span><span class="p">,</span>
+                        <span class="n">dataset_config</span><span class="o">=</span><span class="n">dataset_config</span><span class="p">,</span>
+                        <span class="n">benchmark_config</span><span class="o">=</span><span class="n">benchmark_config</span><span class="p">,</span>
+                        <span class="n">benchmark_results</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">benchmark_results</span><span class="p">,</span>
+                    <span class="p">)</span>
+                <span class="p">)</span>
+                <span class="ow">and</span> <span class="n">model_config</span><span class="o">.</span><span class="n">model_type</span> <span class="ow">in</span> <span class="n">dataset_config</span><span class="o">.</span><span class="n">allowed_model_types</span>
+            <span class="p">]</span>
+            <span class="k">for</span> <span class="n">model_config</span> <span class="ow">in</span> <span class="n">model_configs</span>
+        <span class="p">}</span>
+
+        <span class="n">total_benchmarks</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span>
+            <span class="nb">len</span><span class="p">(</span><span class="n">dataset_configs</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">dataset_configs</span> <span class="ow">in</span> <span class="n">model_config_to_dataset_configs</span><span class="o">.</span><span class="n">values</span><span class="p">()</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="n">total_benchmarks</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+                <span class="s2">&quot;No benchmarks to run, as all the selected models have already been &quot;</span>
+                <span class="s2">&quot;benchmarked on all the selected datasets.&quot;</span>
+            <span class="p">)</span>
+            <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Initiated evaluation of </span><span class="si">{</span><span class="n">total_benchmarks</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2"> benchmarks.&quot;</span><span class="p">)</span>
+
+        <span class="n">num_finished_benchmarks</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">current_benchmark_results</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">BenchmarkResult</span><span class="p">]</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">model_config</span> <span class="ow">in</span> <span class="n">model_configs</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">model_config_to_dataset_configs</span><span class="p">[</span><span class="n">model_config</span><span class="p">]:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;Skipping model </span><span class="si">{</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span><span class="si">!r}</span><span class="s2"> because it has &quot;</span>
+                    <span class="s2">&quot;already been benchmarked on all valid datasets.&quot;</span>
+                <span class="p">)</span>
                 <span class="k">continue</span>
 
             <span class="k">if</span> <span class="n">model_config</span><span class="o">.</span><span class="n">adapter_base_model_id</span><span class="p">:</span>
                 <span class="n">open_issue_msg</span> <span class="o">=</span> <span class="p">(</span>
-                    <span class="s2">&quot;If offline support is important to you, please &quot;</span>
-                    <span class="s2">&quot;consider opening an issue at https://github.com/EuroEval/EuroEval/issues.&quot;</span>
+                    <span class="s2">&quot;If offline support is important to you, please consider opening &quot;</span>
+                    <span class="s2">&quot;an issue at https://github.com/EuroEval/EuroEval/issues.&quot;</span>
                 <span class="p">)</span>
                 <span class="k">if</span> <span class="ow">not</span> <span class="n">internet_connection_available</span><span class="p">():</span>
                     <span class="k">raise</span> <span class="n">InvalidModel</span><span class="p">(</span>
                         <span class="s2">&quot;Offline benchmarking of models with adapters is not currently &quot;</span>
-                        <span class="s2">&quot;supported. &quot;</span>
-                        <span class="sa">f</span><span class="s2">&quot;An active internet connection is required. </span><span class="si">{</span><span class="n">open_issue_msg</span><span class="si">}</span><span class="s2">&quot;</span>
+                        <span class="s2">&quot;supported. An active internet connection is required. &quot;</span>
+                        <span class="s2">&quot;</span><span class="si">{open_issue_msg}</span><span class="s2">&quot;</span>
                     <span class="p">)</span>
                 <span class="k">elif</span> <span class="n">benchmark_config</span><span class="o">.</span><span class="n">download_only</span><span class="p">:</span>
                     <span class="n">log_once</span><span class="p">(</span>
                         <span class="s2">&quot;You are using download only mode with a model that includes &quot;</span>
-                        <span class="s2">&quot;an adapter. &quot;</span>
-                        <span class="s2">&quot;Please note: Offline benchmarking of adapter models is not &quot;</span>
-                        <span class="s2">&quot;currently supported. &quot;</span>
-                        <span class="s2">&quot;An internet connection will be required during evaluation. &quot;</span>
+                        <span class="s2">&quot;an adapter. Please note that offline benchmarking of &quot;</span>
+                        <span class="s2">&quot;adapter models is not currently supported - an internet &quot;</span>
+                        <span class="s2">&quot;connection will be required during evaluation in this case. &quot;</span>
                         <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">open_issue_msg</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
                         <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">,</span>
                     <span class="p">)</span>
 
             <span class="n">loaded_model</span><span class="p">:</span> <span class="n">BenchmarkModule</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
             <span class="n">benchmark_params_to_revert</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">t</span><span class="o">.</span><span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
-            <span class="k">for</span> <span class="n">dataset_config</span> <span class="ow">in</span> <span class="n">dataset_configs</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">dataset_config</span> <span class="ow">in</span> <span class="n">model_config_to_dataset_configs</span><span class="p">[</span><span class="n">model_config</span><span class="p">]:</span>
                 <span class="c1"># Revert any changes to the benchmark configuration made for the</span>
                 <span class="c1"># previous dataset</span>
                 <span class="k">for</span> <span class="n">param</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">benchmark_params_to_revert</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
@@ -2707,34 +2802,6 @@
                     <span class="p">)</span>
                     <span class="n">benchmark_params_to_revert</span><span class="p">[</span><span class="s2">&quot;few_shot&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
                     <span class="n">benchmark_config</span><span class="o">.</span><span class="n">few_shot</span> <span class="o">=</span> <span class="kc">False</span>
-
-                <span class="c1"># Skip if we have already benchmarked this model on this dataset and</span>
-                <span class="c1"># we are not forcing the benchmark</span>
-                <span class="k">if</span> <span class="ow">not</span> <span class="n">benchmark_config</span><span class="o">.</span><span class="n">force</span> <span class="ow">and</span> <span class="n">model_has_been_benchmarked</span><span class="p">(</span>
-                    <span class="n">model_id</span><span class="o">=</span><span class="n">model_id</span><span class="p">,</span>
-                    <span class="n">dataset</span><span class="o">=</span><span class="n">dataset_config</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
-                    <span class="n">few_shot</span><span class="o">=</span><span class="n">benchmark_config</span><span class="o">.</span><span class="n">few_shot</span><span class="p">,</span>
-                    <span class="n">validation_split</span><span class="o">=</span><span class="ow">not</span> <span class="n">benchmark_config</span><span class="o">.</span><span class="n">evaluate_test_split</span><span class="p">,</span>
-                    <span class="n">benchmark_results</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">benchmark_results</span><span class="p">,</span>
-                <span class="p">):</span>
-                    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
-                        <span class="sa">f</span><span class="s2">&quot;Skipping benchmarking </span><span class="si">{</span><span class="n">model_id</span><span class="si">}</span><span class="s2"> on &quot;</span>
-                        <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">dataset_config</span><span class="o">.</span><span class="n">pretty_name</span><span class="si">}</span><span class="s2">, as it has already been &quot;</span>
-                        <span class="s2">&quot;benchmarked.&quot;</span>
-                    <span class="p">)</span>
-                    <span class="n">num_finished_benchmarks</span> <span class="o">+=</span> <span class="mi">1</span>
-                    <span class="k">continue</span>
-
-                <span class="c1"># Skip if the model type should not be benchmarked on this dataset</span>
-                <span class="n">model_type</span> <span class="o">=</span> <span class="n">model_config</span><span class="o">.</span><span class="n">model_type</span>
-                <span class="n">allowed_model_types</span> <span class="o">=</span> <span class="n">dataset_config</span><span class="o">.</span><span class="n">allowed_model_types</span>
-                <span class="k">if</span> <span class="n">model_type</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">allowed_model_types</span><span class="p">:</span>
-                    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
-                        <span class="sa">f</span><span class="s2">&quot;Skipping benchmarking </span><span class="si">{</span><span class="n">model_id</span><span class="si">}</span><span class="s2"> on &quot;</span>
-                        <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">dataset_config</span><span class="o">.</span><span class="n">pretty_name</span><span class="si">}</span><span class="s2">, as it is of type </span><span class="si">{</span><span class="n">model_type</span><span class="si">}</span><span class="s2">, &quot;</span>
-                        <span class="sa">f</span><span class="s2">&quot;and the only allowed model types are </span><span class="si">{</span><span class="n">allowed_model_types</span><span class="si">}</span><span class="s2">.&quot;</span>
-                    <span class="p">)</span>
-                    <span class="k">continue</span>
 
                 <span class="c1"># We do not re-initialise generative models as their architecture is not</span>
                 <span class="c1"># customised to specific datasets</span>
@@ -2768,6 +2835,22 @@
                             <span class="k">break</span>
                     <span class="k">else</span><span class="p">:</span>
                         <span class="n">loaded_model</span><span class="o">.</span><span class="n">dataset_config</span> <span class="o">=</span> <span class="n">dataset_config</span>
+
+                    <span class="c1"># Skip the benchmark if the model is not of the correct</span>
+                    <span class="c1"># generative type</span>
+                    <span class="k">if</span> <span class="p">(</span>
+                        <span class="n">loaded_model</span><span class="o">.</span><span class="n">generative_type</span>
+                        <span class="ow">not</span> <span class="ow">in</span> <span class="n">dataset_config</span><span class="o">.</span><span class="n">allowed_generative_types</span>
+                    <span class="p">):</span>
+                        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+                            <span class="sa">f</span><span class="s2">&quot;Skipping the benchmark of model &quot;</span>
+                            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span><span class="si">!r}</span><span class="s2">on dataset &quot;</span>
+                            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">dataset_config</span><span class="o">.</span><span class="n">name</span><span class="si">!r}</span><span class="s2"> because the model has generative &quot;</span>
+                            <span class="sa">f</span><span class="s2">&quot;type </span><span class="si">{</span><span class="n">loaded_model</span><span class="o">.</span><span class="n">generative_type</span><span class="si">}</span><span class="s2"> and the dataset &quot;</span>
+                            <span class="sa">f</span><span class="s2">&quot;only allows </span><span class="si">{</span><span class="n">dataset_config</span><span class="o">.</span><span class="n">allowed_generative_types</span><span class="si">}</span><span class="s2">.&quot;</span>
+                        <span class="p">)</span>
+                        <span class="n">num_finished_benchmarks</span> <span class="o">+=</span> <span class="mi">1</span>
+                        <span class="k">continue</span>
 
                 <span class="c1"># Benchmark a single model on a single dataset</span>
                 <span class="n">benchmark_output_or_err</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_benchmark_single</span><span class="p">(</span>
@@ -3003,23 +3086,20 @@
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">model_has_been_benchmarked</span><span class="p">(</span><div class="mkapi-source-link" id="euroeval.benchmarker.model_has_been_benchmarked"><a href="../../../api/euroeval/benchmarker/#euroeval.benchmarker.model_has_been_benchmarked" title="Go to docs">[docs]</a></div>
-    <span class="n">model_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-    <span class="n">dataset</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-    <span class="n">few_shot</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
-    <span class="n">validation_split</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+    <span class="n">model_config</span><span class="p">:</span> <span class="s2">&quot;ModelConfig&quot;</span><span class="p">,</span>
+    <span class="n">dataset_config</span><span class="p">:</span> <span class="s2">&quot;DatasetConfig&quot;</span><span class="p">,</span>
+    <span class="n">benchmark_config</span><span class="p">:</span> <span class="s2">&quot;BenchmarkConfig&quot;</span><span class="p">,</span>
     <span class="n">benchmark_results</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">BenchmarkResult</span><span class="p">],</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Checks whether a model has already been benchmarked on a dataset.</span>
 
 <span class="sd">    Args:</span>
-<span class="sd">        model_id:</span>
-<span class="sd">            The model ID.</span>
-<span class="sd">        dataset:</span>
-<span class="sd">            The dataset.</span>
-<span class="sd">        few_shot:</span>
-<span class="sd">            Whether the model was evaluated using few-shot evaluation.</span>
-<span class="sd">        validation_split:</span>
-<span class="sd">            Whether the model was evaluated on the validation split.</span>
+<span class="sd">        model_config:</span>
+<span class="sd">            The configuration of the model we are evaluating.</span>
+<span class="sd">        dataset_config:</span>
+<span class="sd">            The configuration of the dataset we are evaluating on.</span>
+<span class="sd">        benchmark_config:</span>
+<span class="sd">            The general benchmark configuration.</span>
 <span class="sd">        benchmark_results:</span>
 <span class="sd">            The benchmark results.</span>
 
@@ -3027,10 +3107,28 @@
 <span class="sd">        Whether the model has already been evaluated on the dataset.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">for</span> <span class="n">record</span> <span class="ow">in</span> <span class="n">benchmark_results</span><span class="p">:</span>
-        <span class="n">same_evaluation</span> <span class="o">=</span> <span class="n">record</span><span class="o">.</span><span class="n">model</span> <span class="o">==</span> <span class="n">model_id</span> <span class="ow">and</span> <span class="n">record</span><span class="o">.</span><span class="n">dataset</span> <span class="o">==</span> <span class="n">dataset</span>
-        <span class="n">same_validation_split_setting</span> <span class="o">=</span> <span class="n">record</span><span class="o">.</span><span class="n">validation_split</span> <span class="o">==</span> <span class="n">validation_split</span>
-        <span class="n">same_few_shot_setting</span> <span class="o">=</span> <span class="n">record</span><span class="o">.</span><span class="n">few_shot</span> <span class="o">==</span> <span class="n">few_shot</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">record</span><span class="o">.</span><span class="n">generative</span>
-        <span class="k">if</span> <span class="n">same_evaluation</span> <span class="ow">and</span> <span class="n">same_validation_split_setting</span> <span class="ow">and</span> <span class="n">same_few_shot_setting</span><span class="p">:</span>
+        <span class="n">model_id_components</span> <span class="o">=</span> <span class="n">split_model_id</span><span class="p">(</span><span class="n">model_id</span><span class="o">=</span><span class="n">record</span><span class="o">.</span><span class="n">model</span><span class="p">)</span>
+        <span class="n">same_model_id</span> <span class="o">=</span> <span class="n">model_id_components</span><span class="o">.</span><span class="n">model_id</span> <span class="o">==</span> <span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span>
+        <span class="n">same_revision</span> <span class="o">=</span> <span class="n">model_id_components</span><span class="o">.</span><span class="n">revision</span> <span class="o">==</span> <span class="n">model_config</span><span class="o">.</span><span class="n">revision</span>
+        <span class="n">same_param</span> <span class="o">=</span> <span class="n">model_id_components</span><span class="o">.</span><span class="n">param</span> <span class="o">==</span> <span class="n">model_config</span><span class="o">.</span><span class="n">param</span>
+        <span class="n">same_dataset</span> <span class="o">=</span> <span class="n">record</span><span class="o">.</span><span class="n">dataset</span> <span class="o">==</span> <span class="n">dataset_config</span><span class="o">.</span><span class="n">name</span>
+        <span class="n">same_split</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">record</span><span class="o">.</span><span class="n">validation_split</span> <span class="o">!=</span> <span class="n">benchmark_config</span><span class="o">.</span><span class="n">evaluate_test_split</span>
+            <span class="ow">or</span> <span class="s2">&quot;val&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">dataset_config</span><span class="o">.</span><span class="n">splits</span>
+        <span class="p">)</span>
+        <span class="n">same_num_shots</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">record</span><span class="o">.</span><span class="n">few_shot</span> <span class="o">==</span> <span class="n">benchmark_config</span><span class="o">.</span><span class="n">few_shot</span>
+            <span class="ow">or</span> <span class="ow">not</span> <span class="n">record</span><span class="o">.</span><span class="n">generative</span>
+            <span class="ow">or</span> <span class="n">dataset_config</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">requires_zero_shot</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="p">(</span>
+            <span class="n">same_model_id</span>
+            <span class="ow">and</span> <span class="n">same_revision</span>
+            <span class="ow">and</span> <span class="n">same_param</span>
+            <span class="ow">and</span> <span class="n">same_dataset</span>
+            <span class="ow">and</span> <span class="n">same_split</span>
+            <span class="ow">and</span> <span class="n">same_num_shots</span>
+        <span class="p">):</span>
             <span class="k">return</span> <span class="kc">True</span>
     <span class="k">return</span> <span class="kc">False</span>
 

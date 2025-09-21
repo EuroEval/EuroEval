@@ -3183,7 +3183,7 @@ The information about the model, or None if the model could not be found.</p>
 <i class="fa-regular fa-square-minus"></i>
 </span>
 </span>
-<span class="mkapi-object-name"><a href="./#euroeval.benchmark_modules.hf.load_tokeniser" title="euroeval.benchmark_modules.hf.load_tokeniser">load_tokeniser</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">model</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="transformers.modeling_utils.PreTrainedModel">PreTrainedModel</span> | None</span><span class="mkapi-comma">, </span><span class="mkapi-arg">model_id</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str</span><span class="mkapi-comma">, </span><span class="mkapi-arg">trust_remote_code</span><span class="mkapi-colon">: </span><span class="mkapi-ann">bool</span><span class="mkapi-comma">, </span><span class="mkapi-arg">model_cache_dir</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str</span><span class="mkapi-paren">)</span><span class="mkapi-arrow"> → </span><span class="mkapi-return"><span class="mkapi-tooltip" title="transformers.tokenization_utils.PreTrainedTokenizer">PreTrainedTokenizer</span></span></span>
+<span class="mkapi-object-name"><a href="./#euroeval.benchmark_modules.hf.load_tokeniser" title="euroeval.benchmark_modules.hf.load_tokeniser">load_tokeniser</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">model</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="transformers.modeling_utils.PreTrainedModel">PreTrainedModel</span> | None</span><span class="mkapi-comma">, </span><span class="mkapi-arg">model_id</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str</span><span class="mkapi-comma">, </span><span class="mkapi-arg">trust_remote_code</span><span class="mkapi-colon">: </span><span class="mkapi-ann">bool</span><span class="mkapi-comma">, </span><span class="mkapi-arg">model_config</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><a href="../../data_models/#euroeval.data_models.ModelConfig" title="euroeval.data_models.ModelConfig">ModelConfig</a></span><span class="mkapi-paren">)</span><span class="mkapi-arrow"> → </span><span class="mkapi-return"><span class="mkapi-tooltip" title="transformers.tokenization_utils.PreTrainedTokenizer">PreTrainedTokenizer</span></span></span>
 </p>
 <div class="mkapi-document">
 <p>Load the tokeniser.</p>
@@ -3212,6 +3212,11 @@ The model identifier. Used for logging.</p>
 <p><span class="mkapi-item-name">trust_remote_code</span> : 
 <span class="mkapi-item-type">bool</span> <span class="mkapi-dash">&mdash;</span>
 Whether to trust remote code.</p>
+</li>
+<li>
+<p><span class="mkapi-item-name">model_config</span> : 
+<span class="mkapi-item-type"><a href="../../data_models/#euroeval.data_models.ModelConfig" title="euroeval.data_models.ModelConfig">ModelConfig</a></span> <span class="mkapi-dash">&mdash;</span>
+The model configuration.</p>
 </li>
 </ul>
 </div>

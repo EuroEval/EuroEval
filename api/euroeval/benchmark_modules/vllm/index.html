@@ -1280,6 +1280,15 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#euroeval.benchmark_modules.vllm.get_vllm_tokenisation_params" class="md-nav__link">
+    <span class="md-ellipsis">
+      get_vllm_tokenisation_params
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -2269,6 +2278,15 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#euroeval.benchmark_modules.vllm.get_vllm_tokenisation_params" class="md-nav__link">
+    <span class="md-ellipsis">
+      get_vllm_tokenisation_params
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -2354,6 +2372,11 @@ Get the stop tokens for a generative model.</p>
 <p><span class="mkapi-item-name"><a href="./#euroeval.benchmark_modules.vllm.get_pbar_without_leave" title="euroeval.benchmark_modules.vllm.get_pbar_without_leave">get_pbar_without_leave</a></span>
  <span class="mkapi-dash">&mdash;</span>
 Get a progress bar for vLLM which disappears after completion.</p>
+</li>
+<li>
+<p><span class="mkapi-item-name"><a href="./#euroeval.benchmark_modules.vllm.get_vllm_tokenisation_params" title="euroeval.benchmark_modules.vllm.get_vllm_tokenisation_params">get_vllm_tokenisation_params</a></span>
+ <span class="mkapi-dash">&mdash;</span>
+Get the tokenisation parameters for vLLM.</p>
 </li>
 </ul>
 </div>
@@ -2957,7 +2980,7 @@ A pair (model, tokeniser), with the loaded model and tokeniser</p>
 <i class="fa-regular fa-square-minus"></i>
 </span>
 </span>
-<span class="mkapi-object-name"><a href="./#euroeval.benchmark_modules.vllm.load_tokeniser" title="euroeval.benchmark_modules.vllm.load_tokeniser">load_tokeniser</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">model_id</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str</span><span class="mkapi-comma">, </span><span class="mkapi-arg">revision</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str</span><span class="mkapi-comma">, </span><span class="mkapi-arg">adapter_base_model_id</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str | None</span><span class="mkapi-comma">, </span><span class="mkapi-arg">trust_remote_code</span><span class="mkapi-colon">: </span><span class="mkapi-ann">bool</span><span class="mkapi-comma">, </span><span class="mkapi-arg">model_max_length</span><span class="mkapi-colon">: </span><span class="mkapi-ann">int</span><span class="mkapi-comma">, </span><span class="mkapi-arg">model_cache_dir</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str</span><span class="mkapi-comma">, </span><span class="mkapi-arg">token</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str | bool</span><span class="mkapi-paren">)</span><span class="mkapi-arrow"> → </span><span class="mkapi-return"><span class="mkapi-tooltip" title="transformers.tokenization_utils.PreTrainedTokenizer">PreTrainedTokenizer</span></span></span>
+<span class="mkapi-object-name"><a href="./#euroeval.benchmark_modules.vllm.load_tokeniser" title="euroeval.benchmark_modules.vllm.load_tokeniser">load_tokeniser</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">model_id</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str</span><span class="mkapi-comma">, </span><span class="mkapi-arg">revision</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str</span><span class="mkapi-comma">, </span><span class="mkapi-arg">adapter_base_model_id</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str | None</span><span class="mkapi-comma">, </span><span class="mkapi-arg">trust_remote_code</span><span class="mkapi-colon">: </span><span class="mkapi-ann">bool</span><span class="mkapi-comma">, </span><span class="mkapi-arg">model_max_length</span><span class="mkapi-colon">: </span><span class="mkapi-ann">int</span><span class="mkapi-comma">, </span><span class="mkapi-arg">model_config</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><a href="../../data_models/#euroeval.data_models.ModelConfig" title="euroeval.data_models.ModelConfig">ModelConfig</a></span><span class="mkapi-comma">, </span><span class="mkapi-arg">token</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str | bool</span><span class="mkapi-paren">)</span><span class="mkapi-arrow"> → </span><span class="mkapi-return"><span class="mkapi-tooltip" title="transformers.tokenization_utils.PreTrainedTokenizer">PreTrainedTokenizer</span></span></span>
 </p>
 <div class="mkapi-document">
 <p>Load the tokeniser.</p>
@@ -2998,9 +3021,9 @@ Whether to trust remote code.</p>
 The maximum length of the model.</p>
 </li>
 <li>
-<p><span class="mkapi-item-name">model_cache_dir</span> : 
-<span class="mkapi-item-type">str</span> <span class="mkapi-dash">&mdash;</span>
-The cache directory for the model.</p>
+<p><span class="mkapi-item-name">model_config</span> : 
+<span class="mkapi-item-type"><a href="../../data_models/#euroeval.data_models.ModelConfig" title="euroeval.data_models.ModelConfig">ModelConfig</a></span> <span class="mkapi-dash">&mdash;</span>
+The model configuration.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">token</span> : 
@@ -3222,6 +3245,58 @@ Additional keyword arguments to pass to tqdm.</p>
 <li>
 <p><span class="mkapi-item-type"><span class="mkapi-tooltip" title="tqdm.auto.tqdm">tqdm</span></span> <span class="mkapi-dash">&mdash;</span>
 A tqdm progress bar.</p>
+</li>
+</ul>
+</div>
+</div>
+<p class="mkapi-object mkapi-page-source" id="euroeval.benchmark_modules.vllm.get_vllm_tokenisation_params">
+<span class="mkapi-object-link">
+
+
+<a href="../../../../src/euroeval/benchmark_modules/vllm/#euroeval.benchmark_modules.vllm.get_vllm_tokenisation_params" title="Go to source">source</a>
+<span class="mkapi-document-toggle" title="Toggle all docs">
+<i class="fa-regular fa-square-minus"></i>
+</span>
+</span>
+<span class="mkapi-object-name"><a href="./#euroeval.benchmark_modules.vllm.get_vllm_tokenisation_params" title="euroeval.benchmark_modules.vllm.get_vllm_tokenisation_params">get_vllm_tokenisation_params</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">tokeniser</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="transformers.tokenization_utils.PreTrainedTokenizer">PreTrainedTokenizer</span></span><span class="mkapi-comma">, </span><span class="mkapi-arg">model_config</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><a href="../../data_models/#euroeval.data_models.ModelConfig" title="euroeval.data_models.ModelConfig">ModelConfig</a></span><span class="mkapi-paren">)</span><span class="mkapi-arrow"> → </span><span class="mkapi-return">dict[str, <span class="mkapi-tooltip" title="typing">t</span>.<span class="mkapi-tooltip" title="typing.Any">Any</span>]</span></span>
+</p>
+<div class="mkapi-document">
+<p>Get the tokenisation parameters for vLLM.</p>
+<p class="mkapi-section">
+<span class="mkapi-object-link">
+<span class="mkapi-section-toggle" title="Toggle parameters">
+<i class="fa-regular fa-square-minus"></i>
+</span>
+</span>
+<span class="mkapi-section-name">Parameters</span>
+</p>
+<div class="mkapi-section-content">
+<ul class="mkapi-item-list">
+<li>
+<p><span class="mkapi-item-name">tokeniser</span> : 
+<span class="mkapi-item-type"><span class="mkapi-tooltip" title="transformers.tokenization_utils.PreTrainedTokenizer">PreTrainedTokenizer</span></span> <span class="mkapi-dash">&mdash;</span>
+The tokeniser.</p>
+</li>
+<li>
+<p><span class="mkapi-item-name">model_config</span> : 
+<span class="mkapi-item-type"><a href="../../data_models/#euroeval.data_models.ModelConfig" title="euroeval.data_models.ModelConfig">ModelConfig</a></span> <span class="mkapi-dash">&mdash;</span>
+The model configuration.</p>
+</li>
+</ul>
+</div>
+<p class="mkapi-section">
+<span class="mkapi-object-link">
+<span class="mkapi-section-toggle" title="Toggle returns">
+<i class="fa-regular fa-square-minus"></i>
+</span>
+</span>
+<span class="mkapi-section-name">Returns</span>
+</p>
+<div class="mkapi-section-content">
+<ul class="mkapi-item-list">
+<li>
+<p><span class="mkapi-item-type">dict[str, <span class="mkapi-tooltip" title="typing">t</span>.<span class="mkapi-tooltip" title="typing.Any">Any</span>]</span> <span class="mkapi-dash">&mdash;</span>
+A dictionary of tokenisation parameters to pass to vLLM.</p>
 </li>
 </ul>
 </div>

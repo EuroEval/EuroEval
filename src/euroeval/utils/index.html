@@ -2092,7 +2092,7 @@
 <span class="sd">    Returns:</span>
 <span class="sd">        The extracted JSON dictionary, or None if no JSON dictionary could be found.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">json_regex</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">&quot;\{[^</span><span class="si">{}</span><span class="s2">]+?\}&quot;</span>
+    <span class="n">json_regex</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">&quot;\{[^</span><span class="si">{}</span><span class="s2">]*?\}&quot;</span>
     <span class="k">if</span> <span class="p">(</span><span class="n">json_match</span> <span class="o">:=</span> <span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">pattern</span><span class="o">=</span><span class="n">json_regex</span><span class="p">,</span> <span class="n">string</span><span class="o">=</span><span class="n">s</span><span class="p">,</span> <span class="n">flags</span><span class="o">=</span><span class="n">re</span><span class="o">.</span><span class="n">DOTALL</span><span class="p">))</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
             <span class="s2">&quot;The model output does not contain any JSON dictionary, so cannot parse &quot;</span>

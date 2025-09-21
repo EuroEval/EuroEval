@@ -1003,7 +1003,9 @@
 <span class="normal">110</span>
 <span class="normal">111</span>
 <span class="normal">112</span>
-<span class="normal">113</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;EuroEval - A benchmarking framework for language models.&quot;&quot;&quot;</span>
+<span class="normal">113</span>
+<span class="normal">114</span>
+<span class="normal">115</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;EuroEval - A benchmarking framework for language models.&quot;&quot;&quot;</span>
 
 <span class="c1">### STAGE 1 ###</span>
 <span class="c1">### Block unwanted terminal output that happens on importing external modules ###</span>
@@ -1108,8 +1110,10 @@
 <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">&quot;VLLM_USE_V1&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;1&quot;</span>
 
 
-<span class="c1"># Use the FlashInfer flash-attention backend for vLLM</span>
-<span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">&quot;VLLM_ATTENTION_BACKEND&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;FLASHINFER&quot;</span>
+<span class="c1"># Use the FlashInfer flash-attention backend for vLLM, unless the user has already</span>
+<span class="c1"># specified a different backend.</span>
+<span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;VLLM_ATTENTION_BACKEND&quot;</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">&quot;VLLM_ATTENTION_BACKEND&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;FLASHINFER&quot;</span>
 
 
 <span class="c1"># Set the HF_TOKEN env var to copy the HUGGINGFACE_API_KEY env var, as vLLM uses the</span>

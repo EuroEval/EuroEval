@@ -1160,7 +1160,12 @@
 <span class="normal">273</span>
 <span class="normal">274</span>
 <span class="normal">275</span>
-<span class="normal">276</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Metrics based on a scikit-learn Pipeline.&quot;&quot;&quot;</span>
+<span class="normal">276</span>
+<span class="normal">277</span>
+<span class="normal">278</span>
+<span class="normal">279</span>
+<span class="normal">280</span>
+<span class="normal">281</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Metrics based on a scikit-learn Pipeline.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">c</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
@@ -1353,6 +1358,11 @@
             <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">choice</span> <span class="ow">in</span> <span class="n">idx_to_choice</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
             <span class="k">if</span> <span class="n">choice</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
         <span class="p">}</span>
+        <span class="k">if</span> <span class="n">prediction</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">idx_to_choice</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">InvalidBenchmark</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;The prediction </span><span class="si">{</span><span class="n">prediction</span><span class="si">}</span><span class="s2"> is not a valid index for the &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;question with choices </span><span class="si">{</span><span class="n">idx_to_choice</span><span class="si">}</span><span class="s2">.&quot;</span>
+            <span class="p">)</span>
         <span class="n">integer_prediction</span> <span class="o">=</span> <span class="n">idx_to_choice</span><span class="p">[</span><span class="n">prediction</span><span class="p">]</span>
         <span class="n">integer_predictions</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">integer_prediction</span><span class="p">)</span>
 
