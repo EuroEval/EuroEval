@@ -14,7 +14,7 @@ import pandas as pd
 from datasets import Dataset, DatasetDict, Split, load_dataset
 from huggingface_hub import HfApi
 
-LANUGAGE_CODES = ["lt", "lv"]
+LANGUAGE_CODES = ["lt", "lv"]
 
 
 def main() -> None:
@@ -22,7 +22,7 @@ def main() -> None:
     # Load the WikiANN dataset for Latvian
     dataset_id = "unimelb-nlp/wikiann"
 
-    for language_code in LANUGAGE_CODES:
+    for language_code in LANGUAGE_CODES:
         # Load only the Latvian subset
         dataset = load_dataset(dataset_id, language_code, token=True)
         assert isinstance(dataset, DatasetDict)
