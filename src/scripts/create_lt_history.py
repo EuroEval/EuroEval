@@ -16,6 +16,7 @@ from collections import Counter
 import pandas as pd
 import requests
 from constants import (
+    CHOICES_MAPPING,
     MAX_NUM_CHARS_IN_INSTRUCTION,
     MAX_NUM_CHARS_IN_OPTION,
     MAX_REPETITIONS,
@@ -25,9 +26,6 @@ from constants import (
 from datasets import Dataset, DatasetDict, Split
 from huggingface_hub import HfApi
 from sklearn.model_selection import train_test_split
-
-# Lithuanian choices mapping
-CHOICES_MAPPING_LT = "Pasirinkimai"
 
 
 def main() -> None:
@@ -104,7 +102,7 @@ def main() -> None:
     # Create the `text` column with all options formatted
     df["text"] = [
         row.instruction.replace("\n", " ").strip() + "\n"
-        f"{CHOICES_MAPPING_LT}:\n"
+        f"{CHOICES_MAPPING['lt']}:\n"
         "a. " + row.option_a.replace("\n", " ").strip() + "\n"
         "b. " + row.option_b.replace("\n", " ").strip() + "\n"
         "c. " + row.option_c.replace("\n", " ").strip() + "\n"
