@@ -655,7 +655,7 @@ class Benchmarker:
                 "No benchmarks to run, as all the selected models have already been "
                 "benchmarked on all the selected datasets."
             )
-            sys.exit(0)
+            return list()
 
         logger.info(f"Initiated evaluation of {total_benchmarks:,} benchmarks.")
 
