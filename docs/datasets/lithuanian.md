@@ -16,8 +16,6 @@ The original dataset contains 377k / 47.1k / 5.43k / 41.7k samples for the combi
 Here are a few examples from the training split:
 
 ```json
-Dataset uploaded to EuroEval/lithuanian-emotions-mini
-```json
 {
   "text": "Aš jaučiuosi taip nekantrus, kad turiu laukti daugiau nei mėnesį ir tuo pačiu labai stengiuosi nelinkėti to laiko",
   "label": "positive"
