@@ -14,6 +14,7 @@ from ..languages import (
     FR,
     IS,
     IT,
+    LT,
     LV,
     NB,
     NL,
@@ -240,6 +241,25 @@ NER_TEMPLATES: dict["Language", PromptConfig] = {
         "nella frase. Il risultato dovrebbe essere un dizionario JSON con le chiavi "
         "{labels_str}. I valori devono essere elenchi di entità "
         "nominate di quel tipo, esattamente come appaiono nella frase.",
+    ),
+    LT: PromptConfig(
+        default_prompt_label_mapping={
+            "b-per": "asmuo",
+            "i-per": "asmuo",
+            "b-loc": "vieta",
+            "i-loc": "vieta",
+            "b-org": "organizacija",
+            "i-org": "organizacija",
+            "b-misc": "kita",
+            "i-misc": "kita",
+        },
+        default_prompt_prefix="Toliau pateikti sakiniai ir JSON žodynai su vardiniais "
+        "vienetais, kurie pateikiame sakinyje.",
+        default_prompt_template="Sakinys: {text}\nVardiniai vienetai: {label}",
+        default_instruction_prompt="Sakinys: {text}\n\nIdentifikuokite vardinius "
+        "vienetus sakinyje. Turėtumėte pateikti tai kaip JSON žodyną su raktais "
+        "{labels_str}. Reikšmės turi būti to tipo vardinių vienetų sąrašai, "
+        "tiksliai taip, kaip jie rodomi sakinyje.",
     ),
     LV: PromptConfig(
         default_prompt_label_mapping={

@@ -70,76 +70,7 @@ $ euroeval --model <model-id> --dataset lithuanian-emotions
 
 ## Named Entity Recognition
 
-### FullStack-NER-lv
-
-This dataset was published in [this paper](https://aclanthology.org/L18-1714/) and is
-part of a multilayered syntactically and semantically annotated text corpus for Latvian.
-The corpus text sources include approximately 60% news, 20% fiction, 10% legal texts, 5%
-spoken language transcripts, and 5% miscellaneous content from a balanced
-10-million-word corpus.
-
-The original full dataset consists of 11,425 samples. We use 1,024 / 256 / 2,048 samples
-for our
-training, validation and test splits, respectively.
-
-Here are a few examples from the training split:
-
-```json
-{
-    "tokens": array(["'", "Tērvetes", "AL", "'", "reģistrēts", "2012.", "gadā", "Kroņaucē", ",", "pārņemot", "šo", "biznesu", "no", "AS", "'", "Agrofirma", "Tērvete", "'", "ar", "mērķi", "modernizēt", "ražošanu", ",", "ieguldot", "attīstībā", "vairāk", "nekā", "piecus", "miljonus", "eiro", "."], dtype=object),
-    "labels": ["B-ORG", "I-ORG", "I-ORG", "I-ORG", "O", "B-MISC", "I-MISC", "B-LOC", "O", "O", "O", "O", "O", "B-ORG", "I-ORG", "I-ORG", "I-ORG", "I-ORG", "O", "O", "O", "O", "O", "O", "O", "O", "O", "B-MISC", "I-MISC", "I-MISC", "O"],
-}
-```
-```json
-{
-    "tokens": array(["Lieldienas", "aktrise", "Torija", "Spelinga", "pavadīja", "kopā", "ar", "ģimeni", "Ķīniešu", "restorānā", ",", "svētki", "tika", "izbojāti", "mirklī", ",", "kad", "viņa", "darbinieku", "nevīžības", "dēļ", "paslīdēja", "un", "iekrita", "grilā", "."], dtype=object),
-    "labels": ["B-MISC", "O", "B-PER", "I-PER", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O"],
-}
-```
-```json
-{
-    "tokens": array(["Mani", "pamodinājis", "Patrīcijas", "zvans", "."], dtype=object),
-    "labels": ["O", "O", "B-PER", "O", "O"],
-}
-```
-
-When evaluating generative models, we use the following setup (see the
-[methodology](/methodology) for more information on how these are used):
-
-- Number of few-shot examples: 8
-- Prefix prompt:
-  ```
-  Tālāk ir teikumi un JSON vārdnīcas ar nosauktajiem objektiem, kas parādās dotajā teikumā.
-  ```
-- Base prompt template:
-  ```
-  Teikums: {text}
-  Nosauktie objekti: {label}
-  ```
-- Instruction-tuned prompt template:
-  ```
-  Teikums: {text}
-
-  Identificējiet nosauktos objektus teikumā. Jums jāizvada šī informācija kā JSON vārdnīcu ar atslēgām 'persona', 'vieta', 'organizācija' un 'dažādi'. Vērtībām jābūt šī tipa nosaukto objektu sarakstiem, tieši tā, kā tie parādās teikumā.
-  ```
-- Label mapping:
-    - `B-PER` ➡️ `persona`
-    - `I-PER` ➡️ `persona`
-    - `B-LOC` ➡️ `vieta`
-    - `I-LOC` ➡️ `vieta`
-    - `B-ORG` ➡️ `organizācija`
-    - `I-ORG` ➡️ `organizācija`
-    - `B-MISC` ➡️ `dažādi`
-    - `I-MISC` ➡️ `dažādi`
-
-You can evaluate this dataset directly as follows:
-
-```bash
-$ euroeval --model <model-id> --dataset fullstack-ner-lv
-```
-
-
-### Unofficial: WikiANN-lv
+### WikiANN-lt
 
 This dataset was published in [this paper](https://aclanthology.org/P17-1178/) and is
 part of a cross-lingual named entity recognition framework for 282 languages from
@@ -156,24 +87,21 @@ Here are a few examples from the training split:
 
 ```json
 {
-    "tokens": array(["Iezīmē", "robežu", "starp", "Greiema", "Zemi", "ziemeļos", "un",
-       "Pālmera", "Zemi", "Antarktīdas", "pussalas", "dienvidos", ",",
-       "kā", "arī", "starp", "Faljēra", "krastu", "ziemeļos", "un",
-       "Raimila", "krastu", "dienvidos", "."], dtype=object),
-       "labels": ["O", "O", "O", "B-LOC", "I-LOC", "O", "O", "B-LOC", "I-LOC", "B-LOC", "I-LOC", "O", "O", "O", "O", "O", "B-LOC", "I-LOC", "O", "O", "B-LOC", "I-LOC", "O", "O"]
+  "tokens": array(["'", "''", 'Michael', 'Schumacher', "''", "'"], dtype=object),
+  "labels": ["O", "O", "B-PER", "I-PER", "O", "O"]
 }
 ```
 ```json
 {
-    "tokens": array(["'", "''", "x-", "''", "Detroitas", "``", "Pistons", "''"],
-      dtype=object),
-      "labels": ["O", "O", "O", "O", "B-ORG", "I-ORG", "I-ORG", "I-ORG"]
+  "tokens": array(['Keliu', 'sujungtas', 'su', 'Alta', '.'], dtype=object),
+  "labels": ["O", "O", "O", "B-LOC", "O"]
 }
 ```
 ```json
 {
-    "tokens": array(["Kārlis", "Gustavs", "Jēkabs", "Jakobi"], dtype=object),
-    "labels": ["B-PER", "I-PER", "I-PER", "I-PER"]
+  "tokens": array(['Amazonės', 'lamantinas', '(', "''Trichechus", 'inunguis', "''",
+       ')'], dtype=object),
+  "labels": ["B-LOC", "I-LOC", "O", "O", "O", "O", "O"]
 }
 ```
 
@@ -183,33 +111,33 @@ When evaluating generative models, we use the following setup (see the
 - Number of few-shot examples: 8
 - Prefix prompt:
   ```
-  Tālāk ir teikumi un JSON vārdnīcas ar nosauktajiem objektiem, kas parādās dotajā teikumā.
+  Toliau pateikti sakiniai ir JSON žodynai su vardiniais vienetais, kurie pateikiame sakinyje.
   ```
 - Base prompt template:
   ```
-  Teikums: {text}
-  Nosauktie objekti: {label}
+  Sakinys: {text}
+  Vardiniai vienetai: {label}
   ```
 - Instruction-tuned prompt template:
   ```
-  Teikums: {text}
+  Sakinys: {text}
 
-  Identificējiet nosauktos objektus teikumā. Jums jāizvada šī informācija kā JSON vārdnīcu ar atslēgām 'persona', 'vieta', 'organizācija' un 'dažādi'. Vērtībām jābūt šī tipa nosaukto objektu sarakstiem, tieši tā, kā tie parādās teikumā.
+  Identifikuokite vardinius vienetus sakinyje. Turėtumėte pateikti tai kaip JSON žodyną su raktais 'asmuo', 'vieta', 'organizacija' ir 'kita'. Reikšmės turi būti to tipo vardinių vienetų sąrašai, tiksliai taip, kaip jie rodomi sakinyje.
   ```
 - Label mapping:
-    - `B-PER` ➡️ `persona`
-    - `I-PER` ➡️ `persona`
+    - `B-PER` ➡️ `asmuo`
+    - `I-PER` ➡️ `asmuo`
     - `B-LOC` ➡️ `vieta`
     - `I-LOC` ➡️ `vieta`
-    - `B-ORG` ➡️ `organizācija`
-    - `I-ORG` ➡️ `organizācija`
-    - `B-MISC` ➡️ `dažādi`
-    - `I-MISC` ➡️ `dažādi`
+    - `B-ORG` ➡️ `organizacija`
+    - `I-ORG` ➡️ `organizacija`
+    - `B-MISC` ➡️ `kita`
+    - `I-MISC` ➡️ `kita`
 
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ euroeval --model <model-id> --dataset wikiann-lv
+$ euroeval --model <model-id> --dataset wikiann-lt
 ```
 
 
