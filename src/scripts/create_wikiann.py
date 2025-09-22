@@ -8,7 +8,7 @@
 # ]
 # ///
 
-"""Create the WikiANN-LV-mini NER dataset and upload it to the HF Hub."""
+"""Create the WikiANN NER datasets and upload them to the HF Hub."""
 
 import pandas as pd
 from datasets import Dataset, DatasetDict, Split, load_dataset
@@ -18,7 +18,7 @@ LANGUAGE_CODES = ["lt", "lv"]
 
 
 def main() -> None:
-    """Create the WikiANN-LV-mini NER dataset and uploads it to the HF Hub."""
+    """Create the WikiANN NER datasets and uploads them to the HF Hub."""
     # Load the WikiANN dataset for Latvian
     dataset_id = "unimelb-nlp/wikiann"
 
