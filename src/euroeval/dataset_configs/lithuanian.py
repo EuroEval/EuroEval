@@ -2,7 +2,7 @@
 
 from ..data_models import DatasetConfig
 from ..languages import LT
-from ..tasks import LA, NER, SENT
+from ..tasks import KNOW, LA, NER, SENT
 
 ### Official datasets ###
 
@@ -29,5 +29,13 @@ WIKIANN_LT_CONFIG = DatasetConfig(
     "recognition dataset WikiANN",
     huggingface_id="EuroEval/wikiann-lt-mini",
     task=NER,
+    languages=[LT],
+)
+
+LT_HISTORY_CONFIG = DatasetConfig(
+    name="lt-history",
+    pretty_name="the Lithuanian history knowledge dataset LT-History",
+    huggingface_id="EuroEval/lt-history",
+    task=KNOW,
     languages=[LT],
 )

@@ -285,36 +285,31 @@ $ euroeval --model <model-id> --dataset multi-wiki-qa-lv
 
 ## Knowledge
 
-### MMLU-lv
+### LT-History
 
-This dataset is a machine translated version of the English [MMLU
-dataset](https://openreview.net/forum?id=d7KBjmI3GmQ) and features questions within 57
-different topics, such as elementary mathematics, US history and law. The translation to
-Latvian was done by the Latvian Language Technology Initiative and is available in the
-[VTI-Data
-repository](https://github.com/LUMII-AILab/VTI-Data/tree/refs/heads/main/mmlu).
+This dataset was published in [this paper](https://aclanthology.org/2025.nbreal-1.1/), and consists of Lithuanian national and general history
+questions and answers.
 
-The full Latvian MMLU dataset consists of 13,941 samples. We use a 1,024 /
-256 / 2,048 split for training, validation and testing, respectively, sampled randomly.
+The dataset originally contains 593 samples, which are reduced to 559 after filtering. Due to the limited number of examples, there is no training split; instead, the data is divided into 47 samples for validation and 512 for testing.
 
-Here are a few examples from the training split:
+Here are a few examples from the validation split:
 
 ```json
 {
-  "text": "Atrodiet skaitli, kas padara apgalvojumu patiesu: 48 m = lodziņš mm.\nIzvēles:\na. 48,000\nb. 480\nc. 4,800\nd. 5",
-  "label": "a",
+  "text": "Abiejų Tautų Respublikos Ketverių metų seimo nutarimu:\nPasirinkimai:\na. valstiečiams suteikta asmens laisvė.\nb. bajorai atleisti nuo valstybinių mokesčių;\nc. miestiečiams leista užimti valstybines tarnybas;\nd. įteisinta absoliuti monarcho valdžia;",
+  "label": "c"
 }
 ```
 ```json
 {
-  "text": "Darbinieks sagaida lielāku konsekvenci sava priekšnieka uzvedībā, nekā tas ir pamatoti. Kurš no šiem faktoriem vislabāk izskaidro darbinieka gaidas?\nIzvēles:\na. pārmērīgas attaisnošanas hipotēze\nb. pašlabuma aizspriedumainība\nc. fundamentālais atribūcijas aizspriedums\nd. pašpārbaudes teorija",
-  "label": "c",
+  "text": "Kurioje eilutėje visos išvardytos asmenybės gyveno Renesanso epochoje?\nPasirinkimai:\na. Vaskas da Gama, Maksimiljenas Robespjeras, Johanas Gutenbergas.\nb. Nikola Makiavelis, Šarlis Monteskjė, Kristupas Kolumbas.\nc. Mikalojus Kopernikas, Ferdinandas Magelanas, Leonardas da Vinčis.\nd. Johanas Gutenbergas, Žanas Žakas Ruso, Leonardas da Vinčis.",
+  "label": "c"
 }
 ```
 ```json
 {
-  "text": "Kurā no šiem diviem scenārijiem galvenais varonis (kurš lieto es/jē/man) dara kaut ko, kas ir acīmredzami morāli nepareizs, saskaņā ar parastajām morāles normām ASV no 2020. gada? scenārijs | Es atslēdzu automašīnas kruīza kontroli. scenārijs | Es izsaucu policiju savam bijušajam mīļotajam, jo viņš mani piekāva.\nIzvēles:\na. Nepareizi, nepareizi\nb. Nepareizi, nav nepareizi\nc. Nav nepareizi, nepareizi\nd. Nav nepareizi, nav nepareizi",
-  "label": "d",
+  "text": "Lietuvos teritorija suskirstyta į 10 apskričių: Vilniaus, Kauno, Klaipėdos, Šiaulių, Panevėžio, Alytaus ir...\nPasirinkimai:\na. Tauragės, Utenos, Marijampolės ir Telšių;\nb. Tauragės, Trakų, Kėdainių ir Plungės;\nc. Utenos, Marijampolės, Šalčininkų ir Telšių.\nd. Marijampolės, Telšių, Ukmergės ir Neringos;",
+  "label": "a"
 }
 ```
 
@@ -324,34 +319,34 @@ When evaluating generative models, we use the following setup (see the
 - Number of few-shot examples: 5
 - Prefix prompt:
   ```
-  Tālāk seko jautājumi ar vairākām atbilžu izvēlēm (ar atbildēm).
+  Toliau pateikti daugiavariančiai klausimai (su atsakymais).
   ```
 - Base prompt template:
   ```
-  Jautājums: {text}
-  Izvēles:
+  Klausimas: {text}
+  Pasirinkimai:
   a. {option_a}
   b. {option_b}
   c. {option_c}
   d. {option_d}
-  Atbilde: {label}
+  Atsakymas: {label}
   ```
 - Instruction-tuned prompt template:
   ```
-  Jautājums: {text}
-  Izvēles:
+  Klausimas: {text}
+  Pasirinkimai:
   a. {option_a}
   b. {option_b}
   c. {option_c}
   d. {option_d}
 
-  Atbildiet uz iepriekšējo jautājumu, atbildot ar 'a', 'b', 'c' vai 'd', un nekas cits.
+  Atsakykite į aukščiau pateiktą klausimą atsakydami 'a', 'b', 'c' arba 'd', ir nieko daugiau.
   ```
 
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ euroeval --model <model-id> --dataset mmlu-lv
+$ euroeval --model <model-id> --dataset lt-history
 ```
 
 
