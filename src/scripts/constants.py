@@ -36,6 +36,7 @@ CHOICES_MAPPING = {
     "fr": "Choix",
     "is": "Svarmöguleikar",
     "it": "Scelte",
+    "lt": "Pasirinkimai",
     "lv": "Izvēles",
     "nl": "Antwoordopties",
     "no": "Svaralternativer",

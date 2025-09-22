@@ -1,8 +1,8 @@
 """All Lithuanian dataset configurations used in EuroEval."""
 
-from ..data_models import DatasetConfig
+from ..data_models import DatasetConfig, ModelType
 from ..languages import LT
-from ..tasks import KNOW, LA, NER, SENT
+from ..tasks import COMMON_SENSE, KNOW, LA, NER, SENT
 
 ### Official datasets ###
 
@@ -38,4 +38,16 @@ LT_HISTORY_CONFIG = DatasetConfig(
     huggingface_id="EuroEval/lt-history",
     task=KNOW,
     languages=[LT],
+)
+
+WINOGRANDE_LV_CONFIG = DatasetConfig(
+    name="winogrande-lv",
+    pretty_name="the Lithuanian common-sense reasoning dataset Winogrande-lv, "
+    "translated from the English Winogrande dataset",
+    huggingface_id="EuroEval/winogrande-lv",
+    task=COMMON_SENSE,
+    languages=[LT],
+    splits=["train", "test"],
+    _labels=["a", "b"],
+    _allowed_model_types=[ModelType.GENERATIVE],
 )

@@ -32,6 +32,7 @@ LANGUAGES = [
     "fi",
     "fr",
     "it",
+    "lt",
     "lv",
     "nl",
     "no",

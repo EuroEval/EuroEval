@@ -10,8 +10,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Added
 - Added support for Lithuanian 🇱🇹! This includes the sentiment classification dataset
   Lithuanian Emotions, the linguistic acceptability dataset ScaLA-lt, the named entity
-  recognition dataset WikiANN-lt, and the history
-  knowledge dataset LT-History.
+  recognition dataset WikiANN-lt, the the history
+  knowledge dataset LT-History, and the common-sense reasoning dataset Winogrande-lt.
 - Added "slow-tokenizer" model parameter, which can be used to force the use of a slow
   tokenizer when loading it. Use this by replacing your model ID with
   `<model-id>#slow-tokenizer`.
