@@ -215,11 +215,11 @@ $ euroeval --model <model-id> --dataset wikiann-lv
 
 ## Linguistic Acceptability
 
-### ScaLA-lv
+### ScaLA-lt
 
 This dataset was published in [this paper](https://aclanthology.org/2023.nodalida-1.20/)
 and was automatically created from the [Latvian Universal Dependencies
-treebank](https://github.com/UniversalDependencies/UD_Latvian-LVTB) by assuming that the
+treebank](https://github.com/UniversalDependencies/UD_Lithuanian-ALKSNIS) by assuming that the
 documents in the treebank are correct, and corrupting the samples to create
 grammatically incorrect samples. The corruptions were done by either removing a word
 from a sentence, or by swapping two neighbouring words in a sentence. To ensure that
@@ -234,20 +234,20 @@ Here are a few examples from the training split:
 
 ```json
 {
-    "text": "Gultā viņam nav jādara pilnīgi nekas, lai es nonāktu līdz orgasmam.",
-    "label": "correct"
+  "text": "Be to, tai, kad turi man neįprastų drabužių, primena, jog ir daugiau man nežinomo gyvenimo.",
+  "label": "incorrect"
 }
 ```
 ```json
 {
-    "text": "Ar savu puiku, kurš parasts.",
-    "label": "incorrect"
+  "text": "Juos sukelia kokia nors konkreti organinė ir šiuo atveju galvos skausmas yra tik tam tikros ligos simptomas.",
+  "label": "incorrect"
 }
 ```
 ```json
 {
-    "text": "1992. vēl gadā Latvijā atradās no 50 000 līdz 80 000 padomju militārpersonu.",
-    "label": "incorrect"
+  "text": "Juos sukelia kokia nors konkreti organinė ir šiuo atveju galvos skausmas yra tik tam tikros ligos simptomas.",
+  "label": "incorrect"
 }
 ```
 
@@ -257,27 +257,27 @@ When evaluating generative models, we use the following setup (see the
 - Number of few-shot examples: 12
 - Prefix prompt:
   ```
-  Šie ir teikumi un to gramatiskie pareizumi.
+  Toliau pateikti sakiniai ir ar jie yra gramatiškai teisingi.
   ```
 - Base prompt template:
   ```
-  Teikums: {text}
-  Gramatiski pareizs: {label}
+  Sakinys: {text}
+  Gramatiškai teisingas: {label}
   ```
 - Instruction-tuned prompt template:
   ```
-  Teikums: {text}
+  Sakinys: {text}
 
-  Noteiciet, vai teikums ir gramatiski pareizs vai nē. Atbildiet ar 'jā', ja teikums ir pareizs, un 'nē', ja tas nav.
+  Nustatykite, ar sakinys yra gramatiškai teisingas, ar ne. Atsakykite su 'taip' arba 'ne', ir nieko kito.
   ```
 - Label mapping:
-    - `correct` ➡️ `jā`
-    - `incorrect` ➡️ `nē`
+    - `correct` ➡️ `taip`
+    - `incorrect` ➡️ `ne`
 
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ euroeval --model <model-id> --dataset scala-lv
+$ euroeval --model <model-id> --dataset scala-lt
 ```
 
 

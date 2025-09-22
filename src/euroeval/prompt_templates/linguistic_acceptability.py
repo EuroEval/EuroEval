@@ -14,6 +14,7 @@ from ..languages import (
     FR,
     IS,
     IT,
+    LT,
     LV,
     NB,
     NL,
@@ -125,6 +126,14 @@ LA_TEMPLATES: dict["Language", PromptConfig] = {
         default_prompt_template="Frase : {text}\nGrammaticalmente corretto : {label}",
         default_instruction_prompt="Frase: {text}\n\nStabilite se la frase è "
         "grammaticalmente corretta o meno. Rispondere con {labels_str}, e nient'altro.",
+    ),
+    LT: PromptConfig(
+        default_prompt_label_mapping=dict(correct="taip", incorrect="ne"),
+        default_prompt_prefix="Toliau pateikti sakiniai ir ar jie yra gramatiškai "
+        "teisingi.",
+        default_prompt_template="Sakinys: {text}\nGramatiškai teisingas: {label}",
+        default_instruction_prompt="Sakinys: {text}\n\nNustatykite, ar sakinys yra "
+        "gramatiškai teisingas, ar ne. Atsakykite su {labels_str}, ir nieko kito.",
     ),
     LV: PromptConfig(
         default_prompt_label_mapping=dict(correct="jā", incorrect="nē"),
