@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 ### Added
+- Added support for Czech 🇨🇿! This includes the sentiment classification dataset
+  CSFD-sentiment.
 - Added "slow-tokenizer" model parameter, which can be used to force the use of a slow
   tokenizer when loading it. Use this by replacing your model ID with
   `<model-id>#slow-tokenizer`.
