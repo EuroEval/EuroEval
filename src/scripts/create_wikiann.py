@@ -23,7 +23,6 @@ def main() -> None:
     dataset_id = "unimelb-nlp/wikiann"
 
     for language_code in LANGUAGE_CODES:
-        # Load only the Latvian subset
         dataset = load_dataset(dataset_id, language_code, token=True)
         assert isinstance(dataset, DatasetDict)
 
