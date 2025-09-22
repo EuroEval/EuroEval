@@ -211,6 +211,68 @@ $ euroeval --model <model-id> --dataset scala-lt
 
 ## Reading Comprehension
 
+### MultiWikiQA-lt
+
+This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2509.04111)
+and contains Wikipedia articles with LLM-generated questions and answers in 300+
+languages.
+
+The original full dataset consists of 5,000 samples in a single split. We use a 1,024 /
+256 / 2,048 split for training, validation and testing, respectively, sampled randomly.
+
+Here are a few examples from the training split:
+
+```json
+{
+    "context": "Gadas Elmalė (; ; g. 1971\xa0m. balandžio 19 d.)\xa0– Maroko ir Prancūzijos komikas ir aktorius. Jo naujausias spektaklis vadinasi „Sans tambour“ (pažodž. „be būgno“, kas yra žodžių žaismas tarp prancūzų kalbos žodžių tabou ('tabū') ir tambour ('būgnas')). Jis vaidino daugelyje filmų, įskaitant „Coco“, „Hors de prix“, „La doublure“ ir „Midnight in Paris“.\n\nAnkstyvasis gyvenimas ir šeima \nG. Elmalė gimė Kasablankoje, Maroke. Jis turi sefardų žydų kraujo. Augo mišrių kultūrų apsuptyje, kur buvo kalbama arabiškai, hebrajiškai ir prancūziškai. Tėvo vardas Davidas, motinos\xa0– Reginė (mergautinė pavardė Aymard). Turi brolį Arié, kuris yra aktorius ir dainininkas, ir seserį Judith, kuri yra artistė ir režisierio padėjėja.\n\nKarjera \n\nG. Elmalė lankė Kasablankos licėjų. Vėliau jis ketverius metus studijavo politologiją Monrealyje, o kiek vėliau persikėlė į Paryžių, kur jis studijavo dramą. Pirmą savo vaidmenį teatre G. Elmalė atliko monospektaklyje „Décalages“ 1997\xa0m. Šis spektaklis buvo autobiografinis. Pirmosios G. Elmalė sąsajos su kinu buvo Merzak Allouache filme „Salut cousin“. Vėliau jis vaidino filmuose „L’homme est une femme comme les autres“ ir „Train de vie“. G. Elmalė šlovė augo su antro monospektaklio „La vie normale“ pasisekimu ir su filmu „La vérité si je mens 2“ (2000\xa0m.), kuriame jis atliko vaidmenį Dov.\n\nAsmeninis gyvenimas \nG. Elmalė gyveno su prancūze artiste Anne Brochet nuo 1998\xa0m. iki 2002\xa0m. Jie susilaukė sūnaus Noé. Nuo 2009\xa0m. iki 2010\xa0m. jo antroji pusė buvo prancūzė žurnalistė Marie Drucker. Nuo 2011\xa0m. aktorius gyvena su Charlotte Casiraghi. Judviejų sūnus Raphaël gimė 2013\xa0m. gruodžio 17 d.\n\nIšnašos \n\nPrancūzijos aktoriai\nMaroko asmenybės",
+    "question": "Su kuo gyveno G. Elmalė nuo 2011 metų?",
+    "answers": {"answer_start": [1559], "text": ["Charlotte Casiraghi"]}
+}
+```
+```json
+{
+    "context": "Bus kraujo () – 2007 m. JAV epinės dramos filmas, kurio scenarijaus autorius ir režisierius Paul Thomas Anderson. Filmas dalinai remiasi Upton Sinclair romano „Oil!“ motyvais. Pasakojama apie auksakasį, kuris XIX a. pab. – XX a. pr Pietų Kalifornijoje kilusio naftos bumo metu nusprendė užsiimti naftos gavyba ir taip pralobti iš šio verslo.\n\nSiužetas \n\n1902-ieji. Aukso ieškotojas Danielis Pleinvju (akt. Day-Lewis) atranda naftos klodą ir įkuria nedidelę naftos gavybos įmonę. Vieno nelaimingo atsitikimo metu žuvus jo darbininkui, Pleinvju įsivaikina jo sūnų. Berniukas, vardu H.V., tampa jo formaliu verslo „partneriu“.\n\nPo devynerių metu Pleinvju sutinka Polą Sandėjų (akt. Dano), kuris jam prasitaria apie naftos klodą, esantį po jo žeme. Pleinvju mėgina nupirkti sklypą už nusiderėtą kainą, bet Polo brolis dvynys Elis, žinodamas apie jo ketinimus, primygtinai pareikalauja $5 000, už kuriuos būtų pastatyta vietinė bažnyčia, kurios pastoriumi taptų Elis. Tačiau Pleinvju įtikina Elio tėvą sudaryti sandorį už nusiderėtą kainą. Vėliau avarijos metu įvykęs sprogimas pažeidžia H.V. klausą.\n\nVieną dieną, Pleinvju aplanko vyriškis, teigiantis esąs jo pusiau brolis Henris. Pleinvju jį priima, nors jo istorijoje ir randa spragų. Vėliau berniukas pabando nužudyti Henrį padegdamas jo antklodę. Pasipiktinęs sūnaus poelgiu, Pleinvju išsiunčia berniuką į mokyklą San Franciske. Įmonės „Standard Oil“ atstovas pasisiūlo nupirkti Pleinvju žemę, bet Pleinvju sudaro sutartį su „Union Oil“ ir nutiesia vamzdyną į Kalifornijos pakrantę. Pleinvju kyla įtarimas dėl Henrio ir šiam papasakojus tikrąją istoriją, Pleinvju jį nužudo ir užkasa lavoną.\n\n1927-ieji. H.V. jau suaugęs ir vedęs. Jis susitinka su tėvu, kuris ne tik, kad tapo turtingu, bet ir įniko į alkoholį, ir paprašo jo nutraukti judviejų sutartį, kad jis galėtų įsteigti savo verslą. Pleinvju išjuokia jo kurtumą ir papasakoja jam apie jo kilmę, ir H.V. išvyksta.\n\nElis aplanko Pleinvju ir pasiūlo jam dar kartą įsigyti dalį jo žemės, kuri priklausė ponui Bendžiui. Pleinvju atskleidžia, kad jis jau seniausiai išgavo visą naftą iš jo nuosavybės per aplinkinius naftos gręžinius. Elis vis tiek paprašo sumokėti, bet Pleinvju įniršta ir užmuša jį boulingo kėgliu.\n\nApdovanojimai \n Oskarų apdovanojimai: geriausias aktorius (Daniel Day-Lewis), geriausia kinematografija (Robert Elswit)\n BAFTA: geriausias pirmo plano aktorius (Daniel Day-Lewis)\n Auksiniai gaubliai: geriausias draminio filmo aktorius (Daniel Day-Lewis)\n Ekrano aktorių gildijos apdovanojimai: geriausias aktorius (Daniel Day-Lewis)\n\nIšnašos \n\n2007 filmai\nJAV filmai\nDramos\nEpiniai filmai",
+    "question": "Kokią kompaniją įsteigė Danielis Pleinvju?",
+    "answers": {"answer_start": [448], "text": ["nedidelę naftos gavybos įmonę"]}
+}
+```
+```json
+{
+    "context": "Ero ežeras (, arabanų k. Kati Thanda)\xa0– ežeras centrinėje Australijoje, Pietų Australijos valstijoje, didžiausias visame žemyne.\n\nEro ežeras yra žemiausiame Australijos taške\xa0– jo dugnas yra 15\xa0m žemiau jūros lygio. Dvi ežero dalys\xa0– šiaurinis Ero ežeras ir pietinis Ero ežeras\xa0– kartu užima apie 9 600\xa0km² plotą. Šiuos ežerus jungia 15\xa0km ilgio Godjero sąsiauris. Paviršiaus altitudė\xa0– 9,5 metro. Ero ežero baseino plotas apie 1,3 mln. km².\n\nPavadinimą ežerui davė Edvardas Eras (Edward Eyre), kuris 1839\xa0m. išvyko iš Adelaidės norėdamas tapti pirmuoju europiečiu, kirtusiu Australiją iš pietų į šiaurę. Įveikęs Flinderso kalnagūbrį jis susidūrė su neįveikiama sūrių ežerų juosta ir buvo priverstas grįžti atgal. Po keleto metų Eras dar kartą išvyko į kelionę ir pasiekė ežerą, kuris buvo pavadintas jo vardu. Aborigenai arabanai ežerą vadino Kati Thanda.\n\nUpėms pripildžius Ero ežerą, jo pakrantėse įsikuria didžiulė pelikanų kolonija ir susuka dešimtis tūkstančių lizdų. Tam, kad čia patektų, šie paukščiai įveikia didžiulius atstumus skrisdami virš kaitrios dykumos. Vandens srautui nutrūkus, didelėje kaitroje ežeras greitai garuoja ir tampa dar sūresnis.\n\nDidžiąją metų dalį Ero ežeras\xa0– uždruskėjusi pelkė, vandens prisipildo tik vasarą. Ilgą laiką tyrinėtojai manė, kad Ero ežeras\xa0– didžiulis gėlo vandens ežeras. Šiandien jau aišku, kad Ero ežeras gali būti didžiulėmis gėlo vandens platybėmis\xa0– tačiau vos kartą per aštuonerius ar dešimt metų. Šis ciklas jau kartojasi apie 20 tūkstančių metų. Smarkūs lietūs dvi vasaras iš eilės\xa0– retas įvykis šiame regione: pirmųjų metų lietus susigeria į žemę, antraisiais metais žemė sugeria mažiau vandens, jis atiteka į Ero ežerą iš kalnų ir jį pripildo.\n\nAplink ežerą įsteigtas Ero ežero nacionalinis parkas.\n\nŠaltiniai\n\nNuorodos \n Ero ežeras: Pelikanų rojus  \n Ero ežeras: Jachtklubas \n \nAustralijos ežerai\nPietų Australija",
+    "question": "Koks vandens kelias sujungia šiaurinę ir pietinę Ero ežero dalis?",
+    "answers": {"answer_start": [346], "text": ["Godjero sąsiauris"]}
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 4
+- Prefix prompt:
+  ```
+  Toliau pateikti tekstai su atitinkamais klausimais ir atsakymais.
+  ```
+- Base prompt template:
+  ```
+  Tekstas: {text}
+  Klausimas: {question}
+  Atsakykite ne daugiau kaip 3 žodžiais: {label}
+  ```
+- Instruction-tuned prompt template:
+  ```
+  Tekstas: {text}
+
+  Atsakykite į šį klausimą apie aukščiau pateiktą tekstą ne daugiau kaip 3 žodžiais.
+
+  Klausimas: {question}
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+$ euroeval --model <model-id> --dataset multi-wiki-qa-lt
+```
+
 
 ## Knowledge
 

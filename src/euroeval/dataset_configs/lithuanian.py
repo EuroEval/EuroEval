@@ -2,7 +2,7 @@
 
 from ..data_models import DatasetConfig, ModelType
 from ..languages import LT
-from ..tasks import COMMON_SENSE, KNOW, LA, NER, SENT
+from ..tasks import COMMON_SENSE, KNOW, LA, NER, RC, SENT
 
 ### Official datasets ###
 
@@ -11,6 +11,15 @@ SCALA_LT_CONFIG = DatasetConfig(
     pretty_name="the Lithuanian part of the linguistic acceptability dataset ScaLA",
     huggingface_id="EuroEval/scala-lt",
     task=LA,
+    languages=[LT],
+)
+
+MULTI_WIKI_QA_LT_CONFIG = DatasetConfig(
+    name="multi-wiki-qa-lt",
+    pretty_name="the truncated version of the Lithuanian part of the reading "
+    "comprehension dataset MultiWikiQA",
+    huggingface_id="EuroEval/multi-wiki-qa-lt-mini",
+    task=RC,
     languages=[LT],
 )
 
@@ -40,11 +49,11 @@ LT_HISTORY_CONFIG = DatasetConfig(
     languages=[LT],
 )
 
-WINOGRANDE_LV_CONFIG = DatasetConfig(
-    name="winogrande-lv",
-    pretty_name="the Lithuanian common-sense reasoning dataset Winogrande-lv, "
+WINOGRANDE_LT_CONFIG = DatasetConfig(
+    name="winogrande-lt",
+    pretty_name="the Lithuanian common-sense reasoning dataset Winogrande-lt, "
     "translated from the English Winogrande dataset",
-    huggingface_id="EuroEval/winogrande-lv",
+    huggingface_id="EuroEval/winogrande-lt",
     task=COMMON_SENSE,
     languages=[LT],
     splits=["train", "test"],
