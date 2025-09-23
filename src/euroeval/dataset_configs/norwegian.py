@@ -1,7 +1,6 @@
 """All Norwegian dataset configurations used in EuroEval."""
 
 from ..data_models import DatasetConfig
-from ..enums import ModelType
 from ..languages import NB, NN, NO
 from ..tasks import COMMON_SENSE, EUROPEAN_VALUES, KNOW, LA, MCRC, NER, RC, SENT, SUMM
 
@@ -226,7 +225,6 @@ WINOGRANDE_NO_CONFIG = DatasetConfig(
     languages=[NB, NN, NO],
     splits=["train", "test"],
     _labels=["a", "b"],
-    _allowed_model_types=[ModelType.GENERATIVE],
     unofficial=True,
 )
 

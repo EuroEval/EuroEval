@@ -1,7 +1,6 @@
 """All Latvian dataset configurations used in EuroEval."""
 
 from ..data_models import DatasetConfig
-from ..enums import ModelType
 from ..languages import LV
 from ..tasks import COMMON_SENSE, KNOW, LA, NER, RC, SENT, SUMM
 
@@ -91,6 +90,5 @@ WINOGRANDE_LV_CONFIG = DatasetConfig(
     languages=[LV],
     splits=["train", "test"],
     _labels=["a", "b"],
-    _allowed_model_types=[ModelType.GENERATIVE],
     unofficial=True,
 )
