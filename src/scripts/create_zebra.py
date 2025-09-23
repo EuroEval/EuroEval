@@ -55,7 +55,7 @@ def main() -> None:
         )
 
         # Create dataset ID
-        dataset_id = f"EuroEval/zebra-puzzle-{theme}"
+        dataset_id = f"EuroEval/zebra-puzzles-{theme}"
 
         # Remove the dataset from Hugging Face Hub if it already exists
         HfApi().delete_repo(dataset_id, repo_type="dataset", missing_ok=True)
