@@ -14,6 +14,8 @@ import pandas as pd
 from constants import MAX_NUM_CHARS_IN_DOCUMENT, MIN_NUM_CHARS_IN_DOCUMENT  # noqa
 from datasets import Dataset, DatasetDict, Split, load_dataset
 from huggingface_hub import HfApi
+from sklearn.model_selection import train_test_split
+from sklearn.utils import resample
 
 
 def main() -> None:
@@ -76,6 +78,8 @@ def main() -> None:
         # Drop the temporary text_len column
         df = df.drop(columns=["text_len"])
 
+        # Create a uniform label distribution
+        df = _create_uniform_label_distribution(df=df)
         return df
 
     # Process each split
@@ -87,9 +91,16 @@ def main() -> None:
     val_size = 256
     test_size = 2048
 
-    train_df = create_balanced_split(df=train_df, target_total_size=train_size)
-    val_df = create_balanced_split(df=val_df, target_total_size=val_size)
-    test_df = create_balanced_split(df=test_df, target_total_size=test_size)
+    # Assuming train_df, val_df, and test_df are your original DataFrames
+    train_df, _ = train_test_split(
+        train_df, train_size=train_size, stratify=train_df["label"], random_state=4242
+    )
+    val_df, _ = train_test_split(
+        val_df, train_size=val_size, stratify=val_df["label"], random_state=4242
+    )
+    test_df, _ = train_test_split(
+        test_df, train_size=test_size, stratify=test_df["label"], random_state=4242
+    )
 
     # Reset indices
     train_df = train_df.reset_index(drop=True)
@@ -113,61 +124,34 @@ def main() -> None:
     dataset.push_to_hub(dataset_id, private=True)
 
 
-def create_balanced_split(
-    df: pd.DataFrame, target_total_size: int, random_state: int = 4242
+def _create_uniform_label_distribution(
+    df: pd.DataFrame, random_state: int = 4242
 ) -> pd.DataFrame:
-    """Create a balanced split with equal samples per class.
-
-    This is used to create a balanced split with equal samples per class.
+    """Create a sampled dataset with a uniform label distribution.
 
     Args:
-        df: The dataframe to create a balanced split from.
-        target_total_size: The total number of samples to create.
-        random_state: The random state to use for sampling.
+        df: The input dataframe with a 'label' column.
+        random_state: The random state for reproducibility.
 
     Returns:
-        The balanced split dataframe.
+        A dataframe with a uniform label distribution.
     """
-    # Calculate samples per class (divide by 3 for the 3 classes)
-    samples_per_class = target_total_size // 3
+    # Separate each class
+    classes = df["label"].unique()
+    class_dfs = [df[df["label"] == label] for label in classes]
 
-    # Check if we have enough samples in each class
-    label_counts = df["label"].value_counts()
-    min_samples_available = min(
-        label_counts["negative"], label_counts["positive"], label_counts["neutral"]
-    )
-    assert min_samples_available > samples_per_class, "Not enough samples in each class"
+    # Find the size of the smallest class
+    min_size = min(len(class_df) for class_df in class_dfs)
 
-    # Sample equal amounts from each class
-    sampled_class_dfs = []
-    remaining_samples = []  # Keep track of unused samples for padding
+    # Resample each class to the size of the smallest class
+    resampled_dfs = [
+        resample(class_df, replace=False, n_samples=min_size, random_state=random_state)
+        for class_df in class_dfs
+    ]
 
-    for label in ["negative", "positive", "neutral"]:
-        class_df = df[df["label"] == label]
-        sampled_df = class_df.sample(n=samples_per_class, random_state=random_state)
-        sampled_class_dfs.append(sampled_df)
+    # Combine the resampled dataframes
+    balanced_df = pd.concat(resampled_dfs, ignore_index=True)
 
-        # Keep remaining samples for padding
-        unused_df = class_df.drop(sampled_df.index)
-        remaining_samples.append(unused_df)
-
-    # Combine the balanced samples
-    balanced_df = pd.concat(sampled_class_dfs, ignore_index=True)
-
-    # Add remaining samples to reach exact target size
-    current_size = len(balanced_df)
-    needed_samples = target_total_size - current_size
-    if needed_samples > 0:
-        all_remaining = pd.concat(remaining_samples, ignore_index=True)
-        extra_samples = all_remaining.sample(
-            n=needed_samples, random_state=random_state
-        )
-        balanced_df = pd.concat([balanced_df, extra_samples], ignore_index=True)
-
-    # Final shuffle and reset index
-    balanced_df = balanced_df.sample(frac=1, random_state=random_state).reset_index(
-        drop=True
-    )
     return balanced_df
 
 
