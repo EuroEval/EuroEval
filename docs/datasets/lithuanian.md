@@ -9,7 +9,7 @@ information about what these constitute.
 
 ### Lithuanian Emotions
 
-This dataset is a combination of machine translated versions of the [GoEmotions dataset](https://arxiv.org/abs/2005.00547) and the [Kaggle emotions dataset](https://www.kaggle.com/datasets/nelgiriyewithana/emotions). GoEmotions consists of English Reddit comments and the Kaggle dataset contains English Twitter messages. Both datasets have been machine translated to Lithuanian.
+This dataset is a combination of machine translated versions of the [GoEmotions dataset](https://doi.org/10.48550/arXiv.2005.00547) and the [Kaggle emotions dataset](https://www.kaggle.com/datasets/nelgiriyewithana/emotions). GoEmotions consists of English Reddit comments and the Kaggle dataset contains English Twitter messages. Both datasets have been machine translated to Lithuanian.
 
 The original dataset contains 377k / 47.1k / 5.43k / 41.7k samples for the combined training, combined validation, Lithuanian GoEmotions test, and Lithuanian Twitter emotions test splits, respectively. We use 1,024 / 256 / 2,048 samples for our training, validation and test splits, respectively. Our splits are based on the original splits.
 
