@@ -58,5 +58,4 @@ WINOGRANDE_LT_CONFIG = DatasetConfig(
     languages=[LT],
     splits=["train", "test"],
     _labels=["a", "b"],
-    _allowed_model_types=[ModelType.GENERATIVE],
 )
