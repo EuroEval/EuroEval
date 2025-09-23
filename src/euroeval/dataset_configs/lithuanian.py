@@ -6,23 +6,6 @@ from ..tasks import COMMON_SENSE, KNOW, LA, NER, RC, SENT
 
 ### Official datasets ###
 
-SCALA_LT_CONFIG = DatasetConfig(
-    name="scala-lt",
-    pretty_name="the Lithuanian part of the linguistic acceptability dataset ScaLA",
-    huggingface_id="EuroEval/scala-lt",
-    task=LA,
-    languages=[LT],
-)
-
-MULTI_WIKI_QA_LT_CONFIG = DatasetConfig(
-    name="multi-wiki-qa-lt",
-    pretty_name="the truncated version of the Lithuanian part of the reading "
-    "comprehension dataset MultiWikiQA",
-    huggingface_id="EuroEval/multi-wiki-qa-lt-mini",
-    task=RC,
-    languages=[LT],
-)
-
 LITHUANIAN_EMOTIONS_CONFIG = DatasetConfig(
     name="lithuanian-emotions",
     pretty_name="the truncated version of the Lithuanian sentiment "
@@ -32,12 +15,29 @@ LITHUANIAN_EMOTIONS_CONFIG = DatasetConfig(
     languages=[LT],
 )
 
+SCALA_LT_CONFIG = DatasetConfig(
+    name="scala-lt",
+    pretty_name="the Lithuanian part of the linguistic acceptability dataset ScaLA",
+    huggingface_id="EuroEval/scala-lt",
+    task=LA,
+    languages=[LT],
+)
+
 WIKIANN_LT_CONFIG = DatasetConfig(
     name="wikiann-lt",
     pretty_name="the truncated version of the Lithuanian part of the named entity "
     "recognition dataset WikiANN",
     huggingface_id="EuroEval/wikiann-lt-mini",
     task=NER,
+    languages=[LT],
+)
+
+MULTI_WIKI_QA_LT_CONFIG = DatasetConfig(
+    name="multi-wiki-qa-lt",
+    pretty_name="the truncated version of the Lithuanian part of the reading "
+    "comprehension dataset MultiWikiQA",
+    huggingface_id="EuroEval/multi-wiki-qa-lt-mini",
+    task=RC,
     languages=[LT],
 )
 
