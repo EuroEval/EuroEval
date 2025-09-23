@@ -117,20 +117,19 @@ def main() -> None:
     df.drop_duplicates(inplace=True)
     df.reset_index(drop=True, inplace=True)
 
-    # Create test and validation splits
-    val_size = 47
-
-    test_arr, val_arr = train_test_split(df, test_size=val_size, random_state=4242)
+    # Create train and test splits
+    train_size = 47
+    test_arr, train_arr = train_test_split(df, test_size=train_size, random_state=4242)
     test_df = pd.DataFrame(test_arr, columns=df.columns)
-    val_df = pd.DataFrame(val_arr, columns=df.columns)
+    train_df = pd.DataFrame(train_arr, columns=df.columns)
 
     # Reset the index
-    val_df = val_df.reset_index(drop=True)
+    train_df = train_df.reset_index(drop=True)
     test_df = test_df.reset_index(drop=True)
 
     # Collect datasets in a dataset dictionary (no train split)
     dataset = DatasetDict(
-        val=Dataset.from_pandas(val_df, split=Split.VALIDATION),
+        train=Dataset.from_pandas(train_df, split=Split.TRAIN),
         test=Dataset.from_pandas(test_df, split=Split.TEST),
     )
 
