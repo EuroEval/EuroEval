@@ -568,14 +568,24 @@ class VLLMModel(HuggingFaceEncoderModel):
                     completions[idx] = completions[idx].split(
                         self.end_of_reasoning_token
                     )[-1]
-                else:
+                elif self.benchmark_config.verbose:
                     logger.warning(
                         f"The model {self.model_config.model_id!r} is a reasoning "
                         "model, but the generated output does not contain the end of "
                         f"reasoning token ({self.end_of_reasoning_token!r}). Using "
                         "an empty string as the prediction instead."
                     )
-                    logger.debug(f"The generated output was: {completions[idx]!r}.")
+                    completions[idx] = ""
+                else:
+                    log_once(
+                        f"The model {self.model_config.model_id!r} is a reasoning "
+                        "model, but the generated output does not contain the end of "
+                        f"reasoning token ({self.end_of_reasoning_token!r}). Using "
+                        "an empty string as the prediction instead. Only showing "
+                        "this warning once - see all occurrences if you run with the "
+                        "`verbose` flag.",
+                        level=logging.WARNING,
+                    )
                     completions[idx] = ""
         stop_token_pattern = re.compile(
             "|".join(re.escape(stop_token) for stop_token in stop_tokens)
