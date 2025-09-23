@@ -45,28 +45,8 @@ def main() -> None:
         assert isinstance(test_df, pd.DataFrame)
 
         # Remove unused columns
-        train_df = train_df[
-            [
-                "introductions",
-                "clues",
-                "questions",
-                "format_instructions",
-                "format_examples",
-                "solution",
-            ]
-        ]
-        test_df = test_df[
-            [
-                "introductions",
-                "clues",
-                "questions",
-                "format_instructions",
-                "format_examples",
-                "solution",
-            ]
-        ]
-
-        # TODO: Also remove "questions" and "format_instructions"?
+        train_df = train_df[["introduction", "clues", "format_example", "solution"]]
+        test_df = test_df[["introduction", "clues", "format_example", "solution"]]
 
         # Rename the solution column as label
         train_df.rename(columns={"solution": "label"}, inplace=True)
