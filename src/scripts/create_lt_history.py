@@ -135,7 +135,7 @@ def main() -> None:
     )
 
     # Create dataset ID
-    dataset_id = "EuroEval/lithuanian-history"
+    dataset_id = "EuroEval/lt-history"
 
     # Remove the dataset from Hugging Face Hub if it already exists
     HfApi().delete_repo(dataset_id, repo_type="dataset", missing_ok=True)
