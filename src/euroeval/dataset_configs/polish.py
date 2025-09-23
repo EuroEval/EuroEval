@@ -1,7 +1,6 @@
 """All Polish dataset configurations used in EuroEval."""
 
 from ..data_models import DatasetConfig
-from ..enums import ModelType
 from ..languages import PL
 from ..tasks import COMMON_SENSE, EUROPEAN_VALUES, KNOW, LA, NER, RC, SENT, SUMM
 
@@ -64,7 +63,6 @@ WINOGRANDE_PL_CONFIG = DatasetConfig(
     languages=[PL],
     splits=["train", "test"],
     _labels=["a", "b"],
-    _allowed_model_types=[ModelType.GENERATIVE],
 )
 
 EUROPEAN_VALUES_PL_CONFIG = DatasetConfig(

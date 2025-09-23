@@ -4,7 +4,6 @@ This is an overview of all the datasets used in the Italian part of EuroEval. Th
 datasets are grouped by their task - see the [task overview](/tasks) for more
 information about what these constitute.
 
-
 ## Sentiment Classification
 
 ### Sentipolc-16
@@ -26,12 +25,14 @@ Here are a few examples from the training split:
   "label": "negative"
 }
 ```
+
 ```json
 {
   "text": "Ho aggiunto un video a una playlist di @user: http ROMA PRESENTAZIONE LIBRO SVIMEZ SULL’ECONOMIA DEL",
   "label": "neutral"
 }
 ```
+
 ```json
 {
   "text": "RT @user: @user te lo auguro di cuore e farò il possibile affinché sia così. Un abbraccio",
@@ -44,16 +45,21 @@ When evaluating generative models, we use the following setup (see the
 
 - Number of few-shot examples: 4
 - Prefix prompt:
-  ```
+
+  ```text
   Di seguito sono riportati i testi e il loro sentimento, che può essere 'positivo', 'neutro' o 'negativo'.
   ```
+
 - Base prompt template:
-  ```
+
+  ```text
   Tweet: {text}
   Sentimento: {label}
   ```
+
 - Instruction-tuned prompt template:
-  ```
+
+  ```text
   Tweet: {text}
 
   Classificare il sentimento nel Tweet. Rispondete con 'positivo', 'neutro' o 'negativo', e nient'altro.
@@ -62,9 +68,8 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ euroeval --model <model-id> --dataset sentipolc16
+euroeval --model <model-id> --dataset sentipolc16
 ```
-
 
 ## Named Entity Recognition
 
@@ -111,12 +116,14 @@ Here are a few examples from the training split:
   "labels": array(['O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'B-LOC', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'B-LOC', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O'], dtype=object)
 }
 ```
+
 ```json
 {
   "tokens": array(['Nella' 'seconda' 'metà' 'del' 'XX' 'secolo' 'gli' 'infinitesimi' 'sono' 'stati' 'recuperati' ',' 'in' 'una' 'prospettiva' 'rigorosa' ',' 'da' 'Abraham' 'Robinson' ',' 'nella' 'formulazione' 'di' 'quella' 'che' 'lui' 'chiamò' 'analisi' 'non' 'standard' '.'], dtype=object),
   "labels": array(['O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'B-PER', 'I-PER', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O'], dtype=object)
 }
 ```
+
 ```json
 {
   "tokens": array(['Il' 'monumento' 'a' 'Carlo' 'Emanuele' 'III' 'di' 'Savoia' 'è' 'ubicato' 'nella' 'piazza' 'omonima' 'sul' 'lungomare' '.'], dtype=object),
@@ -129,34 +136,40 @@ When evaluating generative models, we use the following setup (see the
 
 - Number of few-shot examples: 8
 - Prefix prompt:
-  ```
+
+  ```text
   Di seguito sono riportate le frasi e i dizionari JSON con le entità denominate presenti nella frase data.
   ```
+
 - Base prompt template:
-  ```
+
+  ```text
   Frase: {text}
   Entità denominate: {label}
   ```
+
 - Instruction-tuned prompt template:
-  ```
+
+  ```text
   Frase: {text}
 
   Identificare le entità nominate nella frase. Il risultato dovrebbe essere un dizionario JSON con le chiavi 'persona', 'posizione', 'organizzazione' e 'varie'. I valori devono essere elenchi di entità nominate di quel tipo, esattamente come appaiono nella frase.
   ```
+
 - Label mapping:
-    - `B-PER` ➡️ `persona`
-    - `I-PER` ➡️ `persona`
-    - `B-LOC` ➡️ `posizione`
-    - `I-LOC` ➡️ `posizione`
-    - `B-ORG` ➡️ `organizzazione`
-    - `I-ORG` ➡️ `organizzazione`
-    - `B-MISC` ➡️ `varie`
-    - `I-MISC` ➡️ `varie`
+  - `B-PER` ➡️ `persona`
+  - `I-PER` ➡️ `persona`
+  - `B-LOC` ➡️ `posizione`
+  - `I-LOC` ➡️ `posizione`
+  - `B-ORG` ➡️ `organizzazione`
+  - `I-ORG` ➡️ `organizzazione`
+  - `B-MISC` ➡️ `varie`
+  - `I-MISC` ➡️ `varie`
 
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ euroeval --model <model-id> --dataset multinerd-it
+euroeval --model <model-id> --dataset multinerd-it
 ```
 
 ### Unofficial: WikiNEuRal IT
@@ -179,12 +192,14 @@ Here are a few examples from the training split:
   "labels": array(['O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'B-PER', 'O', 'O', 'O', 'O', 'O', 'O', 'B-MISC', 'O', 'O', 'B-PER', 'I-PER', 'O'])
 }
 ```
+
 ```json
 {
   "tokens": array(['È' 'stato' 'uno' 'degli' 'artisti' 'più' 'importanti' "dell'" 'etichetta' 'discografica' 'di' 'musica' 'soul' 'Stax' 'Records' 'che' 'negli' 'anni' 'sessanta' 'e' 'settanta' 'era' 'la' 'principale' 'antagonista' 'della' 'Motown' 'nel' 'campo' 'della' 'black' 'music' '.']),
   "labels": array(['O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'B-ORG', 'I-ORG', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'B-ORG', 'O', 'O', 'O', 'O', 'O', 'O'])
 }
 ```
+
 ```json
 {
   "tokens": array(['Decise' 'di' 'scrivere' 'una' 'serie' 'di' 'saggi' 'e' 'presentarli' 'in' 'un' 'periodico' 'intitolato' '"' 'The' 'Rambler' '"' 'che' 'sarebbe' 'stato' 'messo' 'in' 'vendita' 'per' 'pochi' 'centesimi' 'ogni' 'martedì' 'e' 'sabato' '.']),
@@ -197,34 +212,40 @@ When evaluating generative models, we use the following setup (see the
 
 - Number of few-shot examples: 8
 - Prefix prompt:
-  ```
+
+  ```text
   Di seguito sono riportate le frasi e i dizionari JSON con le entità denominate presenti nella frase data.
   ```
+
 - Base prompt template:
-  ```
+
+  ```text
   Frase: {text}
   Entità denominate: {label}
   ```
+
 - Instruction-tuned prompt template:
-  ```
+
+  ```text
   Frase: {text}
 
   Identificare le entità nominate nella frase. Il risultato dovrebbe essere un dizionario JSON con le chiavi 'persona', 'posizione', 'organizzazione' e 'varie'. I valori devono essere elenchi di entità nominate di quel tipo, esattamente come appaiono nella frase.
   ```
+
 - Label mapping:
-    - `B-PER` ➡️ `persona`
-    - `I-PER` ➡️ `persona`
-    - `B-LOC` ➡️ `posizione`
-    - `I-LOC` ➡️ `posizione`
-    - `B-ORG` ➡️ `organizzazione`
-    - `I-ORG` ➡️ `organizzazione`
-    - `B-MISC` ➡️ `varie`
-    - `I-MISC` ➡️ `varie`
+  - `B-PER` ➡️ `persona`
+  - `I-PER` ➡️ `persona`
+  - `B-LOC` ➡️ `posizione`
+  - `I-LOC` ➡️ `posizione`
+  - `B-ORG` ➡️ `organizzazione`
+  - `I-ORG` ➡️ `organizzazione`
+  - `B-MISC` ➡️ `varie`
+  - `I-MISC` ➡️ `varie`
 
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ euroeval --model <model-id> --dataset wikineural-it
+euroeval --model <model-id> --dataset wikineural-it
 ```
 
 ## Linguistic Acceptability
@@ -252,12 +273,14 @@ Here are a few examples from the training split:
   "label": "correct"
 }
 ```
+
 ```json
 {
   "text": "Ottimamente ha retto invece il cuore nuovo di Saverio Pallucca - alle a le spalle tre infarti, quattro by-pass, un trapianto cardiaco meno di due anni fa - nell' in l' ultima edizione della di la famosa maratona di New York.",
   "label": "correct"
 }
 ```
+
 ```json
 {
   "text": "Un secondo gruppo di problemi riguarda la necessità di garantire che il sistema economico venga percepito come fondamentalmente equo, che rappresenta la chiave della la di sua sostenibilità politica.",
@@ -270,30 +293,35 @@ When evaluating generative models, we use the following setup (see the
 
 - Number of few-shot examples: 12
 - Prefix prompt:
-  ```
+
+  ```text
   Di seguito sono riportate le frasi e la loro correttezza grammaticale.
   ```
+
 - Base prompt template:
-  ```
+
+  ```text
   Frase: {text}
   Grammaticalmente corretto: {label}
   ```
+
 - Instruction-tuned prompt template:
-  ```
+
+  ```text
   Frase: {text}
 
   Stabilite se la frase è grammaticalmente corretta o meno. Rispondete con 'si' se la frase è corretta e con 'no' se non lo è, e nient'altro.
   ```
+
 - Label mapping:
-    - `correct` ➡️ `si`
-    - `incorrect` ➡️ `no`
+  - `correct` ➡️ `si`
+  - `incorrect` ➡️ `no`
 
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ euroeval --model <model-id> --dataset scala-it
+euroeval --model <model-id> --dataset scala-it
 ```
-
 
 ## Reading Comprehension
 
@@ -320,6 +348,7 @@ Here are a few examples from the training split:
   }
 }
 ```
+
 ```json
 {
   "context": "Florida Alta Velocità ferroviaria è stata proposta ferroviaria ad alta velocità sostenuta dal governo che avrebbe collegato Miami, Orlando e Tampa. La prima fase è stata pianificata per collegare Orlando e Tampa ed è stato offerto un finanziamento federale, ma è stato respinto dal governatore Rick Scott nel 2011. La seconda fase della linea è stata prevista per collegare Miami. Entro il 2014, un progetto privato conosciuto come All Aboard Florida da parte di una società della storica Florida East Coast Railway ha iniziato la costruzione di una linea ferroviaria ad alta velocità nel sud della Florida che dovrebbe terminare all' aeroporto internazionale di Orlando.",
@@ -330,6 +359,7 @@ Here are a few examples from the training split:
   }
 }
 ```
+
 ```json
 {
   "context": "Gli insetti sociali, come le termiti, le formiche e molte api e vespe, sono la specie più familiare di animali eusociali. Vivono insieme in grandi colonie ben organizzate che possono essere così strettamente integrate e geneticamente simili che le colonie di alcune specie sono talvolta considerate superorganismi. Talvolta si sostiene che le varie specie di api da miele siano gli unici invertebrati (e addirittura uno dei pochi gruppi non umani) ad aver evoluto un sistema di comunicazione simbolica astratta in cui un comportamento viene utilizzato per rappresentare e trasmettere informazioni specifiche su qualcosa nell' ambiente. In questo sistema di comunicazione, chiamato linguaggio dance, l' angolo in cui una danza d' ape rappresenta una direzione relativa al sole, e la lunghezza della danza rappresenta la distanza da volare. 309-311 Anche se forse non così avanzato come le api mellifere, anche i bombi hanno potenzialmente alcuni comportamenti di comunicazione sociale.",
@@ -346,17 +376,22 @@ When evaluating generative models, we use the following setup (see the
 
 - Number of few-shot examples: 4
 - Prefix prompt:
-  ```
+
+  ```text
   I testi che seguono sono accompagnati da domande e risposte.
   ```
+
 - Base prompt template:
-  ```
+
+  ```text
   Testo: {text}
   Domanda: {question}
   Rispondere in massimo 3 parole: {label}
   ```
+
 - Instruction-tuned prompt template:
-  ```
+
+  ```text
   Testo: {text}
 
   Rispondi alla seguente domanda sul in un massimo di 3 parole.
@@ -367,9 +402,8 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ euroeval --model <model-id> --dataset squad-it
+euroeval --model <model-id> --dataset squad-it
 ```
-
 
 ### Unofficial: BeleBele-it
 
@@ -388,12 +422,14 @@ Here are a few examples from the training split:
   "label": "b"
 }
 ```
+
 ```json
 {
   "text": "Testo: "I commenti, in diretta televisiva, hanno rappresentato la prima occasione per autorevoli fonti iraniane per ammettere che le sanzioni sono efficaci. Esse comprendono limitazioni finanziarie e il divieto dell\'Unione europea all\'esportazione di petrolio greggio, che rappresenta l\'80% del reddito estero nell\'economia dell\'Iran. Secondo l\'ultimo rapporto mensile dell’OPEC, il volume delle esportazioni di greggio è sceso al livello più basso degli ultimi vent\'anni, con 2,8 milioni di barili al giorno. Il leader supremo del Paese, l’Ayatollah Ali Khamenei, ha parlato della dipendenza dal petrolio paragonandola ad ""una trappola"" che risale al periodo precedente la rivoluzione islamica iraniana del 1979 e dalla quale il Paese si dovrebbe liberare."\nDomanda: Secondo il passaggio, chi ha ammesso gli effetti delle sanzioni sull\'economia iraniana?\nOpzioni:\na. Autorevoli fonti\nb. OPEC\nc. Ayatollah Ali Khamenei\nd. L\'Unione Europea",
   "label": "a"
 }
 ```
+
 ```json
 {
   "text": "Testo: Il dottor Lee si è detto preoccupato anche in merito ai rapporti che rivelano che i bambini in Turchia ora sono stati contagiati dal virus dell'influenza aviaria A(H5N1) senza ammalarsi. Ha sottolineato che secondo alcuni studi la malattia diventerà meno mortale prima che possa causare un'epidemia globale. Si teme che se permangono sintomi influenzali di lieve entità, i pazienti possano continuare a contagiare più persone durante la loro routine quotidiana.\nDomanda: Secondo il brano, cosa dovrebbe accadere alla malattia prima di causare un'epidemia globale?\nOpzioni:\na. Deve diventare meno letale\nb. I sintomi devono rimanere lievi\nc. Occorre che più pazienti vengano infettati\nd. I bambini devono manifestare i sintomi",
@@ -406,11 +442,14 @@ When evaluating generative models, we use the following setup (see the
 
 - Number of few-shot examples: 5
 - Prefix prompt:
-  ```
+
+  ```text
   Le seguenti sono domande a scelta multipla (con relative risposte).
   ```
+
 - Base prompt template:
-  ```
+
+  ```text
   Domanda: {text}
   Opzioni:
   a. {option_a}
@@ -419,8 +458,10 @@ When evaluating generative models, we use the following setup (see the
   d. {option_d}
   Risposta: {label}
   ```
+
 - Instruction-tuned prompt template:
-  ```
+
+  ```text
   Domanda: {text}
   Opzioni:
   a. {option_a}
@@ -434,9 +475,8 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ euroeval --model <model-id> --dataset belebele-it
+euroeval --model <model-id> --dataset belebele-it
 ```
-
 
 ### Unofficial: MultiWikiQA-it
 
@@ -459,6 +499,7 @@ Here are a few examples from the training split:
     }
 }
 ```
+
 ```json
 {
     "context": "\n\nCarriera\nTra il 1991 ed il 1995 è tesserato del , club della prima divisione inglese: nelle prime 2 stagioni gioca nelle giovanili, mentre dal 1993 al 1995 è aggregato alla prima squadra, in cui comunque gioca solamente una partita ufficiale, il 14 agosto 1994, quando subentra dalla panchina al 64' nel Charity Shield perso per 2-0 contro il  a Wembley. Nell'arco di queste stagioni trascorre anche un breve periodo in prestito al , club di quarta divisione, con cui nella parte finale della stagione 1993-1994 gioca 11 partite di campionato. Nella seconda parte della stagione 1994-1995 viene ceduto a titolo definitivo allo , con cui realizza 9 reti in 20 partite di campionato, non riuscendo comunque ad evitare la retrocessione in terza divisione del club, con cui in compenso raggiunge le semifinali di Coppa di Lega, risultato a cui contribuisce realizzando 2 reti in altrettante presenze nella competizione. L'anno seguente con 10 reti in 26 presenze contribuisce all'immediato ritorno del club in seconda divisione, categoria nella quale nella stagione 1996-1997 mette a segno 8 reti in 31 presenze.\n\nNell'estate del 1997 passa allo , altro club di seconda divisione, con cui mette a segno 12 reti in 36 partite nel campionato 1997-1998, che si conclude con la retrocessione in terza divisione delle Potteries; l'anno seguente realizza 9 reti in 34 presenze in questa categoria, mentre nella stagione 1999-2000 oltre a vincere un Football League Trophy realizza 24 reti in 45 partite di campionato, a cui aggiunge 16 reti in 38 partite nel campionato successivo. Nella stagione 2000-2001 realizza invece 4 reti in 5 presenze per poi essere ceduto al , altro club di terza divisione, con cui nella rimanente parte della stagione mette a segno 8 reti in 26 presenze. Nella stagione 2002-2003 vince invece i play-off di terza divisione, dopo aver segnato 13 reti in 46 partite di campionato; nella stagione 2003-2004 torna quindi nuovamente a giocare in seconda divisione, categoria nella quale va a segno per 13 volte in 23 presenze. L'anno seguente, che è anche il suo ultimo nel Cardiff City, gioca con maggior regolarità e va nuovamente in doppia cifra di reti segnate: chiude infatti il campionato con 31 presenze e 12 reti. Tra il 2005 ed il 2007 gioca ancora in seconda divisione, con la maglia del , ma con un ruolo da comprimario: nell'arco di 2 stagioni segna infatti solamente una rete in complessive 36 partite di campionato. Al termine della stagione 2006-2007 scende di categoria e si accasa al , in quarta divisione: qui, nelle stagioni 2007-2008 e 2008-2009 gioca stabilmente da titolare e torna a segnare con regolarità (31 reti in 70 partite di campionato nell'arco del biennio), mentre nella stagione 2009-2010, la sua ultima in carriera, perde il posto in squadra e gioca in totale solamente 9 partite fra tutte le competizioni (7 in campionato e 2 nel Football League Trophy) senza mai segnare.\n\nIn carriera ha totalizzato complessivamente 495 presenze e 174 reti nei campionati professionistici inglesi (play-off inclusi), più 25 presenze e 2 reti in FA Cup, 27 presenze e 14 reti in Coppa di Lega, una presenza nel Community Shield e 13 presenze e 7 reti nel Football League Trophy, per un totale complessivo di 561 presenze e 197 reti in carriera in partite ufficiali.\n\nPalmarès\n\nClub\n\nCompetizioni nazionali\n\nStoke: 1999-2000\n\nNote\n\nCollegamenti esterni",
@@ -469,6 +510,7 @@ Here are a few examples from the training split:
     }
 }
 ```
+
 ```json
 {
     "context": "HD 56779 è una stella bianco-azzurra nella sequenza principale di magnitudine 5,01 situata nella costellazione della Poppa. Dista 959 anni luce dal sistema solare.\n\nOsservazione\nSi tratta di una stella situata nell'emisfero celeste australe. La sua posizione moderatamente australe fa sì che questa stella sia osservabile specialmente dall'emisfero sud, in cui si mostra alta nel cielo nella fascia temperata; dall'emisfero boreale la sua osservazione risulta invece più penalizzata, specialmente al di fuori della sua fascia tropicale. La sua magnitudine pari a 5 fa sì che possa essere scorta solo con un cielo sufficientemente libero dagli effetti dell'inquinamento luminoso.\n\nIl periodo migliore per la sua osservazione nel cielo serale ricade nei mesi compresi fra dicembre e maggio; nell'emisfero sud è visibile anche all'inizio dell'inverno, grazie alla declinazione australe della stella, mentre nell'emisfero nord può essere osservata limitatamente durante i mesi della tarda estate boreale.\n\nCaratteristiche fisiche\nLa stella è una bianco-azzurra nella sequenza principale; possiede una magnitudine assoluta di -2,33 e la sua velocità radiale positiva indica che la stella si sta allontanando dal sistema solare.\n\nVoci correlate\nStelle principali della costellazione della Poppa\n\nCollegamenti esterni\n\nStelle di classe spettrale B\nStelle bianco-azzurre di sequenza principale",
@@ -485,17 +527,22 @@ When evaluating generative models, we use the following setup (see the
 
 - Number of few-shot examples: 4
 - Prefix prompt:
-  ```
+
+  ```text
   I testi che seguono sono accompagnati da domande e risposte.
   ```
+
 - Base prompt template:
-  ```
+
+  ```text
   Testo: {text}
   Domanda: {question}
   Rispondere in massimo 3 parole: {label}
   ```
+
 - Instruction-tuned prompt template:
-  ```
+
+  ```text
   Testo: {text}
 
   Rispondi alla seguente domanda sul in un massimo di 3 parole.
@@ -506,9 +553,8 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ euroeval --model <model-id> --dataset multi-wiki-qa-it
+euroeval --model <model-id> --dataset multi-wiki-qa-it
 ```
-
 
 ## Knowledge
 
@@ -534,12 +580,14 @@ Here are a few examples from the training split:
   "label": "d"
 }
 ```
+
 ```json
 {
   "text": "Il 'nuovo razzismo' si riferisce a:\nScelte:\na. una forma più sottile di pregiudizio, mascherata dall'orgoglio nazionale\nb. una decostruzione post-moderna delle idee razziste per rivelarne la mancanza di profondità\nc. pratiche razziste riscontrabili in aree sociali di recente emergenza, come il cyberspazio\nd. un movimento antifascista che sfida le politiche nazionaliste",
   "label": "a"
 }
 ```
+
 ```json
 {
   "text": "Tutti i seguenti possono agire come messaggeri intracellulari, TRANNE\nScelte:\na. ioni di calcio\nb. cAMP\nc. acetilcolina\nd. inositolo 1,4,5-trifosfato",
@@ -552,11 +600,14 @@ When evaluating generative models, we use the following setup (see the
 
 - Number of few-shot examples: 5
 - Prefix prompt:
-  ```
+
+  ```text
   Le seguenti sono domande a scelta multipla (con relative risposte).
   ```
+
 - Base prompt template:
-  ```
+
+  ```text
   Domanda: {text}
   Scelte:
   a. {option_a}
@@ -565,8 +616,10 @@ When evaluating generative models, we use the following setup (see the
   d. {option_d}
   Risposta: {label}
   ```
+
 - Instruction-tuned prompt template:
-  ```
+
+  ```text
   Domanda: {text}
   Scelte:
   a. {option_a}
@@ -580,9 +633,8 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ euroeval --model <model-id> --dataset mmlu-it
+euroeval --model <model-id> --dataset mmlu-it
 ```
-
 
 ## Common-sense Reasoning
 
@@ -605,12 +657,14 @@ Here are a few examples from the training split:
     "label": "c"
 }
 ```
+
 ```json
 {
     "text": "[header] Come sapere perché un bambino (sotto i 2 anni) sta piangendo [title] Ascolta il pianto forte, quasi un lamento. [step] Questo di solito significa \"ho dolore\" o \"sono malato\". Il bambino farà una pausa, poi urlerà di nuovo e ripeterà il processo.\nScelte:\na. Questo tipo di pianto è di solito solo un segnale di avvertimento della fame. Un bambino piangerà anche leggermente di più se ha fame.\nb. Questo può essere molto sconvolgente da guardare, quindi fai venire un genitore ad aiutare il bambino. [substeps] Solo un genitore può giudicare l'età del loro bambino.\nc. Questo di solito finirà dopo circa tre minuti. [title] Fai attenzione agli occhi chiusi del bambino.\nd. È persistente, penetrante e inequivocabile. Se senti questo pianto, vai immediatamente dal bambino.",
     "label": "d"
 }
 ```
+
 ```json
 {
     "text": "Una donna mostra come asciugare la superficie del bancone e il lavandino dall'acqua schizzata dal rubinetto con un asciugamano di carta. una donna\nScelte:\na. mostra il suo metodo preparatorio meticoloso per il bancone e il pavimento sui quali applicherà un asciugamano.\nb. sta in cucina accanto al lavandino e parla alla telecamera.\nc. impugna un asciugamano di carta e inizia a pulire una bevanda appoggiata sulla superficie del bancone e del lavandino.\nd. sta di fronte ad un set di utensili sul bancone, prende un asciugacapelli con le sue parti accessorie fissate e sicure con una barra sul lavandino asciutto.",
@@ -623,11 +677,14 @@ When evaluating generative models, we use the following setup (see the
 
 - Number of few-shot examples: 5
 - Prefix prompt:
-  ```
+
+  ```text
   Le seguenti sono domande a scelta multipla (con relative risposte).
   ```
+
 - Base prompt template:
-  ```
+
+  ```text
   Domanda: {text}
   Scelte:
   a. {option_a}
@@ -636,8 +693,10 @@ When evaluating generative models, we use the following setup (see the
   d. {option_d}
   Risposta: {label}
   ```
+
 - Instruction-tuned prompt template:
-  ```
+
+  ```text
   Domanda: {text}
   Scelte:
   a. {option_a}
@@ -651,9 +710,8 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ euroeval --model <model-id> --dataset hellaswag-it
+euroeval --model <model-id> --dataset hellaswag-it
 ```
-
 
 ### Unofficial: GoldenSwag-it
 
@@ -697,11 +755,14 @@ When evaluating generative models, we use the following setup (see the
 
 - Number of few-shot examples: 5
 - Prefix prompt:
-  ```
+
+  ```text
   Le seguenti sono domande a scelta multipla (con relative risposte).
   ```
+
 - Base prompt template:
-  ```
+
+  ```text
   Domanda: {text}
   Scelte:
   a. {option_a}
@@ -710,8 +771,10 @@ When evaluating generative models, we use the following setup (see the
   d. {option_d}
   Risposta: {label}
   ```
+
 - Instruction-tuned prompt template:
-  ```
+
+  ```text
   Domanda: {text}
   Scelte:
   a. {option_a}
@@ -725,7 +788,7 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ euroeval --model <model-id> --dataset goldenswag-it
+euroeval --model <model-id> --dataset goldenswag-it
 ```
 
 ### Unofficial: Winogrande-it
@@ -765,19 +828,24 @@ When evaluating generative models, we use the following setup (see the
 
 - Number of few-shot examples: 5
 - Prefix prompt:
-  ```
+
+  ```text
   Le seguenti sono domande a scelta multipla (con relative risposte).
   ```
+
 - Base prompt template:
-  ```
+
+  ```text
   Domanda: {text}
   Scelte:
   a. {option_a}
   b. {option_b}
   Risposta: {label}
   ```
+
 - Instruction-tuned prompt template:
-  ```
+
+  ```text
   Domanda: {text}
   Scelte:
   a. {option_a}
@@ -789,9 +857,8 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ euroeval --model <model-id> --dataset winogrande-it
+euroeval --model <model-id> --dataset winogrande-it
 ```
-
 
 ## Summarisation
 
@@ -813,12 +880,14 @@ Here are a few examples from the training split:
   "target_text": "Snapchat e l’Internet “temporanea”. Come funziona – e cosa implica, per gli utenti – la popolare applicazione per mandarsi messaggi e foto che spariscono dopo pochi secondi, contesa a colpi di offerte miliardarie."
 }
 ```
+
 ```json
 {
   "text": "Con trovata da entertainer, nel suo discorso da sconfitto al ballottaggio delle primarie del centrosinistra, Matteo Renzi ha citato Bersani, “ma non Pierluigi, Samuele”. è sempre bellissima la cicatrice che mi ricorderà di esser stato felice",
   "target_text": "Pesce d’aprile, Samuele Bersani. La canzone citata da Matteo Renzi nel suo \"concession speech\"."
 }
 ```
+
 ```json
 {
   "text": "Questa mattina i carabinieri hanno arrestato più di 50 persone accusate di essere a capo o affiliate al clan mafioso D’Abramo-Sforza. Gli arresti sono avvenuti a Bari, Altamura (Bari), Foggia, Cerignola (Foggia), Matera, Lecce e Roma. Le accuse contro gli arrestati sono di associazione armata di tipo mafioso, detenzione e porto d’armi anche da guerra, traffico di sostanze stupefacenti, omicidio, tentato omicidio, estorsione, turbativa d’asta. L’operazione è stata disposta dal gip di Bari su richiesta della Direzione distrettuale antimafia; le indagini sono state condotte dal nucleo investigativo del Comando provinciale Carabinieri di Bari.",
@@ -831,16 +900,21 @@ When evaluating generative models, we use the following setup (see the
 
 - Number of few-shot examples: 1
 - Prefix prompt:
-  ```
+
+  ```text
   Di seguito sono riportati gli articoli con i relativi riassunti.
   ```
+
 - Base prompt template:
-  ```
+
+  ```text
   Articolo di cronaca: {text}
   Sintesi: {target_text}
   ```
+
 - Instruction-tuned prompt template:
-  ```
+
+  ```text
   Articolo di cronaca: {text}
 
   Scrivete un riassunto dell'articolo sopra citato.
@@ -849,5 +923,5 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ euroeval --model <model-id> --dataset ilpost-sum
+euroeval --model <model-id> --dataset ilpost-sum
 ```

@@ -6,7 +6,6 @@ hide:
 
 👈 Choose a leaderboard on the left to see the results.
 
-
 ## 🏷️ Types of Leaderboards
 
 Each language has two leaderboards:
@@ -17,7 +16,6 @@ Each language has two leaderboards:
 - **NLU Leaderboard**: This leaderboard shows the performance of models that can
   understand text, which includes both generative and non-generative models.
 
-
 ## 📊 How to Read the Leaderboards
 
 The main score column is the `Rank`, showing the [mean rank score](/methodology) of the
@@ -26,10 +24,10 @@ model across all the tasks in the leaderboard. The lower the rank, the better th
 The columns that follow the rank columns are metadata about the model:
 
 - `Type`: The type of model:
-    - 🔍 indicates that it is an encoder model (e.g., BERT)
-    - 🧠 indicates that it is a base generative model (e.g., GPT-2)
-    - 📝 indicates that it is an instruction-tuned model (e.g., ChatGPT)
-    - 🤔 indicates that it is a reasoning model (e.g., o1)
+  - 🔍 indicates that it is an encoder model (e.g., BERT)
+  - 🧠 indicates that it is a base generative model (e.g., GPT-2)
+  - 📝 indicates that it is an instruction-tuned model (e.g., ChatGPT)
+  - 🤔 indicates that it is a reasoning model (e.g., o1)
 - `Parameters`: The total number of parameters in the model, in millions.
 - `Vocabulary`: The size of the model's vocabulary, in thousands.
 - `Context`: The maximum number of tokens that the model can process at a time.

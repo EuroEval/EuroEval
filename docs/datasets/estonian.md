@@ -4,7 +4,6 @@ This is an overview of all the datasets used in the Estonian part of EuroEval. T
 datasets are grouped by their task - see the [task overview](/tasks) for more
 information about what these constitute.
 
-
 ## Sentiment Classification
 
 ### Estonian Valence Corpus
@@ -24,7 +23,6 @@ to 1,024 examples, and redistribute the rest to validation and test resulting in
 final size of 1,024 / 256 / 2,048 for the training, validation and test splits,
 respectively.
 
-
 Here are a few examples from the training split:
 
 ```json
@@ -33,12 +31,14 @@ Here are a few examples from the training split:
   "label": "positiivne"
 }
 ```
+
 ```json
 {
   "text": "Sellises eas, nagu teie olete, tundub muidugi ka 20-aastane üsna laps ...",
   "label": "neutraalne"
 }
 ```
+
 ```json
 {
   "text": "ka ainus märkimisväärne saavutus temalt selle loo esituse juures.",
@@ -51,31 +51,36 @@ When evaluating generative models, we use the following setup (see the
 
 - Number of few-shot examples: 12
 - Prefix prompt:
-  ```
+
+  ```text
   Järgmised on dokumendid ja nende meelestatus, mis võib olla 'positiivne', 'neutraalne' või 'negatiivne'.
   ```
+
 - Base prompt template:
-  ```
+
+  ```text
   Dokument: {text}
   Meelestatus: {label}
   ```
+
 - Instruction-tuned prompt template:
-  ```
+
+  ```text
   Dokument: {text}
 
   Klassifitseeri dokument meelestatuse järgi. Võimalikud vastused: 'positiivne', 'neutraalne' või 'negatiivne'. Muud vastused ei ole lubatud.
   ```
+
 - Label mapping:
-    - `positive` ➡️ `positiivne`
-    - `neutral` ➡️ `neutraalne`
-    - `negative` ➡️ `negatiivne`
+  - `positive` ➡️ `positiivne`
+  - `neutral` ➡️ `neutraalne`
+  - `negative` ➡️ `negatiivne`
 
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ euroeval --model <model-id> --dataset estonian-valence
+euroeval --model <model-id> --dataset estonian-valence
 ```
-
 
 ## Named Entity Recognition
 
@@ -98,12 +103,14 @@ Here are a few examples from the training split:
   "labels": ["O", "O", "O", "O", "O", "O", "O", "O"]
 }
 ```
+
 ```json
 {
   "tokens": ["“", "Kui", "tegemist", "oleks", "olnud", "piletiga", "peoga", ",", "peaksime", "inimestele", "raha", "tagasi", "maksma", ",", "nüüd", "saame", "üksnes", "külalistelt", "vabandust", "paluda", ",”ütles", "Järvamaa", "omavalitsuste", "liidu", "tegevdirektor", "Krista", "Nurm", "ajalehele", "Järvamaa", "Teataja", "."],
   "labels": ["O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "B-ORG", "I-ORG", "I-ORG", "B-MISC", "B-PER", "I-PER", "O", "B-MISC", "I-MISC", "O"]
 }
 ```
+
 ```json
 {
   "tokens": ["Makke", "lõpetas", "Quincy", "keskkooli", "Illinoisi", "osariigis", "ja", "plaanib", "sportlasstipendiumi", "abil", "edasi", "õppida", "Lääne-Illinoisi", "ülikoolis", ",", "mille", "korvpallimeeskond", "kuulub", "USA", "üliõpilasliiga", "NCAA", "esimesse", "divisjoni", "."],
@@ -116,37 +123,42 @@ When evaluating generative models, we use the following setup (see the
 
 - Number of few-shot examples: 8
 - Prefix prompt:
-  ```
+
+  ```text
   Allpool on laused ja JSON-sõnastikud, mis sisaldavad antud lauses esinevaid nimetatud üksuseid.
   ```
+
 - Base prompt template:
-  ```
+
+  ```text
   Lause: {text}
   Nimetatud üksused: {label}
   ```
+
 - Instruction-tuned prompt template:
-  ```
+
+  ```text
   Lause: {text}
 
   Tuvasta lauses nimetatud üksused. Väljund peaks olema JSON-sõnastik, mille võtmed on 'inimene', 'asukoht', 'organisatsioon' ja 'muu'.
   Väärtused peaksid olema kindlat tüüpi nimetatud üksuste loendid, täpselt nii nagu need lauses esinevad.
   ```
+
 - Label mapping:
-    - `B-PER` ➡️ `inimene`
-    - `I-PER` ➡️ `inimene`
-    - `B-LOC` ➡️ `asukoht`
-    - `I-LOC` ➡️ `asukoht`
-    - `B-ORG` ➡️ `organisatsioon`
-    - `I-ORG` ➡️ `organisatsioon`
-    - `B-MISC` ➡️ `muu`
-    - `I-MISC` ➡️ `muu`
+  - `B-PER` ➡️ `inimene`
+  - `I-PER` ➡️ `inimene`
+  - `B-LOC` ➡️ `asukoht`
+  - `I-LOC` ➡️ `asukoht`
+  - `B-ORG` ➡️ `organisatsioon`
+  - `I-ORG` ➡️ `organisatsioon`
+  - `B-MISC` ➡️ `muu`
+  - `I-MISC` ➡️ `muu`
 
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ euroeval --model <model-id> --dataset estner
+euroeval --model <model-id> --dataset estner
 ```
-
 
 ## Linguistic Acceptability
 
@@ -170,12 +182,14 @@ Here are a few examples from the training split:
   "label": "incorrect"
 }
 ```
+
 ```json
 {
   "text": "Esiteks valid sa raamatu ise, kui sul on seda vaja, näiteks õppekirjanduse puhul, või tuleb see mingil teisel põhjusel läbi lugeda, näiteks sõbra nõuandel.",
   "label": "correct"
 }
 ```
+
 ```json
 {
   "text": "Ma olen kindel et mitte amet rikkub inimest, aga raha.",
@@ -188,16 +202,21 @@ When evaluating generative models, we use the following setup (see the
 
 - Number of few-shot examples: 1
 - Prefix prompt:
-  ```
+
+  ```text
   Järgnevad on laused ja kas need on grammatiliselt õiged.
   ```
+
 - Base prompt template:
-  ```
+
+  ```text
   Lause: {text}
   Grammatikaliselt õige:: {label}
   ```
+
 - Instruction-tuned prompt template:
-  ```
+
+  ```text
   Lause: {text}
 
   Otsusta, kas lause on grammatiliselt õige või mitte. Vasta {labels_str}, ja mitte midagi muud.
@@ -206,9 +225,8 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ euroeval --model <model-id> --dataset grammar-et
+euroeval --model <model-id> --dataset grammar-et
 ```
-
 
 ### Unofficial: ScaLA-da
 
@@ -233,12 +251,14 @@ Here are a few examples from the training split:
   "label": "correct"
 }
 ```
+
 ```json
 {
   "text": "Karuks ütleb, et oma natuuri tõttu huvitub ta ka väga paljudest muudest asjadest: sise- ja välispoliitikast, ajaloost, erinevatest ühiskonnaprobleemidest.",
   "label": "correct"
 }
 ```
+
 ```json
 {
   "text": "Juta teab oma kogemusest, et selline söök tahab pikka ja tunneb kohe ära, et varem valmis tehtud asi on mikrolaineahjus üles soojendatud.",
@@ -251,30 +271,35 @@ When evaluating generative models, we use the following setup (see the
 
 - Number of few-shot examples: 12
 - Prefix prompt:
-  ```
+
+  ```text
   Järgnevad on laused ja kas need on grammatiliselt õiged.
   ```
+
 - Base prompt template:
-  ```
+
+  ```text
   Lause: {text}
   Grammatikaliselt õige: {label}
   ```
+
 - Instruction-tuned prompt template:
-  ```
+
+  ```text
   Sætning: {text}
 
   Bestem om sætningen er grammatisk korrekt eller ej. Svar med 'ja', hvis sætningen er korrekt, og 'nej', hvis den ikke er.
   ```
+
 - Label mapping:
-    - `correct` ➡️ `jah`
-    - `incorrect` ➡️ `ei`
+  - `correct` ➡️ `jah`
+  - `incorrect` ➡️ `ei`
 
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ euroeval --model <model-id> --dataset scala-et
+euroeval --model <model-id> --dataset scala-et
 ```
-
 
 ## Reading Comprehension
 
@@ -299,6 +324,7 @@ Here are a few examples from the training split:
     }
 }
 ```
+
 ```json
 {
     "context": "Lepna haruraamatukogu on raamatukogu, mis tegutseb Lääne-Viru maakonnas Rakvere vallas Lepna külas. See on Sõmeru raamatukogu struktuuriüksus.\n\nAjalugu \n\nRaamatukogu täpne ja ametlik asutamise aeg pole kindlalt teada. Raamatukogus leiduvas kroonika kirjutaja arvates ulatub see 1892. aastasse, kuid dokumentaalset kinnitust sellele ei ole leitud. Kirjas on, et raamatukogu asutati Tõrma valla kooli juurde. Küll aga saab ajalehest Virulane (10. mai 1928) lugeda, et Rakvere valla avalik raamatukogu asutati 1925. aasta lõpul "Avalikkude raamatukogu seaduse" alusel ja alustas tegevust 1. jaanuaril 1926.\n\nRaamatukogu aluspõhi töötati välja Rakvere vallas töötavate seltside poolt, kes oma raamatukogud täies ulatuses avalikule raamatukogule üle andsid. Raamatukogu tegevust toetasid rahaliselt nii Rakvere vald kui Haridusministeerium.\n\nRakvere valla avaliku raamatukogu all töötasid erinevad osakonnad (7. osakond),\xa0mille juhatajateks olid nii koolide juhatajad ja teised haridustegelased. Edukamaks osakonnaks aga peeti Mädapea osakonda, mida juhatas Mädapea Algkooli juhataja Jakob Awik. Raamatukogu asus Mädapea mõisas, Mädapea Algkooliga ühe katuse all. 1934. aastal laenutas raamatuid välja toonane kooliõpetaja Helene Tammik.\n\n1965–1991 oli Mädapea mõis Energia kolhoosi hallata.\n\n1991 avati Lepna alevikus paiknev Lepna teeninduspunkt kortermaja neljatoalises korteris kolmandal korrusel. Raamatukogu kogu oli jaotunud kahte hoonesse: Mädapea mõisa ja Lepna kortermajja.\n\n1995 kolis raamatukogu Mädapealt Lepna alevikku kortermaja kahte korterisse, mis asusid maja kolmandal korrusel.\n\n26. juunist 1996 nimetatakse Mädapea raamatukogu Lepna raamatukoguks.\n\nAlates 12. septembrist 2018 kuulub raamatukogu haruraamatukoguna Sõmeru raamatukogustruktuuri.\n\nRaamatukogul on kaks teeninduspunkti: Veltsi Lasteaed-Algkoolis ja Lasila Põhikoolis.\n\nTöötajad \nMädapea raamatukogu töötajad alates 1927. aastast vastavalt Lepna raamatukogu üleandmise ja vastuvõtmise aktidele:\n Jakob Awik 1927\n Helene Tammik 1934\n Ellen Kuusik 01.11.1945–20.02.1954\n Salme Partei 20.02.1949–25.11.1954\n Vilma Niitla (Laar) 25.11.1954–25.05.1955\n Evi Suurväli 25.05.1955–06.08.1956\n Elvi Sats 06.08.1956–30.05.1957\n Maie Tiigi 30.05.1957–05.04.1959\n Vaike Salamets 05.04.1959–15.09.1961\n Elfride Salumäe 15.09.1961–28.03.1963\n Linda Rünk 28.03.1963–07.03.1964\n Evi Lahi 07.03.1964–01.08.1964\n Liia Pall 1964–1947\n Ille Laarman 1975–1977\n Anne Pilipenko1978–20.09.2009 (Mädapea Raamatukogu / Lepna Raamatukogu)\n Jaana Ant 01.09.2009–01.07.2016\n Olga Samra (raamatukogu direktori kohusetäitja) 01.09.2016-märts 2017\n Silja Raudsepp märts 2017– august 2018\n Jaana Ant 22.10.2018 –\n\nKirjandus \n Virulane, 10. mai 1928. lk 4\n\nViited\n\nVälislingid \n Rakvere valla koduleht, rakvere valla raamatukogud\n Lepna raamatukogu koduleht\n Lepna raamatukogu Facebookis\n\nLääne-Viru maakonna raamatukogud\nRakvere vald",
@@ -309,6 +335,7 @@ Here are a few examples from the training split:
     }
 }
 ```
+
 ```json
 {
     "context": "Kannuka pank ehk Kannuka klindineemik on Põhja-Eesti panga osa Ida-Viru maakonnas Narva-Jõesuu linnas ja Sillamäe linnas. Kannuka pank algab peale Sõtke klindilahest ja kulgeb kuni Pimestiku panga moodustavate klindisaarteni.\n\nKannuka klindineemik on läänepoolsem 2,5 km pikkune ja 1,5 km laiune osa Vaivara Sinimägedega sarnase, Sillamäe rikkevööndi, tektooniliselt rikutud keerulise ehitusega klindivööndist. Panga paeplatoo kõrgub 28...30 meetrit üle merepinna. Paeplatool avanevad õhukese moreenikihi all Kesk-Ordoviitsiumi Volhovi lademe Toila kihistu glaukoniiti sisaldavad lubjakivid.\n\nKlindiserv on kaetud rusukalletega ning paljandid peaaegu puuduvad välja arvatud Sillamäe linnas mõned üksikud lõigud. Kannuka pank on nüüdisajal kasvanud suures osas Sillamäe linna sisse, kuid kohati on säilinud väikeste lõikudena ka pangale omast klindimetsa.\n\nVaata ka\nEesti pankade loend\nMeriküla pank\nPargimäe pank\nPimestiku pank\nPõrguaugumäe pank\nTornimäe pank\nUtria kõrgekallas\nUdria maastikukaitseala\nUtria savikallas\nVaivara klindilõik\nPuhkovo-Olgina klindiplatoo (Puhkovo-Vodava-Olgina klindiplatoo)\nLaagna klindisaarestik\n\nKirjandus\nKalle Suuroja. Põhja-Eesti pangad, Tallinn 2004.\n\nIda-Viru maakonna paljandid\nNarva-Jõesuu linn",
@@ -325,17 +352,22 @@ When evaluating generative models, we use the following setup (see the
 
 - Number of few-shot examples: 4
 - Prefix prompt:
-  ```
+
+  ```text
   Järgnevad on tekstid koos küsimuste ja vastustega.
   ```
+
 - Base prompt template:
-  ```
+
+  ```text
   Tekst: {text}
   Küsimus: {question}
   Vasta maksimaalselt 3 sõnaga: {label}
   ```
+
 - Instruction-tuned prompt template:
-  ```
+
+  ```text
   Tekst: {text}
 
   Vasta järgmisele küsimusele ülevaltoodud teksti kohta maksimaalselt 3 sõnaga.
@@ -346,9 +378,8 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ euroeval --model <model-id> --dataset multi-wiki-qa-et
+euroeval --model <model-id> --dataset multi-wiki-qa-et
 ```
-
 
 ## Knowledge
 
@@ -390,11 +421,14 @@ When evaluating generative models, we use the following setup (see the
 
 - Number of few-shot examples: 5
 - Prefix prompt:
-  ```
+
+  ```text
   Järgnevad on vastusevariantidega küsimused (koos vastustega).
   ```
+
 - Base prompt template:
-  ```
+
+  ```text
   Küsimus: {text}
   Vastusevariandid:
   a. {option_a}
@@ -403,8 +437,10 @@ When evaluating generative models, we use the following setup (see the
   d. {option_d}
   Vastus: {label}
   ```
+
 - Instruction-tuned prompt template:
-  ```
+
+  ```text
   Küsimus: {text}
   Vastusevariandid:
   a. {option_a}
@@ -418,9 +454,8 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ euroeval --model <model-id> --dataset trivia-et
+euroeval --model <model-id> --dataset trivia-et
 ```
-
 
 ### Unofficial: Exam-et
 
@@ -440,12 +475,14 @@ Here are a few examples from the training split:
   "label": "a"
 }
 ```
+
 ```json
 {
   "text": "Kas väide on tõene või väär? Veendumuste pärast võib isikult Eesti kodakondsuse ära võtta.\nVastusevariandid:\na. tõene\nb. väär",
   "label": "b"
 }
 ```
+
 ```json
 {
   "text": "Kellel on Eesti vabariigis õigus kehtestada eriolukord?\nVastusevariandid:\na. politseil\nb. õiguskantsleril\nc. vabariigi valitsusel\nd. riigikohtul",
@@ -458,19 +495,24 @@ When evaluating generative models, we use the following setup (see the
 
 - Number of few-shot examples: 5
 - Prefix prompt:
-  ```
+
+  ```text
   Järgnevad on vastusevariantidega küsimused (koos vastustega).
   ```
+
 - Base prompt template:
-  ```
+
+  ```text
   Küsimus: {text}
   Vastusevariandid:
   a. {option_a}
   b. {option_b}
   Vastus: {label}
   ```
+
 - Instruction-tuned prompt template:
-  ```
+
+  ```text
   Küsimus: {text}
   Vastusevariandid:
   a. {option_a}
@@ -485,9 +527,8 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ euroeval --model <model-id> --dataset exam-et
+euroeval --model <model-id> --dataset exam-et
 ```
-
 
 ## Common-sense Reasoning
 
@@ -510,12 +551,14 @@ are machine translated):
   "label": "b"
 }
 ```
+
 ```json
 {
   "text": "Ian vabatahtlikult sõi Dennise menudo pärast seda, kui oli juba kausitäie söönud, sest _ nautis soolte söömist.\nVastusevariandid:\na. Ian\nb. Dennis",
   "label": "a"
 }
 ```
+
 ```json
 {
   "text": "Ta ei tule kunagi minu koju, aga mina lähen alati tema majja, sest _ on väiksem.\nVastusevariandid:\na. kodu\nb. maja",
@@ -528,19 +571,24 @@ When evaluating generative models, we use the following setup (see the
 
 - Number of few-shot examples: 5
 - Prefix prompt:
-  ```
+
+  ```text
   Sulle esitatakse lüngaga (_) tekstülesanne ja kaks vastusevarianti (a ja b).
   ```
+
 - Base prompt template:
-  ```
+
+  ```text
   Tekstülesanne: {text}
   Vastusevariandid:
   a. {option_a}
   b. {option_b}
   Vastus: {label}
   ```
+
 - Instruction-tuned prompt template:
-  ```
+
+  ```text
   Tekstülesanne: {text}
   Vastusevariandid:
   a. {option_a}
@@ -552,9 +600,8 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ euroeval --model <model-id> --dataset winogrande-et
+euroeval --model <model-id> --dataset winogrande-et
 ```
-
 
 ## Summarisation
 
@@ -577,12 +624,14 @@ examples from the train split.
   "target_text": "Eesti Konservatiivse Rahvaerakonna esimehe Mart Helme sõnul on riigikokku valitud erakonnakaaslase Jaak Madisoni sotsiaalmeedias levinud natsi-Saksamaad kiitev blogitekst üksikisiku arvamus ning lihtsalt hinnang Saksamaale ja tolle majandusele."
 }
 ```
+
 ```json
 {
   "text": "Eelkõige uute toodete ja teenuste disainimisel me püüame lähtuda või soovitav oleks disaineritel lähtuda eelkõige vajadusest ja mitte ainult lõbu pärast maailma kuhja ta võib-olla mittevajalike asjadega. Te annate välja ka need tootedisaini auhinnad nimega Bruno, kas ütleme siis auhinnatakse ka rohkem neid inimesi, kes siin rohkem sellist vajaduspõhist disaini hindavad? Disaini auhind, tänase pruun antakse välja iga kahe aasta tagant ja, ja tegelikult tõenäoliselt on enamus tooteid hakatud juba disainima kaks aastat tagasi tootearendusprotsess on päris pikk, aga kuna meil on rahvusvahelisel žüriil ette kirjutatud kriteeriumid, mille järgi nad hindavad, siis ma võin öelda, et seal edetabeli lõpus alles on esteetika ga esimesed mitu mitu kategooriat on pühendatud eelkõige just ka kasutaja mugavusele kasutaja vajadusele keskkonnasõbralikkusele materjalide taaskasutusele, nii et, et hästi palju kategooriaid on tulnud nagu tavapärase disaini hindamisele juurde. Kui vanasti hinnati võibolla ainult vormi ja emotsiooni ja ilu, siis nüüd on disainerite ees palju suuremad nõudmised. See festival kestab päris mitu päeva, et oskate te kohe anda mõne soovituse ka, et mida inimesed saaksid vaatama-kuulama tulla. Jah, no arvestades praeguseid niisuguseid olusid, et väga palju inimesi ei kuhjuks ühel ajal, siis me oleme praegu õnnega koos, et meie üritus kõigepealt toimub Põjala tehases, kus mahub isegi siis, kui inimesed peaksid seisma kaks pluss kaks, mida nad ilmselt peaksidki tegema, mahub 500 inimest ja kuna näitused on lahti kella 12. kaheksani iga päev, siis võib hajutatult käia neid vaatamas terve nädala jooksul. Aga kes tahab nagu pidulikumalt osaleda näituste üldisel avamisel, kus saab näha ka, et ausi, kas teksadega pääseb paradiisi, on näituse nimi, aga ma etenduse nimi on Totali outo fassion. Et siis võib tulla esmaspäeval juba kella viieks kohale ja kuni peaaegu kella kaheksani toimuvad siis kõikide näituste avamised ja, ja siis ka see maaetendus, mida ma nimetasin",
   "target_text": "Täna algab Eesti Disainiöö festival, mis sel aastal toimub juba 15. korda."
 }
 ```
+
 ```json
 {
   "text": "Mihhail Korbilt saadikupuutumatuse äravõtmine oli vajalik selleks, et tema suhtes saaks jätkata kriminaalmenetlust. Riigiprokuratuur esitas õiguskantslerile sellekohase taotluse kuu aega tagasi. Peaprokuröri taotlusest nähtub, et riigikogu liikmele Mihhail Korbile on esitatud kahtlustus karistusseadustiku paragrahv 298 prim lõikes üks sätestatud kuriteo toimepanemises. See on mõjuvõimuga kauplemine. Lühidalt väidab peaprokurör, et Mihhail Korb lubas Hillar Tederile üheksandal veebruaril 2020 kasutada oma mõjuvõimu Tallinna linnapea Mihhail Kõlvarti üle. Selleks, et kolmas isik, porto Franco osaühing, saaks ametiisikult Mihhail Kõlvartilt avaliku huvi seisukohalt põhjendamatu eelise. See siis puudutas servituudi hinda. Ja küsimus sellest, et kas porto Franco peaks väljasõidud rajama enda maale või peaks saama rajada need linnamaale ja madalama hinna eest, kui algselt välja pakuti. Ning Madiselisas. Olles kriminaaltoimiku materjalidega ja ka jälituslubadega tutvunud kinnitan teile, et märki sellest, et tegemist oleks ilmselgelt põhjendamatu menetlusega või poliitiliselt kallutatud menetlusega. Meie ei leidnud. Mihhail Korb tuletas oma sõnavõtus meelde, et kahtlustuse esitamisest on möödas 15 kuud ja tegelikult oleks asi juba ammu võinud kohtus olla, sest tema on huvitatud maksimaalselt kiirest tõe väljaselgitamisest. Täna ma pöördun kogu saali poole, samuti toetada minul saadikute puutumatuse äravõtmise. Seda kõik selleks, et maksimaalselt kiiresti teieni jõuda. Saadikupuutumatuse äravõtmise poolt hääletas 82 saadikut, vastu ei olnud keegi, mõned jätsid hääletamata.",
@@ -595,16 +644,21 @@ When evaluating generative models, we use the following setup (see the
 
 - Number of few-shot examples: 1
 - Prefix prompt:
-  ```
+
+  ```text
   Allpool on dokumendid koos kokkuvõtetega.
   ```
+
 - Base prompt template:
-  ```
+
+  ```text
   Dokument: {text}
   Kokkuvõte: {target_text}
   ```
+
 - Instruction-tuned prompt template:
-  ```
+
+  ```text
   Document: {text}
 
   Koosta ülaltoodud dokumendi kokkuvõte.
@@ -613,5 +667,5 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ euroeval --model <model-id> --dataset err-news
+euroeval --model <model-id> --dataset err-news
 ```

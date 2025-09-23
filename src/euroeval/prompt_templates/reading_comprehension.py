@@ -14,6 +14,7 @@ from ..languages import (
     FR,
     IS,
     IT,
+    LT,
     LV,
     NB,
     NL,
@@ -114,6 +115,15 @@ RC_TEMPLATES: dict["Language", PromptConfig] = {
         "massimo 3 parole: {label}",
         default_instruction_prompt="Testo: {text}\n\nRispondi alla seguente domanda "
         "sul in un massimo di 3 parole.\n\nDomanda: {question}",
+        default_prompt_label_mapping=dict(),
+    ),
+    LT: PromptConfig(
+        default_prompt_prefix="Toliau pateikti tekstai su atitinkamais klausimais ir "
+        "atsakymais.",
+        default_prompt_template="Tekstas: {text}\nKlausimas: {question}\nAtsakykite ne "
+        "daugiau kaip 3 žodžiais: {label}",
+        default_instruction_prompt="Tekstas: {text}\n\nAtsakykite į šį klausimą apie "
+        "aukščiau pateiktą tekstą ne daugiau kaip 3 žodžiais.\n\nKlausimas: {question}",
         default_prompt_label_mapping=dict(),
     ),
     LV: PromptConfig(

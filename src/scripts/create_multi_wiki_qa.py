@@ -42,6 +42,7 @@ LANGUAGES = [
     "pl",
     "pt-pt",
     "lv",
+    "lt",
 ]
 
 

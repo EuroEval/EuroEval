@@ -4,7 +4,6 @@ This is an overview of all the datasets used in the Norwegian part of EuroEval. 
 datasets are grouped by their task - see the [task overview](/tasks) for more
 information about what these constitute.
 
-
 ## Sentiment Classification
 
 ### NoReC
@@ -26,12 +25,14 @@ Here are a few examples from the training split:
   "label": "positive"
 }
 ```
+
 ```json
 {
   "text": "Under er noen av funksjonene som er dels unike for LG G3 :",
   "label": "neutral"
 }
 ```
+
 ```json
 {
   "text": "Tilsvarende får vi også lavere score i 3DMark enn hva tilfellet er for f.eks . Xperia Z2 og Galaxy S5 .",
@@ -44,31 +45,36 @@ When evaluating generative models, we use the following setup (see the
 
 - Number of few-shot examples: 5
 - Prefix prompt:
-  ```
+
+  ```text
   Følgende er anmeldelser og deres sentiment, som kan være 'positiv', 'nøytral' eller 'negativ'.
   ```
+
 - Base prompt template:
-  ```
+
+  ```text
   Anmeldelse: {text}
   Sentiment: {label}
   ```
+
 - Instruction-tuned prompt template:
-  ```
+
+  ```text
   Anmeldelse: {text}
 
   Klassifiser sentimentet i anmeldelsen. Svar med 'positiv', 'nøytral' eller 'negativ'.
   ```
+
 - Label mapping:
-    - `positive` ➡️ `positiv`
-    - `neutral` ➡️ `nøytral`
-    - `negative` ➡️ `negativ`
+  - `positive` ➡️ `positiv`
+  - `neutral` ➡️ `nøytral`
+  - `negative` ➡️ `negativ`
 
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ euroeval --model <model-id> --dataset norec
+euroeval --model <model-id> --dataset norec
 ```
-
 
 ## Named Entity Recognition
 
@@ -104,12 +110,14 @@ Here are a few examples from the training split:
   "labels": array(['O', 'O', 'O', 'O', 'O', 'B-ORG', 'I-ORG', 'O', 'O', 'O', 'O', 'O', 'O'], dtype=object)
 }
 ```
+
 ```json
 {
   "tokens": array(['Viktig', 'var', 'det', 'også', 'at', 'Kina', 'allerede', 'var', 'blitt', 'så', 'avhengig', 'av', 'det', 'amerikanske', 'markedet', 'og', 'av', 'dollaren', ',', 'at', 'en', 'nedgang', 'i', 'USA', 'også', 'ville', 'ramme', 'Kina', 'hardt', '.'], dtype=object),
   "labels": array(['O', 'O', 'O', 'O', 'O', 'B-ORG', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'B-LOC', 'O', 'O', 'O', 'B-ORG', 'O', 'O'], dtype=object)
 }
 ```
+
 ```json
 {
   'tokens': array(['Han', 'tok', 'fram', 'pistolen', 'og', 'dro', 'tilbake', 'til', 'Skaregata', '2', '.'], dtype=object),
@@ -122,36 +130,41 @@ When evaluating generative models, we use the following setup (see the
 
 - Number of few-shot examples: 8
 - Prefix prompt:
-  ```
+
+  ```text
   Følgende er fraser og JSON-ordbøker med de navngitte enhetene som forekommer i den gitte frasen.
   ```
+
 - Base prompt template:
-  ```
+
+  ```text
   Frase: {text}
   Navngitte enheter: {label}
   ```
+
 - Instruction-tuned prompt template:
-  ```
+
+  ```text
   Frase: {text}
 
   Identifiser de navngitte enhetene i frasen. Du bør outputte dette som en JSON-ordbok med nøklene 'person', 'sted', 'organisasjon' og 'diverse'. Verdiene skal være lister over de navngitte enhetene av den typen, akkurat som de vises i frasen.
   ```
+
 - Label mapping:
-    - `B-PER` ➡️ `person`
-    - `I-PER` ➡️ `person`
-    - `B-LOC` ➡️ `sted`
-    - `I-LOC` ➡️ `sted`
-    - `B-ORG` ➡️ `organisasjon`
-    - `I-ORG` ➡️ `organisasjon`
-    - `B-MISC` ➡️ `diverse`
-    - `I-MISC` ➡️ `diverse`
+  - `B-PER` ➡️ `person`
+  - `I-PER` ➡️ `person`
+  - `B-LOC` ➡️ `sted`
+  - `I-LOC` ➡️ `sted`
+  - `B-ORG` ➡️ `organisasjon`
+  - `I-ORG` ➡️ `organisasjon`
+  - `B-MISC` ➡️ `diverse`
+  - `I-MISC` ➡️ `diverse`
 
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ euroeval --model <model-id> --dataset norne-nb
+euroeval --model <model-id> --dataset norne-nb
 ```
-
 
 ### NorNE-nn
 
@@ -185,12 +198,14 @@ Here are a few examples from the training split:
   "labels": array(['O', 'B-PER', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O'], dtype=object)
 }
 ```
+
 ```json
 {
   "tokens": array(['I', 'haust', 'blei', 'det', 'avslørt', 'at', 'minst', 'to', 'tolvåringar', 'på', 'mellomtrinnet', 'ved', 'Gimle', 'skule', 'hadde', 'med', 'seg', 'alkohol', 'på', 'ein', 'skuletur', '.'], dtype=object),
   "labels": array(['O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'B-LOC', 'I-LOC', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O'], dtype=object)
 }
 ```
+
 ```json
 {
   "tokens": array(['Krigen', 'mot', 'Irak', 'skulle', 'aldri', 'ha', 'vore', 'gjennomførd', '.'], dtype=object),
@@ -203,36 +218,41 @@ When evaluating generative models, we use the following setup (see the
 
 - Number of few-shot examples: 8
 - Prefix prompt:
-  ```
+
+  ```text
   Følgende er fraser og JSON-ordbøker med de navngitte enhetene som forekommer i den gitte frasen.
   ```
+
 - Base prompt template:
-  ```
+
+  ```text
   Frase: {text}
   Navngitte enheter: {label}
   ```
+
 - Instruction-tuned prompt template:
-  ```
+
+  ```text
   Frase: {text}
 
   Identifiser de navngitte enhetene i frasen. Du bør outputte dette som en JSON-ordbok med nøklene 'person', 'sted', 'organisasjon' og 'diverse'. Verdiene skal være lister over de navngitte enhetene av den typen, akkurat som de vises i frasen.
   ```
+
 - Label mapping:
-    - `B-PER` ➡️ `person`
-    - `I-PER` ➡️ `person`
-    - `B-LOC` ➡️ `sted`
-    - `I-LOC` ➡️ `sted`
-    - `B-ORG` ➡️ `organisasjon`
-    - `I-ORG` ➡️ `organisasjon`
-    - `B-MISC` ➡️ `diverse`
-    - `I-MISC` ➡️ `diverse`
+  - `B-PER` ➡️ `person`
+  - `I-PER` ➡️ `person`
+  - `B-LOC` ➡️ `sted`
+  - `I-LOC` ➡️ `sted`
+  - `B-ORG` ➡️ `organisasjon`
+  - `I-ORG` ➡️ `organisasjon`
+  - `B-MISC` ➡️ `diverse`
+  - `I-MISC` ➡️ `diverse`
 
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ euroeval --model <model-id> --dataset norne-nn
+euroeval --model <model-id> --dataset norne-nn
 ```
-
 
 ## Linguistic Acceptability
 
@@ -259,12 +279,14 @@ Here are a few examples from the training split:
   "label": "correct"
 }
 ```
+
 ```json
 {
   "text": "Lunde var ikke blant, mener Andreassen.",
   "label": "incorrect"
 }
 ```
+
 ```json
 {
   "text": "72 kjoler går hver med sesong.",
@@ -277,30 +299,35 @@ When evaluating generative models, we use the following setup (see the
 
 - Number of few-shot examples: 12
 - Prefix prompt:
-  ```
+
+  ```text
   Følgende er setninger og hvorvidt de er grammatisk korrekte.
   ```
+
 - Base prompt template:
-  ```
+
+  ```text
   Setning: {text}
   Grammatisk korrekt: {label}
   ```
+
 - Instruction-tuned prompt template:
-  ```
+
+  ```text
   Setning: {text}
 
   Bestem om setningen er grammatisk korrekt eller ikke. Svar med 'ja' hvis setningen er korrekt og 'nei' hvis den ikke er.
   ```
+
 - Label mapping:
-    - `correct` ➡️ `ja`
-    - `incorrect` ➡️ `nei`
+  - `correct` ➡️ `ja`
+  - `incorrect` ➡️ `nei`
 
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ euroeval --model <model-id> --dataset scala-nb
+euroeval --model <model-id> --dataset scala-nb
 ```
-
 
 ### ScaLA-nn
 
@@ -325,12 +352,14 @@ Here are a few examples from the training split:
   "label": "correct"
 }
 ```
+
 ```json
 {
   "text": "Eg kan ikkje sjå at det er grunn til å ha ei slik grense i lova, det kan vurderast i, seier ho.",
   "label": "incorrect"
 }
 ```
+
 ```json
 {
   "text": "SV har elles levert og i dag framsett ei gode forslag som kan bidra til å gjera noko med straumprisproblematikken og straumforbruket, om viljen vår er der.",
@@ -343,30 +372,35 @@ When evaluating generative models, we use the following setup (see the
 
 - Number of few-shot examples: 12
 - Prefix prompt:
-  ```
+
+  ```text
   Følgende er setninger og hvorvidt de er grammatisk korrekte.
   ```
+
 - Base prompt template:
-  ```
+
+  ```text
   Setning: {text}
   Grammatisk korrekt: {label}
   ```
+
 - Instruction-tuned prompt template:
-  ```
+
+  ```text
   Setning: {text}
 
   Bestem om setningen er grammatisk korrekt eller ikke. Svar med 'ja' hvis setningen er korrekt og 'nei' hvis den ikke er.
   ```
+
 - Label mapping:
-    - `correct` ➡️ `ja`
-    - `incorrect` ➡️ `nei`
+  - `correct` ➡️ `ja`
+  - `incorrect` ➡️ `nei`
 
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ euroeval --model <model-id> --dataset scala-nn
+euroeval --model <model-id> --dataset scala-nn
 ```
-
 
 ### Unofficial: NoCoLA
 
@@ -390,12 +424,14 @@ Here are a few examples from the training split:
   "label": "correct"
 }
 ```
+
 ```json
 {
   "text": "Hvis jeg ikke sier in n genting, kan han spille hele dagen.",
   "label": "incorrect"
 }
 ```
+
 ```json
 {
   "text": "De føler at samfunnet trenger ikke dem.",
@@ -408,30 +444,35 @@ When evaluating generative models, we use the following setup (see the
 
 - Number of few-shot examples: 12
 - Prefix prompt:
-  ```
+
+  ```text
   Følgende er setninger og hvorvidt de er grammatisk korrekte.
   ```
+
 - Base prompt template:
-  ```
+
+  ```text
   Setning: {text}
   Grammatisk korrekt: {label}
   ```
+
 - Instruction-tuned prompt template:
-  ```
+
+  ```text
   Setning: {text}
 
   Bestem om setningen er grammatisk korrekt eller ikke. Svar med 'ja' hvis setningen er korrekt og 'nei' hvis den ikke er.
   ```
+
 - Label mapping:
-    - `correct` ➡️ `ja`
-    - `incorrect` ➡️ `nei`
+  - `correct` ➡️ `ja`
+  - `incorrect` ➡️ `nei`
 
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ euroeval --model <model-id> --dataset no-cola-binary
+euroeval --model <model-id> --dataset no-cola-binary
 ```
-
 
 ### Unofficial: Jentoft
 
@@ -451,12 +492,14 @@ Here are a few examples from the training split:
   "label": "incorrect"
 }
 ```
+
 ```json
 {
   "text": "Det viser seg at folk ikke kan leve uten mobiltelefonen.",
   "label": "correct"
 }
 ```
+
 ```json
 {
   "text": "Mobiltelefoner dominerer mange av oss, og vi bruker dem over alt, på gatene 'hvert hjørne', i gatene, holdeplasser, kaffeteriaene og i parken, der folk burde tilbringe koselig tid sammen i naturen.",
@@ -469,28 +512,34 @@ When evaluating generative models, we use the following setup (see the
 
 - Number of few-shot examples: 12
 - Prefix prompt:
-  ```
+
+  ```text
   Følgende er setninger og hvorvidt de er grammatisk korrekte.
   ```
+
 - Base prompt template:
-  ```
+
+  ```text
   Setning: {text}
   Grammatisk korrekt: {label}
   ```
+
 - Instruction-tuned prompt template:
-  ```
+
+  ```text
   Setning: {text}
 
   Bestem om setningen er grammatisk korrekt eller ikke. Svar med 'ja' hvis setningen er korrekt og 'nei' hvis den ikke er.
   ```
+
 - Label mapping:
-    - `correct` ➡️ `ja`
-    - `incorrect` ➡️ `nei`
+  - `correct` ➡️ `ja`
+  - `incorrect` ➡️ `nei`
 
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ euroeval --model <model-id> --dataset jentoft
+euroeval --model <model-id> --dataset jentoft
 ```
 
 ## Reading Comprehension
@@ -518,6 +567,7 @@ Here are a few examples from the training split:
   }
 }
 ```
+
 ```json
 {
   "context": 'Litauiske medier: En utvekslingsavtale skal være på plass for Frode Berg\nFrode Berg ble dømt til 14 års fengsel i Russland. Foto: Tore Meek / NTB scanpix\nRussland og Litauen er enige om å utveksle en spiondømt russer mot to litauere og en nordmann, opplyser kilder i den litauiske sikkerhetstjenesten til den litauiske nyhetstjenesten Baltic News Service (BNS).\n– Utvekslingsavtalen inkluderer også en norsk statsborger som er dømt i Russland, sier en anonym tjenestemann i den litauiske sikkerhetstjenesten.\nAvisen navngir ikke Frode Berg, men Berg er den eneste nordmannen som soner en slik dom i Russland.\nAftenposten og en rekke norske medier omtalte saken onsdag ettermiddag. Flere russiske medier melder også om det samme, alle med BNS som kilde\n– Håper en avtale foreligger\nFrode Bergs norske advokat Brynjulf Risnes kan ikke bekrefte opplysningene.\n– Jeg har ikke informasjon som verken bekrefter eller avkrefter en slik avtale. Vi håper selvsagt at en slik avtale foreligger, sier Risnes til NTB.\nUD vil ikke kommentere saken.\n– Norske myndigheter ønsker å få Frode Berg hjem. Vi håndterer saken på den måten som vi mener er best for å ivareta hans interesser. Utover det kommenterer vi ikke saken, sier underdirektør Ane Haavardsdatter Lunde i Utenriksdepartementet til NTB.\nBergs russiske forsvarer, advokat Ilja Novikov, ikke vil kommentere saken, ifølge NRK.\nStøttegruppen for Frode Berg håper opplysningene stemmer.\n– Dersom det viser seg at dette er riktig, er det en ufattelig god nyhet som vi har ventet på skulle skje, sier støttegruppemedlem Thorbjørn Brox Webber til NTB.\n– En slik avtale må bety at Frode kan komme tilbake til Norge og Kirkenes, legger han til.\nDømt for spionasje\nBerg er dømt til 14 års fengsel for spionasje. Han ble pågrepet i Moskva i desember 2017 og har sittet fengslet siden.\nNRK meldte i august at UD er i forhandlinger med Russland om å få Berg hjem og har informert hans nærmeste familie om dette.\nMuligheten for en utvekslingsavtale har vært antydet, men et problem har vært hvem den i så fall skal omfatte.',
@@ -528,6 +578,7 @@ Here are a few examples from the training split:
   }
 }
 ```
+
 ```json
 {
   "context": 'Ny nedtur for Ruud\nCasper Ruud røk torsdag ut av challengerturneringen i Koblenz. Bildet er fra en tidligere turnering.\nAv Ole Henrik Tveten\nDet ble en frustrerende kamp mot nederlandske Tallpon Griekspoor torsdag. Casper Ruud vant første sett 6-4, men etter det var det lite som stemte for nordmannen i Tyskland.\nI andre sett ble Ruud utspilt og tapte 1-6, mens feilene fortsatte å florere også i tredje sett og Ruud tapte settet 2-6.\nDen norske 20-åringen gikk rett inn i 2. runde i Koblenz-turneringen etter å ha fått walkover i den første. Der slet han seg til seier mot italienske Raul Brancaccio onsdag. Torsdagens motstander, Tallpon Griekspoor, er nummer 233 på verdensrankingen.\nDet startet bra for Snarøya-gutten da han i første sett brøt nederlenderens serve og tok ledelsen 4-3. Servebruddet ble avgjørende for settet som Ruud vant 6-4, etter blant annet å ha reddet en breakball etter en lengre ballveksling.\nI andre sett begynte problemene for Casper Ruud. Griekspoor brøt Ruuds serve ved første anledning og gikk opp i 2-0-ledelse. Deretter vant han egen serve, brøt Ruuds serve på ny og vant så egen serve. Da ledet plutselig nederlenderen 5-0.\nNordmannen servet inn til 5-1, men det var dessverre ikke starten på noen snuoperasjon. Nederlenderen vant settet 6-1.\nNordmannen hadde ikke ristet av seg problemene i pausen, og ble feid av banen av Griekspoor. Ruud kom under 0-4 i tredje sett før han omsider reduserte til 1-4. Men da var det for sent.\nNederlenderen servet inn 5-1, Ruud reduserte, før Griekspoor servet seieren i land. Dermed tapte Ruud tredje sett 6-2 og røk ut av turneringen.\nÅ ryke ut i Tyskland hjelper ikke nordmannens jakt på rankingpoeng for å komme seg inn i topp 100 i verden. Han risikerer å falle flere plasser ettersom han mister de 70 rankingpoengene han skaffet seg da han tok seg til 2. runde i Australian Open i fjor. Ruud er akkurat nå nummer 112 på verdensrankingen. (NTB)',
@@ -544,17 +595,22 @@ When evaluating generative models, we use the following setup (see the
 
 - Number of few-shot examples: 2
 - Prefix prompt:
-  ```
+
+  ```text
   Her følger tekster med tilhørende spørsmål og svar.
   ```
+
 - Base prompt template:
-  ```
+
+  ```text
   Tekst: {text}
   Spørsmål: {question}
   Svar på maks 3 ord: {label}
   ```
+
 - Instruction-tuned prompt template:
-  ```
+
+  ```text
   Tekst: {text}
 
   Besvar følgende spørsmål om teksten ovenfor med maks 3 ord.
@@ -565,9 +621,8 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ euroeval --model <model-id> --dataset norquad
+euroeval --model <model-id> --dataset norquad
 ```
-
 
 ### Unofficial: NorGLM Multi QA
 
@@ -594,6 +649,7 @@ Here are a few examples from the training split:
   }
 }
 ```
+
 ```json
 {
   "context": ' Alt om pubertet, penis, psyken og livet sjæl. Nok en fullkommen bok fra duoen bak et par av de største boksuksessene de siste årene. «De har gjort det igjen», skrev jeg i VG for ganske nøyaktig to år siden, da jeg satt her og leste og anmeldte «Jenteboka» av legene Nina Brochmann og Ellen Støkken Dahl. Da hadde det gått to år siden de brak-debuterte med «Gleden med skjeden». Jeg gav «Jenteboka» terningkast 6. Vel, vel. Du har kanskje gjettet det nå, men nå har de altså gjort det enda en gang: Laget en knallgod, fullkommen bok vi får håpe mange leser.For jeg tør påstå at guttene trenger sin Guttebok vel så mye som jentene trenger sin. For selv om det er jentene vi har snakket mest om, er det mange unge gutter som sliter. Unge gutter faller oftere ut av skolen, er mer deprimerte og har mindre fremtidsoptimisme enn før. Det finnes dyster statistikk, kort fortalt: De opplever også stress og press og uhelse. Og så er de ikke så flinke til å snakke om det. I «Gutteboka» tar Brochmann og Dahl for seg alt man må vite og forstå når man er på vei inn i eller står midt i puberteten. (Eller senere i livet, for den saks skyld, jeg plukket opp noen gode tips selv, jeg.) De skriver om kroppshår, kviser, stemmeskifte,  legning, penisstørrelse, pung, kjønn, sæd, kåthet, ereksjonsknipe (!) og svettelukt, for å nevne noen av mange høydepunkter.  Legeduoen havnet på denne lista: De ti heteste norske forfatterne i utlandet! Foruten alle de rent kroppslige og fysiske forandringene man kan oppleve på veien fra gutt til mann, inneholder boka gode kapitler om de psykiske aspektene og livet sjæl. Grensesetting, samtykke, nettvett, om å trenge en pornopause, om psykisk uhelse, stress og press. «Alle har det vondt iblant, men ingen har det vondt for alltid. Du kommer til å bli glad igjen!» Det er noe med tonen i boka, som er så fin. Lett, åpen, sympatisk, avvæpnende. Smart, kul og og med faglig tyngde. Men aldri formanende, ingen pekefinger. «Onani er godt og sunt. Onani er ikke bare ufarlig – det er bra for deg.» «Kroppen din er laget for å brukes og nytes.»  «Det er synd at trening ender opp med å handle om bare utseendet. Å trene er nemlig bra for deg. Det er ikke jakten på «drømmekroppen».» Selv de mer alvorlige og kliniske temaene er dessuten en fornøyelse å bla om til, også takket være de fantastiske illustrasjonene til Magnhild Wisnes. De er fargerike og morsomme, og gjør boka komplett. Så mange peniser har jeg ikke sett siden vi fniste og lo av «Penisatlaset» på et nachspiel i studietiden. Så kan man jo stille seg spørsmålet, om denne boka når frem til dem som trenger å lese den. Den burde egentlig vært pensum, tenker jeg, eller i alle fall utgangspunkt for et prosjekt på skolen. Å sette seg ned med en bok, som attpåtil handler om puberteten, står vel ikke høyest på lista over hva tenåringsgutter flest vil bruke fritiden sin på. Prøv likevel.  Jeg vet ikke, kanskje betale gutten noen kroner for å lese den, om det er det som skal til. Jeg føler meg sikker på at det vil være verdt det. For hvis de unge guttene våre leser denne boka, er jeg sikker på at livet blir lettere å leve og verden et morsommere sted. Anmeldt av: Trine Saugestad Hatlen',
@@ -604,6 +660,7 @@ Here are a few examples from the training split:
   }
 }
 ```
+
 ```json
 {
   "context": ' Regjeringen lanserer ny handlingsplan for å beskytte den truede villaksen. – Altfor slapt, sier SV-politiker.Regjeringen lanserer nå en handlingsplan for å bevare den truede villaksen.– Villaksen kan nå bli rødlistet i Norge for første gong. Det er helt klart at det trengs konkrete tiltak for å snu denne utviklingen, sier Sveinung Rotevatn i pressemeldingen fra regjeringen.Handlingsplanen inneholder tiltak mot blant annet lakselus, rømt oppdrettsfisk, lakseparasitten Gyro, vannkraftregulering, forsuring, overbeskatning og fremmende fiskearter som pukkellaks.Regjeringen viser til at lakselus utgjør den største risikoen for å gjøre ytterligere skade på vill atlantisk laks, ifølge Vitenskapelig råd for lakseforvaltning.– Lakselus utgjør en stor risiko for villaksen. Regjeringen vil blant annet utrede krav om nullutslipp av lakselus fra oppdrettsanlegg fra og med 2030, sier Rotevatn.Det vil i så fall innebære krav om lukkede anlegg.Lakselus finnes naturlig i alle havområder på den nordlige halvkule, og er den vanligste parasitten på laksefisk.Blir forekomsten av lus høy, kan det være en utfordring både for oppdrettsfisk og vill laksefisk.Havbruk medfører at antall fisk i sjøen øker, og dermed øker også antall verter for lakselus. Nivåene med lakselus i anleggene må derfor holdes lavest mulig, slik at de samlede lusemengdene i sjøen ikke blir for store.Som følge av omfattende resistens hos lusen mot kjemiske behandlingsmidler, har næringen de siste årene vært tvunget til å ta i bruk mekaniske metoder for å fjerne lusen, med negative konsekvenser for fiskens velferd.Kilde: Lusedata, MattilsynetDagens trafikklyssystem som regulerer veksten i næringen i forhold til luseutviklingen, skal også utvikles og forbedres.Planen inneholder også tiltak mot en rekke andre påvirkningsfaktorer. Utfisking av rømt oppdrettslaks skal økes, og det skal vurderes nye metoder for å spore og merke oppdrettslaks og hindre at rømt oppdrettslaks gyter.Hele 80 prosent av villaksbestandene i Norge når for tiden ikke minstemålet for god kvalitet. Rømt oppdrettslaks og lakselus er regnet som de to største truslene, skriver regjeringen.Fremmende fiskearter utgjør også en risiko for både biologisk mangfold, produktiviteten til lokal laksefisk og akvakultur.I år har Norge hatt den største invasjonen av pukkellaks noensinne, og regjeringen vil derfor opprette en nasjonal kompetansegruppe for å koordinere arbeidet med dette.SVs nestleder Torgeir Knag Fylkesnes er ikke fornøyd med tiltakene.– Dette er altfor, altfor slapt. Regjeringen tar ikke tak i elefanten i rommet, nemlig den lite bærekraftige forvaltningen av oppdrettsnæringa. Vi må stille strengere miljøkrav til alle nye oppdrettstillatelser, og fase inn disse kravene hos de med eksisterende tillatelser, skriver han i en kommentar til E24.Han påpeker at det i dag tildeles oppdrettstillatelser til den høystbydende, og ikke til de med den mest miljøvennlige teknologien. – Skal vi redde villaksen og sikre en bærekraftig vekst for oppdrettsnæringen, må vi legge om systemet slik at vi gjennom å gi billigere tillatelser, men med krav om nullutslipp, null rømming og null ressurser på avveie.Fylkesnes understreker videre at teknologien finnes, og at næringen har god råd.– Når man for eksempel ser på Salmars investeringsaktivitet de siste ukene, så ser vi at næringen både kan betale for ny teknologi og skatt på formue og grunnrente.Fylkesnes gikk tidligere denne uken hardt ut mot Salmar-eier Gustav Witzøe, etter at laksemilliardæren uttalte seg kritisk mot økning i formuesskatten tidligere i sommer.',
@@ -620,17 +677,22 @@ When evaluating generative models, we use the following setup (see the
 
 - Number of few-shot examples: 2
 - Prefix prompt:
-  ```
+
+  ```text
   Her følger tekster med tilhørende spørsmål og svar.
   ```
+
 - Base prompt template:
-  ```
+
+  ```text
   Tekst: {text}
   Spørsmål: {question}
   Svar på maks 3 ord: {label}
   ```
+
 - Instruction-tuned prompt template:
-  ```
+
+  ```text
   Tekst: {text}
 
   Besvar følgende spørsmål om teksten ovenfor med maks 3 ord.
@@ -641,9 +703,8 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ euroeval --model <model-id> --dataset norglm-multi-qa
+euroeval --model <model-id> --dataset norglm-multi-qa
 ```
-
 
 ### Unofficial: BeleBele-no
 
@@ -662,12 +723,14 @@ Here are a few examples from the training split:
   "label": "b"
 }
 ```
+
 ```json
 {
   "text": "Tekst: Tyskland begynte å gjøre seg klare til å invadere Storbritannia da kampen om Frankrike var over. Tyskland gav angrepet kodenavnet «operasjon sjøløve». Mesteparten av den britiske hærens tunge våpen og forsyninger hadde gått tapt da den flyktet fra Dunkirk, så de var svært sårbar. Den britiske marinen var imidlertid fremdeles mye kraftigere enn den tyske («Kriegsmarine») og kunne ha ødelagt en eventuell invasjonsflåte sendt over den engelske kanal. Det var likevel svært få skip fra Royal Navy som ble stasjonert nær de sannsynlige invasjonsrutene siden admiralene var engstelige for at de kom til å bli senket av tyske luftangrep.\nSpørsmål: Hva kalte Tyskland angrepet på Storbritannia?\nSvaralternativer:\na. Dunkirk\nb. Operasjon sjøløve\nc. Kriegsmarine\nd. Royal Navy",
   "label": "b"
 }
 ```
+
 ```json
 {
   "text": "Tekst: Det italienske og det tyske landslaget er de nest beste lagene i verden og var FIFA World Cup-mestere i 2006. Fotball, basketball, volleyball, vannpolo, fekting, rugby, sykling, ishockey, rullehockey og Formel-1 bilsport er godt likte sportsgrener. Vintersport er mest populært i nordlige områder, der italienere deltar i internasjonale konkurranser og OL-arrangementer.\nSpørsmål: Hvilke av følgende sporter vant et verdensmesterskap for Italia, basert på informasjonen i avsnittet?\nSvaralternativer:\na. Fotball\nb. Vannpolo\nc. Basketball\nd. Sykling",
@@ -680,11 +743,14 @@ When evaluating generative models, we use the following setup (see the
 
 - Number of few-shot examples: 5
 - Prefix prompt:
-  ```
+
+  ```text
   Følgende er flervalgsspørsmål (med svar).
   ```
+
 - Base prompt template:
-  ```
+
+  ```text
   Spørsmål: {text}
   Svaralternativer:
   a. {option_a}
@@ -693,8 +759,10 @@ When evaluating generative models, we use the following setup (see the
   d. {option_d}
   Svar: {label}
   ```
+
 - Instruction-tuned prompt template:
-  ```
+
+  ```text
   Spørsmål: {text}
   Svaralternativer:
   a. {option_a}
@@ -708,9 +776,8 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ euroeval --model <model-id> --dataset belebele-no
+euroeval --model <model-id> --dataset belebele-no
 ```
-
 
 ### Unofficial: MultiWikiQA-nb
 
@@ -733,6 +800,7 @@ Here are a few examples from the training split:
     }
 }
 ```
+
 ```json
 {
     "context": "Dagligvarehandelen er en frittstående ukeavis for dagligvarebransjen og distribueres til alle landets dagligvareforretninger og kjedekontorer samt kiosker og bensinstasjoner med dagligvarer i sortimentet.\n\nLesere er ledere og mellomledere hos leverandører, agenter og kjedekontorer i dagligvarebransjen, samt PR- og informasjonsrådgivere og reklame- og formidlingsbyråer. Nettutgaven er et verktøy for alle leverandører av produkter og tjenester til dagligvarebransjen. Målgruppen er alle som driver butikk, enten de er selvstendige, ansatte eller franchisetakere. Dagligvarehandelen er et av Nordens mest leste fagtidsskrifter.\n\nUtgiver er Medier og Ledelse AS, og ansvarlig redaktør er Are Knudsen. Daglig leder er Magne Lerø.\n\nPublikasjoner\n\nHvem er hvem gir en oversikt over hovedkontorer og kjeder i de sentrale grupperingene i dagligvare detalj i Norge og Norden, samt de viktigste aktørene i kiosk, – bensin og servicemarkedet. Her finner man adresser, telefonnummer etc. samt aktuelle kontaktpersoner i de ulike kjedene. Hvem er hvem benyttes som oppslagsverk i alle ledd i bransjen.\n\nTemanumre tar opp aktuelle saker i bransjen og varierer fra år til år. De distribueres sammen med Dagligvarehandelen til alle dagligvareforretninger, kjedekontorer samt kiosker og bensinstasjoner med dagligvarer i sortimentet.\n\nReferanser\n\nEksterne lenker\n Dagligvarehandelens hjemmeside\n\nNorske tidsskrifter\nDagligvarehandel",
@@ -743,6 +811,7 @@ Here are a few examples from the training split:
     }
 }
 ```
+
 ```json
 {
     "context": "Timothy Evans (født 20. november 1924 i Merthyr Tydfil i South Wales, død 9. mars 1950 ved henging) var en waliser anklaget for mordet på sin kone og datter under et opphold i Notting Hill, London i november 1949. I januar 1950 ble Evans dømt for drapet på datteren sin, og han ble dømt til døden ved henging på grunn av dette. \n\nUnder rettssaken, hadde Evans anklaget naboen, John Christie, for å være ansvarlig for begge drapene. Tre år etter Evans sin rettssak og henging, ble det oppdaget at Christie var en seriemorder som hadde myrdet en rekke kvinner på hans egen eiendom, inkludert hans egen kone, og disse oppdagelsene kastet alvorlig tvil om dommen mot at Timothy Evans var riktig. En offisiell undersøkelse som ble foretatt seksten år etter at Evans ble hengt bekreftet at Evans sin datter var blitt myrdet av Christie, og Evans ble deretter gitt en posthumt benådning. Denne saken genererte mye kontrovers og ble senere anerkjent som et justismord. Dette spilte en stor rolle i avskaffelsen av endelig dødsstraff i Storbritannia. \n\nHans biologiske far forlot familien i 1924 kort tid før Evans ble født. Evans hadde en eldre søster Eileen og en yngre halvsøster Maureen, som ble født etter at Evans mor giftet seg for andre gang i 1929. Som barn, hadde Evans problemer med å lære å snakke og han slet på skolen. Etter en ulykke da han var åtte år, utviklet Evans en tuberkuløs verucca på hans høyre fot som aldri ble helt bra igjen, og som gjorde at han gikk glipp av betydelige mengder tid fra skolen på grunn av flere omfattende behandlinger. Derfor klarte han verken å lese eller skrive noe utover hans eget navn som voksen. Som barn, ble Evans ansett for å ha et dårlig temperament og han hadde flere raserianfall. \n\nDen 20. september 1947 giftet Evans seg med Beryl Susanna Thorley, som han hadde møtt gjennom en felles venn av dem. Timothy og Beryl fikk datteren Geraldine som ble født 10. oktober 1948. Deres ekteskap var preget av flere store krangler, forsterket av Beryl sitt dårlige renhold og manglende evne til å håndtere familiens økonomi. Timothy fikk etter hvert større og større problemer hans tunge drikking som forverret hans allerede korte temperament. \n\nPå slutten av 1949, ble Beryl ut at hun var gravid med deres andre barn. Siden familien allerede slet økonomisk, bestemte Beryl seg for at det eneste valget var å ta abort, og etter noe motvilje, godtok Evans denne beslutningen. Flere uker senere, 30. november 1949, informerte Evans politiet at han hadde drept sin kone. Hans første tilståelse var at han hadde ved et uhell hadde drept henne ved å gi henne noe i en flaske som en mann hadde gitt til ham for å avbryte graviditeten. Deretter skal han ha kastet liket i en kloakk i nærheten av hjemmet deres, men politiet fant ingenting på det angitte stedet i kloakk-systemet og forklaringen ble ikke godtatt som ekte. Til tross for flere svake indisier brukte juryen bare 40 minutter på å finne Evans skyldig i drapene på hans kone og barn.\n\nReferanser \n\nBriter dømt for forbrytelser\nWalisere\nPersoner som har blitt benådet\nPersoner dømt for drap\nPersoner utsatt for justismord\nHenrettede personer",
@@ -759,17 +828,22 @@ When evaluating generative models, we use the following setup (see the
 
 - Number of few-shot examples: 2
 - Prefix prompt:
-  ```
+
+  ```text
   Her følger tekster med tilhørende spørsmål og svar.
   ```
+
 - Base prompt template:
-  ```
+
+  ```text
   Tekst: {text}
   Spørsmål: {question}
   Svar på maks 3 ord: {label}
   ```
+
 - Instruction-tuned prompt template:
-  ```
+
+  ```text
   Tekst: {text}
 
   Besvar følgende spørsmål om teksten ovenfor med maks 3 ord.
@@ -780,9 +854,8 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ euroeval --model <model-id> --dataset multi-wiki-qa-nb
-```
-
+euroeval --model <model-id> --dataset multi-wiki-qa-nb
+```text
 
 ### Unofficial: MultiWikiQA-nn
 
@@ -804,6 +877,7 @@ Here are a few examples from the training split:
     }
 }
 ```
+
 ```json
 {
     "context": "For den tidlegare kyrkja i Eidsberg, sjå Hen kyrkje i Eidsberg\nHen kyrkje ligg sentralt i bygda Isfjorden i Rauma kommune.\n\nKyrkja vart bygd i 1831 av gråstein, tak-konstruksjonen og klokketårnet er av treverk.\n\nKyrkja er bygd på den same plassen der ei eldre kyrkje stod før. Denne var i så dårleg tilstand at ho måtte rivast. Ei gammal kyrkjeklokke frå 1200-talet er bevart og er i dag på Romsdalsmuseet på Molde.\n\nInteriøret\nPreikestolen som vert brukt i dag er frå 1930-åra.\n\nAltertavla vart laga til kyrkja i 1831. Ein eldre preikestol, som ikkje er i bruk, er plassert midt i altertavla. Då kyrkja vart restaurert i 1931, måla Halvard Hatlen eitt nytt bilde i altertavla. \n\nElles finst det eit rosemåla skap frå 1788. Halvard Hatlen har måla seks portrett av tidlegare prestar. Desse heng langs langveggane. Han har òg måla et måleri (1942), som heng i koret.\n\nKjelde\n Thaule, John Ove; Ubostad, Ingar; Pedersen, Bjørn. 1990. Kyrkjene våre i Ei bok om Rauma, Rauma Kommune. s 207-210\n\nBakgrunnsstoff\n \n\nKyrkjer i Rauma\nKyrkjer i Indre Romsdal prosti\nKulturminne i Rauma\nNorske kyrkjer frå 1831\nLangkyrkjer i Møre bispedømme",
@@ -814,6 +888,7 @@ Here are a few examples from the training split:
     }
 }
 ```
+
 ```json
 {
     "context": "Christophorus Clavius (fødd Christoph Klau 1537/38 i Bamberg i Tyskland, død 1612 i Roma) var ein tysk matematikar, astronom og jesuittpater på 1500-talet. I samtida vart han kalla «kongen av matematikken», og vart framført alt kjend for arbeidet sitt ved det vatikanske stjerneobservatoriet som førte til utviklinga av det nye kalendersystemet som vart kalla opp etter pave Gregor XIII, den gregorianske kalenderen. \n\nClavius tredde inn i jesuittordenen i 1555 og fekk utdanninga si i ordenen. Ved jesuittane sitt Collegio Romano i Roma studerte han teologi og underviste deretter matematikk der i ein lang periode. Clavius forfatta fleire matematikkbøker og medverka slik til utviklinga av matematikken. Ein vidt utbreidd kommentar til euklidsk geometri stammer frå han. Clavius medverka òg til teorien for prostaferese, ein reknemetode som var ein forløpar for logaritmane. Verka hans kom ut i 1612 i Mainz i fem band.\n\nMånekrateret Clavius er kalla opp etter han.\n\nKjelder\nDenne artikkelen bygger på «Christophorus Clavius» frå ,  den 1. november 2011.  \n \n\nFødde i 1530-åra\nDøde i 1612\nFolk frå Bamberg\nTyske katolske prestar\nTyske matematikarar\nTyske astronomar\nTyske jesuittar\nMatematikarar på 1500-talet\nMatematikarar på 1600-talet",
@@ -830,17 +905,22 @@ When evaluating generative models, we use the following setup (see the
 
 - Number of few-shot examples: 2
 - Prefix prompt:
-  ```
+
+  ```text
   Her følger tekster med tilhørende spørsmål og svar.
   ```
+
 - Base prompt template:
-  ```
+
+  ```text
   Tekst: {text}
   Spørsmål: {question}
   Svar på maks 3 ord: {label}
   ```
+
 - Instruction-tuned prompt template:
-  ```
+
+  ```text
   Tekst: {text}
 
   Besvar følgende spørsmål om teksten ovenfor med maks 3 ord.
@@ -851,9 +931,8 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ euroeval --model <model-id> --dataset multi-wiki-qa-nn
+euroeval --model <model-id> --dataset multi-wiki-qa-nn
 ```
-
 
 ## Knowledge
 
@@ -876,12 +955,14 @@ Here are a few examples from the training split:
   "label": "a"
 }
 ```
+
 ```json
 {
   "text": "80 år gamle Harrison Ford er nok ein gong aktuell i rolla som Indiana Jones. Kva heiter filmen?\nSvaralternativer:\na. Indiana Jones and the Nasty Nazis\nb. Indiana Jones and the Dial of Destiny\nc. Indiana Jones and the Hunt for Power\nd. Indiana Jones Forever",
   "label": "b"
 }
 ```
+
 ```json
 {
   "text": "I 1980 måtte denne bassisten overnatte ni netter i fengsel i Japan fordi han prøvde å få med seg ca. 200 gram marihuana inn i landet. Hvem var det?\nSvaralternativer:\na. Sting\nb. Lemmy Kilmister\nc. Paul McCartney\nd. Bootsy Collins",
@@ -894,11 +975,14 @@ When evaluating generative models, we use the following setup (see the
 
 - Number of few-shot examples: 5
 - Prefix prompt:
-  ```
+
+  ```text
   Følgende er flervalgsspørsmål (med svar).
   ```
+
 - Base prompt template:
-  ```
+
+  ```text
   Spørsmål: {text}
   Svaralternativer:
   a. {option_a}
@@ -907,8 +991,10 @@ When evaluating generative models, we use the following setup (see the
   d. {option_d}
   Svar: {label}
   ```
+
 - Instruction-tuned prompt template:
-  ```
+
+  ```text
   Spørsmål: {text}
   Svaralternativer:
   a. {option_a}
@@ -922,9 +1008,8 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ euroeval --model <model-id> --dataset nrk-quiz-qa
+euroeval --model <model-id> --dataset nrk-quiz-qa
 ```
-
 
 ### Idioms-no
 
@@ -946,12 +1031,14 @@ Here are a few examples from the training split:
   "label": "b"
 }
 ```
+
 ```json
 {
   "text": "Complete the Bokmål idiom:\ndet er ikke bare , _____\n\nSvaralternativer::\na. moro\nb. bare\nc. lett\nd. enkelt",
   "label": "b",
 }
 ```
+
 ```json
 {
   "text": "Complete the Bokmål idiom:\ndet får stå sin _____\n\nSvaralternativer::\na. prøve\nb. vegg\nc. sak\nd. greie",
@@ -964,11 +1051,14 @@ When evaluating generative models, we use the following setup (see the
 
 - Number of few-shot examples: 5
 - Prefix prompt:
-  ```
+
+  ```text
   Følgende er flervalgsspørsmål (med svar).
   ```
+
 - Base prompt template:
-  ```
+
+  ```text
   Spørsmål: {text}
   Svaralternativer:
   a. {option_a}
@@ -977,8 +1067,10 @@ When evaluating generative models, we use the following setup (see the
   d. {option_d}
   Svar: {label}
   ```
+
 - Instruction-tuned prompt template:
-  ```
+
+  ```text
   Spørsmål: {text}
   Svaralternativer:
   a. {option_a}
@@ -992,9 +1084,8 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ euroeval --model <model-id> --dataset idioms-no
+euroeval --model <model-id> --dataset idioms-no
 ```
-
 
 ### Unofficial: MMLU-no
 
@@ -1018,12 +1109,14 @@ Here are a few examples from the training split:
   "label": "a"
 }
 ```
+
 ```json
 {
   "text": "En enfaset fullbroomformer kan drives i lastkommuteringsmodus hvis belastningen består av\nSvaralternativer:\na. RL.\nb. RLC underdempet.\nc. RLC overdempet.\nd. RLC kritisk dempet.",
   "label": "b"
 }
 ```
+
 ```json
 {
   "text": "En professor, som var eneeier av en boligblokk, skrev et skjøte med følgende ordlyd: \"Jeg overdrar herved min boligblokk til min sønn og datter som leietakere i fellesskap.\" I skjøtet, som var korrekt utferdiget, forbeholdt professoren seg en livsvarig eiendomsrett. Professoren fortalte deretter barna sine om overdragelsen og la den i familiehvelvet i biblioteket for oppbevaring. Deretter giftet sønnen seg med en lege. Professoren, som mislikte legen, utferdiget deretter et nytt skjøte som han kalte \"et korreksjonsskjøte\". I \"korreksjonsskjøtet\" overførte professoren bygården \"til min sønn og datter som sameiere med overlevelsesrett.\" Ifølge det nye skjøtet forbeholdt professoren seg igjen livsvarig eiendomsrett. Begge barna aksepterte overdragelsen av \"korreksjonsskjøtet.\" Et halvt år senere døde sønnen, og etterlot seg legen som eneste arving. Eiendomsretten til boligblokken er i datterens og\nSvaralternativer:\na. datteren og legen som sameiere.\nb. datteren med forbehold om professorens livstidsarv.\nc. datteren og legen som sameiere, med forbehold om professorens livsarvinger.\nd. datteren og legen som sameiere med overlevelsesrett, med forbehold for professorens livsarvinger.",
@@ -1036,11 +1129,14 @@ When evaluating generative models, we use the following setup (see the
 
 - Number of few-shot examples: 5
 - Prefix prompt:
-  ```
+
+  ```text
   Følgende er flervalgsspørsmål (med svar).
   ```
+
 - Base prompt template:
-  ```
+
+  ```text
   Spørsmål: {text}
   Svaralternativer:
   a. {option_a}
@@ -1049,8 +1145,10 @@ When evaluating generative models, we use the following setup (see the
   d. {option_d}
   Svar: {label}
   ```
+
 - Instruction-tuned prompt template:
-  ```
+
+  ```text
   Spørsmål: {text}
   Svaralternativer:
   a. {option_a}
@@ -1064,9 +1162,8 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ euroeval --model <model-id> --dataset mmlu-no
+euroeval --model <model-id> --dataset mmlu-no
 ```
-
 
 ### Unofficial: ARC-no
 
@@ -1088,12 +1185,14 @@ Here are a few examples from the training split:
   "label": "a"
 }
 ```
+
 ```json
 {
   "text": "Hvilket av følgende er et biprodukt av celleånding hos dyr?\nSvaralternativer:\na. oksygen\nb. varme\nc. sukker\nd. protein",
   "label": "b"
 }
 ```
+
 ```json
 {
   "text": "Big Bang-teorien sier at universet\nSvaralternativer:\na. trekker seg sammen.\nb. ikke har noen begynnelse.\nc. startet som én enkelt masse.\nd. hele tiden danner hydrogen.",
@@ -1106,11 +1205,14 @@ When evaluating generative models, we use the following setup (see the
 
 - Number of few-shot examples: 5
 - Prefix prompt:
-  ```
+
+  ```text
   Følgende er flervalgsspørsmål (med svar).
   ```
+
 - Base prompt template:
-  ```
+
+  ```text
   Spørsmål: {text}
   Svaralternativer:
   a. {option_a}
@@ -1119,8 +1221,10 @@ When evaluating generative models, we use the following setup (see the
   d. {option_d}
   Svar: {label}
   ```
+
 - Instruction-tuned prompt template:
-  ```
+
+  ```text
   Spørsmål: {text}
   Svaralternativer:
   a. {option_a}
@@ -1134,9 +1238,8 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ euroeval --model <model-id> --dataset arc-no
+euroeval --model <model-id> --dataset arc-no
 ```
-
 
 ## Common-sense Reasoning
 
@@ -1157,12 +1260,14 @@ Here are a few examples from the training split:
   "label": "a"
 }
 ```
+
 ```json
 {
   "text": "Hvis et hjem har et abonnoment, hva får de sannsyneligvis hver dag i posten?\nSvaralternativer:\na. Delestykker\nb. En avis\nc. En gate\nd. En vaskemaskin\ne. Jordas overflate",
   "label": "b"
 }
 ```
+
 ```json
 {
   "text": "Når du ikke klarer å gjøre noe ferdig, hva feilet du i da?\nSvaralternativer:\na. Å vinne\nb. Å bestå\nc. Å fullfør\nd. Å gjøre det bra\ne. Å lykkes",
@@ -1175,11 +1280,14 @@ When evaluating generative models, we use the following setup (see the
 
 - Number of few-shot examples: 5
 - Prefix prompt:
-  ```
+
+  ```text
   Følgende er flervalgsspørsmål (med svar).
   ```
+
 - Base prompt template:
-  ```
+
+  ```text
   Spørsmål: {text}
   Svaralternativer:
   a. {option_a}
@@ -1189,8 +1297,10 @@ When evaluating generative models, we use the following setup (see the
   e. {option_e}
   Svar: {label}
   ```
+
 - Instruction-tuned prompt template:
-  ```
+
+  ```text
   Spørsmål: {text}
   Svaralternativer:
   a. {option_a}
@@ -1205,9 +1315,8 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ euroeval --model <model-id> --dataset nor-common-sense-qa
+euroeval --model <model-id> --dataset nor-common-sense-qa
 ```
-
 
 ### Unofficial: HellaSwag-no
 
@@ -1228,12 +1337,14 @@ Here are a few examples from the training split:
   "label": "a"
 }
 ```
+
 ```json
 {
   "text": "En løper løper på en bane foran en folkemengde. en mann\nSvaralternativer:\na. kaster en ball som hunden skal fange.\nb. snakker til kameraet.\nc. løper ikke når han hopper ned i en sandkasse.\nd. gir en kort introduksjon før han fortsetter og konkurrerer mot mannen i svart.",
   "label": "b"
 }
 ```
+
 ```json
 {
   "text": "[header] Slik vet du om hunden din liker deg best [title] Legg merke til at hunden din følger mye etter deg. [En måte å bevise at en hund liker deg best, er når den er mye sammen med deg. Så hold øye med om hunden din liker å være i nærheten av deg.\nSvaralternativer:\na. [Hold øye med eventuell fysisk atferd. [Et godt eksempel på denne atferden er hvis den presser rumpa opp mot låret ditt og sjekker hva du har på deg.\nb. [Se etter tegn på at hunden din kan være flørtende. [Et godt tegn på at hunden din liker deg er at den klapper deg mye eller stirrer på deg i intime øyeblikk.\nc. [Finn ut om hunden din liker å leke med deg. [Hvis det er en hund som elsker leker, kan du leke med dem, og hvis den er veldig glad i å leke, så liker den at du leker med den.\nd. Legg merke til at hunden din følger deg rundt i huset hver dag når du er ute og går. Selv om du kanskje ikke har lyst til det, kan det å tilbringe mye tid sammen med en hund få den til å føle seg komfortabel med deg.",
@@ -1246,11 +1357,14 @@ When evaluating generative models, we use the following setup (see the
 
 - Number of few-shot examples: 5
 - Prefix prompt:
-  ```
+
+  ```text
   Følgende er flervalgsspørsmål (med svar).
   ```
+
 - Base prompt template:
-  ```
+
+  ```text
   Spørsmål: {text}
   Svaralternativer:
   a. {option_a}
@@ -1259,8 +1373,10 @@ When evaluating generative models, we use the following setup (see the
   d. {option_d}
   Svar: {label}
   ```
+
 - Instruction-tuned prompt template:
-  ```
+
+  ```text
   Spørsmål: {text}
   Svaralternativer:
   a. {option_a}
@@ -1274,7 +1390,7 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ euroeval --model <model-id> --dataset hellaswag-no
+euroeval --model <model-id> --dataset hellaswag-no
 ```
 
 ### Unofficial: Winogrande-no
@@ -1314,19 +1430,24 @@ When evaluating generative models, we use the following setup (see the
 
 - Number of few-shot examples: 5
 - Prefix prompt:
-  ```
+
+  ```text
   Følgende er flervalgsspørsmål (med svar).
   ```
+
 - Base prompt template:
-  ```
+
+  ```text
   Spørsmål: {text}
   Svaralternativer:
   a. {option_a}
   b. {option_b}
   Svar: {label}
   ```
+
 - Instruction-tuned prompt template:
-  ```
+
+  ```text
   Spørsmål: {text}
   Svaralternativer:
   a. {option_a}
@@ -1338,9 +1459,8 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ euroeval --model <model-id> --dataset winogrande-no
+euroeval --model <model-id> --dataset winogrande-no
 ```
-
 
 ## Summarisation
 
@@ -1366,12 +1486,14 @@ Here are a few examples from the training split:
   "target_text": "Mens solen skinner og temperaturene er som høyest, tar dyreparker rundt om i Europa i bruk kreative løsninger for å holde dyrene avkjølte."
 }
 ```
+
 ```json
 {
   "text": "Nick Corsellis, advokat for Carl Wood, sa at en \"innendørs mann\" må ha vært involvert i razzia, men hans klient manglet ekspertise til å være den personen. Mr Wood og tre andre menn nekter å ha deltatt i £ 14m røveriet. Fire andre har allerede erklært seg skyldig for deres roller i røveriet. \"Og dette er en av grunnene til at Mr. Wood ikke er skyldig. Hva tok han med seg til bordet?\" sa han. Mr. Corsellis sa at det ikke fulgte at hans klient var mannen som ble identifisert av anklagemyndigheten som \"Man F\" i CCTV-opptak av razzia. \"Male F var faktisk en spiller. En innsider, eller knyttet til innsiden, som var fullt kjent med det indre arbeidet i Hatton Garden Safe Deposit\". Mr. Wood manglet slik kunnskap og ville bare ha vært i stand til å fungere som en \"generell hundekrop\", sa advokaten. Corsellis spurte juryen om profesjonelle kriminelle ville vært forberedt på å gi opp en del av sine millioner til en person som bare ville ha vært et \"ekstrapar hender (EPH)\". Han kalte det \"ilogisk\" og \"utrolig\" at en slik person var involvert da \"kriminelle ikke er veldedig folk\". \"Men hvem ville spille Carl Wood - EPH? Tror du at Mr. Tom Hardy eller Mr. Vinnie Jones vil haste å ta rollen som... EPH?\" spurte han.",
   "target_text": "En av mennene som er anklaget for å være en del av Hatton Garden-raiden, kunne ikke ha vært involvert fordi han manglet noen ferdigheter å tilby gjengen, har en domstol hørt."
 }
 ```
+
 ```json
 {
   "text": "Verdenshjelpen forlot klubben i fjor på grunn av arbeids- og studietilbud, pluss behovet for å komme seg fra en ryggskade. Manager Jamie Sherwood sa til klubbens nettside: \"Jeg er virkelig glad for å ha brakt Natalie tilbake til klubben. \"Hennes erfaring, lederskap og åpenbare evne blir et utmerket tillegg til vår tropp for 2017\". Haigh la til: \"Etter skaden jeg fikk på ryggen for nesten 15 måneder siden, trodde jeg aldri at jeg ville spille igjen, enn si på dette nivået. \"Det er flott å være tilbake i og rundt klubben - det er en ekte buzz etter den suksessen de oppnådde i fjor\".",
@@ -1384,16 +1506,21 @@ When evaluating generative models, we use the following setup (see the
 
 - Number of few-shot examples: 1
 - Prefix prompt:
-  ```
+
+  ```text
   Her følger nyhetsartikler med tilhørende sammendrag.
   ```
+
 - Base prompt template:
-  ```
+
+  ```text
   Nyhetsartikkel: {text}
   Sammendrag: {target_text}
   ```
+
 - Instruction-tuned prompt template:
-  ```
+
+  ```text
   Nyhetsartikkel: {text}
 
   Skriv et sammendrag av den ovennevnte artikkelen.
@@ -1402,9 +1529,8 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ euroeval --model <model-id> --dataset no-sammendrag
+euroeval --model <model-id> --dataset no-sammendrag
 ```
-
 
 ### Unofficial: NorGLM Multi Sum
 
@@ -1422,12 +1548,14 @@ Here are a few examples from the training split:
   "target_text": " En sel i England som var fanget i plast ble reddet av dyrevernere. Dette er en vanlig situasjon, både i Norge og andre steder i verden, da mange dyr setter seg fast og lider lenge fordi de ikke kan komme seg løs. Per-Erik Schulze, en ekspert fra Naturvernforbundet, oppfordrer folk til å fortsette ryddearbeidet for å minimere risikoen for dyr å komme til skade assosiert med plastforsøpling. Han bekrefter at ryddedugnadene i Norge har vært en suksess."
 }
 ```
+
 ```json
 {
   "text": " Det drar seg til mot sommer, ferietid, og ikke minst helg. Usikker på hva du skal vie den til? Her har du et lite knippe velmente tips.Denne guiden gjelder fra fredag 10. juni til søndag 12. juni.Fredag og lørdag er det duket for folkefest og musikkbonanza på Viking stadion i Jåttåvågen.Anledningen er to konserter fra det folkekjære Stavangerbandet Mods, som er tilbake igjen på arenaen hvor de i 2012 og i 2017 spilte foran flere titalls tusen elleville fans. Også Kvelertak er med på å innramme en meget sterk musikkhelg i regionen. På fredag går de nemlig opp på scenen på Folken i Stavanger, og skal by på de herligste toner med både hardrock og metall. Også i utelivets verden skjer det ting i helgen. Fredag kveld gjør et nytt nattklubb- og cocktailbar-konsept sitt inntog i Stavanger når LouLou åpner dørene i de gamle Hot-lokalene i Skagen. – Vi har sett at Stavanger manglet en annen og kanskje litt mer eksklusiv plass, hvor man kan feire bursdager og andre store begivenheter, sa daglig leder i Rekom, Frederik Mygind til Byas i forrige uke.Også på Show Bar, nysatsingen til duoen Dennis Poppe og Øyvind Sørensen, blir det åpning til helgen. «Ein liden (ein) pre-opening i morgen (lørdag) og søndag på Show Bar! Sees kl. 20:00», skriver Poppe på sin Instagram-konto. Etter seieren borte mot Sverige sist søndag, er det en revansjelysten «söta bror» som gjester Ullevaal kommende søndag. Flere rogalendinger figurerer i viktige roller på landslaget, med Erling Braut Haaland, Veton Berisha, Kristian Thorstvedt og Birger Meling som navnene. Kampen kan sees på flere utesteder i Stavanger, men kan også nytes fra sofaen fra klokken 20:45. I det Aftenbladet omtaler som «superdagene», med en hel rekke arrangementer den kommende uken, finner flere av de sted denne helgen. Det 91 kilometer lange sykkelløpet, Nordsjørittet, fra Egersund til Sandnes går av stabelen lørdag, og kan la svettekjertlene få fri utfoldelse. Rittet så dagens lys tilbake i 1998 og er et samarbeid mellom flere lokale sykkelklubber. Og på Sola blir det moro for både store og små når Sola Airshow 2022, flystevnet som har vist fram gamle og nye luftmaskiner i en årrekke, holdes på lørdagen og søndagen. Er du derimot mer opptatt av folkelivet, så kan enten Tanangerdagene, eller Solafestivalen være for deg. I Sola kulturhus er det på fredag og lørdag duket for ungdomsfestival.Arrangementet er gratis, for de mellom 13 og 20 år, og byr blant annet på musikk fra den norske rapperen Hkeem, samt Stavanger-bandet Kriminell Kunst. Og et lite stykke unna, fra onsdag denne uken og fram til og med søndag, blir det folkeliv i Tananger, når Tanagerdagene går av stabelen. Arrangementet holdes i regi av Lions Club Tananger, og lover fem dager fulle av aktiviteter for familier, barn, ungdom og voksne. – Her er noe for alle og mye for mange. Hjertelig velkommen, skriver arrangøren på Facebook-arrangementet sitt. Fra 10. til 12. juni holder fem kunstnere pop up-utstilling i Pedersgata.Kunstnerne det er snakk om er ragnhild.kristine, pryl.art, hwks.art, corneliussen.art og Rosa Ottestad.Det hele finner sted i Pedersgata 43, og det er ventet flere besøkende til arrangementet. Utstillingen åpner kl. 18 på fredag, og holder åpent gjennom helga. Vet du bedre enn oss hva skjer neste helg? Send en e-post til helga@byas.no!",
   "target_text": " Artikkelen handler om hvilke arrangementer som skal holdes i perioden fra 10. juni til 12. juni. Blant arrangementene er konserter med bandene Mods og Kvelertak, landskamp i fotball på Ullevaal, og flystevnet Sola Airshow 2022 på Sola der det skal vises fram gamle og nye luftmaskiner. I tillegg arrangeres Tanangerdagene og Solafestivalen."
 }
 ```
+
 ```json
 {
   "text": " Regjeringen foreslår å åpne nye områder for oppdrettsnæringen, men med strenge miljøkrav. – Gir betydelige muligheter for å øke produksjonen, sier fiskeriministeren.Nærings- og fiskeridepartementet foreslår nå en ny tillatelsesordning for oppdrett med miljøkrav.Det første året kan det tildeles tillatelser på maksimalt 15.000 tonn biomasse (fisk). Hver enkelt søker kan maksimalt få tildelt ti tillatelser, og det vil stilles strenge miljøkrav til søkerne, heter det i meldingen fra departementet.– Dagens produksjon i åpne merder vil fortsatt være grunnstammen i norsk oppdrett. I tillegg har vi lagt til rette for landbasert oppdrett og havbruk til havs. Med denne ordningen peker vi ut en ny retning som gir oppdrettsnæringen mulighet til å ta i bruk nye arealer langs kysten, sier fiskeri- og sjømatminister Odd Emil Ingebrigtsen (H).Til sammenligning ble det produsert rundt 1,4 millioner tonn laks i Norge i 2019, ifølge SSB.Tillatelsene i den nye miljøteknologiordningen kommer i tillegg til veksten som blir tilbudt på ordinær måte gjennom trafikklyssystemet.– Samlet sett gir dette norsk havbruksnæring betydelige muligheter for å øke produksjonen fremover, sier ministeren.Forslaget innebærer følgende miljøkrav: Null utslipp av egg og frittsvømmende stadier av lakselus, minimum 60 prosent oppsamling av slam, samt krav til rømningssikkerhet.Prisen for tillatelsene vil bli satt med utgangspunkt i auksjonsprisene som er oppnådd i forbindelse med ordinære kapasitetsjusteringer, men med et rimelig fradrag.– Havbruksnæringen skaper store verdier for Norge. Men videre vekst må skje innenfor bærekraftige rammer. Hensynet til natur generelt, og villaksen spesielt, er av avgjørende betydning, sier klima- og miljøminister Sveinung Rotevatn (V).Til tross for bedring på viktige områder, er antallet norsk laks i havet mer enn halvert siden 1980-tallet, ifølge Vitenskapelig råd for lakseforvaltning.Det er flere grunner til det, også overfiske, men rådet slår fast at rømt oppdrettslaks og lakselus nå er de største truslene mot villaks.Forslaget skal på kort tid ut på høring.E24 skrev tidligere at siste sitat i saken var fra Ingebrigtsen, mens det egentlig var fra Rotevatn. E24 beklager og har nå rettet feilen.",
@@ -1440,16 +1568,21 @@ When evaluating generative models, we use the following setup (see the
 
 - Number of few-shot examples: 1
 - Prefix prompt:
-  ```
+
+  ```text
   Her følger nyhetsartikler med tilhørende sammendrag.
   ```
+
 - Base prompt template:
-  ```
+
+  ```text
   Nyhetsartikkel: {text}
   Sammendrag: {target_text}
   ```
+
 - Instruction-tuned prompt template:
-  ```
+
+  ```text
   Nyhetsartikkel: {text}
 
   Skriv et sammendrag av den ovennevnte artikkelen.
@@ -1458,9 +1591,8 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ euroeval --model <model-id> --dataset norglm-multi-sum
+euroeval --model <model-id> --dataset norglm-multi-sum
 ```
-
 
 ### Unofficial: Schibsted-no
 
@@ -1479,12 +1611,14 @@ Here are a few examples from the training split:
   "target_text": "489 RBK-medlemmer stemte for å avvikle VAR ved et møte torsdag, med 157 mot Styremedlem Ola By Rise innrømmet gode argumenter mot videodømming, men argumenterte for at Rosenborg skulle være en kritisk stemme imot. RBK-medlem Emil Almås hevder \"norske supportere starter et jordskred\" mot VAR i Europa Medlemmene ga også sitt nei til at RBK-styret skulle få «utrede ulike modeller for å få kapital inn i klubben».  – Et gedigent nederlag for det sittende styret, mener Adresseavisens kommentator Birger Løfaldli "
 }
 ```
+
 ```json
 {
   "text": "Gazas befolkning sultes med vilje, sier FN-ekspert: Krigen har ødelagt matproduksjonen. Samtidig slippes det ikke inn nok nødhjelp. Israel driver en aktiv politikk for å sulte ut Gazas befolkning, mener FNs spesialrapportør. Israel har som mål å begrense Gazas sivilbefolkning tilgang til mat. Det hevder FNs spesialrapportør for retten til mat, Michael Fakhri, til The Guardian. – Det finnes ingen grunn til å med vilje stoppe leveringen av humanitær hjelp eller ødelegger små fiskebåter, drivhus og fruktåkere, bortsett fra å nekte folk tilgang til mat, sier Fakhri til den britiske avisen. Han mener at Israel med dette gjør seg skyldig i både krigsforbrytelser og folkemord. Jan Egeland: – Fullstendig galskap Sentrale israelske politikere er flere ganger blitt anklaget for å ha brukt retorikk som oppfordrer til folkemord. Dette ble blant annet lagt til grunn da Sør-Afrika klaget Israel inn til ICJ. – Som en menneskerettighetsekspert ved FN mener jeg at dette nå er en folkemord-situasjon, understreker Fakhri. Fakhri er ikke den eneste som har advart om konsekvensene av hungersnøden i Gaza. En FN-rapport konkluderte nylig: Flyktninghjelpens generalsekretær, Jan Egeland, reiste tirsdag inn i Gaza. Han beskriver rystende scener med desperate mennesker som gjør alt i sin makt for å kare til seg mat. – Jeg er fullstendig sjokkert over forholdene her. Folk slåss som ville og gale over madrasser og sekker med mat, sier Egeland til VG. – Det er fullstendig galskap at verden har latt en befolkning bestående av stort sett helt uskyldige kvinner og barn bli utsatt for bombardement og utsulting siden midten av oktober. Hevder Israel trosser FN-domstol Situasjonen er ikke blitt bedre de siste ukene. Det sier bistandsorganisasjoner. Det til tross for at Den internasjonale domstolen (ICJ), FNs viktigste domstol, for én måned siden bestemte at Israel må gjøre alt i sin makt for å sørge for å stoppe et folkemord og sørge for at palestinere har tilgang til bistand. Human Rights Watch (HRW) og Amnesty International påpeker at det slippes inn 30 prosent færre lastebiler med nødhjelp hver dag nå sammenlignet med før ICJs pålegg 26. januar. I februar slapp det inn halvparten så mye nødhjelp i Gaza som måneden før, ifølge FNs organisasjon for palestinske flyktninger (Unrwa). – Den israelske regjeringen sulter 2,4 millioner palestinere i Gaza.  Det sier Omar Shakir, som er lederen for HRWs virksomhet i Israel og Palestina. – Den israelske regjeringen har ganske enkelt oversett domstolens pålegg, føyer han til. Tirsdag redegjorde Ramesh Rajasingham ved FNs kontor for koordinering av humanitær innsats (UNOCHA) om situasjonen for FNs sikkerhetsråd. Han advarte om at jordbruket i Gaza vil kollapse innen mai hvis situasjonen ikke blir bedre, og hvis det ikke blir pause i krigshandlingene. – Vi understreker derfor nok en gang vårt krav om en våpenhvile, sa han. USA blokkerte i februar enda en gang en resolusjon i Sikkerhetsrådet om våpenhvile. Begrunnelsen var at resolusjonen kunne ødelegge forhandlinger om våpenhvile og fangeutveksling som pågår mellom Egypt, Israel og Qatar. – Hvis ingenting skjer, frykter vi at storskala sult i Gaza nesten er uunngåelig, og det vil føre til mange flere ofre, sa Rajasingham til Sikkerhetsrådet.",
   "target_text": "FN mener Israel prøver å sulte ut befolkningen på Gazastripen. Målrettede angrep hindrer matproduksjon og levering av nødhjelp.  Akutt underernæring truer hele befolkningen. Barn og kvinner i Nord-Gaza og Rafah er mest utsatt.  Israel overser FN-domstolens pålegg om å gi palestinere tilgang til bistand. Hjelpeorganisasjoner ser mindre nødhjelp komme inn."
 }
 ```
+
 ```json
 {
   "text": "Marokkanske og albanske mafianettverk dominerer. Svenskene blir en stadig større trussel.: Flere er bygd på lojalitet til familie og klan, ifølge ny rapport fra Kripos. Om kort tid legger politiet frem sin trusselvurdering. Der vil Politi-Norge peke på de største truslene mot det norske samfunnet. En av truslene som vil bli viet mye plass, er organiserte kriminelle nettverk. I Norge er det rundt hundre slike nettverk. Kripos mener politiet har kapasitet til å følge med på 40 av dem. Nettverkene smugler og selger enorme mengder narkotika. De står bak skyteepisoder, eksplosjoner, menneskesmugling og bedragerier. Målet er profitt. Midlene er vold og hard indre justis. Noen av de mektigste nettverkene er bygd på lojalitet til familie og klan. Nå letter Kripos på sløret. For første gang går politiet ut med en egen rapport om nettverkene som dominerer i den kriminelle underverdenen: I rapporten trekker Kripos frem fem store trusler: 1. Marokkanske narkonettverk En av de aller største truslene er marokkanske narkonettverk. – De er utrolig sentrale, ikke bare i Norge og Norden, sier Eivind Borge fra Kripos. Norskmarokkanere dukker også opp i etterforskninger i andre europeiske land. Aftenposten har tidligere omtalt Zakariya Rahali, som har vært på rømmen siden 2017. Rahali er pekt ut som lederen av Norges største narkonettverk. 2. Albanske narkonettverk Etter marokkanerne, er det albanske nettverk som utgjør den største trusselen. Disse regnes for å være blant de største nettverkene som driver med kokain i hele Europa.  3. Svenske narkonettverk Borges skrekkscenario er at Norge kommer dit Sverige er i dag. Der har gjengkrigen herjet og deler av samfunnet er i ferd med å bli infiltrert av kriminelle. I Norge har samtlige politidistrikt støtt på svenske kriminelle nettverk. Og trusselen er økende, vurderer Kripos. 4. Litauiske kriminelle nettverk For å frakte narkotika, trengs det logistikk. For å gjøre dette, tar mange kriminelle i bruk litauiske nettverk.  5. Norge som transittland I fjor opplevde Europa en «kokaintsunami». Enorme mengder kokain ble tatt av politi og tollere, også i Norge. Men prisene gikk ikke opp. Et tegn på at store mengder kokain er i omløp.  I flere år har havnene i Rotterdam og Antwerpen vært stedet hvor kokain er blitt smuglet inn til Europa. Men der har myndighetene kastet seg rundt. Dermed må de kriminelle se seg om etter nye havner for å få det hvite pulveret til kundene. De store beslagene i fjor, kan peke mot at Norge i større grad er i ferd med å bli et av disse stedene. Enn så lenge er det for tidlig å konkludere om Norge er blitt en del av kokainruten til Europa, mener Borge og Ole Jørgen Arvesen, avdelingsleder med ansvar for etterretning i Kripos. Går sammen med kartellene Hvordan kan Kripos være så sikre i sin sak? Mye kommer fra pågående etterforskninger, men de siste årene har de også fått et unikt innblikk i hvordan de kriminelle jobber og samarbeider. De har fått meldinger og bilder fra Encrochat, Sky ECC og Anom. Det har ledet til flere store saker, men likevel er trusselen fra de kriminelle nettverkene blitt større. – Den er betydelig og økende for hele Europa, også Norge, sier Arvesen. Nettverkene er blitt mer profesjonelle og samarbeider mer med kriminelle i andre land.  – Vi ser tydelig at norske nettverk har direkte kontakt med karteller i Sør-Amerika, sier Eivind Borge fra Kripos. Han sier bakmennene de jobber for å ta, ikke lar seg stoppe med forebygging. Det krever mye etterforskning og samarbeid med politi i andre land.",
@@ -1497,16 +1631,21 @@ When evaluating generative models, we use the following setup (see the
 
 - Number of few-shot examples: 1
 - Prefix prompt:
-  ```
+
+  ```text
   Her følger nyhetsartikler med tilhørende sammendrag.
   ```
+
 - Base prompt template:
-  ```
+
+  ```text
   Nyhetsartikkel: {text}
   Sammendrag: {target_text}
   ```
+
 - Instruction-tuned prompt template:
-  ```
+
+  ```text
   Nyhetsartikkel: {text}
 
   Skriv et sammendrag av den ovennevnte artikkelen.
@@ -1515,9 +1654,8 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ euroeval --model <model-id> --dataset schibsted-no
+euroeval --model <model-id> --dataset schibsted-no
 ```
-
 
 ### Unofficial: Personal Sum
 
@@ -1540,12 +1678,14 @@ Here are a few examples from the training split:
     "I boken «Frihetens øyeblikk» forteller forfatteren Håkon F. Høydal at Rajas eksmann var voldelig og hun ønsket å forlate ham. Hun ble værende fordi hun var redd for barnas lidelser, redd for fattigdom og hun skammet seg."]
 }
 ```
+
 ```json
 {
     "text": "Flere lakseaksjer falt igjen tungt, dagen etter at skatteforslag ga børsras for sjømatselskaper. Samtidig steg Norwegian etter anbefaling fra storbank.Det Ble en noe vinglete dag på Oslo Børs torsdag.Etter en positiv start vendte Børsen snuten nedover i tidlig handel, før den hentet seg inn igjen til forsiktig oppgang omtrent halvveis ut i handelsdagen. Utover ettermiddagen snudde Børsen så nedover igjen.Hovedindeksen endte til slutt dagen ned 1,58 prosent.Nedgangen tiltok den siste timen med handel, samtidig som Wall Street falt kraftig.Oljeprisen steg solid gjennom gårsdagen, og handles rundt én dollar høyere enn da Børsen stengte onsdag. Et fat Nordsjøolje (brent spot) koster ved stengetid torsdag 88,4 dollar, ned rundt 0,9 prosentsiden midnatt.Oljeselskapene Equinor og Aker BP falt i overkant av én prosent, mens Vår Energi endte ned 3,82 prosent.Onsdag falt Hovedindeksen 2,76 prosent etter at lakseselskapene fikk gjennomgå etter regjeringens foreslåtte grunnrenteskatt på havbruk. Verst gikk det for Salmar som stupte 30 prosent, samtidig som Lerøy Seafood falt 27,5 prosent. Torsdag fortsetter nedgangen for lakseaksjene. Sjømatindeksen endte ned 5,05 prosent.Slik så det ut for lakseaksjene ved stengetid (utvikling onsdag i parentes): Salmar falt 1,05 prosent (stupte 30,3 prosent)Grieg Seafood falt 2,75 prosent (falt 26,6 prosent)Mowi falt 3,15 prosent (falt 18,9 prosent) Lerøy Seafood falt 8,10 prosent (raste 27,5 prosent)Austevoll Seafood falt 6,28 prosent (falt 21,7 prosentNorway Royal Salmon falt 8,94 prosent (endte ned 22,9 prosent)Bakkafrost-aksjen falt samtidig 12,83 prosent.Selskapet har virksomhet på Færøyene og understreket onsdag at de ikke påvirkes av det nye norske skatteforslaget. Samtidig understreket de at det arbeides med et forslag om justeringer av skattesatsen på Færøyene.I USA peker pilene solid nedover på børsene torsdag ettermiddag.Det er kraftig nedgang på Wall Street, der den brede S&P 500-indeksen faller godt over to prosent. Teknologiindeksen Nasdaq faller samtidig mer enn tre prosent.I Europa er det også bred, kraftig nedgang på de viktigste børsene. London-børsen, Frankfurt-børsen og Paris-børsen er alle ned i overkant av to prosent rundt stengetid i Oslo.Storbanken HSBC har gjenopptatt dekning på flyselskapet Norwegian, ifølge Bloomberg. Banken anbefaler kjøp og har satt et kursmål på 14,50 kroner. Dermed ser banken for seg en oppside på hele 119 prosent i aksjen, skriver nyhetsbyrået. Norwegian-aksjen steg 6,81 prosent.– Nye Norwegian er en annen forretning enn den før pandemien, som har omstrukturert operasjonelt og økonomisk, skriver HSBC i analysen.– Den nye ledelsen har en solid strategi, en enkel og kostnadseffektiv\nforretningsmodell med en enkelt type fly, et sterkt fokus på sine nøkkelmarkeder i Norden og en solid balanse og likviditet, alt innenfor et gunstig konkurranselandskap som bør tillate ny NAS å ta markedsandeler fra sine konkurrenter, heter det videre i analysen.Storbanken begrunner også sin nye dekning på flyselskapet ved at dets konkurrenter venter mye motvind og ny etterspørsel for Norwegian kan komme ut av det. I tillegg nevnes Norges sikkerhetsnett rundt høye energi- og strømpriser.- Mens Europa står overfor høy inflasjon og lav forbrukertillit, har Norge betydelig lysere utsikter med sine omfattende energiressurser, statlig finansiering og høy inntekt per innbygger.HSBC viser også til høy reiseetterspørsel blant nordmenn.Fornybarselskapet Scatec er i fokus i forbindelse med at selskapet har kommet med nye målsetninger. Selskapet vil investere 10 milliarder kroner av egenkapitalen i nye kraftverk frem mot 2027. Investeringene har som mål å utvide kapasiteten med 1,5 gigawatt hvert år i perioden. Scatec-aksjen endte dagen ned 2,93 prosentXXL er samtidig blant børstaperne torsdag. Aksjen til sportsbutikk-kjeden falt 11,66 prosent.",
     "target_text": ["Lakseaksjer opplever fortsatt betydelig nedgang på Oslo Børs etter regjeringens foreslåtte grunnrenteskatt på havbruk. Hovedindeksen endte ned 1,58 prosent, og sjømatindeksen falt ytterligere 5,05 prosent. Samtidig steg Norwegian-aksjen etter anbefaling fra HSBC, som gjenopptok dekning på selskapet og anbefalte kjøp med et kursmål på 14,50 kroner, med en forventet oppside på 119 prosent."]
 }
 ```
+
 ```json
 {
     "text": "(Minnesota Wild – St. Louis Blues 4–6) Mats Zuccarello (34) var svært kritisk til seg selv og lagkameratene i Minnesota Wild etter nattens tap mot St. Louis Blues i 23 minusgrader foran 38.000 tilskuere.– Jeg har egentlig ikke ord. Det er pinlig når du har 40.000 mennesker som kommer og fryser ræva av seg, og så spiller vi sånn, sa Zuccarello på pressekonferansen etter «Winter Classic»-oppgjøret på Target Field – et baseballstadion i Minneapolis. Før siste periode ledet Blues 6–2, og Zuccarello beskriver de to første periodene som at de ble «lett utspilt» av Blues. Zuccarello hadde én assist – da Ryan Hartman scoret lagets tredje mål . Wild reduserte to ganger i siste periode og fastsatte sluttresultatet til 4–6. 34-åringen mener det ikke nytter å forklare tapet med kulden, vanskelige forhold og det faktum at de ikke har spilt kamp siden 20. desember: – Det er ingen unnskyldninger ... Det er kaldt for begge lag, isen er humpete for begge lag. Vi spilte ikke smart hockey som vi har gjort i store deler av sesongen. Det var Wilds femte strake tap i en sesong der Zuccarello og laget jevnt over har levert meget bra. – Dessverre skjedde det på en stor kveld som dette. Folk forlater hjemmene sine i kulden for å støtte oss, og så serverer vi dem dette. Vi har skuffet oss selv og alle andre. Det var på forhånd varslet sprengkulde, og målingene viste 23 minusgrader. Zuccarello beskriver opplevelsen slik:– Jeg var skikkelig kald under oppvarmingen, men når kampen starter slår adrenalinet inn. Men jeg tror aldri jeg har vært så kald i hele mitt liv før sisteperioden da vi lå under 6–2, eller hva det var. Det var ingen god følelse. – Det store bildet nå er at vi har fem strake tap, og vi må finne tilbake til måten å vinne på og hvordan vi skal spille som et lag, sier Zuccarello. Zuccarello har scoret åtte mål og lagt 17 målgivende pasninger i løpet av 25 kamper denne sesongen. Det vil si ett målpoeng per kamp i snitt. I sine beste målpoengsesonger for New York Rangers – 2013/14, 2015/16 og 2016/17 – oppnådde han henholdsvis 59 målpoeng på 77 kamper, 61 målpoeng på 81 kamper og 59 på 80 kamper.PS! Natt til fredag spiller Minnesota Wild borte mot Boston Bruins. To dager senere er det hjemmekamp mot Washington Capitals.",
@@ -1559,16 +1699,21 @@ When evaluating generative models, we use the following setup (see the
 
 - Number of few-shot examples: 1
 - Prefix prompt:
-  ```
+
+  ```text
   Her følger nyhetsartikler med tilhørende sammendrag.
   ```
+
 - Base prompt template:
-  ```
+
+  ```text
   Nyhetsartikkel: {text}
   Sammendrag: {target_text}
   ```
+
 - Instruction-tuned prompt template:
-  ```
+
+  ```text
   Nyhetsartikkel: {text}
 
   Skriv et sammendrag av den ovennevnte artikkelen.
@@ -1577,5 +1722,5 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ euroeval --model <model-id> --dataset personal-sum
+euroeval --model <model-id> --dataset personal-sum
 ```

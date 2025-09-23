@@ -13,7 +13,6 @@ fluctuates depending on the number of requests in the queue, so the speed benchm
 should be taken as only a rough estimate of the model's speed, rather than an exact
 measurement.
 
-
 ## 📊 Metrics
 
 The primary metric used to evaluate the performance of a model on the speed task is the
@@ -26,12 +25,11 @@ if the model has less than ~8B parameters, and one or more NVIDIA A100 GPUs is l
 The secondary metric is the same, but where the documents are shorter, with roughly
 12.5, 15, ..., 125 tokens.
 
-
 ## 🛠️ How to run
 
 In the command line interface of the [EuroEval Python package](/python-package.md), you
 can benchmark your favorite model on the speed task like so:
 
 ```bash
-$ euroeval --model <model-id> --task speed
+euroeval --model <model-id> --task speed
 ```

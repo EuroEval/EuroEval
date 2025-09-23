@@ -1,16 +1,22 @@
 # 🇵🇹 Portuguese
 
-This is an overview of all the datasets used in the European Portuguese part of EuroEval. The
-datasets are grouped by their task - see the [task overview](/tasks) for more
-information about what these constitute.
+This is an overview of all the datasets used in the European Portuguese part of
+EuroEval. The datasets are grouped by their task - see the [task overview](/tasks) for
+more information about what these constitute.
 
 ## Sentiment Classification
 
 ### SST2-PT
 
-This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2404.05333) and is part of the ExtraGLUE dataset. It is created by taking the original SST-2 dataset and using machine translation (DeepL) to translate it.
+This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2404.05333)
+and is part of the ExtraGLUE dataset. It is created by taking the original SST-2 dataset
+and using machine translation (DeepL) to translate it.
 
-The original dataset contains 67,300 training, 872 validation, and 1,820 test samples. We use 1,024 / 256 / 2,048 samples for train / val / test respectively. Given that the original validation dataset only has 1,820 sample for testing, we derive that split from the training split, while ensuring no overlaps occur. This dataset only includes positive and negative labels, no neutrals.
+The original dataset contains 67,300 training, 872 validation, and 1,820 test samples.
+We use 1,024 / 256 / 2,048 samples for train / val / test respectively. Given that the
+original validation dataset only has 1,820 sample for testing, we derive that split from
+the training split, while ensuring no overlaps occur. This dataset only includes
+positive and negative labels, no neutrals.
 
 Here are a few examples from the training split:
 
@@ -40,17 +46,21 @@ When evaluating generative models, we use the following setup (see the
 
 - Number of few-shot examples: 12
 - Prefix prompt:
-  ```
+
+  ```text
   Abaixo encontras documentos e os seus sentimentos correspondentes, que podem ser 'positivo' ou 'negativo'.
   ```
+
 - Base prompt template:
-  ```
+
+  ```text
   Documento: {text}
   Sentimento: {label}
   ```
+
 - Instruction-tuned prompt template:
 
-  ```
+  ```text
   Texto: {text}
 
   Clasifica o sentimento do documento. Responde apenas com 'positivo' ou 'negativo'.
@@ -59,17 +69,22 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ euroeval --model <model-id> --dataset sst2-pt
+euroeval --model <model-id> --dataset sst2-pt
 ```
-
 
 ## Named Entity Recognition
 
 ### HAREM
 
-This dataset was published in [this paper](https://aclanthology.org/L06-1027/) and is based on the [Primeiro HAREM](https://www.linguateca.pt/harem/) evaluation campaign for **Portuguese from Portugal**, using the manually annotated **Colecção Dourada**. The text sources come from varied sources: web, news, fiction books, politics, email, speeches, technical, expository.
+This dataset was published in [this paper](https://aclanthology.org/L06-1027/) and is
+based on the [Primeiro HAREM](https://www.linguateca.pt/harem/) evaluation campaign for
+**Portuguese from Portugal**, using the manually annotated **Colecção Dourada**. The
+text sources come from varied sources: web, news, fiction books, politics, email,
+speeches, technical, expository.
 
-We extract only documents where `<ORIGEM>` is `PT`, i.e., of **Portuguese origin**. The raw XML annotations are parsed and converted to token-level BIO labels. Tags are mapped to standard CoNLL categories:
+We extract only documents where `<ORIGEM>` is `PT`, i.e., of **Portuguese origin**. The
+raw XML annotations are parsed and converted to token-level BIO labels. Tags are mapped
+to standard CoNLL categories:
 
 - `PER` (pessoa)
 - `LOC` (local)
@@ -92,14 +107,16 @@ Labels follow the standard CoNLL BIO scheme with numeric encoding:
 }
 ```
 
-In addition to tokenization and label alignment, each document is split into individual sentences, using punctuation-based heuristics. This makes the dataset better suited for sentence-level inference and generation.
+In addition to tokenization and label alignment, each document is split into individual
+sentences, using punctuation-based heuristics. This makes the dataset better suited for
+sentence-level inference and generation.
 
-Due to the limited number of PT-origin documents (1,965 examples total), we couldn’t reach the target of 2,304 (1,024 + 256 + 1,024). The final split is:
+Due to the limited number of PT-origin documents (1,965 examples total), we couldn’t
+reach the target of 2,304 (1,024 + 256 + 1,024). The final split is:
 
 - Train: 873 examples
 - Validation: 218 examples
 - Test: 874 examples
-
 
 ```json
 {
@@ -107,12 +124,14 @@ Due to the limited number of PT-origin documents (1,965 examples total), we coul
   "labels": array([0, 5, 0, 0, 0, 0, 0, 0, 0], dtype=object)
 }
 ```
+
 ```json
 {
  "tokens": array(["Por", "exemplo", ",", "em", "Filosofia", "está", "muito", "boa", "."], dtype=object),
   "labels": array([0, 0, 0, 0, 7, 0, 0, 0, 0], dtype=object)
 }
 ```
+
 ```json
 {
   "tokens": array(["Sabe", "qual", "a", "origem", "da", "sua", "família", "?"], dtype=object),
@@ -125,44 +144,57 @@ When evaluating generative models, we use the following setup (see the
 
 - Number of few-shot examples: 8
 - Prefix prompt:
-  ```
+
+  ```text
   Seguem-se frases e dicionários JSON com as entidades mencionadas presentes na frase indicada.
   ```
+
 - Base prompt template:
-  ```
+
+  ```text
   Frase: {text}
   Entidades mencionadas: {label}
   ```
+
 - Instruction-tuned prompt template:
-  ```
+
+  ```text
   Frase: {text}
 
   Identifica as entidades mencionadas na frase. Deves devolver um dicionário JSON com as chaves 'pessoa', 'organização', 'local' e 'diverso' . Os valores devem ser listas contendo as entidades mencionadas desse tipo, tal como ocorrem na frase.
   ```
+
 - Label mapping:
-    - `B-PER` ➡️ `pessoa`
-    - `I-PER` ➡️ `pessoa`
-    - `B-LOC` ➡️ `local`
-    - `I-LOC` ➡️ `local`
-    - `B-ORG` ➡️ `organização`
-    - `I-ORG` ➡️ `organização`
-    - `B-MISC` ➡️ `diverso`
-    - `I-MISC` ➡️ `diverso`
+  - `B-PER` ➡️ `pessoa`
+  - `I-PER` ➡️ `pessoa`
+  - `B-LOC` ➡️ `local`
+  - `I-LOC` ➡️ `local`
+  - `B-ORG` ➡️ `organização`
+  - `I-ORG` ➡️ `organização`
+  - `B-MISC` ➡️ `diverso`
+  - `I-MISC` ➡️ `diverso`
 
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ euroeval --model <model-id> --dataset harem
+euroeval --model <model-id> --dataset harem
 ```
-
 
 ## Linguistic Acceptability
 
 ### ScaLA-pt
 
-This dataset is a Portuguese version of ScaLA, which was originally published in [this paper](https://aclanthology.org/2023.nodalida-1.20/), created by corrupting grammatically correct sentences from the [Universal Dependencies Portuguese-Bosque treebank](https://github.com/UniversalDependencies/UD_Portuguese-Bosque), filtered to only include samples from the European Portuguese source *CETEMPúblico*. The treebank is based on the Constraint Grammar conversion of the Bosque corpus, part of the Floresta Sintá(c)tica treebank.
+This dataset is a Portuguese version of ScaLA, which was originally published in [this
+paper](https://aclanthology.org/2023.nodalida-1.20/), created by corrupting
+grammatically correct sentences from the [Universal Dependencies Portuguese-Bosque
+treebank](https://github.com/UniversalDependencies/UD_Portuguese-Bosque), filtered to
+only include samples from the European Portuguese source *CETEMPúblico*. The treebank is
+based on the Constraint Grammar conversion of the Bosque corpus, part of the Floresta
+Sintá(c)tica treebank.
 
-Corruptions were applied by either **removing a word** from the sentence or **swapping two neighbouring words**. Rules based on part-of-speech tags were used to ensure that these corruptions lead to grammatical errors.
+Corruptions were applied by either **removing a word** from the sentence or **swapping
+two neighbouring words**. Rules based on part-of-speech tags were used to ensure that
+these corruptions lead to grammatical errors.
 
 The final dataset contains:
 
@@ -180,12 +212,14 @@ Here are a few examples from the training split:
     "label": "incorrect"
 }
 ```
+
 ```json
 {
     "text": "A equipa está a mostrar progressos, mas ainda há muito para fazer.",
     "label": "correct"
 }
 ```
+
 ```json
 {
     "text": "Vários estudos têm mostrado que estes linfomas regridem depois de tratamentos dirigidos à a HP a, o que sugere uma relação entre os dois.",
@@ -198,30 +232,35 @@ When evaluating generative models, we use the following setup (see the
 
 - Number of few-shot examples: 12
 - Prefix prompt:
-  ```
+
+  ```text
   Seguem-se abaixo textos e se são gramaticalmente corretos.
   ```
+
 - Base prompt template:
-  ```
+
+  ```text
     Texto: {text}
     Gramaticalmente correcto: {label}
   ```
+
 - Instruction-tuned prompt template:
-  ```
+
+  ```text
     Texto: {text}
 
     Determina se o texto é gramaticalmente correcto ou não. Responde com 'sim' ou 'não', e nada mais.
   ```
+
 - Label mapping:
-    - `correct` ➡️ `sim`
-    - `incorrect` ➡️ `não`
+  - `correct` ➡️ `sim`
+  - `incorrect` ➡️ `não`
 
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ euroeval --model <model-id> --dataset scala-pt
+euroeval --model <model-id> --dataset scala-pt
 ```
-
 
 ## Reading Comprehension
 
@@ -252,6 +291,7 @@ Here are a few examples from the training split:
     }
 }
 ```
+
 ```json
 {
     "context": "Multibanco é uma rede portuguesa de caixas automáticos (ATM) e de terminais de pagamento automático (POS) pertencente à SIBS, que tem como acionistas praticamente a totalidade das instituições bancárias portuguesas. Apesar do nome multibanco ser uma marca registada, propriedade da empresa SIBS, o termo é frequentemente empregue para designar de forma genérica um sistema interbancário que disponibilize serviços como o levantamento de dinheiro num dispositivo automático ou o pagamento de compras em lojas físicas.\n\nAtualmente, a utilização da rede Multibanco não se encontra limitada à utilização de um cartão bancário sendo possível usufruir de alguns dos serviços Multibanco através da aplicação MB Way, ao possibilitar o levantamento de numerário em qualquer caixa automático Multibanco ou pagamentos de compras nos terminais de pagamento automático da rede Multibanco através da leitura de um código QR, por aproximação do telemóvel ou usando o número de telemóvel.\n\nHistória \n\nO funcionamento do Multibanco teve início em setembro de 1985, com a instalação de 12 caixas automáticos (ATM) nas duas principais cidades do país (Lisboa e Porto). Enquanto Portugal foi um dos últimos países da Europa ocidental a instalá-las, o equipamento usado representou o que havia de mais avançado, baseado nas experiências de outros países, muitos dos quais gastam agora imenso dinheiro para substituir e atualizar máquinas obsoletas. Segundo um estudo britânico, o Multibanco seria o mais funcional de toda a Europa (com 60 funcionalidades), permitindo fazer operações que outros sistemas europeus não conseguem (por exemplo, o da Noruega não permite mais do que levantar dinheiro, saber os saldos e carregar o telemóvel). Em Portugal, os multibancos têm tido muito sucesso, o que levou ao aparecimento de novos serviços não bancários, como a venda de bilhetes ou o pagamento de serviços (água, eletricidade, gás, telefone, Internet, carregamento de telemóvel, Via Verde, etc.)\n\nEm 1987, foram introduzidos os terminais de pagamento automático (POS) Multibanco que permitiam pagar em lojas físicas com a utilização de cartões bancários, mesmo com cartões não exclusivos da rede Multibanco. Em 2008, estes sistemas passaram a permitir pagar faturas, carregar o telemóvel, consultar o saldo e movimentar contas, sendo neste caso, ao contrário do que acontece com os caixas automáticos Multibanco, as operações feitas pelos comerciantes.\n\nUtilização \n\nEm 2014, haviam cerca de 270 mil terminais de pagamento automático Multibanco. Em 2018, existiam cerca de 12 mil caixas multibanco de norte a sul do país, incluindo as regiões autónomas dos Açores e da Madeira. Diariamente, são levantados das máquinas de Multibanco cerca de 71 milhões de euros. A SIBS gere cerca de três mil milhões de operações financeiras por ano com um valor superior a 4,5 mil milhões de euros e conta com mais de 300 milhões de utilizadores, nacionais e estrangeiros.\n\nCom a exceção de 2019, o número de terminais no país tem vindo a diminuir ano após ano. Esta redução surge em paralelo com a redução acelerada da utilização dos terminais em favor do uso de aplicações móveis e web-sites.\n\nVer também\n Rede interbancária\n Caixa automático\n Plus\n Cirrus\n\nLigações externas \n\n SIBS - instituição de pagamento gestora dos sistemas Multibanco em Portugal\n\nRedes interbancárias\nCaixas eletrônicos\nSistema bancário\nInvenções e descobertas portuguesas",
@@ -262,6 +302,7 @@ Here are a few examples from the training split:
     }
 }
 ```
+
 ```json
 {
     "context": "O furacão do Dia do Trabalho de 1935 foi o ciclone tropical mais forte da temporada de furacões no oceano Atlântico de 1935. Tem sido um dos mais intensos dos que têm tocado terra nos Estados Unidos e o primeiro dos três furacões de categoria 5 que têm açoitado este país durante o século XX, sendo os outros o Furacão Camille em 1969 e o Furacão Andrew em 1992. Depois de ter-se gerado como uma débil tempestade tropical ao leste das Bahamas a 29 de agosto de 1935, avançou lentamente para o oeste, se convertendo em furacão a 1 de setembro, intensificando rapidamente a sua potência antes de golpear a parte norte das Florida Keys a 2 de setembro. Após tocar terra em seu pico de intensidade, seguiu ao noroeste ao longo da costa oeste da Flórida, e debilitado anteriormente a terra para perto de Cedar Keys a 4 de setembro.\n\nO furacão causou graves danos na zona norte das Florida Keys, vendo-se toda a região afectada por uma forte marejada, com ondas dentre 4 e 9 metros aproximadamente. Por causa dos fortes ventos a maioria dos edifícios na zona de Islamorada ficaram destruídos. As linhas ferroviárias da Key West Flórida viram-se gravemente danificadas ou destruídas. O furacão também causou danos a seu passo pelo noroeste da Flórida, Geórgia e as Carolinas. Calcula-se que ao todo morreram mais de 400 pessoas. Este furacão iguala o recorde com o Furacão Dorian por ter sido o furacão mais potente que tenha golpeado os Estados Unidos quanto a pressão barométrica.\n\n1935 nos Estados Unidos",
@@ -278,17 +319,22 @@ When evaluating generative models, we use the following setup (see the
 
 - Number of few-shot examples: 4
 - Prefix prompt:
-  ```
+
+  ```text
   Os textos que se seguem são acompanhados de perguntas e respostas.
   ```
+
 - Base prompt template:
-  ```
+
+  ```text
   Texto: {text}
   Pergunta: {question}
   Resposta com um máximo de 3 palavras: {label}
   ```
+
 - Instruction-tuned prompt template:
-  ```
+
+  ```text
   Texto: {text}
 
   Responde à seguinte pergunta sobre o texto acima num máximo de 3 palavras.
@@ -299,17 +345,23 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ euroeval --model <model-id> --dataset multi-wiki-qa-pt
+euroeval --model <model-id> --dataset multi-wiki-qa-pt
 ```
-
 
 ### Unofficial: BoolQ-PT
 
-This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2404.05333) and is part of the ExtraGLUE dataset. It is created by taking the original BoolQ dataset and using machine translation (DeepL) to translate it.
+This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2404.05333)
+and is part of the ExtraGLUE dataset. It is created by taking the original BoolQ dataset
+and using machine translation (DeepL) to translate it.
 
-The original dataset has a passage, question, and yes/no label. We adapt this dataset by taking the original passage, question, and yes/no options, and turning it into a Q/A style question where the model can answer yes or no.
+The original dataset has a passage, question, and yes/no label. We adapt this dataset by
+taking the original passage, question, and yes/no options, and turning it into a Q/A
+style question where the model can answer yes or no.
 
-The original dataset contains 9,430 training, 3,270 validation, and 3,250 test samples. We use 1,024 / 256 / 2,048 samples for train / val / test respectively. We've observed some overlap in the splits, so decided to concatenate all splits into a single dataset, shuffling it, and extract splits.
+The original dataset contains 9,430 training, 3,270 validation, and 3,250 test samples.
+We use 1,024 / 256 / 2,048 samples for train / val / test respectively. We've observed
+some overlap in the splits, so decided to concatenate all splits into a single dataset,
+shuffling it, and extract splits.
 
 Here are a few examples from the training split:
 
@@ -339,20 +391,24 @@ When evaluating generative models, we use the following setup (see the
 
 - Number of few-shot examples: 5
 - Prefix prompt:
-  ```
+
+  ```text
   As seguintes são perguntas de escolha múltipla (com respostas).
   ```
+
 - Base prompt template:
-  ```
+
+  ```text
   Pergunta: {text}
   Opções:
   a. {option_a}
   b. {option_b}
   Resposta: {label}
   ```
+
 - Instruction-tuned prompt template:
 
-  ```
+  ```text
   Pergunta: {text}
   Opções:
   a. {option_a}
@@ -364,20 +420,23 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ euroeval --model <model-id> --dataset boolq-pt
+euroeval --model <model-id> --dataset boolq-pt
 ```
-
 
 ## Knowledge
 
 ### MMLU-pt
 
-This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2410.08928) and is a machine translated version of the English [MMLU
+This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2410.08928)
+and is a machine translated version of the English [MMLU
 dataset](https://openreview.net/forum?id=d7KBjmI3GmQ) and features questions within 57
 different topics, such as elementary mathematics, US history and law. The translation to
 Portuguese was done using DeepL.
 
-The original full dataset consists of 270 / 1,439 / 14,774 samples for training, validation, and testing, respectively. These splits were merged, duplicates removed, and new splits were created with 1,024 / 256 / 2048 samples for training, validation, and testing, respectively.
+The original full dataset consists of 270 / 1,439 / 14,774 samples for training,
+validation, and testing, respectively. These splits were merged, duplicates removed, and
+new splits were created with 1,024 / 256 / 2048 samples for training, validation, and
+testing, respectively.
 
 Here are a few examples from the training split:
 
@@ -407,11 +466,14 @@ When evaluating generative models, we use the following setup (see the
 
 - Number of few-shot examples: 5
 - Prefix prompt:
-  ```
+
+  ```text
   As seguintes são perguntas de escolha múltipla (com respostas).
   ```
+
 - Base prompt template:
-  ```
+
+  ```text
   Pergunta: {text}
   Opções:
   a. {option_a}
@@ -420,9 +482,10 @@ When evaluating generative models, we use the following setup (see the
   d. {option_d}
   Resposta: {label}
   ```
+
 - Instruction-tuned prompt template:
 
-  ```
+  ```text
   Pergunta: {text}
   Opções:
   a. {option_a}
@@ -436,17 +499,24 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ euroeval --model <model-id> --dataset mmlu-pt
+euroeval --model <model-id> --dataset mmlu-pt
 ```
-
 
 ## Common-sense Reasoning
 
 ### GoldenSwag-pt
 
-This dataset is a filtered and machine translated version of the English [HellaSwag dataset](https://aclanthology.org/P19-1472/), featuring both video descriptions from ActivityNet as well as how-to articles from WikiHow. The machine translated version was published in [this paper](https://doi.org/10.48550/arXiv.2410.08928) and was done using DeepL, and the filtering was published in [this paper](https://doi.org/10.48550/arXiv.2504.07825), which resulted in higher quality samples.
+This dataset is a filtered and machine translated version of the English [HellaSwag
+dataset](https://aclanthology.org/P19-1472/), featuring both video descriptions from
+ActivityNet as well as how-to articles from WikiHow. The machine translated version was
+published in [this paper](https://doi.org/10.48550/arXiv.2410.08928) and was done using
+DeepL, and the filtering was published in [this
+paper](https://doi.org/10.48550/arXiv.2504.07825), which resulted in higher quality
+samples.
 
-The original full dataset consists of 1530 / 1530 samples for training and validation, respectively. However, they are exactly equal. We use a split of 660 / 256 / 2,048 samples for training, validation, and testing, respectively.
+The original full dataset consists of 1530 / 1530 samples for training and validation,
+respectively. However, they are exactly equal. We use a split of 660 / 256 / 2,048
+samples for training, validation, and testing, respectively.
 
 Here are a few examples from the training split:
 
@@ -476,11 +546,14 @@ When evaluating generative models, we use the following setup (see the
 
 - Number of few-shot examples: 5
 - Prefix prompt:
-  ```
+
+  ```text
   As seguintes são perguntas de escolha múltipla (com respostas).
   ```
+
 - Base prompt template:
-  ```
+
+  ```text
   Pergunta: {text}
   Opções:
   a. {option_a}
@@ -489,9 +562,10 @@ When evaluating generative models, we use the following setup (see the
   d. {option_d}
   Resposta: {label}
   ```
+
 - Instruction-tuned prompt template:
 
-  ```
+  ```text
   Pergunta: {text}
   Opções:
   a. {option_a}
@@ -505,7 +579,7 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ euroeval --model <model-id> --dataset goldenswag-pt
+euroeval --model <model-id> --dataset goldenswag-pt
 ```
 
 ### Unofficial: Winogrande-pt
@@ -545,19 +619,24 @@ When evaluating generative models, we use the following setup (see the
 
 - Number of few-shot examples: 5
 - Prefix prompt:
-  ```
+
+  ```text
   Følgende er multiple choice spørgsmål (med svar).
   ```
+
 - Base prompt template:
-  ```
+
+  ```text
   Spørgsmål: {text}
   Svarmuligheder:
   a. {option_a}
   b. {option_b}
   Svar: {label}
   ```
+
 - Instruction-tuned prompt template:
-  ```
+
+  ```text
   Spørgsmål: {text}
   Svarmuligheder:
   a. {option_a}
@@ -569,25 +648,29 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ euroeval --model <model-id> --dataset winogrande-pt
+euroeval --model <model-id> --dataset winogrande-pt
 ```
-
 
 ## Summarisation
 
 ### Publico
 
-This dataset contains 3,304 news articles from the Portuguese newspaper *Público* paired with extractive-style summaries. The samples all come from the [CCNews corpus](https://commoncrawl.org/blog/news-dataset-available).
+This dataset contains 3,304 news articles from the Portuguese newspaper *Público* paired
+with extractive-style summaries. The samples all come from the [CCNews
+corpus](https://commoncrawl.org/blog/news-dataset-available).
 
-To create summary–document pairs, we extract the **first two sentences** of each article as the `target_text` (summary), and concatenate the **title and the remainder** of the article into `text`. This heuristic is grounded in the journalistic convention of placing concise leads at the beginning of articles.
+To create summary–document pairs, we extract the **first two sentences** of each article
+as the `target_text` (summary), and concatenate the **title and the remainder** of the
+article into `text`. This heuristic is grounded in the journalistic convention of
+placing concise leads at the beginning of articles.
 
 We provide 3 splits:
+
 - Train: 1,024 examples
 - Validation: 256 examples
 - Test: 2,024 examples
 
 Here are a few examples from the training split:
-
 
 ```json
 {
@@ -595,12 +678,14 @@ Here are a few examples from the training split:
     "target_text": "O nosso tempo não corre de feição. Desastres ambientais motivados por alterações climáticas, campos de refugiados em número crescente, pandemia da covid-19, elevado número de abalos de terra e erupções vulcânicas, adição digital e ódio nas redes sociais, polarização social e radicalização política, crise da transição energética, precariedade nos mercados de trabalho e baixos salários, dívidas públicas acumuladas gigantescas, crescente tensão geopolítica entre grandes potências."
 }
 ```
+
 ```json
 {
     "text": "Sloane Stephens bateu todas as probabilidades\nFiel às indicações do treinador – “Respira, bate na bola, mexe os pés” –, Stephens soube controlar melhor as emoções, embora, na véspera não soubesse o que fazer para lidar com o nervosismo. “Estive a ler revistas de carros, críticas sobre a segurança… é um pouco estranho mas foi o que fiz. Estava muito nervosa, mas sabia que ela, provavelmente, sentia o mesmo”, contou a norte-americana de 24 anos. Não foi preciso muito tempo para se saber quem estava mais à vontade no Arthur Ashe Stadium: três erros directos de Keys conduziram ao primeiro break e deram uma vantagem de 3-2 à compatriota. A ansiedade da jogadora de 22 anos foi aumentando, o que não ajudou a que reencontrasse o seu ténis poderoso. E Keys terminou com somente metade dos pontos disputados com o seu primeiro serviço e sem concretizar nenhum dos três break-points – todos no segundo jogo do segundo set. Mais conservadora no seu estilo de jogo, Stephens não precisou muito mais do que manter a bola em campo para manter o ascendente no encontro. Mas também serviu bem, contra-atacou e defendeu-se muito bem nas esporádicas tentativas de reacção de Keys, e fechou o encontro ao fim dos 61 minutos. “Fiz seis erros em todo o encontro? Inacreditável! Acho que isso nunca me aconteceu antes”, confessou Stephens, já na conferência de imprensa, após a vitória por 6-3, 6-0. Antes, também tinha ficado boquiaberta quando Keys cometeu o último erro, no terceiro match-point. “’Ganhei mesmo o Open dos EUA’. Fiquei assim um bocadinho… Uau!”, admitiu. E foi de estupefacção o seu ar quando recebeu o cheque de três milhões de euros. Pelo meio, abraçou longamente na rede a amiga Maddy, que não conseguiu conter as lágrimas. E depois de subir às bancadas para abraçar treinador, família e o namorado (o futebolista Jozy Altidore), foi sentar-se ao lado dela, fazendo-a sorrir. “Sendo a amiga que é, Sloane apoiou-me muito”, contou Keys, que também reconheceu os nervos. “Estive nervosa toda a manhã, obviamente. Sloane é uma adversária difícil de defrontar, especialmente quando não metemos muitas bolas e ela também não falha. Não sabia o que fazer quando estava no court, o que intensificou ainda mais o nervosismo”, admitiu Keys. Por causa das paragens forçadas, nenhuma delas vai surgir no "top-10" do ranking desta segunda-feira. Stephens, que regressou à competição em Julho, após uma paragem de 11 meses e uma operação ao pé direito, vai surgir no 17.º lugar. Já Keys, operada por duas vezes ao pulso esquerdo, a segunda em Junho, vai subir ao 12.º lugar. Mas com o regresso em pleno das veteranas Serena Williams, Victoria Azarenka e Maria Sharapova, o confronto com a nova geração, em que se incluem as duas norte-americanas, mas também as campeãs Jelena Ostapenko (Roland Garros) e Garbiñe Muguruza (Wimbledon), vai elevar o interesse sobre o circuito feminino em 2018. Quatro anos e meio depois de derrotar Serena Williams, ser apontada como sua sucessora e chegar às meias-finais do Open da Austrália, Stephens está orgulhosa por ter confirmado as expectativas. “Um dia, vou poder mostrar aos meus filhos que venci o Open dos EUA. Quantas pessoas podem dizer isto? Até já gravaram o meu nome no vestuário. Isto é espantoso”, disse Stephens, ainda incrédula.",
     "target_text": "Se já era altamente improvável que duas jogadoras vindas de recentes intervenções cirúrgicas pudessem, poucos meses depois, estar numa final de um torneio do Grand Slam, as hipóteses de Sloane Stephens vencer o Open dos EUA eram mais reduzidas depois da sua amiga Madison Keys ter realizado uma exibição de sonho nas meias-finais. Mas, no derradeiro encontro entre duas estreantes em finais de majors, o maior nervosismo de Keys impediu-a de produzir o ténis que a levou a eliminar Venus Williams e, com 30 erros não forçados, contribuiu com metade dos pontos ganhos por Stephens e suficientes para erguer o seu primeiro troféu do Grand Slam."
 }
 ```
+
 ```json
 {
     "text": "Praia algarvia entre as seis melhores do mundo, destaca TripAdvisor\nDesta vez, deixa a segunda metade da tabela para firmar-se entre os dez melhores areais do planeta, subindo seis lugares em relação a 2021. “É uma praia deslumbrante... o sol bate nos diferentes tons de areia laranja e amarela das falésias altas que reflectem uma cor quente”, lê-se no comentário de um utilizador, destacado pela TripAdvisor em comunicado. “A própria areia da praia é um amarelo dourado de grão fino. As ondas quebram na praia com uma ferocidade gentil que cria um surf branco para nadadores e surfistas.” Para criar a lista, renovada anualmente, a TripAdvisor revê “dezenas de milhões de avaliações enviadas por milhões de viajantes globais nos últimos 12 meses”, analisando “a qualidade e a quantidade das avaliações” para “determinar as praias favoritas dos viajantes” no ano anterior, antecipando tendências para os próximos meses. Este ano, as escapadelas para praias insulares surgem particularmente “populares”, “com quase três quartos das dez melhores do mundo a situarem-se em locais remotos”, destaca a empresa em comunicado. É o caso da praia vencedora de 2023, a brasileira Baía do Sancho, localizada na ilha Fernando de Noronha. É um regresso ao topo da lista, subindo seis posições relativamente ao ano passado. Outro destaque é uma “nova e empolgante entrada”: a “dramática” praia de Reynisfjara, em Vik, na Islândia. “É uma praia como nenhuma outra”, assegura a nota de imprensa. “Com as suas mundialmente famosas areias negras e imponentes formações rochosas que se elevam sobre a costa, alguns podem reconhecer o impressionante cenário de A Guerra dos Tronos.” Apesar de “popular entre os observadores de pássaros devido aos vários tipos de aves marinhas avistadas nas proximidades, principalmente os papagaios-do-mar”, as “águas geladas” e as ondas, que podem atingir os 40 metros de altitude, não convidam a banhos. “É uma praia mais bem admirada da segurança do litoral.” “Além das adoradas praias do Havai, das Caraíbas e da Europa continental, a nossa comunidade está mesmo à procura de melhorar as suas experiências ao abraçar as falésias de Cannon Beach, na costa de Oregon, no Oeste dos Estados Unidos, e destinos mais frios, como a praia de Reynisfjara, na Islândia”, nota Sarah Firshein, chefe editorial da TripAdvisor, em comunicado.",
@@ -613,16 +698,21 @@ When evaluating generative models, we use the following setup (see the
 
 - Number of few-shot examples: 1
 - Prefix prompt:
-  ```
+
+  ```text
   Abaixo encontras documentos com resumos associados.
   ```
+
 - Base prompt template:
-  ```
+
+  ```text
   Documento: {text}
   Resumo: {target_text}
   ```
+
 - Instruction-tuned prompt template:
-  ```
+
+  ```text
   Documento: {text}
 
   Escreve um resumo do documento anterior.
@@ -631,5 +721,5 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ euroeval --model <model-id> --dataset publico
+euroeval --model <model-id> --dataset publico
 ```

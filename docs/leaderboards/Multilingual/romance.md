@@ -2,6 +2,8 @@
 hide:
     - toc
 ---
+<!-- This disables the requirement that all lines must be shorter than 88 characters -->
+<!-- markdownlint-configure-file { "MD013": false } -->
 # 🇫🇷🇮🇹🇵🇹🇪🇸 Romance
 
 See the [leaderboard page](/leaderboards) for more information about all the columns.

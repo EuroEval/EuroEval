@@ -11,7 +11,6 @@ generative model is used to answer a question based on one or more retrieved doc
 When evaluating generative models, we allow the model to generate 32 tokens on this
 task.
 
-
 ## 📊 Metrics
 
 The primary metric we use when evaluating the performance of a model on the reading
@@ -22,12 +21,11 @@ We also report the [F1-score](https://en.wikipedia.org/wiki/F1_score) on a
 character-basis, which is more lenient than the EM score, as it allows for small
 differences in the answer.
 
-
 ## 🛠️ How to run
 
 In the command line interface of the [EuroEval Python package](/python-package.md), you
 can benchmark your favorite model on the reading comprehension task like so:
 
 ```bash
-$ euroeval --model <model-id> --task reading-comprehension
+euroeval --model <model-id> --task reading-comprehension
 ```

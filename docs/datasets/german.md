@@ -4,7 +4,6 @@ This is an overview of all the datasets used in the German part of EuroEval. The
 datasets are grouped by their task - see the [task overview](/tasks) for more
 information about what these constitute.
 
-
 ## Sentiment Classification
 
 ### SB10k
@@ -25,12 +24,14 @@ Here are a few examples from the training split:
   "label": "positive"
 }
 ```
+
 ```json
 {
   "text": "@user ok. Bin jetzt dann hernach gleich nochmal weg, aber schreib ruhig.",
   "label": "neutral"
 }
 ```
+
 ```json
 {
   "text": "@user Schwüle 34°, Tendenz steigend. #schrecklich",
@@ -43,31 +44,36 @@ When evaluating generative models, we use the following setup (see the
 
 - Number of few-shot examples: 12
 - Prefix prompt:
-  ```
+
+  ```text
   Im Folgenden sind Tweets und ihre Stimmung aufgeführt, die 'positiv', 'neutral' oder 'negativ' sein kann.
   ```
+
 - Base prompt template:
-  ```
+
+  ```text
   Tweet: {text}
   Stimmungslage: {label}
   ```
+
 - Instruction-tuned prompt template:
-  ```
+
+  ```text
   Tweet: {text}
 
   Klassifizieren Sie die Stimmung im Tweet. Antworten Sie mit 'positiv', 'neutral' oder 'negativ'.
   ```
+
 - Label mapping:
-    - `positive` ➡️ `positiv`
-    - `neutral` ➡️ `neutral`
-    - `negative` ➡️ `negativ`
+  - `positive` ➡️ `positiv`
+  - `neutral` ➡️ `neutral`
+  - `negative` ➡️ `negativ`
 
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ euroeval --model <model-id> --dataset sb10k
+euroeval --model <model-id> --dataset sb10k
 ```
-
 
 ## Named Entity Recognition
 
@@ -91,12 +97,14 @@ Here are a few examples from the training split:
   'labels': array(['O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'B-ORG', 'O', 'O', 'O', 'B-LOC', 'O', 'O'], dtype=object)
 }
 ```
+
 ```json
 {
   'tokens': array(['In', 'einer', 'Stichwahl', 'gegen', 'seinen', 'Vorgänger', 'Georg', 'Kronawitter', 'wurde', 'Erich', 'Kiesl', 'am', '1.', 'April', '1984', 'abgewählt', '.'], dtype=object),
   'labels': array(['O', 'O', 'O', 'O', 'O', 'O', 'B-PER', 'I-PER', 'O', 'B-PER', 'I-PER', 'O', 'O', 'O', 'O', 'O', 'O'], dtype=object)
 }
 ```
+
 ```json
 {
   'tokens': array(['Noch', 'im', '13.', 'Jahrhundert', 'wurde', 'sie', 'in', 'manchen', 'Handschriften', 'mit', 'der', 'Christherre-Chronik', 'verschmolzen', '.'], dtype=object),
@@ -109,36 +117,41 @@ When evaluating generative models, we use the following setup (see the
 
 - Number of few-shot examples: 8
 - Prefix prompt:
-  ```
+
+  ```text
   Es folgen Sätze und JSON-Wörterbücher mit den benannten Entitäten, die in der angegebenen Phrase vorkommen.
   ```
+
 - Base prompt template:
-  ```
+
+  ```text
   Satz: {text}
   Benannte Entitäten: {label}
   ```
+
 - Instruction-tuned prompt template:
-  ```
+
+  ```text
   Satz: {text}
 
   Identifizieren Sie die benannten Entitäten im Satz. Sie sollten dies als JSON-Wörterbuch mit den Schlüsseln 'person', 'ort', 'organisation' und 'verschiedenes' ausgeben. Die Werte sollten Listen der benannten Entitäten dieses Typs sein, genau wie sie im Satz erscheinen.
   ```
+
 - Label mapping:
-    - `B-PER` ➡️ `person`
-    - `I-PER` ➡️ `person`
-    - `B-LOC` ➡️ `ort`
-    - `I-LOC` ➡️ `ort`
-    - `B-ORG` ➡️ `organisation`
-    - `I-ORG` ➡️ `organisation`
-    - `B-MISC` ➡️ `verschiedenes`
-    - `I-MISC` ➡️ `verschiedenes`
+  - `B-PER` ➡️ `person`
+  - `I-PER` ➡️ `person`
+  - `B-LOC` ➡️ `ort`
+  - `I-LOC` ➡️ `ort`
+  - `B-ORG` ➡️ `organisation`
+  - `I-ORG` ➡️ `organisation`
+  - `B-MISC` ➡️ `verschiedenes`
+  - `I-MISC` ➡️ `verschiedenes`
 
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ euroeval --model <model-id> --dataset germeval
+euroeval --model <model-id> --dataset germeval
 ```
-
 
 ## Linguistic Acceptability
 
@@ -165,12 +178,14 @@ Here are a few examples from the training split:
   "label": "correct"
 }
 ```
+
 ```json
 {
   "text": "Eine 65 m lange Betonmauer trägt nachts einen Leucht - Schriftzug \"HOSTAL HOSTILE HOTEL HOSTAGE GOSTIN OSTILE HOSTEL HOSTIL HOST\", was in seinem etymologischen Wortspiel so viel bedeutet, dass aus einem feindlichen ein gastfreundlicher Ort geworden ist, in Anspielung auf das auf dem Gelände des ehemaligen Frauenlagers genau gegenüber liegende Novotel Goldene Bremm (heute Mercure Saarbrücken - Süd), das konzeptionell insoweit in die Idee einbezogen ist.",
   "label": "incorrect"
 }
 ```
+
 ```json
 {
   "text": "Allerdings wurde nachgewiesen, dass sich der ebenfalls in Extremlebensräumen vorkommende Nematode Halicephalobus mephisto im in dem Labor bevorzugt Desulforudis audaxviator ernährt, wenn er eine Wahl hat (Alternative: E. coli).",
@@ -183,30 +198,35 @@ When evaluating generative models, we use the following setup (see the
 
 - Number of few-shot examples: 12
 - Prefix prompt:
-  ```
+
+  ```text
   Die folgenden Sätze und ob sie grammatikalisch korrekt sind.
   ```
+
 - Base prompt template:
-  ```
+
+  ```text
   Satz: {text}
   Grammatikalisch richtig: {label}
   ```
+
 - Instruction-tuned prompt template:
-  ```
+
+  ```text
   Satz: {text}
 
   Bestimmen Sie, ob der Satz grammatikalisch korrekt ist oder nicht. Antworten Sie mit 'ja', wenn der Satz korrekt ist und 'nein', wenn er es nicht ist.
   ```
+
 - Label mapping:
-    - `correct` ➡️ `ja`
-    - `incorrect` ➡️ `nein`
+  - `correct` ➡️ `ja`
+  - `incorrect` ➡️ `nein`
 
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ euroeval --model <model-id> --dataset scala-de
+euroeval --model <model-id> --dataset scala-de
 ```
-
 
 ## Reading Comprehension
 
@@ -233,6 +253,7 @@ Here are a few examples from the training split:
   }
 }
 ```
+
 ```json
 {
   "context": 'Iran\n\n=== Automobilindustrie ===\nIn der Automobilindustrie waren 2010 rund 500.000 Menschen beschäftigt, damit ist die Branche der zweitgrößte Arbeitgeber nach der Ölindustrie und der Iran der größte Automobilproduzent im Mittleren Osten. 2012 ist die Automobilproduktion des Iran jedoch scharf eingebrochen; es wurden nur noch 989.110 Fahrzeuge produziert – 40 Prozent weniger als 2011. Darunter fallen 848.000 PKW und 141.110 Nutzfahrzeuge.\nDie beiden größten Automobilhersteller sind die staatliche SAIPA – derzeit im Privatisierungsprozess – und Iran Khodro (IKCO). Die IKCO produziert neben einheimischen Modellen wie Dena und Runna in Lizenz Modelle u.\xa0a. von Peugeot. SAIPA hat die IKCO im Jahr 2010 das erste Mal in der Rangfolge überholt. Nach Ansicht des Business Monitor International’s Iran Autos Report wird sich die Belastbarkeit der iranischen Automobilindustrie erst in den nächsten Jahren zeigen, wenn der einheimische Markt gesättigt ist und der Iran zunehmend auf dem internationalen Markt agiert, denn bisher ist der Produktionsanstieg noch überwiegend auf die Unterstützung der Regierung zurückzuführen. 12,64 % der zugelassenen Kraftfahrzeuge werden mit Gas betrieben. Der Iran liegt damit weltweit an fünfter Stelle der Nutzung von gasbetriebenen Kraftfahrzeugen.\nDer schwedische LKW-Produzent Scania eröffnete 2011 eine neue Produktionslinie in Qazvin und löst damit Daimler-Chrysler ab, das seine Geschäftskontakte mit dem Iran abgebrochen hat.',
@@ -243,6 +264,7 @@ Here are a few examples from the training split:
   }
 }
 ```
+
 ```json
 {
   "context": 'Griechenland\n\n=== Klima ===\nGriechenland hat überwiegend ein mediterranes Klima mit feucht-milden Wintern und trocken-heißen Sommern. An der Küste ist es im Winter sehr mild und es regnet häufig; Schnee fällt nur selten. Die Sommer sind relativ heiß und es gibt nur gelegentlich Sommergewitter. Mit 48° wurde 1977 in Griechenland der kontinentaleuropäische Hitzerekord gemessen.\nIm Landesinneren ist es vor allem im Winter deutlich kühler und es gibt häufig Nachtfrost, manchmal auch starke Schneefälle. Der Frühling ist kurz, verwöhnt aber „mit einem Feuerwerk aus Lavendel und Anemonen, Klatschmohn und Kamille“. Im Sommer ist es ähnlich wie an der Küste heiß und trocken. Die jährlichen Niederschläge schwanken zwischen 400 und 1000\xa0mm. Da Griechenland sehr gebirgig ist, ist Wintersport durchaus möglich, es existieren 19 Wintersportgebiete unterschiedlicher Größe. Ein kleiner Teil im Nordwesten des Festlandes liegt in der gemäßigten Klimazone.',
@@ -259,17 +281,22 @@ When evaluating generative models, we use the following setup (see the
 
 - Number of few-shot examples: 4
 - Prefix prompt:
-  ```
+
+  ```text
   Im Folgenden finden Sie Texte mit den dazugehörigen Fragen und Antworten.
   ```
+
 - Base prompt template:
-  ```
+
+  ```text
   Text: {text}
   Fragen: {question}
   Fragen Antwort in maximal 3 Wörtern: {label}
   ```
+
 - Instruction-tuned prompt template:
-  ```
+
+  ```text
   Text: {text}
 
   Beantworten Sie die folgende Frage zum obigen Text in höchstens 3 Wörtern.
@@ -280,9 +307,8 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ euroeval --model <model-id> --dataset germanquad
+euroeval --model <model-id> --dataset germanquad
 ```
-
 
 ### Unofficial: XQuAD-de
 
@@ -306,6 +332,7 @@ Here are a few examples from the training split:
     }
 }
 ```
+
 ```json
 {
     "context": "Im tibetischen Buddhismus werden die Dharma-Lehrer/innen gewöhnlich als Lama bezeichnet. Ein Lama, der sich durch Phowa und Siddhi bewusst zur Wiedergeburt, häufig mehrere Male, entschlossen hat, um sein Bodhisattva-Gelübte fortsetzen zu können, wird Tulku genannt.",
@@ -316,6 +343,7 @@ Here are a few examples from the training split:
     }
 }
 ```
+
 ```json
 {
     "context": "Trotz ihrer weichen, gallertartigen Körper wurden Fossilien in Lagerstätten gefunden, die bis ins frühe Kambrium vor etwa 515 Millionen Jahren zurückreichen und von denen man annimmt, dass sie Rippenquallen darstellen. Die Fossilien verfügen nicht über Tentakel, haben aber viel mehr Kammreihen als moderne Formen. Die Position der Rippenquallen im evolutionären Stammbaum der Tiere ist seit langem umstritten. Die heutigen Mehrheitsmeinung, die auf der molekularen Phylogenese basiert, geht davon aus, dass Nesseltiere und Bilateria enger miteinander verwandt sind als die Rippenquallen selbst. Eine kürzlich durchgeführte Analyse der molekularen Phylogenese kam zu dem Schluss, dass der gemeinsame Vorfahre aller modernen Rippenquallen cydippida-ähnlich war und alle modernen Gruppen erst relativ spät auftauchten, wahrscheinlich nach der Kreide-Paläogen-Grenze vor 66 Millionen Jahren. Die seit den 1980er Jahren ansammelnden Beweise deuten darauf hin, dass „Cydippida“ nicht monophyletisch sind. Mit anderen Worten, sie beinhalten nicht alle Nachkommen, sondern nur die Nachkommen eines einzigen gemeinsamen Vorfahren. Dies wird angenommen, da alle anderen traditionellen Gruppen von Rippenquallen Nachkommen verschiedener Cydippida sind.",
@@ -332,17 +360,22 @@ When evaluating generative models, we use the following setup (see the
 
 - Number of few-shot examples: 4
 - Prefix prompt:
-  ```
+
+  ```text
   Im Folgenden finden Sie Texte mit den dazugehörigen Fragen und Antworten.
   ```
+
 - Base prompt template:
-  ```
+
+  ```text
   Text: {text}
   Fragen: {question}
   Fragen Antwort in maximal 3 Wörtern: {label}
   ```
+
 - Instruction-tuned prompt template:
-  ```
+
+  ```text
   Text: {text}
 
   Beantworten Sie die folgende Frage zum obigen Text in höchstens 3 Wörtern.
@@ -353,9 +386,8 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ euroeval --model <model-id> --dataset xquad-de
+euroeval --model <model-id> --dataset xquad-de
 ```
-
 
 ### Unofficial: BeleBele-de
 
@@ -374,12 +406,14 @@ Here are a few examples from the training split:
   "label": "b"
 }
 ```
+
 ```json
 {
   "text": "Text: Genehmigungen müssen im Voraus bestellt werden. Sie benötigen eine Genehmigung, um in La Sirena zu übernachten. Sirena ist die einzige Rangerstation, die neben Zelten auch Übernachtung im Schlafsaal und warme Mahlzeiten anbietet. La Leona, San Pedrillo und Los Patos bieten nur Camping ohne Verpflegung an. Es ist möglich, eine Parklizenz direkt bei der Rangerstation in Puerto Jiménez zu bekommen, aber sie akzeptieren keine Kreditkarten Die Parkverwaltung (MINAE) stellt Genehmigungen  für den Park nicht früher als einen Monat vor der geplanten Ankunft aus. CafeNet El Sol bietet einen Reservierungsservice gegen eine Gebühr von 30 US-Dollar bzw. 10 US-Dollar für Tageskarten an. Einzelheiten dazu findet man auf deren Corcovado-Seite.\nFragen: Welche der folgenden Rangerstationen bietet zwei Übernachtungsmöglichkeiten an?\nAntwortmöglichkeiten:\na. Sirena\nb. Los Patos\nc. La Leona\nd. San Pedrillo",
   "label": "a"
 }
 ```
+
 ```json
 {
   "text": "Text: Naturnaher Tourismus zieht Leute an, die daran interessiert sind, Naturgebiete zu besuchen, um die Landschaft zu genießen, einschließlich der wilden Pflanzen und Tiere. Beispiele für Aktivitäten vor Ort sind Jagen, Angeln, Fotografie, Vogelbeobachtung, der Besuch von Parks und das Lernen von Informationen über das Ökosystem. Ein Beispiel dafür ist der Besuch, das Fotografieren und das Studieren von Orangutangs in Borneo.\nFragen: Welche der folgenden Aktivitäten ist kein Beispiel für naturnahen Tourismus?\nAntwortmöglichkeiten:\na. Wandern zu einem Wasserfall\nb. Fotografieren von Wildblumen\nc. Besuch eines Wissenschaftsmuseum\nd. Fliegenfischen",
@@ -392,16 +426,21 @@ When evaluating generative models, we use the following setup (see the
 
 - Number of few-shot examples: 5
 - Prefix prompt:
-  ```
+
+  ```text
   Die folgenden Fragen sind Multiple-Choice-Fragen (mit Antworten).
   ```
+
 - Base prompt template:
-  ```
+
+  ```text
   Frage: {text}
   Antwort: {label}
   ```
+
 - Instruction-tuned prompt template:
-  ```
+
+  ```text
   Frage: {text}
   Antwortmöglichkeiten:
   a. {option_a}
@@ -415,9 +454,8 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ euroeval --model <model-id> --dataset belebele-de
+euroeval --model <model-id> --dataset belebele-de
 ```
-
 
 ### Unofficial: MultiWikiQA-de
 
@@ -440,6 +478,7 @@ Here are a few examples from the training split:
     }
 }
 ```
+
 ```json
 {
     "context": "Claris International Inc. (bis August 2019 FileMaker, Inc.) ist eine hundertprozentige US-amerikanische Tochtergesellschaft des kalifornischen Computerherstellers Apple, die die Datenbanksoftware FileMaker entwickelt. Die Firma FileMaker entstand 1998 als Nachfolgerin von Claris, die ihrerseits 1987 als Ableger von Apple gegründet worden war.\n\nGeschichte \nClaris wurde Anfang 1998 aufgelöst. Das Programm FileMaker Pro wurde Grundlage des neu gegründeten Unternehmens FileMaker, Inc.\n\nProdukte von Claris waren:\n ClarisCAD, ein CAD-Programm\n Claris MacDraw, ein Zeichenprogramm\n Claris Em@iler, ein E-Mail-Programm\n FileMaker, später FileMaker Pro, das dominierende Datenbankprogramm auf der Macintosh-Plattform\n Claris Home Page, ein HTML-Editor\n Claris Impact, ein Präsentationsprogramm\n Claris MacWrite Pro, eine Textverarbeitung\n Claris Organizer, ein Personal Information Manager\n Claris Resolve, eine Tabellenkalkulation\n ClarisWorks, ein Büropaket, das später von Apple als AppleWorks weitergeführt wurde\n Claris MacPaint, ein Bildbearbeitungsprogramm\n\nVon 2008 bis 2013 wurde die persönliche Datenbankanwendung Bento verkauft.\n\nIm August 2019 gab das Unternehmen bekannt, zum alten Unternehmensnamen Claris zurückzukehren.\n\nEinzelnachweise \n\nApple\nSoftwarehersteller (Vereinigte Staaten)\nUnternehmen (Santa Clara, Kalifornien)\nGegründet 1998",
@@ -450,6 +489,7 @@ Here are a few examples from the training split:
     }
 }
 ```
+
 ```json
 {
     "context": "Augusta Marie Gertrude von Hanau (* 21. September 1829 in Niederdorfelden; † 18. September 1887 in Halle) war die unehelich geborene älteste Tochter des Kurfürsten Friedrich Wilhelm I. von Hessen-Kassel (1802–1875) und seiner erst späteren Ehefrau Gertrude, spätere Fürstin von Hanau und zu Hořowitz (1803–1882).\n\nKurprinz Friedrich Wilhelm lernte seine Frau kennen, als diese noch mit dem Leutnant Karl Michael Lehmann (1787–1882) verheiratet war, beging mit ihr Ehebruch, erreichte schließlich die Scheidung und heiratete sie 1831. Augusta Marie Gertrude wurde so zu einer Zeit geboren, als ihre Mutter noch eine verheiratete Lehmann war. Sie wurde deshalb zunächst vom damaligen Mann ihrer Mutter als ehelich anerkannt. Erst nach der Scheidung und der Heirat von Gertrude Lehmann mit dem Kurprinzen verzichtete Karl Michael Lehmann auf die Vaterschaftsrechte. Augusta Marie Gertrude Lehmann wurde nun von ihrem leiblichen Vater zur Gräfin Schaumburg und später zur Prinzessin von Hanau erhoben.\n\nAm 17. Juli 1849 heiratete sie den Grafen Ferdinand Maximilian zu Ysenburg-Büdingen (* 24. Oktober 1823; † 5. Mai 1903). Dieser war mental wohl etwas gestört. Nachdem eine Kasseler Zeitung 1853 seine Frau „Erlaucht“ statt „Durchlaucht“ betitelt hatte, griff er den Ersten Minister seines Schwiegervaters, Ludwig Hassenpflug, tätlich an und verletzte ihn mit Stockschlägen. Er kam darauf vorübergehend in eine Klinik. 1865 wurde er durch den Kurfürsten in den Fürstenstand erhoben und nannte sich nun Ferdinand-Maximillian I.\n\nFürstin Augusta Marie Gertrude hatte ein sehr enges Verhältnis zu ihrem Vater. Als er 1866 nach dem gegen Preußen verlorenen Krieg in Stettin als Kriegsgefangener einsaß, besuchte sie ihn.\n\nSie starb in Halle, wohin sie ihren Mann begleitet hatte, der sich dort einer Operation unterziehen musste.\n\nLiteratur \n Rüdiger Ham: Ludwig Hassenpflug: Staatsmann und Jurist zwischen Revolution und Reaktion. Eine politische Biographie = Studien zur Geschichtsforschung der Neuzeit 50. Hamburg 2007. ISBN 978-3-8300-2764-5\nMichel Huberty: L' Allemagne dynastique: Les 15 familles qui ont fait l'empire. Bd. 1: Hesse - Reuss - Saxe. Le Perreux-sur-Marne 1976. ISBN 2-901138-01-2\n Philipp Losch: Die Fürstin von Hanau und ihre Kinder. In: Hanauer Geschichtsblätter 13 (1939), S. 33.\n\nWeblinks\n\nEinzelnachweise \n\nFriedrich Wilhelm I. (Hessen-Kassel)\nTitularfürst (Isenburg)\nFamilienmitglied des Hauses Hanau-Hořovice\n⚭Augusta Marie Gertrude #Hanau\nDeutscher\nGeboren 1829\nGestorben 1887\nFrau",
@@ -466,17 +506,22 @@ When evaluating generative models, we use the following setup (see the
 
 - Number of few-shot examples: 4
 - Prefix prompt:
-  ```
+
+  ```text
   Im Folgenden finden Sie Texte mit den dazugehörigen Fragen und Antworten.
   ```
+
 - Base prompt template:
-  ```
+
+  ```text
   Text: {text}
   Fragen: {question}
   Fragen Antwort in maximal 3 Wörtern: {label}
   ```
+
 - Instruction-tuned prompt template:
-  ```
+
+  ```text
   Text: {text}
 
   Beantworten Sie die folgende Frage zum obigen Text in höchstens 3 Wörtern.
@@ -487,9 +532,8 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ euroeval --model <model-id> --dataset multi-wiki-qa-de
+euroeval --model <model-id> --dataset multi-wiki-qa-de
 ```
-
 
 ## Knowledge
 
@@ -515,12 +559,14 @@ Here are a few examples from the training split:
   "label": "a"
 }
 ```
+
 ```json
 {
   "text": "Wer von den folgenden ist der industrielle Philanthrop?\nAntwortmöglichkeiten:\na. Frederick Taylor\nb. Seebohm Rowntree\nc. Henry Ford\nd. Max Weber",
   "label": "b"
 }
 ```
+
 ```json
 {
   "text": "Verglichen mit der Varianz der Maximum-Likelihood-Schätzung (MLE) ist die Varianz der Maximum-A-Posteriori (MAP)-Schätzung ________\nAntwortmöglichkeiten:\na. höher\nb. gleich\nc. niedriger\nd. es kann jede der obigen Optionen sein",
@@ -533,16 +579,21 @@ When evaluating generative models, we use the following setup (see the
 
 - Number of few-shot examples: 5
 - Prefix prompt:
-  ```
+
+  ```text
   Die folgenden Fragen sind Multiple-Choice-Fragen (mit Antworten).
   ```
+
 - Base prompt template:
-  ```
+
+  ```text
   Frage: {text}
   Antwort: {label}
   ```
+
 - Instruction-tuned prompt template:
-  ```
+
+  ```text
   Frage: {text}
   Antwortmöglichkeiten:
   a. {option_a}
@@ -556,9 +607,8 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ euroeval --model <model-id> --dataset mmlu-de
+euroeval --model <model-id> --dataset mmlu-de
 ```
-
 
 ### Unofficial: ARC-de
 
@@ -580,11 +630,13 @@ Here are a few examples from the training split:
   "label": "a"
 }
 ```
+
 ```json
   "text": "Eine Frau besaß ein Land im absoluten Besitz. Die Frau übertrug das Land an einen Freund “auf Lebenszeit” und als der Freund starb, sollte das Land an den Nachbarn der Frau \"und ihre Erben\" weitergegeben werden. Der Nachbar starb und in ihrem ordnungsgemäß beglaubigten Testament vermachte sie ihre gesamte Hinterlassenschaft an eine örtliche Wohltätigkeitsorganisation. Wenn sie intestat gestorben wäre, wäre ihre Tochter ihre einzige Erbin gewesen. Ein Jahr nach dem Tod des Nachbarn übertrug dessen Tochter durch eine Quitclaims-Erklärung jegliches Interesse, das sie an dem Land haben könnte, an die Freundin der Frau. Das Common Law Rule Against Perpetuities ist in der Gerichtsbarkeit unverändert. Es gibt keine weiteren anwendbaren Gesetze. Wer hat welches Interesse an dem Land?\nAntwortmöglichkeiten:\na. Der Freund hat einen absoluten Besitz, weil sein Lebensbesitz mit dem verbleibenden Teil verschmolzen ist, den ihm die Tochter übertragen hat.\nb. Der Freund hat einen Lebensbesitz und die Wohltätigkeitsorganisation hat einen unverfallbaren Rest, weil das Interesse des Nachbarn übertragbar war.\nc. Der Freund hat einen Lebensbesitz und die Tochter hat einen unverfallbaren Rest, weil die Erklärung der Frau ein Interesse an den Erben des Nachbarn schuf.\nd. Der Freund hat einen Lebensbesitz und die Frau hat einen Rückfall, weil das Restinteresse des Nachbarn gemäß dem Rule Against Perpetuities ungültig war.",
   "label": "b"
 }
 ```
+
 ```json
 {
   "text": "Für welches dieser beiden Szenarien tut der Hauptcharakter (der ich/mich/mein verwendet) etwas, das nach den gewöhnlichen moralischen Standards in den USA im Jahr 2020 eindeutig moralisch falsch ist? Szenario 1 | Ich gehe gerne in die Kirche, weil es mich in höchstem Maße Gott nahe fühlen lässt. Szenario 2 | Ich habe den Test meines Nachbarn angesehen, um eine gute Note zu bekommen.\nAntwortmöglichkeiten:\na. Falsch, Falsch\nb. Falsch, Nicht falsch\nc. Nicht falsch, Falsch\nd. Nicht falsch, Nicht falsch",
@@ -597,16 +649,21 @@ When evaluating generative models, we use the following setup (see the
 
 - Number of few-shot examples: 5
 - Prefix prompt:
-  ```
+
+  ```text
   Die folgenden Fragen sind Multiple-Choice-Fragen (mit Antworten).
   ```
+
 - Base prompt template:
-  ```
+
+  ```text
   Frage: {text}
   Antwort: {label}
   ```
+
 - Instruction-tuned prompt template:
-  ```
+
+  ```text
   Frage: {text}
   Antwortmöglichkeiten:
   a. {option_a}
@@ -620,9 +677,8 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ euroeval --model <model-id> --dataset arc-de
+euroeval --model <model-id> --dataset arc-de
 ```
-
 
 ## Common-sense Reasoning
 
@@ -645,12 +701,14 @@ Here are a few examples from the training split:
   "label": "a"
 }
 ```
+
 ```json
 {
   "text": "[header] Wie man Festival-Make-up macht [title] Bereiten Sie Ihr Gesicht vor. [step] Bevor Sie Ihr Augen-Make-up auftragen, müssen Sie eine Basis schaffen. Dies hilft sicherzustellen, dass Ihr Augen-Make-up den ganzen Tag hält.\nAntwortmöglichkeiten:\na. [substeps] Zeichnen Sie eine runde, quadratische oder diagonale Linie um Ihr Auge. Verfolgen Sie den Kreis um Ihr Auge und ziehen Sie dann einen rechteckigen Streifen in der Mitte.\nb. [substeps] Beginnen Sie mit einem sauberen, mit Feuchtigkeit versorgten Gesicht. Reinigen Sie Ihr Gesicht zunächst mit einem sanften Reinigungsmittel und tragen Sie dann einen leichten Feuchtigkeitsspender auf Ihr Gesicht und Ihren Hals auf, um das Erscheinungsbild feiner Linien zu reduzieren.\nc. Bevor Sie Lidschatten auftragen, wählen Sie einen einzelnen Lidschatten aus und messen Sie ihn so aus, dass er etwas größer ist als das Auge, das Sie verblenden möchten. Tragen Sie den Lidschatten auf die Spitze jedes Auges auf und streichen Sie mit einem Verblendpinsel darüber.\nd. Make-up am frühen Morgen zu tragen ist nicht immer eine Option, aber Sie können es am Abend tun. [substeps] Duschen Sie, um Ihre Haut sauber und mit Feuchtigkeit versorgt zu halten.",
   "label": "b"
 }
 ```
+
 ```json
 {
   "text": "Wir sehen einen Mann in einem Orchester Grimassen schneiden. Der Mann steht dann auf und spielt die Violine. Wir sehen Menschen an Spinden. wir\nAntwortmöglichkeiten:\na. sehen Menschen in einem Bus.\nb. sehen Menschen beim Üben von Kampfsport und Musik spielen.\nc. kehren zum Mann zurück, der die Violine spielt.\nd. sehen den Mann am Keyboard wieder.",
@@ -663,16 +721,21 @@ When evaluating generative models, we use the following setup (see the
 
 - Number of few-shot examples: 5
 - Prefix prompt:
-  ```
+
+  ```text
   Die folgenden Fragen sind Multiple-Choice-Fragen (mit Antworten).
   ```
+
 - Base prompt template:
-  ```
+
+  ```text
   Frage: {text}
   Antwort: {label}
   ```
+
 - Instruction-tuned prompt template:
-  ```
+
+  ```text
   Frage: {text}
   Antwortmöglichkeiten:
   a. {option_a}
@@ -686,15 +749,22 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ euroeval --model <model-id> --dataset hellaswag-de
+euroeval --model <model-id> --dataset hellaswag-de
 ```
-
 
 ### Unofficial: GoldenSwag-de
 
-This dataset is a filtered and machine translated version of the English [HellaSwag dataset](https://aclanthology.org/P19-1472/), featuring both video descriptions from ActivityNet as well as how-to articles from WikiHow. The machine translated version was published in [this paper](https://doi.org/10.48550/arXiv.2410.08928) and was done using DeepL, and the filtering was published in [this paper](https://doi.org/10.48550/arXiv.2504.07825), which resulted in higher quality samples.
+This dataset is a filtered and machine translated version of the English [HellaSwag
+dataset](https://aclanthology.org/P19-1472/), featuring both video descriptions from
+ActivityNet as well as how-to articles from WikiHow. The machine translated version was
+published in [this paper](https://doi.org/10.48550/arXiv.2410.08928) and was done using
+DeepL, and the filtering was published in [this
+paper](https://doi.org/10.48550/arXiv.2504.07825), which resulted in higher quality
+samples.
 
-The original full dataset consists of 1530 / 1530 samples for training and validation, respectively. However, they are exactly equal. We use a split of 660 / 256 / 2,048 samples for training, validation, and testing, respectively.
+The original full dataset consists of 1530 / 1530 samples for training and validation,
+respectively. However, they are exactly equal. We use a split of 660 / 256 / 2,048
+samples for training, validation, and testing, respectively.
 
 Here are a few examples from the training split:
 
@@ -724,16 +794,21 @@ When evaluating generative models, we use the following setup (see the
 
 - Number of few-shot examples: 5
 - Prefix prompt:
-  ```
+
+  ```text
   Die folgenden Fragen sind Multiple-Choice-Fragen (mit Antworten).
   ```
+
 - Base prompt template:
-  ```
+
+  ```text
   Frage: {text}
   Antwort: {label}
   ```
+
 - Instruction-tuned prompt template:
-  ```
+
+  ```text
   Frage: {text}
   Antwortmöglichkeiten:
   a. {option_a}
@@ -747,7 +822,7 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ euroeval --model <model-id> --dataset goldenswag-de
+euroeval --model <model-id> --dataset goldenswag-de
 ```
 
 ### Unofficial: Winogrande-de
@@ -787,16 +862,21 @@ When evaluating generative models, we use the following setup (see the
 
 - Number of few-shot examples: 5
 - Prefix prompt:
-  ```
+
+  ```text
   Die folgenden Fragen sind Multiple-Choice-Fragen (mit Antworten).
   ```
+
 - Base prompt template:
-  ```
+
+  ```text
   Frage: {text}
   Antwort: {label}
   ```
+
 - Instruction-tuned prompt template:
-  ```
+
+  ```text
   Frage: {text}
   Antwortmöglichkeiten:
   a. {option_a}
@@ -808,9 +888,8 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ euroeval --model <model-id> --dataset winogrande-de
+euroeval --model <model-id> --dataset winogrande-de
 ```
-
 
 ## Summarisation
 
@@ -834,12 +913,14 @@ Here are a few examples from the training split:
   "target_text": "Jede neue Schlagzeile ein Stich ins Herz: Führende Muslime beklagen in einem offenen Brief die wachsende \"Feindseligkeit\" gegen Migranten in Deutschland. Sie fordern Bundespräsident Wulff auf, Stellung zu beziehen."
 }
 ```
+
 ```json
 {
   "text": "Hoch flog der erste Schläger in die Luft, und viele andere Gegenstände folgten ihm. Überall auf dem Eis lag die Ausrüstung der deutschen Mannschaft zerstreut, Handschuhe, Helme, Schläger, weg damit, wer braucht so etwas schon, wenn er hemmungslos jubeln kann? In einer Ecke des Eises versammelten sich die Spieler der deutschen Eishockey-Mannschaft. Sie hüpften und tanzten und schrien, und wenn es nicht zu den Gepflogenheiten des Sports zählen würde, irgendwann zum Händeschütteln mit dem Gegner in der Mitte des Feldes zu erscheinen, dann hätten sie wahrscheinlich noch eine ganze Weile so weitergemacht. Es war nun wirklich ein sporthistorischer Moment, den das Team des Deutschen Eishockey-Bundes (DEB) dort zelebrierte. Mit 4:3 (1:0, 3:1, 0:2) hatte es in einem phänomenalen Spiel den Rekord-Olympiasieger Kanada bezwungen und sich damit für das Finale des Turniers gegen die Olympischen Athleten aus Russland (5.10 Uhr MEZ) qualifiziert. Zum ersten Mal überhaupt kann eine deutsche Mannschaft Olympiasieger werden, es ist der größte Erfolg in der Geschichte des deutschen Eishockeys. \"Verrückt, ne, verrückt, verrückte Welt\", sagte Bundestrainer Marco Sturm: \"Das ist einmalig.\" Ein ohnehin schon irres Turnier kulminiert in diesem 4:3 im Halbfinale Ja, einmalig war es in der Tat, was seine Mannschaft da geleistete hatte. Und es war interessant mitzuerleben, wie nach dem Spiel ein Akteur nach dem anderen in die Kabine trottete und sich unterwegs kurz den Journalisten stellte. Da war etwa der Torwart Danny aus den Birken, der völlig ausgelaugt war. Oder Defensivspieler Moritz Müller, der seine Tränen kaum halten konnte. Oder die NHL-gestählten Routiniers Christian Erhoff und Marcel Goc, die schon so viel erlebt haben, aber so etwas wie an diesem Abend dann doch noch nicht. Keiner hatte schon so recht begriffen, was da geschehen war, und keiner wollte zu großen sportfachlichen Analysen ansetzen, als es um die Gründe für den Erfolg ging. Ein jeder sagte nur: Team. Mannschaft. Teamgeist. Mannschaftsgeist. Diese Wörter fallen oft im Sport, aber soweit sich das von außen beurteilen lässt, trifft das bei den Eishockey-Spielern tatsächlich zu. Sturm hat in den drei Jahren eine bemerkenswerte Mannschaft geformt, die ohnehin ein irres Turnier spielt. Das knappe 0:1 gegen Schweden in der Vorrunde, der Penalty-Sieg über Norwegen, der Erfolg nach Verlängerung gegen die Schweiz, das denkwürdige 4:3 gegen Schweden im Viertelfinale. Aber all das kulminierte jetzt in diesem 4:3 gegen Kanada im Halbfinale. In einem \"Jahrhundertspiel\", wie Alfons Hörmann, Präsident des Deutschen Olympischen Sportbundes, nicht ganz zu Unrecht schwärmte.",
   "target_text": "Nach dem sensationellen 4:3-Sieg gegen Kanada kann das deutsche Eishockey-Team erstmals Olympiasieger werden. Im Finale ist der Gegner der Favorit - doch die Mannschaft von Marco Sturm glaubt an sich."
 }
 ```
+
 ```json
 {
   "text": "Monatelang haben Sicherheitsbehörden nach Salah Abdeslam gefahndet. Jetzt ist der 26-jährige Terrorverdächtige festgenommen worden. Er soll an den Anschlägen von Paris beteiligt gewesen sein, bei denen am 13. November drei Killerkommandos 130 Menschen getötet hatten. Was man bisher über den Mann weiß Salah Abdeslam ist in Brüssel geboren, aber französischer Staatsbürger. Er ist der Bruder des Selbstmordattentäters Brahim, der ebenfalls bei den Anschlägen dabei war. Die verstümmelte Leiche des 31-jährigen Brahim Abdeslam hatte die Polizei am Tag des Anschlags am Boulevard Voltaire in der Nähe des Konzertsaals Bataclan gefunden, wo er sich in die Luft gesprengt hatte. Salah wohnte im Brüsseler Vorort Molenbeek, der als eine Hochburg von gewaltbereiten Islamisten in Belgien gilt. Abdeslam soll in Deutschland gewesen sein Laut Recherchen des SWR soll sich Abdeslam Anfang Oktober 2015 kurzzeitig in Baden-Württemberg aufgehalten und dort womöglich Komplizen abgeholt haben. Demnach fuhr er in der Nacht vom 2. auf den 3. Oktober 2015 mit einem auf seinen Namen angemieteten Wagen nach Ulm und offenbar nach etwa einer Stunde wieder zurück. Er könnte in Ulm laut SWR drei Männer, die sich als Syrer ausgegeben hatten, aus einer Flüchtlingsunterkunft abgeholt haben. Bei einer Anwesenheitskontrolle am 3. Oktober wurde festgestellt, dass die drei Männer in der Unterkunft fehlten. Ihre Identität werde vom Bundeskriminalamt gemeinsam mit französischen und belgischen Sicherheitsbehörden geprüft, hieß es. Die deutschen Behörden wollten sich nicht zu dem Vorgang äußern. Familie bat ihn, sich zu stellen Wie andere Islamisten auch ist Abdeslam im Brüsseler Stadtteil Molenbeek aufgewachsen. Er war der Polizei wegen Drogendelikten bekannt. Seinen Job als Mechaniker verlor er 2011 wegen häufiger Abwesenheit. Ab 2013 betrieb er eine Bar in Molenbeek, die schließlich von den Behörden geschlossen wurde, weil Gäste dort Drogen genommen haben sollen. Mit Abdelhamid Abaaoud, der die Anschläge von Paris vermutlich geplant hat, war Salah Abdeslam seit seiner Kindheit befreundet. Nach den Anschlägen in Frankreich wurde er per internationalem Haftbefehl gesucht. Fahnder beschrieben ihn als \"gefährlich\" und möglicherweise \"schwer bewaffnet\". Zwischenzeitlich war auch über einen Aufenthalt in Syrien spekuliert worden. Salahs Bruder Mohamed hatte in Fernsehinterviews an den Gesuchten appelliert, sich zu stellen. Er selbst war nach den Anschlägen kurzzeitig festgenommen, aber bald wieder freigelassen worden. Seine Anwältin sagte, er habe \"nicht das gleiche Leben gewählt\" wie seine Brüder. Mohamed berichtete, dass Brahim und Salah in den Monaten vor den Anschlägen im November in Paris gesünder gelebt, gebetet, keinen Alkohol mehr getrunken hätten und hin und wieder in die Moschee gegangen seien. Er wollte darin aber \"nicht direkt ein Zeichen für Radikalisierung\" sehen. Zur Rolle seines Bruders bei den Anschlägen in Paris sagte Mohamed: \"Salah ist sehr intelligent. Er hat in letzter Minute kehrtgemacht\". Salah sollte angeblich in Paris auch ein Selbstmordattentat verüben. Er zündete die Bombe aber nicht, sondern warf seinen Sprengstoffgürtel in einem Pariser Vorort in einen Mülleimer.",
@@ -852,16 +933,21 @@ When evaluating generative models, we use the following setup (see the
 
 - Number of few-shot examples: 1
 - Prefix prompt:
-  ```
+
+  ```text
   Im Folgenden finden Sie Nachrichtenartikel mit den dazugehörigen Zusammenfassungen.
   ```
+
 - Base prompt template:
-  ```
+
+  ```text
   Nachrichtenartikel: {text}
   Zusammenfassung: {target_text}
   ```
+
 - Instruction-tuned prompt template:
-  ```
+
+  ```text
   Nachrichtenartikel: {text}
 
   Schreiben Sie eine Zusammenfassung des obigen Artikels.
@@ -870,5 +956,5 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ euroeval --model <model-id> --dataset mlsum-de
+euroeval --model <model-id> --dataset mlsum-de
 ```

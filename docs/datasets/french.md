@@ -4,7 +4,6 @@ This is an overview of all the datasets used in the French part of EuroEval. The
 datasets are grouped by their task - see the [task overview](/tasks) for more
 information about what these constitute.
 
-
 ## Sentiment Classification
 
 ### AlloCiné
@@ -29,12 +28,14 @@ Here are a few examples from the training split:
   "label": "negative"
 }
 ```
+
 ```json
 {
   "text": "Meme pour ceux qui n'aime pas les Chevaliers du Fiel allez voir. 1 il est meilleur que le 1 et cela est rare de voir une suite qui est meilleur que le 1. Des scènes qui peuvent faire rire les petit et les grands. On ne s'ennuie pas. Super film allez le voir. L'interpretation des acteurs sont super. Bonne journée",
   "label": "positive"
 }
 ```
+
 ```json
 {
   "text": "Une ambiance envoûtante, un récit où se mélangent sorcellerie, croyances indiennes, enquête policière sur fond de trafic de drogue, tout est conforme au livre de Tony Hillerman, même si ce dernier a \"renié\" le film. Personnellement j'adore. Hélas introuvable en France et diffusé seulement sur canal , il y a ..... un certain temps.",
@@ -47,16 +48,21 @@ When evaluating generative models, we use the following setup (see the
 
 - Number of few-shot examples: 4
 - Prefix prompt:
-  ```
+
+  ```text
   Voici des textes et leur sentiment, qui peut être 'positif' ou 'négatif'.
   ```
+
 - Base prompt template:
-  ```
+
+  ```text
   Texte: {text}
   Sentiment: {label}
   ```
+
 - Instruction-tuned prompt template:
-  ```
+
+  ```text
   Texte: {text}
 
   Classez le sentiment dans le texte. Répondez par ‘positif' ou ‘négatif'.
@@ -65,9 +71,8 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ euroeval --model <model-id> --dataset allocine
+euroeval --model <model-id> --dataset allocine
 ```
-
 
 ## Named Entity Recognition
 
@@ -101,12 +106,14 @@ Here are a few examples from the training split:
   'labels': array(['O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'B-PER', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O'], dtype=object)
 }
 ```
+
 ```json
 {
   'tokens': array(['I', 'Il', 'y', 'avait', 'plus', 'de', 'soixante', 'ans', 'que', "l'empereur", 'Napoléon', ',', 'pressé', "d'argent", ',', 'avait', 'vendu', 'les', 'provinces', 'de', 'la', 'Louisiane', 'à', 'la', 'République', 'des', 'États-Unis', ';', 'mais', ',', 'en', 'dépit', 'de', "l'infiltration", 'yankee', ',', 'les', 'traditions', 'des', 'créoles', 'français', 'se', 'perpétuaient', '.'], dtype=object),
   'labels': array(['O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'B-PER', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'B-LOC', 'O', 'O', 'B-ORG', 'I-ORG', 'I-ORG', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O'], dtype=object)
 }
 ```
+
 ```json
 {
   'tokens': array(['Les', 'fenêtres', 'de', 'la', 'vieille', 'demeure', 'royale', ',', 'ordinairement', 'si', 'sombres', ',', 'étaient', 'ardemment', 'éclairées', ';', 'les', 'places', 'et', 'les', 'rues', 'attenantes', ',', 'habituellement', 'si', 'solitaires', ',', 'dès', 'que', 'neuf', 'heures', 'sonnaient', 'à', "Saint-Germain-l'Auxerrois", ',', 'étaient', ',', "quoiqu'il", 'fût', 'minuit', ',', 'encombrées', 'de', 'populaire', '.'], dtype=object),
@@ -119,37 +126,41 @@ When evaluating generative models, we use the following setup (see the
 
 - Number of few-shot examples: 8
 - Prefix prompt:
-  ```
+
+  ```text
   Vous trouverez ci-dessous des phrases et des dictionnaires JSON avec les entités nommées qui apparaissent dans la phrase donnée.
   ```
+
 - Base prompt template:
-  ```
+
+  ```text
   Sentence: {text}
   Entités nommées: {label}
   ```
+
 - Instruction-tuned prompt template:
-  ```
+
+  ```text
   Sentence: {text}
 
   Identifiez les entités nommées dans la phrase. Vous devez produire ceci sous forme de dictionnaire JSON avec les clés 'personne', 'lieu', 'organisation' et 'divers'. Les valeurs doivent être des listes des entités nommées de ce type, exactement comme elles apparaissent dans la phrase.
   ```
 
 - Label mapping:
-    - `B-PER` ➡️ `personne`
-    - `I-PER` ➡️ `personne`
-    - `B-LOC` ➡️ `lieu`
-    - `I-LOC` ➡️ `lieu`
-    - `B-ORG` ➡️ `organisation`
-    - `I-ORG` ➡️ `organisation`
-    - `B-MISC` ➡️ `divers`
-    - `I-MISC` ➡️ `divers`
+  - `B-PER` ➡️ `personne`
+  - `I-PER` ➡️ `personne`
+  - `B-LOC` ➡️ `lieu`
+  - `I-LOC` ➡️ `lieu`
+  - `B-ORG` ➡️ `organisation`
+  - `I-ORG` ➡️ `organisation`
+  - `B-MISC` ➡️ `divers`
+  - `I-MISC` ➡️ `divers`
 
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ euroeval --model <model-id> --dataset eltec
+euroeval --model <model-id> --dataset eltec
 ```
-
 
 ## Linguistic Acceptability
 
@@ -176,12 +187,14 @@ Here are a few examples from the training split:
   "label": "correct"
 }
 ```
+
 ```json
 {
   "text": "Le trafic international sera normal vendredi sur Eurostar, Thalys, et sur les trains à grande vitesse à destination de l', a indiqué la SNCF dans un communiqué.",
   "label": "incorrect"
 }
 ```
+
 ```json
 {
   "text": "Certains craignent qu' un avantage compétitif trop net et trop durable favorise les positions dominantes, monopoles et oligopoles, qui limitent la et concurrence finissent par peser sur le consommateur.",
@@ -194,30 +207,35 @@ When evaluating generative models, we use the following setup (see the
 
 - Number of few-shot examples: 12
 - Prefix prompt:
-  ```
+
+  ```text
   Les phrases suivantes indiquent si elles sont grammaticalement correctes.
   ```
+
 - Base prompt template:
-  ```
+
+  ```text
   Phrase: {text}
   Correct du point de vue grammatical: {label}
   ```
+
 - Instruction-tuned prompt template:
-  ```
+
+  ```text
   Phrase: {text}
 
   Déterminez si la phrase est grammaticalement correcte ou non. Répondez par 'oui' si la phrase est correcte et par 'non' si elle ne l'est pas, et rien d'autre.
   ```
+
 - Label mapping:
-    - `correct` ➡️ `oui`
-    - `incorrect` ➡️ `non`
+  - `correct` ➡️ `oui`
+  - `incorrect` ➡️ `non`
 
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ euroeval --model <model-id> --dataset scala-fr
+euroeval --model <model-id> --dataset scala-fr
 ```
-
 
 ## Reading Comprehension
 
@@ -246,6 +264,7 @@ Here are a few examples from the training split:
   }
 }
 ```
+
 ```json
 {
   "context": "Au cours de cette période, Cavour se distingue par son talent de financier. Il contribue de manière prépondérante à la fusion de la Banque de Gênes et de la nouvelle Banque de Turin au sein de la Banque Nationale des États sardes (Banca Nazionale degli Stati Sardi). Après le succès électoral de décembre 1849, Cavour devient également une des figures dominantes de la politique piémontaise et il prend la fonction de porte-parole de la majorité modérée qui vient de se créer. Fort de cette position, il fait valoir que le moment des réformes est arrivé, favorisé par le Statut albertin qui a créé de réelles perspectives de progrès. Le Piémont peut ainsi s'éloigner du front catholique et réactionnaire, qui triomphe dans le reste de l'Italie. ",
@@ -256,6 +275,7 @@ Here are a few examples from the training split:
   }
 }
 ```
+
 ```json
 {
   "context": "Pour autant, le phénomène météorologique se décline sous d'autres variantes : ocelles du paon, évoquant les cent yeux d'Argus, fleurs champêtres et ornant les jardins où s'établit l'osmose entre couleurs complémentaires. La poésie tient en main la palette du peintre,, celle de Claude Gellée ou de Poussin. Pour autant, il ne s'agit pas là d'une posture habituelle chez lui, qui privilégie les paysages quasi-monochromes.",
@@ -272,17 +292,22 @@ When evaluating generative models, we use the following setup (see the
 
 - Number of few-shot examples: 4
 - Prefix prompt:
-  ```
+
+  ```text
   Les textes suivants sont accompagnés de questions et de réponses.
   ```
+
 - Base prompt template:
-  ```
+
+  ```text
   Texte: {text}
   Question: {question}
   Réponse en 3 mots maximum: {label}
   ```
+
 - Instruction-tuned prompt template:
-  ```
+
+  ```text
   Texte: {text}
 
   Répondez à la question suivante sur le texte ci-dessus en 3 mots maximum.
@@ -293,9 +318,8 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ euroeval --model <model-id> --dataset fquad
+euroeval --model <model-id> --dataset fquad
 ```
-
 
 ### Unofficial: BeleBele-fr
 
@@ -314,12 +338,14 @@ Here are a few examples from the training split:
   "label": "a"
 }
 ```
+
 ```json
 {
   "text": "Texte: Le pillage généralisé se serait poursuivi pendant la nuit, les forces de l'ordre n'étant pas présentes dans les rues de Bichkek. Un observateur a décrit Bichkek comme étant en train de sombrer dans un état d’« anarchie », tandis que la population se déplaçait en bandes dans les rues et pillait les magasins de biens de consommation. Plusieurs habitants de Bichkek ont reproché les manifestants du sud d'être responsables de l'anarchie.\nQuestion: Qui a accusé les manifestants du sud de pillage\xa0?\nChoix:\na. Des habitants de Bichkek\nb. Les forces de l’ordre\nc. Les anarchistes\nd. Des bandes de personnes",
   "label": "a"
 }
 ```
+
 ```json
 {
   "text": "Texte: Dans de nombreuses régions du monde, faire un signe de la main est un geste amical signifiant «\u2009bonjour\u2009». En revanche, en Malaisie, du moins chez les Malais des zones rurales, cela signifie « viens par ici », comme le fait de plier l'index vers soi, geste utilisé dans certains pays occidentaux, et il ne devrait être utilisé qu'en ce sens. De même, un voyageur britannique en Espagne pourrait confondre un signe d'adieu fait par une personne qui tourne la paume de sa main vers elle-même (plutôt que vers la personne à qui elle adresse le signe) avec une invitation à revenir.\nQuestion: Dans les zones rurales de la Malaisie, quel geste signifie « viens par ici » ?\nChoix:\na. Plier l’index\nb. Faire un signe de la main\nc. Faire un « high five »\nd. Lever le pouce",
@@ -332,11 +358,14 @@ When evaluating generative models, we use the following setup (see the
 
 - Number of few-shot examples: 5
 - Prefix prompt:
-  ```
+
+  ```text
   Les questions suivantes sont des questions à choix multiples (avec réponses).
   ```
+
 - Base prompt template:
-  ```
+
+  ```text
   Question: {text}
   Choix:
   a. {option_a}
@@ -345,8 +374,10 @@ When evaluating generative models, we use the following setup (see the
   d. {option_d}
   Réponse: {label}
   ```
+
 - Instruction-tuned prompt template:
-  ```
+
+  ```text
   Question: {text}
   Choix:
   a. {option_a}
@@ -360,9 +391,8 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ euroeval --model <model-id> --dataset belebele-fr
+euroeval --model <model-id> --dataset belebele-fr
 ```
-
 
 ### Unofficial: MultiWikiQA-fr
 
@@ -385,6 +415,7 @@ Here are a few examples from the training split:
     }
 }
 ```
+
 ```json
 {
     "context": "La Sabine de Gandon est un timbre-poste d'usage courant qui a servi en France de  au retrait de la vente des derniers timbres en . Ce type remplace la Marianne de Béquet et est remplacé en  par la Liberté de Gandon d'après Delacroix.\n\nDescription \n\nLa Sabine est dessinée et gravée par Pierre Gandon à partir de la tête de l'héroïne Hersilie, représentée au centre du tableau de Jacques Louis David Les Sabines, sur lequel elle s'interpose entre les Sabins et les Romains. Le modèle est Aurore de Bellegarde, une amie du peintre.\n\nLes timbres sont imprimés en taille-douce en feuille de cent exemplaires.\n\nDeux mentions de pays émetteurs ont figuré sur ces timbres. De 1977 à 1981, la mention est « FRANCE » comme sur les timbres commémoratifs depuis le début de l'année 1975, après le début de la présidence de Valéry Giscard d'Estaing. Après l'élection de François Mitterrand à la présidence de la République, « République française » revient sur les timbres, y compris les derniers émis au type Sabine, dans la deuxième partie de l'année 1981.\n\nCarrière \nLa première émission a lieu le  pour les 0,80 franc vert et 1 franc rouge, servant aux tarifs les plus fréquents de la lettre économique et prioritaire de moins de 20 grammes. Les valeurs de compléments et les autres valeurs d'usage sont émises le  et le .\n\nEnsuite, les nouvelles émissions suivent les changements de tarifs : , . Ce dernier changement de tarif est également à l'origine de l'émission de six timbres le .\n\nLes trois derniers timbres au type Sabine émis le sont le  pour correspondre aux tarifs des  août et  septembre précédents. Ils portent la mention « REPUBLIQUE FRANÇAISE ». Le , paraissent les timbres au type Liberté de Gandon d'après Delacroix.\n\nNotes et références\n\nVoir aussi\n\nBibliographie \n Catalogue de cotations de timbres de France, éd. Dallay, 2005-2006.\n\nArticle connexe \n Timbre de France d'usage courant\n\nLiens externes \n Bibliographie sur le type Sabine sur le site du Cercle des amis de Marianne.\n Liste des timbres au type Sabine sur le site Phil-Ouest.\n\nTimbre de France d'usage courant",
@@ -395,6 +426,7 @@ Here are a few examples from the training split:
     }
 }
 ```
+
 ```json
 {
     "context": "(parfois sous-titré Collectible Lennon) est le septième album de John Lennon, sorti en 1975. Il s'agit de la première compilation de son œuvre , et du dernier album qu'il ait publié avant sa retraite de cinq ans destinée à s'occuper de son fils Sean.\n\nParution \nL'album reprend onze chansons publiées par Lennon en single entre 1969 et 1974. Cinq des chansons, parmi les plus anciennes, n'avaient jusque-là jamais été publiées sur un 33 tours. Cet aspect a été particulièrement apprécié par la critique qui a généralement bien noté l'album. Celui-ci s'est bien vendu et a atteint le huitième rang des ventes au Royaume-Uni, et le douzième rang aux États-Unis, où il est devenu disque d'or.\n\nGive Peace a Chance est présenté ici sous forme d'un court extrait tandis qu'une portion de sa version live, enregistrée le  au Madison Square Garden à New York lors du concert de charité « One to One », est greffée au final de Happy Xmas (War Is Over). Cette version augmentée de la chanson de Noël est inédite à cette collection.\n\nLe nom du disque fait référence au katsuobushi, une méthode japonaise de préparation et de conservation du poisson.\n\nLe sous-titre varie selon les éditions : absent des premières éditions américaines, il est parfois indiqué Collectible Lennon sur une étiquette rouge, parfois Collectable Lennon imprimé au dos de la pochette, avant la liste des titres.\n\nPochette \nLe recto de la pochette est composé de douze dessins : onze pour les titres des chansons, plus un pour le titre de l'album qui est illustré d'un disque rouge sur fond blanc semblable au drapeau du Japon, crédité à « Lennon Plastic Ono Band ». La palette de couleurs, dans des tons pastel, est volontairement limitée : un bleu pâle prédomine, formant sur la plupart des vignettes un ciel agrémenté de nuages blancs ; la palette est complétée par des tons de rose et de couleur chair.\n\nLes illustrations pour Imagine, Mind Games, et Whatever Gets You Thru the Night rappellent les pochettes des albums dont les chansons sont tirées. L'illustration pour Give Peace a Chance est réalisée à partir d'une photo de presse du bed-in de John et Yoko à Amsterdam, avec, posée sur le lit, la pochette du second album expérimental du couple, Unfinished Music No.2: Life with the Lions. Pour Happy Xmas (War is Over), un bombardier B29 apparaît suspendu à la façon d'une maquette , une boule de Noël rouge étant à son tour suspendue à l'avion. La chanson Instant Karma! est représentée par un flacon de produit lyophilisé. Woman is the Nigger of the World est illustrée par une femme nue, à la tête couverte, sous une pluie de tubes de rouge à lèvres fusant à la façon de balles de fusil, en référence aux paroles  (). L'illustration pour Mother est directement inspirée du tableau La Mère de Whistler, la mère ayant ici les traits de Lennon, tandis que le cadre de gauche compte un second portrait de Lennon, en gros plan, laissant échapper des larmes. Power to the People est représenté par un texte déclarant Lennon admissible à une green card et commençant par , rappelant le manuscrit de la constitution des États-Unis. Des dessins de Lennon sont utilisés pour illustrer Cold Turkey et #9 Dream.\n\nLe dessin au verso représente un emballage, ouvert, de poisson séché selon la méthode japonaise de la compagnie fictive « Lennon Brand ». Une citation de Lennon, sous le pseudonyme Dr. Winston O'Boogie,  y est inscrite.\n\nLa pochette intérieure porte au recto un grand disque rouge sur fond blanc , et au verso les paroles des chansons en blanc sur fond rouge, avec quelques erreurs de transcription.\n\nLa direction artistique est confiée à Roy Kohara, le même qui créa les pochettes des deux précédents albums de Lennon, Mind Games et Rock 'n' Roll et celle de la compilation des Beatles Rock 'n' Roll Music l'année suivante. Les illustrations sont de Michael Bryant.\n\nListe des chansons \nLes titres sont crédités à John Lennon sauf indication contraire.\n\nClassement\n\nNotes et références\n\nNotes\n\nRéférences \n\nAlbum de John Lennon\nCompilation musicale sortie en 1975\nAlbum publié par Apple Records\nAlbum publié par EMI Group\nAlbum produit par Phil Spector",
@@ -411,17 +443,22 @@ When evaluating generative models, we use the following setup (see the
 
 - Number of few-shot examples: 4
 - Prefix prompt:
-  ```
+
+  ```text
   Les textes suivants sont accompagnés de questions et de réponses.
   ```
+
 - Base prompt template:
-  ```
+
+  ```text
   Texte: {text}
   Question: {question}
   Réponse en 3 mots maximum: {label}
   ```
+
 - Instruction-tuned prompt template:
-  ```
+
+  ```text
   Texte: {text}
 
   Répondez à la question suivante sur le texte ci-dessus en 3 mots maximum.
@@ -432,9 +469,8 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ euroeval --model <model-id> --dataset multi-wiki-qa-fr
+euroeval --model <model-id> --dataset multi-wiki-qa-fr
 ```
-
 
 ## Knowledge
 
@@ -460,12 +496,14 @@ Here are a few examples from the training split:
   "label": "a"
 }
 ```
+
 ```json
 {
   "text": "Combien de nombres entiers positifs et négatifs $12$ est-il un multiple?\nChoix:\na. 3\nb. 12\nc. 4\nd. 6",
   "label": "b"
 }
 ```
+
 ```json
 {
   "text": "Quelle affirmation suivante concernant les réactions dépendantes de la lumière de la photosynthèse est correcte?\nChoix:\na. Ils fournissent le carbone qui est incorporé dans le sucre.\nb. Ils produisent du PGA, qui est converti en glucose par la fixation du carbone dans les réactions indépendantes de la lumière.\nc. L'eau est séparée en fournissant des ions hydrogène et des électrons à la NADP pour un stockage temporaire.\nd. Ils se produisent dans le stroma des chloroplastes.",
@@ -478,11 +516,14 @@ When evaluating generative models, we use the following setup (see the
 
 - Number of few-shot examples: 5
 - Prefix prompt:
-  ```
+
+  ```text
   Les questions suivantes sont des questions à choix multiples (avec réponses).
   ```
+
 - Base prompt template:
-  ```
+
+  ```text
   Question: {text}
   Choix:
   a. {option_a}
@@ -491,8 +532,10 @@ When evaluating generative models, we use the following setup (see the
   d. {option_d}
   Réponse: {label}
   ```
+
 - Instruction-tuned prompt template:
-  ```
+
+  ```text
   Question: {text}
   Choix:
   a. {option_a}
@@ -506,9 +549,8 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ euroeval --model <model-id> --dataset mmlu-fr
+euroeval --model <model-id> --dataset mmlu-fr
 ```
-
 
 ## Common-sense Reasoning
 
@@ -531,12 +573,14 @@ Here are a few examples from the training split:
   "label": "a"
 }
 ```
+
 ```json
 {
   "text": "Certains stands servent des hot-dogs aux gens alors qu'ils pêchent sur la glace. Un petit garçon et une petite fille tentent d'attraper un poisson. ils\nChoix:\na. attrapent un poisson et continuent de nager.\nb. sont interviewés pendant qu'ils pêchent.\nc. essaient à plusieurs reprises, errant tout près de leur poisson.\nd. sont rapidement emportés par le courant alors qu'ils luttent pour s'éloigner du banc de la rivière et pagayent pour échapper à de légères infestations de poissons dans l'eau",
   "label": "b"
 }
 ```
+
 ```json
 {
   "text": "[header] Comment se calmer [title] Respirer. [step] Respirer. Lentement.\nChoix:\na. Concentrez-vous sur votre respiration et détendez votre corps. Continuez à inspirer et expirer lentement par le nez, en mettant une pression sur votre diaphragme et vos muscles fessiers (vos poumons).\nb. Si votre cœur bat vite ou fort, vous pourriez être en danger de tachycardie, d'AVC ou de toute autre crise cardiaque. [title] Allongez-vous sur le dos et inspirez et expirez profondément.\nc. Inspirez pendant 5 secondes; retenez votre souffle pendant 5 secondes, puis expirez pendant 5 secondes. Cela fonctionne parce que vous faites l'opposé de ce qu'une personne excitée ferait.\nd. Inspirez pendant un compte de cinq et abaissez-vous. Expirez, expirez quatre fois de plus, aussi profondément que vous pouvez sentir, et répétez pour un total de dix.",
@@ -549,11 +593,14 @@ When evaluating generative models, we use the following setup (see the
 
 - Number of few-shot examples: 5
 - Prefix prompt:
-  ```
+
+  ```text
   Les questions suivantes sont des questions à choix multiples (avec réponses).
   ```
+
 - Base prompt template:
-  ```
+
+  ```text
   Question: {text}
   Choix:
   a. {option_a}
@@ -562,8 +609,10 @@ When evaluating generative models, we use the following setup (see the
   d. {option_d}
   Réponse: {label}
   ```
+
 - Instruction-tuned prompt template:
-  ```
+
+  ```text
   Question: {text}
   Choix:
   a. {option_a}
@@ -577,9 +626,8 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ euroeval --model <model-id> --dataset hellaswag-fr
+euroeval --model <model-id> --dataset hellaswag-fr
 ```
-
 
 ### Unofficial: GoldenSwag-fr
 
@@ -623,11 +671,14 @@ When evaluating generative models, we use the following setup (see the
 
 - Number of few-shot examples: 5
 - Prefix prompt:
-  ```
+
+  ```text
   Les questions suivantes sont des questions à choix multiples (avec réponses).
   ```
+
 - Base prompt template:
-  ```
+
+  ```text
   Question: {text}
   Choix:
   a. {option_a}
@@ -636,8 +687,10 @@ When evaluating generative models, we use the following setup (see the
   d. {option_d}
   Réponse: {label}
   ```
+
 - Instruction-tuned prompt template:
-  ```
+
+  ```text
   Question: {text}
   Choix:
   a. {option_a}
@@ -651,7 +704,7 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ euroeval --model <model-id> --dataset goldenswag-fr
+euroeval --model <model-id> --dataset goldenswag-fr
 ```
 
 ### Unofficial: Winogrande-fr
@@ -691,19 +744,24 @@ When evaluating generative models, we use the following setup (see the
 
 - Number of few-shot examples: 5
 - Prefix prompt:
-  ```
+
+  ```text
   Les questions suivantes sont des questions à choix multiples (avec réponses).
   ```
+
 - Base prompt template:
-  ```
+
+  ```text
   Question: {text}
   Choix:
   a. {option_a}
   b. {option_b}
   Réponse: {label}
   ```
+
 - Instruction-tuned prompt template:
-  ```
+
+  ```text
   Question: {text}
   Choix:
   a. {option_a}
@@ -715,9 +773,8 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ euroeval --model <model-id> --dataset winogrande-fr
+euroeval --model <model-id> --dataset winogrande-fr
 ```
-
 
 ## Summarisation
 
@@ -740,12 +797,14 @@ Here are a few examples from the training split:
   "target_text": "Le Premier ministre a ouvert ce lundi 7 octobre le débat sur l'immigration à l'Assemblée nationale, déclarant que le système français d'asile est aujourd'hui \"saturé\". Il a au passage pourfendu la théorie de \"l'immigration de remplacement\", qui fait selon lui appel \"aux ressorts les plus détestables du complotisme\"."
 }
 ```
+
 ```json
 {
   "text": "Un supermarché a été détruit par une explosion, samedi 2 janvier, à Grasse, dans les Alpes-Maritimes, a rapporté France 3. Aucun blessé n'est à déplorer.L'explosion s'est produite vers 6h du matin dans ce supermarché Aldi de Grasse. Elle a été suivie par un violent incendie. Le bâtiment a été \"totalement détruit\", selon le maire de la ville, qui a évoqué une cause \"accidentelle\" sur sa page Facebook. Une centaine de pompiers, ainsi que des policiers ont été mobilisés pour lutter contre le sinistre et sécuriser le périmètre.Selon Nice-Matin, deux employées du supermarché ont été soufflées par l'explosion en allumant la lumière au moment d'arriver sur leur lieu de travail. Aucune des deux n'a été blessée physiquement, mais elles sont très choquées.Vers 9h, le feu était maîtrisé, a indiqué à France 3 un porte-parole du Service d'incendie et de secours des Alpes-Maritimes. Soixante pompiers et 40 engins de secours étaient toujours mobilisés sur place.",
   "target_text": "Une centaine de pompiers ont été mobilisés pour lutter contre l'incendie."
 }
 ```
+
 ```json
 {
   "text": "Trois ans et demi après la décision des Britanniques de quitter l'Union européenne, le Brexit est finalement intervenu vendredi 31 janvier. Une mesure qui va sérieusement changer la donne pour les Britanniques qui siègent aujourd'hui dans les conseils municipaux en France. Comme tous les citoyens européens, les Britanniques avaient jusqu'à présent le droit de vote et d'éligibilité aux élections municipales françaises. Actuellement sur 2.493 conseillers étrangers, 757 viennent du Royaume-Uni, soit environ 30%, selon le Répertoire national des élus. Ils sont nettement plus nombreux que les Belges (544 élus) et les Portugais (357). Ils résident pour la plupart dans un grand quart Sud-Ouest de la France : Charente (70 élus), Dordogne (59), Aude (52), Haute-Vienne (40), Lot-et-Garonne (31), Hérault (30), Deux Sèvres (28), Gers (26), Lot (23)...Or, avec le Brexit, ils ne pourront pas briguer de nouveau mandat, à moins d'avoir acquis une autre nationalité européenne depuis les dernières élections. C'est notamment le cas à Poupas, village de 85 habitants dans le Tarn-et-Garonne, où deux des trois conseillers municipaux britanniques, sur les 11 au total que compte la commune, ont obtenu la nationalité française. Le droit \"de payer et de se taire\"Pour certaines petites communes, où il est souvent difficile de trouver des candidats, c'est un vrai casse-tête. À Perriers-en-Beauficel, dans la Manche, Patrick Head , originaire du Wiltshire (sud de l'Angleterre), va ainsi terminer son mandat. Le sexagénaire avait raflé pas moins de 89,74% des suffrages dans ce petit village normand, où il a élu domicile en 2004. Soit le meilleur score de cette commune de 216 habitants, où les électeurs peuvent rayer ou ajouter un nom. \"Ça va nous manquer car Patrick nous aidait beaucoup\", regrette la maire Lydie Brionne, qui explique que son colistier faisait \"le lien\" avec la cinquantaine de Britanniques installés dans ce coin de campagne normande. À Perriers-en-Beauficel, sur les onze élus de 2014, deux sont Britanniques. \"Il va falloir trouver deux nouveaux candidats. C'est difficile de trouver des gens motivés dans une petite commune\", souligne la maire, par ailleurs éleveuse de vaches laitières. \"Depuis 20 ans, beaucoup de Britanniques se sont installés, ils ont repeuplé la commune, ça a donné du dynamisme\", raconte l'élue. Avec le Brexit, \"j'ai peur qu'ils soient obligés de repartir.\"Loin d'être isolé, le cas de ce village normand se retrouve partout où les Britanniques sont fortement implantés. À Bellegarde-du-Razès, commune de 240 habitants dans l'Aude, les deux élus d'Outre-Manche \"apportent une valeur ajoutée\" au village, avec \"leur importante implication dans le milieu associatif\", estime le maire Gilbert De Paoli. L'Écossaise Alisson Mackie, 63 ans, installée depuis 2011, est dépitée de ne plus pouvoir se représenter en mars. \"On a construit notre maison ici, on paye des impôts ici, on consomme ici mais on a été rayés des listes électorales\", déplore-t-elle.À Jouac, village de 180 habitants en Haute-Vienne, la maire Virginie Windridge, 39 ans, elle-même mariée à un Britannique, trouve aussi \"très injuste que des gens qui sont là depuis des années, payent des impôts et contribuent à la vie de la commune, aient du jour au lendemain le droit 'de payer et de se taire'\". \"C'est dur à avaler\", dit-elle.Les deux élus britanniques actuels ont \"un apport important\", souligne la maire. \"Déjà ils sont un relais avec la communauté britannique de la commune. Et puis ils apportent des idées différentes, une autre façon de fonctionner, de voir les choses\", décrit Mme Windridge. \"Ils amènent parfois un regard sur ce qui existe ou se fait ailleurs, une autre perspective\". \"Et, il faut bien le dire, culturellement, quelquefois, les Britanniques sont plus ouverts aux changements que nous, ont un peu moins peur de l'inconnu\", ajoute-t-elle en donnant en exemple la décision d'éteindre l'éclairage public nocturne. \"Les élus britanniques étaient naturellement les plus ouverts sur cette idée-là, ils voyaient de suite le gagnant-gagnant, pour l'environnement et le budget de la commune\", estime-t-elle.",
@@ -758,16 +817,21 @@ When evaluating generative models, we use the following setup (see the
 
 - Number of few-shot examples: 1
 - Prefix prompt:
-  ```
+
+  ```text
   Les articles suivants sont accompagnés d'un résumé.
   ```
+
 - Base prompt template:
-  ```
+
+  ```text
   Article de presse: {text}
   Résumé: {target_text}
   ```
+
 - Instruction-tuned prompt template:
-  ```
+
+  ```text
   Article de presse: {text}
 
   Rédigez un résumé de l'article ci-dessus.
@@ -776,5 +840,5 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ euroeval --model <model-id> --dataset orange-sum
+euroeval --model <model-id> --dataset orange-sum
 ```
