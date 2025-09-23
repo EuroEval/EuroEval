@@ -9,7 +9,7 @@
       
       
       
-        <link rel="prev" href="../latvian/">
+        <link rel="prev" href="../lithuanian/">
       
       
         <link rel="next" href="../polish/">
@@ -639,6 +639,8 @@
       
         
       
+        
+      
     
     
     
@@ -946,6 +948,29 @@
                 
   
   
+  
+  
+    <li class="md-nav__item">
+      <a href="../lithuanian/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    🇱🇹 Lithuanian
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
     
   
   
@@ -1147,15 +1172,6 @@
   <a href="#unofficial-multiwikiqa-nb" class="md-nav__link">
     <span class="md-ellipsis">
       Unofficial: MultiWikiQA-nb
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#unofficial-multiwikiqa-nn" class="md-nav__link">
-    <span class="md-ellipsis">
-      Unofficial: MultiWikiQA-nn
     </span>
   </a>
   
@@ -1722,15 +1738,6 @@
   
 </li>
         
-          <li class="md-nav__item">
-  <a href="#unofficial-multiwikiqa-nn" class="md-nav__link">
-    <span class="md-ellipsis">
-      Unofficial: MultiWikiQA-nn
-    </span>
-  </a>
-  
-</li>
-        
       </ul>
     </nav>
   
@@ -1913,7 +1920,7 @@ validation and test, respectively. We use a split of 1,024 / 256 / 2,048 samples
 training, validation and test, respectively. All the new splits are subsets of the
 original splits.</p>
 <p>Here are a few examples from the training split:</p>
-<p><div class="highlight"><pre><span></span><code><span class="p">{</span>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Den som ikke blir rystende berørt av « De utvalgte » , må være forherdet til det immune .&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;positive&quot;</span>
 <span class="p">}</span>
@@ -1927,32 +1934,36 @@ original splits.</p>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Tilsvarende får vi også lavere score i 3DMark enn hva tilfellet er for f.eks . Xperia Z2 og Galaxy S5 .&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;negative&quot;</span>
 <span class="p">}</span>
-</code></pre></div></p>
+</code></pre></div>
 <p>When evaluating generative models, we use the following setup (see the
 <a href="/methodology">methodology</a> for more information on how these are used):</p>
 <ul>
 <li>Number of few-shot examples: 5</li>
-<li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>Følgende er anmeldelser og deres sentiment, som kan være &#39;positiv&#39;, &#39;nøytral&#39; eller &#39;negativ&#39;.
-</code></pre></div></li>
-<li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>Anmeldelse: {text}
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Følgende er anmeldelser og deres sentiment, som kan være &#39;positiv&#39;, &#39;nøytral&#39; eller &#39;negativ&#39;.
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Anmeldelse: {text}
 Sentiment: {label}
-</code></pre></div></li>
-<li>Instruction-tuned prompt template:
-  <div class="highlight"><pre><span></span><code>Anmeldelse: {text}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Anmeldelse: {text}
 
 Klassifiser sentimentet i anmeldelsen. Svar med &#39;positiv&#39;, &#39;nøytral&#39; eller &#39;negativ&#39;.
-</code></pre></div></li>
-<li>Label mapping:<ul>
+</code></pre></div>
+<ul>
+<li>Label mapping:</li>
 <li><code>positive</code> ➡️ <code>positiv</code></li>
 <li><code>neutral</code> ➡️ <code>nøytral</code></li>
 <li><code>negative</code> ➡️ <code>negativ</code></li>
 </ul>
-</li>
-</ul>
 <p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>norec
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>norec
 </code></pre></div>
 <h2 id="named-entity-recognition">Named Entity Recognition</h2>
 <h3 id="norne-nb">NorNE-nb</h3>
@@ -1977,7 +1988,7 @@ be some samples from the training split in the validation or test splits.</p>
 <li><code>EVT</code> ➡️ <code>MISC</code></li>
 </ul>
 <p>Here are a few examples from the training split:</p>
-<p><div class="highlight"><pre><span></span><code><span class="p">{</span>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">&quot;tokens&quot;</span><span class="p">:</span><span class="w"> </span><span class="err">array(</span><span class="p">[</span><span class="err">&#39;De</span><span class="kc">t</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;</span><span class="kc">fre</span><span class="err">mkommer&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;av&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;årsmeldi</span><span class="kc">n</span><span class="err">ge</span><span class="kc">ne</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;</span><span class="kc">fra</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;Berge</span><span class="kc">n</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;helseråd&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;i&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;åre</span><span class="kc">ne</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;</span><span class="mi">1952</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;</span><span class="mi">-</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;</span><span class="mi">66</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;.&#39;</span><span class="p">],</span><span class="w"> </span><span class="err">d</span><span class="kc">t</span><span class="err">ype=objec</span><span class="kc">t</span><span class="err">)</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;labels&quot;</span><span class="p">:</span><span class="w"> </span><span class="err">array(</span><span class="p">[</span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;B</span><span class="mi">-</span><span class="err">ORG&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;I</span><span class="mi">-</span><span class="err">ORG&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">],</span><span class="w"> </span><span class="err">d</span><span class="kc">t</span><span class="err">ype=objec</span><span class="kc">t</span><span class="err">)</span>
 <span class="p">}</span>
@@ -1991,24 +2002,30 @@ be some samples from the training split in the validation or test splits.</p>
 <span class="w">  </span><span class="err">&#39;</span><span class="kc">t</span><span class="err">oke</span><span class="kc">ns</span><span class="err">&#39;</span><span class="p">:</span><span class="w"> </span><span class="err">array(</span><span class="p">[</span><span class="err">&#39;Ha</span><span class="kc">n</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;</span><span class="kc">t</span><span class="err">ok&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;</span><span class="kc">fra</span><span class="err">m&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;pis</span><span class="kc">t</span><span class="err">ole</span><span class="kc">n</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;og&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;dro&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;</span><span class="kc">t</span><span class="err">ilbake&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;</span><span class="kc">t</span><span class="err">il&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;Skarega</span><span class="kc">ta</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;</span><span class="mi">2</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;.&#39;</span><span class="p">],</span><span class="w"> </span><span class="err">d</span><span class="kc">t</span><span class="err">ype=objec</span><span class="kc">t</span><span class="err">)</span><span class="p">,</span>
 <span class="w">  </span><span class="err">&#39;labels&#39;</span><span class="p">:</span><span class="w"> </span><span class="err">array(</span><span class="p">[</span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;B</span><span class="mi">-</span><span class="err">LOC&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;I</span><span class="mi">-</span><span class="err">LOC&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">],</span><span class="w"> </span><span class="err">d</span><span class="kc">t</span><span class="err">ype=objec</span><span class="kc">t</span><span class="err">)</span>
 <span class="p">}</span>
-</code></pre></div></p>
+</code></pre></div>
 <p>When evaluating generative models, we use the following setup (see the
 <a href="/methodology">methodology</a> for more information on how these are used):</p>
 <ul>
 <li>Number of few-shot examples: 8</li>
-<li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>Følgende er fraser og JSON-ordbøker med de navngitte enhetene som forekommer i den gitte frasen.
-</code></pre></div></li>
-<li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>Frase: {text}
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Følgende er fraser og JSON-ordbøker med de navngitte enhetene som forekommer i den gitte frasen.
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Frase: {text}
 Navngitte enheter: {label}
-</code></pre></div></li>
-<li>Instruction-tuned prompt template:
-  <div class="highlight"><pre><span></span><code>Frase: {text}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Frase: {text}
 
 Identifiser de navngitte enhetene i frasen. Du bør outputte dette som en JSON-ordbok med nøklene &#39;person&#39;, &#39;sted&#39;, &#39;organisasjon&#39; og &#39;diverse&#39;. Verdiene skal være lister over de navngitte enhetene av den typen, akkurat som de vises i frasen.
-</code></pre></div></li>
-<li>Label mapping:<ul>
+</code></pre></div>
+<ul>
+<li>Label mapping:</li>
 <li><code>B-PER</code> ➡️ <code>person</code></li>
 <li><code>I-PER</code> ➡️ <code>person</code></li>
 <li><code>B-LOC</code> ➡️ <code>sted</code></li>
@@ -2018,10 +2035,8 @@ Identifiser de navngitte enhetene i frasen. Du bør outputte dette som en JSON-o
 <li><code>B-MISC</code> ➡️ <code>diverse</code></li>
 <li><code>I-MISC</code> ➡️ <code>diverse</code></li>
 </ul>
-</li>
-</ul>
 <p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>norne-nb
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>norne-nb
 </code></pre></div>
 <h3 id="norne-nn">NorNE-nn</h3>
 <p>This dataset was published in <a href="https://aclanthology.org/2020.lrec-1.559/">this paper</a>
@@ -2045,7 +2060,7 @@ be some samples from the training split in the validation or test splits.</p>
 <li><code>EVT</code> ➡️ <code>MISC</code></li>
 </ul>
 <p>Here are a few examples from the training split:</p>
-<p><div class="highlight"><pre><span></span><code><span class="p">{</span>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">&quot;tokens&quot;</span><span class="p">:</span><span class="w"> </span><span class="err">array(</span><span class="p">[</span><span class="err">&#39;</span><span class="mi">-</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;Ul</span><span class="kc">fr</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;provoserer&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;kjap</span><span class="kc">t</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;</span><span class="kc">fra</span><span class="err">m&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;ei</span><span class="kc">t</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;slagsmål&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;</span><span class="p">,</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;og&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;ha</span><span class="kc">n</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;drep&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;hovdi</span><span class="kc">n</span><span class="err">ge</span><span class="kc">n</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;.&#39;</span><span class="p">],</span><span class="w"> </span><span class="err">d</span><span class="kc">t</span><span class="err">ype=objec</span><span class="kc">t</span><span class="err">)</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;labels&quot;</span><span class="p">:</span><span class="w"> </span><span class="err">array(</span><span class="p">[</span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;B</span><span class="mi">-</span><span class="err">PER&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">],</span><span class="w"> </span><span class="err">d</span><span class="kc">t</span><span class="err">ype=objec</span><span class="kc">t</span><span class="err">)</span>
 <span class="p">}</span>
@@ -2059,24 +2074,30 @@ be some samples from the training split in the validation or test splits.</p>
 <span class="w">  </span><span class="nt">&quot;tokens&quot;</span><span class="p">:</span><span class="w"> </span><span class="err">array(</span><span class="p">[</span><span class="err">&#39;Krige</span><span class="kc">n</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;mo</span><span class="kc">t</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;Irak&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;skulle&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;aldri&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;ha&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;vore&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;gje</span><span class="kc">nn</span><span class="err">om</span><span class="kc">f</span><span class="err">ørd&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;.&#39;</span><span class="p">],</span><span class="w"> </span><span class="err">d</span><span class="kc">t</span><span class="err">ype=objec</span><span class="kc">t</span><span class="err">)</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;labels&quot;</span><span class="p">:</span><span class="w"> </span><span class="err">array(</span><span class="p">[</span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;B</span><span class="mi">-</span><span class="err">LOC&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">],</span><span class="w"> </span><span class="err">d</span><span class="kc">t</span><span class="err">ype=objec</span><span class="kc">t</span><span class="err">)</span>
 <span class="p">}</span>
-</code></pre></div></p>
+</code></pre></div>
 <p>When evaluating generative models, we use the following setup (see the
 <a href="/methodology">methodology</a> for more information on how these are used):</p>
 <ul>
 <li>Number of few-shot examples: 8</li>
-<li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>Følgende er fraser og JSON-ordbøker med de navngitte enhetene som forekommer i den gitte frasen.
-</code></pre></div></li>
-<li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>Frase: {text}
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Følgende er fraser og JSON-ordbøker med de navngitte enhetene som forekommer i den gitte frasen.
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Frase: {text}
 Navngitte enheter: {label}
-</code></pre></div></li>
-<li>Instruction-tuned prompt template:
-  <div class="highlight"><pre><span></span><code>Frase: {text}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Frase: {text}
 
 Identifiser de navngitte enhetene i frasen. Du bør outputte dette som en JSON-ordbok med nøklene &#39;person&#39;, &#39;sted&#39;, &#39;organisasjon&#39; og &#39;diverse&#39;. Verdiene skal være lister over de navngitte enhetene av den typen, akkurat som de vises i frasen.
-</code></pre></div></li>
-<li>Label mapping:<ul>
+</code></pre></div>
+<ul>
+<li>Label mapping:</li>
 <li><code>B-PER</code> ➡️ <code>person</code></li>
 <li><code>I-PER</code> ➡️ <code>person</code></li>
 <li><code>B-LOC</code> ➡️ <code>sted</code></li>
@@ -2086,10 +2107,8 @@ Identifiser de navngitte enhetene i frasen. Du bør outputte dette som en JSON-o
 <li><code>B-MISC</code> ➡️ <code>diverse</code></li>
 <li><code>I-MISC</code> ➡️ <code>diverse</code></li>
 </ul>
-</li>
-</ul>
 <p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>norne-nn
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>norne-nn
 </code></pre></div>
 <h2 id="linguistic-acceptability">Linguistic Acceptability</h2>
 <h3 id="scala-nb">ScaLA-nb</h3>
@@ -2105,7 +2124,7 @@ on the part-of-speech tags of the words in the sentence.</p>
 samples for training, validation and testing, respectively (so 3,328 samples used in
 total). These splits are used as-is in the framework.</p>
 <p>Here are a few examples from the training split:</p>
-<p><div class="highlight"><pre><span></span><code><span class="p">{</span>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;En vellykket gjennomføring av denne reformen vil bli en avgjørende prøve på Regjeringens handlekraft.&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;correct&quot;</span>
 <span class="p">}</span>
@@ -2119,31 +2138,35 @@ total). These splits are used as-is in the framework.</p>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;72 kjoler går hver med sesong.&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;incorrect&quot;</span>
 <span class="p">}</span>
-</code></pre></div></p>
+</code></pre></div>
 <p>When evaluating generative models, we use the following setup (see the
 <a href="/methodology">methodology</a> for more information on how these are used):</p>
 <ul>
 <li>Number of few-shot examples: 12</li>
-<li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>Følgende er setninger og hvorvidt de er grammatisk korrekte.
-</code></pre></div></li>
-<li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>Setning: {text}
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Følgende er setninger og hvorvidt de er grammatisk korrekte.
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Setning: {text}
 Grammatisk korrekt: {label}
-</code></pre></div></li>
-<li>Instruction-tuned prompt template:
-  <div class="highlight"><pre><span></span><code>Setning: {text}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Setning: {text}
 
 Bestem om setningen er grammatisk korrekt eller ikke. Svar med &#39;ja&#39; hvis setningen er korrekt og &#39;nei&#39; hvis den ikke er.
-</code></pre></div></li>
-<li>Label mapping:<ul>
+</code></pre></div>
+<ul>
+<li>Label mapping:</li>
 <li><code>correct</code> ➡️ <code>ja</code></li>
 <li><code>incorrect</code> ➡️ <code>nei</code></li>
 </ul>
-</li>
-</ul>
 <p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>scala-nb
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>scala-nb
 </code></pre></div>
 <h3 id="scala-nn">ScaLA-nn</h3>
 <p>This dataset was published in <a href="https://aclanthology.org/2023.nodalida-1.20/">this paper</a>
@@ -2158,7 +2181,7 @@ on the part-of-speech tags of the words in the sentence.</p>
 samples for training, validation and testing, respectively (so 3,328 samples used in
 total). These splits are used as-is in the framework.</p>
 <p>Here are a few examples from the training split:</p>
-<p><div class="highlight"><pre><span></span><code><span class="p">{</span>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Dersom Noreg snart går forbi Danmark i folketal, slik framskrivingane tilseier, kan også dette langt på veg forklarast med naturressursar.&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;correct&quot;</span>
 <span class="p">}</span>
@@ -2172,31 +2195,35 @@ total). These splits are used as-is in the framework.</p>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;SV har elles levert og i dag framsett ei gode forslag som kan bidra til å gjera noko med straumprisproblematikken og straumforbruket, om viljen vår er der.&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;incorrect&quot;</span>
 <span class="p">}</span>
-</code></pre></div></p>
+</code></pre></div>
 <p>When evaluating generative models, we use the following setup (see the
 <a href="/methodology">methodology</a> for more information on how these are used):</p>
 <ul>
 <li>Number of few-shot examples: 12</li>
-<li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>Følgende er setninger og hvorvidt de er grammatisk korrekte.
-</code></pre></div></li>
-<li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>Setning: {text}
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Følgende er setninger og hvorvidt de er grammatisk korrekte.
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Setning: {text}
 Grammatisk korrekt: {label}
-</code></pre></div></li>
-<li>Instruction-tuned prompt template:
-  <div class="highlight"><pre><span></span><code>Setning: {text}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Setning: {text}
 
 Bestem om setningen er grammatisk korrekt eller ikke. Svar med &#39;ja&#39; hvis setningen er korrekt og &#39;nei&#39; hvis den ikke er.
-</code></pre></div></li>
-<li>Label mapping:<ul>
+</code></pre></div>
+<ul>
+<li>Label mapping:</li>
 <li><code>correct</code> ➡️ <code>ja</code></li>
 <li><code>incorrect</code> ➡️ <code>nei</code></li>
 </ul>
-</li>
-</ul>
 <p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>scala-nn
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>scala-nn
 </code></pre></div>
 <h3 id="unofficial-nocola">Unofficial: NoCoLA</h3>
 <p>This dataset was published in <a href="https://aclanthology.org/2023.nodalida-1.60/">this paper</a>
@@ -2210,7 +2237,7 @@ validation and test, respectively. We use 1,024 / 256 / 2,048 samples for traini
 validation and test, respectively, where we sample each error type equally. All splits
 are subsets of the original splits.</p>
 <p>Here are a few examples from the training split:</p>
-<p><div class="highlight"><pre><span></span><code><span class="p">{</span>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Vi har hatt krig i nesten ti år. Jeg føler meg noen ganger trist fordi jeg har mistet flere venner og min far på grunn av krigen.&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;correct&quot;</span>
 <span class="p">}</span>
@@ -2224,31 +2251,35 @@ are subsets of the original splits.</p>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;De føler at samfunnet trenger ikke dem.&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;incorrect&quot;</span>
 <span class="p">}</span>
-</code></pre></div></p>
+</code></pre></div>
 <p>When evaluating generative models, we use the following setup (see the
 <a href="/methodology">methodology</a> for more information on how these are used):</p>
 <ul>
 <li>Number of few-shot examples: 12</li>
-<li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>Følgende er setninger og hvorvidt de er grammatisk korrekte.
-</code></pre></div></li>
-<li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>Setning: {text}
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Følgende er setninger og hvorvidt de er grammatisk korrekte.
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Setning: {text}
 Grammatisk korrekt: {label}
-</code></pre></div></li>
-<li>Instruction-tuned prompt template:
-  <div class="highlight"><pre><span></span><code>Setning: {text}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Setning: {text}
 
 Bestem om setningen er grammatisk korrekt eller ikke. Svar med &#39;ja&#39; hvis setningen er korrekt og &#39;nei&#39; hvis den ikke er.
-</code></pre></div></li>
-<li>Label mapping:<ul>
+</code></pre></div>
+<ul>
+<li>Label mapping:</li>
 <li><code>correct</code> ➡️ <code>ja</code></li>
 <li><code>incorrect</code> ➡️ <code>nei</code></li>
 </ul>
-</li>
-</ul>
 <p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>no-cola-binary
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>no-cola-binary
 </code></pre></div>
 <h3 id="unofficial-jentoft">Unofficial: Jentoft</h3>
 <p>This dataset was published in <a href="https://www.duo.uio.no/handle/10852/103885">this Master's
@@ -2258,7 +2289,7 @@ validation and test, respectively. We use a split of 1,024 / 256 / 2,048 samples
 training, validation and test, respectively. In each split, the distribution of
 <code>correct</code> and <code>incorrect</code> is 50/50.</p>
 <p>Here are a few examples from the training split:</p>
-<p><div class="highlight"><pre><span></span><code><span class="p">{</span>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;For to uker siden var jeg på en fotoutstilling om Erytrea.&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;incorrect&quot;</span>
 <span class="p">}</span>
@@ -2272,31 +2303,35 @@ training, validation and test, respectively. In each split, the distribution of
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Mobiltelefoner dominerer mange av oss, og vi bruker dem over alt, på gatene &#39;hvert hjørne&#39;, i gatene, holdeplasser, kaffeteriaene og i parken, der folk burde tilbringe koselig tid sammen i naturen.&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;incorrect&quot;</span>
 <span class="p">}</span>
-</code></pre></div></p>
+</code></pre></div>
 <p>When evaluating generative models, we use the following setup (see the
 <a href="/methodology">methodology</a> for more information on how these are used):</p>
 <ul>
 <li>Number of few-shot examples: 12</li>
-<li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>Følgende er setninger og hvorvidt de er grammatisk korrekte.
-</code></pre></div></li>
-<li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>Setning: {text}
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Følgende er setninger og hvorvidt de er grammatisk korrekte.
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Setning: {text}
 Grammatisk korrekt: {label}
-</code></pre></div></li>
-<li>Instruction-tuned prompt template:
-  <div class="highlight"><pre><span></span><code>Setning: {text}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Setning: {text}
 
 Bestem om setningen er grammatisk korrekt eller ikke. Svar med &#39;ja&#39; hvis setningen er korrekt og &#39;nei&#39; hvis den ikke er.
-</code></pre></div></li>
-<li>Label mapping:<ul>
+</code></pre></div>
+<ul>
+<li>Label mapping:</li>
 <li><code>correct</code> ➡️ <code>ja</code></li>
 <li><code>incorrect</code> ➡️ <code>nei</code></li>
 </ul>
-</li>
-</ul>
 <p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>jentoft
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>jentoft
 </code></pre></div>
 <h2 id="reading-comprehension">Reading Comprehension</h2>
 <h3 id="norquad">NorQuAD</h3>
@@ -2308,7 +2343,7 @@ validation and test, respectively. When creating the splits, we only select samp
 contain an answer in the associated context. The splits we use are new, so there might
 be some samples from the training split in the validation or test splits.</p>
 <p>Here are a few examples from the training split:</p>
-<p><div class="highlight"><pre><span></span><code><span class="p">{</span>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">&quot;context&quot;</span><span class="p">:</span><span class="w"> </span><span class="err">&#39;Sprekpodde</span><span class="kc">n</span><span class="p">:</span><span class="w"> </span><span class="err">De</span><span class="kc">nne</span><span class="w"> </span><span class="kc">tren</span><span class="err">i</span><span class="kc">n</span><span class="err">ge</span><span class="kc">n</span><span class="w"> </span><span class="err">gjør</span><span class="w"> </span><span class="err">deg</span><span class="w"> </span><span class="err">smar</span><span class="kc">tere</span><span class="w"> </span><span class="err">og</span><span class="w"> </span><span class="err">lykkeligere\</span><span class="kc">n</span><span class="err">HJERNEFORSKER</span><span class="p">:</span><span class="w"> </span><span class="err">–</span><span class="w"> </span><span class="err">Hjer</span><span class="kc">nen</span><span class="w"> </span><span class="err">er</span><span class="w"> </span><span class="err">i</span><span class="w"> </span><span class="err">u</span><span class="kc">t</span><span class="err">ga</span><span class="kc">n</span><span class="err">gspu</span><span class="kc">n</span><span class="err">k</span><span class="kc">tet</span><span class="w"> </span><span class="err">programmer</span><span class="kc">t</span><span class="w"> </span><span class="kc">f</span><span class="err">or</span><span class="w"> </span><span class="err">la</span><span class="kc">ts</span><span class="err">kap.</span><span class="w"> </span><span class="err">Der</span><span class="kc">f</span><span class="err">or</span><span class="w"> </span><span class="err">må</span><span class="w"> </span><span class="err">vi</span><span class="w"> </span><span class="err">i</span><span class="w"> </span><span class="err">s</span><span class="kc">t</span><span class="err">ørre</span><span class="w"> </span><span class="err">grad</span><span class="w"> </span><span class="kc">t</span><span class="err">vi</span><span class="kc">n</span><span class="err">ge</span><span class="w"> </span><span class="err">oss</span><span class="w"> </span><span class="err">selv</span><span class="w"> </span><span class="kc">t</span><span class="err">il</span><span class="w"> </span><span class="err">å</span><span class="w"> </span><span class="err">være</span><span class="w"> </span><span class="err">mer</span><span class="w"> </span><span class="err">ak</span><span class="kc">t</span><span class="err">ive</span><span class="p">,</span><span class="w"> </span><span class="err">sier</span><span class="w"> </span><span class="kc">f</span><span class="err">orsker</span><span class="w"> </span><span class="err">Ole</span><span class="w"> </span><span class="err">Pe</span><span class="kc">tter</span><span class="w"> </span><span class="err">Hjelle.</span><span class="w"> </span><span class="err">Fo</span><span class="kc">t</span><span class="err">o</span><span class="p">:</span><span class="w"> </span><span class="err">Tor</span><span class="w"> </span><span class="err">S</span><span class="kc">tenersen</span><span class="w"> </span><span class="err">(arkiv)\</span><span class="kc">n</span><span class="err">SPREKPODDEN</span><span class="p">:</span><span class="w"> </span><span class="err">De</span><span class="kc">nne</span><span class="w"> </span><span class="err">uke</span><span class="kc">n</span><span class="w"> </span><span class="err">har</span><span class="w"> </span><span class="err">programleder</span><span class="w"> </span><span class="err">Da</span><span class="kc">n</span><span class="err">iel</span><span class="w"> </span><span class="err">Røed</span><span class="mi">-</span><span class="err">Joha</span><span class="kc">nsen</span><span class="w"> </span><span class="err">og</span><span class="w"> </span><span class="err">Male</span><span class="kc">ne</span><span class="w"> </span><span class="err">I</span><span class="kc">n</span><span class="err">drebø</span><span class="mi">-</span><span class="err">La</span><span class="kc">n</span><span class="err">glo</span><span class="w"> </span><span class="err">besøk</span><span class="w"> </span><span class="err">av</span><span class="w"> </span><span class="err">Ole</span><span class="w"> </span><span class="err">Pe</span><span class="kc">tter</span><span class="w"> </span><span class="err">Hjelle.</span><span class="w"> </span><span class="err">Fo</span><span class="kc">t</span><span class="err">o</span><span class="p">:</span><span class="w"> </span><span class="err">Mor</span><span class="kc">ten</span><span class="w"> </span><span class="err">Uglum\</span><span class="kc">n</span><span class="err">–</span><span class="w"> </span><span class="err">Vi</span><span class="w"> </span><span class="err">var</span><span class="w"> </span><span class="err">re</span><span class="kc">tt</span><span class="w"> </span><span class="err">og</span><span class="w"> </span><span class="err">sle</span><span class="kc">tt</span><span class="w"> </span><span class="err">lei</span><span class="w"> </span><span class="err">av</span><span class="w"> </span><span class="err">å</span><span class="w"> </span><span class="err">si</span><span class="kc">tte</span><span class="w"> </span><span class="err">og</span><span class="w"> </span><span class="kc">f</span><span class="err">or</span><span class="kc">telle</span><span class="w"> </span><span class="err">pasie</span><span class="kc">ntene</span><span class="w"> </span><span class="err">våre</span><span class="w"> </span><span class="err">a</span><span class="kc">t</span><span class="w"> </span><span class="err">de</span><span class="w"> </span><span class="err">må</span><span class="kc">tte</span><span class="w"> </span><span class="err">være</span><span class="w"> </span><span class="err">i</span><span class="w"> </span><span class="kc">f</span><span class="err">ysisk</span><span class="w"> </span><span class="err">ak</span><span class="kc">t</span><span class="err">ivi</span><span class="kc">tet</span><span class="p">,</span><span class="w"> </span><span class="err">u</span><span class="kc">ten</span><span class="w"> </span><span class="err">a</span><span class="kc">t</span><span class="w"> </span><span class="kc">n</span><span class="err">oe</span><span class="w"> </span><span class="err">skjedde.\</span><span class="kc">n</span><span class="err">For</span><span class="w"> </span><span class="kc">n</span><span class="err">oe</span><span class="kc">n</span><span class="w"> </span><span class="err">år</span><span class="w"> </span><span class="err">side</span><span class="kc">n</span><span class="w"> </span><span class="err">s</span><span class="kc">tartet</span><span class="w"> </span><span class="err">hjer</span><span class="kc">nef</span><span class="err">orsker</span><span class="w"> </span><span class="err">og</span><span class="w"> </span><span class="kc">fastle</span><span class="err">ge</span><span class="w"> </span><span class="err">Ole</span><span class="w"> </span><span class="err">Pe</span><span class="kc">tter</span><span class="w"> </span><span class="err">Hjelle</span><span class="p">,</span><span class="w"> </span><span class="err">og</span><span class="w"> </span><span class="err">de</span><span class="w"> </span><span class="err">a</span><span class="kc">n</span><span class="err">dre</span><span class="w"> </span><span class="err">lege</span><span class="kc">ne</span><span class="w"> </span><span class="err">på</span><span class="w"> </span><span class="err">Åsgårds</span><span class="kc">tran</span><span class="err">d</span><span class="w"> </span><span class="err">legeko</span><span class="kc">nt</span><span class="err">or</span><span class="p">,</span><span class="w"> </span><span class="err">e</span><span class="kc">n</span><span class="w"> </span><span class="kc">tren</span><span class="err">i</span><span class="kc">n</span><span class="err">gsgruppe</span><span class="w"> </span><span class="kc">f</span><span class="err">or</span><span class="w"> </span><span class="err">pasie</span><span class="kc">ntene</span><span class="w"> </span><span class="err">si</span><span class="kc">ne</span><span class="err">.</span><span class="w"> </span><span class="err">De</span><span class="kc">t</span><span class="w"> </span><span class="err">ble</span><span class="w"> </span><span class="err">s</span><span class="kc">t</span><span class="err">or</span><span class="w"> </span><span class="err">suksess.\</span><span class="kc">n</span><span class="err">–</span><span class="w"> </span><span class="err">Folk</span><span class="w"> </span><span class="err">ve</span><span class="kc">t</span><span class="w"> </span><span class="err">a</span><span class="kc">t</span><span class="w"> </span><span class="err">de</span><span class="kc">t</span><span class="w"> </span><span class="err">er</span><span class="w"> </span><span class="err">bra</span><span class="w"> </span><span class="err">å</span><span class="w"> </span><span class="kc">trene</span><span class="w"> </span><span class="kc">f</span><span class="err">or</span><span class="w"> </span><span class="err">de</span><span class="kc">n</span><span class="w"> </span><span class="kc">f</span><span class="err">ysiske</span><span class="w"> </span><span class="err">helse</span><span class="kc">n</span><span class="p">,</span><span class="w"> </span><span class="err">me</span><span class="kc">n</span><span class="w"> </span><span class="err">a</span><span class="kc">t</span><span class="w"> </span><span class="kc">f</span><span class="err">ysisk</span><span class="w"> </span><span class="err">ak</span><span class="kc">t</span><span class="err">ivi</span><span class="kc">tet</span><span class="w"> </span><span class="err">også</span><span class="w"> </span><span class="err">er</span><span class="w"> </span><span class="err">bra</span><span class="w"> </span><span class="kc">f</span><span class="err">or</span><span class="w"> </span><span class="err">de</span><span class="kc">n</span><span class="w"> </span><span class="err">me</span><span class="kc">ntale</span><span class="w"> </span><span class="err">helse</span><span class="p">,</span><span class="w"> </span><span class="err">er</span><span class="w"> </span><span class="err">e</span><span class="kc">t</span><span class="w"> </span><span class="err">u</span><span class="kc">n</span><span class="err">derkommu</span><span class="kc">n</span><span class="err">iser</span><span class="kc">t</span><span class="w"> </span><span class="kc">te</span><span class="err">ma</span><span class="p">,</span><span class="w"> </span><span class="err">sier</span><span class="w"> </span><span class="err">ha</span><span class="kc">n</span><span class="err">.\</span><span class="kc">n</span><span class="err">Bedre</span><span class="w"> </span><span class="err">e</span><span class="kc">nn</span><span class="w"> </span><span class="err">sudoku</span><span class="w"> </span><span class="err">og</span><span class="w"> </span><span class="err">kryssord\</span><span class="kc">n</span><span class="err">–</span><span class="w"> </span><span class="err">Er</span><span class="w"> </span><span class="kc">f</span><span class="err">ysisk</span><span class="w"> </span><span class="err">ak</span><span class="kc">t</span><span class="err">ivi</span><span class="kc">tet</span><span class="w"> </span><span class="err">bedre</span><span class="w"> </span><span class="err">hjer</span><span class="kc">netr</span><span class="err">im</span><span class="w"> </span><span class="err">e</span><span class="kc">nn</span><span class="w"> </span><span class="err">sudoku</span><span class="w"> </span><span class="err">og</span><span class="w"> </span><span class="err">kryssord?\</span><span class="kc">n</span><span class="err">–</span><span class="w"> </span><span class="err">Løser</span><span class="w"> </span><span class="err">du</span><span class="w"> </span><span class="err">masse</span><span class="w"> </span><span class="err">kryssord</span><span class="p">,</span><span class="w"> </span><span class="err">så</span><span class="w"> </span><span class="err">blir</span><span class="w"> </span><span class="err">du</span><span class="w"> </span><span class="err">veldig</span><span class="w"> </span><span class="kc">t</span><span class="err">il</span><span class="w"> </span><span class="err">å</span><span class="w"> </span><span class="err">løse</span><span class="w"> </span><span class="err">kryssord.</span><span class="w"> </span><span class="err">Me</span><span class="kc">n</span><span class="w"> </span><span class="err">de</span><span class="kc">t</span><span class="w"> </span><span class="err">har</span><span class="w"> </span><span class="err">ikke</span><span class="w"> </span><span class="err">de</span><span class="w"> </span><span class="err">s</span><span class="kc">t</span><span class="err">ore</span><span class="w"> </span><span class="err">ri</span><span class="kc">n</span><span class="err">gvirk</span><span class="kc">n</span><span class="err">i</span><span class="kc">n</span><span class="err">ge</span><span class="kc">ne</span><span class="w"> </span><span class="err">på</span><span class="w"> </span><span class="err">våre</span><span class="w"> </span><span class="err">kog</span><span class="kc">n</span><span class="err">i</span><span class="kc">t</span><span class="err">ive</span><span class="w"> </span><span class="kc">fun</span><span class="err">ksjo</span><span class="kc">ner</span><span class="p">,</span><span class="w"> </span><span class="err">som</span><span class="w"> </span><span class="err">de</span><span class="kc">t</span><span class="w"> </span><span class="err">å</span><span class="w"> </span><span class="err">huske</span><span class="p">,</span><span class="w"> </span><span class="err">pla</span><span class="kc">nle</span><span class="err">gge</span><span class="w"> </span><span class="err">og</span><span class="w"> </span><span class="err">gje</span><span class="kc">nn</span><span class="err">om</span><span class="kc">f</span><span class="err">øre</span><span class="p">,</span><span class="w"> </span><span class="err">sier</span><span class="w"> </span><span class="err">Hjelle.\</span><span class="kc">n</span><span class="err">Ha</span><span class="kc">n</span><span class="w"> </span><span class="kc">f</span><span class="err">orklarer</span><span class="w"> </span><span class="err">a</span><span class="kc">t</span><span class="w"> </span><span class="kc">n</span><span class="err">år</span><span class="w"> </span><span class="err">pulse</span><span class="kc">n</span><span class="w"> </span><span class="err">vår</span><span class="w"> </span><span class="err">øker</span><span class="p">,</span><span class="w"> </span><span class="err">skilles</span><span class="w"> </span><span class="err">de</span><span class="kc">t</span><span class="w"> </span><span class="err">u</span><span class="kc">t</span><span class="w"> </span><span class="err">veks</span><span class="kc">tfa</span><span class="err">k</span><span class="kc">t</span><span class="err">orer</span><span class="w"> </span><span class="err">i</span><span class="w"> </span><span class="err">hjer</span><span class="kc">nen</span><span class="w"> </span><span class="err">som</span><span class="w"> </span><span class="err">besky</span><span class="kc">tter</span><span class="w"> </span><span class="err">hjer</span><span class="kc">ne</span><span class="err">celle</span><span class="kc">ne</span><span class="w"> </span><span class="err">våre</span><span class="w"> </span><span class="err">og</span><span class="w"> </span><span class="err">gjør</span><span class="w"> </span><span class="err">a</span><span class="kc">t</span><span class="w"> </span><span class="err">celle</span><span class="kc">ne</span><span class="w"> </span><span class="err">kommu</span><span class="kc">n</span><span class="err">iserer</span><span class="w"> </span><span class="err">bedre.\</span><span class="kc">n</span><span class="err">Forsk</span><span class="kc">n</span><span class="err">i</span><span class="kc">n</span><span class="err">g</span><span class="w"> </span><span class="err">viser</span><span class="w"> </span><span class="err">også</span><span class="w"> </span><span class="err">a</span><span class="kc">t</span><span class="w"> </span><span class="err">de</span><span class="kc">t</span><span class="w"> </span><span class="err">da</span><span class="kc">nnes</span><span class="w"> </span><span class="kc">n</span><span class="err">ye</span><span class="w"> </span><span class="err">hjer</span><span class="kc">ne</span><span class="err">celler</span><span class="w"> </span><span class="err">i</span><span class="w"> </span><span class="err">e</span><span class="kc">n</span><span class="err">kel</span><span class="kc">te</span><span class="w"> </span><span class="err">deler</span><span class="w"> </span><span class="err">av</span><span class="w"> </span><span class="err">hjer</span><span class="kc">nen</span><span class="p">,</span><span class="w"> </span><span class="err">u</span><span class="kc">n</span><span class="err">der</span><span class="w"> </span><span class="err">ak</span><span class="kc">t</span><span class="err">ivi</span><span class="kc">tet</span><span class="err">.\</span><span class="kc">n</span><span class="err">–</span><span class="w"> </span><span class="err">Me</span><span class="kc">n</span><span class="w"> </span><span class="err">skal</span><span class="w"> </span><span class="err">ma</span><span class="kc">n</span><span class="w"> </span><span class="kc">f</span><span class="err">å</span><span class="w"> </span><span class="err">de</span><span class="kc">nne</span><span class="w"> </span><span class="err">e</span><span class="kc">ffe</span><span class="err">k</span><span class="kc">ten</span><span class="p">,</span><span class="w"> </span><span class="err">må</span><span class="w"> </span><span class="err">ma</span><span class="kc">n</span><span class="w"> </span><span class="err">re</span><span class="kc">tt</span><span class="w"> </span><span class="err">og</span><span class="w"> </span><span class="err">sle</span><span class="kc">tt</span><span class="w"> </span><span class="err">være</span><span class="w"> </span><span class="err">i</span><span class="w"> </span><span class="err">ak</span><span class="kc">t</span><span class="err">ivi</span><span class="kc">tet</span><span class="err">.\</span><span class="kc">n</span><span class="err">Få</span><span class="w"> </span><span class="err">opp</span><span class="w"> </span><span class="err">pulse</span><span class="kc">n</span><span class="err">\</span><span class="kc">n</span><span class="err">Forsk</span><span class="kc">n</span><span class="err">i</span><span class="kc">n</span><span class="err">g</span><span class="w"> </span><span class="err">viser</span><span class="w"> </span><span class="err">også</span><span class="w"> </span><span class="err">a</span><span class="kc">t</span><span class="w"> </span><span class="kc">f</span><span class="err">ysisk</span><span class="w"> </span><span class="err">ak</span><span class="kc">t</span><span class="err">ivi</span><span class="kc">tet</span><span class="w"> </span><span class="err">reduserer</span><span class="w"> </span><span class="err">risiko</span><span class="w"> </span><span class="kc">f</span><span class="err">or</span><span class="w"> </span><span class="err">depresjo</span><span class="kc">n</span><span class="w"> </span><span class="err">og</span><span class="w"> </span><span class="err">deme</span><span class="kc">ns</span><span class="p">,</span><span class="w"> </span><span class="err">øker</span><span class="w"> </span><span class="err">i</span><span class="kc">ntell</span><span class="err">ige</span><span class="kc">nsen</span><span class="p">,</span><span class="w"> </span><span class="err">bedrer</span><span class="w"> </span><span class="err">hukommelse</span><span class="kc">n</span><span class="p">,</span><span class="w"> </span><span class="err">gjør</span><span class="w"> </span><span class="err">deg</span><span class="w"> </span><span class="err">mer</span><span class="w"> </span><span class="err">krea</span><span class="kc">t</span><span class="err">iv</span><span class="w"> </span><span class="err">og</span><span class="w"> </span><span class="err">gir</span><span class="w"> </span><span class="err">deg</span><span class="w"> </span><span class="err">e</span><span class="kc">t</span><span class="w"> </span><span class="err">le</span><span class="kc">n</span><span class="err">gre</span><span class="w"> </span><span class="err">og</span><span class="w"> </span><span class="err">bedre</span><span class="w"> </span><span class="err">liv.\</span><span class="kc">n</span><span class="err">Hjelle</span><span class="w"> </span><span class="kc">f</span><span class="err">or</span><span class="kc">teller</span><span class="w"> </span><span class="err">a</span><span class="kc">t</span><span class="w"> </span><span class="err">de</span><span class="kc">t</span><span class="w"> </span><span class="err">vik</span><span class="kc">t</span><span class="err">igs</span><span class="kc">te</span><span class="w"> </span><span class="kc">f</span><span class="err">or</span><span class="w"> </span><span class="err">å</span><span class="w"> </span><span class="err">he</span><span class="kc">nte</span><span class="w"> </span><span class="err">u</span><span class="kc">t</span><span class="w"> </span><span class="err">disse</span><span class="w"> </span><span class="kc">f</span><span class="err">ordele</span><span class="kc">ne</span><span class="w"> </span><span class="err">er</span><span class="w"> </span><span class="err">å</span><span class="w"> </span><span class="kc">f</span><span class="err">å</span><span class="w"> </span><span class="err">opp</span><span class="w"> </span><span class="err">pulse</span><span class="kc">n</span><span class="err">.\</span><span class="kc">n</span><span class="err">–</span><span class="w"> </span><span class="err">Me</span><span class="kc">n</span><span class="w"> </span><span class="err">dersom</span><span class="w"> </span><span class="err">du</span><span class="w"> </span><span class="err">skulle</span><span class="w"> </span><span class="err">valg</span><span class="kc">t</span><span class="w"> </span><span class="err">e</span><span class="kc">n</span><span class="w"> </span><span class="err">ak</span><span class="kc">t</span><span class="err">ivi</span><span class="kc">tet</span><span class="w"> </span><span class="err">–</span><span class="w"> </span><span class="err">som</span><span class="w"> </span><span class="err">i</span><span class="w"> </span><span class="err">s</span><span class="kc">t</span><span class="err">ørs</span><span class="kc">t</span><span class="w"> </span><span class="err">mulig</span><span class="w"> </span><span class="err">grad</span><span class="w"> </span><span class="err">s</span><span class="kc">t</span><span class="err">imuler</span><span class="kc">te</span><span class="w"> </span><span class="kc">flest</span><span class="w"> </span><span class="err">mulig</span><span class="w"> </span><span class="err">hjer</span><span class="kc">ne</span><span class="err">områder</span><span class="w"> </span><span class="err">–</span><span class="w"> </span><span class="err">pleier</span><span class="w"> </span><span class="err">jeg</span><span class="w"> </span><span class="err">å</span><span class="w"> </span><span class="err">si</span><span class="w"> </span><span class="err">ballspill.</span><span class="w"> </span><span class="err">Da</span><span class="w"> </span><span class="kc">f</span><span class="err">år</span><span class="w"> </span><span class="err">du</span><span class="w"> </span><span class="err">opp</span><span class="w"> </span><span class="err">pulse</span><span class="kc">n</span><span class="p">,</span><span class="w"> </span><span class="err">du</span><span class="w"> </span><span class="err">samarbeider</span><span class="p">,</span><span class="w"> </span><span class="err">har</span><span class="w"> </span><span class="kc">ta</span><span class="err">k</span><span class="kc">t</span><span class="err">ikk</span><span class="p">,</span><span class="w"> </span><span class="err">koordi</span><span class="kc">nas</span><span class="err">jo</span><span class="kc">n</span><span class="p">,</span><span class="w"> </span><span class="err">bala</span><span class="kc">nse</span><span class="w"> </span><span class="err">og</span><span class="w"> </span><span class="err">s</span><span class="kc">trate</span><span class="err">gi</span><span class="p">,</span><span class="w"> </span><span class="err">sier</span><span class="w"> </span><span class="err">Hjelle.\</span><span class="kc">n</span><span class="err">Hør</span><span class="w"> </span><span class="err">mer</span><span class="w"> </span><span class="kc">fra</span><span class="w"> </span><span class="err">«</span><span class="kc">tren</span><span class="err">i</span><span class="kc">n</span><span class="err">gslege</span><span class="kc">n</span><span class="err">»</span><span class="w"> </span><span class="err">i</span><span class="w"> </span><span class="err">uke</span><span class="kc">ns</span><span class="w"> </span><span class="err">Sprekpodde</span><span class="kc">n</span><span class="w"> </span><span class="err">her.&#39;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;question&quot;</span><span class="p">:</span><span class="w"> </span><span class="err">&#39;Hva</span><span class="w"> </span><span class="err">jobber</span><span class="w"> </span><span class="err">Da</span><span class="kc">n</span><span class="err">iel</span><span class="w"> </span><span class="err">som?&#39;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;answers&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
@@ -2334,29 +2369,33 @@ be some samples from the training split in the validation or test splits.</p>
 <span class="w">    </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="err">array(</span><span class="p">[</span><span class="err">&#39;</span><span class="mi">6-4</span><span class="err">&#39;</span><span class="p">],</span><span class="w"> </span><span class="err">d</span><span class="kc">t</span><span class="err">ype=objec</span><span class="kc">t</span><span class="err">)</span>
 <span class="w">  </span><span class="p">}</span>
 <span class="p">}</span>
-</code></pre></div></p>
+</code></pre></div>
 <p>When evaluating generative models, we use the following setup (see the
 <a href="/methodology">methodology</a> for more information on how these are used):</p>
 <ul>
 <li>Number of few-shot examples: 2</li>
-<li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>Her følger tekster med tilhørende spørsmål og svar.
-</code></pre></div></li>
-<li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>Tekst: {text}
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Her følger tekster med tilhørende spørsmål og svar.
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Tekst: {text}
 Spørsmål: {question}
 Svar på maks 3 ord: {label}
-</code></pre></div></li>
-<li>Instruction-tuned prompt template:
-  <div class="highlight"><pre><span></span><code>Tekst: {text}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Tekst: {text}
 
 Besvar følgende spørsmål om teksten ovenfor med maks 3 ord.
 
 Spørsmål: {question}
-</code></pre></div></li>
-</ul>
+</code></pre></div>
 <p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>norquad
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>norquad
 </code></pre></div>
 <h3 id="unofficial-norglm-multi-qa">Unofficial: NorGLM Multi QA</h3>
 <p>This dataset was released in <a href="https://doi.org/10.48550/arXiv.2312.01314">this paper</a> and
@@ -2369,7 +2408,7 @@ which utilised the <code>gpt-4o-2024-05-13</code> model.</p>
 <p>The original dataset contains 2,406 samples, which we split into 1,024 / 256 / 1,126
 samples for training, validation and test, respectively.</p>
 <p>Here are a few examples from the training split:</p>
-<p><div class="highlight"><pre><span></span><code><span class="p">{</span>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">&quot;context&quot;</span><span class="p">:</span><span class="w"> </span><span class="err">&#39;</span><span class="w"> </span><span class="err">Kommer</span><span class="w"> </span><span class="err">de</span><span class="kc">t</span><span class="w"> </span><span class="err">meldi</span><span class="kc">n</span><span class="err">g</span><span class="w"> </span><span class="err">om</span><span class="w"> </span><span class="err">a</span><span class="kc">t</span><span class="w"> </span><span class="err">a</span><span class="kc">nsatte</span><span class="w"> </span><span class="err">kjøper</span><span class="w"> </span><span class="err">aksjer</span><span class="w"> </span><span class="err">i</span><span class="w"> </span><span class="err">ege</span><span class="kc">t</span><span class="w"> </span><span class="err">selskap</span><span class="p">,</span><span class="w"> </span><span class="err">ka</span><span class="kc">n</span><span class="w"> </span><span class="err">de</span><span class="kc">t</span><span class="w"> </span><span class="err">være</span><span class="w"> </span><span class="err">gode</span><span class="w"> </span><span class="err">gru</span><span class="kc">nner</span><span class="w"> </span><span class="kc">t</span><span class="err">il</span><span class="w"> </span><span class="err">a</span><span class="kc">t</span><span class="w"> </span><span class="err">du</span><span class="w"> </span><span class="err">også</span><span class="w"> </span><span class="err">bør</span><span class="w"> </span><span class="err">gjøre</span><span class="w"> </span><span class="err">de</span><span class="kc">t</span><span class="err">.</span><span class="w"> </span><span class="err">–</span><span class="w"> </span><span class="err">Vær</span><span class="w"> </span><span class="err">på</span><span class="w"> </span><span class="err">lag</span><span class="w"> </span><span class="err">med</span><span class="w"> </span><span class="err">i</span><span class="kc">nns</span><span class="err">ider</span><span class="kc">ne</span><span class="p">,</span><span class="w"> </span><span class="err">er</span><span class="w"> </span><span class="err">eksper</span><span class="kc">tens</span><span class="w"> </span><span class="err">råd.Har</span><span class="w"> </span><span class="err">du</span><span class="w"> </span><span class="err">lys</span><span class="kc">t</span><span class="w"> </span><span class="kc">t</span><span class="err">il</span><span class="w"> </span><span class="err">å</span><span class="w"> </span><span class="err">prøve</span><span class="w"> </span><span class="err">deg</span><span class="w"> </span><span class="err">som</span><span class="w"> </span><span class="err">aksjei</span><span class="kc">n</span><span class="err">ves</span><span class="kc">t</span><span class="err">or</span><span class="w"> </span><span class="err">hel</span><span class="kc">t</span><span class="w"> </span><span class="err">gra</span><span class="kc">t</span><span class="err">is</span><span class="w"> </span><span class="err">og</span><span class="w"> </span><span class="err">u</span><span class="kc">ten</span><span class="w"> </span><span class="err">reell</span><span class="w"> </span><span class="err">risiko?</span><span class="w"> </span><span class="err">Meld</span><span class="w"> </span><span class="err">deg</span><span class="w"> </span><span class="err">på</span><span class="w"> </span><span class="err">Aksje</span><span class="mi">-</span><span class="err">NM</span><span class="w"> </span><span class="err">her!Ma</span><span class="kc">n</span><span class="err">ge</span><span class="w"> </span><span class="err">assosierer</span><span class="w"> </span><span class="err">i</span><span class="kc">nns</span><span class="err">ideha</span><span class="kc">n</span><span class="err">del</span><span class="w"> </span><span class="err">med</span><span class="w"> </span><span class="err">kjøp</span><span class="w"> </span><span class="err">og</span><span class="w"> </span><span class="err">salg</span><span class="w"> </span><span class="err">av</span><span class="w"> </span><span class="err">aksjer</span><span class="w"> </span><span class="err">baser</span><span class="kc">t</span><span class="w"> </span><span class="err">på</span><span class="w"> </span><span class="kc">t</span><span class="err">ilga</span><span class="kc">n</span><span class="err">g</span><span class="w"> </span><span class="err">på</span><span class="w"> </span><span class="err">selskaps</span><span class="kc">n</span><span class="err">yhe</span><span class="kc">ter</span><span class="w"> </span><span class="kc">f</span><span class="err">ør</span><span class="w"> </span><span class="err">de</span><span class="w"> </span><span class="err">blir</span><span class="w"> </span><span class="err">o</span><span class="kc">ffentl</span><span class="err">iggjor</span><span class="kc">t</span><span class="w"> </span><span class="err">i</span><span class="w"> </span><span class="err">markede</span><span class="kc">t</span><span class="err">.</span><span class="w"> </span><span class="err">Slik</span><span class="w"> </span><span class="err">ha</span><span class="kc">n</span><span class="err">del</span><span class="w"> </span><span class="err">ka</span><span class="kc">n</span><span class="w"> </span><span class="err">gi</span><span class="w"> </span><span class="err">s</span><span class="kc">t</span><span class="err">or</span><span class="w"> </span><span class="err">øko</span><span class="kc">n</span><span class="err">omisk</span><span class="w"> </span><span class="err">gevi</span><span class="kc">nst</span><span class="p">,</span><span class="w"> </span><span class="err">og</span><span class="w"> </span><span class="err">er</span><span class="w"> </span><span class="err">ulovlig.De</span><span class="kc">t</span><span class="w"> </span><span class="kc">f</span><span class="err">i</span><span class="kc">nnes</span><span class="w"> </span><span class="err">derimo</span><span class="kc">t</span><span class="w"> </span><span class="err">også</span><span class="w"> </span><span class="err">e</span><span class="kc">n</span><span class="w"> </span><span class="err">lovlig</span><span class="w"> </span><span class="kc">f</span><span class="err">orm</span><span class="w"> </span><span class="kc">f</span><span class="err">or</span><span class="w"> </span><span class="err">i</span><span class="kc">nns</span><span class="err">ideha</span><span class="kc">n</span><span class="err">del</span><span class="p">,</span><span class="w"> </span><span class="err">og</span><span class="w"> </span><span class="err">de</span><span class="kc">nne</span><span class="w"> </span><span class="err">ka</span><span class="kc">n</span><span class="w"> </span><span class="err">de</span><span class="kc">t</span><span class="w"> </span><span class="err">være</span><span class="w"> </span><span class="err">lur</span><span class="kc">t</span><span class="w"> </span><span class="err">å</span><span class="w"> </span><span class="kc">f</span><span class="err">ølge</span><span class="w"> </span><span class="err">med</span><span class="w"> </span><span class="err">på</span><span class="p">,</span><span class="w"> </span><span class="err">skal</span><span class="w"> </span><span class="err">vi</span><span class="w"> </span><span class="kc">tr</span><span class="err">o</span><span class="w"> </span><span class="kc">f</span><span class="err">orsk</span><span class="kc">n</span><span class="err">i</span><span class="kc">n</span><span class="err">gssje</span><span class="kc">f</span><span class="w"> </span><span class="err">Geir</span><span class="w"> </span><span class="err">Li</span><span class="kc">nl</span><span class="err">økke</span><span class="kc">n</span><span class="w"> </span><span class="err">i</span><span class="w"> </span><span class="err">I</span><span class="kc">n</span><span class="err">ves</span><span class="kc">tte</span><span class="err">ch.</span><span class="w"> </span><span class="err">Aksjeskole</span><span class="kc">n</span><span class="w"> </span><span class="err">er</span><span class="w"> </span><span class="err">e</span><span class="kc">n</span><span class="w"> </span><span class="err">del</span><span class="w"> </span><span class="err">av</span><span class="w"> </span><span class="err">E</span><span class="mi">24</span><span class="err">s</span><span class="w"> </span><span class="err">Aksje</span><span class="mi">-</span><span class="err">NM.</span><span class="w"> </span><span class="err">E</span><span class="kc">n</span><span class="w"> </span><span class="kc">t</span><span class="err">idligere</span><span class="w"> </span><span class="err">versjo</span><span class="kc">n</span><span class="w"> </span><span class="err">av</span><span class="w"> </span><span class="err">de</span><span class="kc">nne</span><span class="w"> </span><span class="err">ar</span><span class="kc">t</span><span class="err">ikkelserie</span><span class="kc">n</span><span class="w"> </span><span class="err">ble</span><span class="w"> </span><span class="err">publiser</span><span class="kc">t</span><span class="w"> </span><span class="err">i</span><span class="w"> </span><span class="mf">2020.</span><span class="err">Når</span><span class="w"> </span><span class="err">ma</span><span class="kc">n</span><span class="w"> </span><span class="err">s</span><span class="kc">na</span><span class="err">kker</span><span class="w"> </span><span class="err">om</span><span class="w"> </span><span class="err">«i</span><span class="kc">nns</span><span class="err">ideha</span><span class="kc">n</span><span class="err">del»</span><span class="w"> </span><span class="err">i</span><span class="w"> </span><span class="err">børssamme</span><span class="kc">n</span><span class="err">he</span><span class="kc">n</span><span class="err">g</span><span class="p">,</span><span class="w"> </span><span class="err">sik</span><span class="kc">tes</span><span class="w"> </span><span class="err">de</span><span class="kc">t</span><span class="w"> </span><span class="err">som</span><span class="w"> </span><span class="err">regel</span><span class="w"> </span><span class="kc">t</span><span class="err">il</span><span class="w"> </span><span class="err">ha</span><span class="kc">n</span><span class="err">dler</span><span class="w"> </span><span class="err">som</span><span class="w"> </span><span class="err">direk</span><span class="kc">t</span><span class="err">ører</span><span class="p">,</span><span class="w"> </span><span class="err">s</span><span class="kc">t</span><span class="err">yremedlemmer</span><span class="w"> </span><span class="err">og</span><span class="w"> </span><span class="err">a</span><span class="kc">n</span><span class="err">dre</span><span class="w"> </span><span class="kc">n</span><span class="err">økkelmedarbeidere</span><span class="w"> </span><span class="err">gjør.</span><span class="w"> </span><span class="err">Disse</span><span class="w"> </span><span class="err">ha</span><span class="kc">n</span><span class="err">dle</span><span class="kc">ne</span><span class="w"> </span><span class="err">må</span><span class="w"> </span><span class="err">rappor</span><span class="kc">teres</span><span class="w"> </span><span class="err">i</span><span class="kc">nn</span><span class="w"> </span><span class="kc">t</span><span class="err">il</span><span class="w"> </span><span class="err">Oslo</span><span class="w"> </span><span class="err">Børs</span><span class="p">,</span><span class="w"> </span><span class="err">og</span><span class="w"> </span><span class="err">kjøpe</span><span class="kc">t</span><span class="w"> </span><span class="err">eller</span><span class="w"> </span><span class="err">salge</span><span class="kc">t</span><span class="w"> </span><span class="err">blir</span><span class="w"> </span><span class="err">o</span><span class="kc">ffentl</span><span class="err">ig</span><span class="w"> </span><span class="err">i</span><span class="kc">nf</span><span class="err">ormasjo</span><span class="kc">n</span><span class="err">.</span><span class="w"> </span><span class="err">De</span><span class="kc">nne</span><span class="w"> </span><span class="err">i</span><span class="kc">nf</span><span class="err">ormasjo</span><span class="kc">nen</span><span class="w"> </span><span class="err">ka</span><span class="kc">n</span><span class="w"> </span><span class="err">være</span><span class="w"> </span><span class="err">gull</span><span class="w"> </span><span class="err">verd</span><span class="kc">t</span><span class="p">,</span><span class="w"> </span><span class="err">skal</span><span class="w"> </span><span class="err">vi</span><span class="w"> </span><span class="kc">tr</span><span class="err">o</span><span class="w"> </span><span class="kc">f</span><span class="err">orsk</span><span class="kc">n</span><span class="err">i</span><span class="kc">n</span><span class="err">ge</span><span class="kc">n</span><span class="w"> </span><span class="kc">t</span><span class="err">il</span><span class="w"> </span><span class="err">I</span><span class="kc">n</span><span class="err">ves</span><span class="kc">tte</span><span class="err">ch.–</span><span class="w"> </span><span class="err">Nøkkelperso</span><span class="kc">ner</span><span class="w"> </span><span class="err">som</span><span class="w"> </span><span class="err">direk</span><span class="kc">t</span><span class="err">ører</span><span class="w"> </span><span class="err">og</span><span class="w"> </span><span class="err">s</span><span class="kc">t</span><span class="err">yremedlemmer</span><span class="w"> </span><span class="err">si</span><span class="kc">tter</span><span class="w"> </span><span class="err">på</span><span class="w"> </span><span class="err">veldig</span><span class="w"> </span><span class="err">mye</span><span class="w"> </span><span class="err">ku</span><span class="kc">nns</span><span class="err">kap</span><span class="w"> </span><span class="err">om</span><span class="w"> </span><span class="err">bedri</span><span class="kc">ften</span><span class="err">.</span><span class="w"> </span><span class="err">Når</span><span class="w"> </span><span class="err">disse</span><span class="w"> </span><span class="err">e</span><span class="kc">nten</span><span class="w"> </span><span class="err">selger</span><span class="w"> </span><span class="err">eller</span><span class="w"> </span><span class="err">kjøper</span><span class="w"> </span><span class="err">aksjer</span><span class="w"> </span><span class="err">i</span><span class="w"> </span><span class="err">ege</span><span class="kc">t</span><span class="w"> </span><span class="err">selskap</span><span class="p">,</span><span class="w"> </span><span class="err">ka</span><span class="kc">n</span><span class="w"> </span><span class="err">de</span><span class="kc">t</span><span class="w"> </span><span class="err">ses</span><span class="w"> </span><span class="err">på</span><span class="w"> </span><span class="err">som</span><span class="w"> </span><span class="err">e</span><span class="kc">t</span><span class="w"> </span><span class="err">sig</span><span class="kc">nal</span><span class="w"> </span><span class="kc">t</span><span class="err">il</span><span class="w"> </span><span class="err">a</span><span class="kc">n</span><span class="err">dre</span><span class="w"> </span><span class="err">ak</span><span class="kc">t</span><span class="err">ører</span><span class="p">,</span><span class="w"> </span><span class="err">sier</span><span class="w"> </span><span class="err">Li</span><span class="kc">nl</span><span class="err">økke</span><span class="kc">n</span><span class="err">.</span><span class="w"> </span><span class="err">Li</span><span class="kc">nl</span><span class="err">økke</span><span class="kc">n</span><span class="w"> </span><span class="err">har</span><span class="w"> </span><span class="kc">f</span><span class="err">orske</span><span class="kc">t</span><span class="w"> </span><span class="err">på</span><span class="w"> </span><span class="err">i</span><span class="kc">nns</span><span class="err">ideha</span><span class="kc">n</span><span class="err">del</span><span class="w"> </span><span class="err">og</span><span class="w"> </span><span class="kc">tatt</span><span class="w"> </span><span class="err">u</span><span class="kc">t</span><span class="err">ga</span><span class="kc">n</span><span class="err">gspu</span><span class="kc">n</span><span class="err">k</span><span class="kc">t</span><span class="w"> </span><span class="err">i</span><span class="w"> </span><span class="err">over</span><span class="w"> </span><span class="mf">11.000</span><span class="w"> </span><span class="err">rappor</span><span class="kc">terte</span><span class="w"> </span><span class="err">i</span><span class="kc">nns</span><span class="err">idekjøp</span><span class="w"> </span><span class="err">i</span><span class="w"> </span><span class="kc">n</span><span class="err">orske</span><span class="w"> </span><span class="err">og</span><span class="w"> </span><span class="err">sve</span><span class="kc">ns</span><span class="err">ke</span><span class="w"> </span><span class="err">selskaper.</span><span class="w"> </span><span class="err">Ha</span><span class="kc">n</span><span class="w"> </span><span class="err">har</span><span class="w"> </span><span class="err">se</span><span class="kc">tt</span><span class="w"> </span><span class="kc">n</span><span class="err">ærmere</span><span class="w"> </span><span class="err">på</span><span class="w"> </span><span class="err">hvorda</span><span class="kc">n</span><span class="w"> </span><span class="err">kurse</span><span class="kc">n</span><span class="w"> </span><span class="err">u</span><span class="kc">t</span><span class="err">vikle</span><span class="kc">t</span><span class="w"> </span><span class="err">seg</span><span class="w"> </span><span class="err">i</span><span class="w"> </span><span class="kc">t</span><span class="err">ide</span><span class="kc">n</span><span class="w"> </span><span class="err">e</span><span class="kc">tter</span><span class="w"> </span><span class="err">i</span><span class="kc">nns</span><span class="err">idekjøpe</span><span class="kc">t</span><span class="err">.</span><span class="w"> </span><span class="err">–</span><span class="w"> </span><span class="err">Vi</span><span class="w"> </span><span class="kc">fant</span><span class="w"> </span><span class="err">a</span><span class="kc">t</span><span class="w"> </span><span class="err">disse</span><span class="w"> </span><span class="err">selskape</span><span class="kc">ne</span><span class="w"> </span><span class="err">på</span><span class="w"> </span><span class="err">årlig</span><span class="w"> </span><span class="err">basis</span><span class="w"> </span><span class="err">s</span><span class="kc">te</span><span class="err">g</span><span class="w"> </span><span class="err">med</span><span class="w"> </span><span class="mi">7</span><span class="p">,</span><span class="mi">1</span><span class="w"> </span><span class="err">prose</span><span class="kc">nt</span><span class="err">poe</span><span class="kc">n</span><span class="err">g</span><span class="w"> </span><span class="err">mer</span><span class="w"> </span><span class="err">e</span><span class="kc">nn</span><span class="w"> </span><span class="err">a</span><span class="kc">n</span><span class="err">dre</span><span class="w"> </span><span class="err">selskaper.</span><span class="w"> </span><span class="err">De</span><span class="kc">t</span><span class="w"> </span><span class="err">ka</span><span class="kc">n</span><span class="w"> </span><span class="err">al</span><span class="kc">ts</span><span class="err">å</span><span class="w"> </span><span class="err">være</span><span class="w"> </span><span class="err">e</span><span class="kc">t</span><span class="w"> </span><span class="err">god</span><span class="kc">t</span><span class="w"> </span><span class="kc">t</span><span class="err">ips</span><span class="w"> </span><span class="err">å</span><span class="w"> </span><span class="kc">f</span><span class="err">ølge</span><span class="w"> </span><span class="err">med</span><span class="w"> </span><span class="err">på</span><span class="w"> </span><span class="err">i</span><span class="kc">nns</span><span class="err">idekjøp.Dersom</span><span class="w"> </span><span class="err">de</span><span class="kc">t</span><span class="w"> </span><span class="kc">t</span><span class="err">ikker</span><span class="w"> </span><span class="err">i</span><span class="kc">nn</span><span class="w"> </span><span class="err">meldi</span><span class="kc">n</span><span class="err">ger</span><span class="w"> </span><span class="err">om</span><span class="w"> </span><span class="err">a</span><span class="kc">t</span><span class="w"> </span><span class="err">i</span><span class="kc">nns</span><span class="err">idere</span><span class="w"> </span><span class="err">selger</span><span class="w"> </span><span class="err">aksje</span><span class="kc">ne</span><span class="w"> </span><span class="err">si</span><span class="kc">ne</span><span class="p">,</span><span class="w"> </span><span class="err">er</span><span class="w"> </span><span class="err">de</span><span class="kc">t</span><span class="w"> </span><span class="err">også</span><span class="w"> </span><span class="err">lur</span><span class="kc">t</span><span class="w"> </span><span class="err">å</span><span class="w"> </span><span class="kc">f</span><span class="err">ølge</span><span class="w"> </span><span class="kc">n</span><span class="err">øye</span><span class="w"> </span><span class="err">med.</span><span class="w"> </span><span class="err">I</span><span class="kc">n</span><span class="err">ves</span><span class="kc">tte</span><span class="err">ch</span><span class="w"> </span><span class="err">har</span><span class="w"> </span><span class="kc">tatt</span><span class="w"> </span><span class="err">u</span><span class="kc">t</span><span class="err">ga</span><span class="kc">n</span><span class="err">gspu</span><span class="kc">n</span><span class="err">k</span><span class="kc">t</span><span class="w"> </span><span class="err">i</span><span class="w"> </span><span class="err">over</span><span class="w"> </span><span class="mf">6.900</span><span class="w"> </span><span class="err">slike</span><span class="w"> </span><span class="kc">t</span><span class="err">il</span><span class="kc">feller</span><span class="w"> </span><span class="err">i</span><span class="w"> </span><span class="err">Norge</span><span class="w"> </span><span class="err">og</span><span class="w"> </span><span class="err">Sverige</span><span class="p">,</span><span class="w"> </span><span class="err">og</span><span class="w"> </span><span class="err">gjorde</span><span class="w"> </span><span class="err">spe</span><span class="kc">nnen</span><span class="err">de</span><span class="w"> </span><span class="kc">funn</span><span class="err">.</span><span class="w"> </span><span class="err">–</span><span class="w"> </span><span class="err">I</span><span class="w"> </span><span class="err">s</span><span class="kc">n</span><span class="err">i</span><span class="kc">tt</span><span class="w"> </span><span class="err">gjorde</span><span class="w"> </span><span class="err">disse</span><span class="w"> </span><span class="err">aksje</span><span class="kc">ne</span><span class="w"> </span><span class="err">de</span><span class="kc">t</span><span class="w"> </span><span class="mi">3</span><span class="p">,</span><span class="mi">0</span><span class="w"> </span><span class="err">prose</span><span class="kc">nt</span><span class="err">poe</span><span class="kc">n</span><span class="err">g</span><span class="w"> </span><span class="err">svakere</span><span class="w"> </span><span class="err">e</span><span class="kc">nn</span><span class="w"> </span><span class="err">børse</span><span class="kc">n</span><span class="p">,</span><span class="w"> </span><span class="err">sier</span><span class="w"> </span><span class="err">ha</span><span class="kc">n</span><span class="err">.</span><span class="w"> </span><span class="err">Li</span><span class="kc">nl</span><span class="err">økke</span><span class="kc">n</span><span class="w"> </span><span class="kc">f</span><span class="err">or</span><span class="kc">teller</span><span class="w"> </span><span class="err">a</span><span class="kc">t</span><span class="w"> </span><span class="kc">n</span><span class="err">oe</span><span class="kc">n</span><span class="w"> </span><span class="err">av</span><span class="w"> </span><span class="err">aksje</span><span class="kc">ne</span><span class="w"> </span><span class="err">ka</span><span class="kc">n</span><span class="w"> </span><span class="err">ha</span><span class="w"> </span><span class="kc">falt</span><span class="w"> </span><span class="kc">f</span><span class="err">or</span><span class="w"> </span><span class="err">eksempel</span><span class="w"> </span><span class="mi">50</span><span class="w"> </span><span class="err">prose</span><span class="kc">nt</span><span class="w"> </span><span class="err">e</span><span class="kc">tter</span><span class="w"> </span><span class="err">i</span><span class="kc">nns</span><span class="err">idesalg</span><span class="p">,</span><span class="w"> </span><span class="err">me</span><span class="kc">ns</span><span class="w"> </span><span class="err">de</span><span class="kc">t</span><span class="w"> </span><span class="err">ka</span><span class="kc">n</span><span class="w"> </span><span class="err">ha</span><span class="w"> </span><span class="err">gå</span><span class="kc">tt</span><span class="w"> </span><span class="err">ga</span><span class="kc">ns</span><span class="err">ke</span><span class="w"> </span><span class="err">bra</span><span class="w"> </span><span class="err">i</span><span class="w"> </span><span class="err">a</span><span class="kc">n</span><span class="err">dre</span><span class="w"> </span><span class="err">selskaper</span><span class="w"> </span><span class="err">med</span><span class="w"> </span><span class="err">i</span><span class="kc">nns</span><span class="err">idesalg.–</span><span class="w"> </span><span class="err">Me</span><span class="kc">n</span><span class="w"> </span><span class="err">i</span><span class="w"> </span><span class="err">gje</span><span class="kc">nn</span><span class="err">oms</span><span class="kc">n</span><span class="err">i</span><span class="kc">tt</span><span class="w"> </span><span class="err">har</span><span class="w"> </span><span class="err">disse</span><span class="w"> </span><span class="err">aksje</span><span class="kc">ne</span><span class="w"> </span><span class="err">gjor</span><span class="kc">t</span><span class="w"> </span><span class="err">de</span><span class="kc">t</span><span class="w"> </span><span class="err">dårlig</span><span class="p">,</span><span class="w"> </span><span class="kc">fastsl</span><span class="err">år</span><span class="w"> </span><span class="err">ha</span><span class="kc">n</span><span class="err">.Li</span><span class="kc">nl</span><span class="err">økke</span><span class="kc">n</span><span class="w"> </span><span class="err">sier</span><span class="w"> </span><span class="err">a</span><span class="kc">t</span><span class="w"> </span><span class="err">I</span><span class="kc">n</span><span class="err">ves</span><span class="kc">tte</span><span class="err">ch</span><span class="w"> </span><span class="err">a</span><span class="kc">nser</span><span class="w"> </span><span class="err">i</span><span class="kc">nns</span><span class="err">ideha</span><span class="kc">n</span><span class="err">dela</span><span class="kc">nal</span><span class="err">yse</span><span class="w"> </span><span class="err">som</span><span class="w"> </span><span class="err">e</span><span class="kc">n</span><span class="w"> </span><span class="kc">f</span><span class="err">ore</span><span class="kc">n</span><span class="err">kle</span><span class="kc">t</span><span class="w"> </span><span class="kc">fun</span><span class="err">dame</span><span class="kc">ntal</span><span class="w"> </span><span class="err">a</span><span class="kc">nal</span><span class="err">yse</span><span class="p">,</span><span class="w"> </span><span class="err">al</span><span class="kc">ts</span><span class="err">å</span><span class="w"> </span><span class="err">e</span><span class="kc">n</span><span class="w"> </span><span class="err">a</span><span class="kc">nal</span><span class="err">yse</span><span class="w"> </span><span class="err">av</span><span class="w"> </span><span class="err">om</span><span class="w"> </span><span class="err">aksje</span><span class="kc">n</span><span class="w"> </span><span class="err">er</span><span class="w"> </span><span class="err">billig</span><span class="w"> </span><span class="err">eller</span><span class="w"> </span><span class="err">dyr</span><span class="w"> </span><span class="err">i</span><span class="w"> </span><span class="kc">f</span><span class="err">orhold</span><span class="w"> </span><span class="kc">t</span><span class="err">il</span><span class="w"> </span><span class="err">verdie</span><span class="kc">ne</span><span class="w"> </span><span class="err">i</span><span class="w"> </span><span class="err">selskape</span><span class="kc">t</span><span class="err">.</span><span class="w"> </span><span class="err">Har</span><span class="w"> </span><span class="err">ma</span><span class="kc">n</span><span class="w"> </span><span class="err">ikke</span><span class="w"> </span><span class="kc">t</span><span class="err">id</span><span class="w"> </span><span class="err">eller</span><span class="w"> </span><span class="err">ku</span><span class="kc">nns</span><span class="err">kap</span><span class="w"> </span><span class="kc">t</span><span class="err">il</span><span class="w"> </span><span class="err">å</span><span class="w"> </span><span class="err">gjøre</span><span class="w"> </span><span class="err">slik</span><span class="w"> </span><span class="err">a</span><span class="kc">nal</span><span class="err">yse</span><span class="w"> </span><span class="err">selv</span><span class="p">,</span><span class="w"> </span><span class="err">er</span><span class="w"> </span><span class="err">de</span><span class="kc">t</span><span class="w"> </span><span class="err">e</span><span class="kc">t</span><span class="w"> </span><span class="err">god</span><span class="kc">t</span><span class="w"> </span><span class="err">al</span><span class="kc">ternat</span><span class="err">iv</span><span class="w"> </span><span class="err">å</span><span class="w"> </span><span class="err">se</span><span class="w"> </span><span class="kc">t</span><span class="err">il</span><span class="w"> </span><span class="err">i</span><span class="kc">nns</span><span class="err">ider</span><span class="kc">ne</span><span class="err">.</span><span class="w"> </span><span class="err">–</span><span class="w"> </span><span class="err">His</span><span class="kc">t</span><span class="err">orisk</span><span class="w"> </span><span class="err">og</span><span class="w"> </span><span class="err">s</span><span class="kc">tat</span><span class="err">is</span><span class="kc">t</span><span class="err">isk</span><span class="w"> </span><span class="err">se</span><span class="kc">tt</span><span class="p">,</span><span class="w"> </span><span class="err">har</span><span class="w"> </span><span class="err">de</span><span class="kc">t</span><span class="w"> </span><span class="err">vær</span><span class="kc">t</span><span class="w"> </span><span class="err">rik</span><span class="kc">t</span><span class="err">ig</span><span class="w"> </span><span class="err">å</span><span class="w"> </span><span class="kc">f</span><span class="err">ølge</span><span class="w"> </span><span class="err">i</span><span class="kc">nns</span><span class="err">ider</span><span class="kc">ne</span><span class="w"> </span><span class="err">og</span><span class="w"> </span><span class="err">være</span><span class="w"> </span><span class="err">på</span><span class="w"> </span><span class="err">lag</span><span class="w"> </span><span class="err">med</span><span class="w"> </span><span class="err">dem</span><span class="p">,</span><span class="w"> </span><span class="err">svarer</span><span class="w"> </span><span class="err">Li</span><span class="kc">nl</span><span class="err">økke</span><span class="kc">n</span><span class="err">.&#39;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;question&quot;</span><span class="p">:</span><span class="w"> </span><span class="err">&#39;Hva</span><span class="w"> </span><span class="err">ka</span><span class="kc">n</span><span class="w"> </span><span class="err">ma</span><span class="kc">n</span><span class="w"> </span><span class="err">gjøre</span><span class="w"> </span><span class="err">dersom</span><span class="w"> </span><span class="err">ma</span><span class="kc">n</span><span class="w"> </span><span class="err">ikke</span><span class="w"> </span><span class="err">har</span><span class="w"> </span><span class="kc">t</span><span class="err">id</span><span class="w"> </span><span class="err">eller</span><span class="w"> </span><span class="err">ku</span><span class="kc">nns</span><span class="err">kap</span><span class="w"> </span><span class="kc">t</span><span class="err">il</span><span class="w"> </span><span class="err">å</span><span class="w"> </span><span class="err">gjøre</span><span class="w"> </span><span class="err">e</span><span class="kc">n</span><span class="w"> </span><span class="err">a</span><span class="kc">nal</span><span class="err">yse</span><span class="w"> </span><span class="err">av</span><span class="w"> </span><span class="err">aksje</span><span class="kc">ne</span><span class="w"> </span><span class="kc">t</span><span class="err">il</span><span class="w"> </span><span class="err">e</span><span class="kc">t</span><span class="w"> </span><span class="err">selskap?&#39;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;answers&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
@@ -2395,29 +2434,33 @@ samples for training, validation and test, respectively.</p>
 <span class="w">    </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="err">array(</span><span class="p">[</span><span class="err">&#39;Ha</span><span class="kc">n</span><span class="err">dli</span><span class="kc">n</span><span class="err">gspla</span><span class="kc">nen</span><span class="w"> </span><span class="err">i</span><span class="kc">nne</span><span class="err">holder</span><span class="w"> </span><span class="kc">t</span><span class="err">il</span><span class="kc">ta</span><span class="err">k</span><span class="w"> </span><span class="err">mo</span><span class="kc">t</span><span class="w"> </span><span class="err">bla</span><span class="kc">nt</span><span class="w"> </span><span class="err">a</span><span class="kc">nnet</span><span class="err">&#39;</span><span class="p">],</span><span class="w"> </span><span class="err">d</span><span class="kc">t</span><span class="err">ype=objec</span><span class="kc">t</span><span class="err">)</span>
 <span class="w">  </span><span class="p">}</span>
 <span class="p">}</span>
-</code></pre></div></p>
+</code></pre></div>
 <p>When evaluating generative models, we use the following setup (see the
 <a href="/methodology">methodology</a> for more information on how these are used):</p>
 <ul>
 <li>Number of few-shot examples: 2</li>
-<li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>Her følger tekster med tilhørende spørsmål og svar.
-</code></pre></div></li>
-<li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>Tekst: {text}
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Her følger tekster med tilhørende spørsmål og svar.
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Tekst: {text}
 Spørsmål: {question}
 Svar på maks 3 ord: {label}
-</code></pre></div></li>
-<li>Instruction-tuned prompt template:
-  <div class="highlight"><pre><span></span><code>Tekst: {text}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Tekst: {text}
 
 Besvar følgende spørsmål om teksten ovenfor med maks 3 ord.
 
 Spørsmål: {question}
-</code></pre></div></li>
-</ul>
+</code></pre></div>
 <p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>norglm-multi-qa
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>norglm-multi-qa
 </code></pre></div>
 <h3 id="unofficial-belebele-no">Unofficial: BeleBele-no</h3>
 <p>This dataset was published in <a href="https://aclanthology.org/2024.acl-long.44/">this paper</a>
@@ -2426,7 +2469,7 @@ and features multiple-choice reading comprehension questions across 122 language
 and questions. From these, we use a 256 / 64 / 580 split for training, validation and
 testing, respectively.</p>
 <p>Here are a few examples from the training split:</p>
-<p><div class="highlight"><pre><span></span><code><span class="p">{</span>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Tekst: Det kinesiske nyhetsbyrået Xinhua meldte tidligere fra om at et fly var kapret. Det ble senere rapportert at flyet fikk en bombetrussel og ble veiledet mot retur til Afghanistan med landing i Kandahar. Ifølge de første rapportene ble flyet dirigert tilbake til Afghanistan etter å ha blitt nektet nødlanding i Ürümqi.\nSpørsmål: Hva ble ikke sagt i den nyeste rapporten fra nyhetsbyrået Xinhua?\nSvaralternativer:\na. Flyet fikk en bombetrussel\nb. Flyet landet i Ürümqi\nc. Flyet ble dirigert til Afghanistan\nd. Flyet landet i Kandahar&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;b&quot;</span>
 <span class="p">}</span>
@@ -2440,25 +2483,30 @@ testing, respectively.</p>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Tekst: Det italienske og det tyske landslaget er de nest beste lagene i verden og var FIFA World Cup-mestere i 2006. Fotball, basketball, volleyball, vannpolo, fekting, rugby, sykling, ishockey, rullehockey og Formel-1 bilsport er godt likte sportsgrener. Vintersport er mest populært i nordlige områder, der italienere deltar i internasjonale konkurranser og OL-arrangementer.\nSpørsmål: Hvilke av følgende sporter vant et verdensmesterskap for Italia, basert på informasjonen i avsnittet?\nSvaralternativer:\na. Fotball\nb. Vannpolo\nc. Basketball\nd. Sykling&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;a&quot;</span>
 <span class="p">}</span>
-</code></pre></div></p>
+</code></pre></div>
 <p>When evaluating generative models, we use the following setup (see the
 <a href="/methodology">methodology</a> for more information on how these are used):</p>
 <ul>
 <li>Number of few-shot examples: 5</li>
-<li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>Følgende er flervalgsspørsmål (med svar).
-</code></pre></div></li>
-<li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>Spørsmål: {text}
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Følgende er flervalgsspørsmål (med svar).
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Spørsmål: {text}
 Svaralternativer:
 a. {option_a}
 b. {option_b}
 c. {option_c}
 d. {option_d}
 Svar: {label}
-</code></pre></div></li>
-<li>Instruction-tuned prompt template:
-  <div class="highlight"><pre><span></span><code>Spørsmål: {text}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Spørsmål: {text}
 Svaralternativer:
 a. {option_a}
 b. {option_b}
@@ -2466,10 +2514,9 @@ c. {option_c}
 d. {option_d}
 
 Besvar følgende spørsmål med &#39;a&#39;, &#39;b&#39;, &#39;c&#39; eller &#39;d&#39;, og ikke noe annet.
-</code></pre></div></li>
-</ul>
+</code></pre></div>
 <p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>belebele-no
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>belebele-no
 </code></pre></div>
 <h3 id="unofficial-multiwikiqa-nb">Unofficial: MultiWikiQA-nb</h3>
 <p>This dataset was published in <a href="https://doi.org/10.48550/arXiv.2509.04111">this paper</a>
@@ -2478,7 +2525,7 @@ languages.</p>
 <p>The original full dataset consists of 5,000 samples in a single split. We use a 1,024 /
 256 / 2,048 split for training, validation and testing, respectively, sampled randomly.</p>
 <p>Here are a few examples from the training split:</p>
-<p><div class="highlight"><pre><span></span><code><span class="p">{</span>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">    </span><span class="nt">&quot;context&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Cabaret Marzipan er et musikkalbum med Lumbago, innspilt i Nidaros Studios i Trondheim og utgitt i 1981 på Polydor Records. Produsent er Nils B. Kvam. Dette er bandets andre og siste album.\n\nSporliste\n «Tanta mi rapper i supermarkedet» (Thanasis Zlatanos/Morten Jørgensen)\n «Pene jenter» (Thanasis Zlatanos/Stein Gulbrandsen/Morten Jørgensen)\n «Bare deg jeg tenker på» (Stein Gulbrandsen/Trond Armand Larsen/Morten Jørgensen)\n «Natt» (Thanasis Zlatanos/Stein Gulbrandsen/Trond Armand Larsen/Morten Jørgensen)\n «En god dag idag» (Thanasis Zlatanos/Morten Jørgensen)\n «I gata der du bor» (Thanasis Zlatanos/Stein Gulbrandsen/Morten Jørgensen)\n «Sammen igjen» (Thanasis Zlatanos/Marilena Zlatanou/Stein Gulbrandsen/Morten Jørgensen)\n «Lumbagoid» (Thanasis Zlatanos/Stein Gulbrandsen/Trond Armand Larsen/Morten Jørgensen)\n «Eva» (Thanasis Zlatanos/Stein Gulbrandsen/Morten Jørgensen)\n «Totalklaustrofobi» (Thanasis Zlatanos/Stein Gulbrandsen/Morten Jørgensen)\n\nMedvirkende\n\nLumbago\n Morten Jørgensen - sang, flersang, orgel, flakse, casio vi-tone, låtskriver\n Thanasis Zlatanos - vokal på Sammen igjen, gitarer, synthesizer, kor, emt-bombe, låtskriver, fotograf, coverdesign\n Stein Gulbrandsen - bass, kontrabass, piano, synthesizer, kor, låtskriver\n Trond Armand Larsen - trommer, perkusjon, marimba, vibrafon, casio vi-tone, orgel, programmering, kor, låtskriver\n\nØvrige\n Trygve Mathiesen - flersang på Pene jenter og I gata der du bor, coverdesign \n Anne Sandborg, Carl Otto Platou, Eva Storevik Tveit, Hilde Norrgrèn, Ivar Eidem, Mona Eggehagen, Tom Trussel, Cecilie, Geir, Ida, Ina, Ivan, Joachim, K. Udzen, Katja, Maijana, Mala og Martin - bakgrunnvokal på I gata der du bor\n Marilena Zlatanou - gresk oversettelse på Sammen igjen\n Nils Bjarne Kvam - produsent, miksing\n Hans Petter Danielsen - tekniker\n Tore Tambs Lyche - tekniker \n Ivar Finsen - tekniker\n Rune Nordal - miksing \n Bitte Petersen - fotograf\n Gunnhild Bakke - fotograf\n Jan Walaker - fotograf\n Trond Davidsen - fotograf\n Ole Schøning - coverdesign\n\nEksterne lenker \n\nMusikkalbum fra 1981\nLumbago-album&quot;</span><span class="p">,</span>
 <span class="w">    </span><span class="nt">&quot;question&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Når kom Cabaret Marzipan ut?&quot;</span><span class="p">,</span>
 <span class="w">    </span><span class="nt">&quot;answers&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
@@ -2504,44 +2551,54 @@ languages.</p>
 <span class="w">        </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="err">array(</span><span class="p">[</span><span class="s2">&quot;John Christie&quot;</span><span class="p">],</span><span class="w"> </span><span class="err">d</span><span class="kc">t</span><span class="err">ype=objec</span><span class="kc">t</span><span class="err">)</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="p">}</span>
-</code></pre></div></p>
+</code></pre></div>
 <p>When evaluating generative models, we use the following setup (see the
 <a href="/methodology">methodology</a> for more information on how these are used):</p>
 <ul>
 <li>Number of few-shot examples: 2</li>
-<li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>Her følger tekster med tilhørende spørsmål og svar.
-</code></pre></div></li>
-<li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>Tekst: {text}
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Her følger tekster med tilhørende spørsmål og svar.
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Tekst: {text}
 Spørsmål: {question}
 Svar på maks 3 ord: {label}
-</code></pre></div></li>
-<li>Instruction-tuned prompt template:
-  <div class="highlight"><pre><span></span><code>Tekst: {text}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Tekst: {text}
 
 Besvar følgende spørsmål om teksten ovenfor med maks 3 ord.
 
 Spørsmål: {question}
-</code></pre></div></li>
-</ul>
-<p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>multi-wiki-qa-nb
 </code></pre></div>
-<h3 id="unofficial-multiwikiqa-nn">Unofficial: MultiWikiQA-nn</h3>
-<p>This dataset will be published in an upcoming paper, and contains Norwegian Nynorsk
-Wikipedia articles with generated questions and answers, using the LLM Gemini-1.5-pro.</p>
-<p>The original full dataset consists of 5,000 samples in a single split. We use a 1,024 /
-256 / 2,048 split for training, validation and testing, respectively, sampled randomly.</p>
-<p>Here are a few examples from the training split:</p>
-<p><div class="highlight"><pre><span></span><code><span class="p">{</span>
-<span class="w">    </span><span class="nt">&quot;context&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Peter Høeg () er ein dansk forfattar, som vart verdskjend med romanen Frøken Smillas fornemmelse for sne (1992).\n\nLiv og forfattarskap \nHøeg er oppvaksen i København, kor han i 1984 vart ferdigutdanna som mag. art. i litteraturvitskap. Etter ein omflakkande periode som m.a. globetrotter, idrettslærar og dansar debuterte Høeg i 1988 med Forestilling om det tyvende århundret på Rosinante forlag. Romanen, som er ein sterkt fabulerande slektskrønike, ber tydelege spor av søramerikansk magisk realisme og tiltrekte seg relativt stor merksemd allereie ved utgjevinga. I 1990 kom Fortællinger om natten ut, 9 noveller med tematisk samanheng, og med denne utgjevinga vart Høeg snart omtalt som eit forfattartalent med internasjonalt potensiale. Det endelege nybrottet lot ikkje venta på seg.\n\nI 1992 kom kriminalromanen Frøken Smillas fornemmelse for sne ut, eit portrett av den dansk-grønlandske glasiologen Smilla. Romanen sementerer Høegs føretrekte tema og understrekar sympatiane i forfattarskapen for det kvinnelege prinsippet, for barnet og dei marginaliserte, samtidig som han byr på ein god del kritikk av den vestlege sivilisasjon sin imperialisme og vitskapen sin maktmisbruk.\n\nHøeg vart rost til skyane for sin store fortellerevne, sin språklege evne og selde no uhøyrt mange bøker samanlikna med danske standardar, men særleg med utgjevinga av De måske egnede (1993) begynte kritikken å dukka opp. Omtalarar anklaga Høegs forfattarskap for politisk korrektheit, føreseieleg sivilisasjonskritikk og lettkjøpt frelstheit. Med nærskyld sivilisasjonskritisk tematikk kunne romanen Kvinnen og aben (1996) alt anna enn retta opp i dette, samtidig som stiftinga av fondet Lolwe til støtte for kvinner og born i Den tredje verda ikkje just fekk kritikken til å tagna. Etter Kvinnen og aben lot forfattaren ikkje høyra meir frå seg utanom eit enkelt, personleg dikt med tittelen Første og siste kapitel i antologien Trykt - og godt (1998) til Høegs forleggar og nære ven, Merethe Riis. I staden trekte Høeg seg heilt tilbake frå det offentlege rampelyset. I ei årrekke budde han ved Vekstsenteret i Nørre Snede, eit spirituelt treningssenter med undervisning i meditativ praksis og sjølvutvikling.\n\nTrass kritikken vert forfattarskapen hans endå stadig rekna for vesentleg, og noko tyder på at det møter fornya interesse. Såleis kom forfattarskapsportrett Apa si poetikk ut våren 2005, ein kronologisk litteraturvitskapleg kritikk av Høegs tekstar. Sjølv gav forfattaren, etter 10 års skjønnlitterær tagnad, ut romanen Den stille jenta i mai 2006.\n\nI 2010 gav Peter Høeg ut romanen Elefantpassernes børn.\n\nNærframtidsromanen Effekten av Susan (2014) trekker, med sin bruk av ei sterk kvinne med spesielle evnar som hovudfigur, linjer tilbake til &#39;Smilla&#39;.\n\nPrisar \nPeter Høeg har teke i mot mange litterære prisar, mellom dei: \n Weekendavisens litteraturpris (1988)\n Kritikarprisen (1993)\n Herman Bangs Mindelegat (1993) \n De Gyldne Laurbær (1994).\n Glassnøkkelen for Smillas fornemmelse for sne\n\nFilmatisering \nI 1997 filmatiserte Bille August Frøken Smillas fornemmelse for sne. Filmen vart ein fiasko, både i omtalene og i salstala.\n\nBibliografi \n Forestilling om det tyvende århundre (1988)\n Fortellinger om natten (1990)\n Frøken Smillas fornemmelse for sne (1992)\n De måske egnede (1993)\n Kvinnen og apen (1996)\n Den stille piken (2006)\n Elefantpassernes børn (2010)\n Effekten af Susan (2014)\n Gennem dine øjne (2018)\n\nKjelder \n\nDanske romanforfattarar\nStatens Kunstfonds hædersydelse\nFolk frå København\nVinnarar av Glassnøkkelen&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;question&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Kven laga filmen basert på Frøken Smillas kjensle for snø?&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;answers&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">        </span><span class="nt">&quot;answer_start&quot;</span><span class="p">:</span><span class="w"> </span><span class="err">array(</span><span class="p">[</span><span class="mi">3033</span><span class="p">]</span><span class="err">)</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="err">array(</span><span class="p">[</span><span class="s2">&quot;Bille August&quot;</span><span class="p">],</span><span class="w"> </span><span class="err">d</span><span class="kc">t</span><span class="err">ype=objec</span><span class="kc">t</span><span class="err">)</span>
-<span class="w">    </span><span class="p">}</span>
-<span class="p">}</span>
+<p>You can evaluate this dataset directly as follows:</p>
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>multi-wiki-qa-nb
+<span class="sb">```</span>text
+
+<span class="c1">### Unofficial: MultiWikiQA-nn</span>
+
+This<span class="w"> </span>dataset<span class="w"> </span>will<span class="w"> </span>be<span class="w"> </span>published<span class="w"> </span><span class="k">in</span><span class="w"> </span>an<span class="w"> </span>upcoming<span class="w"> </span>paper,<span class="w"> </span>and<span class="w"> </span>contains<span class="w"> </span>Norwegian<span class="w"> </span>Nynorsk
+Wikipedia<span class="w"> </span>articles<span class="w"> </span>with<span class="w"> </span>generated<span class="w"> </span>questions<span class="w"> </span>and<span class="w"> </span>answers,<span class="w"> </span>using<span class="w"> </span>the<span class="w"> </span>LLM<span class="w"> </span>Gemini-1.5-pro.
+
+The<span class="w"> </span>original<span class="w"> </span>full<span class="w"> </span>dataset<span class="w"> </span>consists<span class="w"> </span>of<span class="w"> </span><span class="m">5</span>,000<span class="w"> </span>samples<span class="w"> </span><span class="k">in</span><span class="w"> </span>a<span class="w"> </span>single<span class="w"> </span>split.<span class="w"> </span>We<span class="w"> </span>use<span class="w"> </span>a<span class="w"> </span><span class="m">1</span>,024<span class="w"> </span>/
+<span class="m">256</span><span class="w"> </span>/<span class="w"> </span><span class="m">2</span>,048<span class="w"> </span>split<span class="w"> </span><span class="k">for</span><span class="w"> </span>training,<span class="w"> </span>validation<span class="w"> </span>and<span class="w"> </span>testing,<span class="w"> </span>respectively,<span class="w"> </span>sampled<span class="w"> </span>randomly.
+
+Here<span class="w"> </span>are<span class="w"> </span>a<span class="w"> </span>few<span class="w"> </span>examples<span class="w"> </span>from<span class="w"> </span>the<span class="w"> </span>training<span class="w"> </span>split:
+
+<span class="sb">```</span>json
+<span class="o">{</span>
+<span class="w">    </span><span class="s2">&quot;context&quot;</span>:<span class="w"> </span><span class="s2">&quot;Peter Høeg () er ein dansk forfattar, som vart verdskjend med romanen Frøken Smillas fornemmelse for sne (1992).\n\nLiv og forfattarskap \nHøeg er oppvaksen i København, kor han i 1984 vart ferdigutdanna som mag. art. i litteraturvitskap. Etter ein omflakkande periode som m.a. globetrotter, idrettslærar og dansar debuterte Høeg i 1988 med Forestilling om det tyvende århundret på Rosinante forlag. Romanen, som er ein sterkt fabulerande slektskrønike, ber tydelege spor av søramerikansk magisk realisme og tiltrekte seg relativt stor merksemd allereie ved utgjevinga. I 1990 kom Fortællinger om natten ut, 9 noveller med tematisk samanheng, og med denne utgjevinga vart Høeg snart omtalt som eit forfattartalent med internasjonalt potensiale. Det endelege nybrottet lot ikkje venta på seg.\n\nI 1992 kom kriminalromanen Frøken Smillas fornemmelse for sne ut, eit portrett av den dansk-grønlandske glasiologen Smilla. Romanen sementerer Høegs føretrekte tema og understrekar sympatiane i forfattarskapen for det kvinnelege prinsippet, for barnet og dei marginaliserte, samtidig som han byr på ein god del kritikk av den vestlege sivilisasjon sin imperialisme og vitskapen sin maktmisbruk.\n\nHøeg vart rost til skyane for sin store fortellerevne, sin språklege evne og selde no uhøyrt mange bøker samanlikna med danske standardar, men særleg med utgjevinga av De måske egnede (1993) begynte kritikken å dukka opp. Omtalarar anklaga Høegs forfattarskap for politisk korrektheit, føreseieleg sivilisasjonskritikk og lettkjøpt frelstheit. Med nærskyld sivilisasjonskritisk tematikk kunne romanen Kvinnen og aben (1996) alt anna enn retta opp i dette, samtidig som stiftinga av fondet Lolwe til støtte for kvinner og born i Den tredje verda ikkje just fekk kritikken til å tagna. Etter Kvinnen og aben lot forfattaren ikkje høyra meir frå seg utanom eit enkelt, personleg dikt med tittelen Første og siste kapitel i antologien Trykt - og godt (1998) til Høegs forleggar og nære ven, Merethe Riis. I staden trekte Høeg seg heilt tilbake frå det offentlege rampelyset. I ei årrekke budde han ved Vekstsenteret i Nørre Snede, eit spirituelt treningssenter med undervisning i meditativ praksis og sjølvutvikling.\n\nTrass kritikken vert forfattarskapen hans endå stadig rekna for vesentleg, og noko tyder på at det møter fornya interesse. Såleis kom forfattarskapsportrett Apa si poetikk ut våren 2005, ein kronologisk litteraturvitskapleg kritikk av Høegs tekstar. Sjølv gav forfattaren, etter 10 års skjønnlitterær tagnad, ut romanen Den stille jenta i mai 2006.\n\nI 2010 gav Peter Høeg ut romanen Elefantpassernes børn.\n\nNærframtidsromanen Effekten av Susan (2014) trekker, med sin bruk av ei sterk kvinne med spesielle evnar som hovudfigur, linjer tilbake til &#39;Smilla&#39;.\n\nPrisar \nPeter Høeg har teke i mot mange litterære prisar, mellom dei: \n Weekendavisens litteraturpris (1988)\n Kritikarprisen (1993)\n Herman Bangs Mindelegat (1993) \n De Gyldne Laurbær (1994).\n Glassnøkkelen for Smillas fornemmelse for sne\n\nFilmatisering \nI 1997 filmatiserte Bille August Frøken Smillas fornemmelse for sne. Filmen vart ein fiasko, både i omtalene og i salstala.\n\nBibliografi \n Forestilling om det tyvende århundre (1988)\n Fortellinger om natten (1990)\n Frøken Smillas fornemmelse for sne (1992)\n De måske egnede (1993)\n Kvinnen og apen (1996)\n Den stille piken (2006)\n Elefantpassernes børn (2010)\n Effekten af Susan (2014)\n Gennem dine øjne (2018)\n\nKjelder \n\nDanske romanforfattarar\nStatens Kunstfonds hædersydelse\nFolk frå København\nVinnarar av Glassnøkkelen&quot;</span>,
+<span class="w">    </span><span class="s2">&quot;question&quot;</span>:<span class="w"> </span><span class="s2">&quot;Kven laga filmen basert på Frøken Smillas kjensle for snø?&quot;</span>,
+<span class="w">    </span><span class="s2">&quot;answers&quot;</span>:<span class="w"> </span><span class="o">{</span>
+<span class="w">        </span><span class="s2">&quot;answer_start&quot;</span>:<span class="w"> </span>array<span class="o">([</span><span class="m">3033</span><span class="o">])</span>,
+<span class="w">        </span><span class="s2">&quot;text&quot;</span>:<span class="w"> </span>array<span class="o">([</span><span class="s2">&quot;Bille August&quot;</span><span class="o">]</span>,<span class="w"> </span><span class="nv">dtype</span><span class="o">=</span>object<span class="o">)</span>
+<span class="w">    </span><span class="o">}</span>
+<span class="o">}</span>
 </code></pre></div>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">    </span><span class="nt">&quot;context&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;For den tidlegare kyrkja i Eidsberg, sjå Hen kyrkje i Eidsberg\nHen kyrkje ligg sentralt i bygda Isfjorden i Rauma kommune.\n\nKyrkja vart bygd i 1831 av gråstein, tak-konstruksjonen og klokketårnet er av treverk.\n\nKyrkja er bygd på den same plassen der ei eldre kyrkje stod før. Denne var i så dårleg tilstand at ho måtte rivast. Ei gammal kyrkjeklokke frå 1200-talet er bevart og er i dag på Romsdalsmuseet på Molde.\n\nInteriøret\nPreikestolen som vert brukt i dag er frå 1930-åra.\n\nAltertavla vart laga til kyrkja i 1831. Ein eldre preikestol, som ikkje er i bruk, er plassert midt i altertavla. Då kyrkja vart restaurert i 1931, måla Halvard Hatlen eitt nytt bilde i altertavla. \n\nElles finst det eit rosemåla skap frå 1788. Halvard Hatlen har måla seks portrett av tidlegare prestar. Desse heng langs langveggane. Han har òg måla et måleri (1942), som heng i koret.\n\nKjelde\n Thaule, John Ove; Ubostad, Ingar; Pedersen, Bjørn. 1990. Kyrkjene våre i Ei bok om Rauma, Rauma Kommune. s 207-210\n\nBakgrunnsstoff\n \n\nKyrkjer i Rauma\nKyrkjer i Indre Romsdal prosti\nKulturminne i Rauma\nNorske kyrkjer frå 1831\nLangkyrkjer i Møre bispedømme&quot;</span><span class="p">,</span>
@@ -2560,29 +2617,33 @@ Wikipedia articles with generated questions and answers, using the LLM Gemini-1.
 <span class="w">        </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="err">array(</span><span class="p">[</span><span class="s2">&quot;1537/38&quot;</span><span class="p">],</span><span class="w"> </span><span class="err">d</span><span class="kc">t</span><span class="err">ype=objec</span><span class="kc">t</span><span class="err">)</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="p">}</span>
-</code></pre></div></p>
+</code></pre></div>
 <p>When evaluating generative models, we use the following setup (see the
 <a href="/methodology">methodology</a> for more information on how these are used):</p>
 <ul>
 <li>Number of few-shot examples: 2</li>
-<li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>Her følger tekster med tilhørende spørsmål og svar.
-</code></pre></div></li>
-<li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>Tekst: {text}
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Her følger tekster med tilhørende spørsmål og svar.
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Tekst: {text}
 Spørsmål: {question}
 Svar på maks 3 ord: {label}
-</code></pre></div></li>
-<li>Instruction-tuned prompt template:
-  <div class="highlight"><pre><span></span><code>Tekst: {text}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Tekst: {text}
 
 Besvar følgende spørsmål om teksten ovenfor med maks 3 ord.
 
 Spørsmål: {question}
-</code></pre></div></li>
-</ul>
+</code></pre></div>
 <p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>multi-wiki-qa-nn
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>multi-wiki-qa-nn
 </code></pre></div>
 <h2 id="knowledge">Knowledge</h2>
 <h3 id="nrk-quiz-qa">NRK Quiz QA</h3>
@@ -2594,7 +2655,7 @@ of quizzes from NRK, the national public broadcaster in Norway.</p>
 top-256 quizzes, allowing us to create splits stratified across all the remaining
 quizzes. We 635 / 256 / 2048 samples for training, validation and test, respectively.</p>
 <p>Here are a few examples from the training split:</p>
-<p><div class="highlight"><pre><span></span><code><span class="p">{</span>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Gunnar har hatt plutselige og sterke smerteanfall siden han var liten gutt. Det var vondt å tisse og det gjorde vondt i ryggen og magen. Det hjalp litt å drikke vann. Reseptbelagte medisiner kan være nødvendig under anfall.\nSvaralternativer:\na. Nyrestein, kronisk\nb. Irritabel tarmsyndrom\nc. Angst\nd. Urinveisinfeksjon&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;a&quot;</span>
 <span class="p">}</span>
@@ -2608,25 +2669,30 @@ quizzes. We 635 / 256 / 2048 samples for training, validation and test, respecti
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;I 1980 måtte denne bassisten overnatte ni netter i fengsel i Japan fordi han prøvde å få med seg ca. 200 gram marihuana inn i landet. Hvem var det?\nSvaralternativer:\na. Sting\nb. Lemmy Kilmister\nc. Paul McCartney\nd. Bootsy Collins&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;c&quot;</span>
 <span class="p">}</span>
-</code></pre></div></p>
+</code></pre></div>
 <p>When evaluating generative models, we use the following setup (see the
 <a href="/methodology">methodology</a> for more information on how these are used):</p>
 <ul>
 <li>Number of few-shot examples: 5</li>
-<li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>Følgende er flervalgsspørsmål (med svar).
-</code></pre></div></li>
-<li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>Spørsmål: {text}
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Følgende er flervalgsspørsmål (med svar).
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Spørsmål: {text}
 Svaralternativer:
 a. {option_a}
 b. {option_b}
 c. {option_c}
 d. {option_d}
 Svar: {label}
-</code></pre></div></li>
-<li>Instruction-tuned prompt template:
-  <div class="highlight"><pre><span></span><code>Spørsmål: {text}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Spørsmål: {text}
 Svaralternativer:
 a. {option_a}
 b. {option_b}
@@ -2634,10 +2700,9 @@ c. {option_c}
 d. {option_d}
 
 Besvar følgende spørsmål med &#39;a&#39;, &#39;b&#39;, &#39;c&#39;, eller &#39;d&#39;, og ikke noe annet.
-</code></pre></div></li>
-</ul>
+</code></pre></div>
 <p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>nrk-quiz-qa
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>nrk-quiz-qa
 </code></pre></div>
 <h3 id="idioms-no">Idioms-no</h3>
 <p>This dataset was published <a href="https://doi.org/10.48550/arXiv.2504.07749">here</a> and
@@ -2649,7 +2714,7 @@ where the alternative answers have been generated using GPT-4o. Based on 3,232 s
 (11 Nynorsk) / 2,048 (50 Nynorsk) split for training, validation and testing,
 respectively.</p>
 <p>Here are a few examples from the training split:</p>
-<p><div class="highlight"><pre><span></span><code><span class="p">{</span>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Complete the Nynorsk idiom:\nalle gode ting er _____\n\nSvaralternativer::\na. søte\nb. tre\nc. fire\nd. vennlege&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;b&quot;</span>
 <span class="p">}</span>
@@ -2663,25 +2728,30 @@ respectively.</p>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Complete the Bokmål idiom:\ndet får stå sin _____\n\nSvaralternativer::\na. prøve\nb. vegg\nc. sak\nd. greie&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;a&quot;</span>
 <span class="p">}</span>
-</code></pre></div></p>
+</code></pre></div>
 <p>When evaluating generative models, we use the following setup (see the
 <a href="/methodology">methodology</a> for more information on how these are used):</p>
 <ul>
 <li>Number of few-shot examples: 5</li>
-<li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>Følgende er flervalgsspørsmål (med svar).
-</code></pre></div></li>
-<li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>Spørsmål: {text}
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Følgende er flervalgsspørsmål (med svar).
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Spørsmål: {text}
 Svaralternativer:
 a. {option_a}
 b. {option_b}
 c. {option_c}
 d. {option_d}
 Svar: {label}
-</code></pre></div></li>
-<li>Instruction-tuned prompt template:
-  <div class="highlight"><pre><span></span><code>Spørsmål: {text}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Spørsmål: {text}
 Svaralternativer:
 a. {option_a}
 b. {option_b}
@@ -2689,10 +2759,9 @@ c. {option_c}
 d. {option_d}
 
 Besvar følgende spørsmål med &#39;a&#39;, &#39;b&#39;, &#39;c&#39; eller &#39;d&#39;, og ikke noe annet.
-</code></pre></div></li>
-</ul>
+</code></pre></div>
 <p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>idioms-no
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>idioms-no
 </code></pre></div>
 <h3 id="unofficial-mmlu-no">Unofficial: MMLU-no</h3>
 <p>This dataset is a machine translated version of the English <a href="https://openreview.net/forum?id=d7KBjmI3GmQ">MMLU
@@ -2706,7 +2775,7 @@ validation and testing, respectively (so 3,328 samples used in total). These spl
 new and there can thus be some overlap between the original validation and test sets and
 our validation and test sets.</p>
 <p>Here are a few examples from the training split:</p>
-<p><div class="highlight"><pre><span></span><code><span class="p">{</span>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Hvorfor er Mahavira en viktig person i jainatradisjonene?\nSvaralternativer:\na. Han er den siste av de asketiske profetene.\nb. Han er den første av de asketiske profetene\nc. Han er den mest lærde av de asketiske profetene\nd. Han er den helligste av de asketiske profetene&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;a&quot;</span>
 <span class="p">}</span>
@@ -2720,25 +2789,30 @@ our validation and test sets.</p>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;En professor, som var eneeier av en boligblokk, skrev et skjøte med følgende ordlyd: \&quot;Jeg overdrar herved min boligblokk til min sønn og datter som leietakere i fellesskap.\&quot; I skjøtet, som var korrekt utferdiget, forbeholdt professoren seg en livsvarig eiendomsrett. Professoren fortalte deretter barna sine om overdragelsen og la den i familiehvelvet i biblioteket for oppbevaring. Deretter giftet sønnen seg med en lege. Professoren, som mislikte legen, utferdiget deretter et nytt skjøte som han kalte \&quot;et korreksjonsskjøte\&quot;. I \&quot;korreksjonsskjøtet\&quot; overførte professoren bygården \&quot;til min sønn og datter som sameiere med overlevelsesrett.\&quot; Ifølge det nye skjøtet forbeholdt professoren seg igjen livsvarig eiendomsrett. Begge barna aksepterte overdragelsen av \&quot;korreksjonsskjøtet.\&quot; Et halvt år senere døde sønnen, og etterlot seg legen som eneste arving. Eiendomsretten til boligblokken er i datterens og\nSvaralternativer:\na. datteren og legen som sameiere.\nb. datteren med forbehold om professorens livstidsarv.\nc. datteren og legen som sameiere, med forbehold om professorens livsarvinger.\nd. datteren og legen som sameiere med overlevelsesrett, med forbehold for professorens livsarvinger.&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;c&quot;</span>
 <span class="p">}</span>
-</code></pre></div></p>
+</code></pre></div>
 <p>When evaluating generative models, we use the following setup (see the
 <a href="/methodology">methodology</a> for more information on how these are used):</p>
 <ul>
 <li>Number of few-shot examples: 5</li>
-<li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>Følgende er flervalgsspørsmål (med svar).
-</code></pre></div></li>
-<li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>Spørsmål: {text}
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Følgende er flervalgsspørsmål (med svar).
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Spørsmål: {text}
 Svaralternativer:
 a. {option_a}
 b. {option_b}
 c. {option_c}
 d. {option_d}
 Svar: {label}
-</code></pre></div></li>
-<li>Instruction-tuned prompt template:
-  <div class="highlight"><pre><span></span><code>Spørsmål: {text}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Spørsmål: {text}
 Svaralternativer:
 a. {option_a}
 b. {option_b}
@@ -2746,10 +2820,9 @@ c. {option_c}
 d. {option_d}
 
 Besvar følgende spørsmål med &#39;a&#39;, &#39;b&#39;, &#39;c&#39; eller &#39;d&#39;, og ikke noe annet.
-</code></pre></div></li>
-</ul>
+</code></pre></div>
 <p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>mmlu-no
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>mmlu-no
 </code></pre></div>
 <h3 id="unofficial-arc-no">Unofficial: ARC-no</h3>
 <p>This dataset is a machine translated version of the English <a href="https://doi.org/10.48550/arXiv.1803.05457">ARC
@@ -2761,7 +2834,7 @@ validation and testing, respectively. We use a 1,024 / 256 / 1,024 split for tra
 validation and testing, respectively (so 2,304 samples used in total). All new splits
 are subsets of the original splits.</p>
 <p>Here are a few examples from the training split:</p>
-<p><div class="highlight"><pre><span></span><code><span class="p">{</span>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Hvorfor er det tryggere å se på månen enn på solen?\nSvaralternativer:\na. Månen er mindre lyssterk.\nb. Månen er nærmere jorden.\nc. Månen skinner mest om natten.\nd. Månen er full bare én gang i måneden.&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;a&quot;</span>
 <span class="p">}</span>
@@ -2775,25 +2848,30 @@ are subsets of the original splits.</p>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Big Bang-teorien sier at universet\nSvaralternativer:\na. trekker seg sammen.\nb. ikke har noen begynnelse.\nc. startet som én enkelt masse.\nd. hele tiden danner hydrogen.&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;c&quot;</span>
 <span class="p">}</span>
-</code></pre></div></p>
+</code></pre></div>
 <p>When evaluating generative models, we use the following setup (see the
 <a href="/methodology">methodology</a> for more information on how these are used):</p>
 <ul>
 <li>Number of few-shot examples: 5</li>
-<li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>Følgende er flervalgsspørsmål (med svar).
-</code></pre></div></li>
-<li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>Spørsmål: {text}
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Følgende er flervalgsspørsmål (med svar).
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Spørsmål: {text}
 Svaralternativer:
 a. {option_a}
 b. {option_b}
 c. {option_c}
 d. {option_d}
 Svar: {label}
-</code></pre></div></li>
-<li>Instruction-tuned prompt template:
-  <div class="highlight"><pre><span></span><code>Spørsmål: {text}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Spørsmål: {text}
 Svaralternativer:
 a. {option_a}
 b. {option_b}
@@ -2801,10 +2879,9 @@ c. {option_c}
 d. {option_d}
 
 Besvar følgende spørsmål med &#39;a&#39;, &#39;b&#39;, &#39;c&#39; eller &#39;d&#39;, og ikke noe annet.
-</code></pre></div></li>
-</ul>
+</code></pre></div>
 <p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>arc-no
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>arc-no
 </code></pre></div>
 <h2 id="common-sense-reasoning">Common-sense Reasoning</h2>
 <h3 id="norcommonsenseqa">NorCommonSenseQA</h3>
@@ -2814,7 +2891,7 @@ There are samples in both Bokmål and Nynorsk, but with the vast majority being 
 <p>The original dataset contains 1,093 samples. We use a 128 / 128 / 787 split for
 training, validation and testing, respectively.</p>
 <p>Here are a few examples from the training split:</p>
-<p><div class="highlight"><pre><span></span><code><span class="p">{</span>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Hvor er det sannsynlig at en fugl lager hjemmet sitt?\nSvaralternativer:\na. I skogen\nb. I et rede\nc. På taket\nd. På blader\ne. I himmelen&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;a&quot;</span>
 <span class="p">}</span>
@@ -2828,16 +2905,19 @@ training, validation and testing, respectively.</p>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Når du ikke klarer å gjøre noe ferdig, hva feilet du i da?\nSvaralternativer:\na. Å vinne\nb. Å bestå\nc. Å fullfør\nd. Å gjøre det bra\ne. Å lykkes&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;c&quot;</span>
 <span class="p">}</span>
-</code></pre></div></p>
+</code></pre></div>
 <p>When evaluating generative models, we use the following setup (see the
 <a href="/methodology">methodology</a> for more information on how these are used):</p>
 <ul>
 <li>Number of few-shot examples: 5</li>
-<li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>Følgende er flervalgsspørsmål (med svar).
-</code></pre></div></li>
-<li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>Spørsmål: {text}
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Følgende er flervalgsspørsmål (med svar).
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Spørsmål: {text}
 Svaralternativer:
 a. {option_a}
 b. {option_b}
@@ -2845,9 +2925,11 @@ c. {option_c}
 d. {option_d}
 e. {option_e}
 Svar: {label}
-</code></pre></div></li>
-<li>Instruction-tuned prompt template:
-  <div class="highlight"><pre><span></span><code>Spørsmål: {text}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Spørsmål: {text}
 Svaralternativer:
 a. {option_a}
 b. {option_b}
@@ -2856,10 +2938,9 @@ d. {option_d}
 e. {option_e}
 
 Besvar følgende spørsmål med &#39;a&#39;, &#39;b&#39;, &#39;c&#39;, &#39;d&#39; eller &#39;e&#39;, og ikke noe annet.
-</code></pre></div></li>
-</ul>
+</code></pre></div>
 <p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>nor-common-sense-qa
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>nor-common-sense-qa
 </code></pre></div>
 <h3 id="unofficial-hellaswag-no">Unofficial: HellaSwag-no</h3>
 <p>This dataset is a machine translated version of the English <a href="https://aclanthology.org/P19-1472/">HellaSwag
@@ -2870,7 +2951,7 @@ API</a>.</p>
 <p>The original full dataset consists of 9,310 samples. We use a 1,024 / 256 / 2,048 split
 for training, validation and testing, respectively (so 3,328 samples used in total).</p>
 <p>Here are a few examples from the training split:</p>
-<p><div class="highlight"><pre><span></span><code><span class="p">{</span>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;[header] Slik holder du deg kjølig og føler deg frisk om sommeren [title] Dusj hver dag. [step] Bruk en eksfolierende dusjsåpe for å fjerne smuss. Sett vannet på varmt i starten av dusjen (fordi det rengjør deg mer effektivt), men mot slutten av dusjen setter du vannet på lunkent eller kjølig.\nSvaralternativer:\na. Dette senker kroppstemperaturen slik at du føler deg kjøligere (og våkner opp om morgenen!). [Smør deg med fuktighetskrem rett etter at du har gått ut av dusjen.\nb. Påfør denne gelen på svetten under armene eller på kroppen. Tenk på det som å spyle den ene armhulen med vann (du kan lage din egen dusjsåpe med armene eller bena, og du kan vaske av deg litt med en gang).\nc. Alternativt kan du åpne døren og la kjølig vann strømme gjennom det åpne vinduet i minst en time. [Bruk en ansiktsmaske mens du dusjer.\nd. Vannet skal være varmt nok til å skylle ut smuss og død hud som henger over ansiktet. Påfør kroppssåpe (eller la den være åpen for lufting) på hudoverflaten i korte riller.&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;a&quot;</span>
 <span class="p">}</span>
@@ -2884,25 +2965,30 @@ for training, validation and testing, respectively (so 3,328 samples used in tot
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;[header] Slik vet du om hunden din liker deg best [title] Legg merke til at hunden din følger mye etter deg. [En måte å bevise at en hund liker deg best, er når den er mye sammen med deg. Så hold øye med om hunden din liker å være i nærheten av deg.\nSvaralternativer:\na. [Hold øye med eventuell fysisk atferd. [Et godt eksempel på denne atferden er hvis den presser rumpa opp mot låret ditt og sjekker hva du har på deg.\nb. [Se etter tegn på at hunden din kan være flørtende. [Et godt tegn på at hunden din liker deg er at den klapper deg mye eller stirrer på deg i intime øyeblikk.\nc. [Finn ut om hunden din liker å leke med deg. [Hvis det er en hund som elsker leker, kan du leke med dem, og hvis den er veldig glad i å leke, så liker den at du leker med den.\nd. Legg merke til at hunden din følger deg rundt i huset hver dag når du er ute og går. Selv om du kanskje ikke har lyst til det, kan det å tilbringe mye tid sammen med en hund få den til å føle seg komfortabel med deg.&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;c&quot;</span>
 <span class="p">}</span>
-</code></pre></div></p>
+</code></pre></div>
 <p>When evaluating generative models, we use the following setup (see the
 <a href="/methodology">methodology</a> for more information on how these are used):</p>
 <ul>
 <li>Number of few-shot examples: 5</li>
-<li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>Følgende er flervalgsspørsmål (med svar).
-</code></pre></div></li>
-<li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>Spørsmål: {text}
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Følgende er flervalgsspørsmål (med svar).
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Spørsmål: {text}
 Svaralternativer:
 a. {option_a}
 b. {option_b}
 c. {option_c}
 d. {option_d}
 Svar: {label}
-</code></pre></div></li>
-<li>Instruction-tuned prompt template:
-  <div class="highlight"><pre><span></span><code>Spørsmål: {text}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Spørsmål: {text}
 Svaralternativer:
 a. {option_a}
 b. {option_b}
@@ -2910,10 +2996,9 @@ c. {option_c}
 d. {option_d}
 
 Besvar følgende spørsmål med &#39;a&#39;, &#39;b&#39;, &#39;c&#39; eller &#39;d&#39;, og ikke noe annet.
-</code></pre></div></li>
-</ul>
+</code></pre></div>
 <p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>hellaswag-no
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>hellaswag-no
 </code></pre></div>
 <h3 id="unofficial-winogrande-no">Unofficial: Winogrande-no</h3>
 <p>This dataset was published in <a href="https://doi.org/10.48550/arXiv.2506.19468">this paper</a>
@@ -2941,27 +3026,31 @@ we use the same splits.</p>
 <a href="/methodology">methodology</a> for more information on how these are used):</p>
 <ul>
 <li>Number of few-shot examples: 5</li>
-<li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>Følgende er flervalgsspørsmål (med svar).
-</code></pre></div></li>
-<li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>Spørsmål: {text}
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Følgende er flervalgsspørsmål (med svar).
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Spørsmål: {text}
 Svaralternativer:
 a. {option_a}
 b. {option_b}
 Svar: {label}
-</code></pre></div></li>
-<li>Instruction-tuned prompt template:
-  <div class="highlight"><pre><span></span><code>Spørsmål: {text}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Spørsmål: {text}
 Svaralternativer:
 a. {option_a}
 b. {option_b}
 
 Besvar følgende spørsmål med &#39;a&#39; eller &#39;b&#39;, og ikke noe annet.
-</code></pre></div></li>
-</ul>
+</code></pre></div>
 <p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>winogrande-no
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>winogrande-no
 </code></pre></div>
 <h2 id="summarisation">Summarisation</h2>
 <h3 id="nosammendrag">NoSammendrag</h3>
@@ -2976,7 +3065,7 @@ the <a href="https://doi.org/10.48550/arXiv.2207.04672">NLLB model</a>.</p>
 split for training, validation and testing, respectively (so 3,328 samples used in
 total).</p>
 <p>Here are a few examples from the training split:</p>
-<p><div class="highlight"><pre><span></span><code><span class="p">{</span>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;På Akvariet i Bergen har pingvinene fått et ekstra fristende sommertilbud denne uken. – Vi fikk en litt artig idé, og bestemte oss for å gi pingvinene våre en slags «slush-is» i går. Det ble til en morsom aktivisering for pingvinene, og det falt virkelig i god smak hos dem, sier dyrepasser Jannicke Johannessen. Hun forteller at de eldre pingvinene først var litt skeptiske, og at det var de yngste som ledet an i isleken. – Ett- og toåringene var veldig interesserte da vi kom ut med isen, og hoppet opp på den og storkoste seg. En av pingvinene ble faktisk liggende oppå isen helt til den smeltet, ler hun. Hun forteller at isen falt i så god smak, at de skal gjenta suksessen lørdag, slik at flere gjester i parken også kan få med seg aktiviteten.Selv om sommeren har satt flere varmerekorder i hele landet, forteller Johannessen at dyrene i Akvariet slettes ikke har lidd noen nød. – Vi har California-sjøløver, som overhodet ikke har hatt noen problemer med varmen. Tvert imot, de elsker å ligge å sole seg. Vi har også europeiske otere, som takler klimaet godt, da det er dyr man finner naturlig i sørlige deler av Europa. Dessuten er vi ekstremt heldige her på Akvariet, og pumper opp nytt saltvann hele tiden, og dyrene har mange muligheter til å kjøle seg ned på. Hun gir imidlertid et viktig råd til dyreeiere som vil kjøle ned dyrene sine: – Jeg har fått med meg at folk gir is som hundene kan spise for eksempel, og det er ikke akkurat et sjakktrekk. Når man kjøler ned dyrene fra innsiden samtidig som det er veldig varmt ute, tuller det med kroppstemperaturen. Kroppen jobber for å varme opp innsiden samtidig som de får varme utenfra. Du gir dem egentlig et heteslag, sier hun. – Det beste er å kjøle dem ned på utsiden. Dusj dem under «armhulene», eller generelt der de har tynn hud.Også i Tyskland har det vært høye temperaturer i sommer, og dyrepassere har måttet ta grep for å avkjøle dyrene i varmen. I Osnabrück, nord i landet, ble det registrert rundt 35 varmegrader onsdag. For tapirene i dyrehagen ble maten strategisk servert i skyggen, slik at dyrene ikke blir solbrent. Dyrepasser Daniel Chirico bestemte seg dessuten for å spyle tapirene med en hageslange, for å kjøle dem ned ytterligere. – Spesielt de nordiske artene i dyreparken har merket hetebølgen, og tilbringer mesteparten av dagen i skyggen, sier Tobias Klumpe, biolog i Osnabrück Zoo til den tyske avisen Osnabrücker Zeitung . Svartbjørnene tar mer enn gjerne en kald dukkert i sola, samtidig som de nyter kalde forfriskninger med frukt og bær.I Finland har også sommervarmen slått inn for fullt. I Korkeasaari Zoo i Helsinki ble det torsdag registrert 30 varmegrader. Løsningen har blant annet vært å installere en «regnskog» for kenguruene, mens papegøyene har fått egne dusjer de kan bruke. Bjørnene har fått iskald vannmelon, som de nyter i det kalde vannet, og tigerne får frosne kaniner – såfremt de faktisk ønsker å spise. – Appetitten deres blir mindre i varmen. For eksempel spiser hunnene i snitt bare annenhver dag, sier dyrepasser Jonne Stenroth til den finske avisen MTV . Ellers tilbringer tigrene mesteparten av dagen i skyggen mens de slapper av i bassenget, skriver avisen.&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;target_text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Mens solen skinner og temperaturene er som høyest, tar dyreparker rundt om i Europa i bruk kreative løsninger for å holde dyrene avkjølte.&quot;</span>
 <span class="p">}</span>
@@ -2990,26 +3079,30 @@ total).</p>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Verdenshjelpen forlot klubben i fjor på grunn av arbeids- og studietilbud, pluss behovet for å komme seg fra en ryggskade. Manager Jamie Sherwood sa til klubbens nettside: \&quot;Jeg er virkelig glad for å ha brakt Natalie tilbake til klubben. \&quot;Hennes erfaring, lederskap og åpenbare evne blir et utmerket tillegg til vår tropp for 2017\&quot;. Haigh la til: \&quot;Etter skaden jeg fikk på ryggen for nesten 15 måneder siden, trodde jeg aldri at jeg ville spille igjen, enn si på dette nivået. \&quot;Det er flott å være tilbake i og rundt klubben - det er en ekte buzz etter den suksessen de oppnådde i fjor\&quot;.&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;target_text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Yeovil Town Ladies har gjenforenet tidligere kaptein Natalie Haigh før damer Super League One klubbens første sesong i toppklassen.&quot;</span>
 <span class="p">}</span>
-</code></pre></div></p>
+</code></pre></div>
 <p>When evaluating generative models, we use the following setup (see the
 <a href="/methodology">methodology</a> for more information on how these are used):</p>
 <ul>
 <li>Number of few-shot examples: 1</li>
-<li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>Her følger nyhetsartikler med tilhørende sammendrag.
-</code></pre></div></li>
-<li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>Nyhetsartikkel: {text}
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Her følger nyhetsartikler med tilhørende sammendrag.
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Nyhetsartikkel: {text}
 Sammendrag: {target_text}
-</code></pre></div></li>
-<li>Instruction-tuned prompt template:
-  <div class="highlight"><pre><span></span><code>Nyhetsartikkel: {text}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Nyhetsartikkel: {text}
 
 Skriv et sammendrag av den ovennevnte artikkelen.
-</code></pre></div></li>
-</ul>
+</code></pre></div>
 <p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>no-sammendrag
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>no-sammendrag
 </code></pre></div>
 <h3 id="unofficial-norglm-multi-sum">Unofficial: NorGLM Multi Sum</h3>
 <p>This dataset was released in <a href="https://doi.org/10.48550/arXiv.2312.01314">this paper</a> and
@@ -3017,7 +3110,7 @@ features a manually annotated summarisation dataset based on Norwegian news arti
 <p>The original dataset contains 467 samples, which we split into 147 / 64 / 256 samples
 for training, validation and test, respectively.</p>
 <p>Here are a few examples from the training split:</p>
-<p><div class="highlight"><pre><span></span><code><span class="p">{</span>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot; En sel i England ble fanget i plast. Det kunne gått galt. Hver dag blir også dyr i Norge fanget i plast. Et vondt syn møtte nylig dyrevernere på en strand i England. Der lå en sel som hadde tuklet seg inn i plast. Det kunne gått veldig galt.– Det var tydelig at selen hadde det vondt, forteller en kvinne som så selen på stranden, til kanalen BBC.Men dyrlegene fra den britiske dyrevernsorganisasjonen BDMLR kom heldigvis i tide. De klarte å fri selen fra plasten. Selen ble sluppet tilbake i sjøen.Heldigvis ble ikke selen skadet denne gangen, forklarte dyrevernsorganisasjonen til BBC.Men mange dyr er ikke så heldige når de blir fanget i plast. Dyr setter seg fast i plast over hele verden. Norske sjødyr setter seg fast i plast hver eneste dag, forteller Per-Erik Schulze. Han jobber i Naturvernforbundet og er ekspert på plast og forurensing i havet. – Mange av dyrene står fast i mange dager eller måneder uten å slippe løs. Det er helt grusomt, sier Schulze.Han forteller at disse dyrene ofte setter seg fast i plast: SjøfuglerFiskSelerSmåhvalerHummerSkilpadderDet er også dyr på land som setter seg fast i plast, for eksempel sauer og reinsdyr. Hvert år havner over åtte millioner tonn plast i havet, ifølge Verdens naturfond (WWF). Det meste synker til havbunnen, resten skyller inn på strender eller flyter på havoverflaten.Det er farlig for dyr som lever i og rundt havet, fordi de kan sette seg fast i plasten eller få den i magen.Hva skjer med dyrene som setter seg fast i plast?– Det er det største dyreplageriet i verden. Det er veldig vondt å hekte seg fast. Mange dør kanskje ikke av plasten, men av sult, fordi de ikke kommer seg løs så de kan dra og spise, sier han.Derfor er det viktig ikke å kaste plast som forsøpler naturen, mener Schulze.– En fin tanke er at hver plastbit vi rydder opp, kanskje kan redde et dyr. For det finnes også en god nyhet: De siste årene har mange ryddet søppel i naturen og langs kysten i Norge. Har det hjulpet? – Ja, det har vært en kjempe-ryddedugnad i Norge de siste fem årene. Noen steder er det så rent nå at det er vanskelig å finne noe plast. Det er et godt tegn, sier Schulze.&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;target_text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot; En sel i England som var fanget i plast ble reddet av dyrevernere. Dette er en vanlig situasjon, både i Norge og andre steder i verden, da mange dyr setter seg fast og lider lenge fordi de ikke kan komme seg løs. Per-Erik Schulze, en ekspert fra Naturvernforbundet, oppfordrer folk til å fortsette ryddearbeidet for å minimere risikoen for dyr å komme til skade assosiert med plastforsøpling. Han bekrefter at ryddedugnadene i Norge har vært en suksess.&quot;</span>
 <span class="p">}</span>
@@ -3031,26 +3124,30 @@ for training, validation and test, respectively.</p>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot; Regjeringen foreslår å åpne nye områder for oppdrettsnæringen, men med strenge miljøkrav. – Gir betydelige muligheter for å øke produksjonen, sier fiskeriministeren.Nærings- og fiskeridepartementet foreslår nå en ny tillatelsesordning for oppdrett med miljøkrav.Det første året kan det tildeles tillatelser på maksimalt 15.000 tonn biomasse (fisk). Hver enkelt søker kan maksimalt få tildelt ti tillatelser, og det vil stilles strenge miljøkrav til søkerne, heter det i meldingen fra departementet.– Dagens produksjon i åpne merder vil fortsatt være grunnstammen i norsk oppdrett. I tillegg har vi lagt til rette for landbasert oppdrett og havbruk til havs. Med denne ordningen peker vi ut en ny retning som gir oppdrettsnæringen mulighet til å ta i bruk nye arealer langs kysten, sier fiskeri- og sjømatminister Odd Emil Ingebrigtsen (H).Til sammenligning ble det produsert rundt 1,4 millioner tonn laks i Norge i 2019, ifølge SSB.Tillatelsene i den nye miljøteknologiordningen kommer i tillegg til veksten som blir tilbudt på ordinær måte gjennom trafikklyssystemet.– Samlet sett gir dette norsk havbruksnæring betydelige muligheter for å øke produksjonen fremover, sier ministeren.Forslaget innebærer følgende miljøkrav: Null utslipp av egg og frittsvømmende stadier av lakselus, minimum 60 prosent oppsamling av slam, samt krav til rømningssikkerhet.Prisen for tillatelsene vil bli satt med utgangspunkt i auksjonsprisene som er oppnådd i forbindelse med ordinære kapasitetsjusteringer, men med et rimelig fradrag.– Havbruksnæringen skaper store verdier for Norge. Men videre vekst må skje innenfor bærekraftige rammer. Hensynet til natur generelt, og villaksen spesielt, er av avgjørende betydning, sier klima- og miljøminister Sveinung Rotevatn (V).Til tross for bedring på viktige områder, er antallet norsk laks i havet mer enn halvert siden 1980-tallet, ifølge Vitenskapelig råd for lakseforvaltning.Det er flere grunner til det, også overfiske, men rådet slår fast at rømt oppdrettslaks og lakselus nå er de største truslene mot villaks.Forslaget skal på kort tid ut på høring.E24 skrev tidligere at siste sitat i saken var fra Ingebrigtsen, mens det egentlig var fra Rotevatn. E24 beklager og har nå rettet feilen.&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;target_text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot; Regjeringen foreslår en ny tillatelsesordning for oppdrett med strenge miljøkrav for å muliggjøre bærekraftig vekst i havbruksnæringen. Denne ordningen vil åpne nye områder for oppdrett, tillate hver søker å få maksimalt ti tillatelser, og krever null utslipp av egg og frittsvømmende stadier av lakselus, minimum 60 prosent oppsamling av slam, samt krav til rømningssikkerhet. Dette skal gi næringen mulighet til å øke produksjonen på bærekraftig måte.&quot;</span>
 <span class="p">}</span>
-</code></pre></div></p>
+</code></pre></div>
 <p>When evaluating generative models, we use the following setup (see the
 <a href="/methodology">methodology</a> for more information on how these are used):</p>
 <ul>
 <li>Number of few-shot examples: 1</li>
-<li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>Her følger nyhetsartikler med tilhørende sammendrag.
-</code></pre></div></li>
-<li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>Nyhetsartikkel: {text}
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Her følger nyhetsartikler med tilhørende sammendrag.
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Nyhetsartikkel: {text}
 Sammendrag: {target_text}
-</code></pre></div></li>
-<li>Instruction-tuned prompt template:
-  <div class="highlight"><pre><span></span><code>Nyhetsartikkel: {text}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Nyhetsartikkel: {text}
 
 Skriv et sammendrag av den ovennevnte artikkelen.
-</code></pre></div></li>
-</ul>
+</code></pre></div>
 <p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>norglm-multi-sum
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>norglm-multi-sum
 </code></pre></div>
 <h3 id="unofficial-schibsted-no">Unofficial: Schibsted-no</h3>
 <p>This dataset was released
@@ -3059,7 +3156,7 @@ features summaries of news articles from Schibsted Medias Norwegian newsrooms.</
 <p>The original dataset contains 1,240 / 347 / 374 samples for training, validation and
 testing, respectively. We use these splits as-is.</p>
 <p>Here are a few examples from the training split:</p>
-<p><div class="highlight"><pre><span></span><code><span class="p">{</span>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Klubblegenden med innrømmelse under VAR-debatten: – Vanskelig å stå her : VAR-opprøret tok en knusende seier i Trondheim. Til og med styremedlem Ola By Rise måtte innrømme at det var mange gode argumenter imot videodømmingen.  Den gamle keeperhelten talte RBK-styrets sak for VAR sammen med medstyremedlem Tore Reginiussen:  – Det er en veldig vanskelig sak. Det er ikke to VAR-tilhengere som står her, sa en engasjert By Rise fra talerstolen.  VAR-debatten hadde kommet til Rosenborgs medlemmer torsdag, som skulle stemme for at Rosenborg aktivt skulle arbeide for å fjerne VAR eller ikke.  489 stemte for å avvikle VAR. 157 stemte for å beholde VAR. Stemmene ble lest opp til enorm applaus fra salen.  Forslaget om at RBK-styret skulle få «utrede ulike modeller for å få kapital inn i klubben» ble også stemt ned med god margin. – Medlemmene har definitivt makta i Rosenborg og de bruker den. Dette er et gedigent nederlag for det sittende styret og leder Cecilie Gotaas Johnsen, sier Adresseavisens kommentator Birger Løfaldli til VG.  – Særlig investorsaken tror jeg er tung å svelge, der det foreløpig kun var snakk om en utredning. Jeg er spent på hvordan Gotaas Johnsen vil reagere på dette og hvordan hun vurderer arbeidsbetingelsene det kommende året, sier Løfaldli.  VAR-debatten var den som tok lengst tid:  – Jeg har forståelse for klubbens posisjon og forstår at måten oppleves som uvanlig detaljstyrende. Men for mange er dette en ekstraordinær sak. Det er viktig at styret forstår: VAR må ikke forbedres, VAR må fjernes! sa forslagsstiller Ole Christian Gullvåg.  – Talelista begynner å bli lang, var meldingen fra ordstyrer etter at et par stykker hadde snakket sin side i VAR-saken.  Styremedlem By Rise argumenterte med at det ville bli vanskelig å «sette tannkremen tilbake på tuben». Forslagsstiller Gullvåg svarte:  – For oss oppleves det som at noen har sprøytet tannkrem på stua midt under fredagstacoen. Vi har ikke bedt om det, vil ikke ha det.  Ola By Rise har tidligere vært ute på Twitter og vært kritisk til VAR. Han innrømmet også sin tvil rundt temaet.  – Det er vanskelig å stå her. Man må ikke stå hver kamp på Øvre Øst for å reagere på hvordan VAR praktiseres i dag. Så er det ikke sikkert den blir god nok. Involveringen av supporterne burde definitivt blitt bedre. Men det er ikke sikkert det er verktøyet som er problemet, men gjennomføringen, sa By Rise.  Han og Reginiussen listet opp både negative og positive sider ved VAR, og pekte som flere andre klubber på det potensielle økonomiske tapet ved å fjerne VAR.  Styret argumenterte for at Rosenborg skulle være en kritisk meningsbærer rundt videodømming. Et titalls medlemmer tok ordet og sa seg svært uenige, og til slutt var det forslaget fra medlemmene som vant frem.  RBK-medlem Emil Almås var forslagsstiller sammen med Gullvårg. Han sier følgende til VG: – Det vi har fått til i norsk toppfotball de siste dagene er en seier for fotballen og en seier for medlemsdemokratiet. Ved å takke nei til VAR, har norske supportere startet et jordskred, som kommer til å rase gjennom fotballeuropa i årene som kommer! Den dagen VAR er historie, skal jeg med stolthet si at jeg, og mange andre norske fotballsupportere var med på å trille de første steinene nedover dalsiden, sier Almås.  PS. En rørt Rune Bratseth mottok tittelen som æresmedlem i Rosenborg, etter en lang karriere som spiller, sportssjef og styremedlem. - Det er veldig spesielt for meg, sa Bratseth. &quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;target_text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;489 RBK-medlemmer stemte for å avvikle VAR ved et møte torsdag, med 157 mot Styremedlem Ola By Rise innrømmet gode argumenter mot videodømming, men argumenterte for at Rosenborg skulle være en kritisk stemme imot. RBK-medlem Emil Almås hevder \&quot;norske supportere starter et jordskred\&quot; mot VAR i Europa Medlemmene ga også sitt nei til at RBK-styret skulle få «utrede ulike modeller for å få kapital inn i klubben».  – Et gedigent nederlag for det sittende styret, mener Adresseavisens kommentator Birger Løfaldli &quot;</span>
 <span class="p">}</span>
@@ -3073,26 +3170,30 @@ testing, respectively. We use these splits as-is.</p>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Marokkanske og albanske mafianettverk dominerer. Svenskene blir en stadig større trussel.: Flere er bygd på lojalitet til familie og klan, ifølge ny rapport fra Kripos. Om kort tid legger politiet frem sin trusselvurdering. Der vil Politi-Norge peke på de største truslene mot det norske samfunnet. En av truslene som vil bli viet mye plass, er organiserte kriminelle nettverk. I Norge er det rundt hundre slike nettverk. Kripos mener politiet har kapasitet til å følge med på 40 av dem. Nettverkene smugler og selger enorme mengder narkotika. De står bak skyteepisoder, eksplosjoner, menneskesmugling og bedragerier. Målet er profitt. Midlene er vold og hard indre justis. Noen av de mektigste nettverkene er bygd på lojalitet til familie og klan. Nå letter Kripos på sløret. For første gang går politiet ut med en egen rapport om nettverkene som dominerer i den kriminelle underverdenen: I rapporten trekker Kripos frem fem store trusler: 1. Marokkanske narkonettverk En av de aller største truslene er marokkanske narkonettverk. – De er utrolig sentrale, ikke bare i Norge og Norden, sier Eivind Borge fra Kripos. Norskmarokkanere dukker også opp i etterforskninger i andre europeiske land. Aftenposten har tidligere omtalt Zakariya Rahali, som har vært på rømmen siden 2017. Rahali er pekt ut som lederen av Norges største narkonettverk. 2. Albanske narkonettverk Etter marokkanerne, er det albanske nettverk som utgjør den største trusselen. Disse regnes for å være blant de største nettverkene som driver med kokain i hele Europa.  3. Svenske narkonettverk Borges skrekkscenario er at Norge kommer dit Sverige er i dag. Der har gjengkrigen herjet og deler av samfunnet er i ferd med å bli infiltrert av kriminelle. I Norge har samtlige politidistrikt støtt på svenske kriminelle nettverk. Og trusselen er økende, vurderer Kripos. 4. Litauiske kriminelle nettverk For å frakte narkotika, trengs det logistikk. For å gjøre dette, tar mange kriminelle i bruk litauiske nettverk.  5. Norge som transittland I fjor opplevde Europa en «kokaintsunami». Enorme mengder kokain ble tatt av politi og tollere, også i Norge. Men prisene gikk ikke opp. Et tegn på at store mengder kokain er i omløp.  I flere år har havnene i Rotterdam og Antwerpen vært stedet hvor kokain er blitt smuglet inn til Europa. Men der har myndighetene kastet seg rundt. Dermed må de kriminelle se seg om etter nye havner for å få det hvite pulveret til kundene. De store beslagene i fjor, kan peke mot at Norge i større grad er i ferd med å bli et av disse stedene. Enn så lenge er det for tidlig å konkludere om Norge er blitt en del av kokainruten til Europa, mener Borge og Ole Jørgen Arvesen, avdelingsleder med ansvar for etterretning i Kripos. Går sammen med kartellene Hvordan kan Kripos være så sikre i sin sak? Mye kommer fra pågående etterforskninger, men de siste årene har de også fått et unikt innblikk i hvordan de kriminelle jobber og samarbeider. De har fått meldinger og bilder fra Encrochat, Sky ECC og Anom. Det har ledet til flere store saker, men likevel er trusselen fra de kriminelle nettverkene blitt større. – Den er betydelig og økende for hele Europa, også Norge, sier Arvesen. Nettverkene er blitt mer profesjonelle og samarbeider mer med kriminelle i andre land.  – Vi ser tydelig at norske nettverk har direkte kontakt med karteller i Sør-Amerika, sier Eivind Borge fra Kripos. Han sier bakmennene de jobber for å ta, ikke lar seg stoppe med forebygging. Det krever mye etterforskning og samarbeid med politi i andre land.&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;target_text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;For første gang går politiet ut med en egen rapport om kriminelle nettverk. Rapporten peker på fem store trusler: marokkanske og albanske narkonettverk, svenske narkonettverk, litauiske kriminelle nettverk og at Norge blir et transittland for kokain. Nettverkene i Norge er blitt mer profesjonelle, har direkte kontakt med karteller i Sør-Amerika. Dette krever mer etterforskning og internasjonalt samarbeid.&quot;</span>
 <span class="p">}</span>
-</code></pre></div></p>
+</code></pre></div>
 <p>When evaluating generative models, we use the following setup (see the
 <a href="/methodology">methodology</a> for more information on how these are used):</p>
 <ul>
 <li>Number of few-shot examples: 1</li>
-<li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>Her følger nyhetsartikler med tilhørende sammendrag.
-</code></pre></div></li>
-<li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>Nyhetsartikkel: {text}
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Her følger nyhetsartikler med tilhørende sammendrag.
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Nyhetsartikkel: {text}
 Sammendrag: {target_text}
-</code></pre></div></li>
-<li>Instruction-tuned prompt template:
-  <div class="highlight"><pre><span></span><code>Nyhetsartikkel: {text}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Nyhetsartikkel: {text}
 
 Skriv et sammendrag av den ovennevnte artikkelen.
-</code></pre></div></li>
-</ul>
+</code></pre></div>
 <p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>schibsted-no
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>schibsted-no
 </code></pre></div>
 <h3 id="unofficial-personal-sum">Unofficial: Personal Sum</h3>
 <p>This dataset was released <a href="https://github.com/SmartmediaAI/PersonalSum">here</a> and
@@ -3103,7 +3204,7 @@ paired with all of its corresponding summaries (1 or more). The dataset has been
 such that we have 121 / 64 / 256 samples for training, validation and testing,
 respectively.</p>
 <p>Here are a few examples from the training split:</p>
-<p><div class="highlight"><pre><span></span><code><span class="p">{</span>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">    </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;I en ny bok forteller Abid Rajas søster Abida Raja (49) at hun over lengre tid levde i et voldelig forhold. I en pressemelding avviser eksmannen anklagene. – Min klient ønsker å påpeke at han nekter straffeskyld for partnervold og\nvoldtektsanklager. Han vedkjenner at ekteskapet har hatt sine utfordringer, og at de derfor skilte seg i 2015, skriver eksmannens advokat Javeed H. Shah i en pressemelding. I boken «Frihetens Øyeblikk», beskriver Raja at eksmannen hennes var voldelig, og at hun flere ganger forsøkte å unnslippe mannen. I boken skriver forfatter Håkon F. Høydal:«De siste tjue årene hadde vært en kamp mot seg selv: Hun ønsket å gå fra mannen. Men hun måtte bli. På grunn av barna, og på grunn av familien, på grunn av frykten for fattigdom og skam. Nå hadde hun verken barna, penger eller hus.»VG har tidligere vært i kontakt med Abida Rajas eksmann i forbindelse med bokutgivelsen, som tirsdag ikke hadde lest boken.– Jeg er i utlandet og har ikke lest boken, så kan ikke kommentere uten å lese det, skriver han i en SMS til VG.I boka skriver forfatteren at Abida etter stort press fra familien, skal ha møtt én av ektemannkandidatene, en 23 år gammel inngiftet onkel i Pakistan. Hun var 18 år og skulle gått i andre klasse på videregående hjemme i Norge.«Abida husker ikke om hun sa ja. Men hun sa heller ikke nei. Hun ville bare bort», heter det i boken.Onsdag svarer eksmannen via sin advokat, at han har levd i god tro om at Abida giftet seg av fri vilje slik hun selv uttrykte ovenfor han. – Derfor er opplysningene om tvangsekteskap noe han ble kjent med først i 2020. Boken kommer ett år etter at venstrepolitiker og tidligere statsråd Abid Raja kom med sin bok\xa0«Min skyld». Boken er skrevet av VG-journalist Håkon F. Høydal og ble lansert tirsdag morgen\xa0etter mye hemmelighold. VG har ikke hatt noe med utgivelsen å gjøre.&quot;</span><span class="p">,</span>
 <span class="w">    </span><span class="nt">&quot;target_text&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;I en ny bok forteller Abid Rajas søster Abida Raja om hennes erfaringer med et voldelig ekteskap, hvor hun beskriver flere forsøk på å unnslippe. Eksmannen avviser anklagene og hevder at han levde i god tro om at ekteskapet var av fri vilje, noe han først ble klar over i 2020.&quot;</span><span class="p">,</span>
 <span class="w">    </span><span class="s2">&quot;Abida Raja beskriver i en ny bok et voldelig forhold med sin eksmann, som avviser anklagene om partnervold og voldtektsanklager. Boken avslører også at Abida ble presset til å møte en ektemannkandidat i en tvangssituasjon, noe eksmannen hevder han ikke var klar over før i 2020.&quot;</span><span class="p">,</span>
@@ -3120,26 +3221,30 @@ respectively.</p>
 <span class="w">    </span><span class="nt">&quot;target_text&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;Minnesota Wild led et nederlag mot St. Louis Blues under ekstreme værforhold på Target Field. Mats Zuccarello uttrykte sin skuffelse over lagets ytelse foran 38 000 tilskuere, og tilskrev tapet til dårlig spill heller enn kulden. Til tross for Zuccarellos bidrag med en assist, endte Wild med sitt femte strake tap, noe som førte til et press for å finne tilbake til seiersformen før kommende kamper mot Boston Bruins og Washington Capitals.&quot;</span><span class="p">,</span>
 <span class="w">    </span><span class="s2">&quot;Det er ingen unnskyldninger for Wilds femte strake tap, til tross for at både Zuccarello og resten av laget generelt har spilt bra denne sesongen. Forholdene var like for begge lag, men laget spilte ikke smart hockey slik de har gjort tidligere i sesongen.&quot;</span><span class="p">]</span>
 <span class="p">}</span>
-</code></pre></div></p>
+</code></pre></div>
 <p>When evaluating generative models, we use the following setup (see the
 <a href="/methodology">methodology</a> for more information on how these are used):</p>
 <ul>
 <li>Number of few-shot examples: 1</li>
-<li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>Her følger nyhetsartikler med tilhørende sammendrag.
-</code></pre></div></li>
-<li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>Nyhetsartikkel: {text}
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Her følger nyhetsartikler med tilhørende sammendrag.
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Nyhetsartikkel: {text}
 Sammendrag: {target_text}
-</code></pre></div></li>
-<li>Instruction-tuned prompt template:
-  <div class="highlight"><pre><span></span><code>Nyhetsartikkel: {text}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Nyhetsartikkel: {text}
 
 Skriv et sammendrag av den ovennevnte artikkelen.
-</code></pre></div></li>
-</ul>
+</code></pre></div>
 <p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>personal-sum
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>personal-sum
 </code></pre></div>
 
 

@@ -639,6 +639,8 @@
       
         
       
+        
+      
     
     
     
@@ -1213,6 +1215,29 @@
   
   
     <li class="md-nav__item">
+      <a href="../lithuanian/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    🇱🇹 Lithuanian
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../norwegian/" class="md-nav__link">
         
   
@@ -1734,7 +1759,7 @@ respectively (so 3,328 samples used in total). The training and testing splits a
 subsets of the original splits, and the validation split is a disjoint subset of the
 original training split.</p>
 <p>Here are a few examples from the training split:</p>
-<p><div class="highlight"><pre><span></span><code><span class="p">{</span>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Het boek geeft uitleg in de basis technieken en heeft handige tips, hoe je de klassieke recepten ook gewoon zelf kan maken, ze zijn geschreven in een soort leermodus, dit alles ondersteunt door stap voor stap foto’s.&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;positive&quot;</span>
 <span class="p">}</span>
@@ -1748,31 +1773,35 @@ original training split.</p>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Voor mij het zwakste boek van Coben tot nu toe.\nHet was alsof ik naar een slechte B-film aan het kijken was. Bordkartonnen personages die me totaal onverschillig lieten. Deus ex machina&#39;s die de plot ongeloofwaardig maken.\nVerloren is als een slecht, onevenwichtig James Bond verhaal. Veel actie zonder context, background en motivatie.&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;negative&quot;</span>
 <span class="p">}</span>
-</code></pre></div></p>
+</code></pre></div>
 <p>When evaluating generative models, we use the following setup (see the
 <a href="/methodology">methodology</a> for more information on how these are used):</p>
 <ul>
 <li>Number of few-shot examples: 12</li>
-<li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>Hieronder staan tweets en hun sentiment, dat &#39;positief&#39;, &#39;neutraal&#39; of &#39;negatief&#39; kan zijn.
-</code></pre></div></li>
-<li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>Tweet: {text}
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Hieronder staan tweets en hun sentiment, dat &#39;positief&#39;, &#39;neutraal&#39; of &#39;negatief&#39; kan zijn.
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Tweet: {text}
 Sentiment: {label}
-</code></pre></div></li>
-<li>Instruction-tuned prompt template:
-  <div class="highlight"><pre><span></span><code>Tweet: {text}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Tweet: {text}
 
 Classificeer het sentiment in de tweet. Antwoord met &#39;positief&#39;, &#39;neutraal&#39; of &#39;negatief&#39;.
-</code></pre></div></li>
-<li>Label mapping:<ul>
+</code></pre></div>
+<ul>
+<li>Label mapping:</li>
 <li><code>positive</code> ➡️ <code>positief</code></li>
 <li><code>negative</code> ➡️ <code>negatief</code></li>
 </ul>
-</li>
-</ul>
 <p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>dbrd
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>dbrd
 </code></pre></div>
 <h2 id="named-entity-recognition">Named Entity Recognition</h2>
 <h3 id="conll-nl">CoNLL-nl</h3>
@@ -1784,7 +1813,7 @@ validation and testing, respectively (so 11,758 samples used in total). We use a
 256 / 1,024 split for training, validation and testing, respectively. All the new splits
 are subsets of the original splits.</p>
 <p>Here are a few examples from the training split:</p>
-<p><div class="highlight"><pre><span></span><code><span class="p">{</span>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">&quot;tokens&quot;</span><span class="p">:</span><span class="w"> </span><span class="err">array(</span><span class="p">[</span><span class="err">&#39;Pui</span><span class="kc">tstraat</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;</span><span class="mi">6</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;</span><span class="p">,</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;</span><span class="mi">8890</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;Moorslede&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;.&#39;</span><span class="p">],</span><span class="w"> </span><span class="err">d</span><span class="kc">t</span><span class="err">ype=objec</span><span class="kc">t</span><span class="err">)</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;labels&quot;</span><span class="p">:</span><span class="w"> </span><span class="err">array(</span><span class="p">[</span><span class="err">&#39;B</span><span class="mi">-</span><span class="err">LOC&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;B</span><span class="mi">-</span><span class="err">LOC&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">],</span><span class="w"> </span><span class="err">d</span><span class="kc">t</span><span class="err">ype=objec</span><span class="kc">t</span><span class="err">)</span><span class="p">,</span>
 <span class="p">}</span>
@@ -1798,24 +1827,30 @@ are subsets of the original splits.</p>
 <span class="w">  </span><span class="nt">&quot;tokens&quot;</span><span class="p">:</span><span class="w"> </span><span class="err">array(</span><span class="p">[</span><span class="err">&#39;He</span><span class="kc">t</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;overwich</span><span class="kc">t</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;lag&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;op&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;</span><span class="kc">n</span><span class="err">ieuw&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;</span><span class="kc">nu</span><span class="err">mmers&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;als&#39;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;&#39;&quot;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;Maria&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;Maria&#39;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;&#39;&quot;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;</span><span class="p">,</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;&#39;&quot;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;Pu</span><span class="kc">t</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;Your&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;Ligh</span><span class="kc">ts</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O</span><span class="kc">n</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;&#39;&quot;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;e</span><span class="kc">n</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;&#39;&quot;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;Smoo</span><span class="kc">t</span><span class="err">h&#39;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;&#39;&quot;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;</span><span class="p">,</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;s</span><span class="kc">tu</span><span class="err">k&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;voor&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;s</span><span class="kc">tu</span><span class="err">k&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;k</span><span class="kc">na</span><span class="err">ppe&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;so</span><span class="kc">n</span><span class="err">gs&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;die&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;zich&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;op&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;de&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;koop&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;</span><span class="kc">t</span><span class="err">oe&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;i</span><span class="kc">n</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;kor</span><span class="kc">te</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;</span><span class="p">,</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;krach</span><span class="kc">t</span><span class="err">ige&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;versies&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;lie</span><span class="kc">ten</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;bewo</span><span class="kc">n</span><span class="err">dere</span><span class="kc">n</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;.&#39;</span><span class="p">],</span><span class="w"> </span><span class="err">d</span><span class="kc">t</span><span class="err">ype=objec</span><span class="kc">t</span><span class="err">)</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;labels&quot;</span><span class="p">:</span><span class="w"> </span><span class="err">array(</span><span class="p">[</span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;B</span><span class="mi">-</span><span class="err">PER&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;B</span><span class="mi">-</span><span class="err">PER&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;B</span><span class="mi">-</span><span class="err">MISC&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;I</span><span class="mi">-</span><span class="err">MISC&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;I</span><span class="mi">-</span><span class="err">MISC&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;I</span><span class="mi">-</span><span class="err">MISC&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;B</span><span class="mi">-</span><span class="err">MISC&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">],</span><span class="w"> </span><span class="err">d</span><span class="kc">t</span><span class="err">ype=objec</span><span class="kc">t</span><span class="err">)</span><span class="p">,</span>
 <span class="p">}</span>
-</code></pre></div></p>
+</code></pre></div>
 <p>When evaluating generative models, we use the following setup (see the
 <a href="/methodology">methodology</a> for more information on how these are used):</p>
 <ul>
 <li>Number of few-shot examples: 8</li>
-<li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>Hieronder staan zinnen en JSON woordenboeken met de genoemde entiteiten die voorkomen in de gegeven zin.
-</code></pre></div></li>
-<li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>Zin: {text}
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Hieronder staan zinnen en JSON woordenboeken met de genoemde entiteiten die voorkomen in de gegeven zin.
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Zin: {text}
 Genoemde entiteiten: {label}
-</code></pre></div></li>
-<li>Instruction-tuned prompt template:
-  <div class="highlight"><pre><span></span><code>Zin: {text}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Zin: {text}
 
 Identificeer de genoemde entiteiten in de zin. Je moet dit uitvoeren als een JSON-woordenboek met de sleutels &#39;persoon&#39;, &#39;locatie&#39;, &#39;organisatie&#39; en &#39;diversen&#39;. De waarden moeten lijsten zijn van de genoemde entiteiten van dat type, precies zoals ze voorkomen in de zin.
-</code></pre></div></li>
-<li>Label mapping:<ul>
+</code></pre></div>
+<ul>
+<li>Label mapping:</li>
 <li><code>B-PER</code> ➡️ <code>persoon</code></li>
 <li><code>I-PER</code> ➡️ <code>persoon</code></li>
 <li><code>B-LOC</code> ➡️ <code>locatie</code></li>
@@ -1825,10 +1860,8 @@ Identificeer de genoemde entiteiten in de zin. Je moet dit uitvoeren als een JSO
 <li><code>B-MISC</code> ➡️ <code>diversen</code></li>
 <li><code>I-MISC</code> ➡️ <code>diversen</code></li>
 </ul>
-</li>
-</ul>
 <p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>conll-nl
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>conll-nl
 </code></pre></div>
 <h2 id="linguistic-acceptability">Linguistic Acceptability</h2>
 <h3 id="scala-nl">ScaLA-nl</h3>
@@ -1844,7 +1877,7 @@ the part-of-speech tags of the words in the sentence.</p>
 samples for training, validation and testing, respectively (so 3,328 samples used in
 total). These splits are used as-is in the framework.</p>
 <p>Here are a few examples from the training split:</p>
-<p><div class="highlight"><pre><span></span><code><span class="p">{</span>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Met het toepassen van zelfbestuur wordt ook al op de lagere school begonnen.&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;correct&quot;</span>
 <span class="p">}</span>
@@ -1858,31 +1891,35 @@ total). These splits are used as-is in the framework.</p>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;U ziet een soort eng nachtclubomgeving, waar een groepje schertsaristocraten glazig zit te lachen om haar zouteloze tussenteksten, waarin ze wanhopig probeert een intelligent ondertoontje te leggen.&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;incorrect&quot;</span>
 <span class="p">}</span>
-</code></pre></div></p>
+</code></pre></div>
 <p>When evaluating generative models, we use the following setup (see the
 <a href="/methodology">methodology</a> for more information on how these are used):</p>
 <ul>
 <li>Number of few-shot examples: 12</li>
-<li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>Hieronder staan zinnen en of ze grammaticaal correct zijn.
-</code></pre></div></li>
-<li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>Zin: {text}
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Hieronder staan zinnen en of ze grammaticaal correct zijn.
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Zin: {text}
 Grammaticaal correct: {label}
-</code></pre></div></li>
-<li>Instruction-tuned prompt template:
-  <div class="highlight"><pre><span></span><code>Zin: {text}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Zin: {text}
 
 Bepaal of de zin grammaticaal correct is of niet. Antwoord met &#39;ja&#39; als de zin correct is en &#39;nee&#39; als dat niet het geval is.
-</code></pre></div></li>
-<li>Label mapping:<ul>
+</code></pre></div>
+<ul>
+<li>Label mapping:</li>
 <li><code>correct</code> ➡️ <code>ja</code></li>
 <li><code>incorrect</code> ➡️ <code>nee</code></li>
 </ul>
-</li>
-</ul>
 <p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>scala-nl
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>scala-nl
 </code></pre></div>
 <h3 id="unofficial-dutch-cola">Unofficial: Dutch CoLA</h3>
 <p>This dataset is published <a href="https://huggingface.co/datasets/GroNLP/dutch-cola">here</a> and
@@ -1894,7 +1931,7 @@ validation and testing, respectively (so 24,700 samples used in total). We use a
 splits were imbalanced, so we ensure a 50/50 split of correct/incorrect samples in the
 new splits. All new splits are subsets of the original splits.</p>
 <p>Here are a few examples from the training split:</p>
-<p><div class="highlight"><pre><span></span><code><span class="p">{</span>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Tasman heeft geen Maori gezien.&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;correct&quot;</span>
 <span class="p">}</span>
@@ -1908,7 +1945,7 @@ new splits. All new splits are subsets of the original splits.</p>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Wat is het duidelijk dat Jan zal krijgen?&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;incorrect&quot;</span>
 <span class="p">}</span>
-</code></pre></div></p>
+</code></pre></div>
 <h2 id="reading-comprehension">Reading Comprehension</h2>
 <h3 id="squad-nl">SQuAD-nl</h3>
 <p>This dataset is published
@@ -1922,7 +1959,7 @@ students as part of their thesis work.</p>
 <p>The original SQuAD and XQuAD datasets are based on English Wikipedia articles and the
 questions and answers are written by crowdworkers.</p>
 <p>Here are a few examples from the training split:</p>
-<p><div class="highlight"><pre><span></span><code><span class="p">{</span>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">&quot;context&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Windows 8 bevat ook verbeterde ondersteuning voor mobiel breedband; het besturingssysteem kan nu de plaatsing van een simkaart detecteren en automatisch verbindingsinstellingen configureren (inclusief APN&#39;s en carrier-branding), en het internetgebruik verminderen om bandbreedte op gemeten netwerken te besparen. Windows 8 voegt ook een geïntegreerde instelling voor vliegtuigmodus toe om ook alle draadloze connectiviteit wereldwijd uit te schakelen. Vervoerders kunnen ook accountbeheersystemen aanbieden via Windows Store-apps, die automatisch kunnen worden geïnstalleerd als onderdeel van het verbindingsproces en gebruiksstatistieken bieden op hun respectievelijke tegel.&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;question&quot;</span><span class="p">:</span><span class="w"> </span><span class="err">&#39;Wa</span><span class="kc">t</span><span class="w"> </span><span class="err">regis</span><span class="kc">treert</span><span class="w"> </span><span class="err">he</span><span class="kc">t</span><span class="w"> </span><span class="err">plaa</span><span class="kc">tsen</span><span class="w"> </span><span class="err">va</span><span class="kc">n</span><span class="w"> </span><span class="err">ee</span><span class="kc">n</span><span class="w"> </span><span class="err">simkaar</span><span class="kc">t</span><span class="err">?&#39;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;answers&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
@@ -1948,29 +1985,33 @@ questions and answers are written by crowdworkers.</p>
 <span class="w">    </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="err">array(</span><span class="p">[</span><span class="err">&#39;dierlijk</span><span class="w"> </span><span class="err">ve</span><span class="kc">t</span><span class="err">&#39;</span><span class="p">],</span><span class="w"> </span><span class="err">d</span><span class="kc">t</span><span class="err">ype=objec</span><span class="kc">t</span><span class="err">)</span>
 <span class="w">  </span><span class="p">}</span>
 <span class="p">}</span>
-</code></pre></div></p>
+</code></pre></div>
 <p>When evaluating generative models, we use the following setup (see the
 <a href="/methodology">methodology</a> for more information on how these are used):</p>
 <ul>
 <li>Number of few-shot examples: 4</li>
-<li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>Hieronder volgen teksten met bijbehorende vragen en antwoorden.
-</code></pre></div></li>
-<li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>Tekst: {text}
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Hieronder volgen teksten met bijbehorende vragen en antwoorden.
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Tekst: {text}
 Vraag: {question}
 Antwoord in max 3 woorden: {label}
-</code></pre></div></li>
-<li>Instruction-tuned prompt template:
-  <div class="highlight"><pre><span></span><code>Tekst: {text}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Tekst: {text}
 
 Beantwoord de volgende vraag over de bovenstaande tekst in maximaal 3 woorden.
 
 Vraag: {question}
-</code></pre></div></li>
-</ul>
+</code></pre></div>
 <p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>squad-nl
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>squad-nl
 </code></pre></div>
 <h3 id="unofficial-belebele-nl">Unofficial: BeleBele-nl</h3>
 <p>This dataset was published in <a href="https://aclanthology.org/2024.acl-long.44/">this paper</a>
@@ -1979,7 +2020,7 @@ and features multiple-choice reading comprehension questions across 122 language
 and questions. From these, we use a 256 / 64 / 580 split for training, validation and
 testing, respectively.</p>
 <p>Here are a few examples from the training split:</p>
-<p><div class="highlight"><pre><span></span><code><span class="p">{</span>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Tekst: Mystiek is het geloven in, identificeren met of bewustzijn van een ultieme werkelijkheid, goddelijkheid, spirituele waarheid of God. De kerkganger streeft naar een directe gewaarwording, intuïtie of inzicht in de goddelijke werkelijkheid. Volgers streven een bepaalde manier van leven na of willen ervaringen opdoen die ze datzelfde gevoel geven. In tegenstelling tot andere religieuze overtuigingen en aanbidding, legt mystiek nadruk op de rechtstreekse persoonlijke beleving van een unieke staat van bewustzijn, vooral van een vredige, inzichtelijke, gelukzalige of extatische aard.\nVraag: Wat is geen juiste omschrijving van mystiek?\nAntwoordopties:\na. De nadruk ligt op het ervaren van een vredige, gelukzalige staat van bewustzijn\nb. Volgers van mystiek streven bewustwording na van een spirituele werkelijkheid\nc. Volgers van mystiek passen gebruiken toe die hun inzicht in een goddelijke werkelijkheid vergroten\nd. De nadruk op het streven naar een directe persoonlijke beleving is vergelijkbaar met veel andere vormen van religieuze overtuiging en aanbidding&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;d&quot;</span>
 <span class="p">}</span>
@@ -1993,25 +2034,30 @@ testing, respectively.</p>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Tekst: Er was 120-160 kubieke meter brandstof aan boord van de Luno toen het schip motorproblemen kreeg en door de harde wind en golven tegen de golfbreker werd geduwd. De twaalf crewleden zijn met helikopters in veiligheid gebracht, met als enige verwonding een gebroken neus. Het 100 meter lange schip was onderweg om de gebruikelijke lading kunstmest op te halen. In eerste instantie vreesden autoriteiten dat het vaartuig met de lading zou kunnen gaan lekken.\nVraag: Waar vreesden de autoriteiten volgens de tekst in eerste instantie voor wat betreft de Luno?\nAntwoordopties:\na. Gebrek aan een lading kunstmest\nb. Golven en harde wind\nc. Lekken van brandstof\nd. Verwondingen van bemanningsleden&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;c&quot;</span>
 <span class="p">}</span>
-</code></pre></div></p>
+</code></pre></div>
 <p>When evaluating generative models, we use the following setup (see the
 <a href="/methodology">methodology</a> for more information on how these are used):</p>
 <ul>
 <li>Number of few-shot examples: 5</li>
-<li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>Hieronder staan meerkeuzevragen (met antwoorden).
-</code></pre></div></li>
-<li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>Vraag: {text}
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Hieronder staan meerkeuzevragen (met antwoorden).
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Vraag: {text}
 Antwoordopties:
 a. {option_a}
 b. {option_b}
 c. {option_c}
 d. {option_d}
 Antwoord: {label}
-</code></pre></div></li>
-<li>Instruction-tuned prompt template:
-  <div class="highlight"><pre><span></span><code>Vraag: {text}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Vraag: {text}
 Antwoordopties:
 a. {option_a}
 b. {option_b}
@@ -2019,10 +2065,9 @@ c. {option_c}
 d. {option_d}
 
 Beantwoord de bovenstaande vraag met &#39;a&#39;, &#39;b&#39;, &#39;c&#39; of &#39;d&#39;, en niets anders.
-</code></pre></div></li>
-</ul>
+</code></pre></div>
 <p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>belebele-nl
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>belebele-nl
 </code></pre></div>
 <h3 id="unofficial-multiwikiqa-nl">Unofficial: MultiWikiQA-nl</h3>
 <p>This dataset was published in <a href="https://doi.org/10.48550/arXiv.2509.04111">this paper</a>
@@ -2031,7 +2076,7 @@ languages.</p>
 <p>The original full dataset consists of 5,000 samples in a single split. We use a 1,024 /
 256 / 2,048 split for training, validation and testing, respectively, sampled randomly.</p>
 <p>Here are a few examples from the training split:</p>
-<p><div class="highlight"><pre><span></span><code><span class="p">{</span>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">    </span><span class="nt">&quot;context&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Het Tokyo Aquatics Centre (Japans: 東京アクアティクスセンタ, Tōkyō akuatikusu sentā) is een zwembad in de Japanse hoofdstad Tokio. Het ligt in het stadsdeel Tatsumi dat deel uit maakt van de wijk Koto. De bouw begon in april 2017 en werd in februari 2020 afgewerkt. De officiële opening werd uitgesteld vanwege de coronapandemie en vond plaats op 26 oktober 2020. Het zwembad werd gebouwd voor de Olympische en Paralympische Spelen in 2020 en biedt plaats aan vijftienduizend toeschouwers. Tijdens de Olympische Spelen zullen het baanzwemmen, schoonspringen en synchroonzwemmen er plaatsvinden; het waterpolotoernooi wordt gehouden in het nabijgelegen Tokyo Tatsumi International Swimming Center.\n\nHet zwembadcomplex heeft twee zwembaden en een duikbad. Het dak werd eerst op de grond gebouwd en vervolgens geleidelijk verhoogd tot een hoogte van 37 meter. Het is 160 meter lang, 130 meter breed en 10 meter dik. Het dak weegt 7.000 ton. Het zwembad blijft na de Olympische en Paralympische spelen in gebruik als zwemarena, evenwel met een in aantal gereduceerde publiekstribune. Tevens wordt het een publiek zwembad.\n\nZwembad in Japan\nKoto\nAccommodatie tijdens de Olympische Zomerspelen 2020\nSportaccommodatie in Tokio&quot;</span><span class="p">,</span>
 <span class="w">    </span><span class="nt">&quot;question&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;In welke plaats is het Tokyo Aquatics Centre gevestigd?&quot;</span><span class="p">,</span>
 <span class="w">    </span><span class="nt">&quot;answers&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
@@ -2057,29 +2102,33 @@ languages.</p>
 <span class="w">        </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="err">array(</span><span class="p">[</span><span class="s2">&quot;zo&#39;n 10 tot 15%&quot;</span><span class="p">],</span><span class="w"> </span><span class="err">d</span><span class="kc">t</span><span class="err">ype=objec</span><span class="kc">t</span><span class="err">)</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="p">}</span>
-</code></pre></div></p>
+</code></pre></div>
 <p>When evaluating generative models, we use the following setup (see the
 <a href="/methodology">methodology</a> for more information on how these are used):</p>
 <ul>
 <li>Number of few-shot examples: 4</li>
-<li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>Hieronder volgen teksten met bijbehorende vragen en antwoorden.
-</code></pre></div></li>
-<li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>Tekst: {text}
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Hieronder volgen teksten met bijbehorende vragen en antwoorden.
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Tekst: {text}
 Vraag: {question}
 Antwoord in max 3 woorden: {label}
-</code></pre></div></li>
-<li>Instruction-tuned prompt template:
-  <div class="highlight"><pre><span></span><code>Tekst: {text}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Tekst: {text}
 
 Beantwoord de volgende vraag over de bovenstaande tekst in maximaal 3 woorden.
 
 Vraag: {question}
-</code></pre></div></li>
-</ul>
+</code></pre></div>
 <p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>multi-wiki-qa-nl
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>multi-wiki-qa-nl
 </code></pre></div>
 <h2 id="knowledge">Knowledge</h2>
 <h3 id="mmlu-nl">MMLU-nl</h3>
@@ -2094,7 +2143,7 @@ validation and testing, respectively (so 3,328 samples used in total). These spl
 new and there can thus be some overlap between the original validation and test sets and
 our validation and test sets.</p>
 <p>Here are a few examples from the training split:</p>
-<p><div class="highlight"><pre><span></span><code><span class="p">{</span>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Polarisatie is een eigenschap van\nAntwoordopties:\na. transversale golven.\nb. longitudinale golven.\nc. alle golven.\nd. Geen van deze.&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;a&quot;</span><span class="p">,</span>
 <span class="p">}</span>
@@ -2108,25 +2157,30 @@ our validation and test sets.</p>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Deze vraag verwijst naar de volgende informatie. Lees het volgende fragment. Nooit waren talenten van het hoogste genie van de meest verheven soort overvloediger geschonken aan een mens. Het genie van Napoleon is verbazingwekkend. Alle takken van menselijke kennis leken even vertrouwd voor zijn gigantische geest. Zijn conversaties op St. Helena, verspreid over de talloze en omvangrijke herdenkingsstukken van degenen die ze verzamelden, zijn gevuld met de grootste interesse. Tijdens de lange doodsstrijd van zijn gevangenschap en zijn dood, sprak hij met volledige vrijheid over de gebeurtenissen van zijn wonderbaarlijke carri\u00e8re, en over al die onderwerpen van moralen, politiek en religie, die het meest diep de welvaart van ons ras betreffen. Er is geen geest die niet zal worden versterkt door bekendheid met deze diepzinnige gedachten, uitgedrukt met zoveel gloed van gevoel en energie van dictie. \u2014 John S. C. Abbott, historicus, Napoleon op St. Helena, 1855 Napoleon hielp de Franse Revolutie tot een internationale beweging te maken in de gebieden die hij veroverde.\nAntwoordopties:\na. Door een universele valuta op basis van de Franse frank op te leggen\nb. Door de brute onderdrukking van guerrilla-verzet\nc. Door het afschaffen van feodalisme en herenboerderijen\nd. Door het aanmoedigen van het gebruik van Frans als universele taal&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;c&quot;</span><span class="p">,</span>
 <span class="p">}</span>
-</code></pre></div></p>
+</code></pre></div>
 <p>When evaluating generative models, we use the following setup (see the
 <a href="/methodology">methodology</a> for more information on how these are used):</p>
 <ul>
 <li>Number of few-shot examples: 5</li>
-<li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>Hieronder staan meerkeuzevragen (met antwoorden).
-</code></pre></div></li>
-<li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>Vraag: {text}
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Hieronder staan meerkeuzevragen (met antwoorden).
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Vraag: {text}
 Antwoordopties:
 a. {option_a}
 b. {option_b}
 c. {option_c}
 d. {option_d}
 Antwoord: {label}
-</code></pre></div></li>
-<li>Instruction-tuned prompt template:
-  <div class="highlight"><pre><span></span><code>Vraag: {text}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Vraag: {text}
 Antwoordopties:
 a. {option_a}
 b. {option_b}
@@ -2134,10 +2188,9 @@ c. {option_c}
 d. {option_d}
 
 Beantwoord de bovenstaande vraag met &#39;a&#39;, &#39;b&#39;, &#39;c&#39; of &#39;d&#39;, en niets anders.
-</code></pre></div></li>
-</ul>
+</code></pre></div>
 <p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>mmlu-nl
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>mmlu-nl
 </code></pre></div>
 <h3 id="unofficial-arc-nl">Unofficial: ARC-nl</h3>
 <p>This dataset is a machine translated version of the English <a href="https://doi.org/10.48550/arXiv.1803.05457">ARC
@@ -2149,7 +2202,7 @@ validation and testing, respectively. We use a 1,024 / 256 / 1,024 split for tra
 validation and testing, respectively (so 2,304 samples used in total). All new splits
 are subsets of the original splits.</p>
 <p>Here are a few examples from the training split:</p>
-<p><div class="highlight"><pre><span></span><code><span class="p">{</span>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;In een graslandecosysteem, als de populatie van adelaars plotseling afneemt, wat zal waarschijnlijk het effect zijn op de rest van het ecosysteem?\nAntwoordopties:\na. Het ecosysteem zal overbevolkt worden met slangen.\nb. Er zal een afname zijn in de populatie van slangen in het ecosysteem.\nc. De voedingswaarde van de bodem zal afnemen in het ecosysteem.\nd. Er zullen meer soorten planten beginnen te groeien in het ecosysteem.&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;a&quot;</span>
 <span class="p">}</span>
@@ -2163,25 +2216,30 @@ are subsets of the original splits.</p>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Wat onderscheidt de organismen in het rijk Fungi van andere eukaryotische organismen?\nAntwoordopties:\na. Fungi zijn eencellig.\nb. Fungi reproduceren seksueel.\nc. Fungi verkrijgen voedingsstoffen door middel van absorptie.\nd. Fungi maken voedsel door middel van fotosynthese.&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;c&quot;</span>
 <span class="p">}</span>
-</code></pre></div></p>
+</code></pre></div>
 <p>When evaluating generative models, we use the following setup (see the
 <a href="/methodology">methodology</a> for more information on how these are used):</p>
 <ul>
 <li>Number of few-shot examples: 5</li>
-<li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>Hieronder staan meerkeuzevragen (met antwoorden).
-</code></pre></div></li>
-<li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>Vraag: {text}
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Hieronder staan meerkeuzevragen (met antwoorden).
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Vraag: {text}
 Antwoordopties:
 a. {option_a}
 b. {option_b}
 c. {option_c}
 d. {option_d}
 Antwoord: {label}
-</code></pre></div></li>
-<li>Instruction-tuned prompt template:
-  <div class="highlight"><pre><span></span><code>Vraag: {text}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Vraag: {text}
 Antwoordopties:
 a. {option_a}
 b. {option_b}
@@ -2189,10 +2247,9 @@ c. {option_c}
 d. {option_d}
 
 Beantwoord de bovenstaande vraag met &#39;a&#39;, &#39;b&#39;, &#39;c&#39; of &#39;d&#39;, en niets anders.
-</code></pre></div></li>
-</ul>
+</code></pre></div>
 <p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>arc-nl
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>arc-nl
 </code></pre></div>
 <h2 id="common-sense-reasoning">Common-sense Reasoning</h2>
 <h3 id="hellaswag-nl">HellaSwag-nl</h3>
@@ -2204,7 +2261,7 @@ paper</a>, using GPT-3.5-turbo.</p>
 <p>The original full dataset consists of 9,310 samples. We use an 1,024 / 256 / 2,048 split
 for training, validation and testing, respectively (so 3,328 samples used in total).</p>
 <p>Here are a few examples from the training split:</p>
-<p><div class="highlight"><pre><span></span><code><span class="p">{</span>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;[header] Hoe maak je organische babydoekjes? [title] Kies een rol organische papieren handdoeken. [step] Deze dienen als de eigenlijke doekjes. Experimenteer met verschillende merken en texturen totdat je degene vindt die het beste werkt voor de huid van je baby.\nAntwoordopties:\na. Het is belangrijk om organische papieren handdoeken te gebruiken, omdat niet-organische papieren handdoeken bleekmiddel, verf en andere chemicali\u00ebn kunnen bevatten die vaak worden gebruikt bij de productie van papierproducten. [substeps] Over het algemeen maken bekende merken van papieren handdoeken betere doekjes dan de goedkopere, generieke versies.\nb. Je kunt een papieren handdoek gebruiken die gebruikt wordt voor luierdoekjes, maar je kunt dezelfde ook gebruiken voor andere doekjes. [substeps] Je kunt drie- of vierzijdige doekjes gebruiken om je te helpen bij het mengen van alle melk, yoghurt en water die je in \u00e9\u00e9n container hebt gemengd.\nc. Als je zelfgemaakte lotion gebruikt, gebruik dan geen papieren handdoeken; deze moeten ook van niet-papier zijn. Rol een grote rol kleine papieren handdoeken uit en houd rekening met de algehele geur van de pad.\nd. [substeps] Spreid het droge doekje uit over het hele oppervlak van de huid van je baby en vermijd contact met het droge doekje (tondeuse, kam of puimsteen). [title] Plaats de fles boven een kom met warm water gedurende 10 minuten.&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;a&quot;</span><span class="p">,</span>
 <span class="p">}</span>
@@ -2218,25 +2275,30 @@ for training, validation and testing, respectively (so 3,328 samples used in tot
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;[header] Hoe citrusvruchten te raspen [title] Was de citrusvrucht. [step] Voordat je begint, spoel de vrucht af onder stromend koel water en wrijf het vervolgens zachtjes schoon met een schone doek of papieren handdoek. Een lichte spoeling helpt bij het verwijderen van het natuurlijke wasachtige residu aan de buitenkant van de vrucht.\nAntwoordopties:\na. [substeps] Zorg ervoor dat de vrucht volledig is afgespoeld voordat je doorgaat naar de volgende stap. De meeste citrusvruchten hebben het beschadigde deel verwijderd, maar met het middenstuk kun je afwisselen tussen het opfrissen van de schil met water en het verwijderen van de schil.\nb. [substeps] Het werk kan het beste ook laat in de avond worden gedaan, nadat de suiker is verdampt. [title] Maak een zure citrus door een kom met zout in het water te dompelen.\nc. Je kunt de citrusvrucht ook kort laten weken in een ondiepe kom met water. [substeps] Het is belangrijk om citrusvruchten altijd te wassen wanneer je ze raspt, omdat de buitenkant het deel is dat daadwerkelijk in je voedsel terechtkomt.\nd. [title] Doe het mengsel van rasp in een druppelaar. [step] Commercieel verkrijgbare rasp komt van de schil van de citrusboom.&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;c&quot;</span><span class="p">,</span>
 <span class="p">}</span>
-</code></pre></div></p>
+</code></pre></div>
 <p>When evaluating generative models, we use the following setup (see the
 <a href="/methodology">methodology</a> for more information on how these are used):</p>
 <ul>
 <li>Number of few-shot examples: 5</li>
-<li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>Hieronder staan meerkeuzevragen (met antwoorden).
-</code></pre></div></li>
-<li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>Vraag: {text}
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Hieronder staan meerkeuzevragen (met antwoorden).
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Vraag: {text}
 Antwoordopties:
 a. {option_a}
 b. {option_b}
 c. {option_c}
 d. {option_d}
 Antwoord: {label}
-</code></pre></div></li>
-<li>Instruction-tuned prompt template:
-  <div class="highlight"><pre><span></span><code>Vraag: {text}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Vraag: {text}
 Antwoordopties:
 a. {option_a}
 b. {option_b}
@@ -2244,10 +2306,9 @@ c. {option_c}
 d. {option_d}
 
 Beantwoord de bovenstaande vraag met &#39;a&#39;, &#39;b&#39;, &#39;c&#39; of &#39;d&#39;, en niets anders.
-</code></pre></div></li>
-</ul>
+</code></pre></div>
 <p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>hellaswag-nl
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>hellaswag-nl
 </code></pre></div>
 <h3 id="unofficial-goldenswag-nl">Unofficial: GoldenSwag-nl</h3>
 <p>This dataset is a filtered and machine translated version of the English <a href="https://aclanthology.org/P19-1472/">HellaSwag
@@ -2280,20 +2341,25 @@ samples for training, validation, and testing, respectively.</p>
 <a href="/methodology">methodology</a> for more information on how these are used):</p>
 <ul>
 <li>Number of few-shot examples: 5</li>
-<li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>Hieronder staan meerkeuzevragen (met antwoorden).
-</code></pre></div></li>
-<li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>Vraag: {text}
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Hieronder staan meerkeuzevragen (met antwoorden).
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Vraag: {text}
 Antwoordopties:
 a. {option_a}
 b. {option_b}
 c. {option_c}
 d. {option_d}
 Antwoord: {label}
-</code></pre></div></li>
-<li>Instruction-tuned prompt template:
-  <div class="highlight"><pre><span></span><code>Vraag: {text}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Vraag: {text}
 Antwoordopties:
 a. {option_a}
 b. {option_b}
@@ -2301,10 +2367,9 @@ c. {option_c}
 d. {option_d}
 
 Beantwoord de bovenstaande vraag met &#39;a&#39;, &#39;b&#39;, &#39;c&#39; of &#39;d&#39;, en niets anders.
-</code></pre></div></li>
-</ul>
+</code></pre></div>
 <p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>goldenswag-nl
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>goldenswag-nl
 </code></pre></div>
 <h3 id="unofficial-winogrande-nl">Unofficial: Winogrande-nl</h3>
 <p>This dataset was published in <a href="https://doi.org/10.48550/arXiv.2506.19468">this paper</a>
@@ -2332,27 +2397,31 @@ we use the same splits.</p>
 <a href="/methodology">methodology</a> for more information on how these are used):</p>
 <ul>
 <li>Number of few-shot examples: 5</li>
-<li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>Hieronder staan meerkeuzevragen (met antwoorden).
-</code></pre></div></li>
-<li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>Vraag: {text}
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Hieronder staan meerkeuzevragen (met antwoorden).
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Vraag: {text}
 Antwoordopties:
 a. {option_a}
 b. {option_b}
 Antwoord: {label}
-</code></pre></div></li>
-<li>Instruction-tuned prompt template:
-  <div class="highlight"><pre><span></span><code>Vraag: {text}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Vraag: {text}
 Antwoordopties:
 a. {option_a}
 b. {option_b}
 
 Beantwoord de bovenstaande vraag met &#39;a&#39; of &#39;b&#39;, en niets anders.
-</code></pre></div></li>
-</ul>
+</code></pre></div>
 <p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>winogrande-nl
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>winogrande-nl
 </code></pre></div>
 <h2 id="summarisation">Summarisation</h2>
 <h3 id="wikilingua-nl">WikiLingua-nl</h3>
@@ -2365,7 +2434,7 @@ validation and testing, respectively. We use a 1,024 / 256 / 1,024 split for tra
 validation and testing, respectively (so 2,304 samples used in total). All new splits
 are subsets of the original splits.</p>
 <p>Here are a few examples from the training split:</p>
-<p><div class="highlight"><pre><span></span><code><span class="p">{</span>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Je gaat de ham ongeveer 15 tot 20 minuten glaceren voordat hij klaar is met koken. Om het glazuur op tijd klaar te hebben, begin je met de bereiding ervan ongeveer 45 tot 60 minuten voordat je verwacht dat de ham klaar zal zijn. Snelle glazuren zijn in een paar minuten klaar, en zelfs de glazuren die op het fornuis moeten sudderen, nemen minder dan 15 minuten in beslag. Voor de eenvoudigste optie zonder te koken, klop je gewoon 270 g donkerbruine suiker met 60 ml sinaasappelsap, rode wijn of cognac. Meng de ingredi\u00ebnten in een kleine kom totdat de suiker volledig is opgelost. Als alternatief, combineer je 270 g lichtbruine suiker, 160 ml sojasaus, en twee gehakte knoflookteentjes in een kleine steelpan -- breng dan de ingredi\u00ebnten aan de kook op gemiddeld vuur. Zet  de temperatuur lager zodra het mengsel aan de kook is. Roer het af en toe door en laat het 3-5 minuten sudderen, of tot het iets is ingedikt. Zet dan het vuur uit en laat het glazuur minstens 10 tot 15 minuten afkoelen alvorens het over de ham te strijken. Klop 320 ml melasse, 160 ml bourbon en \u00bd theelepel (1 g) gemalen kruidnagel in een kleine steelpan. Breng de ingredi\u00ebnten aan de kook op middelmatig vuur, zet het vuur dan laag en laat het onder af en toe roeren, sudderen gedurende 3-5 minuten. Op het moment dat het mengsel iets verdikt is, zet je het vuur uit en laat je het 10 tot 15 minuten afkoelen. Combineer 180 ml ahornsiroop, 120 ml sinaasappelmarmelade, 2 eetlepels (30 g) ongezouten boter, 1 eetlepel (16 g) Dijon-mosterd, 1 theelepel (2 g) gemalen zwarte peper, en \u00bc theelepel gemalen kaneel in een kleine steelpan. Laat het mengsel op matig vuur sudderen, onder af en toe roeren, gedurende 5-10 minuten, of totdat het stroperig is en is ingedikt tot 240 ml. Laat het glazuur minstens 10 tot 15 minuten afkoelen alvorens het over de ham te strijken. Er zijn talloze recepten voor glazuren te vinden, maar het bedenken van een eigen glazuur is eenvoudig. Experimenteer met ingredi\u00ebnten tot je de zoete, zure en hartige smaken in balans hebt gebracht. Streef naar ongeveer 240 tot 500 ml glazuur, en reserveer ongeveer een derde ervan voor op de eettafel. De basisingredi\u00ebnten van een glazuur zijn een zoetstof (zoals bruine suiker of melasse), een zuur (zoals azijn of sinaasappelsap), en kruiden of specerijen (zoals tijm of kruidnagel).&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;target_text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Bereid het glazuur voor nadat je de ham in de oven hebt gezet. Klop een glazuur van bruine suiker voor een eenvoudige klassieker. Sudder een sojasausglazuur voor een hartige smaak. Combineer bourbon, melasse en kruidnagel voor een diep, warm glazuur. Maak een esdoorn-sinaasappelglazuur voor een pittige, opvallende smaakcombinatie. Bedenk je eigen aangepaste glazuur.&quot;</span>
 <span class="p">}</span>
@@ -2379,26 +2448,30 @@ are subsets of the original splits.</p>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Over het algemeen hebben raszuivere Cavaliers voorspelbare eigenschappen. Als je een raszuivere Cavalier koopt, kun je verwachten dat ze energieke, knuffelbare huisdieren zijn met een redelijk te onderhouden vacht. Genetisch bepaald hebben Cavaliers een neiging tot zorgeloosheid. Als je een rashond koopt, kun je een dergelijk karakter verwachten. Niet raszuivere Cavaliers kunnen sommige van de biologische eigenschappen overnemen van om het even welk ander ras waar ze mee gekruist zijn. Als ze zijn gekruist met een jachthond, dan kunnen ze een sterker jachtinstinct hebben, op dezelfde manier kunnen ze, als ze met een ras zijn gekruist met minder energie, zoals de shih tzu, dat energieke enthousiasme kwijtraken waar je in de eerste plaats op gevallen bent. Mensen hebben hun zinnen gezet op raszuivere Cavaliers. Dit betekent dat ze uit een beperkte genenpoel gefokt zijn. Om aangeduid te worden als raszuiver, wordt er op veel plaatsen inteelt gedaan met hun honden, en anderen hebben onwetend gefokt met een genenpoel die te klein is. Dit heeft heel realistische en bijzonder ongewenste consequenties. Raszuivere Cavaliers hebben een verhoogd risico op hartklachten, hernia en/of ernstige neurologische aandoeningen.   Hartziekte: in Engeland heeft 59% van de Cavaliers ouder dan 4 jaar een hartruis. Zijnde bijna tweederden van de populatie Cavaliers in Engeland is dit een uitzonderlijk statistisch gegeven.  Chiari misvorming en Syringomyelia: Kort gezegd betekent deze aandoening dat de schedel van de hond te klein is voor zijn hersenen. Dit veroorzaakt afschuwelijke zenuwpijn. Het diergeneeskundige leerboek \&quot;Breed Predispositions to Disease in the Dogs and Cats\&quot; bestempelt deze aandoening als \&quot;veel voorkomend\&quot; met tekenen die zich ontwikkelen tussen de leeftijd van 5 maanden tot 3 jaar.   Epilepsie: Honden kunnen op elk moment aanvallen ontwikkelen, maar tussen de 6 maanden en 6 jaar is de meest voorkomende periode.  Hernia:  Dit is een andere \&quot;veelvoorkomende\&quot; afwijking, vooral als Cavaliers ouder worden.  In de meeste gevallen zul je niet weten dat je Cavalier gevoelig is voor een hernia, tot je hem stijf ziet lopen of zijn hoofd met tegenzin naar beneden brengt naar zijn voerbak of waterbak.&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;target_text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Overweeg de voordelen als je kiest voor een raszuivere Cavalier. Stel vast wat de schaduwzijden zijn van het kopen van een rashond. Houd algemene gezondheidsproblemen van de Cavalier in gedachten.&quot;</span>
 <span class="p">}</span>
-</code></pre></div></p>
+</code></pre></div>
 <p>When evaluating generative models, we use the following setup (see the
 <a href="/methodology">methodology</a> for more information on how these are used):</p>
 <ul>
 <li>Number of few-shot examples: 1</li>
-<li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>Hieronder volgen artikelen met bijbehorende samenvattingen.
-</code></pre></div></li>
-<li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>Artikel: {text}
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Hieronder volgen artikelen met bijbehorende samenvattingen.
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Artikel: {text}
 Samenvatting: {target_text}
-</code></pre></div></li>
-<li>Instruction-tuned prompt template:
-  <div class="highlight"><pre><span></span><code>Artikel: {text}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Artikel: {text}
 
 Schrijf een samenvatting van het bovenstaande artikel.
-</code></pre></div></li>
-</ul>
+</code></pre></div>
 <p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>wiki-lingua-nl
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>wiki-lingua-nl
 </code></pre></div>
 
 

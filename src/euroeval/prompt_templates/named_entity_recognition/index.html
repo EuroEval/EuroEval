@@ -631,6 +631,8 @@
       
         
       
+        
+      
     
     
     
@@ -1218,7 +1220,27 @@
 <span class="normal">375</span>
 <span class="normal">376</span>
 <span class="normal">377</span>
-<span class="normal">378</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Templates for the Named Entity Recognition task.&quot;&quot;&quot;</span>
+<span class="normal">378</span>
+<span class="normal">379</span>
+<span class="normal">380</span>
+<span class="normal">381</span>
+<span class="normal">382</span>
+<span class="normal">383</span>
+<span class="normal">384</span>
+<span class="normal">385</span>
+<span class="normal">386</span>
+<span class="normal">387</span>
+<span class="normal">388</span>
+<span class="normal">389</span>
+<span class="normal">390</span>
+<span class="normal">391</span>
+<span class="normal">392</span>
+<span class="normal">393</span>
+<span class="normal">394</span>
+<span class="normal">395</span>
+<span class="normal">396</span>
+<span class="normal">397</span>
+<span class="normal">398</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Templates for the Named Entity Recognition task.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">t</span>
 
@@ -1234,6 +1256,7 @@
     <span class="n">FR</span><span class="p">,</span>
     <span class="n">IS</span><span class="p">,</span>
     <span class="n">IT</span><span class="p">,</span>
+    <span class="n">LT</span><span class="p">,</span>
     <span class="n">LV</span><span class="p">,</span>
     <span class="n">NB</span><span class="p">,</span>
     <span class="n">NL</span><span class="p">,</span>
@@ -1460,6 +1483,25 @@
         <span class="s2">&quot;nella frase. Il risultato dovrebbe essere un dizionario JSON con le chiavi &quot;</span>
         <span class="s2">&quot;</span><span class="si">{labels_str}</span><span class="s2">. I valori devono essere elenchi di entità &quot;</span>
         <span class="s2">&quot;nominate di quel tipo, esattamente come appaiono nella frase.&quot;</span><span class="p">,</span>
+    <span class="p">),</span>
+    <span class="n">LT</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
+        <span class="n">default_prompt_label_mapping</span><span class="o">=</span><span class="p">{</span>
+            <span class="s2">&quot;b-per&quot;</span><span class="p">:</span> <span class="s2">&quot;asmuo&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;i-per&quot;</span><span class="p">:</span> <span class="s2">&quot;asmuo&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;b-loc&quot;</span><span class="p">:</span> <span class="s2">&quot;vieta&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;i-loc&quot;</span><span class="p">:</span> <span class="s2">&quot;vieta&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;b-org&quot;</span><span class="p">:</span> <span class="s2">&quot;organizacija&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;i-org&quot;</span><span class="p">:</span> <span class="s2">&quot;organizacija&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;b-misc&quot;</span><span class="p">:</span> <span class="s2">&quot;kita&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;i-misc&quot;</span><span class="p">:</span> <span class="s2">&quot;kita&quot;</span><span class="p">,</span>
+        <span class="p">},</span>
+        <span class="n">default_prompt_prefix</span><span class="o">=</span><span class="s2">&quot;Toliau pateikti sakiniai ir JSON žodynai su vardiniais &quot;</span>
+        <span class="s2">&quot;vienetais, kurie pateikiame sakinyje.&quot;</span><span class="p">,</span>
+        <span class="n">default_prompt_template</span><span class="o">=</span><span class="s2">&quot;Sakinys: </span><span class="si">{text}</span><span class="se">\n</span><span class="s2">Vardiniai vienetai: </span><span class="si">{label}</span><span class="s2">&quot;</span><span class="p">,</span>
+        <span class="n">default_instruction_prompt</span><span class="o">=</span><span class="s2">&quot;Sakinys: </span><span class="si">{text}</span><span class="se">\n\n</span><span class="s2">Identifikuokite vardinius &quot;</span>
+        <span class="s2">&quot;vienetus sakinyje. Turėtumėte pateikti tai kaip JSON žodyną su raktais &quot;</span>
+        <span class="s2">&quot;</span><span class="si">{labels_str}</span><span class="s2">. Reikšmės turi būti to tipo vardinių vienetų sąrašai, &quot;</span>
+        <span class="s2">&quot;tiksliai taip, kaip jie rodomi sakinyje.&quot;</span><span class="p">,</span>
     <span class="p">),</span>
     <span class="n">LV</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
         <span class="n">default_prompt_label_mapping</span><span class="o">=</span><span class="p">{</span>

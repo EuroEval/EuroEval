@@ -639,6 +639,8 @@
       
         
       
+        
+      
     
     
     
@@ -1105,6 +1107,29 @@
   
   
     <li class="md-nav__item">
+      <a href="../lithuanian/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    🇱🇹 Lithuanian
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../norwegian/" class="md-nav__link">
         
   
@@ -1519,7 +1544,7 @@ news article and the chosen sentence as two separate samples, to increase the si
 the dataset (keeping them within the same dataset split). In total, we use a 72 / 40 /
 279 split for training, validation and testing, respectively.</p>
 <p>Here are a few examples from the training split:</p>
-<p><div class="highlight"><pre><span></span><code><span class="p">{</span>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Eg koyri teg, tú koyrir meg Hetta er árstíðin, har vit vanliga fara í jólaborðhald at hugna okkum saman við vinum og starvsfeløgum. Og hóast vit kanska ikki hittast og koma saman á júst sama hátt, sum áðrenn korona rakti samfelagið, so eru óivað nógv sum kortini gleða seg til hesa tíðina við hugna og veitslulag Eins og undanfarin ár, fara Ráðið fyri Ferðslutrygd (í samstarvi við Betri Trygging og Trygd) at fremja átak fyri at steðga rúskoyring. Hetta verður gjørt við filminum  ”Eg koyri teg, tú koyrir meg”, ið er úrslitið av stóru hugskotskappingini hjá Ráðnum fyri Ferðslutrygd síðsta vetur. Filmslýsingin verður í hesum døgum víst í sjónvarpi, biografi og á sosialum miðlum. Brynhild Nolsøe í Lágabø úr Vági vann kappingina, og luttekur saman við vinfólki í lýsingini. Brynhild kennir sjálv til avbjóðingarnar av at vera partur av náttarlívinum í aðrari bygd, enn teirri tú býrt í. Tí bygdi hennara hugskot á egnar royndir. Í vinarbólkinum hjá Brynhild hava tey gjørt eina avtalu, ið byggir á tankan: ”Eg koyri teg, tú koyrir meg.” Hetta merkir, at tey skiftast um at koyra: - Avtalan er tann, at um eitt vinfólk er farið í býin og eg liggi heima, so ringja tey til mín, og eg fari upp at koyra tey. Um eg eri farin í býin og okkurt vinfólk liggur heima, so koma tey eisini upp at koyra meg. Tað er líkamikið um tað er morgun, dagur ella nátt, greiddi Brynhild frá í lýsingarfilminum, ið er komin burtur úr hugskotinum hjá Brynhild. Vit valdu at gera eina hugskotskapping, har ung fólk sluppu at seta dagsskránna, og úrslitið gjørdist hesin filmurin, ið byggir á tey hugskot, ið tey ungu sjálvi høvdu, sigur Lovisa Petersen Glerfoss, stjóri í Ráðnum fyri Ferðslutrygd. Eftir at vinnarin varð funnin, hevur Brynhild arbeitt saman við eini lýsingarstovu við at menna hugskotið til eina lidna lýsing. Í lýsingini síggja vit Brynhild og hennara vinfólk í býnum og á veg til hús. Í samráð við Brynhild er lýsingin blivin jalig og uppbyggjandi, heldur enn fordømandi og neilig. Hugburðurin til rúskoyring er broyttur munandi seinastu nógvu árini, og heili 98% av føroyingum siga at rúskoyring verður ikki góðtikin. Men kortini verða bilførarar javnan tiknir við promillu í blóðinum. Harafturat er rúskoyring orsøk til fjórðu hvørja deyðsvanlukku í ferðsluni, vísa tøl úr norðurlondum. Tí er tað eisini í 2021 týdningarmikið at tosa um at steðga rúskoyring! Átakið heldur fram hetta til nýggjárs og løgreglan ger rúskanningar, meðan átakið er. Eisini fer løgreglan at lata bilførarum, sum hava síni viðurskifti í ordan, snøggar lyklaringar við boðskapinum \&quot;Eg koyri teg, tú koyrir meg\&quot;. &quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;positive&quot;</span>
 <span class="p">}</span>
@@ -1533,32 +1558,36 @@ the dataset (keeping them within the same dataset split). In total, we use a 72 
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Landsverk arbeiður í løtuni við at fáa trailaran, sum er fult lastaður, upp aftur, og arbeiðið fer væntandi at taka nakrar tímar, tí stórar maskinur skulu til, og tær mugu koyra um Eiðiskarð fyri at koma til hjálpar. &quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;negative&quot;</span>
 <span class="p">}</span>
-</code></pre></div></p>
+</code></pre></div>
 <p>When evaluating generative models, we use the following setup (see the
 <a href="/methodology">methodology</a> for more information on how these are used):</p>
 <ul>
 <li>Number of few-shot examples: 5</li>
-<li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>Her eru nakrir tekstir flokkaðir eftir lyndi, sum kann vera &#39;positivt&#39;, &#39;neutralt&#39; ella &#39;negativt&#39;.
-</code></pre></div></li>
-<li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>Text: {text}
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Her eru nakrir tekstir flokkaðir eftir lyndi, sum kann vera &#39;positivt&#39;, &#39;neutralt&#39; ella &#39;negativt&#39;.
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Text: {text}
 Lyndi: {label}
-</code></pre></div></li>
-<li>Instruction-tuned prompt template:
-  <div class="highlight"><pre><span></span><code>Tekstur: {text}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Tekstur: {text}
 
 Flokka lyndið í tekstinum. Svara við &#39;positivt&#39;, &#39;neutralt&#39; ella &#39;negativt&#39;.
-</code></pre></div></li>
-<li>Label mapping:<ul>
+</code></pre></div>
+<ul>
+<li>Label mapping:</li>
 <li><code>positive</code> ➡️ <code>positivt</code></li>
 <li><code>neutral</code> ➡️ <code>neutralt</code></li>
 <li><code>negative</code> ➡️ <code>negativt</code></li>
 </ul>
-</li>
-</ul>
 <p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>fosent
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>fosent
 </code></pre></div>
 <h2 id="named-entity-recognition">Named Entity Recognition</h2>
 <h3 id="fone">FoNE</h3>
@@ -1571,7 +1600,7 @@ only the original CoNNL-2003 entity types (<code>PER</code>, <code>ORG</code>, <
 <p>The original full dataset consists of 6,286 samples, which we split into 1,024 / 256 /
 2,048 samples for training, validation and testing, respectively.</p>
 <p>Here are a few examples from the training split:</p>
-<p><div class="highlight"><pre><span></span><code><span class="p">{</span>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="err">&#39;</span><span class="kc">t</span><span class="err">oke</span><span class="kc">ns</span><span class="err">&#39;</span><span class="p">:</span><span class="w"> </span><span class="err">array(</span><span class="p">[</span><span class="err">&#39;Millum&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;</span><span class="kc">te</span><span class="err">irra&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;er&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;Tommy&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;Pe</span><span class="kc">tersen</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;</span><span class="p">,</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;sum&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;ei</span><span class="kc">tt</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;ski</span><span class="kc">ft</span><span class="err">i&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;hevði&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;ES&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;sum&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;sí</span><span class="kc">tt</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;málsøki&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;í&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;Ti</span><span class="kc">n</span><span class="err">ga</span><span class="kc">nes</span><span class="err">i&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;.&#39;</span><span class="p">],</span><span class="w"> </span><span class="err">d</span><span class="kc">t</span><span class="err">ype=objec</span><span class="kc">t</span><span class="err">)</span><span class="p">,</span>
 <span class="w">  </span><span class="err">&#39;labels&#39;</span><span class="p">:</span><span class="w"> </span><span class="err">array(</span><span class="p">[</span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;B</span><span class="mi">-</span><span class="err">PER&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;I</span><span class="mi">-</span><span class="err">PER&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;B</span><span class="mi">-</span><span class="err">ORG&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;B</span><span class="mi">-</span><span class="err">LOC&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">],</span><span class="w"> </span><span class="err">d</span><span class="kc">t</span><span class="err">ype=objec</span><span class="kc">t</span><span class="err">)</span>
 <span class="p">}</span>
@@ -1585,24 +1614,30 @@ only the original CoNNL-2003 entity types (<code>PER</code>, <code>ORG</code>, <
 <span class="w">  </span><span class="err">&#39;</span><span class="kc">t</span><span class="err">oke</span><span class="kc">ns</span><span class="err">&#39;</span><span class="p">:</span><span class="w"> </span><span class="err">array(</span><span class="p">[</span><span class="err">&#39;Soleiðis&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;</span><span class="p">,</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;a</span><span class="kc">t</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;S</span><span class="kc">tar</span><span class="err">vss</span><span class="kc">t</span><span class="err">ova</span><span class="kc">n</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;ka</span><span class="kc">nn</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;</span><span class="kc">f</span><span class="err">ylgja&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;við&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;</span><span class="p">,</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;a</span><span class="kc">t</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;</span><span class="kc">ta</span><span class="err">ð&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;ikki&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;er&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;</span><span class="kc">n</span><span class="err">ýliga&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;heilivágsviðgjørdur&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;</span><span class="kc">f</span><span class="err">iskur&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;</span><span class="p">,</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;sum&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;</span><span class="kc">t</span><span class="err">iki</span><span class="kc">n</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;verður&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;.&#39;</span><span class="p">],</span><span class="w"> </span><span class="err">d</span><span class="kc">t</span><span class="err">ype=objec</span><span class="kc">t</span><span class="err">)</span><span class="p">,</span>
 <span class="w">  </span><span class="err">&#39;labels&#39;</span><span class="p">:</span><span class="w"> </span><span class="err">array(</span><span class="p">[</span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;B</span><span class="mi">-</span><span class="err">ORG&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">],</span><span class="w"> </span><span class="err">d</span><span class="kc">t</span><span class="err">ype=objec</span><span class="kc">t</span><span class="err">)</span>
 <span class="p">}</span>
-</code></pre></div></p>
+</code></pre></div>
 <p>When evaluating generative models, we use the following setup (see the
 <a href="/methodology">methodology</a> for more information on how these are used):</p>
 <ul>
 <li>Number of few-shot examples: 8</li>
-<li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>Her eru nakrir setningar og nakrar JSON orðabøkur við nevndar eindir, sum eru í setningunum.
-</code></pre></div></li>
-<li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>Setningur: {text}
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Her eru nakrir setningar og nakrar JSON orðabøkur við nevndar eindir, sum eru í setningunum.
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Setningur: {text}
 Nevndar eindir: {label}
-</code></pre></div></li>
-<li>Instruction-tuned prompt template:
-  <div class="highlight"><pre><span></span><code>Setningur: {text}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Setningur: {text}
 
 Greinið nevndu einingarnar í setningunni. Þú ættir að skila þessu sem JSON orðabók með lyklunum &#39;persónur&#39;, &#39;staður&#39;, &#39;felagsskapur&#39; og &#39;ymiskt&#39;. Gildin ættu að vera listi yfir nevndu einingarnar af þeirri gerð, nákvæmlega eins og þær koma fram í setningunni.
-</code></pre></div></li>
-<li>Label mapping:<ul>
+</code></pre></div>
+<ul>
+<li>Label mapping:</li>
 <li><code>B-PER</code> ➡️ <code>persónur</code></li>
 <li><code>I-PER</code> ➡️ <code>persónur</code></li>
 <li><code>B-LOC</code> ➡️ <code>staður</code></li>
@@ -1612,10 +1647,8 @@ Greinið nevndu einingarnar í setningunni. Þú ættir að skila þessu sem JSO
 <li><code>B-MISC</code> ➡️ <code>ymiskt</code></li>
 <li><code>I-MISC</code> ➡️ <code>ymiskt</code></li>
 </ul>
-</li>
-</ul>
 <p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>fone
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>fone
 </code></pre></div>
 <h3 id="unofficial-wikiann-fo">Unofficial: WikiANN-fo</h3>
 <p>This dataset was part of the WikiANN dataset (also known as PAN-X), published in <a href="https://aclanthology.org/P17-1178/">this
@@ -1625,7 +1658,7 @@ labels have been automatically annotated using knowledge base mining. There are 
 <p>The original full dataset consists of an unknown amount of samples, which we split into
 1,024 / 256 / 2,048 samples for training, validation and testing, respectively.</p>
 <p>Here are a few examples from the training split:</p>
-<p><div class="highlight"><pre><span></span><code><span class="p">{</span>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="err">&#39;</span><span class="kc">t</span><span class="err">oke</span><span class="kc">ns</span><span class="err">&#39;</span><span class="p">:</span><span class="w"> </span><span class="err">array(</span><span class="p">[</span><span class="s2">&quot;&#39;&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;&#39;&#39;&quot;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;Pólla</span><span class="kc">n</span><span class="err">d&#39;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;&#39;&#39;&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;&#39;&quot;</span><span class="p">],</span><span class="w"> </span><span class="err">d</span><span class="kc">t</span><span class="err">ype=objec</span><span class="kc">t</span><span class="err">)</span><span class="p">,</span>
 <span class="w">  </span><span class="err">&#39;labels&#39;</span><span class="p">:</span><span class="w"> </span><span class="err">array(</span><span class="p">[</span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;B</span><span class="mi">-</span><span class="err">LOC&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">],</span><span class="w"> </span><span class="err">d</span><span class="kc">t</span><span class="err">ype=objec</span><span class="kc">t</span><span class="err">)</span>
 <span class="p">}</span>
@@ -1639,24 +1672,30 @@ labels have been automatically annotated using knowledge base mining. There are 
 <span class="w">  </span><span class="err">&#39;</span><span class="kc">t</span><span class="err">oke</span><span class="kc">ns</span><span class="err">&#39;</span><span class="p">:</span><span class="w"> </span><span class="err">array(</span><span class="p">[</span><span class="err">&#39;Norðuramerika&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;</span><span class="mi">-</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;</span><span class="mi">16</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;%&#39;</span><span class="p">],</span><span class="w"> </span><span class="err">d</span><span class="kc">t</span><span class="err">ype=objec</span><span class="kc">t</span><span class="err">)</span><span class="p">,</span>
 <span class="w">  </span><span class="err">&#39;labels&#39;</span><span class="p">:</span><span class="w"> </span><span class="err">array(</span><span class="p">[</span><span class="err">&#39;B</span><span class="mi">-</span><span class="err">LOC&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">],</span><span class="w"> </span><span class="err">d</span><span class="kc">t</span><span class="err">ype=objec</span><span class="kc">t</span><span class="err">)</span>
 <span class="p">}</span>
-</code></pre></div></p>
+</code></pre></div>
 <p>When evaluating generative models, we use the following setup (see the
 <a href="/methodology">methodology</a> for more information on how these are used):</p>
 <ul>
 <li>Number of few-shot examples: 8</li>
-<li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>Her eru nakrir setningar og nakrar JSON orðabøkur við nevndar eindir, sum eru í setningunum.
-</code></pre></div></li>
-<li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>Setningur: {text}
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Her eru nakrir setningar og nakrar JSON orðabøkur við nevndar eindir, sum eru í setningunum.
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Setningur: {text}
 Nevndar eindir: {label}
-</code></pre></div></li>
-<li>Instruction-tuned prompt template:
-  <div class="highlight"><pre><span></span><code>Setningur: {text}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Setningur: {text}
 
 Greinið nevndu einingarnar í setningunni. Þú ættir að skila þessu sem JSON orðabók með lyklunum &#39;persónur&#39;, &#39;staður&#39;, &#39;felagsskapur&#39; og &#39;ymiskt&#39;. Gildin ættu að vera listi yfir nevndu einingarnar af þeirri gerð, nákvæmlega eins og þær koma fram í setningunni.
-</code></pre></div></li>
-<li>Label mapping:<ul>
+</code></pre></div>
+<ul>
+<li>Label mapping:</li>
 <li><code>B-PER</code> ➡️ <code>persónur</code></li>
 <li><code>I-PER</code> ➡️ <code>persónur</code></li>
 <li><code>B-LOC</code> ➡️ <code>staður</code></li>
@@ -1666,10 +1705,8 @@ Greinið nevndu einingarnar í setningunni. Þú ættir að skila þessu sem JSO
 <li><code>B-MISC</code> ➡️ <code>ymiskt</code></li>
 <li><code>I-MISC</code> ➡️ <code>ymiskt</code></li>
 </ul>
-</li>
-</ul>
 <p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>wikiann-fo
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>wikiann-fo
 </code></pre></div>
 <h2 id="linguistic-acceptability">Linguistic Acceptability</h2>
 <h3 id="scala-fo">ScaLA-fo</h3>
@@ -1681,11 +1718,11 @@ grammatically incorrect samples. The corruptions were done by either removing a 
 from a sentence, or by swapping two neighbouring words in a sentence. To ensure that
 this does indeed break the grammaticality of the sentence, a set of rules were used on
 the part-of-speech tags of the words in the sentence.</p>
-<p>The original dataset consists of 1,621 samples, from which we use 1,024 / 256 / 1,024 samples for training,
-validation and testing, respectively (so 3,328 samples used in total). These splits are
-used as-is in the framework.</p>
+<p>The original dataset consists of 1,621 samples, from which we use 1,024 / 256 / 1,024
+samples for training, validation and testing, respectively (so 3,328 samples used in
+total). These splits are used as-is in the framework.</p>
 <p>Here are a few examples from the training split:</p>
-<p><div class="highlight"><pre><span></span><code><span class="p">{</span>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Hann talaði tí í samkomuhúsinum við Jödarnar og við teir, sum óttaðust Guð, og á torginum hvönn dag við teir, sum hann har hitti við.&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;correct&quot;</span>
 <span class="p">}</span>
@@ -1699,31 +1736,35 @@ used as-is in the framework.</p>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Hetta hendi tríggjar ferðir, og alt fyri eitt varð luturin tikin upp aftur himmals til.&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;incorrect&quot;</span>
 <span class="p">}</span>
-</code></pre></div></p>
+</code></pre></div>
 <p>When evaluating generative models, we use the following setup (see the
 <a href="/methodology">methodology</a> for more information on how these are used):</p>
 <ul>
 <li>Number of few-shot examples: 12</li>
-<li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>Hetta eru nakrir setningar og um teir eru mállæruliga rættir.
-</code></pre></div></li>
-<li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>Setningur: {text}
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Hetta eru nakrir setningar og um teir eru mállæruliga rættir.
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Setningur: {text}
 Mállæruliga rættur: {label}
-</code></pre></div></li>
-<li>Instruction-tuned prompt template:
-  <div class="highlight"><pre><span></span><code>Setningur: {text}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Setningur: {text}
 
 Greinið hvort setningurin er mállæruliga rættur ella ikki. Svarið skal vera &#39;ja&#39; um setningurin er rættur og &#39;nei&#39; um hann ikki er.
-</code></pre></div></li>
-<li>Label mapping:<ul>
+</code></pre></div>
+<ul>
+<li>Label mapping:</li>
 <li><code>correct</code> ➡️ <code>ja</code></li>
 <li><code>incorrect</code> ➡️ <code>nei</code></li>
 </ul>
-</li>
-</ul>
 <p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>scala-fo
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>scala-fo
 </code></pre></div>
 <h2 id="reading-comprehension">Reading Comprehension</h2>
 <h3 id="foqa">FoQA</h3>
@@ -1734,7 +1775,7 @@ were also corrected by the same native speaker.</p>
 <p>The original full dataset consists of 2,000 samples, and we split these into 848 / 128 /
 1,024 samples for training, validation and testing, respectively.</p>
 <p>Here are a few examples from the training split:</p>
-<p><div class="highlight"><pre><span></span><code><span class="p">{</span>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">&quot;context&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Felagsskapur ST fyri undirvísing, vísindum og mentan (á enskum: United Nations Educational, Scientific and Cultural Organization, stytt UNESCO) er ein serstovnur undir Sameindu Tjóðum, stovnaður í 1946. Endamálið við felagskapinum er at menna útbúgving, gransking og mentan og at fremja samstarv millum tey 195 limalondini og teir 8 atlimirnar, ið eru Føroyar, Curaçao, Aruba, Jomfrúoyggjar, Caymanoyggjar, Makao, Niðurlendsku Antillurnar og Tokelau. Føroyar fingu atlimaskap í 2009 . Atlimaskapur gevur øll tey somu rættindi sum limaskapur. Limalondini skipa seg við hvør síni UNESCO nevnd. Fyrsta føroyska UNESCO nevndin varð skipað í mai 2012. \n\nUNESCO tekur sær millum annað av at meta um, hvørji pláss í heiminum skulu fáa status sum World Heritage Sites (heimsarvur). Limalond UNESCO samtyktu í 1972 millumtjóðasáttmálan um at verja heimsins mentanar- og náttúruarv. Orsøkin er vandin fyri, at náttúruøki, fornfrøðilig minnismerki og mentanarvirði forfarast orsakað av ferðafólkavinnu, dálking, kríggi ella vanligari órøkt.\n\nHygg eisini at \n\n Millumtjóðasáttmáli UNESCO um vernd av heimsins mentanar- og náttúruarvi.\n\nKeldur\n\nSlóðir úteftir \n\n UNESCO World Heritage Centre\n\nST\nHeimsarvar&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;question&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Hvat góðkendu UNESCO-limalondini í 1972?&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;answers&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
@@ -1760,29 +1801,33 @@ were also corrected by the same native speaker.</p>
 <span class="w">    </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="err">array(</span><span class="p">[</span><span class="s2">&quot;Alfredo Binda, Fausto Coppi og Eddy Merckx&quot;</span><span class="p">],</span><span class="w"> </span><span class="err">d</span><span class="kc">t</span><span class="err">ype=objec</span><span class="kc">t</span><span class="err">)</span>
 <span class="w">  </span><span class="p">}</span>
 <span class="p">}</span>
-</code></pre></div></p>
+</code></pre></div>
 <p>When evaluating generative models, we use the following setup (see the
 <a href="/methodology">methodology</a> for more information on how these are used):</p>
 <ul>
 <li>Number of few-shot examples: 4</li>
-<li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>Hetta eru tekstir saman við spurningum og svar.
-</code></pre></div></li>
-<li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>Tekstur: {text}
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Hetta eru tekstir saman við spurningum og svar.
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Tekstur: {text}
 Spurningur: {question}
 Svara við í mesta lagi trimum orðum: {label}
-</code></pre></div></li>
-<li>Instruction-tuned prompt template:
-  <div class="highlight"><pre><span></span><code>Tekstur: {text}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Tekstur: {text}
 
 Svara hesum spurninginum um tekstin uppiyvir við í mesta lagi trimum orðum.
 
 Spurningur: {question}
-</code></pre></div></li>
-</ul>
+</code></pre></div>
 <p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>foqa
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>foqa
 </code></pre></div>
 <h3 id="unofficial-multiwikiqa-fo">Unofficial: MultiWikiQA-fo</h3>
 <p>This dataset was published in <a href="https://doi.org/10.48550/arXiv.2509.04111">this paper</a>
@@ -1791,7 +1836,7 @@ languages.</p>
 <p>The original full dataset consists of 5,000 samples in a single split. We use a 1,024 /
 256 / 2,048 split for training, validation and testing, respectively, sampled randomly.</p>
 <p>Here are a few examples from the training split:</p>
-<p><div class="highlight"><pre><span></span><code><span class="p">{</span>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">    </span><span class="nt">&quot;context&quot;</span><span class="p">:</span><span class="w"> </span><span class="err">&#39;Ali</span><span class="w"> </span><span class="err">Babba</span><span class="mi">-</span><span class="w"> </span><span class="err">og</span><span class="w"> </span><span class="mi">49</span><span class="w"> </span><span class="err">aðrar</span><span class="w"> </span><span class="err">blaðgrei</span><span class="kc">n</span><span class="err">ir</span><span class="w"> </span><span class="err">er</span><span class="w"> </span><span class="err">ei</span><span class="kc">tt</span><span class="w"> </span><span class="err">sav</span><span class="kc">n</span><span class="w"> </span><span class="err">við</span><span class="w"> </span><span class="kc">f</span><span class="err">imm</span><span class="kc">t</span><span class="err">i</span><span class="w"> </span><span class="err">grei</span><span class="kc">nu</span><span class="err">m</span><span class="p">,</span><span class="w"> </span><span class="err">ið</span><span class="w"> </span><span class="err">Høg</span><span class="kc">n</span><span class="err">i</span><span class="w"> </span><span class="err">Mohr</span><span class="w"> </span><span class="err">hevur</span><span class="w"> </span><span class="err">skrivað</span><span class="w"> </span><span class="err">og</span><span class="w"> </span><span class="err">la</span><span class="kc">t</span><span class="err">ið</span><span class="w"> </span><span class="err">pre</span><span class="kc">nta</span><span class="err">ð</span><span class="w"> </span><span class="err">í</span><span class="w"> </span><span class="err">Dimmalæ</span><span class="kc">tt</span><span class="err">i</span><span class="kc">n</span><span class="err">g</span><span class="w"> </span><span class="err">og</span><span class="w"> </span><span class="err">Vi</span><span class="kc">nnu</span><span class="err">vi</span><span class="kc">tan</span><span class="w"> </span><span class="kc">fr</span><span class="err">á</span><span class="w"> </span><span class="err">desember</span><span class="w"> </span><span class="mi">2004</span><span class="w"> </span><span class="kc">t</span><span class="err">il</span><span class="w"> </span><span class="kc">fe</span><span class="err">bruar</span><span class="w"> </span><span class="mf">2006.</span><span class="err">\</span><span class="kc">n</span><span class="err">\</span><span class="kc">n</span><span class="err">Søgugo</span><span class="kc">n</span><span class="err">gd</span><span class="w"> </span><span class="err">\</span><span class="kc">n</span><span class="err">Grei</span><span class="kc">nasa</span><span class="err">v</span><span class="kc">n</span><span class="err">ið</span><span class="w"> </span><span class="err">s</span><span class="kc">n</span><span class="err">ýr</span><span class="w"> </span><span class="err">seg</span><span class="w"> </span><span class="err">um</span><span class="w"> </span><span class="kc">f</span><span class="err">ólk</span><span class="p">,</span><span class="w"> </span><span class="err">sum</span><span class="w"> </span><span class="err">búgva</span><span class="w"> </span><span class="err">í</span><span class="w"> </span><span class="err">Føroyum</span><span class="p">,</span><span class="w"> </span><span class="err">og</span><span class="w"> </span><span class="err">o</span><span class="kc">nnur</span><span class="p">,</span><span class="w"> </span><span class="err">ið</span><span class="w"> </span><span class="err">hava</span><span class="w"> </span><span class="kc">t</span><span class="err">ilk</span><span class="kc">n</span><span class="err">ý</span><span class="kc">t</span><span class="err">i</span><span class="w"> </span><span class="kc">t</span><span class="err">il</span><span class="w"> </span><span class="err">he</span><span class="kc">tta</span><span class="w"> </span><span class="err">la</span><span class="kc">n</span><span class="err">dið</span><span class="p">,</span><span class="w"> </span><span class="err">me</span><span class="kc">n</span><span class="w"> </span><span class="err">búgva</span><span class="w"> </span><span class="err">u</span><span class="kc">ttanlan</span><span class="err">ds.</span><span class="w"> </span><span class="err">Teks</span><span class="kc">t</span><span class="err">ir</span><span class="kc">n</span><span class="err">ir</span><span class="w"> </span><span class="err">hava</span><span class="w"> </span><span class="err">sum</span><span class="w"> </span><span class="err">i</span><span class="kc">nn</span><span class="err">ihald</span><span class="w"> </span><span class="kc">tr</span><span class="err">ý</span><span class="w"> </span><span class="err">eyðke</span><span class="kc">n</span><span class="err">d</span><span class="w"> </span><span class="err">sløg</span><span class="w"> </span><span class="err">av</span><span class="w"> </span><span class="err">me</span><span class="kc">nn</span><span class="err">iskjum</span><span class="p">:</span><span class="w"> </span><span class="kc">te</span><span class="err">y</span><span class="w"> </span><span class="err">ávísu</span><span class="w"> </span><span class="err">óke</span><span class="kc">n</span><span class="err">du</span><span class="p">,</span><span class="w"> </span><span class="err">sum</span><span class="w"> </span><span class="err">s</span><span class="kc">tan</span><span class="err">da</span><span class="w"> </span><span class="err">a</span><span class="kc">ftan</span><span class="w"> </span><span class="kc">f</span><span class="err">yri</span><span class="w"> </span><span class="kc">te</span><span class="err">y</span><span class="w"> </span><span class="err">ke</span><span class="kc">n</span><span class="err">du;</span><span class="w"> </span><span class="err">o</span><span class="kc">nnur</span><span class="p">,</span><span class="w"> </span><span class="err">ið</span><span class="w"> </span><span class="err">eru</span><span class="w"> </span><span class="err">mi</span><span class="kc">tt</span><span class="w"> </span><span class="err">í</span><span class="w"> </span><span class="err">ei</span><span class="kc">nu</span><span class="err">m</span><span class="w"> </span><span class="err">serliga</span><span class="w"> </span><span class="err">spe</span><span class="kc">nnan</span><span class="err">di</span><span class="w"> </span><span class="err">s</span><span class="kc">tar</span><span class="err">vi;</span><span class="w"> </span><span class="err">og</span><span class="w"> </span><span class="err">hi</span><span class="kc">n</span><span class="err">i</span><span class="p">,</span><span class="w"> </span><span class="err">ið</span><span class="w"> </span><span class="err">virka</span><span class="w"> </span><span class="kc">fre</span><span class="err">ms</span><span class="kc">t</span><span class="w"> </span><span class="err">í</span><span class="w"> </span><span class="err">vi</span><span class="kc">nnul</span><span class="err">ívi</span><span class="kc">nu</span><span class="err">m.</span><span class="w"> </span><span class="err">Sav</span><span class="kc">n</span><span class="err">ið</span><span class="w"> </span><span class="err">er</span><span class="w"> </span><span class="err">sos</span><span class="kc">tatt</span><span class="w"> </span><span class="err">gru</span><span class="kc">n</span><span class="err">dað</span><span class="w"> </span><span class="err">á</span><span class="w"> </span><span class="kc">tr</span><span class="err">íggjar</span><span class="w"> </span><span class="err">grei</span><span class="kc">nar</span><span class="err">øðir</span><span class="p">,</span><span class="w"> </span><span class="err">ið</span><span class="w"> </span><span class="err">jús</span><span class="kc">t</span><span class="w"> </span><span class="err">eru</span><span class="w"> </span><span class="err">greiddar</span><span class="w"> </span><span class="err">úr</span><span class="w"> </span><span class="err">ho</span><span class="kc">n</span><span class="err">dum</span><span class="w"> </span><span class="err">e</span><span class="kc">ft</span><span class="err">ir</span><span class="w"> </span><span class="err">hesum</span><span class="w"> </span><span class="kc">tr</span><span class="err">imum</span><span class="w"> </span><span class="err">leis</span><span class="kc">tu</span><span class="err">m.\</span><span class="kc">n</span><span class="err">\</span><span class="kc">n</span><span class="err">Les</span><span class="w"> </span><span class="err">eisi</span><span class="kc">n</span><span class="err">i</span><span class="w"> </span><span class="err">\</span><span class="kc">n</span><span class="err">Mohr</span><span class="p">,</span><span class="w"> </span><span class="err">Høg</span><span class="kc">n</span><span class="err">i</span><span class="w"> </span><span class="err">(</span><span class="mi">2010</span><span class="err">)</span><span class="w"> </span><span class="err">Tá</span><span class="w"> </span><span class="err">deyði</span><span class="kc">n</span><span class="w"> </span><span class="err">verður</span><span class="w"> </span><span class="err">avdúkaður.</span><span class="w"> </span><span class="err">Øgiliga</span><span class="w"> </span><span class="err">egið</span><span class="w"> </span><span class="kc">f</span><span class="err">orlag.</span><span class="w"> </span><span class="err">ISBN</span><span class="w"> </span><span class="mi">9789991880518</span><span class="err">S</span><span class="kc">t</span><span class="err">yrki</span><span class="kc">n</span><span class="w"> </span><span class="err">í</span><span class="w"> </span><span class="err">bóki</span><span class="kc">n</span><span class="err">i</span><span class="w"> </span><span class="err">er</span><span class="w"> </span><span class="kc">tann</span><span class="w"> </span><span class="err">bei</span><span class="kc">nra</span><span class="err">k</span><span class="kc">na</span><span class="w"> </span><span class="kc">te</span><span class="err">ks</span><span class="kc">t</span><span class="err">i</span><span class="kc">n</span><span class="p">,</span><span class="w"> </span><span class="kc">t</span><span class="err">ær</span><span class="w"> </span><span class="err">hug</span><span class="kc">ta</span><span class="err">ka</span><span class="kc">n</span><span class="err">di</span><span class="p">,</span><span class="w"> </span><span class="err">me</span><span class="kc">n</span><span class="w"> </span><span class="err">k</span><span class="kc">n</span><span class="err">øppu</span><span class="w"> </span><span class="err">orði</span><span class="kc">n</span><span class="err">gar</span><span class="kc">nar</span><span class="p">,</span><span class="w"> </span><span class="err">miðli</span><span class="kc">n</span><span class="err">gi</span><span class="kc">n</span><span class="w"> </span><span class="err">av</span><span class="w"> </span><span class="err">s</span><span class="kc">ter</span><span class="err">kum</span><span class="w"> </span><span class="err">me</span><span class="kc">nn</span><span class="err">iskjaligum</span><span class="w"> </span><span class="err">ke</span><span class="kc">nslu</span><span class="err">m</span><span class="p">,</span><span class="w"> </span><span class="err">s</span><span class="kc">t</span><span class="err">úra</span><span class="kc">n</span><span class="p">,</span><span class="w"> </span><span class="err">gleði</span><span class="p">,</span><span class="w"> </span><span class="err">ó</span><span class="kc">tta</span><span class="w"> </span><span class="err">og</span><span class="w"> </span><span class="err">sorg</span><span class="p">,</span><span class="w"> </span><span class="err">og</span><span class="w"> </span><span class="err">so</span><span class="w"> </span><span class="kc">tann</span><span class="w"> </span><span class="err">ei</span><span class="kc">nfal</span><span class="err">da</span><span class="p">,</span><span class="w"> </span><span class="err">posi</span><span class="kc">t</span><span class="err">iva</span><span class="w"> </span><span class="err">me</span><span class="kc">nns</span><span class="err">ikja</span><span class="kc">fatan</span><span class="err">i</span><span class="kc">n</span><span class="w"> </span><span class="err">\xa</span><span class="mi">0-</span><span class="w"> </span><span class="err">Erhard</span><span class="w"> </span><span class="err">Jacobse</span><span class="kc">n</span><span class="p">,</span><span class="w"> </span><span class="err">ummælari.Mohr</span><span class="p">,</span><span class="w"> </span><span class="err">Høg</span><span class="kc">n</span><span class="err">i</span><span class="w"> </span><span class="err">(</span><span class="mi">2017</span><span class="err">)</span><span class="w"> </span><span class="err">Frac</span><span class="kc">tura</span><span class="w"> </span><span class="kc">nas</span><span class="err">i.</span><span class="w"> </span><span class="err">Øgiliga</span><span class="w"> </span><span class="err">egið</span><span class="w"> </span><span class="kc">f</span><span class="err">orlag.</span><span class="w"> </span><span class="err">ISBN</span><span class="w"> </span><span class="mf">9789991880525.</span><span class="w"> </span><span class="err">Kirs</span><span class="kc">ten</span><span class="w"> </span><span class="err">Brix</span><span class="w"> </span><span class="kc">t</span><span class="err">ý</span><span class="kc">tt</span><span class="w"> </span><span class="kc">t</span><span class="err">il</span><span class="w"> </span><span class="err">da</span><span class="kc">ns</span><span class="err">k</span><span class="kc">t</span><span class="w"> </span><span class="mf">2019.</span><span class="w"> </span><span class="err">Da</span><span class="kc">ns</span><span class="err">k</span><span class="kc">t</span><span class="w"> </span><span class="err">hei</span><span class="kc">t</span><span class="err">i</span><span class="w"> </span><span class="err">Rejse</span><span class="w"> </span><span class="kc">f</span><span class="err">or</span><span class="w"> </span><span class="err">live</span><span class="kc">t</span><span class="err">.</span><span class="w"> </span><span class="kc">f</span><span class="err">orlag</span><span class="w"> </span><span class="err">Ama</span><span class="kc">n</span><span class="err">da</span><span class="w"> </span><span class="err">Books.</span><span class="w"> </span><span class="err">Seld</span><span class="w"> </span><span class="kc">t</span><span class="err">il</span><span class="w"> </span><span class="kc">f</span><span class="err">ilm</span><span class="kc">fra</span><span class="err">mleiðslu</span><span class="w"> </span><span class="err">í</span><span class="w"> </span><span class="mf">2018.</span><span class="err">Ho</span><span class="kc">n</span><span class="w"> </span><span class="err">er</span><span class="w"> </span><span class="err">í</span><span class="w"> </span><span class="err">passa</span><span class="kc">n</span><span class="err">di</span><span class="w"> </span><span class="kc">fl</span><span class="err">og</span><span class="kc">fer</span><span class="err">ð</span><span class="p">,</span><span class="w"> </span><span class="err">skrivi</span><span class="kc">n</span><span class="err">gi</span><span class="kc">n</span><span class="err">.</span><span class="w"> </span><span class="err">Floygd</span><span class="p">,</span><span class="w"> </span><span class="err">sum</span><span class="w"> </span><span class="err">ei</span><span class="kc">n</span><span class="err">gi</span><span class="kc">n</span><span class="w"> </span><span class="err">a</span><span class="kc">nnar</span><span class="w"> </span><span class="kc">te</span><span class="err">ks</span><span class="kc">tur</span><span class="w"> </span><span class="err">eg</span><span class="w"> </span><span class="kc">n</span><span class="err">ýliga</span><span class="kc">n</span><span class="err">i</span><span class="w"> </span><span class="err">havi</span><span class="w"> </span><span class="err">lisið.</span><span class="w"> </span><span class="err">Síðs</span><span class="kc">t</span><span class="w"> </span><span class="err">eg</span><span class="w"> </span><span class="err">ke</span><span class="kc">n</span><span class="err">di</span><span class="w"> </span><span class="err">meg</span><span class="w"> </span><span class="err">so</span><span class="w"> </span><span class="err">væl</span><span class="w"> </span><span class="err">í</span><span class="w"> </span><span class="kc">fela</span><span class="err">g</span><span class="w"> </span><span class="err">við</span><span class="w"> </span><span class="err">hi</span><span class="kc">n</span><span class="w"> </span><span class="err">skriva</span><span class="kc">n</span><span class="err">di</span><span class="w"> </span><span class="err">var</span><span class="p">,</span><span class="w"> </span><span class="kc">t</span><span class="err">á</span><span class="w"> </span><span class="err">eg</span><span class="w"> </span><span class="err">læs</span><span class="w"> </span><span class="err">Bommhjar</span><span class="kc">ta</span><span class="w"> </span><span class="err">hjá</span><span class="w"> </span><span class="err">Jóa</span><span class="kc">nes</span><span class="err">i</span><span class="w"> </span><span class="err">Nielse</span><span class="kc">n</span><span class="p">,</span><span class="w"> </span><span class="err">sum</span><span class="w"> </span><span class="err">kom</span><span class="w"> </span><span class="err">í</span><span class="w"> </span><span class="kc">f</span><span class="err">jør.</span><span class="w"> </span><span class="err">Ei</span><span class="kc">n</span><span class="w"> </span><span class="err">smi</span><span class="kc">ttan</span><span class="err">di</span><span class="w"> </span><span class="err">respek</span><span class="kc">tle</span><span class="err">ys</span><span class="w"> </span><span class="err">søga</span><span class="p">,</span><span class="w"> </span><span class="err">sum</span><span class="w"> </span><span class="err">hem</span><span class="kc">n</span><span class="err">i</span><span class="kc">n</span><span class="err">gsleys</span><span class="w"> </span><span class="err">go</span><span class="kc">n</span><span class="err">gur</span><span class="w"> </span><span class="err">sí</span><span class="kc">nar</span><span class="w"> </span><span class="err">eg</span><span class="kc">nu</span><span class="w"> </span><span class="err">leiðir.</span><span class="w"> </span><span class="err">Me</span><span class="kc">n</span><span class="w"> </span><span class="err">a</span><span class="kc">ftanf</span><span class="err">yri</span><span class="w"> </span><span class="err">hómas</span><span class="kc">t</span><span class="w"> </span><span class="err">ei</span><span class="kc">n</span><span class="w"> </span><span class="err">lei</span><span class="kc">tan</span><span class="w"> </span><span class="err">e</span><span class="kc">ft</span><span class="err">ir</span><span class="w"> </span><span class="err">eg</span><span class="kc">nu</span><span class="err">m</span><span class="w"> </span><span class="err">upphavi.</span><span class="w"> </span><span class="err">Hví</span><span class="w"> </span><span class="err">bleiv</span><span class="w"> </span><span class="err">eg</span><span class="w"> </span><span class="err">sum</span><span class="w"> </span><span class="err">eg</span><span class="w"> </span><span class="err">bleiv</span><span class="p">,</span><span class="w"> </span><span class="err">er</span><span class="w"> </span><span class="err">skuggaspur</span><span class="kc">n</span><span class="err">i</span><span class="kc">n</span><span class="err">gur</span><span class="w"> </span><span class="err">høvu</span><span class="kc">n</span><span class="err">da</span><span class="kc">ns</span><span class="w"> </span><span class="err">\xa</span><span class="mi">0-</span><span class="w"> </span><span class="err">Birgir</span><span class="w"> </span><span class="err">Kruse</span><span class="p">,</span><span class="w"> </span><span class="err">ummælari.Mohr</span><span class="p">,</span><span class="w"> </span><span class="err">Høg</span><span class="kc">n</span><span class="err">i</span><span class="w"> </span><span class="err">(</span><span class="mi">2018</span><span class="err">)</span><span class="w"> </span><span class="err">Slepp</span><span class="w"> </span><span class="kc">t</span><span class="err">ær</span><span class="w"> </span><span class="kc">t</span><span class="err">il</span><span class="w"> </span><span class="err">hei</span><span class="kc">t</span><span class="err">i</span><span class="w"> </span><span class="kc">fan</span><span class="err">i.</span><span class="w"> </span><span class="err">Øgiliga</span><span class="w"> </span><span class="err">egið</span><span class="w"> </span><span class="kc">f</span><span class="err">orlag.</span><span class="w"> </span><span class="err">ISBN</span><span class="w"> </span><span class="mf">9789991880532.</span><span class="w"> </span><span class="err">Tek</span><span class="kc">n</span><span class="err">i</span><span class="kc">n</span><span class="err">gar</span><span class="p">:</span><span class="w"> </span><span class="err">As</span><span class="kc">tr</span><span class="err">id</span><span class="w"> </span><span class="err">A</span><span class="kc">n</span><span class="err">drease</span><span class="kc">n</span><span class="err">.Tað</span><span class="w"> </span><span class="err">smakkar</span><span class="w"> </span><span class="err">bara</span><span class="w"> </span><span class="err">so</span><span class="w"> </span><span class="err">væl</span><span class="w"> </span><span class="err">a</span><span class="kc">t</span><span class="w"> </span><span class="err">lesa</span><span class="w"> </span><span class="err">hasi</span><span class="w"> </span><span class="err">orði</span><span class="kc">n</span><span class="err">i.</span><span class="w"> </span><span class="err">Ikki</span><span class="w"> </span><span class="kc">t</span><span class="err">í</span><span class="w"> </span><span class="err">eg</span><span class="w"> </span><span class="err">havi</span><span class="w"> </span><span class="kc">na</span><span class="err">kað</span><span class="w"> </span><span class="err">ímó</span><span class="kc">t</span><span class="err">i</span><span class="w"> </span><span class="err">Gerhardi</span><span class="w"> </span><span class="err">ella</span><span class="w"> </span><span class="err">Jav</span><span class="kc">na</span><span class="err">ðar</span><span class="kc">fl</span><span class="err">okki</span><span class="kc">nu</span><span class="err">m</span><span class="w"> </span><span class="err">í</span><span class="w"> </span><span class="err">Avhaldslosju</span><span class="kc">n</span><span class="err">i</span><span class="p">,</span><span class="w"> </span><span class="err">me</span><span class="kc">n</span><span class="w"> </span><span class="err">bara</span><span class="w"> </span><span class="kc">t</span><span class="err">í</span><span class="w"> </span><span class="err">a</span><span class="kc">t</span><span class="w"> </span><span class="err">eg</span><span class="w"> </span><span class="err">síggi</span><span class="w"> </span><span class="err">spæla</span><span class="kc">n</span><span class="err">di</span><span class="w"> </span><span class="err">orðalagið</span><span class="p">,</span><span class="w"> </span><span class="err">sum</span><span class="w"> </span><span class="err">ikki</span><span class="w"> </span><span class="err">er</span><span class="w"> </span><span class="err">ei</span><span class="kc">tt</span><span class="w"> </span><span class="err">s</span><span class="kc">t</span><span class="err">ívre</span><span class="kc">nt</span><span class="w"> </span><span class="err">kvæðaøri</span><span class="kc">n</span><span class="err">di</span><span class="w"> </span><span class="err">a</span><span class="kc">t</span><span class="w"> </span><span class="kc">f</span><span class="err">áa</span><span class="w"> </span><span class="err">bóks</span><span class="kc">ta</span><span class="err">varím</span><span class="w"> </span><span class="kc">t</span><span class="err">il</span><span class="w"> </span><span class="err">skúlabrúks</span><span class="p">,</span><span class="w"> </span><span class="err">me</span><span class="kc">n</span><span class="w"> </span><span class="err">bei</span><span class="kc">nt</span><span class="w"> </span><span class="kc">fra</span><span class="err">m</span><span class="w"> </span><span class="err">brúks</span><span class="kc">f</span><span class="err">øroysk</span><span class="kc">t</span><span class="w"> </span><span class="err">loys</span><span class="kc">t</span><span class="w"> </span><span class="err">úr</span><span class="w"> </span><span class="err">lagdi</span><span class="w"> </span><span class="err">\xa</span><span class="mi">0-</span><span class="w"> </span><span class="err">Birgir</span><span class="w"> </span><span class="err">Kruse</span><span class="p">,</span><span class="w"> </span><span class="err">ummælari.Mohr</span><span class="p">,</span><span class="w"> </span><span class="err">Høg</span><span class="kc">n</span><span class="err">i</span><span class="w"> </span><span class="err">(</span><span class="mi">2019</span><span class="err">)</span><span class="w"> </span><span class="err">mær</span><span class="w"> </span><span class="err">dámar</span><span class="w"> </span><span class="err">ikki</span><span class="w"> </span><span class="err">høg</span><span class="kc">na</span><span class="w"> </span><span class="err">hoydal.</span><span class="w"> </span><span class="err">Øgiliga</span><span class="w"> </span><span class="err">egið</span><span class="w"> </span><span class="kc">f</span><span class="err">orlag.</span><span class="w"> </span><span class="err">ISBN</span><span class="w"> </span><span class="mi">9789991880549</span><span class="err">\</span><span class="kc">n</span><span class="err">\</span><span class="kc">n</span><span class="err">Tý</span><span class="kc">tt</span><span class="w"> </span><span class="err">og</span><span class="w"> </span><span class="err">ri</span><span class="kc">tst</span><span class="err">jór</span><span class="kc">na</span><span class="err">ð</span><span class="w"> </span><span class="err">\</span><span class="kc">n</span><span class="mi">2006</span><span class="w"> </span><span class="mi">-</span><span class="w"> </span><span class="err">Askur</span><span class="w"> </span><span class="err">og</span><span class="w"> </span><span class="err">Embla</span><span class="w"> </span><span class="err">(</span><span class="kc">t</span><span class="err">ý</span><span class="kc">tt</span><span class="err">)</span><span class="p">,</span><span class="w"> </span><span class="err">Bókadeild</span><span class="w"> </span><span class="err">Føroya</span><span class="w"> </span><span class="err">lærara</span><span class="kc">fela</span><span class="err">gs</span><span class="p">,</span><span class="w"> </span><span class="mi">204</span><span class="w"> </span><span class="err">síður.\</span><span class="kc">n</span><span class="err">\</span><span class="kc">n</span><span class="mi">2013</span><span class="w"> </span><span class="mi">-</span><span class="w"> </span><span class="err">Sa</span><span class="kc">nnle</span><span class="err">iki</span><span class="kc">n</span><span class="w"> </span><span class="err">um</span><span class="w"> </span><span class="err">ás</span><span class="kc">tar</span><span class="err">ævi</span><span class="kc">nt</span><span class="err">ýrið</span><span class="w"> </span><span class="err">(</span><span class="kc">t</span><span class="err">ý</span><span class="kc">tt</span><span class="w"> </span><span class="err">og</span><span class="w"> </span><span class="err">ri</span><span class="kc">tst</span><span class="err">jór</span><span class="kc">na</span><span class="err">ð)</span><span class="p">,</span><span class="w"> </span><span class="err">Øgiliga</span><span class="w"> </span><span class="err">egið</span><span class="w"> </span><span class="kc">f</span><span class="err">orlag</span><span class="p">,</span><span class="w"> </span><span class="mi">35</span><span class="w"> </span><span class="err">síður.\</span><span class="kc">n</span><span class="err">\</span><span class="kc">n</span><span class="err">Keldur&#39;</span><span class="p">,</span>
 <span class="w">    </span><span class="nt">&quot;question&quot;</span><span class="p">:</span><span class="w"> </span><span class="err">&#39;Hvør</span><span class="w"> </span><span class="err">er</span><span class="w"> </span><span class="err">ú</span><span class="kc">t</span><span class="err">gáva</span><span class="kc">n</span><span class="err">di</span><span class="w"> </span><span class="err">av</span><span class="w"> </span><span class="err">bóki</span><span class="kc">n</span><span class="err">i</span><span class="w"> </span><span class="s2">&quot;Mær dámar ikki Høgna Hoydal?&quot;</span><span class="err">&#39;</span><span class="p">,</span>
 <span class="w">    </span><span class="nt">&quot;answers&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
@@ -1817,29 +1862,33 @@ languages.</p>
 <span class="w">        </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="err">array(</span><span class="p">[</span><span class="err">&#39;Fim</span><span class="kc">tan</span><span class="err">&#39;</span><span class="p">],</span><span class="w"> </span><span class="err">d</span><span class="kc">t</span><span class="err">ype=objec</span><span class="kc">t</span><span class="err">)</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="p">}</span>
-</code></pre></div></p>
+</code></pre></div>
 <p>When evaluating generative models, we use the following setup (see the
 <a href="/methodology">methodology</a> for more information on how these are used):</p>
 <ul>
 <li>Number of few-shot examples: 4</li>
-<li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>Hetta eru tekstir saman við spurningum og svar.
-</code></pre></div></li>
-<li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>Tekstur: {text}
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Hetta eru tekstir saman við spurningum og svar.
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Tekstur: {text}
 Spurningur: {question}
 Svara við í mesta lagi trimum orðum: {label}
-</code></pre></div></li>
-<li>Instruction-tuned prompt template:
-  <div class="highlight"><pre><span></span><code>Tekstur: {text}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Tekstur: {text}
 
 Svara hesum spurninginum um tekstin uppiyvir við í mesta lagi trimum orðum.
 
 Spurningur: {question}
-</code></pre></div></li>
-</ul>
+</code></pre></div>
 <p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>multi-wiki-qa-fo
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>multi-wiki-qa-fo
 </code></pre></div>
 
 

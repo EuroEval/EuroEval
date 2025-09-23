@@ -12,7 +12,7 @@
         <link rel="prev" href="../italian/">
       
       
-        <link rel="next" href="../norwegian/">
+        <link rel="next" href="../lithuanian/">
       
       
       <link rel="icon" href="../../gfx/favicon.png">
@@ -639,6 +639,8 @@
       
         
       
+        
+      
     
     
     
@@ -1177,6 +1179,29 @@
   
   
     <li class="md-nav__item">
+      <a href="../lithuanian/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    🇱🇹 Lithuanian
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../norwegian/" class="md-nav__link">
         
   
@@ -1663,7 +1688,7 @@ additional samples drawn from the original training data to reach 2,048 total te
 samples. Both the validation split and final training split are sampled exclusively from
 the original training data.</p>
 <p>Here are a few examples from the training split:</p>
-<p><div class="highlight"><pre><span></span><code><span class="p">{</span>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;@ChiuljuPussala @nahimovs Tu ēd savus konservatīvos draugus?&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;neutral&quot;</span>
 <span class="p">}</span>
@@ -1677,32 +1702,36 @@ the original training data.</p>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;@selmuushh @GMeluskans Es kādu laiku gaļu ēdu ļoti reti, bet no šī gada sākuma pārstāju ēst pavisam. Labprāt pamēģinātu sojšliku.&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;positive&quot;</span>
 <span class="p">}</span>
-</code></pre></div></p>
+</code></pre></div>
 <p>When evaluating generative models, we use the following setup (see the
 <a href="/methodology">methodology</a> for more information on how these are used):</p>
 <ul>
 <li>Number of few-shot examples: 12</li>
-<li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>Tālāk ir dokumenti un to noskaņojums, kas var būt &#39;pozitīvs&#39;, &#39;neitrāls&#39; vai &#39;negatīvs&#39;.
-</code></pre></div></li>
-<li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>Dokuments: {text}
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Tālāk ir dokumenti un to noskaņojums, kas var būt &#39;pozitīvs&#39;, &#39;neitrāls&#39; vai &#39;negatīvs&#39;.
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Dokuments: {text}
 Noskaņojums: {label}
-</code></pre></div></li>
-<li>Instruction-tuned prompt template:
-  <div class="highlight"><pre><span></span><code>Dokuments: {text}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Dokuments: {text}
 
 Klasificējiet noskaņojumu dokumentā. Atbildiet ar &#39;pozitīvs&#39;, &#39;neitrāls&#39; vai &#39;negatīvs&#39;, un neko citu.
-</code></pre></div></li>
-<li>Label mapping:<ul>
+</code></pre></div>
+<ul>
+<li>Label mapping:</li>
 <li><code>positive</code> ➡️ <code>pozitīvs</code></li>
 <li><code>neutral</code> ➡️ <code>neitrāls</code></li>
 <li><code>negative</code> ➡️ <code>negatīvs</code></li>
 </ul>
-</li>
-</ul>
 <p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>latvian-twitter-sentiment
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>latvian-twitter-sentiment
 </code></pre></div>
 <h2 id="named-entity-recognition">Named Entity Recognition</h2>
 <h3 id="fullstack-ner-lv">FullStack-NER-lv</h3>
@@ -1715,7 +1744,7 @@ spoken language transcripts, and 5% miscellaneous content from a balanced
 for our
 training, validation and test splits, respectively.</p>
 <p>Here are a few examples from the training split:</p>
-<p><div class="highlight"><pre><span></span><code><span class="p">{</span>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">    </span><span class="nt">&quot;tokens&quot;</span><span class="p">:</span><span class="w"> </span><span class="err">array(</span><span class="p">[</span><span class="s2">&quot;&#39;&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;Tērvetes&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;AL&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;&#39;&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;reģistrēts&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;2012.&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;gadā&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;Kroņaucē&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;,&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;pārņemot&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;šo&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;biznesu&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;no&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;AS&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;&#39;&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;Agrofirma&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;Tērvete&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;&#39;&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;ar&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;mērķi&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;modernizēt&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;ražošanu&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;,&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;ieguldot&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;attīstībā&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;vairāk&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;nekā&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;piecus&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;miljonus&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;eiro&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;.&quot;</span><span class="p">],</span><span class="w"> </span><span class="err">d</span><span class="kc">t</span><span class="err">ype=objec</span><span class="kc">t</span><span class="err">)</span><span class="p">,</span>
 <span class="w">    </span><span class="nt">&quot;labels&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;B-ORG&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;I-ORG&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;I-ORG&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;I-ORG&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;O&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;B-MISC&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;I-MISC&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;B-LOC&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;O&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;O&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;O&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;O&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;O&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;B-ORG&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;I-ORG&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;I-ORG&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;I-ORG&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;I-ORG&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;O&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;O&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;O&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;O&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;O&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;O&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;O&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;O&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;O&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;B-MISC&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;I-MISC&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;I-MISC&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;O&quot;</span><span class="p">],</span>
 <span class="p">}</span>
@@ -1729,24 +1758,30 @@ training, validation and test splits, respectively.</p>
 <span class="w">    </span><span class="nt">&quot;tokens&quot;</span><span class="p">:</span><span class="w"> </span><span class="err">array(</span><span class="p">[</span><span class="s2">&quot;Mani&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;pamodinājis&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;Patrīcijas&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;zvans&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;.&quot;</span><span class="p">],</span><span class="w"> </span><span class="err">d</span><span class="kc">t</span><span class="err">ype=objec</span><span class="kc">t</span><span class="err">)</span><span class="p">,</span>
 <span class="w">    </span><span class="nt">&quot;labels&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;O&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;O&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;B-PER&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;O&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;O&quot;</span><span class="p">],</span>
 <span class="p">}</span>
-</code></pre></div></p>
+</code></pre></div>
 <p>When evaluating generative models, we use the following setup (see the
 <a href="/methodology">methodology</a> for more information on how these are used):</p>
 <ul>
 <li>Number of few-shot examples: 8</li>
-<li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>Tālāk ir teikumi un JSON vārdnīcas ar nosauktajiem objektiem, kas parādās dotajā teikumā.
-</code></pre></div></li>
-<li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>Teikums: {text}
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Tālāk ir teikumi un JSON vārdnīcas ar nosauktajiem objektiem, kas parādās dotajā teikumā.
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Teikums: {text}
 Nosauktie objekti: {label}
-</code></pre></div></li>
-<li>Instruction-tuned prompt template:
-  <div class="highlight"><pre><span></span><code>Teikums: {text}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Teikums: {text}
 
 Identificējiet nosauktos objektus teikumā. Jums jāizvada šī informācija kā JSON vārdnīcu ar atslēgām &#39;persona&#39;, &#39;vieta&#39;, &#39;organizācija&#39; un &#39;dažādi&#39;. Vērtībām jābūt šī tipa nosaukto objektu sarakstiem, tieši tā, kā tie parādās teikumā.
-</code></pre></div></li>
-<li>Label mapping:<ul>
+</code></pre></div>
+<ul>
+<li>Label mapping:</li>
 <li><code>B-PER</code> ➡️ <code>persona</code></li>
 <li><code>I-PER</code> ➡️ <code>persona</code></li>
 <li><code>B-LOC</code> ➡️ <code>vieta</code></li>
@@ -1756,10 +1791,8 @@ Identificējiet nosauktos objektus teikumā. Jums jāizvada šī informācija k�
 <li><code>B-MISC</code> ➡️ <code>dažādi</code></li>
 <li><code>I-MISC</code> ➡️ <code>dažādi</code></li>
 </ul>
-</li>
-</ul>
 <p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>fullstack-ner-lv
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>fullstack-ner-lv
 </code></pre></div>
 <h3 id="unofficial-wikiann-lv">Unofficial: WikiANN-lv</h3>
 <p>This dataset was published in <a href="https://aclanthology.org/P17-1178/">this paper</a> and is
@@ -1772,7 +1805,7 @@ validation and test splits, respectively. We use 1,024 / 256 / 2,048 samples for
 training, validation and test splits, respectively. All the new splits are subsets of
 the original splits.</p>
 <p>Here are a few examples from the training split:</p>
-<p><div class="highlight"><pre><span></span><code><span class="p">{</span>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">    </span><span class="nt">&quot;tokens&quot;</span><span class="p">:</span><span class="w"> </span><span class="err">array(</span><span class="p">[</span><span class="s2">&quot;Iezīmē&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;robežu&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;starp&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;Greiema&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;Zemi&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;ziemeļos&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;un&quot;</span><span class="p">,</span>
 <span class="w">       </span><span class="s2">&quot;Pālmera&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;Zemi&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;Antarktīdas&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;pussalas&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;dienvidos&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;,&quot;</span><span class="p">,</span>
 <span class="w">       </span><span class="s2">&quot;kā&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;arī&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;starp&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;Faljēra&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;krastu&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;ziemeļos&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;un&quot;</span><span class="p">,</span>
@@ -1790,24 +1823,30 @@ the original splits.</p>
 <span class="w">    </span><span class="nt">&quot;tokens&quot;</span><span class="p">:</span><span class="w"> </span><span class="err">array(</span><span class="p">[</span><span class="s2">&quot;Kārlis&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;Gustavs&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;Jēkabs&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;Jakobi&quot;</span><span class="p">],</span><span class="w"> </span><span class="err">d</span><span class="kc">t</span><span class="err">ype=objec</span><span class="kc">t</span><span class="err">)</span><span class="p">,</span>
 <span class="w">    </span><span class="nt">&quot;labels&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;B-PER&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;I-PER&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;I-PER&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;I-PER&quot;</span><span class="p">]</span>
 <span class="p">}</span>
-</code></pre></div></p>
+</code></pre></div>
 <p>When evaluating generative models, we use the following setup (see the
 <a href="/methodology">methodology</a> for more information on how these are used):</p>
 <ul>
 <li>Number of few-shot examples: 8</li>
-<li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>Tālāk ir teikumi un JSON vārdnīcas ar nosauktajiem objektiem, kas parādās dotajā teikumā.
-</code></pre></div></li>
-<li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>Teikums: {text}
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Tālāk ir teikumi un JSON vārdnīcas ar nosauktajiem objektiem, kas parādās dotajā teikumā.
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Teikums: {text}
 Nosauktie objekti: {label}
-</code></pre></div></li>
-<li>Instruction-tuned prompt template:
-  <div class="highlight"><pre><span></span><code>Teikums: {text}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Teikums: {text}
 
 Identificējiet nosauktos objektus teikumā. Jums jāizvada šī informācija kā JSON vārdnīcu ar atslēgām &#39;persona&#39;, &#39;vieta&#39;, &#39;organizācija&#39; un &#39;dažādi&#39;. Vērtībām jābūt šī tipa nosaukto objektu sarakstiem, tieši tā, kā tie parādās teikumā.
-</code></pre></div></li>
-<li>Label mapping:<ul>
+</code></pre></div>
+<ul>
+<li>Label mapping:</li>
 <li><code>B-PER</code> ➡️ <code>persona</code></li>
 <li><code>I-PER</code> ➡️ <code>persona</code></li>
 <li><code>B-LOC</code> ➡️ <code>vieta</code></li>
@@ -1817,10 +1856,8 @@ Identificējiet nosauktos objektus teikumā. Jums jāizvada šī informācija k�
 <li><code>B-MISC</code> ➡️ <code>dažādi</code></li>
 <li><code>I-MISC</code> ➡️ <code>dažādi</code></li>
 </ul>
-</li>
-</ul>
 <p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>wikiann-lv
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>wikiann-lv
 </code></pre></div>
 <h2 id="linguistic-acceptability">Linguistic Acceptability</h2>
 <h3 id="scala-lv">ScaLA-lv</h3>
@@ -1836,7 +1873,7 @@ the part-of-speech tags of the words in the sentence.</p>
 validation and testing, respectively (so 3,328 samples used in total). These splits are
 used as-is in the framework.</p>
 <p>Here are a few examples from the training split:</p>
-<p><div class="highlight"><pre><span></span><code><span class="p">{</span>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">    </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Gultā viņam nav jādara pilnīgi nekas, lai es nonāktu līdz orgasmam.&quot;</span><span class="p">,</span>
 <span class="w">    </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;correct&quot;</span>
 <span class="p">}</span>
@@ -1850,31 +1887,35 @@ used as-is in the framework.</p>
 <span class="w">    </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;1992. vēl gadā Latvijā atradās no 50 000 līdz 80 000 padomju militārpersonu.&quot;</span><span class="p">,</span>
 <span class="w">    </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;incorrect&quot;</span>
 <span class="p">}</span>
-</code></pre></div></p>
+</code></pre></div>
 <p>When evaluating generative models, we use the following setup (see the
 <a href="/methodology">methodology</a> for more information on how these are used):</p>
 <ul>
 <li>Number of few-shot examples: 12</li>
-<li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>Šie ir teikumi un to gramatiskie pareizumi.
-</code></pre></div></li>
-<li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>Teikums: {text}
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Šie ir teikumi un to gramatiskie pareizumi.
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Teikums: {text}
 Gramatiski pareizs: {label}
-</code></pre></div></li>
-<li>Instruction-tuned prompt template:
-  <div class="highlight"><pre><span></span><code>Teikums: {text}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Teikums: {text}
 
 Noteiciet, vai teikums ir gramatiski pareizs vai nē. Atbildiet ar &#39;jā&#39;, ja teikums ir pareizs, un &#39;nē&#39;, ja tas nav.
-</code></pre></div></li>
-<li>Label mapping:<ul>
+</code></pre></div>
+<ul>
+<li>Label mapping:</li>
 <li><code>correct</code> ➡️ <code>jā</code></li>
 <li><code>incorrect</code> ➡️ <code>nē</code></li>
 </ul>
-</li>
-</ul>
 <p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>scala-lv
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>scala-lv
 </code></pre></div>
 <h2 id="reading-comprehension">Reading Comprehension</h2>
 <h3 id="multiwikiqa-lv">MultiWikiQA-lv</h3>
@@ -1884,7 +1925,7 @@ languages.</p>
 <p>The original full dataset consists of 5,000 samples in a single split. We use a 1,024 /
 256 / 2,048 split for training, validation and testing, respectively, sampled randomly.</p>
 <p>Here are a few examples from the training split:</p>
-<p><div class="highlight"><pre><span></span><code><span class="p">{</span>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">    </span><span class="nt">&quot;context&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Zvjaheļa (, līdz 2022. gadam — Novohrada-Volinska) ir pilsēta Ukrainas ziemeļrietumos, Žitomiras apgabala rietumos, Slučas upes krastā. Tā ir Zvjaheļas rajona administratīvais centrs. Attālums līdz apgabala centram Žitomirai ir .\n\nZvjaheļa ir ukraiņu tautas dzejnieces Lesjas Ukrainkas dzimtā pilsēta.\nŠeit ir dzimis Ukrainas armijas virspavēlnieks ģenerālis Valerijs Zalužnijs.\n\nVēsture \nVēstures avtos apdzīvotā vieta pirmoreiz minēta 1256. gadā Slučas labajā krastā kā Vozvjaheļa (Возвягель) Galīcijas-Volīnijas hronikā. Gadu vēlāk to par nepaklausību nodedzināja Galīcijas karalis Danila. Nākamo reizi apdzīvotā vieta minēta 1432. gadā jau Slučas kreisajā krastā kā Vzvjahoļas (Взвяголь) miests, bet 1499. gadā\xa0— Zvjahoļa (Звяголь). 1507. gadā miests ieguva tiesības būvēt pili un veidot pilsētu. Pēc Ļubļinas ūnijas 1569. gadā miests saukts par Zvjaheļu (Звягель, ).\n\n1793. gadā Zvjaheļa nonāca Krievijas Impērijas sastāvā. 1795. gadā miests ieguva Novohradas-Volinskas nosaukumu un pilsētas tiesības, un kļuva par jaunizveidotās Volīnijas guberņas centru (līdz 1804. gadam).\n\n2022. gada 16. jūnijā Novohradas-Volinskas domes deputāti nobalsoja par pilsētas pārdēvēšanu tās vēsturiskajā nosaukumā — Zvjaheļa. Vēlāk šo lēmumu apstiprināja Žitomiras apgabala dome. Ar Ukrainas Augstākās Radas dekrētu 2022. gada 16. novembrī pilsēta tika pārdēvēta par Zvjaheļu.\n\nAtsauces\n\nĀrējās saites&quot;</span><span class="p">,</span>
 <span class="w">    </span><span class="nt">&quot;question&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Kāds Ukrainas bruņoto spēku komandieris nāk no Zvjaheļas?&quot;</span><span class="p">,</span>
 <span class="w">    </span><span class="nt">&quot;answers&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
@@ -1910,29 +1951,33 @@ languages.</p>
 <span class="w">        </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="err">array(</span><span class="p">[</span><span class="s2">&quot;2012.—13. gada sezonā&quot;</span><span class="p">],</span><span class="w"> </span><span class="err">d</span><span class="kc">t</span><span class="err">ype=objec</span><span class="kc">t</span><span class="err">)</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="p">}</span>
-</code></pre></div></p>
+</code></pre></div>
 <p>When evaluating generative models, we use the following setup (see the
 <a href="/methodology">methodology</a> for more information on how these are used):</p>
 <ul>
 <li>Number of few-shot examples: 4</li>
-<li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>Turpmāk seko teksti ar atbilstošiem jautājumiem un atbildēm.
-</code></pre></div></li>
-<li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>Teksts: {text}
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Turpmāk seko teksti ar atbilstošiem jautājumiem un atbildēm.
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Teksts: {text}
 Jautājums: {question}
 Atbildēt ar maksimāli 3 vārdiem:
-</code></pre></div></li>
-<li>Instruction-tuned prompt template:
-  <div class="highlight"><pre><span></span><code>Teksts: {text}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Teksts: {text}
 
 Atbildiet uz šo jautājumu par iepriekš minēto tekstu ar maksimāli 3 vārdiem.
 
 Jautājums: {question}
-</code></pre></div></li>
-</ul>
+</code></pre></div>
 <p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>multi-wiki-qa-lv
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>multi-wiki-qa-lv
 </code></pre></div>
 <h2 id="knowledge">Knowledge</h2>
 <h3 id="mmlu-lv">MMLU-lv</h3>
@@ -1945,7 +1990,7 @@ repository</a>.</p>
 <p>The full Latvian MMLU dataset consists of 13,941 samples. We use a 1,024 /
 256 / 2,048 split for training, validation and testing, respectively, sampled randomly.</p>
 <p>Here are a few examples from the training split:</p>
-<p><div class="highlight"><pre><span></span><code><span class="p">{</span>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Atrodiet skaitli, kas padara apgalvojumu patiesu: 48 m = lodziņš mm.\nIzvēles:\na. 48,000\nb. 480\nc. 4,800\nd. 5&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;a&quot;</span><span class="p">,</span>
 <span class="p">}</span>
@@ -1959,25 +2004,30 @@ repository</a>.</p>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Kurā no šiem diviem scenārijiem galvenais varonis (kurš lieto es/jē/man) dara kaut ko, kas ir acīmredzami morāli nepareizs, saskaņā ar parastajām morāles normām ASV no 2020. gada? scenārijs | Es atslēdzu automašīnas kruīza kontroli. scenārijs | Es izsaucu policiju savam bijušajam mīļotajam, jo viņš mani piekāva.\nIzvēles:\na. Nepareizi, nepareizi\nb. Nepareizi, nav nepareizi\nc. Nav nepareizi, nepareizi\nd. Nav nepareizi, nav nepareizi&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;d&quot;</span><span class="p">,</span>
 <span class="p">}</span>
-</code></pre></div></p>
+</code></pre></div>
 <p>When evaluating generative models, we use the following setup (see the
 <a href="/methodology">methodology</a> for more information on how these are used):</p>
 <ul>
 <li>Number of few-shot examples: 5</li>
-<li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>Tālāk seko jautājumi ar vairākām atbilžu izvēlēm (ar atbildēm).
-</code></pre></div></li>
-<li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>Jautājums: {text}
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Tālāk seko jautājumi ar vairākām atbilžu izvēlēm (ar atbildēm).
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Jautājums: {text}
 Izvēles:
 a. {option_a}
 b. {option_b}
 c. {option_c}
 d. {option_d}
 Atbilde: {label}
-</code></pre></div></li>
-<li>Instruction-tuned prompt template:
-  <div class="highlight"><pre><span></span><code>Jautājums: {text}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Jautājums: {text}
 Izvēles:
 a. {option_a}
 b. {option_b}
@@ -1985,10 +2035,9 @@ c. {option_c}
 d. {option_d}
 
 Atbildiet uz iepriekšējo jautājumu, atbildot ar &#39;a&#39;, &#39;b&#39;, &#39;c&#39; vai &#39;d&#39;, un nekas cits.
-</code></pre></div></li>
-</ul>
+</code></pre></div>
 <p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>mmlu-lv
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>mmlu-lv
 </code></pre></div>
 <h2 id="common-sense-reasoning">Common-sense Reasoning</h2>
 <h3 id="copa-lv">COPA-lv</h3>
@@ -2001,7 +2050,7 @@ post-edited.</p>
 <p>The original full dataset consists of 214 / 57 / 132 samples, and we keep the splits
 as-is.</p>
 <p>Here are a few examples from the training split (which have <em>not</em> been post-edited):</p>
-<p><div class="highlight"><pre><span></span><code><span class="p">{</span>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Īrnieki tika izlikti no dzīvokļa.\nIzvēles:\na. Viņi savu īri nemaksāja.\nb. Viņi sapratās ar savu saimnieku.&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;a&quot;</span>
 <span class="p">}</span>
@@ -2015,32 +2064,36 @@ as-is.</p>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Pagriezu gaismas slēdzi uz augšu un uz leju.\nIzvēles:\na. Gaisma izdzisa.\nb. Gaisma mirgoja.&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;b&quot;</span>
 <span class="p">}</span>
-</code></pre></div></p>
+</code></pre></div>
 <p>When evaluating generative models, we use the following setup (see the
 <a href="/methodology">methodology</a> for more information on how these are used):</p>
 <ul>
 <li>Number of few-shot examples: 5</li>
-<li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>Tālāk seko jautājumi ar vairākām atbilžu izvēlēm (ar atbildēm).
-</code></pre></div></li>
-<li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>Jautājums: {text}
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Tālāk seko jautājumi ar vairākām atbilžu izvēlēm (ar atbildēm).
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Jautājums: {text}
 Izvēles:
 a. {option_a}
 b. {option_b}
 Atbilde: {label}
-</code></pre></div></li>
-<li>Instruction-tuned prompt template:
-  <div class="highlight"><pre><span></span><code>Jautājums: {text}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Jautājums: {text}
 Izvēles:
 a. {option_a}
 b. {option_b}
 
 Atbildiet uz iepriekšējo jautājumu, atbildot ar &#39;a&#39; vai &#39;b&#39;, un nekas cits.
-</code></pre></div></li>
-</ul>
+</code></pre></div>
 <p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>copa-lv
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>copa-lv
 </code></pre></div>
 <h3 id="unofficial-winogrande-lv">Unofficial: Winogrande-lv</h3>
 <p>This dataset was published in <a href="https://doi.org/10.48550/arXiv.2506.19468">this paper</a>
@@ -2068,27 +2121,31 @@ we use the same splits.</p>
 <a href="/methodology">methodology</a> for more information on how these are used):</p>
 <ul>
 <li>Number of few-shot examples: 5</li>
-<li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>Tālāk seko jautājumi ar vairākām atbilžu izvēlēm (ar atbildēm).
-</code></pre></div></li>
-<li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>Jautājums: {text}
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Tālāk seko jautājumi ar vairākām atbilžu izvēlēm (ar atbildēm).
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Jautājums: {text}
 Izvēles:
 a. {option_a}
 b. {option_b}
 Atbilde: {label}
-</code></pre></div></li>
-<li>Instruction-tuned prompt template:
-  <div class="highlight"><pre><span></span><code>Jautājums: {text}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Jautājums: {text}
 Izvēles:
 a. {option_a}
 b. {option_b}
 
 Atbildiet uz iepriekšējo jautājumu, atbildot ar &#39;a&#39; vai &#39;b&#39;, un nekas cits.
-</code></pre></div></li>
-</ul>
+</code></pre></div>
 <p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>winogrande-lv
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>winogrande-lv
 </code></pre></div>
 <h2 id="summarisation">Summarisation</h2>
 <h3 id="lsm">LSM</h3>
@@ -2098,7 +2155,7 @@ public media news portal <a href="https://www.lsm.lv/">LSM.lv</a>.</p>
 <a href="https://github.com/alexandrainst/lsm_scraper">lsm_scraper</a>. We use 1,024 / 256 / 2,048
 samples for training, validation and testing, respectively.</p>
 <p>Here are a few examples from the training split:</p>
-<p><div class="highlight"><pre><span></span><code><span class="p">{</span>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;FOTO: Raimonda Paula un Elīnas Garančas satikšanās koncertā «Ja tevis nebūtu...»\n\nIdeja svinēt apaļo jubileju uz vienas skatuves ar izcilo operdziedātāju Elīnu Garanču Maestro radusies, kopā uzstājoties jau pirms pieciem gadiem. Maestro neslēpj gandarījumu, ka pandēmijas dēļ pārceltais koncerts beidzot notiks. Raimonds Pauls koncertprogrammā “Ja tevis nebūtu...” dziedātājai veltījis divus jaunus dziesmu ciklus ar kopīgi atlasītu Vizmas Belševicas un Ojāra Vācieša dzeju. Savukārt koncerta otrajā daļā iekļautas Paula dziesmas no kinofilmām un teātra izrādēm. Kamerorķestra “Simfonietta Rīga” pavadījumā populāras melodijas atšķirīgās noskaņās izskanēs jaunos aranžējumos, ko veidojuši tādi izcili komponisti kā Lolita Ritmane, Rihards Dubra, Jēkabs Jančevskis un Raimonds Macats. “Man šī otrā daļa ar kino un teātra mūziku ir tāds sapnis, kas ir piepildījies. Jo šis žanrs mani vienmēr ir ļoti interesējis. Varētu teikt, ka es operas žanrā esmu nokļuvusi faktiski nejauši, jo sirds aicinājums no paša sākuma bija tieši teātris,” atklāj Elīna Garanča. Ojārs Rubenis atzīst: “Es varu tikai apbrīnot gan Maestro 85 gados – izturību un to darbu, ko viņš var izdarīt. Un, protams, arī Elīnu Garanču, kura vienkārši ir apbrīnojama savā neambiciozitātē pret visu pārējo un ambiciozitātē pret mākslu. Tas ir tas lielmākslinieku kods!” Maestro un Elīnas Garančas atkalsatikšanās Nacionālajā teātrī būs skatāma piektdien un sestdien, savukārt Latvijas Televīzijā šo koncertu varēs vērot šī gada rudenī.&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;target_text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Viņiem bija iecerēts tikties jau šī gada sākumā, bet pandēmijas dēļ Raimonda Paula 85. jubilejai veltītais koncerts ar pasaulslavenās operdziedātājas Elīnas Garančas piedalīšanos tika pārcelts. Šajā nedēļas nogalē Nacionālo teātri beidzot pieskandinās abu izcilo mūzikas personību atkalsatikšanās ar skatītājiem koncertā “Ja tevis nebūtu...”.&quot;</span>
 <span class="p">}</span>
@@ -2112,26 +2169,30 @@ samples for training, validation and testing, respectively.</p>
 <span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Norvēģijas dziesma Eirovīzijā – folkmūzikas, elektronikas un viduslaiku estētikas sintēze\n\nAlessandro ir spāņu izcelsmes, viņš runā četrās valodās, iedvesmojas no dažādu pasaules tautu mūzikas, kā arī ir labs dejotājs. Alessandro dziesma \&quot;Lighter\&quot; ieturēta popmūzikas stilistikā, kurā ievīti daudz dažādi elementi. Te var sadzirdēt gan norvēģu folkmūzikas, gan elektroniskās deju mūzikas notis, gan Balkānu popmūzikai raksturīgos ritmus un pat viduslaiku estētiku. Dziesma aicina noticēt sev un būt pašam savai dzirkstij. Dziesmas \&quot;Lighter \&quot; vārdi Golden girl dressed in ice A heart as dark as night You got me to dim my light No more, (no more) I really think I bought your lies Did anything to keep you mine You kept me hooked on your line No more, (no more) Somewhere along the way I lost my mind I had to walk a hundred thousand miles I’m not afraid to set it all on fire I won’t fall again, I’ll be my own lighter (Eh-Eh-Eh-Eh) Nothing can burn me now (Eh-Eh-Eh-Eh) I’ll be my own lighter I feel a spark inside me I don’t need saving (No way, no way) ‘Cause I’m my own, I’m my own lighter I’m tired of a million tries To fight, the signs And when everybody tried to tell me I should’ve known that it was time to break free Your reigns that kept me at your mercy I’ll burn them to the ground No more, no more Ignite the fire Somewhere along the way I lost my mind I had to walk a hundred thousand miles I’m not afraid to set it all on fire I won’t fall again, I’ll be my own lighter (Eh-Eh-Eh-Eh) Nothing can burn me now (Eh-Eh-Eh-Eh) I’ll be my own lighter I feel a spark inside me I don’t need saving (No way, no way) ‘Cause I’m my own, I’m my own lighter Silence fills the room And I’ve taken off my jewels I wish none of this was true But there’s a fire growing too Yeah! (Eh-Eh-Eh-Eh) Nothing can burn me now (Eh-Eh-Eh-Eh) I’ll be my own lighter I feel a spark inside me I don’t need saving (No way, no way) ‘Cause I’m my own, I’m my own lighter (Eh-Eh-Eh-Eh) Nothing can burn me down (Eh-Eh-Eh-Eh) I’m my own, I’m my own lighter Eirovīzija\xa02025 – dalībnieki Vairāk KONTEKSTS: 2025. gada Eirovīzijas dziesmu konkurss notiks Šveicē, Bāzelē, un savu dalību tajā apstiprinājušas 37 valstis. 31 no visām dalībvalstīm sacentīsies pusfinālos\xa013. maijā un 15. maijā. Desmit\xa0labākie no katra pusfināla kvalificēsies lielajam finālam 17. maijā, pievienojoties pērnā gada uzvarētājai Šveicei un \&quot;lielajam piecniekam\&quot; – Spānijai, Apvienotajai\xa0Karalistei, Vācijai, Itālijai un Francijai. Eirovīzijas konkursa pusfināli un fināli šogad sāksies pulksten 22.00 pēc Latvijas laika. Tiešraides būs skatāmas Latvijas Sabiedriskā medija portālā LSM.lv un satura atskaņotājā REplay.lv, kā arī LTV1. Šī gada Latvijas nacionālajā atlasē \&quot;Supernova\&quot; uzvarēja un uz Eirovīziju dosies grupa \&quot;Tautumeitas\&quot; . \&quot;Tautumeitas\&quot; kāps uz skatuves Eirovīzijas konkursa otrajā pusfinālā. Tajā kopā ar Latviju piedalīsies arī Armēnija, Austrālija, Austrija, Grieķija, Īrija, Lietuva, Melnkalne, Čehija, Dānija, Somija, Gruzija, Izraēla, Luksemburga, Malta un Serbija.&quot;</span><span class="p">,</span>
 <span class="nt">&quot;target_text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Norvēģiju Eirovīzijas dziesmu konkursā pārstāv jaunais dziedātājs Kails Alessandro ( Kyle Alessandro ). Plašāka auditorija dziedātāju iepazina jau 10 gadu vecumā, kad viņš veiksmīgi piedalījās\xa0TV šovā \&quot;Norway’s Got Talent\&quot;.&quot;</span>
 <span class="p">}</span>
-</code></pre></div></p>
+</code></pre></div>
 <p>When evaluating generative models, we use the following setup (see the
 <a href="/methodology">methodology</a> for more information on how these are used):</p>
 <ul>
 <li>Number of few-shot examples: 1</li>
-<li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>Tālāk ir dokumenti ar pievienotām kopsavilkumiem.
-</code></pre></div></li>
-<li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>Dokuments: {text}
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Tālāk ir dokumenti ar pievienotām kopsavilkumiem.
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Dokuments: {text}
 Kopsavilkums: {target_text}
-</code></pre></div></li>
-<li>Instruction-tuned prompt template:
-  <div class="highlight"><pre><span></span><code>Dokuments: {text}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Dokuments: {text}
 
 Uzrakstiet kopsavilkumu par iepriekš minēto dokumentu.
-</code></pre></div></li>
-</ul>
+</code></pre></div>
 <p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>lsm
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>lsm
 </code></pre></div>
 
 

@@ -639,6 +639,8 @@
       
         
       
+        
+      
     
     
     
@@ -932,6 +934,29 @@
   
   <span class="md-ellipsis">
     🇱🇻 Latvian
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../lithuanian/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    🇱🇹 Lithuanian
     
   </span>
   
@@ -1648,13 +1673,19 @@
 
 
 <h1 id="portuguese">🇵🇹 Portuguese</h1>
-<p>This is an overview of all the datasets used in the European Portuguese part of EuroEval. The
-datasets are grouped by their task - see the <a href="/tasks">task overview</a> for more
-information about what these constitute.</p>
+<p>This is an overview of all the datasets used in the European Portuguese part of
+EuroEval. The datasets are grouped by their task - see the <a href="/tasks">task overview</a> for
+more information about what these constitute.</p>
 <h2 id="sentiment-classification">Sentiment Classification</h2>
 <h3 id="sst2-pt">SST2-PT</h3>
-<p>This dataset was published in <a href="https://doi.org/10.48550/arXiv.2404.05333">this paper</a> and is part of the ExtraGLUE dataset. It is created by taking the original SST-2 dataset and using machine translation (DeepL) to translate it.</p>
-<p>The original dataset contains 67,300 training, 872 validation, and 1,820 test samples. We use 1,024 / 256 / 2,048 samples for train / val / test respectively. Given that the original validation dataset only has 1,820 sample for testing, we derive that split from the training split, while ensuring no overlaps occur. This dataset only includes positive and negative labels, no neutrals.</p>
+<p>This dataset was published in <a href="https://doi.org/10.48550/arXiv.2404.05333">this paper</a>
+and is part of the ExtraGLUE dataset. It is created by taking the original SST-2 dataset
+and using machine translation (DeepL) to translate it.</p>
+<p>The original dataset contains 67,300 training, 872 validation, and 1,820 test samples.
+We use 1,024 / 256 / 2,048 samples for train / val / test respectively. Given that the
+original validation dataset only has 1,820 sample for testing, we derive that split from
+the training split, while ensuring no overlaps occur. This dataset only includes
+positive and negative labels, no neutrals.</p>
 <p>Here are a few examples from the training split:</p>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;um drama psicológico absorvente e inquietante .&quot;</span><span class="p">,</span>
@@ -1675,13 +1706,17 @@ information about what these constitute.</p>
 <a href="/methodology">methodology</a> for more information on how these are used):</p>
 <ul>
 <li>Number of few-shot examples: 12</li>
-<li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>Abaixo encontras documentos e os seus sentimentos correspondentes, que podem ser &#39;positivo&#39; ou &#39;negativo&#39;.
-</code></pre></div></li>
-<li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>Documento: {text}
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Abaixo encontras documentos e os seus sentimentos correspondentes, que podem ser &#39;positivo&#39; ou &#39;negativo&#39;.
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Documento: {text}
 Sentimento: {label}
-</code></pre></div></li>
+</code></pre></div>
+<ul>
 <li>Instruction-tuned prompt template:</li>
 </ul>
 <div class="highlight"><pre><span></span><code>Texto: {text}
@@ -1689,12 +1724,18 @@ Sentimento: {label}
 Clasifica o sentimento do documento. Responde apenas com &#39;positivo&#39; ou &#39;negativo&#39;.
 </code></pre></div>
 <p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>sst2-pt
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>sst2-pt
 </code></pre></div>
 <h2 id="named-entity-recognition">Named Entity Recognition</h2>
 <h3 id="harem">HAREM</h3>
-<p>This dataset was published in <a href="https://aclanthology.org/L06-1027/">this paper</a> and is based on the <a href="https://www.linguateca.pt/harem/">Primeiro HAREM</a> evaluation campaign for <strong>Portuguese from Portugal</strong>, using the manually annotated <strong>Colecção Dourada</strong>. The text sources come from varied sources: web, news, fiction books, politics, email, speeches, technical, expository.</p>
-<p>We extract only documents where <code>&lt;ORIGEM&gt;</code> is <code>PT</code>, i.e., of <strong>Portuguese origin</strong>. The raw XML annotations are parsed and converted to token-level BIO labels. Tags are mapped to standard CoNLL categories:</p>
+<p>This dataset was published in <a href="https://aclanthology.org/L06-1027/">this paper</a> and is
+based on the <a href="https://www.linguateca.pt/harem/">Primeiro HAREM</a> evaluation campaign for
+<strong>Portuguese from Portugal</strong>, using the manually annotated <strong>Colecção Dourada</strong>. The
+text sources come from varied sources: web, news, fiction books, politics, email,
+speeches, technical, expository.</p>
+<p>We extract only documents where <code>&lt;ORIGEM&gt;</code> is <code>PT</code>, i.e., of <strong>Portuguese origin</strong>. The
+raw XML annotations are parsed and converted to token-level BIO labels. Tags are mapped
+to standard CoNLL categories:</p>
 <ul>
 <li><code>PER</code> (pessoa)</li>
 <li><code>LOC</code> (local)</li>
@@ -1714,14 +1755,17 @@ Clasifica o sentimento do documento. Responde apenas com &#39;positivo&#39; ou &
   <span class="s2">&quot;I-MISC&quot;</span><span class="p">:</span> <span class="mi">8</span>
 <span class="p">}</span>
 </code></pre></div>
-<p>In addition to tokenization and label alignment, each document is split into individual sentences, using punctuation-based heuristics. This makes the dataset better suited for sentence-level inference and generation.</p>
-<p>Due to the limited number of PT-origin documents (1,965 examples total), we couldn’t reach the target of 2,304 (1,024 + 256 + 1,024). The final split is:</p>
+<p>In addition to tokenization and label alignment, each document is split into individual
+sentences, using punctuation-based heuristics. This makes the dataset better suited for
+sentence-level inference and generation.</p>
+<p>Due to the limited number of PT-origin documents (1,965 examples total), we couldn’t
+reach the target of 2,304 (1,024 + 256 + 1,024). The final split is:</p>
 <ul>
 <li>Train: 873 examples</li>
 <li>Validation: 218 examples</li>
 <li>Test: 874 examples</li>
 </ul>
-<p><div class="highlight"><pre><span></span><code><span class="p">{</span>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">&quot;tokens&quot;</span><span class="p">:</span><span class="w"> </span><span class="err">array(</span><span class="p">[</span><span class="s2">&quot;Na&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;Covilhã&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;ainda&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;não&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;havia&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;liceu&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;nessa&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;altura&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;.&quot;</span><span class="p">],</span><span class="w"> </span><span class="err">d</span><span class="kc">t</span><span class="err">ype=objec</span><span class="kc">t</span><span class="err">)</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;labels&quot;</span><span class="p">:</span><span class="w"> </span><span class="err">array(</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">5</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">],</span><span class="w"> </span><span class="err">d</span><span class="kc">t</span><span class="err">ype=objec</span><span class="kc">t</span><span class="err">)</span>
 <span class="p">}</span>
@@ -1735,24 +1779,30 @@ Clasifica o sentimento do documento. Responde apenas com &#39;positivo&#39; ou &
 <span class="w">  </span><span class="nt">&quot;tokens&quot;</span><span class="p">:</span><span class="w"> </span><span class="err">array(</span><span class="p">[</span><span class="s2">&quot;Sabe&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;qual&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;a&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;origem&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;da&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;sua&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;família&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;?&quot;</span><span class="p">],</span><span class="w"> </span><span class="err">d</span><span class="kc">t</span><span class="err">ype=objec</span><span class="kc">t</span><span class="err">)</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;labels&quot;</span><span class="p">:</span><span class="w"> </span><span class="err">array(</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">],</span><span class="w"> </span><span class="err">d</span><span class="kc">t</span><span class="err">ype=objec</span><span class="kc">t</span><span class="err">)</span>
 <span class="p">}</span>
-</code></pre></div></p>
+</code></pre></div>
 <p>When evaluating generative models, we use the following setup (see the
 <a href="/methodology">methodology</a> for more information on how these are used):</p>
 <ul>
 <li>Number of few-shot examples: 8</li>
-<li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>Seguem-se frases e dicionários JSON com as entidades mencionadas presentes na frase indicada.
-</code></pre></div></li>
-<li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>Frase: {text}
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Seguem-se frases e dicionários JSON com as entidades mencionadas presentes na frase indicada.
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Frase: {text}
 Entidades mencionadas: {label}
-</code></pre></div></li>
-<li>Instruction-tuned prompt template:
-  <div class="highlight"><pre><span></span><code>Frase: {text}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Frase: {text}
 
 Identifica as entidades mencionadas na frase. Deves devolver um dicionário JSON com as chaves &#39;pessoa&#39;, &#39;organização&#39;, &#39;local&#39; e &#39;diverso&#39; . Os valores devem ser listas contendo as entidades mencionadas desse tipo, tal como ocorrem na frase.
-</code></pre></div></li>
-<li>Label mapping:<ul>
+</code></pre></div>
+<ul>
+<li>Label mapping:</li>
 <li><code>B-PER</code> ➡️ <code>pessoa</code></li>
 <li><code>I-PER</code> ➡️ <code>pessoa</code></li>
 <li><code>B-LOC</code> ➡️ <code>local</code></li>
@@ -1762,15 +1812,21 @@ Identifica as entidades mencionadas na frase. Deves devolver um dicionário JSON
 <li><code>B-MISC</code> ➡️ <code>diverso</code></li>
 <li><code>I-MISC</code> ➡️ <code>diverso</code></li>
 </ul>
-</li>
-</ul>
 <p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>harem
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>harem
 </code></pre></div>
 <h2 id="linguistic-acceptability">Linguistic Acceptability</h2>
 <h3 id="scala-pt">ScaLA-pt</h3>
-<p>This dataset is a Portuguese version of ScaLA, which was originally published in <a href="https://aclanthology.org/2023.nodalida-1.20/">this paper</a>, created by corrupting grammatically correct sentences from the <a href="https://github.com/UniversalDependencies/UD_Portuguese-Bosque">Universal Dependencies Portuguese-Bosque treebank</a>, filtered to only include samples from the European Portuguese source <em>CETEMPúblico</em>. The treebank is based on the Constraint Grammar conversion of the Bosque corpus, part of the Floresta Sintá(c)tica treebank.</p>
-<p>Corruptions were applied by either <strong>removing a word</strong> from the sentence or <strong>swapping two neighbouring words</strong>. Rules based on part-of-speech tags were used to ensure that these corruptions lead to grammatical errors.</p>
+<p>This dataset is a Portuguese version of ScaLA, which was originally published in <a href="https://aclanthology.org/2023.nodalida-1.20/">this
+paper</a>, created by corrupting
+grammatically correct sentences from the <a href="https://github.com/UniversalDependencies/UD_Portuguese-Bosque">Universal Dependencies Portuguese-Bosque
+treebank</a>, filtered to
+only include samples from the European Portuguese source <em>CETEMPúblico</em>. The treebank is
+based on the Constraint Grammar conversion of the Bosque corpus, part of the Floresta
+Sintá(c)tica treebank.</p>
+<p>Corruptions were applied by either <strong>removing a word</strong> from the sentence or <strong>swapping
+two neighbouring words</strong>. Rules based on part-of-speech tags were used to ensure that
+these corruptions lead to grammatical errors.</p>
 <p>The final dataset contains:</p>
 <ul>
 <li><strong>Training set</strong>: 1,024 examples</li>
@@ -1779,7 +1835,7 @@ Identifica as entidades mencionadas na frase. Deves devolver um dicionário JSON
 </ul>
 <p>These splits are used as-is in the framework.</p>
 <p>Here are a few examples from the training split:</p>
-<p><div class="highlight"><pre><span></span><code><span class="p">{</span>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">    </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Nos Em os mercados orientais, Tóquio foi a excepção e, ao o meio da de a manhã, a bolsa tendia para uma alta marginal, com o índice Nikkei a marcar 12,07 pontos no em o fim da de a sessão da de a manhã.&quot;</span><span class="p">,</span>
 <span class="w">    </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;incorrect&quot;</span>
 <span class="p">}</span>
@@ -1793,31 +1849,35 @@ Identifica as entidades mencionadas na frase. Deves devolver um dicionário JSON
 <span class="w">    </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Vários estudos têm mostrado que estes linfomas regridem depois de tratamentos dirigidos à a HP a, o que sugere uma relação entre os dois.&quot;</span><span class="p">,</span>
 <span class="w">    </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;incorrect&quot;</span>
 <span class="p">}</span>
-</code></pre></div></p>
+</code></pre></div>
 <p>When evaluating generative models, we use the following setup (see the
 <a href="/methodology">methodology</a> for more information on how these are used):</p>
 <ul>
 <li>Number of few-shot examples: 12</li>
-<li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>Seguem-se abaixo textos e se são gramaticalmente corretos.
-</code></pre></div></li>
-<li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>  Texto: {text}
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Seguem-se abaixo textos e se são gramaticalmente corretos.
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>  Texto: {text}
   Gramaticalmente correcto: {label}
-</code></pre></div></li>
-<li>Instruction-tuned prompt template:
-  <div class="highlight"><pre><span></span><code>  Texto: {text}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>  Texto: {text}
 
   Determina se o texto é gramaticalmente correcto ou não. Responde com &#39;sim&#39; ou &#39;não&#39;, e nada mais.
-</code></pre></div></li>
-<li>Label mapping:<ul>
+</code></pre></div>
+<ul>
+<li>Label mapping:</li>
 <li><code>correct</code> ➡️ <code>sim</code></li>
 <li><code>incorrect</code> ➡️ <code>não</code></li>
 </ul>
-</li>
-</ul>
 <p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>scala-pt
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>scala-pt
 </code></pre></div>
 <h2 id="reading-comprehension">Reading Comprehension</h2>
 <h3 id="multiwikiqa-pt">MultiWikiQA-pt</h3>
@@ -1832,7 +1892,7 @@ Portuguese.</p>
 <p>The original full dataset consists of 5,000 samples in a single split. We use a 1,024 /
 256 / 2,048 split for training, validation and testing, respectively, sampled randomly.</p>
 <p>Here are a few examples from the training split:</p>
-<p><div class="highlight"><pre><span></span><code><span class="p">{</span>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">    </span><span class="nt">&quot;context&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Manuel Frederico Tojal de Valsassina Heitor (Lisboa, 21 de setembro de 1958) é um professor universitário e político português, que foi ministro da Ciência, Tecnologia e Ensino Superior do XXI e XXII Governos Constitucionais.\n\nBiografia \nFilho de Frederico Lúcio de Valsassina Heitor (17 de Julho de 1930 - 2010), Comendador da Ordem da Instrução Pública a 9 de Junho de 1995, trineto por via feminina dum Barão de Valsassina na Áustria, Diretor do Colégio Valsassina, Membro-Honorário da Ordem da Instrução Pública a 9 de Novembro de 1985, e Comendador da Ordem da Instrução Pública, e de sua mulher Maria Manuela de Oliveira Tojal (1933 - Lisboa, 25 de Março de 2017), irmão do arquiteto Frederico Valsassina e neto materno do também arquitecto Raul Tojal, Manuel Heitor frequentou o Colégio Valsassina.\n\nFormação académica\nManuel Heitor licenciou-se em Engenharia Mecânica pelo Instituto Superior Técnico da Universidade Técnica de Lisboa em 1981, doutorou-se, em 1985, na mesma área, no domínio da Combustão Experimental, pelo Imperial College de Londres e obteve o título de agregado pela Universidade Técnica de Lisboa em 1992.\nRealizou um pós-doutoramento na Universidade da Califórnia, em San Diego.\n\nEnsino e investigação\nÉ professor catedrático do Instituto Superior Técnico, instituição onde tem desenvolvido a sua carreira académica, inicialmente na área de Mecânica de Fluidos e Combustão Experimental, e, mais recentemente, coordenando os programas de doutoramento daquele Instituto nas áreas da «Engenharia e Políticas Públicas» e da «Engenharia de Concepção e Sistemas Avançados de Manufactura».\n\nDesempenhou as funções de Presidente Adjunto do Instituto Superior Técnico entre 1993 e 1998.\n\nDesde o início dos anos 90 do século XX tem-se dedicado ao estudo de políticas de ciência, tecnologia e inovação, incluindo as políticas e gestão do ensino superior.\n\nDirige o «Centro de Estudos em Inovação, Tecnologia e Politicas de Desenvolvimento, IN+», do Instituto Superior Técnico, cuja fundação promoveu em 1998.\nEm 2005, este Centro foi nomeado como um dos Top 50 global centres of research on Management of Technology, pela International Association for the Management of Technology.\n\nFoi Professor Visitante na Universidade Harvard no ano letivo de 2011-2012.\n\nÉ Research Fellow da Universidade do Texas em Austin, no Instituto IC2, Innovation, Creativity and Capital.\n\nEm julho 2015 promoveu em Portugal o Manifesto «O Conhecimento como Futuro» e, mais recentemente, a declaração internacional «Knowledge as Our Common Future».\n\nAtividade política\n\nFoi Secretário de Estado da Ciência, Tecnologia e Ensino Superior, dos XVII e XVIII Governos, entre março de 2005 e junho de 2011.\n\nNestas funções participou ativamente na modernização do sistema de ensino português e no aumento do financiamento público e privado para atividades de ciência e tecnologia.\n\nNesta funções desenvolveu igualmente a conceção e concretização de consórcios internacionais em investigação e formação avançada entre universidades portuguesas e norte americanas, envolvendo redes temáticas de ciência e tecnologia.\n\nÉ ministro da Ciência, Tecnologia e Ensino Superior desde 2015.\n\nEm 2021 Manuel Heitor anunciou a criação de mais três escolas de Medicina em Évora, Aveiro e Vila Real.\n\nPortugueses de ascendência italiana\nPortugueses de ascendência austríaca\nNaturais de Lisboa\nAlunos do Instituto Superior Técnico\nAlunos da Universidade da Califórnia\nEngenheiros mecânicos de Portugal\nProfessores universitários de Portugal\nPolíticos do Partido Socialista (Portugal)\nSecretários de Estado de Portugal\nMinistros da Ciência de Portugal\nMinistros de Portugal\nPolíticos de Portugal\nGoverno de Portugal&quot;</span><span class="p">,</span>
 <span class="w">    </span><span class="nt">&quot;question&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Quando Manuel Heitor divulgou os planos para estabelecer três novas faculdades de medicina em Portugal?&quot;</span><span class="p">,</span>
 <span class="w">    </span><span class="nt">&quot;answers&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
@@ -1858,34 +1918,45 @@ Portuguese.</p>
 <span class="w">        </span><span class="s2">&quot;text&#39;: array([&quot;</span><span class="err">O</span><span class="w"> </span><span class="kc">fura</span><span class="err">cão</span><span class="w"> </span><span class="err">do</span><span class="w"> </span><span class="err">Dia</span><span class="w"> </span><span class="err">do</span><span class="w"> </span><span class="err">Trabalho</span><span class="w"> </span><span class="err">de</span><span class="w"> </span><span class="mi">1935</span><span class="err">&quot;], dtype=object)</span>
 <span class="err">    }</span>
 <span class="err">}</span>
-</code></pre></div></p>
+</code></pre></div>
 <p>When evaluating generative models, we use the following setup (see the
 <a href="/methodology">methodology</a> for more information on how these are used):</p>
 <ul>
 <li>Number of few-shot examples: 4</li>
-<li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>Os textos que se seguem são acompanhados de perguntas e respostas.
-</code></pre></div></li>
-<li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>Texto: {text}
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Os textos que se seguem são acompanhados de perguntas e respostas.
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Texto: {text}
 Pergunta: {question}
 Resposta com um máximo de 3 palavras: {label}
-</code></pre></div></li>
-<li>Instruction-tuned prompt template:
-  <div class="highlight"><pre><span></span><code>Texto: {text}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Texto: {text}
 
 Responde à seguinte pergunta sobre o texto acima num máximo de 3 palavras.
 
 Pergunta: {question}
-</code></pre></div></li>
-</ul>
+</code></pre></div>
 <p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>multi-wiki-qa-pt
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>multi-wiki-qa-pt
 </code></pre></div>
 <h3 id="unofficial-boolq-pt">Unofficial: BoolQ-PT</h3>
-<p>This dataset was published in <a href="https://doi.org/10.48550/arXiv.2404.05333">this paper</a> and is part of the ExtraGLUE dataset. It is created by taking the original BoolQ dataset and using machine translation (DeepL) to translate it.</p>
-<p>The original dataset has a passage, question, and yes/no label. We adapt this dataset by taking the original passage, question, and yes/no options, and turning it into a Q/A style question where the model can answer yes or no.</p>
-<p>The original dataset contains 9,430 training, 3,270 validation, and 3,250 test samples. We use 1,024 / 256 / 2,048 samples for train / val / test respectively. We've observed some overlap in the splits, so decided to concatenate all splits into a single dataset, shuffling it, and extract splits.</p>
+<p>This dataset was published in <a href="https://doi.org/10.48550/arXiv.2404.05333">this paper</a>
+and is part of the ExtraGLUE dataset. It is created by taking the original BoolQ dataset
+and using machine translation (DeepL) to translate it.</p>
+<p>The original dataset has a passage, question, and yes/no label. We adapt this dataset by
+taking the original passage, question, and yes/no options, and turning it into a Q/A
+style question where the model can answer yes or no.</p>
+<p>The original dataset contains 9,430 training, 3,270 validation, and 3,250 test samples.
+We use 1,024 / 256 / 2,048 samples for train / val / test respectively. We've observed
+some overlap in the splits, so decided to concatenate all splits into a single dataset,
+shuffling it, and extract splits.</p>
 <p>Here are a few examples from the training split:</p>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Texto: Animais Fantásticos e Onde Encontrá-los -- Fantastic Beasts and Where to Find Them é um livro de 2001 escrito pela autora britânica J.K. Rowling (sob o pseudónimo do autor fictício Newt Scamander) sobre as criaturas mágicas do universo Harry Potter. A versão original, ilustrada pela própria autora, pretende ser a cópia de Harry Potter do livro didático com o mesmo nome mencionado em Harry Potter e a Pedra Filosofal (ou Harry Potter and the Sorcerer&#39;s Stone nos EUA), o primeiro romance da série Harry Potter. Inclui várias notas no seu interior, supostamente escritas à mão por Harry, Ron Weasley e Hermione Granger, detalhando as suas próprias experiências com algumas das bestas descritas e incluindo piadas relacionadas com a série original.\nPergunta: Animais fantásticos e onde encontrá-los está relacionado com Harry Potter?\nOpções:\na. sim\nb. não&quot;</span><span class="p">,</span>
@@ -1906,16 +1977,20 @@ Pergunta: {question}
 <a href="/methodology">methodology</a> for more information on how these are used):</p>
 <ul>
 <li>Number of few-shot examples: 5</li>
-<li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>As seguintes são perguntas de escolha múltipla (com respostas).
-</code></pre></div></li>
-<li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>Pergunta: {text}
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>As seguintes são perguntas de escolha múltipla (com respostas).
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Pergunta: {text}
 Opções:
 a. {option_a}
 b. {option_b}
 Resposta: {label}
-</code></pre></div></li>
+</code></pre></div>
+<ul>
 <li>Instruction-tuned prompt template:</li>
 </ul>
 <div class="highlight"><pre><span></span><code>Pergunta: {text}
@@ -1926,15 +2001,19 @@ b. {option_b}
 Responde à pergunta acima usando só &#39;a&#39; ou &#39;b&#39;, e nada mais.
 </code></pre></div>
 <p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>boolq-pt
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>boolq-pt
 </code></pre></div>
 <h2 id="knowledge">Knowledge</h2>
 <h3 id="mmlu-pt">MMLU-pt</h3>
-<p>This dataset was published in <a href="https://doi.org/10.48550/arXiv.2410.08928">this paper</a> and is a machine translated version of the English <a href="https://openreview.net/forum?id=d7KBjmI3GmQ">MMLU
+<p>This dataset was published in <a href="https://doi.org/10.48550/arXiv.2410.08928">this paper</a>
+and is a machine translated version of the English <a href="https://openreview.net/forum?id=d7KBjmI3GmQ">MMLU
 dataset</a> and features questions within 57
 different topics, such as elementary mathematics, US history and law. The translation to
 Portuguese was done using DeepL.</p>
-<p>The original full dataset consists of 270 / 1,439 / 14,774 samples for training, validation, and testing, respectively. These splits were merged, duplicates removed, and new splits were created with 1,024 / 256 / 2048 samples for training, validation, and testing, respectively.</p>
+<p>The original full dataset consists of 270 / 1,439 / 14,774 samples for training,
+validation, and testing, respectively. These splits were merged, duplicates removed, and
+new splits were created with 1,024 / 256 / 2048 samples for training, validation, and
+testing, respectively.</p>
 <p>Here are a few examples from the training split:</p>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;De que tipo de direitos gozam os Estados costeiros sobre a sua plataforma continental?\nOpções:\na. O Estado costeiro goza ipso facto e ab initio de direitos soberanos sobre a sua plataforma continental para efeitos de exploração e aproveitamento dos seus recursos naturais\nb. O Estado costeiro só pode exercer direitos soberanos sobre a sua plataforma continental mediante declaração\nc. O Estado costeiro exerce direitos soberanos sobre a sua plataforma continental para efeitos de exploração dos seus recursos haliêuticos\nd. O Estado costeiro só pode exercer direitos limitados sobre a sua plataforma continental e apenas com o consentimento dos Estados vizinhos&quot;</span><span class="p">,</span>
@@ -1955,18 +2034,22 @@ Portuguese was done using DeepL.</p>
 <a href="/methodology">methodology</a> for more information on how these are used):</p>
 <ul>
 <li>Number of few-shot examples: 5</li>
-<li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>As seguintes são perguntas de escolha múltipla (com respostas).
-</code></pre></div></li>
-<li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>Pergunta: {text}
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>As seguintes são perguntas de escolha múltipla (com respostas).
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Pergunta: {text}
 Opções:
 a. {option_a}
 b. {option_b}
 c. {option_c}
 d. {option_d}
 Resposta: {label}
-</code></pre></div></li>
+</code></pre></div>
+<ul>
 <li>Instruction-tuned prompt template:</li>
 </ul>
 <div class="highlight"><pre><span></span><code>Pergunta: {text}
@@ -1979,12 +2062,20 @@ d. {option_d}
 Responde à pergunta acima usando só &#39;a&#39; ou &#39;b&#39;, &#39;c&#39; ou &#39;d&#39;, e nada mais.
 </code></pre></div>
 <p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>mmlu-pt
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>mmlu-pt
 </code></pre></div>
 <h2 id="common-sense-reasoning">Common-sense Reasoning</h2>
 <h3 id="goldenswag-pt">GoldenSwag-pt</h3>
-<p>This dataset is a filtered and machine translated version of the English <a href="https://aclanthology.org/P19-1472/">HellaSwag dataset</a>, featuring both video descriptions from ActivityNet as well as how-to articles from WikiHow. The machine translated version was published in <a href="https://doi.org/10.48550/arXiv.2410.08928">this paper</a> and was done using DeepL, and the filtering was published in <a href="https://doi.org/10.48550/arXiv.2504.07825">this paper</a>, which resulted in higher quality samples.</p>
-<p>The original full dataset consists of 1530 / 1530 samples for training and validation, respectively. However, they are exactly equal. We use a split of 660 / 256 / 2,048 samples for training, validation, and testing, respectively.</p>
+<p>This dataset is a filtered and machine translated version of the English <a href="https://aclanthology.org/P19-1472/">HellaSwag
+dataset</a>, featuring both video descriptions from
+ActivityNet as well as how-to articles from WikiHow. The machine translated version was
+published in <a href="https://doi.org/10.48550/arXiv.2410.08928">this paper</a> and was done using
+DeepL, and the filtering was published in <a href="https://doi.org/10.48550/arXiv.2504.07825">this
+paper</a>, which resulted in higher quality
+samples.</p>
+<p>The original full dataset consists of 1530 / 1530 samples for training and validation,
+respectively. However, they are exactly equal. We use a split of 660 / 256 / 2,048
+samples for training, validation, and testing, respectively.</p>
 <p>Here are a few examples from the training split:</p>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Como fazer com que o seu namorado à distância se sinta especial. Escreva uma carta de amor à moda antiga para enviar por correio normal. Embora seja possível enviar um e-mail instantaneamente, receber um pacote ou uma carta pelo correio é um esforço muito mais íntimo e sincero. As cartas também criam uma recordação que não pode ser feita por correio eletrónico.\nOpções:\na. Não se preocupe em escrever o poema perfeito ou algo profundo, o facto de se ter esforçado por escrever é suficiente. Pode fazer um desenho, encontrar um cartão pré-fabricado ou até enviar um postal de um local especial.\nb. Considere a possibilidade de criar um álbum de recortes com as notas do seu casamento como forma de surpreender o seu namorado com flores, um colar sentido ou até uma caixa com os brinquedos favoritos dele. A carta irá acompanhar a maioria dos filmes favoritos dele, dos quais você e o seu homem gostam de falar.\nc. Numa carta, escrevem-se palavras que vão até ao coração da pessoa. Se quiser enganar alguém para que lhe conte um pequeno segredo que lhe contou, tem de ter cuidado.\nd. Escreva-o em silêncio, não em voz alta e clara, e peça ao destinatário que o leia duas vezes. Utilize a linha de assunto para explicar a razão pela qual está a escrever ao seu namorado.&quot;</span><span class="p">,</span>
@@ -2005,18 +2096,22 @@ Responde à pergunta acima usando só &#39;a&#39; ou &#39;b&#39;, &#39;c&#39; ou
 <a href="/methodology">methodology</a> for more information on how these are used):</p>
 <ul>
 <li>Number of few-shot examples: 5</li>
-<li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>As seguintes são perguntas de escolha múltipla (com respostas).
-</code></pre></div></li>
-<li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>Pergunta: {text}
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>As seguintes são perguntas de escolha múltipla (com respostas).
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Pergunta: {text}
 Opções:
 a. {option_a}
 b. {option_b}
 c. {option_c}
 d. {option_d}
 Resposta: {label}
-</code></pre></div></li>
+</code></pre></div>
+<ul>
 <li>Instruction-tuned prompt template:</li>
 </ul>
 <div class="highlight"><pre><span></span><code>Pergunta: {text}
@@ -2029,7 +2124,7 @@ d. {option_d}
 Responde à pergunta acima usando só &#39;a&#39; ou &#39;b&#39;, &#39;c&#39; ou &#39;d&#39;, e nada mais.
 </code></pre></div>
 <p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>goldenswag-pt
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>goldenswag-pt
 </code></pre></div>
 <h3 id="unofficial-winogrande-pt">Unofficial: Winogrande-pt</h3>
 <p>This dataset was published in <a href="https://doi.org/10.48550/arXiv.2506.19468">this paper</a>
@@ -2057,38 +2152,49 @@ we use the same splits.</p>
 <a href="/methodology">methodology</a> for more information on how these are used):</p>
 <ul>
 <li>Number of few-shot examples: 5</li>
-<li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>Følgende er multiple choice spørgsmål (med svar).
-</code></pre></div></li>
-<li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>Spørgsmål: {text}
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Følgende er multiple choice spørgsmål (med svar).
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Spørgsmål: {text}
 Svarmuligheder:
 a. {option_a}
 b. {option_b}
 Svar: {label}
-</code></pre></div></li>
-<li>Instruction-tuned prompt template:
-  <div class="highlight"><pre><span></span><code>Spørgsmål: {text}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Spørgsmål: {text}
 Svarmuligheder:
 a. {option_a}
 b. {option_b}
 
 Besvar ovenstående spørgsmål ved at svare med &#39;a&#39; eller &#39;b&#39;, og intet andet.
-</code></pre></div></li>
-</ul>
+</code></pre></div>
 <p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>winogrande-pt
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>winogrande-pt
 </code></pre></div>
 <h2 id="summarisation">Summarisation</h2>
 <h3 id="publico">Publico</h3>
-<p>This dataset contains 3,304 news articles from the Portuguese newspaper <em>Público</em> paired with extractive-style summaries. The samples all come from the <a href="https://commoncrawl.org/blog/news-dataset-available">CCNews corpus</a>.</p>
-<p>To create summary–document pairs, we extract the <strong>first two sentences</strong> of each article as the <code>target_text</code> (summary), and concatenate the <strong>title and the remainder</strong> of the article into <code>text</code>. This heuristic is grounded in the journalistic convention of placing concise leads at the beginning of articles.</p>
-<p>We provide 3 splits:
-- Train: 1,024 examples
-- Validation: 256 examples
-- Test: 2,024 examples</p>
+<p>This dataset contains 3,304 news articles from the Portuguese newspaper <em>Público</em> paired
+with extractive-style summaries. The samples all come from the <a href="https://commoncrawl.org/blog/news-dataset-available">CCNews
+corpus</a>.</p>
+<p>To create summary–document pairs, we extract the <strong>first two sentences</strong> of each article
+as the <code>target_text</code> (summary), and concatenate the <strong>title and the remainder</strong> of the
+article into <code>text</code>. This heuristic is grounded in the journalistic convention of
+placing concise leads at the beginning of articles.</p>
+<p>We provide 3 splits:</p>
+<ul>
+<li>Train: 1,024 examples</li>
+<li>Validation: 256 examples</li>
+<li>Test: 2,024 examples</li>
+</ul>
 <p>Here are a few examples from the training split:</p>
-<p><div class="highlight"><pre><span></span><code><span class="p">{</span>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">    </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;As grandes transições, o risco de disrupção\nPor que razão se acumulam tantos riscos elevados e com tal perigosidade? A razão principal, quero crer, reside no afloramento dos impactos das grandes transições - climática, ecológica, energética, demográfica, digital, migratória, laboral, sociocultural e sociopolítica - e numa inusitada convergência de todos os seus efeitos, internos e externos, nas décadas mais próximas e, bem assim, na impotência da política, tal como a conhecemos, para lidar com tantos eventos de tal amplitude. Senão vejamos. A vertigem digital e as suas inúmeras provações Eis o vórtice em que estamos metidos: chips e sensores, drones e câmaras de vigilância, interfaces cérebro-computacionais e nano-implantes, máquinas inteligentes e mestres algoritmos, robots e veículos autónomos, torres e antenas. Neste ambiente congestionado e num campo eletromagnético 4G+5G cada vez mais preenchido, seria impossível não acontecerem interações fortuitas, incidentes imprevistos, impactos inusitados, descobertas acidentais. Estamos, assim, obrigados a multiplicar os ângulos de observação e as perspetivas de olhar para os problemas. A surpresa pode ser, deveras, surpreendente. Basta, apenas, que aconteçam alguns acidentes graves cuja responsabilidade seja atribuída, “afinal”, à utilização abusiva de sistemas de inteligência automáticos e veículos autónomos. Estou convencido de que neste novo ambiente de virtualidade real a descontextualização que a inteligência artificial e automática carrega consigo nos fará passar inúmeras provações. Velocidade e colisão Com a chegada das redes 4G e 5G chegam as tecnologias mais disruptivas, mas chega, também, o risco de mais imersão, invasão e intrusão, ou seja, o risco iminente de uma grande colisão. Dito de outro modo, com a chegada das redes distribuídas as tecnologias imersivas, intrusivas e invasivas irão colidir, tarde ou cedo, com os seus destinatários potenciais. O que importa sublinhar nesta altura, no preciso momento em que a alta velocidade da rede 5G está para chegar, é o risco muito elevado de uma “grande colisão por excesso de velocidade”. De facto, a pandemia da covid-19 mostra-nos que está iminente uma grande colisão entre o infinitamente grande dos macro-organismos, os seres humanos que nós somos, e o infinitamente pequeno dos microorganismos, como é o caso da covid-19. Efeitos assimétricos Os efeitos assimétricos destas grandes transições vão deixar muitos territórios para trás. Cada transição tem o seu ciclo de vida específico, com uma duração variável, e é completamente impossível abordar todas as suas consequências no âmbito limitado de uma escala de tempo ou geografia em concreto. Ou seja, cada território nacional ou regional acabará por sofrer, tarde ou cedo, os danos colaterais de medidas erradas tomadas pelos territórios seus vizinhos. É nesta altura, justamente, que organizações supranacionais como a União Europeia ou subnacionais como as comunidades intermunicipais poderão e deverão mostrar toda a sua relevância geoeconómica e geopolítica. As interações fortuitas e os imponderáveis do acaso As características principais da rede 5G são a hipervelocidade, baixa latência, alta conectividade, elevada densidade e intensidade, curto alcance. Se pensarmos, agora, no polígono digital que esta rede nos oferece – Big data e computação na nuvem, (BDCC), Internet dos objetos (IOT), Inteligência artificial (IA), Realidade aumentada e virtual (RAV), Computação periférica (EC) – e na interação intensa entre estes e outros dispositivos tecnológicos e digitais, estamos cada vez mais próximos das chamadas “propriedades emergentes” do “serendipismo” (do inglês serenpidity), a saber, interações fortuitas, incidentes imprevistos, impactos inusitados, descobertas acidentais. Ou seja, perante a interdependência máxima crescem extraordinariamente os imponderáveis do acaso. Dispositivos tecnológicos e assistentes inteligentes Na sociedade da informação e da comunicação a inteligência deixou de estar contida nos limites humanos originais. Com efeito, nos dias que correm, a inteligência está dispersa e difusa, manifesta-se sob múltiplas formas e interage com praticamente tudo o que nos envolve. Deste ponto de vista, a realidade não para de aumentar todos os dias à medida que a inteligência se transfere para ambientes inteligentes que são extensões da nossa própria inteligência. Hoje tudo é smart, desde a realidade virtual e aumentada aos interfaces cérebro-computacionais, desde a inteligência dos objetos até à inteligência das máquinas. De facto, a nossa inteligência e as faculdades humanas estão a transitar para fora do seu habitat biológico e o corpo humano instala-se em dispositivos tecnológicos transumanos e pós-humanos cuja configuração futura nem sequer imaginamos. Entre a distração e a alucinação Somos screeners muitas horas por dia, é impossível manter a atenção num ambiente completamente saturado de notificações e avisos. A multiplicação dos dispositivos tecnológicos e digitais – uma espécie de sexto continente - exige de nós uma atualização constante. Todos os dias mergulhamos num imenso oceano de informação, experimentamos uma vertigem permanente para separar o essencial do acessório e lutamos com imensas dificuldades para administrar a nossa economia da atenção. No final do dia estamos exaustos e no dia seguinte, ainda debilitados, tudo recomeça. Na vertigem o foco da atenção converte-se num turbilhão, talvez, mesmo, em delírio e alucinação. As mudanças paradigmáticas Entre tantas transições previsíveis e excecionais haverá, também, mudanças paradigmáticas, cujos sinais de longo alcance só alguns vislumbrarão. O drama das mudanças paradigmáticas é que elas não se compadecem com a duração dos ciclos políticos curtos e muito menos com programas de governo reativos. A redução dos passivos climáticos, tais como o sequestro e armazenamento de carbono, ou a mudança de alguns aspetos nucleares do modelo de desenvolvimento dominante, por exemplo, a revisão de algumas cadeias de valor no sentido da sua reterritorialização, ou, ainda, a mudança de aspetos fundamentais do nosso comportamento quotidiano, por exemplo, no que diz respeito ao cumprimento de regras base de economia circular. Quer dizer, temos de estar avisados, não podemos permitir que os efeitos contraproducentes ou paradoxais das várias transições acabem por absorver os pequenos/grandes sinais das mudanças paradigmáticas. Notas Finais Como se observa, o risco de disrupção está sempre presente, seja o carácter invasivo e intrusivo das tecnologias 5G, a histeria coletiva de informação e comunicação num ambiente totalmente saturado, a crença nos mestres-algoritmos e na metalinguagem normalizadora das plataformas digitais. Digamos que, doravante, crescerá bastante o risco sistémico da economia digital 4G e 5G e, nesse sentido, estamos obrigados a desenvolver treino específico e capacidades especiais para entender e antecipar como se forjam e desenvolvem as interações fortuitas, os incidentes imprevistos e, por via deles, também, as descobertas acidentais. Este é o grande paradoxo do nosso tempo. Mais liberdade, mais incerteza, mais episódios acidentais. Por outro lado, os sinais dessas interações acidentais podem ser de tal modo fortuitos e furtivos que dificilmente caberão no interior das nossas métricas conceptuais e instrumentais habituais. O nosso arsenal teórico e, muito em especial, o campo das ciências sociais e humanas, com origem no iluminismo moderno e na cultura analógica, estão definitivamente postos em causa e a academia deve preparar-se para rever o seu estatuto científico eminente se não quiser ser um ator secundário que corre pelo lado de fora da realidade da cultura tecnológica e digital.&quot;</span><span class="p">,</span>
 <span class="w">    </span><span class="nt">&quot;target_text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;O nosso tempo não corre de feição. Desastres ambientais motivados por alterações climáticas, campos de refugiados em número crescente, pandemia da covid-19, elevado número de abalos de terra e erupções vulcânicas, adição digital e ódio nas redes sociais, polarização social e radicalização política, crise da transição energética, precariedade nos mercados de trabalho e baixos salários, dívidas públicas acumuladas gigantescas, crescente tensão geopolítica entre grandes potências.&quot;</span>
 <span class="p">}</span>
@@ -2102,26 +2208,30 @@ Besvar ovenstående spørgsmål ved at svare med &#39;a&#39; eller &#39;b&#39;, 
 <span class="w">    </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Praia algarvia entre as seis melhores do mundo, destaca TripAdvisor\nDesta vez, deixa a segunda metade da tabela para firmar-se entre os dez melhores areais do planeta, subindo seis lugares em relação a 2021. “É uma praia deslumbrante... o sol bate nos diferentes tons de areia laranja e amarela das falésias altas que reflectem uma cor quente”, lê-se no comentário de um utilizador, destacado pela TripAdvisor em comunicado. “A própria areia da praia é um amarelo dourado de grão fino. As ondas quebram na praia com uma ferocidade gentil que cria um surf branco para nadadores e surfistas.” Para criar a lista, renovada anualmente, a TripAdvisor revê “dezenas de milhões de avaliações enviadas por milhões de viajantes globais nos últimos 12 meses”, analisando “a qualidade e a quantidade das avaliações” para “determinar as praias favoritas dos viajantes” no ano anterior, antecipando tendências para os próximos meses. Este ano, as escapadelas para praias insulares surgem particularmente “populares”, “com quase três quartos das dez melhores do mundo a situarem-se em locais remotos”, destaca a empresa em comunicado. É o caso da praia vencedora de 2023, a brasileira Baía do Sancho, localizada na ilha Fernando de Noronha. É um regresso ao topo da lista, subindo seis posições relativamente ao ano passado. Outro destaque é uma “nova e empolgante entrada”: a “dramática” praia de Reynisfjara, em Vik, na Islândia. “É uma praia como nenhuma outra”, assegura a nota de imprensa. “Com as suas mundialmente famosas areias negras e imponentes formações rochosas que se elevam sobre a costa, alguns podem reconhecer o impressionante cenário de A Guerra dos Tronos.” Apesar de “popular entre os observadores de pássaros devido aos vários tipos de aves marinhas avistadas nas proximidades, principalmente os papagaios-do-mar”, as “águas geladas” e as ondas, que podem atingir os 40 metros de altitude, não convidam a banhos. “É uma praia mais bem admirada da segurança do litoral.” “Além das adoradas praias do Havai, das Caraíbas e da Europa continental, a nossa comunidade está mesmo à procura de melhorar as suas experiências ao abraçar as falésias de Cannon Beach, na costa de Oregon, no Oeste dos Estados Unidos, e destinos mais frios, como a praia de Reynisfjara, na Islândia”, nota Sarah Firshein, chefe editorial da TripAdvisor, em comunicado.&quot;</span><span class="p">,</span>
 <span class="w">    </span><span class="nt">&quot;target_text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;As “exuberantes falésias de areia vermelha” que emolduram “uma praia de areia branca que parece estender-se infinitamente”, terminando num “oceano azul-esverdeado”, valeram à praia da Falésia, situada em Olhos de Água, no concelho de Albufeira, o sexto lugar do ranking das melhores praias do mundo, eleito anualmente pelos Traveler&#39;s Choice Awards, da TripAdvisor. Há anos que o areal algarvio surge entre as preferências dos utilizadores da plataforma internacional, mantendo-se a única praia portuguesa no top mundial.&quot;</span><span class="p">,</span>
 <span class="p">}</span>
-</code></pre></div></p>
+</code></pre></div>
 <p>When evaluating generative models, we use the following setup (see the
 <a href="/methodology">methodology</a> for more information on how these are used):</p>
 <ul>
 <li>Number of few-shot examples: 1</li>
-<li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>Abaixo encontras documentos com resumos associados.
-</code></pre></div></li>
-<li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>Documento: {text}
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Abaixo encontras documentos com resumos associados.
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Documento: {text}
 Resumo: {target_text}
-</code></pre></div></li>
-<li>Instruction-tuned prompt template:
-  <div class="highlight"><pre><span></span><code>Documento: {text}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Documento: {text}
 
 Escreve um resumo do documento anterior.
-</code></pre></div></li>
-</ul>
+</code></pre></div>
 <p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>publico
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>publico
 </code></pre></div>
 
 

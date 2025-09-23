@@ -639,6 +639,8 @@
       
         
       
+        
+      
     
     
     
@@ -1171,6 +1173,29 @@
   
   
     <li class="md-nav__item">
+      <a href="../lithuanian/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    🇱🇹 Lithuanian
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../norwegian/" class="md-nav__link">
         
   
@@ -1648,7 +1673,7 @@ classification dataset, with labels "positive" and "negative".</p>
 samples, we have created a 1,024 / 256 / 2,048 split for the train, validation and test
 splits, respectively.</p>
 <p>Here are a few examples from the training split:</p>
-<p><div class="highlight"><pre><span></span><code><span class="p">{</span>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Kaikki meni niinkuin piti. Nopea toimitus.&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;positive&quot;</span>
 <span class="p">}</span>
@@ -1662,31 +1687,35 @@ splits, respectively.</p>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Todella hidas toimitus, ja virheellistä tietoa tuotteiden saatavuudesta, paketti ja tuotteet perillä vasta kuukauden päästä tilauksesta....&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;negative&quot;</span>
 <span class="p">}</span>
-</code></pre></div></p>
+</code></pre></div>
 <p>When evaluating generative models, we use the following setup (see the
 <a href="/methodology">methodology</a> for more information on how these are used):</p>
 <ul>
 <li>Number of few-shot examples: 12</li>
-<li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>Seuraavassa on arvosteluja ja niiden tunnesävy, joka voi olla &#39;positiivinen&#39; tai &#39;negatiivinen&#39;.
-</code></pre></div></li>
-<li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>Teksti: {text}
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Seuraavassa on arvosteluja ja niiden tunnesävy, joka voi olla &#39;positiivinen&#39; tai &#39;negatiivinen&#39;.
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Teksti: {text}
 Tunnesävy: {label}
-</code></pre></div></li>
-<li>Instruction-tuned prompt template:
-  <div class="highlight"><pre><span></span><code>Teksti: {text}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Teksti: {text}
 
 Luokittele arvostelun tunnesävy. Vastaa vain &#39;positiivinen&#39; tai &#39;negatiivinen&#39;, ei muuta.
-</code></pre></div></li>
-<li>Label mapping:<ul>
+</code></pre></div>
+<ul>
+<li>Label mapping:</li>
 <li><code>positive</code> ➡️ <code>positiivinen</code></li>
 <li><code>negative</code> ➡️ <code>negatiivinen</code></li>
 </ul>
-</li>
-</ul>
 <p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>scandisent-fi
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>scandisent-fi
 </code></pre></div>
 <h2 id="named-entity-recognition">Named Entity Recognition</h2>
 <h3 id="turku-ner-fi">Turku-NER-fi</h3>
@@ -1698,7 +1727,7 @@ validation and test splits, respectively. We use 1,024 / 256 / 2,048 samples for
 training, validation and test splits, respectively. All the new splits are subsets of
 the original splits.</p>
 <p>Here are a few examples from the training split:</p>
-<p><div class="highlight"><pre><span></span><code><span class="p">{</span>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">&quot;tokens&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;Suomalaiset&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;vaihtoivat&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;Tukholman&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;Tallinnaan&quot;</span><span class="p">],</span>
 <span class="w">  </span><span class="nt">&quot;labels&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;O&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;O&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;B-LOC&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;B-LOC&quot;</span><span class="p">]</span>
 <span class="p">}</span>
@@ -1712,24 +1741,30 @@ the original splits.</p>
 <span class="w">  </span><span class="nt">&quot;tokens&quot;</span><span class="p">:</span><span class="w"> </span><span class="err">array(</span><span class="p">[</span><span class="err">&#39;Mi</span><span class="kc">t</span><span class="err">hrida</span><span class="kc">tes</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;oli&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;Po</span><span class="kc">nt</span><span class="err">okse</span><span class="kc">n</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;merki</span><span class="kc">tt</span><span class="err">ävi</span><span class="kc">n</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;ku</span><span class="kc">n</span><span class="err">i</span><span class="kc">n</span><span class="err">gas&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;ja&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;Rooma</span><span class="kc">n</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;val</span><span class="kc">ta</span><span class="err">ku</span><span class="kc">nnan</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;vaarallisi</span><span class="kc">n</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;viholli</span><span class="kc">nen</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;e</span><span class="kc">ns</span><span class="err">immäisellä&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;vuosisadalla&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;eaa.&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;.&#39;</span><span class="p">],</span><span class="w"> </span><span class="err">d</span><span class="kc">t</span><span class="err">ype=objec</span><span class="kc">t</span><span class="err">)</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;labels&quot;</span><span class="p">:</span><span class="w"> </span><span class="err">array(</span><span class="p">[</span><span class="err">&#39;B</span><span class="mi">-</span><span class="err">PER&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;B</span><span class="mi">-</span><span class="err">LOC&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;B</span><span class="mi">-</span><span class="err">LOC&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;I</span><span class="mi">-</span><span class="err">LOC&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">],</span><span class="w"> </span><span class="err">d</span><span class="kc">t</span><span class="err">ype=objec</span><span class="kc">t</span><span class="err">)</span>
 <span class="p">}</span>
-</code></pre></div></p>
+</code></pre></div>
 <p>When evaluating generative models, we use the following setup (see the
 <a href="/methodology">methodology</a> for more information on how these are used):</p>
 <ul>
 <li>Number of few-shot examples: 8</li>
-<li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>Seuraavassa on lauseita ja JSON-sanakirjoja, jotka sisältävät annetussa lauseessa esiintyvät nimetyt entiteetit.
-</code></pre></div></li>
-<li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>Lause: {text}
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Seuraavassa on lauseita ja JSON-sanakirjoja, jotka sisältävät annetussa lauseessa esiintyvät nimetyt entiteetit.
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Lause: {text}
 Nimetyt entiteetit: {label}
-</code></pre></div></li>
-<li>Instruction-tuned prompt template:
-  <div class="highlight"><pre><span></span><code>Lause: {text}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Lause: {text}
 
 Tunnista lauseessa esiintyvät nimetyt entiteetit. Tulosta ne JSON-sanakirjana, jonka avaimet ovat &#39;henkilö&#39;, &#39;paikka&#39;, &#39;organisaatio&#39; ja &#39;muut&#39;. Arvojen tulee olla listoja kyseisen tyypin nimetyistä entiteeteistä täsmälleen siinä muodossa kuin ne esiintyvät lauseessa.
-</code></pre></div></li>
-<li>Label mapping:<ul>
+</code></pre></div>
+<ul>
+<li>Label mapping:</li>
 <li><code>B-PER</code> ➡️ <code>person</code></li>
 <li><code>I-PER</code> ➡️ <code>person</code></li>
 <li><code>B-LOC</code> ➡️ <code>sted</code></li>
@@ -1739,10 +1774,8 @@ Tunnista lauseessa esiintyvät nimetyt entiteetit. Tulosta ne JSON-sanakirjana, 
 <li><code>B-MISC</code> ➡️ <code>diverse</code></li>
 <li><code>I-MISC</code> ➡️ <code>diverse</code></li>
 </ul>
-</li>
-</ul>
 <p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>turku-ner-fi
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>turku-ner-fi
 </code></pre></div>
 <h2 id="linguistic-acceptability">Linguistic Acceptability</h2>
 <h3 id="scala-fi">ScaLA-fi</h3>
@@ -1758,7 +1791,7 @@ on the part-of-speech tags of the words in the sentence.</p>
 samples for training, validation and testing, respectively (so 3,328 samples used in
 total). These splits are used as-is in the framework.</p>
 <p>Here are a few examples from the training split:</p>
-<p><div class="highlight"><pre><span></span><code><span class="p">{</span>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Vuotta aiempaan verrattuna uusia ajoneuvoja rekisteröitiin 17,6 prosenttia enemmän.&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;correct&quot;</span>
 <span class="p">}</span>
@@ -1772,31 +1805,35 @@ total). These splits are used as-is in the framework.</p>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Kun käyttäjä kirjoittaa viestin, se näkyy käyttäjän käyttäjälistassa.&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;incorrect&quot;</span>
 <span class="p">}</span>
-</code></pre></div></p>
+</code></pre></div>
 <p>When evaluating generative models, we use the following setup (see the
 <a href="/methodology">methodology</a> for more information on how these are used):</p>
 <ul>
 <li>Number of few-shot examples: 12</li>
-<li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>Seuraavat ovat lauseita ja ovatko ne kieliopillisesti oikein.
-</code></pre></div></li>
-<li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>Lause: {text}
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Seuraavat ovat lauseita ja ovatko ne kieliopillisesti oikein.
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Lause: {text}
 Kieliopillisesti oikein: {label}
-</code></pre></div></li>
-<li>Instruction-tuned prompt template:
-  <div class="highlight"><pre><span></span><code>Lause: {text}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Lause: {text}
 
 Määritä onko lause kieliopillisesti oikein vai ei. Vastaa &#39;kyllä&#39;, jos lause on oikein, ja &#39;ei&#39;, jos se ei ole.
-</code></pre></div></li>
-<li>Label mapping:<ul>
+</code></pre></div>
+<ul>
+<li>Label mapping:</li>
 <li><code>correct</code> ➡️ <code>kyllä</code></li>
 <li><code>incorrect</code> ➡️ <code>ei</code></li>
 </ul>
-</li>
-</ul>
 <p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>scala-fi
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>scala-fi
 </code></pre></div>
 <h2 id="reading-comprehension">Reading Comprehension</h2>
 <h3 id="tydiqa-fi">TydiQA-fi</h3>
@@ -1814,7 +1851,7 @@ split are sampled from the original train and validation splits, respectively. T
 set consists of the remaining samples from the original validation split + additional
 samples from the original train split.</p>
 <p>Here are a few examples from the training split:</p>
-<p><div class="highlight"><pre><span></span><code><span class="p">{</span>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">&quot;question&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Kuka näytteli Dumbledorea Harry Potter elokuvissa?&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;context&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Dumbledorea esittää kirjasarjasta tehdyssä elokuvasarjassa Richard Harris kahdessa ensimmäisessä elokuvassa. Harrisin kuoltua Michael Gambon esitti hahmoa sarjan lopuissa elokuvissa.&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;answers&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
@@ -1840,29 +1877,33 @@ samples from the original train split.</p>
 <span class="w">    </span><span class="nt">&quot;answer_start&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="mi">687</span><span class="p">]</span>
 <span class="w">  </span><span class="p">}</span>
 <span class="p">}</span>
-</code></pre></div></p>
+</code></pre></div>
 <p>When evaluating generative models, we use the following setup (see the
 <a href="/methodology">methodology</a> for more information on how these are used):</p>
 <ul>
 <li>Number of few-shot examples: 4</li>
-<li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>Seuraavassa on tekstejä ja niihin liittyviä kysymyksiä ja vastauksia.
-</code></pre></div></li>
-<li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>Teksti: {text}
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Seuraavassa on tekstejä ja niihin liittyviä kysymyksiä ja vastauksia.
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Teksti: {text}
 Kysymys: {question}
 Vastaa enintään 3 sanalla: {label}
-</code></pre></div></li>
-<li>Instruction-tuned prompt template:
-  <div class="highlight"><pre><span></span><code>Teksti: {text}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Teksti: {text}
 
 Vastaa seuraavaan kysymykseen yllä olevasta tekstistä enintään 3 sanalla.
 
 Kysymys: {question}
-</code></pre></div></li>
-</ul>
+</code></pre></div>
 <p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>tydiqa-fi
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>tydiqa-fi
 </code></pre></div>
 <h3 id="unofficial-belebele-fi">Unofficial: BeleBele-fi</h3>
 <p>This dataset was published in <a href="https://aclanthology.org/2024.acl-long.44/">this paper</a>
@@ -1871,7 +1912,7 @@ and features multiple-choice reading comprehension questions across 122 language
 and questions. From these, we use a 256 / 64 / 580 split for training, validation and
 testing, respectively.</p>
 <p>Here are a few examples from the training split:</p>
-<p><div class="highlight"><pre><span></span><code><span class="p">{</span>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Toisin kuin muut kädelliset, isot ihmisapinat eivät enää käytä käsiään liikkumiseen, painon kannattelemiseen tai liikkumiseen puissa itseään heilautellen. Simpanssin käsi ja jalka ovat samankokoisia ja -pituisia, mikä viittaa siihen, että kädelle varataan painoa rystykävelyssä. Ihmisen käsi on lyhyempi kuin jalka, ja sen sormiluut ovat suoremmat. Kahden-kolmen miljoonan vuoden ikäiset käsiluiden fossiilit paljastavat käden erikoistumisessa tämän muutoksen liikkumisesta käyttelyyn.\nKysymys: Mikä seuraavista kuvaa tarkasti simpanssin sormiluita?\nVaihtoehdot:\na. Ne ovat suoremmat kuin ihmisillä\nb. Niiden kädet ja jalat ovat erikokoisia\nc. Niitä käytetään painon kannattelemiseen\nd. Niitä käytetään pääasiassa käyttelyyn&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;c&quot;</span>
 <span class="p">}</span>
@@ -1885,25 +1926,30 @@ testing, respectively.</p>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Teksti: Sundarban on maailman suurin mangrovemetsäalue. Se ulottuu 80 kilometriä (50 mailia) rannikolta Bangladeshin ja Intian takamaille. Sundarban on julistettu Unescon maailmanperintökohteeksi. Metsän Intian puolella sijaitsevaa osaa kutsutaan Sundarbanin kansallispuistoksi. Metsät eivät kuitenkaan ole pelkkiä mangrovesoita, vaan niihin kuuluu joitakin viimeisiä jäänteitä niistä mahtavista viidakoista, jotka aikoinaan peittivät koko Gangesin tasangon. Sundarban kattaa 3 850 neliökilometrin alueen, josta noin kolmasosa on vesi- tai suoalueiden peitossa. Vuodesta 1966 asti Sundarbans on ollut villieläinten suojelualue. Arvioidaan, että siellä on nykyään 400 intiantiikeriä ja suunnilleen 30 000 aksishirveä.\nKysymys: Mikä metsän osa on Intian puolella?\nVaihtoehdot:\na. Sundarbanin kansallispuisto\nb. Villieläinten suojelualue\nc. Maailmanperintökohde\nd. Gangesin tasanko&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;a&quot;</span>
 <span class="p">}</span>
-</code></pre></div></p>
+</code></pre></div>
 <p>When evaluating generative models, we use the following setup (see the
 <a href="/methodology">methodology</a> for more information on how these are used):</p>
 <ul>
 <li>Number of few-shot examples: 5</li>
-<li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>Seuraavat ovat monivalintakysymyksiä (vastauksineen).
-</code></pre></div></li>
-<li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>Kysymys: {text}
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Seuraavat ovat monivalintakysymyksiä (vastauksineen).
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Kysymys: {text}
 Vaihtoehdot:
 a. {option_a}
 b. {option_b}
 c. {option_c}
 d. {option_d}
 Vastaus: {label}
-</code></pre></div></li>
-<li>Instruction-tuned prompt template:
-  <div class="highlight"><pre><span></span><code>Kysymys: {text}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Kysymys: {text}
 Vaihtoehdot:
 a. {option_a}
 b. {option_b}
@@ -1911,10 +1957,9 @@ c. {option_c}
 d. {option_d}
 
 Vastaa yllä olevaan kysymykseen käyttämällä &#39;a&#39;, &#39;b&#39;, &#39;c&#39; tai &#39;d&#39;, äläkä mitään muuta.
-</code></pre></div></li>
-</ul>
+</code></pre></div>
 <p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>belebele-fi
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>belebele-fi
 </code></pre></div>
 <h3 id="unofficial-multiwikiqa-fi">Unofficial: MultiWikiQA-fi</h3>
 <p>This dataset was published in <a href="https://doi.org/10.48550/arXiv.2509.04111">this paper</a>
@@ -1923,7 +1968,7 @@ languages.</p>
 <p>The original full dataset consists of 5,000 samples in a single split. We use a 1,024 /
 256 / 2,048 split for training, validation and testing, respectively, sampled randomly.</p>
 <p>Here are a few examples from the training split:</p>
-<p><div class="highlight"><pre><span></span><code><span class="p">{</span>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">    </span><span class="nt">&quot;context&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Aarne Silvio Heikinheimo (20. maaliskuuta 1894 Tornio – 24. tammikuuta 1938) oli suomalainen jääkärikenraalimajuri. Hänen vanhempansa olivat ylimetsänhoitaja Johan Henrik Heikel ja Sally Armida Thauvón. Hänet vihittiin avioliittoon vuonna 1919 Sylvi Amalia Jurveliuksen kanssa.\n\nOpinnot\nHeikinheimo kirjoitti ylioppilaaksi Oulun suomalaisesta yhteiskoulusta vuonna 1913 ja liittyi Pohjois-Pohjalaiseen Osakuntaan. Opintojaan hän jatkoi Teknillisen korkeakoulun koneinsinööriosastolla vuosina 1913–1914. Hän seurasi opetusta Sotakorkeakoulun komentajakurssilla vuonna 1925 ja kävi Sotakorkeakoulun yleisen osaston vuosina 1926–1927.\n\nJääkäriaika\nHän liittyi yhtenä ensimmäisten vapaaehtoisten joukkoon, jonka päämääränä oli Saksassa sotilaskoulutusta antava Pfadfinder-kurssi, joka järjestettiin Pohjois-Saksassa sijaitsevalla Lockstedter Lagerin harjoitusalueella. Leirille hän ilmoittautui 25. helmikuuta 1915. Hänet sijoitettiin joukon 1. komppaniaan. Myöhemmin hänet sijoitettiin Kuninkaallisen, Preussin Jääkäripataljoona 27:n 1. komppaniaan. Hän otti osaa taisteluihin ensimmäisessä maailmansodassa Saksan itärintamalla Misse-joella, Riianlahdella ja Aa-joella. Hän osallistui kesällä vuonna 1917 Libaussa järjestetyille moottoriveneenkuljettaja- ja konekivääriasemestarikursseille ja  elokuussa vuonna 1917 Schaulenissa järjestetylle autokurssille  sekä syksyllä Libaussa vuonna 1917 järjestetylle räjäytyskurssille.\n\nSuomen sisällissota\n\nKatso myös: Suomen sisällissota\nHän saapui Suomeen oberzugführer Friedel Jacobssonin komennuskunnan mukana 30. tammikuuta 1918 ja liittyi Perä-Pohjolan suojeluskuntajoukkoihin Tervolassa. Hänet komennettiin joukkueenjohtajaksi Tervolaa ja Torniota vastaan taisteleviin joukkoihin. Tervolan ja Tornion valtausten jälkeen hänet nimitettiin Kemin kaupungin komendantiksi 7. helmikuuta, kunnes 5. maaliskuuta hänet nimitettiin Perä-Pohjolan pataljoonan komentajaksi. Hän johdatti pataljoonansa taisteluihin Vilkkilässä, Haavistolla (Oriveden), Tervaniemessä, Lempäälässä, Vesilahdella, Karkussa ja Tyrväällä. Sisällissodan loppuvaiheissa hän sai tehtäväkseen muodostaa Lahdessa Itä-Uudenmaan rykmentin.\n\nSisällissodan jälkeinen aika\n\nSisällissodan jälkeen Heikinheimo määrättiin 1. heinäkuuta 1918 alkaen 1. Divisioonan adjutantiksi ja myöhemmin väliaikaiseksi esikuntapäälliköksi, josta hänet siirrettiin 15. elokuuta 1918 Suomen valkoisen kaartin I pataljoonan komentajaksi ja edelleen komentajaksi 11. syyskuuta 1918 Viipurin rykmentin II pataljoonaan. II Polkupyöräpataljoonan komentajaksi hänet siirrettiin 27. huhtikuuta 1921 ja Viipurin rykmentin komentajaksi 15. elokuuta 1924. Hän toimi 12. elokuuta 1926 alkaen komentajana Jääkäriprikaatissa, josta hänet siirrettiin komentajaksi 3. Divisioonaan 9. kesäkuuta 1928. Esikuntatehtäviin hänet siirrettiin 25. elokuuta 1934 ja sijoitettiin Yleisesikuntaan ja määrättiin jalkaväen tarkastajaksi. Hän menehtyi tapaturmaisesti koeammunnoissa Harakan saarella kranaatinheittimen putken räjähdettyä 24. tammikuuta 1938. Hänet on haudattu Ouluun Intiön hautausmaalle, aivan sankarihautojen viereen.\n\nLuottamustoimet\nHeikinheimo toimi 2. Divisioonan kunniatuomioistuimen puheenjohtajana vuonna 1920 ja  3. Divisioonan kunniatuomioistuimen puheenjohtajana vuosina 1921 ja 1925. Polkupyöräjoukkojen erikoiskysymyksiä käsitelleen komitean jäsenenä hän toimi vuonna 1922 ja polkupyöräjoukkojen ohjesääntökomitean puheenjohtajana vuonna 1924 sekä pikakiväärinkokeilukomitean jäsenenä vuosina 1924–1925. Talvivarustuskomitean jäsenenä hän toimi vuonna 1924 ja kenttävarustustoimikunnan puheenjohtajana vuosina 1931–1934 sekä ohjesääntökomitean puheenjohtajana vuonna 1934. Mikkelin kaupunkiseurakunnan lisätyn kirkkovaltuuston jäsenenä hän toimi vuosina 1933–1934.\n\nLähteet \n Puolustusministeriön Sotahistoriallisen toimiston julkaisuja IV, Suomen jääkärien elämäkerrasto, WSOY Porvoo 1938.\n Sotatieteen Laitoksen Julkaisuja XIV, Suomen jääkärien elämäkerrasto 1975, Vaasa 1975 ISBN 951-99046-8-9.\n\nViitteet \n\nJääkärikenraalit\nVuonna 1894 syntyneet\nVuonna 1938 kuolleet&quot;</span><span class="p">,</span>
 <span class="w">    </span><span class="nt">&quot;question&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Milloin Aarne Heikinheimo sai ylioppilastutkinnon suoritettua?&quot;</span><span class="p">,</span>
 <span class="w">    </span><span class="nt">&quot;answers&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
@@ -1949,29 +1994,33 @@ languages.</p>
 <span class="w">        </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="err">array(</span><span class="p">[</span><span class="s2">&quot;Liuksialan kartanossa&quot;</span><span class="p">],</span><span class="w"> </span><span class="err">d</span><span class="kc">t</span><span class="err">ype=objec</span><span class="kc">t</span><span class="err">)</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="p">}</span>
-</code></pre></div></p>
+</code></pre></div>
 <p>When evaluating generative models, we use the following setup (see the
 <a href="/methodology">methodology</a> for more information on how these are used):</p>
 <ul>
 <li>Number of few-shot examples: 4</li>
-<li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>Seuraavassa on tekstejä ja niihin liittyviä kysymyksiä ja vastauksia.
-</code></pre></div></li>
-<li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>Teksti: {text}
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Seuraavassa on tekstejä ja niihin liittyviä kysymyksiä ja vastauksia.
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Teksti: {text}
 Kysymys: {question}
 Vastaa enintään 3 sanalla: {label}
-</code></pre></div></li>
-<li>Instruction-tuned prompt template:
-  <div class="highlight"><pre><span></span><code>Teksti: {text}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Teksti: {text}
 
 Vastaa seuraavaan kysymykseen yllä olevasta tekstistä enintään 3 sanalla.
 
 Kysymys: {question}
-</code></pre></div></li>
-</ul>
+</code></pre></div>
 <p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>multi-wiki-qa-fi
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>multi-wiki-qa-fi
 </code></pre></div>
 <h2 id="common-sense-reasoning">Common-sense Reasoning</h2>
 <h3 id="hellaswag-fi">HellaSwag-fi</h3>
@@ -1982,7 +2031,7 @@ created by Finnish-NLP using Google Translate. The dataset is designed to be use
 EuroEval and it therefore already has a 1,024 / 256 / 2,048 split for the train,
 validation and test splits, respectively.</p>
 <p>Here are a few examples from the training split:</p>
-<p><div class="highlight"><pre><span></span><code><span class="p">{</span>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;[Otsikko ] Tiikkihuonekalujen tahraus [vaihe] Pyyhi lika, pöly ja roskat pois. [vaihe] Voit harjata lian pois kuivalla paperipyyhkeellä tai liinalla. Jos puhdistettavia kohtia on sitkeämpiä, voit hieroa ne puhtaaksi kostealla rievulla.\nVastausvaihtoehdot:\na. [vaihe] Poista tahrat tiikistä pyyhkimällä ne kuivalla talouspaperilla. [vaihe] Noudata samoja puhdistustoimenpiteitä, joita käytit tahran kanssa.\nb. Aja niiden yli puhdistusaineella, kunnes tahra on poissa. [vaihe] Kokeile puupetsin ja öljyn yhdistelmää.\nc. [välivaiheet] Älä käytä puhdistusaineita. Saatat vahingoittaa puuta, mutta vaikeutat varmasti värjäysprosessia.\nd. Poista mahdollisimman paljon likaa levittämällä tahra kevyelle, pörröiselle liinalle tai kädelle ja pyyhkimällä se pois. [vaihe] Käytä hankaamiseen valkaisuainetta ja vettä.&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;c&quot;</span><span class="p">,</span>
 <span class="p">}</span>
@@ -1996,25 +2045,30 @@ validation and test splits, respectively.</p>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Kahden ihmisen nähdään kävelevän pöytäjalkapallopöydän ympärillä pelaamassa. ihmisiä\nVastausvaihtoehdot:\na. pitäkää kupit ylös ja alakaa pelata peliä ja lyödä toisianne.\nb. Tartu sauvoista ja lyö palloa pöydän ympärillä.\nc. Jatka kävelemistä ja yksi henkilö lyö pallon verkon yli.\nd. siirrä ympäri pöytää heittäen palloa ympäriinsä, kun ihmiset katselevat sivuilla.&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;b&quot;</span><span class="p">,</span>
 <span class="p">}</span>
-</code></pre></div></p>
+</code></pre></div>
 <p>When evaluating generative models, we use the following setup (see the
 <a href="/methodology">methodology</a> for more information on how these are used):</p>
 <ul>
 <li>Number of few-shot examples: 5</li>
-<li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>Seuraavat ovat monivalintakysymyksiä (vastauksineen).
-</code></pre></div></li>
-<li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>Kysymys: {text}
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Seuraavat ovat monivalintakysymyksiä (vastauksineen).
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Kysymys: {text}
 Vastausvaihtoehdot:
 a. {option_a}
 b. {option_b}
 c. {option_c}
 d. {option_d}
 Vastaus: {label}
-</code></pre></div></li>
-<li>Instruction-tuned prompt template:
-  <div class="highlight"><pre><span></span><code>Kysymys: {text}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Kysymys: {text}
 Vastausvaihtoehdot:
 a. {option_a}
 b. {option_b}
@@ -2022,10 +2076,9 @@ c. {option_c}
 d. {option_d}
 
 Vastaa yllä olevaan kysymykseen käyttämällä &#39;a&#39;, &#39;b&#39;, &#39;c&#39; tai &#39;d&#39;, äläkä mitään muuta.
-</code></pre></div></li>
-</ul>
+</code></pre></div>
 <p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>hellaswag-fi
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>hellaswag-fi
 </code></pre></div>
 <h3 id="unofficial-goldenswag-fi">Unofficial: GoldenSwag-fi</h3>
 <p>This dataset is a filtered and machine translated version of the English <a href="https://aclanthology.org/P19-1472/">HellaSwag
@@ -2058,20 +2111,25 @@ samples for training, validation, and testing, respectively.</p>
 <a href="/methodology">methodology</a> for more information on how these are used):</p>
 <ul>
 <li>Number of few-shot examples: 5</li>
-<li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>Seuraavat ovat monivalintakysymyksiä (vastauksineen).
-</code></pre></div></li>
-<li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>Kysymys: {text}
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Seuraavat ovat monivalintakysymyksiä (vastauksineen).
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Kysymys: {text}
 Vastausvaihtoehdot:
 a. {option_a}
 b. {option_b}
 c. {option_c}
 d. {option_d}
 Vastaus: {label}
-</code></pre></div></li>
-<li>Instruction-tuned prompt template:
-  <div class="highlight"><pre><span></span><code>Kysymys: {text}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Kysymys: {text}
 Vastausvaihtoehdot:
 a. {option_a}
 b. {option_b}
@@ -2079,10 +2137,9 @@ c. {option_c}
 d. {option_d}
 
 Vastaa yllä olevaan kysymykseen käyttämällä &#39;a&#39;, &#39;b&#39;, &#39;c&#39; tai &#39;d&#39;, äläkä mitään muuta.
-</code></pre></div></li>
-</ul>
+</code></pre></div>
 <p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>goldenswag-fi
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>goldenswag-fi
 </code></pre></div>
 <h3 id="unofficial-winogrande-fi">Unofficial: Winogrande-fi</h3>
 <p>This dataset was published in <a href="https://doi.org/10.48550/arXiv.2506.19468">this paper</a>
@@ -2110,27 +2167,31 @@ we use the same splits.</p>
 <a href="/methodology">methodology</a> for more information on how these are used):</p>
 <ul>
 <li>Number of few-shot examples: 5</li>
-<li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>Seuraavat ovat monivalintakysymyksiä (vastauksineen).
-</code></pre></div></li>
-<li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>Kysymys: {text}
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Seuraavat ovat monivalintakysymyksiä (vastauksineen).
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Kysymys: {text}
 Vastausvaihtoehdot:
 a. {option_a}
 b. {option_b}
 Vastaus: {label}
-</code></pre></div></li>
-<li>Instruction-tuned prompt template:
-  <div class="highlight"><pre><span></span><code>Kysymys: {text}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Kysymys: {text}
 Vastausvaihtoehdot:
 a. {option_a}
 b. {option_b}
 
 Vastaa yllä olevaan kysymykseen käyttämällä &#39;a&#39; tai &#39;b&#39;, äläkä mitään muuta.
-</code></pre></div></li>
-</ul>
+</code></pre></div>
 <p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>winogrande-fi
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>winogrande-fi
 </code></pre></div>
 <h2 id="summarisation">Summarisation</h2>
 <h3 id="xlsum-fi">XLSum-fi</h3>
@@ -2144,7 +2205,7 @@ validation and test splits, respectively. The new training and validation splits
 subsets of the original splits. The test split is the same as the original test split +
 additional samples from the original validation split.</p>
 <p>Here are a few examples from the training split:</p>
-<p><div class="highlight"><pre><span></span><code><span class="p">{</span>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Poliisi kutsuttiin Century Wharfiin keskiviikkona noin kello 14:15 GMT. 66-vuotias mies on pidätetty murhasta epäiltynä, ja häntä pidetään vangittuna. Etelä-Walesin poliisi ilmoitti, että se siirtää asian vapaaehtoisesti riippumattoman poliisin valituslautakunnan käsiteltäväksi.&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;target_text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Murhatutkinta on aloitettu sen jälkeen, kun 65-vuotiaan naisen ruumis löytyi Cardiff Bayn asunnosta.&quot;</span>
 <span class="p">}</span>
@@ -2158,26 +2219,30 @@ additional samples from the original validation split.</p>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Pohjois-Walesin palo- ja pelastusviranomainen vahvisti maanantaina talousarvionsa vuosiksi 2015-16. Viranomainen on suostunut leikkaamaan neljä johtotehtävää, leikkaamaan joitakin palveluja ja käyttämään vararahastoa, jotta se voi hyväksyä 32,1 miljoonan punnan talousarvionsa. On pelätty, että sadat palomiehet voivat lähteä seuraavien viiden vuoden aikana tehtävien budjettileikkausten seurauksena.&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;target_text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Pohjois-Walesin palomiehet lopettavat suurten eläinten pelastamisen ja vähentävät väärien hälytysten määrää, jotta talous saataisiin tasapainoon.&quot;</span>
 <span class="p">}</span>
-</code></pre></div></p>
+</code></pre></div>
 <p>When evaluating generative models, we use the following setup (see the
 <a href="/methodology">methodology</a> for more information on how these are used):</p>
 <ul>
 <li>Number of few-shot examples: 1</li>
-<li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>Seuraavassa on artikkeleita ja niihin liittyviä tiivistelmiä.
-</code></pre></div></li>
-<li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>Uutisartikkeli: {text}
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Seuraavassa on artikkeleita ja niihin liittyviä tiivistelmiä.
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Uutisartikkeli: {text}
 Tiivistelmä: {target_text}
-</code></pre></div></li>
-<li>Instruction-tuned prompt template:
-  <div class="highlight"><pre><span></span><code>Uutisartikkeli: {text}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Uutisartikkeli: {text}
 
 Kirjoita tiivistelmä yllä olevasta artikkelista.
-</code></pre></div></li>
-</ul>
+</code></pre></div>
 <p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>xlsum-fi
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>xlsum-fi
 </code></pre></div>
 
 

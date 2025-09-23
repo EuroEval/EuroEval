@@ -631,6 +631,8 @@
       
         
       
+        
+      
     
     
     
@@ -1056,7 +1058,18 @@
 <span class="normal">213</span>
 <span class="normal">214</span>
 <span class="normal">215</span>
-<span class="normal">216</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Templates for the Sentiment Analysis task.&quot;&quot;&quot;</span>
+<span class="normal">216</span>
+<span class="normal">217</span>
+<span class="normal">218</span>
+<span class="normal">219</span>
+<span class="normal">220</span>
+<span class="normal">221</span>
+<span class="normal">222</span>
+<span class="normal">223</span>
+<span class="normal">224</span>
+<span class="normal">225</span>
+<span class="normal">226</span>
+<span class="normal">227</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Templates for the Sentiment Analysis task.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">t</span>
 
@@ -1072,6 +1085,7 @@
     <span class="n">FR</span><span class="p">,</span>
     <span class="n">IS</span><span class="p">,</span>
     <span class="n">IT</span><span class="p">,</span>
+    <span class="n">LT</span><span class="p">,</span>
     <span class="n">LV</span><span class="p">,</span>
     <span class="n">NB</span><span class="p">,</span>
     <span class="n">NL</span><span class="p">,</span>
@@ -1210,6 +1224,16 @@
         <span class="n">default_prompt_template</span><span class="o">=</span><span class="s2">&quot;Documento: </span><span class="si">{text}</span><span class="se">\n</span><span class="s2">Sentimento: </span><span class="si">{label}</span><span class="s2">&quot;</span><span class="p">,</span>
         <span class="n">default_instruction_prompt</span><span class="o">=</span><span class="s2">&quot;Documento: </span><span class="si">{text}</span><span class="se">\n\n</span><span class="s2">Classificare il sentiment del &quot;</span>
         <span class="s2">&quot;documento. Rispondere con </span><span class="si">{labels_str}</span><span class="s2">, e nient&#39;altro.&quot;</span><span class="p">,</span>
+    <span class="p">),</span>
+    <span class="n">LT</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
+        <span class="n">default_prompt_label_mapping</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span>
+            <span class="n">positive</span><span class="o">=</span><span class="s2">&quot;teigiamas&quot;</span><span class="p">,</span> <span class="n">neutral</span><span class="o">=</span><span class="s2">&quot;neutralus&quot;</span><span class="p">,</span> <span class="n">negative</span><span class="o">=</span><span class="s2">&quot;neigiamas&quot;</span>
+        <span class="p">),</span>
+        <span class="n">default_prompt_prefix</span><span class="o">=</span><span class="s2">&quot;Toliau pateikti dokumentai ir jų nuotaika, kuri &quot;</span>
+        <span class="s2">&quot;gali būti </span><span class="si">{labels_str}</span><span class="s2">.&quot;</span><span class="p">,</span>
+        <span class="n">default_prompt_template</span><span class="o">=</span><span class="s2">&quot;Dokumentas: </span><span class="si">{text}</span><span class="se">\n</span><span class="s2">Nuotaika: </span><span class="si">{label}</span><span class="s2">&quot;</span><span class="p">,</span>
+        <span class="n">default_instruction_prompt</span><span class="o">=</span><span class="s2">&quot;Dokumentas: </span><span class="si">{text}</span><span class="se">\n\n</span><span class="s2">Klasifikuokite nuotaiką &quot;</span>
+        <span class="s2">&quot;dokumente. Atsakykite su </span><span class="si">{labels_str}</span><span class="s2">, ir nieko kito.&quot;</span><span class="p">,</span>
     <span class="p">),</span>
     <span class="n">LV</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
         <span class="n">default_prompt_label_mapping</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span>

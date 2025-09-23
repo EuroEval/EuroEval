@@ -639,6 +639,8 @@
       
         
       
+        
+      
     
     
     
@@ -1213,6 +1215,29 @@
   
   
     <li class="md-nav__item">
+      <a href="../lithuanian/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    🇱🇹 Lithuanian
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../norwegian/" class="md-nav__link">
         
   
@@ -1742,7 +1767,7 @@ the original splits.</p>
 <li><code>very positive</code> ➡️ <code>positive</code></li>
 </ul>
 <p>Here are a few examples from the training split:</p>
-<p><div class="highlight"><pre><span></span><code><span class="p">{</span>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;the leads are natural and lovely , the pace is serene , the humor wry and sprightly .&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;positive&quot;</span>
 <span class="p">}</span>
@@ -1756,32 +1781,36 @@ the original splits.</p>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;no cliche escapes the perfervid treatment of gang warfare called ces wild .&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;negative&quot;</span>
 <span class="p">}</span>
-</code></pre></div></p>
+</code></pre></div>
 <p>When evaluating generative models, we use the following setup (see the
 <a href="/methodology">methodology</a> for more information on how these are used):</p>
 <ul>
 <li>Number of few-shot examples: 12</li>
-<li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>The following are texts and their sentiment, which can be &#39;positive&#39;, &#39;neutral&#39; or &#39;negative&#39;.
-</code></pre></div></li>
-<li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>Text: {text}
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>The following are texts and their sentiment, which can be &#39;positive&#39;, &#39;neutral&#39; or &#39;negative&#39;.
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Text: {text}
 Sentiment: {label}
-</code></pre></div></li>
-<li>Instruction-tuned prompt template:
-  <div class="highlight"><pre><span></span><code>Text: {text}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Text: {text}
 
 Classify the sentiment in the text. Answer with &#39;positive&#39;, &#39;neutral&#39; or &#39;negative&#39;.
-</code></pre></div></li>
-<li>Label mapping:<ul>
+</code></pre></div>
+<ul>
+<li>Label mapping:</li>
 <li><code>positive</code> ➡️ <code>positive</code></li>
 <li><code>neutral</code> ➡️ <code>neutral</code></li>
 <li><code>negative</code> ➡️ <code>negative</code></li>
 </ul>
-</li>
-</ul>
 <p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>sst5
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>sst5
 </code></pre></div>
 <h2 id="named-entity-recognition">Named Entity Recognition</h2>
 <h3 id="conll-en">CoNLL-en</h3>
@@ -1794,7 +1823,7 @@ validation and test splits, respectively. We use 1,024 / 256 / 2,048 samples for
 training, validation and test splits, respectively. All the new splits are subsets of
 the original splits.</p>
 <p>Here are a few examples from the training split:</p>
-<p><div class="highlight"><pre><span></span><code><span class="p">{</span>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="err">&#39;</span><span class="kc">t</span><span class="err">oke</span><span class="kc">ns</span><span class="err">&#39;</span><span class="p">:</span><span class="w"> </span><span class="err">array(</span><span class="p">[</span><span class="err">&#39;SK&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;Slavia&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;Praha&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;</span><span class="mi">3</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;</span><span class="mi">1</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;</span><span class="mi">2</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;</span><span class="mi">0</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;</span><span class="mi">6</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;</span><span class="mi">3</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;</span><span class="mi">5</span><span class="err">&#39;</span><span class="p">],</span><span class="w"> </span><span class="err">d</span><span class="kc">t</span><span class="err">ype=objec</span><span class="kc">t</span><span class="err">)</span><span class="p">,</span>
 <span class="w">  </span><span class="err">&#39;labels&#39;</span><span class="p">:</span><span class="w"> </span><span class="err">array(</span><span class="p">[</span><span class="err">&#39;B</span><span class="mi">-</span><span class="err">ORG&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;I</span><span class="mi">-</span><span class="err">ORG&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;I</span><span class="mi">-</span><span class="err">ORG&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">],</span><span class="w"> </span><span class="err">d</span><span class="kc">t</span><span class="err">ype=objec</span><span class="kc">t</span><span class="err">)</span>
 <span class="p">}</span>
@@ -1808,24 +1837,30 @@ the original splits.</p>
 <span class="w">  </span><span class="err">&#39;</span><span class="kc">t</span><span class="err">oke</span><span class="kc">ns</span><span class="err">&#39;</span><span class="p">:</span><span class="w"> </span><span class="err">array(</span><span class="p">[</span><span class="err">&#39;Dea</span><span class="kc">n</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;Palmer&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;hi</span><span class="kc">t</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;his&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;</span><span class="mi">30</span><span class="kc">t</span><span class="err">h&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;homer&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;</span><span class="kc">f</span><span class="err">or&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;</span><span class="kc">t</span><span class="err">he&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;Ra</span><span class="kc">n</span><span class="err">gers&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;.&#39;</span><span class="p">],</span><span class="w"> </span><span class="err">d</span><span class="kc">t</span><span class="err">ype=objec</span><span class="kc">t</span><span class="err">)</span><span class="p">,</span>
 <span class="w">  </span><span class="err">&#39;labels&#39;</span><span class="p">:</span><span class="w"> </span><span class="err">array(</span><span class="p">[</span><span class="err">&#39;B</span><span class="mi">-</span><span class="err">PER&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;I</span><span class="mi">-</span><span class="err">PER&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;B</span><span class="mi">-</span><span class="err">ORG&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">],</span><span class="w"> </span><span class="err">d</span><span class="kc">t</span><span class="err">ype=objec</span><span class="kc">t</span><span class="err">)</span>
 <span class="p">}</span>
-</code></pre></div></p>
+</code></pre></div>
 <p>When evaluating generative models, we use the following setup (see the
 <a href="/methodology">methodology</a> for more information on how these are used):</p>
 <ul>
 <li>Number of few-shot examples: 8</li>
-<li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>Below are sentences and JSON dictionaries with the named entities that occur in the given sentence.
-</code></pre></div></li>
-<li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>Sentence: {text}
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Below are sentences and JSON dictionaries with the named entities that occur in the given sentence.
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Sentence: {text}
 Named entities: {label}
-</code></pre></div></li>
-<li>Instruction-tuned prompt template:
-  <div class="highlight"><pre><span></span><code>Sentence: {text}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Sentence: {text}
 
 Identify the named entities in the sentence. You should output this as a JSON dictionary with the keys being &#39;person&#39;, &#39;location&#39;, &#39;organization&#39; and &#39;miscellaneous&#39;. The values should be lists of the named entities of that type, exactly as they appear in the sentence.
-</code></pre></div></li>
-<li>Label mapping:<ul>
+</code></pre></div>
+<ul>
+<li>Label mapping:</li>
 <li><code>B-PER</code> ➡️ <code>person</code></li>
 <li><code>I-PER</code> ➡️ <code>person</code></li>
 <li><code>B-LOC</code> ➡️ <code>location</code></li>
@@ -1835,10 +1870,8 @@ Identify the named entities in the sentence. You should output this as a JSON di
 <li><code>B-MISC</code> ➡️ <code>miscellaneous</code></li>
 <li><code>I-MISC</code> ➡️ <code>miscellaneous</code></li>
 </ul>
-</li>
-</ul>
 <p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>conll-en
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>conll-en
 </code></pre></div>
 <h2 id="linguistic-acceptability">Linguistic Acceptability</h2>
 <h3 id="scala-en">ScaLA-En</h3>
@@ -1854,7 +1887,7 @@ the part-of-speech tags of the words in the sentence.</p>
 validation and testing, respectively (so 3,328 samples used in total). These splits are
 used as-is in the framework.</p>
 <p>Here are a few examples from the training split:</p>
-<p><div class="highlight"><pre><span></span><code><span class="p">{</span>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;And so we have to labour and to work, and to work hard, to give reality to our dreams.&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;correct&quot;</span>
 <span class="p">}</span>
@@ -1868,31 +1901,35 @@ used as-is in the framework.</p>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;While studies the psychology of art have focused on individual works and distinctions between representative / non-representative topics, no work has been completed on the aesthetic appreciation of collections or of devotional themes.&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;incorrect&quot;</span>
 <span class="p">}</span>
-</code></pre></div></p>
+</code></pre></div>
 <p>When evaluating generative models, we use the following setup (see the
 <a href="/methodology">methodology</a> for more information on how these are used):</p>
 <ul>
 <li>Number of few-shot examples: 12</li>
-<li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>The following are sentences and whether they are grammatically correct.
-</code></pre></div></li>
-<li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>Sentence: {text}
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>The following are sentences and whether they are grammatically correct.
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Sentence: {text}
 Grammatically correct: {label}
-</code></pre></div></li>
-<li>Instruction-tuned prompt template:
-  <div class="highlight"><pre><span></span><code>Sentence: {text}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Sentence: {text}
 
 Determine whether the sentence is grammatically correct or not. Reply with &#39;yes&#39; if the sentence is correct and &#39;no&#39; if it is not.
-</code></pre></div></li>
-<li>Label mapping:<ul>
+</code></pre></div>
+<ul>
+<li>Label mapping:</li>
 <li><code>correct</code> ➡️ <code>yes</code></li>
 <li><code>incorrect</code> ➡️ <code>no</code></li>
 </ul>
-</li>
-</ul>
 <p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>scala-en
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>scala-en
 </code></pre></div>
 <h2 id="reading-comprehension">Reading Comprehension</h2>
 <h3 id="squad">SQuAD</h3>
@@ -1905,7 +1942,7 @@ and testing, respectively (so 3,328 samples used in total). The new training spl
 subset of the original training split, and the new validation and test splits are
 disjoint subsets of the original validation split.</p>
 <p>Here are a few examples from the training split:</p>
-<p><div class="highlight"><pre><span></span><code><span class="p">{</span>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">&quot;context&quot;</span><span class="p">:</span><span class="w"> </span><span class="err">&#39;The</span><span class="w"> </span><span class="err">Federa</span><span class="kc">t</span><span class="err">io</span><span class="kc">n</span><span class="w"> </span><span class="err">o</span><span class="kc">f</span><span class="w"> </span><span class="err">I</span><span class="kc">nternat</span><span class="err">io</span><span class="kc">nal</span><span class="w"> </span><span class="err">Gym</span><span class="kc">nast</span><span class="err">ics</span><span class="w"> </span><span class="err">(FIG)</span><span class="w"> </span><span class="err">was</span><span class="w"> </span><span class="kc">f</span><span class="err">ou</span><span class="kc">n</span><span class="err">ded</span><span class="w"> </span><span class="err">i</span><span class="kc">n</span><span class="w"> </span><span class="err">Liege</span><span class="w"> </span><span class="err">i</span><span class="kc">n</span><span class="w"> </span><span class="mf">1881.</span><span class="w"> </span><span class="err">By</span><span class="w"> </span><span class="kc">t</span><span class="err">he</span><span class="w"> </span><span class="err">e</span><span class="kc">n</span><span class="err">d</span><span class="w"> </span><span class="err">o</span><span class="kc">f</span><span class="w"> </span><span class="kc">t</span><span class="err">he</span><span class="w"> </span><span class="kc">n</span><span class="err">i</span><span class="kc">neteent</span><span class="err">h</span><span class="w"> </span><span class="err">ce</span><span class="kc">ntur</span><span class="err">y</span><span class="p">,</span><span class="w"> </span><span class="err">me</span><span class="kc">n</span><span class="err">\&#39;s</span><span class="w"> </span><span class="err">gym</span><span class="kc">nast</span><span class="err">ics</span><span class="w"> </span><span class="err">compe</span><span class="kc">t</span><span class="err">i</span><span class="kc">t</span><span class="err">io</span><span class="kc">n</span><span class="w"> </span><span class="err">was</span><span class="w"> </span><span class="err">popular</span><span class="w"> </span><span class="err">e</span><span class="kc">n</span><span class="err">ough</span><span class="w"> </span><span class="kc">t</span><span class="err">o</span><span class="w"> </span><span class="err">be</span><span class="w"> </span><span class="err">i</span><span class="kc">n</span><span class="err">cluded</span><span class="w"> </span><span class="err">i</span><span class="kc">n</span><span class="w"> </span><span class="kc">t</span><span class="err">he</span><span class="w"> </span><span class="kc">f</span><span class="err">irs</span><span class="kc">t</span><span class="w"> </span><span class="s2">&quot;modern&quot;</span><span class="w"> </span><span class="err">Olympic</span><span class="w"> </span><span class="err">Games</span><span class="w"> </span><span class="err">i</span><span class="kc">n</span><span class="w"> </span><span class="mf">1896.</span><span class="w"> </span><span class="err">From</span><span class="w"> </span><span class="kc">t</span><span class="err">he</span><span class="kc">n</span><span class="w"> </span><span class="err">o</span><span class="kc">n</span><span class="w"> </span><span class="err">u</span><span class="kc">nt</span><span class="err">il</span><span class="w"> </span><span class="kc">t</span><span class="err">he</span><span class="w"> </span><span class="err">early</span><span class="w"> </span><span class="mi">1950</span><span class="err">s</span><span class="p">,</span><span class="w"> </span><span class="err">bo</span><span class="kc">t</span><span class="err">h</span><span class="w"> </span><span class="kc">nat</span><span class="err">io</span><span class="kc">nal</span><span class="w"> </span><span class="err">a</span><span class="kc">n</span><span class="err">d</span><span class="w"> </span><span class="err">i</span><span class="kc">nternat</span><span class="err">io</span><span class="kc">nal</span><span class="w"> </span><span class="err">compe</span><span class="kc">t</span><span class="err">i</span><span class="kc">t</span><span class="err">io</span><span class="kc">ns</span><span class="w"> </span><span class="err">i</span><span class="kc">n</span><span class="err">volved</span><span class="w"> </span><span class="err">a</span><span class="w"> </span><span class="err">cha</span><span class="kc">n</span><span class="err">gi</span><span class="kc">n</span><span class="err">g</span><span class="w"> </span><span class="err">varie</span><span class="kc">t</span><span class="err">y</span><span class="w"> </span><span class="err">o</span><span class="kc">f</span><span class="w"> </span><span class="err">exercises</span><span class="w"> </span><span class="err">ga</span><span class="kc">t</span><span class="err">hered</span><span class="w"> </span><span class="err">u</span><span class="kc">n</span><span class="err">der</span><span class="w"> </span><span class="kc">t</span><span class="err">he</span><span class="w"> </span><span class="err">rubric</span><span class="p">,</span><span class="w"> </span><span class="err">gym</span><span class="kc">nast</span><span class="err">ics</span><span class="p">,</span><span class="w"> </span><span class="kc">t</span><span class="err">ha</span><span class="kc">t</span><span class="w"> </span><span class="err">would</span><span class="w"> </span><span class="err">seem</span><span class="w"> </span><span class="err">s</span><span class="kc">tran</span><span class="err">ge</span><span class="w"> </span><span class="kc">t</span><span class="err">o</span><span class="w"> </span><span class="kc">t</span><span class="err">oday\&#39;s</span><span class="w"> </span><span class="err">audie</span><span class="kc">n</span><span class="err">ces</span><span class="w"> </span><span class="err">a</span><span class="kc">n</span><span class="err">d</span><span class="w"> </span><span class="kc">t</span><span class="err">ha</span><span class="kc">t</span><span class="w"> </span><span class="err">i</span><span class="kc">n</span><span class="err">cluded</span><span class="w"> </span><span class="kc">f</span><span class="err">or</span><span class="w"> </span><span class="err">example</span><span class="p">,</span><span class="w"> </span><span class="err">sy</span><span class="kc">n</span><span class="err">chro</span><span class="kc">n</span><span class="err">ized</span><span class="w"> </span><span class="kc">tea</span><span class="err">m</span><span class="w"> </span><span class="kc">fl</span><span class="err">oor</span><span class="w"> </span><span class="err">calis</span><span class="kc">t</span><span class="err">he</span><span class="kc">n</span><span class="err">ics</span><span class="p">,</span><span class="w"> </span><span class="err">rope</span><span class="w"> </span><span class="err">climbi</span><span class="kc">n</span><span class="err">g</span><span class="p">,</span><span class="w"> </span><span class="err">high</span><span class="w"> </span><span class="err">jumpi</span><span class="kc">n</span><span class="err">g</span><span class="p">,</span><span class="w"> </span><span class="err">ru</span><span class="kc">nn</span><span class="err">i</span><span class="kc">n</span><span class="err">g</span><span class="p">,</span><span class="w"> </span><span class="err">a</span><span class="kc">n</span><span class="err">d</span><span class="w"> </span><span class="err">horizo</span><span class="kc">ntal</span><span class="w"> </span><span class="err">ladder.</span><span class="w"> </span><span class="err">Duri</span><span class="kc">n</span><span class="err">g</span><span class="w"> </span><span class="kc">t</span><span class="err">he</span><span class="w"> </span><span class="mi">1920</span><span class="err">s</span><span class="p">,</span><span class="w"> </span><span class="err">wome</span><span class="kc">n</span><span class="w"> </span><span class="err">orga</span><span class="kc">n</span><span class="err">ized</span><span class="w"> </span><span class="err">a</span><span class="kc">n</span><span class="err">d</span><span class="w"> </span><span class="err">par</span><span class="kc">t</span><span class="err">icipa</span><span class="kc">te</span><span class="err">d</span><span class="w"> </span><span class="err">i</span><span class="kc">n</span><span class="w"> </span><span class="err">gym</span><span class="kc">nast</span><span class="err">ics</span><span class="w"> </span><span class="err">eve</span><span class="kc">nts</span><span class="err">.</span><span class="w"> </span><span class="err">The</span><span class="w"> </span><span class="kc">f</span><span class="err">irs</span><span class="kc">t</span><span class="w"> </span><span class="err">wome</span><span class="kc">n</span><span class="err">\&#39;s</span><span class="w"> </span><span class="err">Olympic</span><span class="w"> </span><span class="err">compe</span><span class="kc">t</span><span class="err">i</span><span class="kc">t</span><span class="err">io</span><span class="kc">n</span><span class="w"> </span><span class="err">was</span><span class="w"> </span><span class="err">primi</span><span class="kc">t</span><span class="err">ive</span><span class="p">,</span><span class="w"> </span><span class="err">o</span><span class="kc">nl</span><span class="err">y</span><span class="w"> </span><span class="err">i</span><span class="kc">n</span><span class="err">volvi</span><span class="kc">n</span><span class="err">g</span><span class="w"> </span><span class="err">sy</span><span class="kc">n</span><span class="err">chro</span><span class="kc">n</span><span class="err">ized</span><span class="w"> </span><span class="err">calis</span><span class="kc">t</span><span class="err">he</span><span class="kc">n</span><span class="err">ics</span><span class="w"> </span><span class="err">a</span><span class="kc">n</span><span class="err">d</span><span class="w"> </span><span class="kc">tra</span><span class="err">ck</span><span class="w"> </span><span class="err">a</span><span class="kc">n</span><span class="err">d</span><span class="w"> </span><span class="kc">f</span><span class="err">ield.</span><span class="w"> </span><span class="err">These</span><span class="w"> </span><span class="err">games</span><span class="w"> </span><span class="err">were</span><span class="w"> </span><span class="err">held</span><span class="w"> </span><span class="err">i</span><span class="kc">n</span><span class="w"> </span><span class="mi">1928</span><span class="p">,</span><span class="w"> </span><span class="err">i</span><span class="kc">n</span><span class="w"> </span><span class="err">Ams</span><span class="kc">ter</span><span class="err">dam.&#39;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;question&quot;</span><span class="p">:</span><span class="w"> </span><span class="err">&#39;Whe</span><span class="kc">n</span><span class="w"> </span><span class="err">was</span><span class="w"> </span><span class="err">gym</span><span class="kc">nast</span><span class="err">ics</span><span class="w"> </span><span class="err">i</span><span class="kc">n</span><span class="err">cluded</span><span class="w"> </span><span class="err">i</span><span class="kc">n</span><span class="w"> </span><span class="kc">t</span><span class="err">he</span><span class="w"> </span><span class="err">Olympics?&#39;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;answers&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
@@ -1931,29 +1968,33 @@ disjoint subsets of the original validation split.</p>
 <span class="w">    </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="err">array(</span><span class="p">[</span><span class="err">&#39;February&#39;</span><span class="p">],</span><span class="w"> </span><span class="err">d</span><span class="kc">t</span><span class="err">ype=objec</span><span class="kc">t</span><span class="err">)</span>
 <span class="w">  </span><span class="p">}</span>
 <span class="p">}</span>
-</code></pre></div></p>
+</code></pre></div>
 <p>When evaluating generative models, we use the following setup (see the
 <a href="/methodology">methodology</a> for more information on how these are used):</p>
 <ul>
 <li>Number of few-shot examples: 4</li>
-<li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>The following are texts with accompanying questions and answers.
-</code></pre></div></li>
-<li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>Text: {text}
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>The following are texts with accompanying questions and answers.
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Text: {text}
 Question: {question}
 Answer in max 3 words:
-</code></pre></div></li>
-<li>Instruction-tuned prompt template:
-  <div class="highlight"><pre><span></span><code>Text: {text}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Text: {text}
 
 Answer the following question about the above text in at most 3 words.
 
 Question: {question}
-</code></pre></div></li>
-</ul>
+</code></pre></div>
 <p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>squad
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>squad
 </code></pre></div>
 <h3 id="unofficial-xquad-en">Unofficial: XQuAD-en</h3>
 <p>This dataset was published in <a href="https://aclanthology.org/2020.acl-main.421/">this paper</a>
@@ -1963,7 +2004,7 @@ professional translators.</p>
 <p>The dataset is split intro 550 / 128 / 512 question-answer pairs for training,
 validation, and testing, respectively.</p>
 <p>Here are a few examples from the training split:</p>
-<p><div class="highlight"><pre><span></span><code><span class="p">{</span>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">    </span><span class="nt">&quot;context&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Newcastle replaced him in January 1756 with Lord Loudoun, with Major General James Abercrombie as his second in command. Neither of these men had as much campaign experience as the trio of officers France sent to North America. French regular army reinforcements arrived in New France in May 1756, led by Major General Louis-Joseph de Montcalm and seconded by the Chevalier de Lévis and Colonel François-Charles de Bourlamaque, all experienced veterans from the War of the Austrian Succession. During that time in Europe, on May 18, 1756, England formally declared war on France, which expanded the war into Europe, which was later to be known as the Seven Years&quot;</span><span class="w"> </span><span class="err">War.</span><span class="s2">&quot;,</span>
 <span class="s2">    &quot;</span><span class="err">ques</span><span class="kc">t</span><span class="err">io</span><span class="kc">n</span><span class="s2">&quot;: &quot;</span><span class="err">Who</span><span class="w"> </span><span class="err">led</span><span class="w"> </span><span class="err">New</span><span class="w"> </span><span class="err">Fra</span><span class="kc">n</span><span class="err">ce</span><span class="w"> </span><span class="err">rei</span><span class="kc">nf</span><span class="err">orceme</span><span class="kc">nts</span><span class="w"> </span><span class="err">i</span><span class="kc">n</span><span class="w"> </span><span class="mi">1756</span><span class="err">?</span><span class="s2">&quot;,</span>
 <span class="s2">    &quot;</span><span class="err">a</span><span class="kc">ns</span><span class="err">wers</span><span class="s2">&quot;: {</span>
@@ -1989,29 +2030,33 @@ validation, and testing, respectively.</p>
 <span class="w">        </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="err">array(</span><span class="p">[</span><span class="s2">&quot;Flung to the Heedless Winds&quot;</span><span class="p">],</span><span class="w"> </span><span class="err">d</span><span class="kc">t</span><span class="err">ype=objec</span><span class="kc">t</span><span class="err">)</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="p">}</span>
-</code></pre></div></p>
+</code></pre></div>
 <p>When evaluating generative models, we use the following setup (see the
 <a href="/methodology">methodology</a> for more information on how these are used):</p>
 <ul>
 <li>Number of few-shot examples: 4</li>
-<li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>The following are texts with accompanying questions and answers.
-</code></pre></div></li>
-<li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>Text: {text}
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>The following are texts with accompanying questions and answers.
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Text: {text}
 Question: {question}
 Answer in max 3 words:
-</code></pre></div></li>
-<li>Instruction-tuned prompt template:
-  <div class="highlight"><pre><span></span><code>Text: {text}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Text: {text}
 
 Answer the following question about the above text in at most 3 words.
 
 Question: {question}
-</code></pre></div></li>
-</ul>
+</code></pre></div>
 <p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>xquad-en
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>xquad-en
 </code></pre></div>
 <h3 id="unofficial-belebele-en">Unofficial: BeleBele-en</h3>
 <p>This dataset was published in <a href="https://aclanthology.org/2024.acl-long.44/">this paper</a>
@@ -2021,7 +2066,7 @@ English into other languages, with answers carefully validated by native speaker
 <p>The original dataset consists of 900 samples, and we use 256 / 64 / 580 samples for
 training, validation and testing, respectively.</p>
 <p>Here are a few examples from the training split:</p>
-<p><div class="highlight"><pre><span></span><code><span class="p">{</span>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="err">&#39;Tex</span><span class="kc">t</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;&quot;&quot;We will endeavour to cut carbon dioxide emissions per unit of GDP by a notable margin by 2020 from the 2005 level,&quot;&quot; Hu said. He did not set a figure for the cuts, saying they will be made based on China\&#39;s economic output. Hu encouraged developing countries &quot;&quot;to avoid the old path of polluting first and cleaning up later.&quot;&quot; He added that &quot;&quot;they should not, however, be asked to take on obligations that go beyond their development stage, responsibility and capabilities.&quot;&quot;&quot;</span><span class="err">\</span><span class="kc">n</span><span class="err">Ques</span><span class="kc">t</span><span class="err">io</span><span class="kc">n</span><span class="p">:</span><span class="w"> </span><span class="err">Wha</span><span class="kc">t</span><span class="w"> </span><span class="err">did</span><span class="w"> </span><span class="err">Hu</span><span class="w"> </span><span class="err">sugges</span><span class="kc">t</span><span class="w"> </span><span class="kc">t</span><span class="err">ha</span><span class="kc">t</span><span class="w"> </span><span class="err">developi</span><span class="kc">n</span><span class="err">g</span><span class="w"> </span><span class="err">cou</span><span class="kc">ntr</span><span class="err">ies</span><span class="w"> </span><span class="err">do?\</span><span class="kc">n</span><span class="err">Choices</span><span class="p">:</span><span class="err">\</span><span class="kc">na</span><span class="err">.</span><span class="w"> </span><span class="err">Take</span><span class="w"> </span><span class="err">o</span><span class="kc">n</span><span class="w"> </span><span class="err">obliga</span><span class="kc">t</span><span class="err">io</span><span class="kc">ns</span><span class="w"> </span><span class="kc">t</span><span class="err">ha</span><span class="kc">t</span><span class="w"> </span><span class="err">push</span><span class="w"> </span><span class="kc">t</span><span class="err">heir</span><span class="w"> </span><span class="err">developme</span><span class="kc">nt</span><span class="w"> </span><span class="err">s</span><span class="kc">ta</span><span class="err">ge\</span><span class="kc">n</span><span class="err">b.</span><span class="w"> </span><span class="err">Focus</span><span class="w"> </span><span class="err">o</span><span class="kc">n</span><span class="w"> </span><span class="err">eco</span><span class="kc">n</span><span class="err">omic</span><span class="w"> </span><span class="err">ou</span><span class="kc">t</span><span class="err">pu</span><span class="kc">t</span><span class="err">\</span><span class="kc">n</span><span class="err">c.</span><span class="w"> </span><span class="err">Go</span><span class="w"> </span><span class="err">beyo</span><span class="kc">n</span><span class="err">d</span><span class="w"> </span><span class="kc">t</span><span class="err">heir</span><span class="w"> </span><span class="err">curre</span><span class="kc">nt</span><span class="w"> </span><span class="err">respo</span><span class="kc">ns</span><span class="err">ibili</span><span class="kc">t</span><span class="err">ies\</span><span class="kc">n</span><span class="err">d.</span><span class="w"> </span><span class="err">Avoidi</span><span class="kc">n</span><span class="err">g</span><span class="w"> </span><span class="err">old</span><span class="w"> </span><span class="err">pa</span><span class="kc">t</span><span class="err">hs</span><span class="w"> </span><span class="err">o</span><span class="kc">f</span><span class="w"> </span><span class="err">pollu</span><span class="kc">t</span><span class="err">io</span><span class="kc">n</span><span class="err">&#39;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;d&quot;</span>
 <span class="p">}</span>
@@ -2035,29 +2080,33 @@ training, validation and testing, respectively.</p>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="err">&#39;Tex</span><span class="kc">t</span><span class="p">:</span><span class="w"> </span><span class="err">The</span><span class="w"> </span><span class="err">proposed</span><span class="w"> </span><span class="err">ame</span><span class="kc">n</span><span class="err">dme</span><span class="kc">nt</span><span class="w"> </span><span class="err">already</span><span class="w"> </span><span class="err">passed</span><span class="w"> </span><span class="err">bo</span><span class="kc">t</span><span class="err">h</span><span class="w"> </span><span class="err">houses</span><span class="w"> </span><span class="err">i</span><span class="kc">n</span><span class="w"> </span><span class="mf">2011.</span><span class="w"> </span><span class="err">A</span><span class="w"> </span><span class="err">cha</span><span class="kc">n</span><span class="err">ge</span><span class="w"> </span><span class="err">was</span><span class="w"> </span><span class="err">made</span><span class="w"> </span><span class="kc">t</span><span class="err">his</span><span class="w"> </span><span class="err">legisla</span><span class="kc">t</span><span class="err">ive</span><span class="w"> </span><span class="err">sessio</span><span class="kc">n</span><span class="w"> </span><span class="err">whe</span><span class="kc">n</span><span class="w"> </span><span class="kc">t</span><span class="err">he</span><span class="w"> </span><span class="err">seco</span><span class="kc">n</span><span class="err">d</span><span class="w"> </span><span class="err">se</span><span class="kc">nten</span><span class="err">ce</span><span class="w"> </span><span class="err">was</span><span class="w"> </span><span class="err">dele</span><span class="kc">te</span><span class="err">d</span><span class="w"> </span><span class="kc">f</span><span class="err">irs</span><span class="kc">t</span><span class="w"> </span><span class="err">by</span><span class="w"> </span><span class="kc">t</span><span class="err">he</span><span class="w"> </span><span class="err">House</span><span class="w"> </span><span class="err">o</span><span class="kc">f</span><span class="w"> </span><span class="err">Represe</span><span class="kc">ntat</span><span class="err">ives</span><span class="w"> </span><span class="err">a</span><span class="kc">n</span><span class="err">d</span><span class="w"> </span><span class="kc">t</span><span class="err">he</span><span class="kc">n</span><span class="w"> </span><span class="err">was</span><span class="w"> </span><span class="err">passed</span><span class="w"> </span><span class="err">i</span><span class="kc">n</span><span class="w"> </span><span class="err">a</span><span class="w"> </span><span class="err">similar</span><span class="w"> </span><span class="kc">f</span><span class="err">orm</span><span class="w"> </span><span class="err">by</span><span class="w"> </span><span class="kc">t</span><span class="err">he</span><span class="w"> </span><span class="err">Se</span><span class="kc">nate</span><span class="w"> </span><span class="err">Mo</span><span class="kc">n</span><span class="err">day.</span><span class="w"> </span><span class="err">The</span><span class="w"> </span><span class="kc">fa</span><span class="err">ilure</span><span class="w"> </span><span class="err">o</span><span class="kc">f</span><span class="w"> </span><span class="kc">t</span><span class="err">he</span><span class="w"> </span><span class="err">seco</span><span class="kc">n</span><span class="err">d</span><span class="w"> </span><span class="err">se</span><span class="kc">nten</span><span class="err">ce</span><span class="p">,</span><span class="w"> </span><span class="err">which</span><span class="w"> </span><span class="err">proposes</span><span class="w"> </span><span class="kc">t</span><span class="err">o</span><span class="w"> </span><span class="err">ba</span><span class="kc">n</span><span class="w"> </span><span class="err">same</span><span class="mi">-</span><span class="err">sex</span><span class="w"> </span><span class="err">civil</span><span class="w"> </span><span class="err">u</span><span class="kc">n</span><span class="err">io</span><span class="kc">ns</span><span class="p">,</span><span class="w"> </span><span class="err">could</span><span class="w"> </span><span class="err">possibly</span><span class="w"> </span><span class="err">ope</span><span class="kc">n</span><span class="w"> </span><span class="kc">t</span><span class="err">he</span><span class="w"> </span><span class="err">door</span><span class="w"> </span><span class="kc">f</span><span class="err">or</span><span class="w"> </span><span class="err">civil</span><span class="w"> </span><span class="err">u</span><span class="kc">n</span><span class="err">io</span><span class="kc">ns</span><span class="w"> </span><span class="err">i</span><span class="kc">n</span><span class="w"> </span><span class="kc">t</span><span class="err">he</span><span class="w"> </span><span class="kc">future</span><span class="err">.</span><span class="w"> </span><span class="err">Followi</span><span class="kc">n</span><span class="err">g</span><span class="w"> </span><span class="kc">t</span><span class="err">he</span><span class="w"> </span><span class="err">process</span><span class="p">,</span><span class="w"> </span><span class="err">HJR</span><span class="mi">-3</span><span class="w"> </span><span class="err">will</span><span class="w"> </span><span class="err">be</span><span class="w"> </span><span class="err">reviewed</span><span class="w"> </span><span class="err">agai</span><span class="kc">n</span><span class="w"> </span><span class="err">by</span><span class="w"> </span><span class="kc">t</span><span class="err">he</span><span class="w"> </span><span class="kc">ne</span><span class="err">x</span><span class="kc">t</span><span class="w"> </span><span class="err">elec</span><span class="kc">te</span><span class="err">d</span><span class="w"> </span><span class="err">legisla</span><span class="kc">ture</span><span class="w"> </span><span class="err">i</span><span class="kc">n</span><span class="w"> </span><span class="err">ei</span><span class="kc">t</span><span class="err">her</span><span class="w"> </span><span class="mi">2015</span><span class="w"> </span><span class="err">or</span><span class="w"> </span><span class="mi">2016</span><span class="w"> </span><span class="kc">t</span><span class="err">o</span><span class="w"> </span><span class="err">remai</span><span class="kc">n</span><span class="w"> </span><span class="err">i</span><span class="kc">n</span><span class="w"> </span><span class="err">process.\</span><span class="kc">n</span><span class="err">Ques</span><span class="kc">t</span><span class="err">io</span><span class="kc">n</span><span class="p">:</span><span class="w"> </span><span class="err">Accordi</span><span class="kc">n</span><span class="err">g</span><span class="w"> </span><span class="kc">t</span><span class="err">o</span><span class="w"> </span><span class="kc">t</span><span class="err">he</span><span class="w"> </span><span class="err">passage</span><span class="p">,</span><span class="w"> </span><span class="err">whe</span><span class="kc">n</span><span class="w"> </span><span class="err">was</span><span class="w"> </span><span class="kc">t</span><span class="err">he</span><span class="w"> </span><span class="err">seco</span><span class="kc">n</span><span class="err">d</span><span class="w"> </span><span class="err">se</span><span class="kc">nten</span><span class="err">ce</span><span class="w"> </span><span class="err">dele</span><span class="kc">te</span><span class="err">d?\</span><span class="kc">n</span><span class="err">Choices</span><span class="p">:</span><span class="err">\</span><span class="kc">na</span><span class="err">.</span><span class="w"> </span><span class="err">Duri</span><span class="kc">n</span><span class="err">g</span><span class="w"> </span><span class="kc">t</span><span class="err">he</span><span class="w"> </span><span class="err">legisla</span><span class="kc">t</span><span class="err">ive</span><span class="w"> </span><span class="err">sessio</span><span class="kc">n</span><span class="err">\</span><span class="kc">n</span><span class="err">b.</span><span class="w"> </span><span class="err">I</span><span class="kc">n</span><span class="w"> </span><span class="mi">2011</span><span class="err">\</span><span class="kc">n</span><span class="err">c.</span><span class="w"> </span><span class="err">O</span><span class="kc">n</span><span class="w"> </span><span class="err">Mo</span><span class="kc">n</span><span class="err">day\</span><span class="kc">n</span><span class="err">d.</span><span class="w"> </span><span class="err">I</span><span class="kc">n</span><span class="w"> </span><span class="mi">2015</span><span class="err">&#39;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;a&quot;</span>
 <span class="p">}</span>
-</code></pre></div></p>
+</code></pre></div>
 <p>When evaluating generative models, we use the following setup (see the
 <a href="/methodology">methodology</a> for more information on how these are used):</p>
 <ul>
 <li>Number of few-shot examples: 4</li>
-<li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>The following are texts with accompanying questions and answers.
-</code></pre></div></li>
-<li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>Text: {text}
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>The following are texts with accompanying questions and answers.
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Text: {text}
 Question: {question}
 Answer in max 3 words:
-</code></pre></div></li>
-<li>Instruction-tuned prompt template:
-  <div class="highlight"><pre><span></span><code>Text: {text}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Text: {text}
 
 Answer the following question about the above text in at most 3 words.
 
 Question: {question}
-</code></pre></div></li>
-</ul>
+</code></pre></div>
 <p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>belebele-en
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>belebele-en
 </code></pre></div>
 <h3 id="unofficial-multiwikiqa-en">Unofficial: MultiWikiQA-en</h3>
 <p>This dataset was published in <a href="https://doi.org/10.48550/arXiv.2509.04111">this paper</a>
@@ -2066,7 +2115,7 @@ languages.</p>
 <p>The original full dataset consists of 5,000 samples in a single split. We use a 1,024 /
 256 / 2,048 split for training, validation and testing, respectively, sampled randomly.</p>
 <p>Here are a few examples from the training split:</p>
-<p><div class="highlight"><pre><span></span><code><span class="p">{</span>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">    </span><span class="nt">&quot;context&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Stagecoach in Norfolk (formerly Norfolk Green) was a bus operator based in King&#39;s Lynn in Norfolk, England. It operated public bus services in the counties of Norfolk, Cambridgeshire and Lincolnshire as well as numerous school and college services. It was a subsidiary of Stagecoach.\n\nIn April 2018, Stagecoach ceased operations in Norfolk. Services were taken over by First Norfolk &amp; Suffolk, Lynx, Sanders Coaches, Stagecoach in Peterborough (the Interconnect 505) and West Norfolk Community Transport.\n\nHistory\n\nNorfolk Green was formed in 1996 with a fleet of four buses. In 1999 the Saham Toney depot was sold to Konectbus with four coaches.\n\nIn April 2011, Norfolk Green purchased the King&#39;s Lynn based services of First East England.\n\nOn 17 December 2013, Norfolk Green was sold to Stagecoach following the retirement of Ben Colson after ill health. Unusually, Stagecoach did not immediately apply its corporate brand, but retained the Norfolk Green trading name and livery, although the fleet received Stagecoach fleet numbers. All buses were rebranded between 2015 and late 2017.\n\nIn January 2018, Stagecoach announced it was reviewing its operations in Norfolk in response to the challenging economic environment, blaming a combination of rising operating costs and pressure on public sector budgets. The company said it met with trade union representatives to minimise the impact on staff and launched a consultation with employees over the potential closure of its King&#39;s Lynn depot. The company hoped to relocate the majority of its staff with other operators or elsewhere within the Stagecoach East area, which includes Bedford, Cambridge, Huntingdon and Peterborough.\n\nRoutes\nRoutes operated by Stagecoach Norfolk included the very popular  Coasthopper services between King&#39;s Lynn and Cromer, the Interconnect 505 between King&#39;s Lynn and Spalding, a town service network in King&#39;s Lynn, a city service in Ely and many rural and interurban bus services across Norfolk, Cambridgeshire and Lincolnshire.\n\nFleet\nAs at July 2013, the fleet consisted of 74 buses. Fleet livery is two tone green. Twelve Optare Solo Slimlines wear a dark blue, yellow and green livery for the Coasthopper group of services. A large proportion of buses are also named after local characters and personalities.\n\nUpon Stagecoach&#39;s purchase of Norfolk Green, in the summer of 2016 Stagecoach Norfolk went onto replace the fleet of Coasthopper Optare Solo&#39;s with Alexander Dennis Enviro200s. In addition, and later on, they purchased brand new Optare Solos. These new buses feature a new updated Coasthopper &#39;Flying Kite&#39; livery, free Wi-Fi, USB charging points and leather seating.\n\nReferences\n\nExternal links\n\nCompany website\n\nStagecoach Group bus operators in England\nTransport companies established in 1966\nTransport companies disestablished in 2018\n1996 establishments in England\n2018 disestablishments in England\nBritish companies established in 1996\nBritish companies disestablished in 2018\nFormer bus operators in Norfolk\nFormer bus operators in Cambridgeshire\nFormer bus operators in Lincolnshire&quot;</span><span class="p">,</span>
 <span class="w">    </span><span class="nt">&quot;question&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;What is the date of formation of Norfolk Green?&quot;</span><span class="p">,</span>
 <span class="w">    </span><span class="nt">&quot;answers&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
@@ -2092,29 +2141,33 @@ languages.</p>
 <span class="w">        </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="err">array(</span><span class="p">[</span><span class="s2">&quot;modular warships&quot;</span><span class="p">],</span><span class="w"> </span><span class="err">d</span><span class="kc">t</span><span class="err">ype=objec</span><span class="kc">t</span><span class="err">)</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="p">}</span>
-</code></pre></div></p>
+</code></pre></div>
 <p>When evaluating generative models, we use the following setup (see the
 <a href="/methodology">methodology</a> for more information on how these are used):</p>
 <ul>
 <li>Number of few-shot examples: 4</li>
-<li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>The following are texts with accompanying questions and answers.
-</code></pre></div></li>
-<li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>Text: {text}
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>The following are texts with accompanying questions and answers.
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Text: {text}
 Question: {question}
 Answer in max 3 words:
-</code></pre></div></li>
-<li>Instruction-tuned prompt template:
-  <div class="highlight"><pre><span></span><code>Text: {text}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Text: {text}
 
 Answer the following question about the above text in at most 3 words.
 
 Question: {question}
-</code></pre></div></li>
-</ul>
+</code></pre></div>
 <p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>multi-wiki-qa-en
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>multi-wiki-qa-en
 </code></pre></div>
 <h2 id="knowledge">Knowledge</h2>
 <h3 id="life-in-the-uk">Life in the UK</h3>
@@ -2129,7 +2182,7 @@ with overly short or long texts, repetitive content, and true/false questions), 
 1,206 samples remaining. From these, we use 438 / 256 / 512 samples for our training,
 validation and test splits, respectively.</p>
 <p>Here are a few examples from the training split:</p>
-<p><div class="highlight"><pre><span></span><code><span class="p">{</span>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;What is the capital of the United Kingdom?\nChoices:\na. London\nb. Manchester\nc. Birmingham\nd. Edinburgh&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;a&quot;</span>
 <span class="p">}</span>
@@ -2143,25 +2196,30 @@ validation and test splits, respectively.</p>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;What is the name of the War Memorial located in Whitehall?\nChoices:\na. Dumfries\nb. Cenotaph\nc. Royal Crescent\nd. The White Tower&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;b&quot;</span>
 <span class="p">}</span>
-</code></pre></div></p>
+</code></pre></div>
 <p>When evaluating generative models, we use the following setup (see the
 <a href="/methodology">methodology</a> for more information on how these are used):</p>
 <ul>
 <li>Number of few-shot examples: 5</li>
-<li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>The following are multiple choice questions (with answers).
-</code></pre></div></li>
-<li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>Question: {text}
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>The following are multiple choice questions (with answers).
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Question: {text}
 Options:
 a. {option_a}
 b. {option_b}
 c. {option_c}
 d. {option_d}
 Answer: {label}
-</code></pre></div></li>
-<li>Instruction-tuned prompt template:
-  <div class="highlight"><pre><span></span><code>Question: {text}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Question: {text}
 Options:
 a. {option_a}
 b. {option_b}
@@ -2169,10 +2227,9 @@ c. {option_c}
 d. {option_d}
 
 Answer the above question by replying with &#39;a&#39;, &#39;b&#39;, &#39;c&#39; or &#39;d&#39;, and nothing else.
-</code></pre></div></li>
-</ul>
+</code></pre></div>
 <p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>life-in-the-uk
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>life-in-the-uk
 </code></pre></div>
 <h3 id="unofficial-mmlu">Unofficial: MMLU</h3>
 <p>This dataset was published <a href="https://doi.org/10.48550/arXiv.2009.03300">in this paper</a>
@@ -2184,7 +2241,7 @@ validation and testing, respectively (so 3,328 samples used in total). These spl
 new and there can thus be some overlap between the original validation and test sets and
 our validation and test sets.</p>
 <p>Here are a few examples from the training split:</p>
-<p><div class="highlight"><pre><span></span><code><span class="p">{</span>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Use the following key to translate the given formula of PL to natural, English sentences. A: Marina reads a Percy Jackson book. B: Izzy plays Minecraft. C: Emily stops working. D: Russell makes dinner. E: Ashleigh stops by. ~(A ⊃ B) • (B ⊃ ~E)\nChoices:\na. It&#39;s not the case that Marina&#39;s reading a Percy Jackson book entails that Izzy plays Minecraft, but Izzy&#39;s playing Minecraft does entail that Ashleigh doesn&#39;t stop by.\nb. If Marina doesn&#39;t read a Percy Jackson book, then Izzy plays Minecraft, which entails that Ashleigh doesn&#39;t stop by.\nc. Marina&#39;s reading a Percy Jackson book does not entail that Izzy plays Minecraft, but Izzy plays Minecraft provided that Ashleigh doesn&#39;t stop by.\nd. It&#39;s not true that Marina reads a Percy Jackson book only when Izzy plays Minecraft, but Izzy plays Minecraft only when Ashleigh stops by.&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;a&quot;</span>
 <span class="p">}</span>
@@ -2198,25 +2255,30 @@ our validation and test sets.</p>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Question 13. A buyer sent a signed letter to a seller that stated: \&quot;Ship 100 boxes of nails at $3 per box, the price quoted in your circular.\&quot; The seller mailed the buyer a signed form acknowledgment that agreed to the buyer&#39;s terms and stated on the reverse side: \&quot;Disputes regarding quality shall be arbitrated.\&quot; The buyer did not reply to the seller&#39;s acknowledgment, and the seller shipped the nails. When the buyer received the nails, it found their quality to be unsatisfactory and sued the seller for breach of warranty. The seller has asked an attorney whether the parties&#39; contract requires arbitration of the buyer&#39;s claim. What is the best advice the attorney can provide?\nChoices:\na. A contract was formed pursuant to conduct when the buyer received the nails, and a court would exclude the arbitration provision from the contract.\nb. A contract was formed when the seller mailed its acknowledgment, and the arbitration term became part of the contract. arbitration term became part of the contract.\nc. A contract was formed when the seller mailed its acknowledgment, and the court must decide whether the arbitration term should be excluded as a material alteration of the contract.\nd. No contract exists, because the arbitration term in the seller&#39;s acknowledgment created a counteroffer that the buyer never accepted.&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;c&quot;</span>
 <span class="p">}</span>
-</code></pre></div></p>
+</code></pre></div>
 <p>When evaluating generative models, we use the following setup (see the
 <a href="/methodology">methodology</a> for more information on how these are used):</p>
 <ul>
 <li>Number of few-shot examples: 5</li>
-<li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>The following are multiple choice questions (with answers).
-</code></pre></div></li>
-<li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>Question: {text}
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>The following are multiple choice questions (with answers).
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Question: {text}
 Options:
 a. {option_a}
 b. {option_b}
 c. {option_c}
 d. {option_d}
 Answer: {label}
-</code></pre></div></li>
-<li>Instruction-tuned prompt template:
-  <div class="highlight"><pre><span></span><code>Question: {text}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Question: {text}
 Options:
 a. {option_a}
 b. {option_b}
@@ -2224,10 +2286,9 @@ c. {option_c}
 d. {option_d}
 
 Answer the above question by replying with &#39;a&#39;, &#39;b&#39;, &#39;c&#39; or &#39;d&#39;, and nothing else.
-</code></pre></div></li>
-</ul>
+</code></pre></div>
 <p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>mmlu
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>mmlu
 </code></pre></div>
 <h3 id="unofficial-arc">Unofficial: ARC</h3>
 <p>This dataset was published <a href="https://doi.org/10.48550/arXiv.1803.05457">in this paper</a>
@@ -2237,7 +2298,7 @@ validation and testing, respectively. We use a 1,024 / 256 / 1,024 split for tra
 validation and testing, respectively (so 2,304 samples used in total). All new splits
 are subsets of the original splits.</p>
 <p>Here are a few examples from the training split:</p>
-<p><div class="highlight"><pre><span></span><code><span class="p">{</span>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Several horses grazed in a fenced area across from a home. On rainy days, soil would wash down a slope and run toward the home. After the horses were moved a few years later, the soil no longer washed down when it rained. What could account for this change?\nChoices:\na. The grass grew and kept the soil intact.\nb. The fence kept the soil contained.\nc. The soil was completely gone.\nd. The amount of rain decreased.&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;a&quot;</span>
 <span class="p">}</span>
@@ -2251,25 +2312,30 @@ are subsets of the original splits.</p>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;A plant that grows red flowers was crossed with the same kind of plant that grows white flowers. Their offspring grew pink flowers. Which best explains why the offspring grew pink flowers?\nChoices:\na. The offspring experienced a genetic mutation.\nb. The offspring resulted from asexual reproduction.\nc. The genes for flower color exhibited incomplete dominance.\nd. A gene for pink-colored flowers was recessive in one of the parents.&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;c&quot;</span>
 <span class="p">}</span>
-</code></pre></div></p>
+</code></pre></div>
 <p>When evaluating generative models, we use the following setup (see the
 <a href="/methodology">methodology</a> for more information on how these are used):</p>
 <ul>
 <li>Number of few-shot examples: 5</li>
-<li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>The following are multiple choice questions (with answers).
-</code></pre></div></li>
-<li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>Question: {text}
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>The following are multiple choice questions (with answers).
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Question: {text}
 Options:
 a. {option_a}
 b. {option_b}
 c. {option_c}
 d. {option_d}
 Answer: {label}
-</code></pre></div></li>
-<li>Instruction-tuned prompt template:
-  <div class="highlight"><pre><span></span><code>Question: {text}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Question: {text}
 Options:
 a. {option_a}
 b. {option_b}
@@ -2277,10 +2343,9 @@ c. {option_c}
 d. {option_d}
 
 Answer the above question by replying with &#39;a&#39;, &#39;b&#39;, &#39;c&#39; or &#39;d&#39;, and nothing else.
-</code></pre></div></li>
-</ul>
+</code></pre></div>
 <p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>arc
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>arc
 </code></pre></div>
 <h2 id="common-sense-reasoning">Common-sense Reasoning</h2>
 <h3 id="hellaswag">HellaSwag</h3>
@@ -2290,7 +2355,7 @@ WikiHow.</p>
 <p>The original full dataset consists of 9,310 samples. We use a 1,024 / 256 / 2,048 split
 for training, validation and testing, respectively (so 3,328 samples used in total).</p>
 <p>Here are a few examples from the training split:</p>
-<p><div class="highlight"><pre><span></span><code><span class="p">{</span>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;[header] How to solo travel to chile [title] Decide how you will get to chile. [step] Start by figuring out how you will get to chile. If you live in north america, you may decide to fly into a major city in the country, such as santiago, and then take public transit to get around or fly within chile.\nChoices:\na. If you live in south america, it may be possible to take a bus or a train into chile, depending on your budget and your timeframe for the trip. [substeps] There is no special visa required for you to travel into chile and no fee to cross the border into chile.\nb. If you live in australia, you will need to negotiate a road trip, such as a train or bus, to get around chile. [substeps] Plan out the route in advance of arrival so that you can do the same to chile in the future.\nc. If you live in a rural area or you do not plan to travel for a long time, you may opt to take a bus. Using a bus or subway to get around chile is a good route to travel.\nd. If you live in a smaller area, or if you live near a large tourist attraction, you may decide to fly in the opposite direction. [substeps] Skiing, mountain climbing, and bicycle riding are examples of solo travel.&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;a&quot;</span>
 <span class="p">}</span>
@@ -2304,25 +2369,30 @@ for training, validation and testing, respectively (so 3,328 samples used in tot
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;A herb garden appears with a woman standing next to it in a large garden next to a wheelbarrow filled with mulch. the woman\nChoices:\na. moves the mulch across the ground in the wheelbarrow, falling backwards on attempts.\nb. takes some of the mulch away and starts bagging it in the wheelbarrow.\nc. begins to talk to the camera while gesturing to the flowerbed and the mulch, before eventually picking up a handful of the mulch.\nd. then begins to mulch close to the wheelbarrow with mulching tool in her hand and while waving her arms in the air.&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;c&quot;</span>
 <span class="p">}</span>
-</code></pre></div></p>
+</code></pre></div>
 <p>When evaluating generative models, we use the following setup (see the
 <a href="/methodology">methodology</a> for more information on how these are used):</p>
 <ul>
 <li>Number of few-shot examples: 5</li>
-<li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>The following are multiple choice questions (with answers).
-</code></pre></div></li>
-<li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>Question: {text}
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>The following are multiple choice questions (with answers).
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Question: {text}
 Options:
 a. {option_a}
 b. {option_b}
 c. {option_c}
 d. {option_d}
 Answer: {label}
-</code></pre></div></li>
-<li>Instruction-tuned prompt template:
-  <div class="highlight"><pre><span></span><code>Question: {text}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Question: {text}
 Options:
 a. {option_a}
 b. {option_b}
@@ -2330,10 +2400,9 @@ c. {option_c}
 d. {option_d}
 
 Answer the above question by replying with &#39;a&#39;, &#39;b&#39;, &#39;c&#39; or &#39;d&#39;, and nothing else.
-</code></pre></div></li>
-</ul>
+</code></pre></div>
 <p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>hellaswag
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>hellaswag
 </code></pre></div>
 <h3 id="unofficial-winogrande">Unofficial: Winogrande</h3>
 <p>This dataset was published in <a href="https://doi.org/10.1145/3474381">this paper</a>. The
@@ -2359,27 +2428,31 @@ use the same splits.</p>
 <a href="/methodology">methodology</a> for more information on how these are used):</p>
 <ul>
 <li>Number of few-shot examples: 5</li>
-<li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>The following are multiple choice questions (with answers).
-</code></pre></div></li>
-<li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>Question: {text}
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>The following are multiple choice questions (with answers).
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Question: {text}
 Options:
 a. {option_a}
 b. {option_b}
 Answer: {label}
-</code></pre></div></li>
-<li>Instruction-tuned prompt template:
-  <div class="highlight"><pre><span></span><code>Question: {text}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Question: {text}
 Options:
 a. {option_a}
 b. {option_b}
 
 Answer the above question by replying with &#39;a&#39; or &#39;b&#39;, and nothing else.
-</code></pre></div></li>
-</ul>
+</code></pre></div>
 <p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>winogrande
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>winogrande
 </code></pre></div>
 <h2 id="summarisation">Summarisation</h2>
 <h3 id="cnndailymail">CNN/DailyMail</h3>
@@ -2391,7 +2464,7 @@ validation and testing, respectively. We use a 1,024 / 256 / 2,048 split for tra
 validation and testing, respectively (so 3,328 samples used in total). All new splits
 are subsets of the original splits.</p>
 <p>Here are a few examples from the training split:</p>
-<p><div class="highlight"><pre><span></span><code><span class="p">{</span>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Reality TV star and conservative firebrand Sarah Palin said today she&#39;s &#39;interested&#39; in running for president in 2016 but stopped short of saying she&#39;d actually seek higher office. &#39;Yeah, I mean, of course, when you have a servant’s heart, when you know that there is opportunity to do all you can to put yourself forward in the name of offering service, anybody would be interested,&#39; Palin told ABC News reporter Neal Karlinsky. Later stating, &#39;America has had enough of seeing that...sign on the Oval Office door saying, \&quot;No Girls Allowed.\&quot; &#39; &#39;It doesn&#39;t necessarily have to be me though,&#39; she said. Scroll down for video . Conservative firebrand Sarah Palin said today she&#39;s &#39;interested&#39; in running for president in 2016 but stopped short of saying she&#39;d actually seek higher office . GIRL POWER: &#39;America has had enough of seeing that...sign on the Oval Office door saying, \&quot;No Girls Allowed,\&quot; &#39; Palin said . NOM NOM NOM: Palin made the comments while serving wild boar chili to the Salvation Army in Las Vegas, Nevada, on Friday. She was hosting an episode of Sportsman Channel program Hunt.Fish.Feed . ABC News caught up with Palin while she was serving wild boar chili to the homeless at a Las Vegas, Nevada, Salvation Army for an episode of Sportsman Channel program Hunt.Fish.Feed. She&#39;s also in the midst of promoting her hunting show, Amazing Alaska, about to begin its second season. Palin said the GOP needs to nominate a candidate &#39;who can take on Hillary&#39; and &#39;show the nation what it is going to take to get the country back on the right track.&#39; &#39;Because we can&#39;t afford status quo,&#39; the former Alaska governor said in a clip of the interview released by ABC this afternoon. &#39;Status quo lately has been Latin for, \&quot;We&#39;re getting screwed,&#39; and status quo has got to go.&#39; The Republican nominee out to be someone can &#39;turn things around, someone who will, in some respects, I don’t know, maybe be considered a bit avant garde, to the establishment anyway, because this next person has got to realize this is war, this is war for our hunters’ future,&#39; she said at another point in the interview, according to ABC. Asked about former Florida Gov. Jeb Bush&#39;s candidacy and 2012 Republican presidential nominee Mitt Romney, Palin snarked, &#39;I can’t wait for new energy.&#39; Moments later asserting that the GOP primary &#39;had better be a competition and not a coronation.&#39; Palin, the 2008 vice presidential nominee, said she doesn&#39;t &#39;have to be&#39; the Republican candidate for president but she&#39;s &#39;happy to drive that competition, because competition will make everyone better and produce more and be more candid regarding their solutions they will offer this country. &#39;I am very interested in that competitive process and, again, not necessarily me.&#39; Former Alaska Palin is pictured here on Thursday at an event to promote her television show, Amazing America with Sarah Palin, at the Shooting, Hunting and Outdoor Trade Show in Las Vegas . The hard-charging, Tea Party icon appears to have a change of heart in the last week about the Oval Office needing a female touch. &#39;I don&#39;t give a flying flip about what gender the person will be,&#39; Palin told Inside Edition after host Deborah Norville asker her about the importance of electing a female president. &#39;I want the absolute best because America deserves the best, in terms of leadership, getting this country on the right track,&#39; she continued. She ultimately concluded &#39;it would be nice&#39; to have a woman president, though, &#39;and it will be nice to see women jump into the ring.&#39; Voicing her support for female candidates in December, Palin told Extra TV, &#39;I would love to see a woman on both sides of the aisle shooting for that top spot.&#39;&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;target_text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;&#39;When you know that there is opportunity to do all you can to put yourself forward in the name of offering service, anybody would be interested&#39;\nPalin added: &#39;It doesn&#39;t necessarily have to be me though&#39;\nThe conservative firebrand appears to have a change of heart about the Oval Office needing a female touch .\nLast week she said: &#39;I don&#39;t give a flying flip about what gender the person will be&#39;&quot;</span>
 <span class="p">}</span>
@@ -2405,26 +2478,30 @@ are subsets of the original splits.</p>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;There were three of them, one of them probably a child, and at least one met a gruesome end at the hands of a terrifying predator. About 67 million years later, a Wyoming rancher led scientists to their remains. Now experts are digging out one of the most complete skeletons yet of a Triceratops, the three-horned, plant-eating dinosaur that was one of the last of the giant reptiles. \&quot;There&#39;s only three other skeletons that will match the completeness of one of the specimens we&#39;re excavating right now,\&quot; said paleontologist Peter Larson, president of the Black Hills Institute of Geological Research. Most of the remains found before now have included fewer than half of the prehistoric creatures&#39; bones, Larson said Monday. The most complete to date, now on display at the Houston Museum of Natural Science in Texas, has about 76% of its skeleton. \&quot;The largest, more mature individual appears to be the most complete,\&quot; Larson said. \&quot;One is just a bit smaller, and there&#39;s another one that by live weight is probably only half the size.\&quot; Will mammoths be brought back to life? Liquid blood fuels cloning hopes . The dig is going on near Newcastle, Wyoming, more than 200 miles north of Cheyenne. \&quot;The fact that there are three of them together is really cool,\&quot; Larson said. The trio could be male and female and their young, or they could be two females looking after a juvenile dinosaur, he said. And before now, there was no indication that the Triceratops moved in groups. The Black Hills Institute is working with the Naturalis Biodiversity Center, from the Netherlands, on the dig. Larson called the discovery of a young Triceratops a \&quot;very significant\&quot; find as well, since it will give scientists an insight into how the great lizards grew up. Newly discovered dinosaur fossil is a primitive bird . Triceratops lived in the twilight of the Cretaceous Period, about a half a million years before the dinosaurs&#39; extinction. Much of what is now the Great Plains and southern Canada was once part of a vast inland sea, and the region is rich in fossils. \&quot;Like most of the specimens that were found, it was brought to our attention by a rancher,\&quot;  Larson said. The rancher sent photos to the Black Hills Institute, located in neighboring South Dakota, in late 2012. Excavation began in May and is expected to take about a month. So far, the bones that have turned up point to a violent end, probably at the hands of the feared Tyrannosaurus rex. On the largest of the three specimens, at least two of the major limb bones were \&quot;bitten through,\&quot; Larson said. \&quot;If you can imagine, this is a bone that is nearly four feet long,\&quot; he said. But a T.rex \&quot;would kind of chop the carcass up with their giant, shearing jaws,\&quot; ripping through flesh and bone alike. \&quot;I think we also have a feeding site for Tyrannosaurus rex, which is very exciting,\&quot; he said. \&quot;This is potentially a site where we can learn the behavior of two different species.\&quot; More science news on CNN&#39;s Light Years blog .&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;target_text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;A rancher led scientists to the remains of three Triceratops .\nOne of the three may be the most complete skeleton yet found .\nA young dinosaur is among the trio .\nAt least one may have been killed by a Tyrannosaurus rex .&quot;</span>
 <span class="p">}</span>
-</code></pre></div></p>
+</code></pre></div>
 <p>When evaluating generative models, we use the following setup (see the
 <a href="/methodology">methodology</a> for more information on how these are used):</p>
 <ul>
 <li>Number of few-shot examples: 1</li>
-<li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>The following are articles with accompanying summaries.
-</code></pre></div></li>
-<li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>News article: {text}
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>The following are articles with accompanying summaries.
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>News article: {text}
 Summary: {target_text}
-</code></pre></div></li>
-<li>Instruction-tuned prompt template:
-  <div class="highlight"><pre><span></span><code>News article: {text}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>News article: {text}
 
 Write a summary of the above article.
-</code></pre></div></li>
-</ul>
+</code></pre></div>
 <p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>cnn-dailymail
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>cnn-dailymail
 </code></pre></div>
 
 

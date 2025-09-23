@@ -639,6 +639,8 @@
       
         
       
+        
+      
     
     
     
@@ -932,6 +934,29 @@
   
   <span class="md-ellipsis">
     🇱🇻 Latvian
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../lithuanian/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    🇱🇹 Lithuanian
     
   </span>
   
@@ -1663,12 +1688,14 @@ training, validation and test splits, respectively. The train and validation spl
 subsets of the original splits. For the test split, we use all available test samples
 and supplement with additional samples from the training set to reach 2,048 samples in
 total.</p>
-<p>The distribution of sentiment labels across the combined splits is as follows:
-- <strong>Negative</strong>: 1,592 samples
-- <strong>Positive</strong>: 1,119 samples
-- <strong>Neutral</strong>: 617 samples</p>
+<p>The distribution of sentiment labels across the combined splits is as follows:</p>
+<ul>
+<li><strong>Negative</strong>: 1,592 samples</li>
+<li><strong>Positive</strong>: 1,119 samples</li>
+<li><strong>Neutral</strong>: 617 samples</li>
+</ul>
 <p>Here are a few examples from the training split:</p>
-<p><div class="highlight"><pre><span></span><code><span class="p">{</span>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">    </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Stary , bardzo zaniedbany hotel , obsluga czesto nie w humorze nie wykluczajac wlasciciela hotelu . Sniadania malo urozmaicone , powtarzajace sie przez caly tydzien dwa rodzaje byle jakiej wedliny , jednego rodzaju zoltego sera i jajecznicy ze sproszkowanych jajek . Obiadokolacja bardzo pozno 19 . 30 . Dla malych dzieci i zmeczonych narciarzy stanowczo za pozno . Napewno odwiedze Livignio , ale nigdy wiecej hotel Europa .&quot;</span><span class="p">,</span>
 <span class="w">    </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;negative&quot;</span>
 <span class="p">}</span>
@@ -1682,32 +1709,36 @@ total.</p>
 <span class="w">    </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Hotel znajduje się w idealnym miejscu dla fanów pieszych wycieczek . Z dala od zgiełku Krupówek - blisko szlaków wychodzących w góry . Pokoje przestronne i czyste . Obsługa bardzo miła . Basen jest aczkolwiek swoim urokiem nie zachwyca . Bardzo bogate i smaczne śniadania . Również jedzenie w restauracji jest naprawdę godne polecenia . Byli śmy gośćmi hotelu już dwa razy za równo jako para jaki i rodzina z dziećmi i za każdym razem byli śmy zadowoleni .&quot;</span><span class="p">,</span>
 <span class="w">    </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;positive&quot;</span>
 <span class="p">}</span>
-</code></pre></div></p>
+</code></pre></div>
 <p>When evaluating generative models, we use the following setup (see the
 <a href="/methodology">methodology</a> for more information on how these are used):</p>
 <ul>
 <li>Liczba przykładów few-shot: 12</li>
-<li>Prefiks promptu:
-  <div class="highlight"><pre><span></span><code>Poniżej znajdują się dokumenty i ich sentyment, który może być &#39;pozytywny&#39;, &#39;neutralny&#39; lub &#39;negatywny&#39;.
-</code></pre></div></li>
-<li>Szablon podstawowy promptu:
-  <div class="highlight"><pre><span></span><code>Dokument: {text}
+<li>Prefiks promptu:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Poniżej znajdują się dokumenty i ich sentyment, który może być &#39;pozytywny&#39;, &#39;neutralny&#39; lub &#39;negatywny&#39;.
+</code></pre></div>
+<ul>
+<li>Szablon podstawowy promptu:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Dokument: {text}
 Sentyment: {label}
-</code></pre></div></li>
-<li>Szablon promptu instrukcyjnego:
-  <div class="highlight"><pre><span></span><code>Dokument: {text}
+</code></pre></div>
+<ul>
+<li>Szablon promptu instrukcyjnego:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Dokument: {text}
 
 Klasyfikuj sentyment w dokumencie. Odpowiedz z &#39;pozytywny&#39;, &#39;neutralny&#39; lub &#39;negatywny&#39;, i nic więcej.
-</code></pre></div></li>
-<li>Label mapping:<ul>
+</code></pre></div>
+<ul>
+<li>Label mapping:</li>
 <li><code>positive</code> ➡️ <code>positive</code></li>
 <li><code>neutral</code> ➡️ <code>neutral</code></li>
 <li><code>negative</code> ➡️ <code>negative</code></li>
 </ul>
-</li>
-</ul>
 <p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>polemo2
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>polemo2
 </code></pre></div>
 <h2 id="named-entity-recognition">Named Entity Recognition</h2>
 <h3 id="kpwr-ner">KPWr-NER</h3>
@@ -1725,7 +1756,7 @@ for our training, validation and test splits, respectively. The train and valida
     splits are subsets of the original training split, while the test split is a subset
     of the original test split.</p>
 <p>Here are a few examples from the training split:</p>
-<p><div class="highlight"><pre><span></span><code><span class="p">{</span>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">&quot;tokens&quot;</span><span class="p">:</span><span class="w"> </span><span class="err">array(</span><span class="p">[</span><span class="err">&#39;Rublowka&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;(&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;ros&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;.&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;Рублёвка&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;)&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;–&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;po</span><span class="kc">t</span><span class="err">ocz</span><span class="kc">na</span><span class="err">&#39;</span><span class="p">,</span>
 <span class="w">       </span><span class="err">&#39;</span><span class="kc">na</span><span class="err">zwa&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;zachod</span><span class="kc">n</span><span class="err">iego&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;przedmieścia&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;Moskwy&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;.&#39;</span><span class="p">],</span><span class="w"> </span><span class="err">d</span><span class="kc">t</span><span class="err">ype=objec</span><span class="kc">t</span><span class="err">)</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;labels&quot;</span><span class="p">:</span><span class="w"> </span><span class="err">array(</span><span class="p">[</span><span class="err">&#39;B</span><span class="mi">-</span><span class="err">LOC&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;B</span><span class="mi">-</span><span class="err">LOC&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;B</span><span class="mi">-</span><span class="err">LOC&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">],</span><span class="w"> </span><span class="err">d</span><span class="kc">t</span><span class="err">ype=objec</span><span class="kc">t</span><span class="err">)</span>
@@ -1744,24 +1775,30 @@ for our training, validation and test splits, respectively. The train and valida
 <span class="w">      </span><span class="err">d</span><span class="kc">t</span><span class="err">ype=objec</span><span class="kc">t</span><span class="err">)</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;labels&quot;</span><span class="p">:</span><span class="w"> </span><span class="err">array(</span><span class="p">[</span><span class="err">&#39;B</span><span class="mi">-</span><span class="err">PER&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;I</span><span class="mi">-</span><span class="err">PER&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;B</span><span class="mi">-</span><span class="err">LOC&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;B</span><span class="mi">-</span><span class="err">LOC&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">],</span><span class="w"> </span><span class="err">d</span><span class="kc">t</span><span class="err">ype=objec</span><span class="kc">t</span><span class="err">)</span>
 <span class="p">}</span>
-</code></pre></div></p>
+</code></pre></div>
 <p>When evaluating generative models, we use the following setup (see the
 <a href="/methodology">methodology</a> for more information on how these are used):</p>
 <ul>
 <li>Number of few-shot examples: 8</li>
-<li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>Poniżej znajdują się zdania i słowniki JSON z nazwanymi jednostkami występującymi w danym zdaniu.
-</code></pre></div></li>
-<li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>Zdanie: {text}
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Poniżej znajdują się zdania i słowniki JSON z nazwanymi jednostkami występującymi w danym zdaniu.
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Zdanie: {text}
 Nazwane jednostki: {label}
-</code></pre></div></li>
-<li>Instruction-tuned prompt template:
-  <div class="highlight"><pre><span></span><code>Zdanie: {text}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Zdanie: {text}
 
 Zidentyfikuj nazwane jednostki w zdaniu. Powinieneś wypisać to jako słownik JSON z kluczami &#39;osoba&#39;, &#39;lokalizacja&#39;, &#39;organizacja&#39; i &#39;różne&#39;. Wartości powinny być listami nazwanych jednostek tego typu, dokładnie tak jak pojawiają się w zdaniu.
-</code></pre></div></li>
-<li>Label mapping:<ul>
+</code></pre></div>
+<ul>
+<li>Label mapping:</li>
 <li><code>B-PER</code> ➡️ <code>osoba</code></li>
 <li><code>I-PER</code> ➡️ <code>osoba</code></li>
 <li><code>B-LOC</code> ➡️ <code>lokalizacja</code></li>
@@ -1771,10 +1808,8 @@ Zidentyfikuj nazwane jednostki w zdaniu. Powinieneś wypisać to jako słownik J
 <li><code>B-MISC</code> ➡️ <code>różne</code></li>
 <li><code>I-MISC</code> ➡️ <code>różne</code></li>
 </ul>
-</li>
-</ul>
 <p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>kpwr-ner
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>kpwr-ner
 </code></pre></div>
 <h2 id="linguistic-acceptability">Linguistic Acceptability</h2>
 <h3 id="scala-pl">ScaLA-pl</h3>
@@ -1789,7 +1824,7 @@ the part-of-speech tags of the words in the sentence.</p>
 <p>The original full dataset consists of 22,152 samples, from which we use 1,024 / 256 /
 2,048 samples for training, validation and testing, respectively.</p>
 <p>Here are a few examples from the training split:</p>
-<p><div class="highlight"><pre><span></span><code><span class="p">{</span>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">    </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Papierową śmierć zafundowaliśmy zafundowali śmy już kilku osobom.&quot;</span><span class="p">,</span>
 <span class="w">    </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;correct&quot;</span>
 <span class="p">}</span>
@@ -1803,31 +1838,35 @@ the part-of-speech tags of the words in the sentence.</p>
 <span class="w">    </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Tutaj interesuje mnie etyczny kontekst transferu naukowej wiedzy psychologicznej z laboratorium badacza do sali wykładowej i laboratorium studenckiego - czynniki ułatwiające i utrudniające, ale lokowane na stosunkowo wysokim poziomie ogólności.&quot;</span><span class="p">,</span>
 <span class="w">    </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;incorrect&quot;</span>
 <span class="p">}</span>
-</code></pre></div></p>
+</code></pre></div>
 <p>When evaluating generative models, we use the following setup (see the
 <a href="/methodology">methodology</a> for more information on how these are used):</p>
 <ul>
 <li>Number of few-shot examples: 12</li>
-<li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>Poniżej znajdują się teksty i czy są gramatycznie poprawne.
-</code></pre></div></li>
-<li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>Tekst: {text}
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Poniżej znajdują się teksty i czy są gramatycznie poprawne.
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Tekst: {text}
 Gramatycznie poprawny: {label}
-</code></pre></div></li>
-<li>Instruction-tuned prompt template:
-  <div class="highlight"><pre><span></span><code>Tekst: {text}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Tekst: {text}
 
 Określ czy tekst jest gramatycznie poprawny czy nie. Odpowiedz {labels_str}, i nic więcej.
-</code></pre></div></li>
-<li>Label mapping:<ul>
+</code></pre></div>
+<ul>
+<li>Label mapping:</li>
 <li><code>correct</code> ➡️ <code>tak</code></li>
 <li><code>incorrect</code> ➡️ <code>nie</code></li>
 </ul>
-</li>
-</ul>
 <p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>scala-pl
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>scala-pl
 </code></pre></div>
 <h2 id="reading-comprehension">Reading Comprehension</h2>
 <h3 id="poquad">PoQuAD</h3>
@@ -1839,7 +1878,7 @@ polar questions, and impossible questions.</p>
 training, validation and testing, respectively. We do not use the impossible questions
 in this version of the dataset.</p>
 <p>Here are a few examples from the training split:</p>
-<p><div class="highlight"><pre><span></span><code><span class="p">{</span>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">&quot;context&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Luna (Karol Sevilla) jest nastolatką z Meksyku, która szczęśliwie jedzie przez życie na wrotkach. Jak każda dziewczyna w jej wieku, mieszka wraz ze swoją rodziną, chodzi do szkoły i ma swoją grupę znajomych. Ma również pracę jako dostawca w restauracji typu fast food. Luna spędza większość swojego czasu na wrotkach na nabrzeżu swego ukochanego miasta, słuchając piosenek skomponowanych przez jej najlepszego przyjaciela, Simóna (Michael Ronda). Ale jej życie przybiera jednak niespodziewany obrót, gdy jej rodzice otrzymują propozycję niemożliwą do odrzucenia..., jutro rodzina Valente musi opuścić swój ukochany dom i przenieść się do innego kraju, do Argentyny. Luna musi przystosować się do nowego życia, nowych przyjaciół i nowej szkoły, gdzie spotyka się świat luksusu i elit, który niewiele ma z nią wspólnego. Luna szuka schronienia w swojej jeździe na wrotkach, a przez nie odkrywa tor wrotkarski, Jam &amp; Roller, który oferuje jej nowy wszechświat na kołach. Podczas tego nowego etapu w swoim życiu Luna rozwija swoją pasję do jazdy i tańca na wrotkach oraz odkrywa drogę do nowych przyjaciół i pierwszej miłości, którą znajduje w osobie zupełnie innej od niej samej, Matteo (Ruggero Pasquarelli). Na przeszkodzie stoi jednak najpopularniejsza dziewczyna w szkole i dziewczyna Matteo, Ámbar (Valentina Zenere), która za wszelką cenę chce uczynić życie Luny niemożliwym. Również podczas rozwijania swych pasji, Luna może być o krok od odkrycia swojej prawdziwej tożsamości.&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;question&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Gdzie przeprowadza się Luna?&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;answers&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="err">&#39;</span><span class="kc">te</span><span class="err">x</span><span class="kc">t</span><span class="err">&#39;</span><span class="p">:</span><span class="w"> </span><span class="err">array(</span><span class="p">[</span><span class="err">&#39;do</span><span class="w"> </span><span class="err">Arge</span><span class="kc">nt</span><span class="err">y</span><span class="kc">n</span><span class="err">y&#39;</span><span class="p">],</span><span class="w"> </span><span class="err">d</span><span class="kc">t</span><span class="err">ype=objec</span><span class="kc">t</span><span class="err">)</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;a</span><span class="kc">ns</span><span class="err">wer_s</span><span class="kc">tart</span><span class="err">&#39;</span><span class="p">:</span><span class="w"> </span><span class="err">array(</span><span class="p">[</span><span class="mi">652</span><span class="p">],</span><span class="w"> </span><span class="err">d</span><span class="kc">t</span><span class="err">ype=i</span><span class="kc">nt</span><span class="mi">32</span><span class="err">)</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;ge</span><span class="kc">nerat</span><span class="err">ive_a</span><span class="kc">ns</span><span class="err">wer&#39;</span><span class="p">:</span><span class="w"> </span><span class="err">array(</span><span class="p">[</span><span class="err">&#39;do</span><span class="w"> </span><span class="err">Arge</span><span class="kc">nt</span><span class="err">y</span><span class="kc">n</span><span class="err">y&#39;</span><span class="p">],</span><span class="w"> </span><span class="err">d</span><span class="kc">t</span><span class="err">ype=objec</span><span class="kc">t</span><span class="err">)</span><span class="p">}}</span>
@@ -1853,30 +1892,34 @@ in this version of the dataset.</p>
 <span class="w">  </span><span class="nt">&quot;context&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Następnego dnia Amerykanie wysłali nad stację kolejową w Ploeszti 136 B-24 i 94 B-17 w asyście 132 P-38 i 48 P-47. 1 Grupa wysłała na przechwycenie 23 myśliwce IAR, ale tylko część z nich odnalazła bombowce meldując o zestrzeleniu trzech B-24. Sierż. Raghiga Dumitrescu stoczył walkę z czterema P-38, uszkadzając jeden z nich, jednak później sam został zestrzelony. Dwa inne samoloty lądowały na brzuchach. 5 Grupa poderwała 8 IAR-80 i 4 Bf 109E z 51 eskadry oraz 7 Bf 109E z 52 eskadry. Ich piloci odnotowali pięć zestrzeleń pewnych i jedno prawdopodobne. Kpt. Iliescu lądował awaryjnie uszkodzonym samolotem. 6 Grupa wykonała 49 lotów na IAR odnotowując pięć zwycięstw, w tym trzy potwierdzone, bez strat własnych. 7 Grupa wysłała 15 IAR-81C i 13 Bf 109G, meldując o trzech zwycięstwach przy stracie jednego samolotu. Piloci niemieckiego III/JG 77 meldowali o 16 zestrzelonych B-24 ze stratą 7 Bf 109G. O strąceniu 4 B-24 i 1 B-17 meldowali piloci z 10./JG 301. Sześć kolejnych Liberatorów mieli zestrzelić piloci II/JG 51, jednego B-17 lotnicy 12./NJG 6, a jednego P-51 pilot 1./JG 302. Prawdziwe straty Amerykanów wyniosły 10 B-24 (po pięć z 450. i 451. BG), trzy B-17 oraz jeden P-38 z 14. FG. Myśliwce eskorty nie odnotowały ani jednego zestrzelenia.&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;question&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Czy sierżantowi Raghiga Dumitrescu udało się doprowadzić do awarii którego z samolotów P-38?&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;answers&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="err">&#39;</span><span class="kc">te</span><span class="err">x</span><span class="kc">t</span><span class="err">&#39;</span><span class="p">:</span><span class="w"> </span><span class="err">array(</span><span class="p">[</span><span class="err">&#39;Sierż.</span><span class="w"> </span><span class="err">Raghiga</span><span class="w"> </span><span class="err">Dumi</span><span class="kc">tres</span><span class="err">cu</span><span class="w"> </span><span class="err">s</span><span class="kc">t</span><span class="err">oczył</span><span class="w"> </span><span class="err">walkę</span><span class="w"> </span><span class="err">z</span><span class="w"> </span><span class="err">cz</span><span class="kc">tere</span><span class="err">ma</span><span class="w"> </span><span class="err">P</span><span class="mi">-38</span><span class="p">,</span><span class="w"> </span><span class="err">uszkadzając</span><span class="w"> </span><span class="err">jede</span><span class="kc">n</span><span class="w"> </span><span class="err">z</span><span class="w"> </span><span class="kc">n</span><span class="err">ich&#39;</span><span class="p">],</span>
 <span class="w">      </span><span class="err">d</span><span class="kc">t</span><span class="err">ype=objec</span><span class="kc">t</span><span class="err">)</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;a</span><span class="kc">ns</span><span class="err">wer_s</span><span class="kc">tart</span><span class="err">&#39;</span><span class="p">:</span><span class="w"> </span><span class="err">array(</span><span class="p">[</span><span class="mi">244</span><span class="p">],</span><span class="w"> </span><span class="err">d</span><span class="kc">t</span><span class="err">ype=i</span><span class="kc">nt</span><span class="mi">32</span><span class="err">)</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;ge</span><span class="kc">nerat</span><span class="err">ive_a</span><span class="kc">ns</span><span class="err">wer&#39;</span><span class="p">:</span><span class="w"> </span><span class="err">array(</span><span class="p">[</span><span class="err">&#39;</span><span class="kc">ta</span><span class="err">k&#39;</span><span class="p">],</span><span class="w"> </span><span class="err">d</span><span class="kc">t</span><span class="err">ype=objec</span><span class="kc">t</span><span class="err">)</span><span class="p">}}</span>
-</code></pre></div></p>
+</code></pre></div>
 <p>When evaluating generative models, we use the following setup (see the
 <a href="/methodology">methodology</a> for more information on how these are used):</p>
 <ul>
 <li>Number of few-shot examples: 4</li>
-<li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>Poniżej znajdują się teksty z towarzyszącymi pytaniami i
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Poniżej znajdują się teksty z towarzyszącymi pytaniami i
 odpowiedziami.
-</code></pre></div></li>
-<li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>Tekst: {text}
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Tekst: {text}
 Pytanie: {question}
 Odpowiedź w maksymalnie 3 słowach: {label}
-</code></pre></div></li>
-<li>Instruction-tuned prompt template:
-  <div class="highlight"><pre><span></span><code>Tekst: {text}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Tekst: {text}
 
 Odpowiedz na następujące pytanie dotyczące powyższego tekstu w maksymalnie 3 słowach.
 
 Pytanie: {question}
-</code></pre></div></li>
-</ul>
+</code></pre></div>
 <p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>poquad
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>poquad
 </code></pre></div>
 <h3 id="unofficial-multiwikiqa-pl">Unofficial: MultiWikiQA-pl</h3>
 <p>This dataset was published in <a href="https://doi.org/10.48550/arXiv.2509.04111">this paper</a>
@@ -1885,7 +1928,7 @@ languages.</p>
 <p>The original full dataset consists of 5,000 samples in a single split. We use a 1,024 /
 256 / 2,048 split for training, validation and testing, respectively, sampled randomly.</p>
 <p>Here are a few examples from the training split:</p>
-<p><div class="highlight"><pre><span></span><code><span class="p">{</span>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">    </span><span class="err">&#39;co</span><span class="kc">nte</span><span class="err">x</span><span class="kc">t</span><span class="err">&#39;</span><span class="p">:</span><span class="w"> </span><span class="err">&#39;Marcus</span><span class="w"> </span><span class="err">Terrell</span><span class="w"> </span><span class="err">Thor</span><span class="kc">nt</span><span class="err">o</span><span class="kc">n</span><span class="w"> </span><span class="err">(ur.</span><span class="w"> </span><span class="mi">5</span><span class="w"> </span><span class="err">czerwca</span><span class="w"> </span><span class="mi">1987</span><span class="w"> </span><span class="err">w</span><span class="w"> </span><span class="err">Ba</span><span class="kc">t</span><span class="err">o</span><span class="kc">n</span><span class="w"> </span><span class="err">Rouge)</span><span class="w"> </span><span class="err">–</span><span class="w"> </span><span class="err">amerykański</span><span class="w"> </span><span class="err">koszykarz</span><span class="p">,</span><span class="w"> </span><span class="err">wys</span><span class="kc">t</span><span class="err">ępujący</span><span class="w"> </span><span class="kc">na</span><span class="w"> </span><span class="err">pozycji</span><span class="w"> </span><span class="err">rzucającego</span><span class="w"> </span><span class="err">obrońcy</span><span class="p">,</span><span class="w"> </span><span class="err">wybra</span><span class="kc">n</span><span class="err">y</span><span class="w"> </span><span class="err">do</span><span class="w"> </span><span class="err">drugiego</span><span class="w"> </span><span class="err">składu</span><span class="w"> </span><span class="kc">na</span><span class="err">jlepszych</span><span class="w"> </span><span class="err">debiu</span><span class="kc">tant</span><span class="err">ów</span><span class="w"> </span><span class="err">NBA.\</span><span class="kc">n</span><span class="err">\</span><span class="kc">n</span><span class="mi">25</span><span class="w"> </span><span class="err">lipca</span><span class="w"> </span><span class="mi">2015</span><span class="w"> </span><span class="err">roku</span><span class="w"> </span><span class="err">podpisał</span><span class="w"> </span><span class="err">umowę</span><span class="w"> </span><span class="err">z</span><span class="w"> </span><span class="err">Hous</span><span class="kc">t</span><span class="err">o</span><span class="kc">n</span><span class="w"> </span><span class="err">Rocke</span><span class="kc">ts</span><span class="err">.\</span><span class="kc">n</span><span class="err">\</span><span class="kc">n</span><span class="mi">18</span><span class="w"> </span><span class="err">lu</span><span class="kc">te</span><span class="err">go</span><span class="w"> </span><span class="mi">2016</span><span class="w"> </span><span class="err">w</span><span class="w"> </span><span class="err">ramach</span><span class="w"> </span><span class="err">wymia</span><span class="kc">n</span><span class="err">y</span><span class="w"> </span><span class="err">między</span><span class="w"> </span><span class="kc">tr</span><span class="err">zema</span><span class="w"> </span><span class="err">klubami</span><span class="w"> </span><span class="err">miał</span><span class="w"> </span><span class="kc">traf</span><span class="err">ić</span><span class="w"> </span><span class="err">do</span><span class="w"> </span><span class="err">De</span><span class="kc">tr</span><span class="err">oi</span><span class="kc">t</span><span class="w"> </span><span class="err">Pis</span><span class="kc">t</span><span class="err">o</span><span class="kc">ns</span><span class="err">.</span><span class="w"> </span><span class="err">Jed</span><span class="kc">na</span><span class="err">k</span><span class="w"> </span><span class="err">cz</span><span class="kc">ter</span><span class="err">y</span><span class="w"> </span><span class="err">d</span><span class="kc">n</span><span class="err">i</span><span class="w"> </span><span class="err">póź</span><span class="kc">n</span><span class="err">iej</span><span class="w"> </span><span class="err">umowa</span><span class="w"> </span><span class="err">zos</span><span class="kc">ta</span><span class="err">ła</span><span class="w"> </span><span class="err">a</span><span class="kc">nul</span><span class="err">owa</span><span class="kc">na</span><span class="p">,</span><span class="w"> </span><span class="err">po</span><span class="kc">n</span><span class="err">ieważ</span><span class="w"> </span><span class="err">i</span><span class="kc">nn</span><span class="err">y</span><span class="w"> </span><span class="err">gracz</span><span class="w"> </span><span class="err">biorący</span><span class="w"> </span><span class="err">udział</span><span class="w"> </span><span class="err">w</span><span class="w"> </span><span class="err">wymia</span><span class="kc">n</span><span class="err">ie</span><span class="p">,</span><span class="w"> </span><span class="err">li</span><span class="kc">te</span><span class="err">wski</span><span class="w"> </span><span class="err">skrzydłowy</span><span class="w"> </span><span class="err">Do</span><span class="kc">natas</span><span class="w"> </span><span class="err">Mo</span><span class="kc">t</span><span class="err">iejū</span><span class="kc">nas</span><span class="p">,</span><span class="w"> </span><span class="kc">n</span><span class="err">ie</span><span class="w"> </span><span class="err">przeszedł</span><span class="w"> </span><span class="kc">test</span><span class="err">ów</span><span class="w"> </span><span class="err">medycz</span><span class="kc">n</span><span class="err">ych</span><span class="w"> </span><span class="err">i</span><span class="w"> </span><span class="kc">t</span><span class="err">ym</span><span class="w"> </span><span class="err">samym</span><span class="w"> </span><span class="err">Thor</span><span class="kc">nt</span><span class="err">o</span><span class="kc">n</span><span class="w"> </span><span class="err">pozos</span><span class="kc">ta</span><span class="err">ł</span><span class="w"> </span><span class="err">w</span><span class="w"> </span><span class="err">druży</span><span class="kc">n</span><span class="err">ie</span><span class="w"> </span><span class="err">Hous</span><span class="kc">t</span><span class="err">o</span><span class="kc">n</span><span class="w"> </span><span class="err">Rocke</span><span class="kc">ts</span><span class="err">.</span><span class="w"> </span><span class="mi">26</span><span class="w"> </span><span class="err">lu</span><span class="kc">te</span><span class="err">go</span><span class="w"> </span><span class="mi">2016</span><span class="w"> </span><span class="err">roku</span><span class="w"> </span><span class="err">zos</span><span class="kc">ta</span><span class="err">ł</span><span class="w"> </span><span class="err">zwol</span><span class="kc">n</span><span class="err">io</span><span class="kc">n</span><span class="err">y</span><span class="w"> </span><span class="err">przez</span><span class="w"> </span><span class="err">klub</span><span class="w"> </span><span class="err">Rocke</span><span class="kc">ts</span><span class="err">.</span><span class="w"> </span><span class="mi">9</span><span class="w"> </span><span class="err">marca</span><span class="w"> </span><span class="mi">2016</span><span class="w"> </span><span class="err">roku</span><span class="w"> </span><span class="err">podpisał</span><span class="w"> </span><span class="err">umowę</span><span class="w"> </span><span class="err">do</span><span class="w"> </span><span class="err">końca</span><span class="w"> </span><span class="err">sezo</span><span class="kc">nu</span><span class="w"> </span><span class="err">z</span><span class="w"> </span><span class="err">klubem</span><span class="w"> </span><span class="err">Washi</span><span class="kc">n</span><span class="err">g</span><span class="kc">t</span><span class="err">o</span><span class="kc">n</span><span class="w"> </span><span class="err">Wizards.\</span><span class="kc">n</span><span class="err">\</span><span class="kc">n</span><span class="mi">22</span><span class="w"> </span><span class="err">lu</span><span class="kc">te</span><span class="err">go</span><span class="w"> </span><span class="mi">2017</span><span class="w"> </span><span class="err">zos</span><span class="kc">ta</span><span class="err">ł</span><span class="w"> </span><span class="err">wy</span><span class="kc">transfer</span><span class="err">owa</span><span class="kc">n</span><span class="err">y</span><span class="w"> </span><span class="err">wraz</span><span class="w"> </span><span class="err">z</span><span class="w"> </span><span class="err">A</span><span class="kc">n</span><span class="err">drew</span><span class="w"> </span><span class="err">Nicholso</span><span class="kc">ne</span><span class="err">m</span><span class="w"> </span><span class="err">oraz</span><span class="w"> </span><span class="err">przyszłym</span><span class="w"> </span><span class="err">wyborem</span><span class="w"> </span><span class="err">I</span><span class="w"> </span><span class="err">ru</span><span class="kc">n</span><span class="err">dy</span><span class="w"> </span><span class="err">dra</span><span class="kc">ftu</span><span class="w"> </span><span class="mi">2017</span><span class="w"> </span><span class="err">do</span><span class="w"> </span><span class="err">Brookly</span><span class="kc">n</span><span class="w"> </span><span class="err">Ne</span><span class="kc">ts</span><span class="w"> </span><span class="err">w</span><span class="w"> </span><span class="err">zamia</span><span class="kc">n</span><span class="w"> </span><span class="err">za</span><span class="w"> </span><span class="err">Boja</span><span class="kc">na</span><span class="w"> </span><span class="err">Bogda</span><span class="kc">n</span><span class="err">ovicia</span><span class="w"> </span><span class="err">i</span><span class="w"> </span><span class="err">Chrisa</span><span class="w"> </span><span class="err">McCullougha.</span><span class="w"> </span><span class="err">Kolej</span><span class="kc">ne</span><span class="err">go</span><span class="w"> </span><span class="err">d</span><span class="kc">n</span><span class="err">ia</span><span class="w"> </span><span class="err">zos</span><span class="kc">ta</span><span class="err">ł</span><span class="w"> </span><span class="err">zwol</span><span class="kc">n</span><span class="err">io</span><span class="kc">n</span><span class="err">y</span><span class="w"> </span><span class="err">przez</span><span class="w"> </span><span class="err">Ne</span><span class="kc">ts</span><span class="err">.\</span><span class="kc">n</span><span class="err">\</span><span class="kc">n</span><span class="err">Osiąg</span><span class="kc">n</span><span class="err">ięcia</span><span class="w"> </span><span class="err">\</span><span class="kc">n</span><span class="err">S</span><span class="kc">tan</span><span class="w"> </span><span class="kc">na</span><span class="w"> </span><span class="mi">29</span><span class="w"> </span><span class="err">grud</span><span class="kc">n</span><span class="err">ia</span><span class="w"> </span><span class="mi">2020</span><span class="p">,</span><span class="w"> </span><span class="kc">na</span><span class="w"> </span><span class="err">pods</span><span class="kc">ta</span><span class="err">wie</span><span class="p">,</span><span class="w"> </span><span class="err">o</span><span class="w"> </span><span class="err">ile</span><span class="w"> </span><span class="kc">n</span><span class="err">ie</span><span class="w"> </span><span class="err">zaz</span><span class="kc">na</span><span class="err">czo</span><span class="kc">n</span><span class="err">o</span><span class="w"> </span><span class="err">i</span><span class="kc">na</span><span class="err">czej.\</span><span class="kc">n</span><span class="w"> </span><span class="err">College\</span><span class="kc">n</span><span class="w"> </span><span class="err">Uczes</span><span class="kc">tn</span><span class="err">ik</span><span class="w"> </span><span class="kc">turn</span><span class="err">ieju</span><span class="w"> </span><span class="err">NCAA</span><span class="w"> </span><span class="err">(</span><span class="mi">2009</span><span class="err">)\</span><span class="kc">n</span><span class="w"> </span><span class="err">Mis</span><span class="kc">tr</span><span class="err">z</span><span class="w"> </span><span class="err">sezo</span><span class="kc">nu</span><span class="w"> </span><span class="err">regular</span><span class="kc">ne</span><span class="err">go</span><span class="w"> </span><span class="err">ko</span><span class="kc">nfere</span><span class="err">cji</span><span class="w"> </span><span class="err">Sou</span><span class="kc">t</span><span class="err">heas</span><span class="kc">tern</span><span class="w"> </span><span class="err">NCAA</span><span class="w"> </span><span class="err">(SEC</span><span class="w"> </span><span class="err">–</span><span class="w"> </span><span class="mi">2009</span><span class="err">)\</span><span class="kc">n</span><span class="w"> </span><span class="err">Zawod</span><span class="kc">n</span><span class="err">ik</span><span class="w"> </span><span class="err">roku</span><span class="w"> </span><span class="err">ko</span><span class="kc">nferen</span><span class="err">cji</span><span class="w"> </span><span class="err">Sou</span><span class="kc">t</span><span class="err">heas</span><span class="kc">tern</span><span class="w"> </span><span class="err">(</span><span class="mi">2009</span><span class="err">)\</span><span class="kc">n</span><span class="w"> </span><span class="err">MVP</span><span class="w"> </span><span class="kc">turn</span><span class="err">ieju</span><span class="w"> </span><span class="err">NJCAA</span><span class="w"> </span><span class="err">Baske</span><span class="kc">t</span><span class="err">ball</span><span class="w"> </span><span class="err">Coaches</span><span class="w"> </span><span class="err">Associa</span><span class="kc">t</span><span class="err">io</span><span class="kc">n</span><span class="w"> </span><span class="err">Classic\</span><span class="kc">n</span><span class="w"> </span><span class="err">Najlepszy</span><span class="w"> </span><span class="kc">n</span><span class="err">owo</span><span class="w"> </span><span class="err">przybyły</span><span class="w"> </span><span class="err">zawod</span><span class="kc">n</span><span class="err">ik</span><span class="w"> </span><span class="err">ko</span><span class="kc">nferen</span><span class="err">cji</span><span class="w"> </span><span class="err">SEC</span><span class="w"> </span><span class="err">(</span><span class="mi">2008</span><span class="err">)\</span><span class="kc">n</span><span class="w"> </span><span class="err">Zaliczo</span><span class="kc">n</span><span class="err">y</span><span class="w"> </span><span class="err">do</span><span class="p">:</span><span class="err">\</span><span class="kc">n</span><span class="w"> </span><span class="err">I</span><span class="w"> </span><span class="err">składu</span><span class="p">:</span><span class="w"> </span><span class="err">\</span><span class="kc">n</span><span class="w"> </span><span class="err">SEC</span><span class="w"> </span><span class="err">(</span><span class="mi">2008</span><span class="p">,</span><span class="w"> </span><span class="mi">2009</span><span class="err">)\</span><span class="kc">n</span><span class="w"> </span><span class="err">All</span><span class="mi">-</span><span class="err">Louisia</span><span class="kc">na</span><span class="w"> </span><span class="err">(</span><span class="mi">2008</span><span class="err">)\</span><span class="kc">n</span><span class="w"> </span><span class="err">NJCAA</span><span class="w"> </span><span class="err">All</span><span class="mi">-</span><span class="err">America</span><span class="kc">n</span><span class="w"> </span><span class="err">(</span><span class="mi">2007</span><span class="err">)\</span><span class="kc">n</span><span class="err">\</span><span class="kc">n</span><span class="w"> </span><span class="err">NBA\</span><span class="kc">n</span><span class="w"> </span><span class="err">Wybra</span><span class="kc">n</span><span class="err">y</span><span class="w"> </span><span class="err">do</span><span class="w"> </span><span class="err">II</span><span class="w"> </span><span class="err">składu</span><span class="w"> </span><span class="err">debiu</span><span class="kc">tant</span><span class="err">ów</span><span class="w"> </span><span class="err">NBA</span><span class="w"> </span><span class="err">(</span><span class="mi">2010</span><span class="err">)\</span><span class="kc">n</span><span class="err">\</span><span class="kc">n</span><span class="w"> </span><span class="err">I</span><span class="kc">nne</span><span class="err">\</span><span class="kc">n</span><span class="w"> </span><span class="err">Uczes</span><span class="kc">tn</span><span class="err">ik</span><span class="w"> </span><span class="err">meczu</span><span class="w"> </span><span class="err">gwiazd</span><span class="w"> </span><span class="err">G</span><span class="mi">-</span><span class="err">League</span><span class="w"> </span><span class="err">(</span><span class="mi">2018</span><span class="err">)\</span><span class="kc">n</span><span class="err">\</span><span class="kc">n</span><span class="err">Przypisy\</span><span class="kc">n</span><span class="err">\</span><span class="kc">n</span><span class="err">Li</span><span class="kc">n</span><span class="err">ki</span><span class="w"> </span><span class="err">zew</span><span class="kc">n</span><span class="err">ę</span><span class="kc">tr</span><span class="err">z</span><span class="kc">ne</span><span class="w"> </span><span class="err">\</span><span class="kc">n</span><span class="w"> </span><span class="err">Pro</span><span class="kc">f</span><span class="err">il</span><span class="w"> </span><span class="kc">na</span><span class="w"> </span><span class="err">NBA.com</span><span class="w"> </span><span class="err">\</span><span class="kc">n</span><span class="w"> </span><span class="err">S</span><span class="kc">tat</span><span class="err">ys</span><span class="kc">t</span><span class="err">yki</span><span class="w"> </span><span class="kc">na</span><span class="w"> </span><span class="err">baske</span><span class="kc">t</span><span class="err">ball</span><span class="mi">-</span><span class="err">re</span><span class="kc">feren</span><span class="err">ce.com</span><span class="w"> </span><span class="err">\</span><span class="kc">n</span><span class="w"> </span><span class="err">Pro</span><span class="kc">f</span><span class="err">il</span><span class="w"> </span><span class="kc">na</span><span class="w"> </span><span class="err">la</span><span class="kc">n</span><span class="err">do</span><span class="kc">f</span><span class="err">baske</span><span class="kc">t</span><span class="err">ball.com</span><span class="w"> </span><span class="err">\</span><span class="kc">n</span><span class="err">\</span><span class="kc">n</span><span class="err">Amerykańscy</span><span class="w"> </span><span class="err">koszykarze\</span><span class="kc">n</span><span class="err">Koszykarze</span><span class="w"> </span><span class="err">Bos</span><span class="kc">t</span><span class="err">o</span><span class="kc">n</span><span class="w"> </span><span class="err">Cel</span><span class="kc">t</span><span class="err">ics\</span><span class="kc">n</span><span class="err">Koszykarze</span><span class="w"> </span><span class="err">New</span><span class="w"> </span><span class="err">Orlea</span><span class="kc">ns</span><span class="w"> </span><span class="err">Hor</span><span class="kc">nets</span><span class="err">\</span><span class="kc">n</span><span class="err">Koszykarze</span><span class="w"> </span><span class="err">Sacrame</span><span class="kc">nt</span><span class="err">o</span><span class="w"> </span><span class="err">Ki</span><span class="kc">n</span><span class="err">gs\</span><span class="kc">n</span><span class="err">Koszykarze</span><span class="w"> </span><span class="err">Phoe</span><span class="kc">n</span><span class="err">ix</span><span class="w"> </span><span class="err">Su</span><span class="kc">ns</span><span class="err">\</span><span class="kc">n</span><span class="err">Koszykarze</span><span class="w"> </span><span class="err">Hous</span><span class="kc">t</span><span class="err">o</span><span class="kc">n</span><span class="w"> </span><span class="err">Rocke</span><span class="kc">ts</span><span class="err">\</span><span class="kc">n</span><span class="err">Koszykarze</span><span class="w"> </span><span class="err">LSU</span><span class="w"> </span><span class="err">Tigers\</span><span class="kc">n</span><span class="err">Koszykarze</span><span class="w"> </span><span class="err">Gra</span><span class="kc">n</span><span class="err">d</span><span class="w"> </span><span class="err">Rapids</span><span class="w"> </span><span class="err">Drive\</span><span class="kc">n</span><span class="err">Koszykarze</span><span class="w"> </span><span class="err">Washi</span><span class="kc">n</span><span class="err">g</span><span class="kc">t</span><span class="err">o</span><span class="kc">n</span><span class="w"> </span><span class="err">Wizards\</span><span class="kc">n</span><span class="err">Koszykarze</span><span class="w"> </span><span class="err">Brookly</span><span class="kc">n</span><span class="w"> </span><span class="err">Ne</span><span class="kc">ts</span><span class="err">\</span><span class="kc">n</span><span class="err">Koszykarze</span><span class="w"> </span><span class="err">Beiji</span><span class="kc">n</span><span class="err">g</span><span class="w"> </span><span class="err">Ducks\</span><span class="kc">n</span><span class="err">Urodze</span><span class="kc">n</span><span class="err">i</span><span class="w"> </span><span class="err">w</span><span class="w"> </span><span class="mi">1987</span><span class="err">\</span><span class="kc">n</span><span class="err">Ludzie</span><span class="w"> </span><span class="err">urodze</span><span class="kc">n</span><span class="err">i</span><span class="w"> </span><span class="err">w</span><span class="w"> </span><span class="err">Ba</span><span class="kc">t</span><span class="err">o</span><span class="kc">n</span><span class="w"> </span><span class="err">Rouge&#39;</span><span class="p">,</span>
 <span class="w">    </span><span class="err">&#39;ques</span><span class="kc">t</span><span class="err">io</span><span class="kc">n</span><span class="err">&#39;</span><span class="p">:</span><span class="w"> </span><span class="err">&#39;Gdzie</span><span class="w"> </span><span class="err">Thor</span><span class="kc">nt</span><span class="err">o</span><span class="kc">n</span><span class="w"> </span><span class="err">przyszedł</span><span class="w"> </span><span class="kc">na</span><span class="w"> </span><span class="err">świa</span><span class="kc">t</span><span class="err">?&#39;</span><span class="p">,</span>
 <span class="w">    </span><span class="err">&#39;a</span><span class="kc">ns</span><span class="err">wers&#39;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
@@ -1911,30 +1954,34 @@ languages.</p>
 <span class="w">        </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="err">array(</span><span class="p">[</span><span class="s2">&quot;2010&quot;</span><span class="p">],</span><span class="w"> </span><span class="err">d</span><span class="kc">t</span><span class="err">ype=objec</span><span class="kc">t</span><span class="err">)</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="p">}</span>
-</code></pre></div></p>
+</code></pre></div>
 <p>When evaluating generative models, we use the following setup (see the
 <a href="/methodology">methodology</a> for more information on how these are used):</p>
 <ul>
 <li>Number of few-shot examples: 4</li>
-<li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>Poniżej znajdują się teksty z towarzyszącymi pytaniami i
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Poniżej znajdują się teksty z towarzyszącymi pytaniami i
 odpowiedziami.
-</code></pre></div></li>
-<li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>Tekst: {text}
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Tekst: {text}
 Pytanie: {question}
 Odpowiedź w maksymalnie 3 słowach: {label}
-</code></pre></div></li>
-<li>Instruction-tuned prompt template:
-  <div class="highlight"><pre><span></span><code>Tekst: {text}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Tekst: {text}
 
 Odpowiedz na następujące pytanie dotyczące powyższego tekstu w maksymalnie 3 słowach.
 
 Pytanie: {question}
-</code></pre></div></li>
-</ul>
+</code></pre></div>
 <p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>multi-wiki-qa-pl
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>multi-wiki-qa-pl
 </code></pre></div>
 <h2 id="knowledge">Knowledge</h2>
 <h3 id="llmzsz">LLMzSzŁ</h3>
@@ -1949,7 +1996,7 @@ between languages and to assess their performance on Polish educational content.
 split. We use a 1,024 / 256 / 2,048 split for training, validation and testing,
 respectively (so 3,328 samples used in total).</p>
 <p>Here are a few examples from the training split:</p>
-<p><div class="highlight"><pre><span></span><code><span class="p">{</span>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Czujnik do pomiaru poziomu obciążenia, stosowany w wozach paszowych jako element systemu zdalnego ważenia masy mieszanki, jest czujnikiem\nChoices:\na. tensometrycznym.\nb. podczerwieni.\nc. indukcyjnym.\nd. optycznym.&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;a&quot;</span>
 <span class="p">}</span>
@@ -1963,25 +2010,30 @@ respectively (so 3,328 samples used in total).</p>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Cieczą ciężką jednorodną nazywamy substancję ciekłą, której gęstość jest\nChoices:\na. równa gęstości wody.\nb. większa od gęstości wody.\nc. mniejsza od gęstości wody.\nd. wypadkową gęstości cieczy ciężkiej i wody.&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;b&quot;</span>
 <span class="p">}</span>
-</code></pre></div></p>
+</code></pre></div>
 <p>When evaluating generative models, we use the following setup (see the
 <a href="/methodology">methodology</a> for more information on how these are used):</p>
 <ul>
 <li>Number of few-shot examples: 5</li>
-<li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>Poniżej znajdują się pytania wielokrotnego wyboru (z odpowiedziami).
-</code></pre></div></li>
-<li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>Pytanie: {text}
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Poniżej znajdują się pytania wielokrotnego wyboru (z odpowiedziami).
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Pytanie: {text}
 Opcje:
 a. {option_a}
 b. {option_b}
 c. {option_c}
 d. {option_d}
 Odpowiedź: {label}
-</code></pre></div></li>
-<li>Instruction-tuned prompt template:
-  <div class="highlight"><pre><span></span><code>Pytanie: {text}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Pytanie: {text}
 Opcje:
 a. {option_a}
 b. {option_b}
@@ -1989,10 +2041,9 @@ c. {option_c}
 d. {option_d}
 
 Odpowiedz na powyższe pytanie, odpowiadając &#39;a&#39;, &#39;b&#39;, &#39;c&#39; lub &#39;d&#39;, i nic więcej.
-</code></pre></div></li>
-</ul>
+</code></pre></div>
 <p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>llmzszl
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>llmzszl
 </code></pre></div>
 <h2 id="common-sense-reasoning">Common-sense Reasoning</h2>
 <h3 id="winogrande-pl">Winogrande-pl</h3>
@@ -2021,27 +2072,31 @@ we use the same splits.</p>
 <a href="/methodology">methodology</a> for more information on how these are used):</p>
 <ul>
 <li>Number of few-shot examples: 5</li>
-<li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>Poniżej znajdują się pytania wielokrotnego wyboru (z odpowiedziami).
-</code></pre></div></li>
-<li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>Pytanie: {text}
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Poniżej znajdują się pytania wielokrotnego wyboru (z odpowiedziami).
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Pytanie: {text}
 Opcje:
 a. {option_a}
 b. {option_b}
 Odpowiedź: {label}
-</code></pre></div></li>
-<li>Instruction-tuned prompt template:
-  <div class="highlight"><pre><span></span><code>Pytanie: {text}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Pytanie: {text}
 Opcje:
 a. {option_a}
 b. {option_b}
 
 Odpowiedz na powyższe pytanie, odpowiadając &#39;a&#39; lub &#39;b&#39;, i nic więcej.
-</code></pre></div></li>
-</ul>
+</code></pre></div>
 <p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>winogrande-pl
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>winogrande-pl
 </code></pre></div>
 <h3 id="unofficial-goldenswag-pl">Unofficial: GoldenSwag-pl</h3>
 <p>This dataset is a filtered and machine translated version of the English <a href="https://aclanthology.org/P19-1472/">HellaSwag
@@ -2074,20 +2129,25 @@ samples for training, validation, and testing, respectively.</p>
 <a href="/methodology">methodology</a> for more information on how these are used):</p>
 <ul>
 <li>Number of few-shot examples: 5</li>
-<li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>Poniżej znajdują się pytania wielokrotnego wyboru (z odpowiedziami).
-</code></pre></div></li>
-<li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>Pytanie: {text}
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Poniżej znajdują się pytania wielokrotnego wyboru (z odpowiedziami).
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Pytanie: {text}
 Opcje:
 a. {option_a}
 b. {option_b}
 c. {option_c}
 d. {option_d}
 Odpowiedź: {label}
-</code></pre></div></li>
-<li>Instruction-tuned prompt template:
-  <div class="highlight"><pre><span></span><code>Pytanie: {text}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Pytanie: {text}
 Opcje:
 a. {option_a}
 b. {option_b}
@@ -2095,10 +2155,9 @@ c. {option_c}
 d. {option_d}
 
 Odpowiedz na powyższe pytanie, odpowiadając &#39;a&#39;, &#39;b&#39;, &#39;c&#39; lub &#39;d&#39;, i nic więcej.
-</code></pre></div></li>
-</ul>
+</code></pre></div>
 <p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>goldenswag-pl
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>goldenswag-pl
 </code></pre></div>
 <h2 id="summarisation">Summarisation</h2>
 <h3 id="psc">PSC</h3>
@@ -2113,7 +2172,7 @@ samples for our training, validation and test splits, respectively. All splits a
 subsets of the original training data, with the validation and test splits sampled from
 the original training set.</p>
 <p>Here are a few examples from the training split:</p>
-<p><div class="highlight"><pre><span></span><code><span class="p">{</span>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Rozpoczynający się 31 grudnia 2000 roku The Race ma stać się pokazem możliwości technicznych współczesnego jachtingu, rozwoju technologii telekomunikacyjnych, ma dowieść siły marketingowej wielkich wydarzeń sportowych, a także potęgi finansowej sponsorów tego przedsięwzięcia. Około dziesięciu superjachtów wystartuje 31 grudnia 2000 roku o północy z Barcelony. Najlepszy po około dwóch miesiącach powinien wpłynąć do Starego Portu w Marsylii.&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;target_text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;31 grudnia 2000 roku rozpoczynają się regaty The Race, będące rozwinięciem regat dookoła świata - Jules Verne Trophy. Jachty wystartują z Barcelony i przepłyną bez pomocy  i zawijania do portów trzy oceany.  Organizatorzy regat chcą dotrzeć do miliardów odbiorców.  By pobić rekordy oglądalności i zaprezentować sponsorów wykorzystana zostanie najnowsza technika m.in kamery na jachtach.&quot;</span>
 <span class="p">}</span>
@@ -2127,26 +2186,30 @@ the original training set.</p>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Podczas II Kongresu Filmu Polskiego ogromne poruszenie środowiska filmowego wywołał list ministra Andrzeja Zakrzewskiego. Minister Zakrzewski zaatakował środowisko filmowe za to, że dotąd nie ma nowego prawa filmowego.  Filmowcy Poczuli się skrzywdzeni ocenami, bo straty były przy zmianie ustrojowej i likwidacji państwowego mecenatu nieuniknione. A Polska najlepiej chyba ze wszystkich krajów postkomunistycznych przeprowadziła swoją kinematografię przez ten trudny okres.&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;target_text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Środowisko filmowe jest poruszone listem ministra kultury, który krytykuje polskie kino i atakuje filmowców m.in. za niewypracowanie nowego prawa filmowego. Twórcy czują się skrzywdzeni bezpodstawnymi zarzutami. Zaznaczają, że to ministerstwo odpowiada za zatrzymanie prac nad ustawą o kinematografii. Publiczna krytyka i niedbałość o interesy środowiska twórczego są oburzające. Minister potwierdza, że jest autorem listu, i nie akceptuje obecnej formuły Komitetu Kinematografii.&quot;</span>
 <span class="p">}</span>
-</code></pre></div></p>
+</code></pre></div>
 <p>When evaluating generative models, we use the following setup (see the
 <a href="/methodology">methodology</a> for more information on how these are used):</p>
 <ul>
 <li>Number of few-shot examples: 1</li>
-<li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>Poniżej znajdują się artykuły z towarzyszącymi streszczeniami.
-</code></pre></div></li>
-<li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>Artykuł: {text}
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Poniżej znajdują się artykuły z towarzyszącymi streszczeniami.
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Artykuł: {text}
 Streszczenie: {target_text}
-</code></pre></div></li>
-<li>Instruction-tuned prompt template:
-  <div class="highlight"><pre><span></span><code>Artykuł: {text}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Artykuł: {text}
 
 Napisz streszczenie powyższego artykułu.
-</code></pre></div></li>
-</ul>
+</code></pre></div>
 <p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>psc
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>psc
 </code></pre></div>
 
 

@@ -639,6 +639,8 @@
       
         
       
+        
+      
     
     
     
@@ -1231,6 +1233,29 @@
   
   
     <li class="md-nav__item">
+      <a href="../lithuanian/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    🇱🇹 Lithuanian
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../norwegian/" class="md-nav__link">
         
   
@@ -1768,7 +1793,7 @@ many others) via a crowdsourcing platform.</p>
 split for training, validation and testing, respectively (so all samples are used in
 total).</p>
 <p>Here are a few examples from the training split:</p>
-<p><div class="highlight"><pre><span></span><code><span class="p">{</span>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Til hamingju með gott framtak. Þetta eru góðir útgangspunktar með stjórnarskrána, þó margt fleira þurfi að laga svo hún þjóni vel  nýju lýðveldi framtíðarinnar.Ég styð heils hugar þetta framtak ykkar.&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;positive&quot;</span>
 <span class="p">}</span>
@@ -1782,32 +1807,36 @@ total).</p>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Meira að segja hörðustu klappstýrur Þórólfs hljóta að hugsa, þó ekki væri í nema augnablik: Mikið er skrýtið að hann sé ekki með á hreinu af hverju fáir handleggir eru að bjóða sig í þriðju sprautuna!Annars er bara sama handritið að fara spilast aftur: Nú er haustið komið og árstíðarbundnar pestir munu rjúka upp, allar sem ein, og þá verður skellt í lás og talað um að hafa opnað of snemma.&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;negative&quot;</span>
 <span class="p">}</span>
-</code></pre></div></p>
+</code></pre></div>
 <p>When evaluating generative models, we use the following setup (see the
 <a href="/methodology">methodology</a> for more information on how these are used):</p>
 <ul>
 <li>Number of few-shot examples: 12</li>
-<li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>Hér fyrir neðan eru textabrot ásamt lyndisgildi þeirra sem getur verið &#39;jákvætt&#39;, &#39;hlutlaust&#39; eða &#39;neikvætt&#39;.
-</code></pre></div></li>
-<li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>Textabrot: {text}
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Hér fyrir neðan eru textabrot ásamt lyndisgildi þeirra sem getur verið &#39;jákvætt&#39;, &#39;hlutlaust&#39; eða &#39;neikvætt&#39;.
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Textabrot: {text}
 Lyndi: {label}
-</code></pre></div></li>
-<li>Instruction-tuned prompt template:
-  <div class="highlight"><pre><span></span><code>Texti: {text}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Texti: {text}
 
 Flokkaðu tilfinninguna í textanum. Svaraðu með &#39;jákvætt&#39;, &#39;hlutlaust&#39; eða &#39;neikvætt&#39;.
-</code></pre></div></li>
-<li>Label mapping:<ul>
+</code></pre></div>
+<ul>
+<li>Label mapping:</li>
 <li><code>positive</code> ➡️ <code>jákvætt</code></li>
 <li><code>neutral</code> ➡️ <code>hlutlaust</code></li>
 <li><code>negative</code> ➡️ <code>neikvætt</code></li>
 </ul>
-</li>
-</ul>
 <p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>hotter-and-colder-sentiment
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>hotter-and-colder-sentiment
 </code></pre></div>
 <h2 id="named-entity-recognition">Named Entity Recognition</h2>
 <h3 id="mim-gold-ner">MIM-GOLD-NER</h3>
@@ -1822,7 +1851,7 @@ labels: <code>DATE</code>, <code>TIME</code>, <code>MONEY</code>, <code>PERCENT<
 <p>The original full dataset consists of 1,000,000 tokens. We use a 1,024 / 256 / 2,048
 split for training, validation and testing, respectively.</p>
 <p>Here are a few examples from the training split:</p>
-<p><div class="highlight"><pre><span></span><code><span class="p">{</span>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="err">&#39;</span><span class="kc">t</span><span class="err">oke</span><span class="kc">ns</span><span class="err">&#39;</span><span class="p">:</span><span class="w"> </span><span class="err">array(</span><span class="p">[</span><span class="err">&#39;Sjál</span><span class="kc">fsa</span><span class="err">g</span><span class="kc">t</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;er&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;að&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;miða&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;e</span><span class="kc">n</span><span class="err">durgreiðslu</span><span class="kc">na</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;verði&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;</span><span class="kc">n</span><span class="err">úvera</span><span class="kc">n</span><span class="err">di&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;heimild&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;</span><span class="kc">fra</span><span class="err">mle</span><span class="kc">n</span><span class="err">gd&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;við&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;EUROIII&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;í&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;s</span><span class="kc">ta</span><span class="err">ð&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;EUROII&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;ei</span><span class="kc">ns</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;og&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;</span><span class="kc">n</span><span class="err">ú&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;er&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;.&#39;</span><span class="p">],</span><span class="w"> </span><span class="err">d</span><span class="kc">t</span><span class="err">ype=objec</span><span class="kc">t</span><span class="err">)</span><span class="p">,</span>
 <span class="w">  </span><span class="err">&#39;labels&#39;</span><span class="p">:</span><span class="w"> </span><span class="err">array(</span><span class="p">[</span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;B</span><span class="mi">-</span><span class="err">MISC&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;B</span><span class="mi">-</span><span class="err">MISC&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">],</span><span class="w"> </span><span class="err">d</span><span class="kc">t</span><span class="err">ype=objec</span><span class="kc">t</span><span class="err">)</span>
 <span class="p">}</span>
@@ -1836,24 +1865,30 @@ split for training, validation and testing, respectively.</p>
 <span class="w">  </span><span class="err">&#39;</span><span class="kc">t</span><span class="err">oke</span><span class="kc">ns</span><span class="err">&#39;</span><span class="p">:</span><span class="w"> </span><span class="err">array(</span><span class="p">[</span><span class="err">&#39;</span><span class="mf">2.-</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;Erla&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;Guð</span><span class="kc">n</span><span class="err">ý&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;Gyl</span><span class="kc">fa</span><span class="err">d.&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;</span><span class="p">,</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;Smyrill&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;</span><span class="kc">fr</span><span class="err">á&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;S</span><span class="kc">t</span><span class="err">okkhólma&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;</span><span class="p">,</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;</span><span class="mi">7</span><span class="p">,</span><span class="mi">01</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;.&#39;</span><span class="p">],</span><span class="w"> </span><span class="err">d</span><span class="kc">t</span><span class="err">ype=objec</span><span class="kc">t</span><span class="err">)</span><span class="p">,</span>
 <span class="w">  </span><span class="err">&#39;labels&#39;</span><span class="p">:</span><span class="w"> </span><span class="err">array(</span><span class="p">[</span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;B</span><span class="mi">-</span><span class="err">PER&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;I</span><span class="mi">-</span><span class="err">PER&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;I</span><span class="mi">-</span><span class="err">PER&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;B</span><span class="mi">-</span><span class="err">PER&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;B</span><span class="mi">-</span><span class="err">LOC&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">],</span><span class="w"> </span><span class="err">d</span><span class="kc">t</span><span class="err">ype=objec</span><span class="kc">t</span><span class="err">)</span>
 <span class="p">}</span>
-</code></pre></div></p>
+</code></pre></div>
 <p>When evaluating generative models, we use the following setup (see the
 <a href="/methodology">methodology</a> for more information on how these are used):</p>
 <ul>
 <li>Number of few-shot examples: 8</li>
-<li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>Eftirfarandi eru setningar ásamt JSON lyklum með nefndum einingum sem koma fyrir í setningunum.
-</code></pre></div></li>
-<li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>Setning: {text}
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Eftirfarandi eru setningar ásamt JSON lyklum með nefndum einingum sem koma fyrir í setningunum.
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Setning: {text}
 Nafneiningar: {label}
-</code></pre></div></li>
-<li>Instruction-tuned prompt template:
-  <div class="highlight"><pre><span></span><code>Setning: {text}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Setning: {text}
 
 Greindu nefndu einingarnar í setningunni. Þú ættir að skila þessu sem JSON orðabók með lyklunum &#39;einstaklingur&#39;, &#39;staðsetning&#39;, &#39;stofnun&#39; og &#39;ýmislegt&#39;. Gildin ættu að vera listi yfir nefndu einingarnar af þeirri gerð, nákvæmlega eins og þær koma fram í setningunni.
-</code></pre></div></li>
-<li>Label mapping:<ul>
+</code></pre></div>
+<ul>
+<li>Label mapping:</li>
 <li><code>B-PER</code> ➡️ <code>einstaklingur</code></li>
 <li><code>I-PER</code> ➡️ <code>einstaklingur</code></li>
 <li><code>B-LOC</code> ➡️ <code>staðsetning</code></li>
@@ -1863,10 +1898,8 @@ Greindu nefndu einingarnar í setningunni. Þú ættir að skila þessu sem JSON
 <li><code>B-MISC</code> ➡️ <code>ýmislegt</code></li>
 <li><code>I-MISC</code> ➡️ <code>ýmislegt</code></li>
 </ul>
-</li>
-</ul>
 <p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>mim-gold-ner
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>mim-gold-ner
 </code></pre></div>
 <h2 id="linguistic-acceptability">Linguistic Acceptability</h2>
 <h3 id="scala-is">ScaLA-is</h3>
@@ -1882,7 +1915,7 @@ the part-of-speech tags of the words in the sentence.</p>
 samples for training, validation and testing, respectively (so 3,328 samples used in
 total). These splits are used as-is in the framework.</p>
 <p>Here are a few examples from the training split:</p>
-<p><div class="highlight"><pre><span></span><code><span class="p">{</span>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Utanrrh.: Ég hef Ég hefði óskað þess að hæstv. utanríkisráðherra hefði meiri áhrif á forsætisráðherra en raun ber vitni Gripið fram í. því að hann er sem betur fer ekki að tala niður þá atvinnugrein sem tengist sjávarútveginum eins og hæstv. forsætisráðherra gerir alla jafna.&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;correct&quot;</span>
 <span class="p">}</span>
@@ -1896,31 +1929,35 @@ total). These splits are used as-is in the framework.</p>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Mig líka að koma að, ég gleymdi því áðan og kom því heldur ekki að, komugjöldunum eins og þau heita víst núna, ekki legugjöld lengur.&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;incorrect&quot;</span>
 <span class="p">}</span>
-</code></pre></div></p>
+</code></pre></div>
 <p>When evaluating generative models, we use the following setup (see the
 <a href="/methodology">methodology</a> for more information on how these are used):</p>
 <ul>
 <li>Number of few-shot examples: 12</li>
-<li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>Hér fyrir neðan eru setningar ásamt mati á því hvort þær eru málfræðilega réttar.
-</code></pre></div></li>
-<li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>Setning: {text}
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Hér fyrir neðan eru setningar ásamt mati á því hvort þær eru málfræðilega réttar.
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Setning: {text}
 Málfræðilega rétt: {label}
-</code></pre></div></li>
-<li>Instruction-tuned prompt template:
-  <div class="highlight"><pre><span></span><code>Setning: {text}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Setning: {text}
 
 Greindu hvort setningin er málfræðilega rétt. Svaraðu með &#39;já&#39; ef setningin er rétt og &#39;nei&#39; ef hún er það ekki.
-</code></pre></div></li>
-<li>Label mapping:<ul>
+</code></pre></div>
+<ul>
+<li>Label mapping:</li>
 <li><code>correct</code> ➡️ <code>já</code></li>
 <li><code>incorrect</code> ➡️ <code>nei</code></li>
 </ul>
-</li>
-</ul>
 <p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>scala-is
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>scala-is
 </code></pre></div>
 <h3 id="unofficial-iceec">Unofficial: IceEC</h3>
 <p>This dataset was published <a href="https://github.com/antonkarl/iceErrorCorpus">here</a> and
@@ -1932,7 +1969,7 @@ respectively. We use a 1,024 / 256 / 2,048 split for training, validation and te
 where the training and testing splits are subsets of the original training and testing
 splits, and the validation split is a disjoint subset of the training split.</p>
 <p>Here are a few examples from the training split:</p>
-<p><div class="highlight"><pre><span></span><code><span class="p">{</span>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Kannski erum við með meiri sölu í öðrum skrokkhlutum en síðum t.d., “ segir Steinþór.&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;correct&quot;</span>
 <span class="p">}</span>
@@ -1946,31 +1983,35 @@ splits, and the validation split is a disjoint subset of the training split.</p>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Síminn er hvers manns ábyrgð.&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;incorrect&quot;</span>
 <span class="p">}</span>
-</code></pre></div></p>
+</code></pre></div>
 <p>When evaluating generative models, we use the following setup (see the
 <a href="/methodology">methodology</a> for more information on how these are used):</p>
 <ul>
 <li>Number of few-shot examples: 12</li>
-<li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>Hér fyrir neðan eru setningar ásamt mati á því hvort þær eru málfræðilega réttar.
-</code></pre></div></li>
-<li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>Setning: {text}
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Hér fyrir neðan eru setningar ásamt mati á því hvort þær eru málfræðilega réttar.
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Setning: {text}
 Málfræðilega rétt: {label}
-</code></pre></div></li>
-<li>Instruction-tuned prompt template:
-  <div class="highlight"><pre><span></span><code>Setning: {text}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Setning: {text}
 
 Greindu hvort setningin er málfræðilega rétt. Svaraðu með &#39;já&#39; ef setningin er rétt og &#39;nei&#39; ef hún er það ekki.
-</code></pre></div></li>
-<li>Label mapping:<ul>
+</code></pre></div>
+<ul>
+<li>Label mapping:</li>
 <li><code>correct</code> ➡️ <code>já</code></li>
 <li><code>incorrect</code> ➡️ <code>nei</code></li>
 </ul>
-</li>
-</ul>
 <p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>ice-ec
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>ice-ec
 </code></pre></div>
 <h3 id="unofficial-icelinguistic">Unofficial: IceLinguistic</h3>
 <p>This dataset was published
@@ -1980,7 +2021,7 @@ whether they are grammatically correct or not (along with other linguistic prope
 <p>The original full dataset consists of 382 samples, and we use a 94 / 32 / 256 split for
 training, validation and testing, respectively.</p>
 <p>Here are a few examples from the training split:</p>
-<p><div class="highlight"><pre><span></span><code><span class="p">{</span>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Ég aflaði upplýsinganna og þú peninganna.&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;correct&quot;</span>
 <span class="p">}</span>
@@ -1994,31 +2035,35 @@ training, validation and testing, respectively.</p>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Þú borðaðir kökuna og ég kleinuhringurinn.&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;incorrect&quot;</span>
 <span class="p">}</span>
-</code></pre></div></p>
+</code></pre></div>
 <p>When evaluating generative models, we use the following setup (see the
 <a href="/methodology">methodology</a> for more information on how these are used):</p>
 <ul>
 <li>Number of few-shot examples: 12</li>
-<li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>Hér fyrir neðan eru setningar ásamt mati á því hvort þær eru málfræðilega réttar.
-</code></pre></div></li>
-<li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>Setning: {text}
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Hér fyrir neðan eru setningar ásamt mati á því hvort þær eru málfræðilega réttar.
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Setning: {text}
 Málfræðilega rétt: {label}
-</code></pre></div></li>
-<li>Instruction-tuned prompt template:
-  <div class="highlight"><pre><span></span><code>Setning: {text}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Setning: {text}
 
 Greindu hvort setningin er málfræðilega rétt. Svaraðu með &#39;já&#39; ef setningin er rétt og &#39;nei&#39; ef hún er það ekki.
-</code></pre></div></li>
-<li>Label mapping:<ul>
+</code></pre></div>
+<ul>
+<li>Label mapping:</li>
 <li><code>correct</code> ➡️ <code>já</code></li>
 <li><code>incorrect</code> ➡️ <code>nei</code></li>
 </ul>
-</li>
-</ul>
 <p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>ice-linguistic
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>ice-linguistic
 </code></pre></div>
 <h2 id="reading-comprehension">Reading Comprehension</h2>
 <h3 id="nqii">NQiI</h3>
@@ -2031,7 +2076,7 @@ and testing, respectively. We use a 1,024 / 256 / 1,024 split for training, vali
 and testing, respectively. Our splits are new, and there can thus be some overlap
 between the new test split and the old training and validation splits.</p>
 <p>Here are a few examples from the training split:</p>
-<p><div class="highlight"><pre><span></span><code><span class="p">{</span>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">&quot;context&quot;</span><span class="p">:</span><span class="w"> </span><span class="err">&#39;Gróðurhúsalo</span><span class="kc">ftte</span><span class="err">gu</span><span class="kc">n</span><span class="err">d</span><span class="w"> </span><span class="err">er</span><span class="w"> </span><span class="err">lo</span><span class="kc">ftte</span><span class="err">gu</span><span class="kc">n</span><span class="err">d</span><span class="w"> </span><span class="p">,</span><span class="w"> </span><span class="err">í</span><span class="w"> </span><span class="err">lo</span><span class="kc">ft</span><span class="err">hjúpi</span><span class="w"> </span><span class="err">sem</span><span class="w"> </span><span class="err">drekkur</span><span class="w"> </span><span class="err">í</span><span class="w"> </span><span class="err">sig</span><span class="w"> </span><span class="err">og</span><span class="w"> </span><span class="err">ge</span><span class="kc">fur</span><span class="w"> </span><span class="kc">fr</span><span class="err">á</span><span class="w"> </span><span class="err">sér</span><span class="w"> </span><span class="err">i</span><span class="kc">nnrau</span><span class="err">ða</span><span class="w"> </span><span class="err">geislu</span><span class="kc">n</span><span class="w"> </span><span class="err">.</span><span class="w"> </span><span class="err">Það</span><span class="w"> </span><span class="kc">ferl</span><span class="err">i</span><span class="w"> </span><span class="err">er</span><span class="w"> </span><span class="err">aðal</span><span class="w"> </span><span class="err">ás</span><span class="kc">t</span><span class="err">æða</span><span class="w"> </span><span class="err">gróðurhúsaáhri</span><span class="kc">fa</span><span class="w"> </span><span class="err">.</span><span class="w"> </span><span class="err">Hels</span><span class="kc">tu</span><span class="w"> </span><span class="err">gróðurhúsalo</span><span class="kc">ftte</span><span class="err">gu</span><span class="kc">n</span><span class="err">dir</span><span class="kc">nar</span><span class="w"> </span><span class="err">í</span><span class="w"> </span><span class="err">lo</span><span class="kc">ft</span><span class="err">hjúpi</span><span class="w"> </span><span class="err">jarðar</span><span class="w"> </span><span class="err">eru</span><span class="w"> </span><span class="err">va</span><span class="kc">tns</span><span class="err">gu</span><span class="kc">fa</span><span class="w"> </span><span class="p">,</span><span class="w"> </span><span class="err">koldíoxíð</span><span class="w"> </span><span class="p">,</span><span class="w"> </span><span class="err">me</span><span class="kc">tan</span><span class="w"> </span><span class="p">,</span><span class="w"> </span><span class="kc">t</span><span class="err">víkö</span><span class="kc">fnunarefn</span><span class="err">isoxíð</span><span class="w"> </span><span class="err">og</span><span class="w"> </span><span class="err">óso</span><span class="kc">n</span><span class="w"> </span><span class="err">.</span><span class="w"> </span><span class="err">Á</span><span class="kc">n</span><span class="w"> </span><span class="err">gróðurhúsalo</span><span class="kc">ftte</span><span class="err">gu</span><span class="kc">n</span><span class="err">da</span><span class="w"> </span><span class="err">væri</span><span class="w"> </span><span class="err">meðalhi</span><span class="kc">t</span><span class="err">i</span><span class="w"> </span><span class="err">y</span><span class="kc">f</span><span class="err">irborðs</span><span class="w"> </span><span class="err">jarðar</span><span class="w"> </span><span class="err">−</span><span class="w"> </span><span class="mi">18</span><span class="w"> </span><span class="err">°</span><span class="w"> </span><span class="err">C</span><span class="w"> </span><span class="p">,</span><span class="w"> </span><span class="kc">n</span><span class="err">úvera</span><span class="kc">n</span><span class="err">di</span><span class="w"> </span><span class="err">meðal</span><span class="kc">tals</span><span class="w"> </span><span class="mi">15</span><span class="w"> </span><span class="err">°</span><span class="w"> </span><span class="err">C</span><span class="w"> </span><span class="err">.</span><span class="w"> </span><span class="err">Í</span><span class="w"> </span><span class="err">sólker</span><span class="kc">f</span><span class="err">i</span><span class="kc">nu</span><span class="w"> </span><span class="p">,</span><span class="w"> </span><span class="err">eru</span><span class="w"> </span><span class="err">Ve</span><span class="kc">nus</span><span class="w"> </span><span class="p">,</span><span class="w"> </span><span class="err">Mars</span><span class="w"> </span><span class="err">og</span><span class="w"> </span><span class="err">Tí</span><span class="kc">tan</span><span class="w"> </span><span class="err">ei</span><span class="kc">nn</span><span class="err">ig</span><span class="w"> </span><span class="err">með</span><span class="w"> </span><span class="err">lo</span><span class="kc">ft</span><span class="err">hjúp</span><span class="w"> </span><span class="err">sem</span><span class="w"> </span><span class="err">veldur</span><span class="w"> </span><span class="err">gróðurhúsaáhri</span><span class="kc">fu</span><span class="err">m</span><span class="w"> </span><span class="err">.&#39;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;question&quot;</span><span class="p">:</span><span class="w"> </span><span class="err">&#39;Hverjar</span><span class="w"> </span><span class="err">eru</span><span class="w"> </span><span class="err">gróðurhúsalo</span><span class="kc">ftte</span><span class="err">gu</span><span class="kc">n</span><span class="err">dir</span><span class="kc">nar</span><span class="w"> </span><span class="err">?&#39;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;answers&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
@@ -2057,29 +2102,33 @@ between the new test split and the old training and validation splits.</p>
 <span class="w">    </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="err">array(</span><span class="p">[</span><span class="err">&#39;</span><span class="w"> </span><span class="err">ú</span><span class="kc">t</span><span class="w"> </span><span class="err">a</span><span class="kc">f</span><span class="w"> </span><span class="err">Suður</span><span class="mi">-</span><span class="err">Ameríku&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;</span><span class="w"> </span><span class="err">ú</span><span class="kc">t</span><span class="w"> </span><span class="err">a</span><span class="kc">f</span><span class="w"> </span><span class="err">Suður</span><span class="mi">-</span><span class="err">Ameríku</span><span class="w"> </span><span class="p">,</span><span class="w"> </span><span class="err">um</span><span class="w"> </span><span class="mi">500</span><span class="w"> </span><span class="err">km</span><span class="w"> </span><span class="kc">t</span><span class="err">il</span><span class="w"> </span><span class="err">suðaus</span><span class="kc">turs</span><span class="w"> </span><span class="kc">fr</span><span class="err">á</span><span class="w"> </span><span class="err">Arge</span><span class="kc">nt</span><span class="err">í</span><span class="kc">nu</span><span class="err">&#39;</span><span class="p">],</span><span class="w"> </span><span class="err">d</span><span class="kc">t</span><span class="err">ype=objec</span><span class="kc">t</span><span class="err">)</span>
 <span class="w">  </span><span class="p">}</span>
 <span class="p">}</span>
-</code></pre></div></p>
+</code></pre></div>
 <p>When evaluating generative models, we use the following setup (see the
 <a href="/methodology">methodology</a> for more information on how these are used):</p>
 <ul>
 <li>Number of few-shot examples: 4</li>
-<li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>Eftirfarandi eru textar með tilheyrandi spurningum og svörum.
-</code></pre></div></li>
-<li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>Texti: {text}
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Eftirfarandi eru textar með tilheyrandi spurningum og svörum.
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Texti: {text}
 Spurning: {question}
 Svaraðu með að hámarki 3 orðum: {label}
-</code></pre></div></li>
-<li>Instruction-tuned prompt template:
-  <div class="highlight"><pre><span></span><code>Texti: {text}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Texti: {text}
 
 Svaraðu eftirfarandi spurningu um textann að hámarki í 3 orðum.
 
 Spurning: {question}
-</code></pre></div></li>
-</ul>
+</code></pre></div>
 <p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>nqii
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>nqii
 </code></pre></div>
 <h3 id="unofficial-icelandicqa">Unofficial: IcelandicQA</h3>
 <p>This dataset was published
@@ -2093,7 +2142,7 @@ ensure that they appear in the context.</p>
 split for training, validation and testing, respectively. These are all the samples
 where the (rephrased) answer appears in the context.</p>
 <p>Here are a few examples from the training split:</p>
-<p><div class="highlight"><pre><span></span><code><span class="p">{</span>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">&quot;context&quot;</span><span class="p">:</span><span class="w"> </span><span class="err">&#39;Ómar</span><span class="w"> </span><span class="err">Rag</span><span class="kc">narss</span><span class="err">o</span><span class="kc">n</span><span class="w"> </span><span class="mi">-</span><span class="w"> </span><span class="err">Sy</span><span class="kc">n</span><span class="err">gur</span><span class="w"> </span><span class="kc">f</span><span class="err">yrir</span><span class="w"> </span><span class="err">bör</span><span class="kc">n</span><span class="err">i</span><span class="kc">n</span><span class="w">  </span><span class="err">er</span><span class="w"> </span><span class="mi">33</span><span class="w"> </span><span class="err">s</span><span class="kc">n</span><span class="err">ú</span><span class="kc">n</span><span class="err">i</span><span class="kc">n</span><span class="err">ga</span><span class="w"> </span><span class="err">LP</span><span class="w"> </span><span class="err">hljómpla</span><span class="kc">ta</span><span class="w"> </span><span class="err">ge</span><span class="kc">f</span><span class="err">i</span><span class="kc">n</span><span class="w"> </span><span class="err">ú</span><span class="kc">t</span><span class="w"> </span><span class="err">a</span><span class="kc">f</span><span class="w"> </span><span class="err">SG</span><span class="w"> </span><span class="mi">-</span><span class="w"> </span><span class="err">hljómplö</span><span class="kc">tu</span><span class="err">m</span><span class="w"> </span><span class="err">árið</span><span class="w"> </span><span class="mf">1981.</span><span class="w"> </span><span class="err">Á</span><span class="w"> </span><span class="err">he</span><span class="kc">nn</span><span class="err">i</span><span class="w"> </span><span class="err">sy</span><span class="kc">n</span><span class="err">gur</span><span class="w"> </span><span class="err">Ómar</span><span class="w"> </span><span class="err">Rag</span><span class="kc">narss</span><span class="err">o</span><span class="kc">n</span><span class="w"> </span><span class="err">þre</span><span class="kc">tt</span><span class="err">á</span><span class="kc">n</span><span class="w"> </span><span class="err">bar</span><span class="kc">nal</span><span class="err">ög.</span><span class="w"> </span><span class="err">Pla</span><span class="kc">tan</span><span class="w"> </span><span class="err">er</span><span class="w"> </span><span class="err">sa</span><span class="kc">fn</span><span class="err">pla</span><span class="kc">ta</span><span class="w"> </span><span class="err">a</span><span class="kc">f</span><span class="w"> </span><span class="err">áður</span><span class="w"> </span><span class="err">ú</span><span class="kc">t</span><span class="err">ge</span><span class="kc">fnu</span><span class="err">m</span><span class="w"> </span><span class="s2">&quot;hit&quot;</span><span class="w"> </span><span class="err">lögum</span><span class="w"> </span><span class="err">a</span><span class="kc">f</span><span class="w"> </span><span class="mi">45</span><span class="w"> </span><span class="err">s</span><span class="kc">n</span><span class="err">ú</span><span class="kc">n</span><span class="err">i</span><span class="kc">n</span><span class="err">ga</span><span class="w"> </span><span class="err">plö</span><span class="kc">tu</span><span class="err">m.\</span><span class="kc">n</span><span class="err">\</span><span class="kc">n</span><span class="err">Lagalis</span><span class="kc">t</span><span class="err">i</span><span class="w"> </span><span class="err">\</span><span class="kc">n</span><span class="w"> </span><span class="err">Ég</span><span class="w"> </span><span class="err">er</span><span class="w"> </span><span class="err">að</span><span class="w"> </span><span class="err">baka</span><span class="w"> </span><span class="mi">-</span><span class="w"> </span><span class="err">Lag</span><span class="w"> </span><span class="mi">-</span><span class="w"> </span><span class="kc">te</span><span class="err">x</span><span class="kc">t</span><span class="err">i</span><span class="p">:</span><span class="w"> </span><span class="err">E.</span><span class="w"> </span><span class="err">Shuma</span><span class="kc">n</span><span class="err">/B.</span><span class="w"> </span><span class="err">Bower</span><span class="w"> </span><span class="mi">-</span><span class="w"> </span><span class="err">Ómar</span><span class="w"> </span><span class="err">Rag</span><span class="kc">narss</span><span class="err">o</span><span class="kc">n</span><span class="err">\</span><span class="kc">n</span><span class="w"> </span><span class="err">Bróðir</span><span class="w"> </span><span class="err">mi</span><span class="kc">nn</span><span class="w"> </span><span class="mi">-</span><span class="w"> </span><span class="err">Lag</span><span class="w"> </span><span class="mi">-</span><span class="w"> </span><span class="kc">te</span><span class="err">x</span><span class="kc">t</span><span class="err">i</span><span class="p">:</span><span class="w"> </span><span class="err">W.</span><span class="w"> </span><span class="err">Hol</span><span class="kc">t</span><span class="w"> </span><span class="mi">-</span><span class="err">Ómar</span><span class="w"> </span><span class="err">Rag</span><span class="kc">narss</span><span class="err">o</span><span class="kc">n</span><span class="err">\</span><span class="kc">n</span><span class="w"> </span><span class="err">Ei</span><span class="kc">tt</span><span class="err">hvað</span><span class="w"> </span><span class="err">ú</span><span class="kc">t</span><span class="w"> </span><span class="err">í</span><span class="w"> </span><span class="err">lo</span><span class="kc">ft</span><span class="err">ið</span><span class="w"> </span><span class="mi">-</span><span class="w"> </span><span class="err">Lag</span><span class="w"> </span><span class="mi">-</span><span class="w"> </span><span class="kc">te</span><span class="err">x</span><span class="kc">t</span><span class="err">i</span><span class="p">:</span><span class="w"> </span><span class="err">P.</span><span class="w"> </span><span class="err">McCar</span><span class="kc">tne</span><span class="err">y</span><span class="w"> </span><span class="mi">-</span><span class="w"> </span><span class="err">Ómar</span><span class="w"> </span><span class="err">Rag</span><span class="kc">narss</span><span class="err">o</span><span class="kc">n</span><span class="w"> </span><span class="err">\</span><span class="kc">n</span><span class="w"> </span><span class="err">Lok</span><span class="p">,</span><span class="w"> </span><span class="err">lok</span><span class="w"> </span><span class="err">og</span><span class="w"> </span><span class="err">læs</span><span class="w"> </span><span class="mi">-</span><span class="w"> </span><span class="err">Lag</span><span class="w"> </span><span class="mi">-</span><span class="w"> </span><span class="kc">te</span><span class="err">x</span><span class="kc">t</span><span class="err">i</span><span class="p">:</span><span class="w"> </span><span class="err">Brezk</span><span class="kc">t</span><span class="w"> </span><span class="err">þjóðlag</span><span class="w"> </span><span class="mi">-</span><span class="w"> </span><span class="err">Ómar</span><span class="w"> </span><span class="err">Rag</span><span class="kc">narss</span><span class="err">o</span><span class="kc">n</span><span class="err">\</span><span class="kc">n</span><span class="w"> </span><span class="err">Aha</span><span class="p">,</span><span class="w"> </span><span class="err">sei</span><span class="mi">-</span><span class="err">sei</span><span class="p">,</span><span class="w"> </span><span class="err">já</span><span class="mi">-</span><span class="err">já</span><span class="w"> </span><span class="mi">-</span><span class="w"> </span><span class="err">Lag</span><span class="w"> </span><span class="mi">-</span><span class="w"> </span><span class="kc">te</span><span class="err">x</span><span class="kc">t</span><span class="err">i</span><span class="p">:</span><span class="w"> </span><span class="err">Ómar</span><span class="w"> </span><span class="err">Rag</span><span class="kc">narss</span><span class="err">o</span><span class="kc">n</span><span class="err">\</span><span class="kc">n</span><span class="w"> </span><span class="err">Ligga</span><span class="p">,</span><span class="w"> </span><span class="err">ligga</span><span class="w"> </span><span class="err">lá</span><span class="w"> </span><span class="mi">-</span><span class="w"> </span><span class="err">Lag</span><span class="w"> </span><span class="mi">-</span><span class="w"> </span><span class="kc">te</span><span class="err">x</span><span class="kc">t</span><span class="err">i</span><span class="p">:</span><span class="w"> </span><span class="err">Ómar</span><span class="w"> </span><span class="err">Rag</span><span class="kc">narss</span><span class="err">o</span><span class="kc">n</span><span class="w"> </span><span class="err">\</span><span class="kc">n</span><span class="w"> </span><span class="err">Hlá</span><span class="kc">tur</span><span class="err">i</span><span class="kc">nn</span><span class="w"> </span><span class="err">le</span><span class="kc">n</span><span class="err">gir</span><span class="w"> </span><span class="err">lí</span><span class="kc">f</span><span class="err">ið</span><span class="w"> </span><span class="mi">-</span><span class="w"> </span><span class="err">Lag</span><span class="w"> </span><span class="mi">-</span><span class="w"> </span><span class="kc">te</span><span class="err">x</span><span class="kc">t</span><span class="err">i</span><span class="p">:</span><span class="w"> </span><span class="err">Or</span><span class="kc">te</span><span class="err">ga</span><span class="w"> </span><span class="mi">-</span><span class="w"> </span><span class="err">Ómar</span><span class="w"> </span><span class="err">Rag</span><span class="kc">narss</span><span class="err">o</span><span class="kc">n</span><span class="err">\</span><span class="kc">n</span><span class="w"> </span><span class="err">Sumar</span><span class="w"> </span><span class="err">og</span><span class="w"> </span><span class="err">sól</span><span class="w"> </span><span class="mi">-</span><span class="w"> </span><span class="err">Lag</span><span class="w"> </span><span class="mi">-</span><span class="w"> </span><span class="kc">te</span><span class="err">x</span><span class="kc">t</span><span class="err">i</span><span class="p">:</span><span class="w"> </span><span class="err">Ómar</span><span class="w"> </span><span class="err">Rag</span><span class="kc">narss</span><span class="err">o</span><span class="kc">n</span><span class="err">\</span><span class="kc">n</span><span class="w"> </span><span class="err">Jói</span><span class="w"> </span><span class="err">ú</span><span class="kc">t</span><span class="err">herji</span><span class="w"> </span><span class="mi">-</span><span class="w"> </span><span class="err">Lag</span><span class="w"> </span><span class="mi">-</span><span class="w"> </span><span class="kc">te</span><span class="err">x</span><span class="kc">t</span><span class="err">i</span><span class="p">:</span><span class="w"> </span><span class="err">Ás</span><span class="kc">trals</span><span class="err">k</span><span class="kc">t</span><span class="w"> </span><span class="err">þjóðlag</span><span class="w"> </span><span class="mi">-</span><span class="w"> </span><span class="err">Ómar</span><span class="w"> </span><span class="err">Rag</span><span class="kc">narss</span><span class="err">o</span><span class="kc">n</span><span class="err">\</span><span class="kc">n</span><span class="w"> </span><span class="err">Óli</span><span class="w"> </span><span class="err">drjóli</span><span class="w"> </span><span class="mi">-</span><span class="w"> </span><span class="err">Lag</span><span class="w"> </span><span class="mi">-</span><span class="w"> </span><span class="kc">te</span><span class="err">x</span><span class="kc">t</span><span class="err">i</span><span class="p">:</span><span class="w"> </span><span class="err">Ómar</span><span class="w"> </span><span class="err">Rag</span><span class="kc">narss</span><span class="err">o</span><span class="kc">n</span><span class="err">)\</span><span class="kc">n</span><span class="w"> </span><span class="err">Mi</span><span class="kc">n</span><span class="err">kuri</span><span class="kc">nn</span><span class="w"> </span><span class="err">í</span><span class="w"> </span><span class="err">hæ</span><span class="kc">nsna</span><span class="err">ko</span><span class="kc">fanu</span><span class="err">m</span><span class="w"> </span><span class="mi">-</span><span class="w"> </span><span class="err">Lag</span><span class="w"> </span><span class="mi">-</span><span class="w"> </span><span class="kc">te</span><span class="err">x</span><span class="kc">t</span><span class="err">i</span><span class="p">:</span><span class="w"> </span><span class="err">Norsk</span><span class="kc">t</span><span class="w"> </span><span class="err">þjóðlag</span><span class="w"> </span><span class="mi">-</span><span class="w"> </span><span class="err">Ómar</span><span class="w"> </span><span class="err">Rag</span><span class="kc">narss</span><span class="err">o</span><span class="kc">n</span><span class="w"> </span><span class="err">\</span><span class="kc">n</span><span class="w"> </span><span class="err">Ke</span><span class="kc">nn</span><span class="err">ið</span><span class="w"> </span><span class="err">mér</span><span class="w"> </span><span class="err">krakkar</span><span class="w"> </span><span class="mi">-</span><span class="w"> </span><span class="err">Lag</span><span class="w"> </span><span class="mi">-</span><span class="w"> </span><span class="kc">te</span><span class="err">x</span><span class="kc">t</span><span class="err">i</span><span class="p">:</span><span class="w"> </span><span class="err">A.</span><span class="w"> </span><span class="err">Joha</span><span class="kc">nsen</span><span class="w"> </span><span class="mi">-</span><span class="w"> </span><span class="err">Ómar</span><span class="w"> </span><span class="err">Rag</span><span class="kc">narss</span><span class="err">o</span><span class="kc">n</span><span class="err">\</span><span class="kc">n</span><span class="w"> </span><span class="err">Hí</span><span class="w"> </span><span class="err">á</span><span class="w"> </span><span class="err">þig</span><span class="w"> </span><span class="mi">-</span><span class="w"> </span><span class="err">Lag</span><span class="w"> </span><span class="mi">-</span><span class="w"> </span><span class="kc">te</span><span class="err">x</span><span class="kc">t</span><span class="err">i</span><span class="p">:</span><span class="w"> </span><span class="err">Amerísk</span><span class="kc">t</span><span class="w"> </span><span class="err">þjóðlag</span><span class="w"> </span><span class="mi">-</span><span class="w"> </span><span class="err">Ómar</span><span class="w"> </span><span class="err">Rag</span><span class="kc">narss</span><span class="err">o</span><span class="kc">n</span><span class="err">\</span><span class="kc">n</span><span class="err">\</span><span class="kc">n</span><span class="err">SG</span><span class="mi">-</span><span class="err">hljómplö</span><span class="kc">tur</span><span class="err">\</span><span class="kc">n</span><span class="err">Hljómplö</span><span class="kc">tur</span><span class="w"> </span><span class="err">ge</span><span class="kc">fnar</span><span class="w"> </span><span class="err">ú</span><span class="kc">t</span><span class="w"> </span><span class="err">árið</span><span class="w"> </span><span class="mi">1981</span><span class="err">\</span><span class="kc">n</span><span class="err">Ómar</span><span class="w"> </span><span class="err">Rag</span><span class="kc">narss</span><span class="err">o</span><span class="kc">n</span><span class="err">&#39;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;question&quot;</span><span class="p">:</span><span class="w"> </span><span class="err">&#39;Hvaða</span><span class="w"> </span><span class="err">ár</span><span class="w"> </span><span class="err">var</span><span class="w"> </span><span class="err">LP</span><span class="mi">-</span><span class="err">hljómpla</span><span class="kc">tan</span><span class="w"> </span><span class="err">„Ómar</span><span class="w"> </span><span class="err">Rag</span><span class="kc">narss</span><span class="err">o</span><span class="kc">n</span><span class="w"> </span><span class="mi">-</span><span class="w"> </span><span class="err">Sy</span><span class="kc">n</span><span class="err">gur</span><span class="w"> </span><span class="kc">f</span><span class="err">yrir</span><span class="w"> </span><span class="err">bör</span><span class="kc">n</span><span class="err">i</span><span class="kc">n</span><span class="err">“</span><span class="w"> </span><span class="err">ge</span><span class="kc">f</span><span class="err">i</span><span class="kc">n</span><span class="w"> </span><span class="err">ú</span><span class="kc">t</span><span class="err">?&#39;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;answers&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
@@ -2119,29 +2168,33 @@ where the (rephrased) answer appears in the context.</p>
 <span class="w">    </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="err">array(</span><span class="p">[</span><span class="err">&#39;Frá</span><span class="w"> </span><span class="mi">1974</span><span class="w"> </span><span class="kc">t</span><span class="err">il</span><span class="w"> </span><span class="mi">1998</span><span class="err">&#39;</span><span class="p">],</span><span class="w"> </span><span class="err">d</span><span class="kc">t</span><span class="err">ype=objec</span><span class="kc">t</span><span class="err">)</span>
 <span class="w">  </span><span class="p">}</span>
 <span class="p">}</span>
-</code></pre></div></p>
+</code></pre></div>
 <p>When evaluating generative models, we use the following setup (see the
 <a href="/methodology">methodology</a> for more information on how these are used):</p>
 <ul>
 <li>Number of few-shot examples: 4</li>
-<li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>Eftirfarandi eru textar með tilheyrandi spurningum og svörum.
-</code></pre></div></li>
-<li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>Texti: {text}
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Eftirfarandi eru textar með tilheyrandi spurningum og svörum.
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Texti: {text}
 Spurning: {question}
 Svaraðu með að hámarki 3 orðum: {label}
-</code></pre></div></li>
-<li>Instruction-tuned prompt template:
-  <div class="highlight"><pre><span></span><code>Texti: {text}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Texti: {text}
 
 Svaraðu eftirfarandi spurningu um textann að hámarki í 3 orðum.
 
 Spurning: {question}
-</code></pre></div></li>
-</ul>
+</code></pre></div>
 <p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>icelandic-qa
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>icelandic-qa
 </code></pre></div>
 <h3 id="unofficial-belebele-is">Unofficial: BeleBele-is</h3>
 <p>This dataset was published in <a href="https://aclanthology.org/2024.acl-long.44/">this paper</a>
@@ -2150,7 +2203,7 @@ and features multiple-choice reading comprehension questions across 122 language
 and questions. From these, we use a 256 / 64 / 580 split for training, validation and
 testing, respectively.</p>
 <p>Here are a few examples from the training split:</p>
-<p><div class="highlight"><pre><span></span><code><span class="p">{</span>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Texti: Í Frelsisstríðinu mynduðu ríkin þrettán veikburða ríkisstjórn – með Þjóðþingið sem eina þátt þess – skv. fyrstu stjórnarskránni. Þingið var ekki með nægar valdheimildir til að leggja á skatta, og vegna þess að ekki var neinn alríkisstjóri eða dómsvald til staðar, treysti það á yfirvöld í hverju ríki fyrir sig, sem voru oft og tíðum ósamvinnuþýð, til að framfylgja lögum þess. Það hafði heldur engar valdheimildir til að fella niður skattalög og tolla á milli ríkja. Greinarnar gerðu kröfu um samhljóða samþykki allra ríkjanna áður en hægt var að breyta þeim og ríkin sýndu ríkisvaldinu svo mikla lítilsvirðingu að fulltrúar þeirra voru oft fjarverandi.\nSpurning: Samkvæmt því sem fram kemur í kaflanum, hvaða fullyrðing á nákvæmlega við um ástand ríkisvaldsins í frelsisstríðinu?\nSvarmöguleikar:\na. Skattar voru innheimtir af þinginu og ríkisstofnunum\nb. Breytingar á stjórnarskránni þurftu samþykki þingsins\nc. Fulltrúar ríkjanna voru oft fjarverandi\nd. Hin miðlæga ríkisstjórn var mynduð í kringum tvo meginþætti&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;c&quot;</span>
 <span class="p">}</span>
@@ -2164,25 +2217,30 @@ testing, respectively.</p>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Texti: Dæmigert fyrir það tímabil er Kirby Muxloe Castle sem er frekar víggirt hús en raunverulegur kastali. Stóru gljáðu gluggarnir og þunnu veggirnir hefðu ekki getað staðist stórárás í langan tíma. Árið 1480, þegar Hastings lávarður hóf byggingarframkvæmdirnar, ríkti friður í nánast öllu landinu og aðeins var þörf á varnarmúrum gegn litlum ræningjahópum.\nSpurning: Hvert af eftirtöldu hefði verið talið óvenjulegt við byggingu Kirby Muxloe kastala á þeim tíma sem talað er um í kaflanum?\nSvarmöguleikar:\na. Stórir gluggar\nb. Grunnur sem á að standast árásir\nc. Minna af varnarútbúnaði en í öðrum köstulum\nd. Þunnir veggir&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;b&quot;</span>
 <span class="p">}</span>
-</code></pre></div></p>
+</code></pre></div>
 <p>When evaluating generative models, we use the following setup (see the
 <a href="/methodology">methodology</a> for more information on how these are used):</p>
 <ul>
 <li>Number of few-shot examples: 5</li>
-<li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>Eftirfarandi eru fjölvalsspurningar (með svörum).
-</code></pre></div></li>
-<li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>Spurningar: {text}
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Eftirfarandi eru fjölvalsspurningar (með svörum).
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Spurningar: {text}
 Svarmöguleikar:
 a. {option_a}
 b. {option_b}
 c. {option_c}
 d. {option_d}
 Svara: {label}
-</code></pre></div></li>
-<li>Instruction-tuned prompt template:
-  <div class="highlight"><pre><span></span><code>Spurningar: {text}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Spurningar: {text}
 Svarmöguleikar:
 a. {option_a}
 b. {option_b}
@@ -2190,10 +2248,9 @@ c. {option_c}
 d. {option_d}
 
 Svaraðu eftirfarandi spurningum með &#39;a&#39;, &#39;b&#39;, &#39;c&#39; eða &#39;d&#39;, og engu öðru.
-</code></pre></div></li>
-</ul>
+</code></pre></div>
 <p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>belebele-is
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>belebele-is
 </code></pre></div>
 <h3 id="unofficial-multiwikiqa-is">Unofficial: MultiWikiQA-is</h3>
 <p>This dataset was published in <a href="https://doi.org/10.48550/arXiv.2509.04111">this paper</a>
@@ -2202,7 +2259,7 @@ languages.</p>
 <p>The original full dataset consists of 5,000 samples in a single split. We use a 1,024 /
 256 / 2,048 split for training, validation and testing, respectively, sampled randomly.</p>
 <p>Here are a few examples from the training split:</p>
-<p><div class="highlight"><pre><span></span><code><span class="p">{</span>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">    </span><span class="nt">&quot;context&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Eldfell er rétt rúmlega 200 m hátt eldfjall á Heimaey í Vestmannaeyjaklasanum. Það myndaðist í eldgosi sem hófst 23. janúar 1973 en lauk 3. júlí 1973, þetta eldgos er kallað Heimaeyjargosið.\n\nHeimaeyjargosið \nÍ upphafi gossins opnaðist stór sprunga frá norðri til suðurs á austasta hluta Heimaeyjar, og náði hún að höfninni  í norðri en niður að Skarfatanga í suðri. Fljótlega minnkaði sprungan þó og megineldvarpið varð þar sem nú stendur Eldfell. Gosefnið í upphafi gossins var nánast ísúrt, en þó varð það fljótlega basískt (SiO2 &gt; 52%). Efnainnihald kvikunnar bendir til að kvikuhólf og megineldstöð séu að myndast á þessum slóðum. \n\nStrax og tilkynning barst um að eldgos væri hafið hófst brottflutningur fólks af eynni. Af 5.500 íbúum eyj[48;55;272;1980;3808tarinnar voru um 4.000 fluttir burt um nóttina, mestmegnis með skipum. Á næstu vikum voru búslóðir fólks fluttar burt að mestu, en hús tóku mjög fljótlega að hverfa undir hraun.\n\nEinn maður dó í gosinu og var það af völdum koldíoxíðeitrunar - mikið af lífshættulegum lofttegundum kom upp úr jörðinni með vikrinum og gjóskunni. Mikil mildi þótti að ekki skyldi hafa farið verr, þar sem að sprungan kom upp rétt austan við austasta hús bæjarins (þó munaði ekki nema nokkrum metrum). \n\nUm helmingur húsa bæjarins ýmist lenti undir hrauni eða á annan hátt eyðilagðist í gosinu, en uppbyggingin eftir gosið var mjög snögg.\n\nGosið í Heimaey byrjaði 23. janúar 1973 og lauk 3. júlí sama ár. Þetta er fyrsta gos sem hefst við þéttbýli á Íslandi. Það var loftskeytamaðurinn Hjálmar Guðnason og vinur hans, Ólaf Granz, sem voru í sínum vanalega miðnæturgöngutúr þegar hinn tilkomumikla sýn birtist þeim þegar þeir skoðuðu bæinn frá Helgafellstoppi. Þar sáu þeir jörðina opnast og eldtungurnar stóðu marga metra upp í loftið. Strax var haft samband við lögreglu þar sem tilkynnt var að jarðeldur væri kominn upp austan við Kirkjubæ. Lögreglan tók upplýsingarnar ekki trúanlegar í fyrstu en fór strax að athuga hvað væri í gangi og þegar á staðinn var komið sáu þeir að gos var hafið á 1600 metra langri sprungu og magnaðist hratt á fyrstu mínútunum. Kveikt var á brunalúðrum og á mjög skömmum tíma var allur bærinn vaknaður og fólk streymdi úr húsum sínum og niður á bryggju. Flestir þeir sem upplifðu gosið eru sammála um að klukkuna hafi vantað fimm mínútur í tvö þegar að gosið hófst.\n\nEldfellshraun er um 2,5 ferkílómetrar og stækkaði Heimaey um 20%.\n\nTenglar \n Átta tímar í eyjum; greinar í Morgunblaðinu 1973\n kort af götum sem fóru undir hraun\nVestmannaeyjar\nEldfjöll á Íslandi\nEldgos á Íslandi&quot;</span><span class="p">,</span>
 <span class="w">    </span><span class="nt">&quot;question&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Hvað er Eldfell hátt?&quot;</span><span class="p">,</span>
 <span class="w">    </span><span class="nt">&quot;answers&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
@@ -2228,29 +2285,33 @@ languages.</p>
 <span class="w">        </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="err">array(</span><span class="p">[</span><span class="s2">&quot;Karl Olgeirsson&quot;</span><span class="p">],</span><span class="w"> </span><span class="err">d</span><span class="kc">t</span><span class="err">ype=objec</span><span class="kc">t</span><span class="err">)</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="p">}</span>
-</code></pre></div></p>
+</code></pre></div>
 <p>When evaluating generative models, we use the following setup (see the
 <a href="/methodology">methodology</a> for more information on how these are used):</p>
 <ul>
 <li>Number of few-shot examples: 4</li>
-<li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>Eftirfarandi eru textar með tilheyrandi spurningum og svörum.
-</code></pre></div></li>
-<li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>Texti: {text}
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Eftirfarandi eru textar með tilheyrandi spurningum og svörum.
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Texti: {text}
 Spurning: {question}
 Svaraðu með að hámarki 3 orðum: {label}
-</code></pre></div></li>
-<li>Instruction-tuned prompt template:
-  <div class="highlight"><pre><span></span><code>Texti: {text}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Texti: {text}
 
 Svaraðu eftirfarandi spurningu um textann að hámarki í 3 orðum.
 
 Spurning: {question}
-</code></pre></div></li>
-</ul>
+</code></pre></div>
 <p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>multi-wiki-qa-is
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>multi-wiki-qa-is
 </code></pre></div>
 <h2 id="knowledge">Knowledge</h2>
 <h3 id="icelandicknowledge">IcelandicKnowledge</h3>
@@ -2278,7 +2339,7 @@ outputs</a>.</p>
 length of this dataset is therefore 1,994. The split is given by 842 / 128 / 1024 for
 train, val, and test, respectively.</p>
 <p>Here are a few examples from the training split:</p>
-<p><div class="highlight"><pre><span></span><code><span class="p">{</span>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Hver var talinn heilagur maður eftir dauða sinn, er tákngervingur alþýðuhreyfingar vestanlands og talinn góður til áheita?\nSvarmöguleikar:\na. Þórður Jónsson helgi\nb. Guðmundur Arason\nc. Snorri Þorgrímsson\nd. Jón Hreggviðsson&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;a&quot;</span>
 <span class="p">}</span>
@@ -2292,25 +2353,30 @@ train, val, and test, respectively.</p>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Hvenær var ákveðið að uppstigningardagur skyldi vera kirkjudagur aldraðra á Íslandi?\nSvarmöguleikar:\na. Árið 1975\nb. Árið 1985\nc. Árið 1982\nd. Árið 1990&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;c&quot;</span>
 <span class="p">}</span>
-</code></pre></div></p>
+</code></pre></div>
 <p>When evaluating generative models, we use the following setup (see the
 <a href="/methodology">methodology</a> for more information on how these are used):</p>
 <ul>
 <li>Number of few-shot examples: 5</li>
-<li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>Eftirfarandi eru fjölvalsspurningar (með svörum).
-</code></pre></div></li>
-<li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>Spurningar: {text}
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Eftirfarandi eru fjölvalsspurningar (með svörum).
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Spurningar: {text}
 Svarmöguleikar:
 a. {option_a}
 b. {option_b}
 c. {option_c}
 d. {option_d}
 Svara: {label}
-</code></pre></div></li>
-<li>Instruction-tuned prompt template:
-  <div class="highlight"><pre><span></span><code>Spurningar: {text}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Spurningar: {text}
 Svarmöguleikar:
 a. {option_a}
 b. {option_b}
@@ -2318,10 +2384,9 @@ c. {option_c}
 d. {option_d}
 
 Svaraðu eftirfarandi spurningum með &#39;a&#39;, &#39;b&#39;, &#39;c&#39; eða &#39;d&#39;, og engu öðru.
-</code></pre></div></li>
-</ul>
+</code></pre></div>
 <p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>icelandic-knowledge
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>icelandic-knowledge
 </code></pre></div>
 <h3 id="unofficial-arc-is">Unofficial: ARC-is</h3>
 <p>This dataset is a machine translated version of the English <a href="https://doi.org/10.48550/arXiv.1803.05457">ARC
@@ -2332,7 +2397,7 @@ validation and testing, respectively. We use a 1,024 / 256 / 1,024 split for tra
 validation and testing, respectively (so 2,304 samples used in total). All new splits
 are subsets of the original splits.</p>
 <p>Here are a few examples from the training split:</p>
-<p><div class="highlight"><pre><span></span><code><span class="p">{</span>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Líkamar manna hafa flókna uppbyggingu sem styður vöxt og lífslíkur. Hver er grundvallaruppbygging líkamans sem stuðlar að vexti og lífslíkum?\nSvarmöguleikar:\na. fruma\nb. vefur\nc. líffæri\nd. líffærakerfi&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;a&quot;</span>
 <span class="p">}</span>
@@ -2346,25 +2411,30 @@ are subsets of the original splits.</p>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Hvaða breytingar urðu þegar reikistjörnurnar hitnnuðu á meðan þær mynduðust?\nSvarmöguleikar:\na. Massi þeirra jókst.\nb. Þær töpuðu meirihluta geislavirkra samsæta sinna.\nc. Uppbygging þeirra aðgreindist í mismunandi lög.\nd. Þær byrjuðu að snúast í kringum sólina.&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;c&quot;</span>
 <span class="p">}</span>
-</code></pre></div></p>
+</code></pre></div>
 <p>When evaluating generative models, we use the following setup (see the
 <a href="/methodology">methodology</a> for more information on how these are used):</p>
 <ul>
 <li>Number of few-shot examples: 5</li>
-<li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>Eftirfarandi eru fjölvalsspurningar (með svörum).
-</code></pre></div></li>
-<li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>Spurningar: {text}
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Eftirfarandi eru fjölvalsspurningar (með svörum).
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Spurningar: {text}
 Svarmöguleikar:
 a. {option_a}
 b. {option_b}
 c. {option_c}
 d. {option_d}
 Svara: {label}
-</code></pre></div></li>
-<li>Instruction-tuned prompt template:
-  <div class="highlight"><pre><span></span><code>Spurningar: {text}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Spurningar: {text}
 Svarmöguleikar:
 a. {option_a}
 b. {option_b}
@@ -2372,10 +2442,9 @@ c. {option_c}
 d. {option_d}
 
 Svaraðu eftirfarandi spurningum með &#39;a&#39;, &#39;b&#39;, &#39;c&#39; eða &#39;d&#39;, og engu öðru.
-</code></pre></div></li>
-</ul>
+</code></pre></div>
 <p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>arc-is
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>arc-is
 </code></pre></div>
 <h3 id="unofficial-mmlu-is">Unofficial: MMLU-is</h3>
 <p>This dataset is a machine translated version of the English <a href="https://openreview.net/forum?id=d7KBjmI3GmQ">MMLU
@@ -2388,7 +2457,7 @@ validation and testing, respectively (so 3,328 samples used in total). These spl
 new and there can thus be some overlap between the original validation and test sets and
 our validation and test sets.</p>
 <p>Here are a few examples from the training split:</p>
-<p><div class="highlight"><pre><span></span><code><span class="p">{</span>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Af hverju er öruggara að horfa á tunglið en að horfa á sólina?\nSvarmöguleikar:\na. Tunglið er minna bjart.\nb. Tunglið er nær jörðinni.\nc. Tunglið skín aðallega á nóttunni.\nd. Tunglið er aðeins fullt einu sinni í mánuði.&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;a&quot;</span>
 <span class="p">}</span>
@@ -2402,25 +2471,30 @@ our validation and test sets.</p>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Bekkur er að rannsaka þéttleika bergsýna. Hvaða vísindalegan búnað þurfa þau til að ákvarða þéttleika bergsýnanna?\nSvarmöguleikar:\na. smásjá og vog\nb. bikar og mæliglös\nc. mæliglös og vog\nd. smásjá og mæliglös&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;c&quot;</span>
 <span class="p">}</span>
-</code></pre></div></p>
+</code></pre></div>
 <p>When evaluating generative models, we use the following setup (see the
 <a href="/methodology">methodology</a> for more information on how these are used):</p>
 <ul>
 <li>Number of few-shot examples: 5</li>
-<li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>Eftirfarandi eru fjölvalsspurningar (með svörum).
-</code></pre></div></li>
-<li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>Spurningar: {text}
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Eftirfarandi eru fjölvalsspurningar (með svörum).
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Spurningar: {text}
 Svarmöguleikar:
 a. {option_a}
 b. {option_b}
 c. {option_c}
 d. {option_d}
 Svara: {label}
-</code></pre></div></li>
-<li>Instruction-tuned prompt template:
-  <div class="highlight"><pre><span></span><code>Spurningar: {text}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Spurningar: {text}
 Svarmöguleikar:
 a. {option_a}
 b. {option_b}
@@ -2428,10 +2502,9 @@ c. {option_c}
 d. {option_d}
 
 Svaraðu eftirfarandi spurningum með &#39;a&#39;, &#39;b&#39;, &#39;c&#39; eða &#39;d&#39;, og engu öðru.
-</code></pre></div></li>
-</ul>
+</code></pre></div>
 <p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>mmlu-is
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>mmlu-is
 </code></pre></div>
 <h2 id="common-sense-reasoning">Common-sense Reasoning</h2>
 <h3 id="winogrande-is">Winogrande-is</h3>
@@ -2443,7 +2516,7 @@ pronoun refers to.</p>
 <p>The original full dataset consists of 1,095 samples, and we use a 64 / 128 / 896 split
 for training, validation and testing, respectively.</p>
 <p>Here are a few examples from the training split:</p>
-<p><div class="highlight"><pre><span></span><code><span class="p">{</span>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Eiginmaðurinn hennar Myrru keypti handa henni hálsmen með perlu og hún hélt að það væri ekki ekta. _ var of gyllt.\nSvarmöguleikar:\na. perlan\nb. hálsmenið&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;a&quot;</span>
 <span class="p">}</span>
@@ -2457,25 +2530,30 @@ for training, validation and testing, respectively.</p>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Danía var spenntari fyrir því að heimsækja ritstjórann en Þorláksína vegna þess að _ fannst nýja bókin geggjuð.\nSvarmöguleikar:\na. Þorláksínu\nb. Daníu&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;b&quot;</span>
 <span class="p">}</span>
-</code></pre></div></p>
+</code></pre></div>
 <p>When evaluating generative models, we use the following setup (see the
 <a href="/methodology">methodology</a> for more information on how these are used):</p>
 <ul>
 <li>Number of few-shot examples: 5</li>
-<li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>Eftirfarandi eru fjölvalsspurningar (með svörum).
-</code></pre></div></li>
-<li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>Spurningar: {text}
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Eftirfarandi eru fjölvalsspurningar (með svörum).
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Spurningar: {text}
 Svarmöguleikar:
 a. {option_a}
 b. {option_b}
 c. {option_c}
 d. {option_d}
 Svara: {label}
-</code></pre></div></li>
-<li>Instruction-tuned prompt template:
-  <div class="highlight"><pre><span></span><code>Spurningar: {text}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Spurningar: {text}
 Svarmöguleikar:
 a. {option_a}
 b. {option_b}
@@ -2483,10 +2561,9 @@ c. {option_c}
 d. {option_d}
 
 Svaraðu eftirfarandi spurningum með &#39;a&#39;, &#39;b&#39;, &#39;c&#39; eða &#39;d&#39;, og engu öðru.
-</code></pre></div></li>
-</ul>
+</code></pre></div>
 <p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>winogrande-is
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>winogrande-is
 </code></pre></div>
 <h3 id="unofficial-hellaswag-is">Unofficial: HellaSwag-is</h3>
 <p>This dataset is a machine translated version of the English <a href="https://aclanthology.org/P19-1472/">HellaSwag
@@ -2497,7 +2574,7 @@ model.</p>
 <p>The original full dataset consists of 9,310 samples. We use a 1,024 / 256 / 2,048 split
 for training, validation and testing, respectively (so 3,328 samples used in total).</p>
 <p>Here are a few examples from the training split:</p>
-<p><div class="highlight"><pre><span></span><code><span class="p">{</span>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;[höf.] Hvernig finna má samræmi í lífinu [titill] Skuldbinda þig til breytinga. [skref] Fyrsta skrefið til að ná fram breytingum í lífinu er að skuldbinda sig til breytinga. Með því að gefa meðvitaða, viljasetta yfirlýsingu til sjálfs síns um að þú munir halda þig við efnið og ná settum árangri getur það hjálpað þér að halda þér við efnið og ýtt þér áfram í átt að því markmiði.\nSvarmöguleikar:\na. Þá ættir þú að vera að skuldbinda þig til að lifa stöðugra og samræmdara lífi. [Undirskrefi] Hugsaðu um ástæðurnar fyrir því að þú vilt lifa samræmdara lífi.\nb. [undirefni] Byrjaðu á því að skuldbinda þig til að breyta einhverju sem kemur þér úr jafnvægi. Ef þú gerir það ekki þá siturðu uppi með eitthvað sem loðir við þig heima hjá þér, sem verður ekki auðveldara að koma í staðinn fyrir þá tilfinningu.\nc. [Undirefni] Ekki láta skoðanir þínar eða skoðanir stangast á við sjálfsvirðingu þína. Viðurkenndu að þú sért fullorðinn og því óhræddur við að taka þínar eigin ákvarðanir varðandi það sem þú vilt í lífinu.\nd. [Efnisorð] Þegar einhver annar hvetur þig til að breyta, þá skaltu verðlauna þig fyrir það góða sem þú nærð fram þó að það hafi kannski ekki litið út á einhvern hátt. [Titill] Ekki ætlast til þess að fólk breyti sér af skyldurækni.&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;a&quot;</span>
 <span class="p">}</span>
@@ -2511,25 +2588,30 @@ for training, validation and testing, respectively (so 3,328 samples used in tot
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Sleðastúlka á uppblásnum bát heldur á streng framan á mann, allt í einu dettur hún í holu. Fólk ber sleðabáta og sleðastúlkan er á sleðabáti. eftir hóp af fólki\nSvarmöguleikar:\na. sleða saman kanóum, svo sleða aðrir í vatninu.\nb. sleða hliðar vatnsvatn á hestum við hliðina á brú báta.\nc. sleða niður brekkuna þangað til hitta aðra einstaklinga.\nd. Sleðamenn ganga á torgi, á milli annarra og síðan hlaupa allir um.&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;c&quot;</span>
 <span class="p">}</span>
-</code></pre></div></p>
+</code></pre></div>
 <p>When evaluating generative models, we use the following setup (see the
 <a href="/methodology">methodology</a> for more information on how these are used):</p>
 <ul>
 <li>Number of few-shot examples: 5</li>
-<li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>Eftirfarandi eru fjölvalsspurningar (með svörum).
-</code></pre></div></li>
-<li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>Spurningar: {text}
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Eftirfarandi eru fjölvalsspurningar (með svörum).
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Spurningar: {text}
 Svarmöguleikar:
 a. {option_a}
 b. {option_b}
 c. {option_c}
 d. {option_d}
 Svara: {label}
-</code></pre></div></li>
-<li>Instruction-tuned prompt template:
-  <div class="highlight"><pre><span></span><code>Spurningar: {text}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Spurningar: {text}
 Svarmöguleikar:
 a. {option_a}
 b. {option_b}
@@ -2537,10 +2619,9 @@ c. {option_c}
 d. {option_d}
 
 Svaraðu eftirfarandi spurningum með &#39;a&#39;, &#39;b&#39;, &#39;c&#39; eða &#39;d&#39;, og engu öðru.
-</code></pre></div></li>
-</ul>
+</code></pre></div>
 <p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>hellaswag-is
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>hellaswag-is
 </code></pre></div>
 <h2 id="summarisation">Summarisation</h2>
 <h3 id="rrn">RRN</h3>
@@ -2550,7 +2631,7 @@ Broadcasting Service, from years 2021 and 2022.</p>
 <p>The original full dataset consists of 3,960 samples, and we use a 1,024 / 256 / 1,024
 split for training, validation and testing, respectively.</p>
 <p>Here are a few examples from the training split:</p>
-<p><div class="highlight"><pre><span></span><code><span class="p">{</span>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Við erum að sjá ótta um truflanir á framleiðslukeðjum og efnahagsstarfsemi eitthvað í líkingu við það sem var fyrr á árinu.\nsegir Jón Bjarki Bentsson aðalhagfræðingur Íslandsbanka. Áhrif Delta afbrigðisins sjást víða. Eftirspurn hefur ekki haldist í hendur við væntingar sem meðal annars hefur orsakað mikla verðlækkun á olíu á heimsmarkaði undanfarnar vikur. Hefur verðið á ekki verið lægra í þrjá mánuði.\nBílaframleiðeindur eru einnig í vanda, en þar er vandamálið ekki skortur á eftirspurn heldur skortur á aðföngum, á svokölluðum hálfleiðurum nánar tiltekið. Þeir eru aðallega framleiddir í Asíu og hefur útbreiðsla Delta afbrigðisins raskað framleiðslu og framkallað skort. Margir af stærstu bílaframleiðendum heims hafa tilkynnt um að þeir neyðist til að draga úr framleiðslu og þarf Toyota, stærsti bílaframleiðandi heims, að minnka framleiðslu sína um 40 prósent.\nÁstandið hefur sömuleiðis valdið mikilli styrkingu dollars. Miðgengi seðlabanka Íslands í dag er 128 krónur en var í byrjun sumars 121 króna. Á sama tíma hefur krónan haldist stöðug gagnvart öðrum myntum. Auk útbreiðslu Delta afbrigðisins hafa atburðir liðinna vikna í Afganistan þrýst á styrkingu dollarsins.\nÞetta hefur allt áhrif til þess að hvetja til ótta í öryggi eins og svo er kallað og dollarinn nýtur oft góðs af svoleiðis ótta. Þykir náttúrlega gríðarlega örugg eign að hafa og seljanleiki hans er náttúrlega meiri en nokkurs annars eigna flokks.&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;target_text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Útbreiðsla Delta afbrigðis kórónuveirunnar ógnar bata heimshagkerfisins. Olíuverð hefur hríðfallið á undanförnum vikum, bílaframleiðendur fá ekki aðföng og fjárfestar flykkjast í bandaríkjadollar. &quot;</span>
 <span class="p">}</span>
@@ -2564,26 +2645,30 @@ split for training, validation and testing, respectively.</p>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Í morgun fjarlægðu bæjarstarfsmenn áberandi kosningaborða framboðsins Vina Kópavogs á horni Digranesvegar og Grænutungu. Jóhann Sigurbjörnsson, sem er í18. sæti á lista Vina Kópavogs, setti borðana upp og er afar ósáttur við þeir hafi verið fjarlægðir. Hann segir að vegið sé að tjáningarfrelsi sínu.\nÉg hengi upp borða vegna þess að ég tel mig vera í fullum rétti til að tjá mig um þær framkvæmdir sem eru í gangi hérna á móti mér. Ég hengi upp þessa borða á grindverkið sem er rétt fyrir innan lóðamörk síðan koma hingað menn í gulum fötum í morgun frá bænum sem fjarlægja borðana.\nBæjarstarfsmenn hafa undanfarið verið í samskiptum við framboðið um að brotið hafi verið gegn lögreglusamþykkt og byggingarreglugerð með því að setja upp auglýsingaborða á lóðamörkum og utan þeirra, og einnig svo stóra auglýsingaborða að sérstakt leyfi þurfi.\nSigríður Björg Tómasdóttir upplýsingafulltrúi Kópavogsbæjar segir í samtali við fréttastofu að skýrar reglur gildi um uppsetningu auglýsingaskilta. Reglur um slíka uppsetningu hafi verið sendar að gefnu tilefni á alla framboðsflokka í Kópavogi fyrir helgi. Þá hafi stórt auglýsingaskilti á vegum Framsóknarflokksins í Skógarlind verið fjarlægt af bæjaryfirvöldum í síðustu viku. Sigríður segir að skiltin verði að vera undir tveimur fermetrum til að mega vera uppi - annars þurfi að sækja um leyfi frá byggingarfulltrúa Kópavogsbæjar. Reglurnar séu skýrar.\nHelga, Oddviti Vina Kópavogsbæjar segist hissa yfir framgangi bæjaryfirvalda, þetta geti ekki staðist skoðun og að framboðið muni leita réttar síns.&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;target_text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Auglýsingaskilti og framboðsborðar hafa verið fjarlægð af bæjaryfirvöldum í Kópavogi víðs vegar um bæinn síðustu daga. &quot;</span>
 <span class="p">}</span>
-</code></pre></div></p>
+</code></pre></div>
 <p>When evaluating generative models, we use the following setup (see the
 <a href="/methodology">methodology</a> for more information on how these are used):</p>
 <ul>
 <li>Number of few-shot examples: 1</li>
-<li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>Eftirfarandi eru fréttagreinar með tilheyrandi samantektum.
-</code></pre></div></li>
-<li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>Fréttagrein: {text}
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Eftirfarandi eru fréttagreinar með tilheyrandi samantektum.
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Fréttagrein: {text}
 Samantekt: {target_text}
-</code></pre></div></li>
-<li>Instruction-tuned prompt template:
-  <div class="highlight"><pre><span></span><code>Fréttagrein: {text}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Fréttagrein: {text}
 
 Skrifaðu samantekt um ofangreindu grein.
-</code></pre></div></li>
-</ul>
+</code></pre></div>
 <p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>rrn
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>rrn
 </code></pre></div>
 
 

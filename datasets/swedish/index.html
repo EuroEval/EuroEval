@@ -639,6 +639,8 @@
       
         
       
+        
+      
     
     
     
@@ -932,6 +934,29 @@
   
   <span class="md-ellipsis">
     🇱🇻 Latvian
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../lithuanian/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    🇱🇹 Lithuanian
     
   </span>
   
@@ -1749,7 +1774,7 @@ is a manually annotated dataset of Swedish reviews from both Trustpilot and Reco
 <p>The original dataset contains 10,757 reviews. We use a split of 1,024 / 256 / 2,048
 samples for training, validation, and testing, respectively.</p>
 <p>Here are a few examples from the training split:</p>
-<p><div class="highlight"><pre><span></span><code><span class="p">{</span>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Jättebra och rekommenderas till alla&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;positive&quot;</span>
 <span class="p">}</span>
@@ -1763,32 +1788,36 @@ samples for training, validation, and testing, respectively.</p>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Extremt dålig mottagning - både gsm och 3g? samtalen bryts hela tiden och så tar dom betalt för en ny uppkopplingsavgift varje gång.&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;negative&quot;</span>
 <span class="p">}</span>
-</code></pre></div></p>
+</code></pre></div>
 <p>When evaluating generative models, we use the following setup (see the
 <a href="/methodology">methodology</a> for more information on how these are used):</p>
 <ul>
 <li>Number of few-shot examples: 12</li>
-<li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>Följande är recensioner och deras sentiment, som kan vara &#39;positiv&#39;, &#39;neutral&#39; eller &#39;negativ&#39;.
-</code></pre></div></li>
-<li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>Recension: {text}
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Följande är recensioner och deras sentiment, som kan vara &#39;positiv&#39;, &#39;neutral&#39; eller &#39;negativ&#39;.
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Recension: {text}
 Sentiment: {label}
-</code></pre></div></li>
-<li>Instruction-tuned prompt template:
-  <div class="highlight"><pre><span></span><code>Recension: {text}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Recension: {text}
 
 Klassificera sentimentet i recensionen. Svara med &#39;positiv&#39;, &#39;neutral&#39; eller &#39;negativ&#39;.
-</code></pre></div></li>
-<li>Label mapping:<ul>
+</code></pre></div>
+<ul>
+<li>Label mapping:</li>
 <li><code>positive</code> ➡️ <code>positiv</code></li>
 <li><code>neutral</code> ➡️ <code>neutral</code></li>
 <li><code>negative</code> ➡️ <code>negativ</code></li>
 </ul>
-</li>
-</ul>
 <p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>swerec
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>swerec
 </code></pre></div>
 <h2 id="named-entity-recognition">Named Entity Recognition</h2>
 <h3 id="suc-30">SUC 3.0</h3>
@@ -1810,7 +1839,7 @@ we convert it into that format using the following mapping:</p>
 <p>The dataset consists of 74,245 samples, which we split into 1,024 / 256 / 2,048 samples
 for training, validation, and testing, respectively.</p>
 <p>Here are a few examples from the training split:</p>
-<p><div class="highlight"><pre><span></span><code><span class="p">{</span>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">&quot;tokens&quot;</span><span class="p">:</span><span class="w"> </span><span class="err">array(</span><span class="p">[</span><span class="err">&#39;De</span><span class="kc">t</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;lå</span><span class="kc">ter</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;som&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;e</span><span class="kc">n</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;väs</span><span class="kc">tanfl</span><span class="err">äk</span><span class="kc">t</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;jäm</span><span class="kc">f</span><span class="err">ör</span><span class="kc">t</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;med&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;de</span><span class="kc">n</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;i&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;</span><span class="kc">f</span><span class="err">ilme</span><span class="kc">n</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;</span><span class="kc">f</span><span class="err">örkä</span><span class="kc">ttra</span><span class="err">de&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;biljä</span><span class="kc">tten</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;Ge</span><span class="kc">neral</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;Mo</span><span class="kc">t</span><span class="err">ors&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;</span><span class="p">,</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;som&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;</span><span class="kc">fr</span><span class="err">is</span><span class="kc">t</span><span class="err">äll</span><span class="kc">t</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;</span><span class="mi">35000</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;jobbare&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;i&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;s</span><span class="kc">ta</span><span class="err">de</span><span class="kc">n</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;Fli</span><span class="kc">nt</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;</span><span class="p">,</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;Michiga</span><span class="kc">n</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;.&#39;</span><span class="p">],</span><span class="w"> </span><span class="err">d</span><span class="kc">t</span><span class="err">ype=objec</span><span class="kc">t</span><span class="err">)</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;labels&quot;</span><span class="p">:</span><span class="w"> </span><span class="err">array(</span><span class="p">[</span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;B</span><span class="mi">-</span><span class="err">ORG&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;I</span><span class="mi">-</span><span class="err">ORG&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;B</span><span class="mi">-</span><span class="err">LOC&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;B</span><span class="mi">-</span><span class="err">LOC&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">],</span><span class="w"> </span><span class="err">d</span><span class="kc">t</span><span class="err">ype=objec</span><span class="kc">t</span><span class="err">)</span>
 <span class="p">}</span>
@@ -1824,24 +1853,30 @@ for training, validation, and testing, respectively.</p>
 <span class="w">  </span><span class="nt">&quot;tokens&quot;</span><span class="p">:</span><span class="w"> </span><span class="err">array(</span><span class="p">[</span><span class="err">&#39;</span><span class="mi">-</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;Dessvärre&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;</span><span class="p">,</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;sa&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;ma</span><span class="kc">n</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;</span><span class="p">,</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;vi&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;har&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;i</span><span class="kc">n</span><span class="err">ge</span><span class="kc">n</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;Björ</span><span class="kc">n</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;Eriksso</span><span class="kc">n</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;på&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;passagerarlis</span><span class="kc">tan</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;.&#39;</span><span class="p">],</span><span class="w"> </span><span class="err">d</span><span class="kc">t</span><span class="err">ype=objec</span><span class="kc">t</span><span class="err">)</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;labels&quot;</span><span class="p">:</span><span class="w"> </span><span class="err">array(</span><span class="p">[</span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;B</span><span class="mi">-</span><span class="err">PER&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;I</span><span class="mi">-</span><span class="err">PER&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">],</span><span class="w"> </span><span class="err">d</span><span class="kc">t</span><span class="err">ype=objec</span><span class="kc">t</span><span class="err">)</span>
 <span class="p">}</span>
-</code></pre></div></p>
+</code></pre></div>
 <p>When evaluating generative models, we use the following setup (see the
 <a href="/methodology">methodology</a> for more information on how these are used):</p>
 <ul>
 <li>Number of few-shot examples: 8</li>
-<li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>Följande är meningar och JSON-ordböcker med de namngivna enheter som förekommer i den givna meningen.
-</code></pre></div></li>
-<li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>Mening: {text}
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Följande är meningar och JSON-ordböcker med de namngivna enheter som förekommer i den givna meningen.
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Mening: {text}
 Namngivna entiteter: {label}
-</code></pre></div></li>
-<li>Instruction-tuned prompt template:
-  <div class="highlight"><pre><span></span><code>Mening: {text}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Mening: {text}
 
 Identifiera de namngivna enheterna i meningen. Du ska outputta detta som en JSON-ordbok med nycklarna &#39;person&#39;, &#39;plats&#39;, &#39;organisation&#39; och &#39;diverse&#39;. Värdena ska vara listor över de namngivna enheter av den typen, precis som de förekommer i meningen.
-</code></pre></div></li>
-<li>Label mapping:<ul>
+</code></pre></div>
+<ul>
+<li>Label mapping:</li>
 <li><code>B-PER</code> ➡️ <code>person</code></li>
 <li><code>I-PER</code> ➡️ <code>person</code></li>
 <li><code>B-LOC</code> ➡️ <code>plats</code></li>
@@ -1851,10 +1886,8 @@ Identifiera de namngivna enheterna i meningen. Du ska outputta detta som en JSON
 <li><code>B-MISC</code> ➡️ <code>diverse</code></li>
 <li><code>I-MISC</code> ➡️ <code>diverse</code></li>
 </ul>
-</li>
-</ul>
 <p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>suc3
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>suc3
 </code></pre></div>
 <h2 id="linguistic-acceptability">Linguistic Acceptability</h2>
 <h3 id="scala-sv">ScaLA-sv</h3>
@@ -1870,7 +1903,7 @@ the part-of-speech tags of the words in the sentence.</p>
 samples for training, validation and testing, respectively (so 3,328 samples used in
 total). These splits are used as-is in the framework.</p>
 <p>Here are a few examples from the training split:</p>
-<p><div class="highlight"><pre><span></span><code><span class="p">{</span>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;U-länderna måste ta en genväg för att komma i fatt.&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;correct&quot;</span>
 <span class="p">}</span>
@@ -1884,31 +1917,35 @@ total). These splits are used as-is in the framework.</p>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Det är också att viktigt ha tillräckligt korta dubbar.&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;incorrect&quot;</span>
 <span class="p">}</span>
-</code></pre></div></p>
+</code></pre></div>
 <p>When evaluating generative models, we use the following setup (see the
 <a href="/methodology">methodology</a> for more information on how these are used):</p>
 <ul>
 <li>Number of few-shot examples: 12</li>
-<li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>Följande är meningar och huruvida de är grammatiskt korrekta.
-</code></pre></div></li>
-<li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>Mening: {text}
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Följande är meningar och huruvida de är grammatiskt korrekta.
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Mening: {text}
 Grammatisk korrekt: {label}
-</code></pre></div></li>
-<li>Instruction-tuned prompt template:
-  <div class="highlight"><pre><span></span><code>Mening: {text}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Mening: {text}
 
 Bestäm om meningen är grammatiskt korrekt eller inte. Svara med &#39;ja&#39; om meningen är korrekt och &#39;nej&#39; om den inte är.
-</code></pre></div></li>
-<li>Label mapping:<ul>
+</code></pre></div>
+<ul>
+<li>Label mapping:</li>
 <li><code>correct</code> ➡️ <code>ja</code></li>
 <li><code>incorrect</code> ➡️ <code>nej</code></li>
 </ul>
-</li>
-</ul>
 <p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>scala-sv
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>scala-sv
 </code></pre></div>
 <h2 id="reading-comprehension">Reading Comprehension</h2>
 <h3 id="scandiqa-sv">ScandiQA-sv</h3>
@@ -1928,7 +1965,7 @@ We use a 1,024 / 256 / 2,048 split for training, validation and testing, respect
 where the splits are made by randomly sampling from the full dataset without considering
 the original train/validation/test splits.</p>
 <p>Here are a few examples from the training split:</p>
-<p><div class="highlight"><pre><span></span><code><span class="p">{</span>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">&quot;context&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;I Freedom Cry får spelaren ta rollen som Adéwalé, en frigiven slav från Trinidad som blev Edward Kenways kvartermästare och senare medlem i Assassin Order. Berättelseläget utspelar sig 15 år efter händelserna i Assassin&#39;s Creed IV: Black Flag där Adéwalé har blivit en tränad lönnmördare och finner sig själv skeppsbruten i Saint-Domingue, där han ställs öga mot öga med något av det mest brutala slaveriet i Västindien. DLC:n är skriven av Jill Murray, som skrev Liberation och Aveline-innehållet för Black Flag. I februari 2014 meddelades att Freedom Cry skulle släppas som en fristående titel till PlayStation 4 och PlayStation 3 den 18 februari 2014 för Nordamerika och den 19 februari 2014 för Europa. Det släpptes för PC den 25 februari 2014.&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;question&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;När släpptes assassin&#39;s creed freedom cry?&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;answers&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
@@ -1954,29 +1991,33 @@ the original train/validation/test splits.</p>
 <span class="w">    </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="err">array(</span><span class="p">[</span><span class="err">&#39;Da</span><span class="kc">ta</span><span class="w"> </span><span class="err">li</span><span class="kc">n</span><span class="err">k</span><span class="w"> </span><span class="err">layer&#39;</span><span class="p">],</span><span class="w"> </span><span class="err">d</span><span class="kc">t</span><span class="err">ype=objec</span><span class="kc">t</span><span class="err">)</span>
 <span class="w">  </span><span class="p">}</span>
 <span class="p">}</span>
-</code></pre></div></p>
+</code></pre></div>
 <p>When evaluating generative models, we use the following setup (see the
 <a href="/methodology">methodology</a> for more information on how these are used):</p>
 <ul>
 <li>Number of few-shot examples: 4</li>
-<li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>Nedan följer texter med tillhörande frågor och svar.
-</code></pre></div></li>
-<li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>Text: {text}
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Nedan följer texter med tillhörande frågor och svar.
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Text: {text}
 Fråga: {question}
 Svar på max 3 ord: {label}
-</code></pre></div></li>
-<li>Instruction-tuned prompt template:
-  <div class="highlight"><pre><span></span><code>Text: {text}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Text: {text}
 
 Besvara följande fråga om texten ovan med högst 3 ord.
 
 Fråga: {question}
-</code></pre></div></li>
-</ul>
+</code></pre></div>
 <p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>scandiqa-sv
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>scandiqa-sv
 </code></pre></div>
 <h3 id="unofficial-belebele-sv">Unofficial: BeleBele-sv</h3>
 <p>This dataset was published in <a href="https://aclanthology.org/2024.acl-long.44/">this paper</a>
@@ -1985,7 +2026,7 @@ and features multiple-choice reading comprehension questions across 122 language
 and questions. From these, we use a 256 / 64 / 580 split for training, validation and
 testing, respectively.</p>
 <p>Here are a few examples from the training split:</p>
-<p><div class="highlight"><pre><span></span><code><span class="p">{</span>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Sundarbans är det största kustmangrovebältet i världen och sträcker sig 80 km in i Bangladesh och det indiska inlandet från kusten. Sundarbans har antagits på Unescos världsarvslista. Den del av skogen som ligger på indiskt territorium kallas Sundarbans National Park. Skogarna är dock inte bara mangroveträsk — de innehåller några av de sista kvarvarande ståndorterna av de stora djunglerna som en gång täckte Gangesslätten. Sundarban täcker ett område på 3 850 km², varav ungefär en tredjedel utgörs av våtmarker. Sedan 1966 har Sundarbans varit ett reservat för vilda djur, och det uppskattas att det nu finns 400 bengaliska tigrar och omkring 30 000 axishjortar i området.\nFråga: Vilken del av skogen ligger på indiskt territorium?\nSvarsalternativ:\na. Sundarbans National Park\nb. Reservatet för vilda djur\nc. Världsarvet\nd. Gangesslätten&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;a&quot;</span>
 <span class="p">}</span>
@@ -1999,25 +2040,30 @@ testing, respectively.</p>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Bokning i förväg ger resenären trygghet och en försäkran om att de kommer att ha någonstans att sova när de anländer till sin destination. Resebyråer har ofta avtal med särskilda hotell, men det kan vara möjligt att boka andra typer av boenden, såsom campingplatser, genom en resebyrå. Resebyråer erbjuder ofta paket som inkluderar frukost, transfer till och från flygplatsen, och till och med paketresor som kombinerar flyg och hotell. De kan också reservera din bokning åt dig om du behöver tid att tänka över erbjudandet eller skaffa fram ytterligare dokument som krävs för din destination (t.ex. visering). Alla ändringar och förfrågningar ska dock gå genom resebyrån först, och inte direkt till hotellet.\nFråga: Vilken typ av resenär kommer sannolikt inte att dra nytta av att använda sig av tjänster från en resebyrå, enligt det som står i texten?\nSvarsalternativ:\na. En obeslutsam resenär\nb. En resenär som är spontan\nc. En resenär som inte har skaffat visum än\nd. En resenär som föredra att boka paketerbjudanden&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;b&quot;</span>
 <span class="p">}</span>
-</code></pre></div></p>
+</code></pre></div>
 <p>When evaluating generative models, we use the following setup (see the
 <a href="/methodology">methodology</a> for more information on how these are used):</p>
 <ul>
 <li>Number of few-shot examples: 5</li>
-<li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>Följande är flervalsfrågor (med svar).
-</code></pre></div></li>
-<li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>Fråga: {text}
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Följande är flervalsfrågor (med svar).
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Fråga: {text}
 Svarsalternativ:
 a. {option_a}
 b. {option_b}
 c. {option_c}
 d. {option_d}
 Svar: {label}
-</code></pre></div></li>
-<li>Instruction-tuned prompt template:
-  <div class="highlight"><pre><span></span><code>Fråga: {text}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Fråga: {text}
 Svarsalternativ:
 a. {option_a}
 b. {option_b}
@@ -2025,10 +2071,9 @@ c. {option_c}
 d. {option_d}
 
 Besvara följande fråga med &#39;a&#39;, &#39;b&#39;, &#39;c&#39; eller &#39;d&#39;, och inget annat.
-</code></pre></div></li>
-</ul>
+</code></pre></div>
 <p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>belebele-sv
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>belebele-sv
 </code></pre></div>
 <h3 id="unofficial-multiwikiqa-sv">Unofficial: MultiWikiQA-sv</h3>
 <p>This dataset was published in <a href="https://doi.org/10.48550/arXiv.2509.04111">this paper</a>
@@ -2037,7 +2082,7 @@ languages.</p>
 <p>The original full dataset consists of 5,000 samples in a single split. We use a 1,024 /
 256 / 2,048 split for training, validation and testing, respectively, sampled randomly.</p>
 <p>Here are a few examples from the training split:</p>
-<p><div class="highlight"><pre><span></span><code><span class="p">{</span>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">    </span><span class="nt">&quot;context&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Juan Mayorga, född 6 april 1965 i Madrid, är en spansk dramatiker och manusförfattare.\n\nBiografi\nJuan Mayorga har en examen i matematik och filosofi från Universidad Complutense de Madrid 1988. Därefter arbetade han som forskarassistent i filosofi vid Consejo Superior de Investigaciones Científicas. Fortsatta studier i Münster, Berlin och Paris ledde till en doktorsexamen i filosofi 1997 med en avhandling om Walter Benjamin. Han debuterade som dramatiker 1989 med Siete hombres buenos (Sju goda män). Tillsammans med dramatiker kollegorna José Ramón Fernández, Luis Miguel González Cruz och Raúl Hernández Garrido grundade han 1993 teatergruppen Teatro del Astillero. 2011 grundade han en ny teatergrupp, La Loca de la Casa. Sedan 1998 är Mayorga har han undervisat i filosofi och dramatik vid Escuela Superior de Arte Dramático i Madrid. För närvarande (2017) är han chef för avdelningen för scenkonst vid Universidad Carlos III de Madrid. Han har skrivit ett trettiotal pjäser (2017) och hans dramatik har spelats i 18 länder och översatts till 16 språk. Han eftersträvar en filosofiskt präglad teater som tvingar publiken till ställningstaganden. Till hans förebilder hör Harold Pinter. Bland utmärkelser han tilldelats kan nämnas de spanska priserna Nacional de Teatro 2007 och Nacional de Literatura Dramática 2013 samt Premio Europa New Theatrical Realities 2016.\n\n2007 regisserade Alexander Mørk-Eidem Mayorgas Himmelweg på Nationaltheatret i Oslo. 2014 skulle han även ha regisserat den på Stockholms stadsteater under titeln Himlavägen i Jens Nordenhöks översättning men det ställdes in.\n\nReferenser\n\nKällor\n Pressrelease, Premio Europa 14/3 2016 \n Juan Mayorga, The Playwrights Database (läst 5 april 2017)\n Juan Mayorga, France culture (läst 5 april 2017)\n Juan Mayorga, theatre-contemporain.net (läst 5 april 2017)\n Juan Mayorga, Théâtre de Rond-Point, Paris (läst 5 april 2017)\n Juan Mayorga, madridesteatro.com (läst 5 april 2017)\n Arkiv, Kulturhuset Stadsteatern (läst 5 april 2017)\n Lillian Bikset: Teater, løgn og bedrag, Dagbladet 31/8 2007\n Elisabeth Leinslie: Kjenn din besøkelsestid, Dagsavisen 2/9 2007\n Rocío García: Juan Mayorga: las obsesiones de un matemático y autor de éxito, El País 1/6 2016\n\nNoter\n\nExterna länkar\n Juan Mayorga, Internet Movie Database (IMDb)\n\nSpanska dramatiker\nSpanskspråkiga dramatiker\nSpanska manusförfattare\nSpanska författare under 1900-talet\nSpanska författare under 2000-talet\nDramatiker under 1900-talet\nDramatiker under 2000-talet\nPersoner från Madrid\nFödda 1965\nLevande personer\nMän&quot;</span><span class="p">,</span>
 <span class="w">    </span><span class="nt">&quot;question&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Vilka akademiska examina har Juan Mayorga avlagt vid Universidad Complutense de Madrid?&quot;</span><span class="p">,</span>
 <span class="w">    </span><span class="nt">&quot;answers&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
@@ -2063,29 +2108,33 @@ languages.</p>
 <span class="w">        </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="err">array(</span><span class="p">[</span><span class="s2">&quot;livskraftig (LC)&quot;</span><span class="p">],</span><span class="w"> </span><span class="err">d</span><span class="kc">t</span><span class="err">ype=objec</span><span class="kc">t</span><span class="err">)</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="p">}</span>
-</code></pre></div></p>
+</code></pre></div>
 <p>When evaluating generative models, we use the following setup (see the
 <a href="/methodology">methodology</a> for more information on how these are used):</p>
 <ul>
 <li>Number of few-shot examples: 4</li>
-<li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>Nedan följer texter med tillhörande frågor och svar.
-</code></pre></div></li>
-<li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>Text: {text}
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Nedan följer texter med tillhörande frågor och svar.
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Text: {text}
 Fråga: {question}
 Svar på max 3 ord: {label}
-</code></pre></div></li>
-<li>Instruction-tuned prompt template:
-  <div class="highlight"><pre><span></span><code>Text: {text}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Text: {text}
 
 Besvara följande fråga om texten ovan med högst 3 ord.
 
 Fråga: {question}
-</code></pre></div></li>
-</ul>
+</code></pre></div>
 <p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>multi-wiki-qa-sv
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>multi-wiki-qa-sv
 </code></pre></div>
 <h2 id="knowledge">Knowledge</h2>
 <h3 id="mmlu-sv">MMLU-sv</h3>
@@ -2100,7 +2149,7 @@ validation and testing, respectively (so 3,328 samples used in total). These spl
 new and there can thus be some overlap between the original validation and test sets and
 our validation and test sets.</p>
 <p>Here are a few examples from the training split:</p>
-<p><div class="highlight"><pre><span></span><code><span class="p">{</span>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Varför är tidpunkten för monumental byggnation vid Ceibal signifikant?\nSvarsalternativ:\na. Det motsäger hypotesen att den monumental byggnationen av Maya i huvudsak inspirerades av Olmekerna.\nb. Det bekräftar att invånarna i Ceibal inspirerades av Olmekerna för att bygga stora plattformar.\nc. Det motsäger hypotesen att utvecklingen av monumental byggnation bland Maya var en intern process.\nd. Det bekräftar att Olmekerna, som byggde de flesta Maya-monumenten, inspirerades av egyptierna.&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;a&quot;</span>
 <span class="p">}</span>
@@ -2114,26 +2163,30 @@ our validation and test sets.</p>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;En subenhet av DNA och protein som består av 134-baspar långa sträckor av DNA som omger en proteinoktomer kallas (a)\nSvarsalternativ:\na. histon\nb. kromatin\nc. nukleosom\nd. solenoid&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;c&quot;</span>
 <span class="p">}</span>
-</code></pre></div></p>
+</code></pre></div>
 <p>When evaluating generative models, we use the following setup (see the
 <a href="/methodology">methodology</a> for more information on how these are used):</p>
 <ul>
 <li>Number of few-shot examples: 5</li>
-<li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>Följande är flervalsfrågor (med svar).
-</code></pre></div></li>
-<li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>Fråga: {text}
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Följande är flervalsfrågor (med svar).
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Fråga: {text}
 Svar: {label}
-</code></pre></div></li>
-<li>Instruction-tuned prompt template:
-  <div class="highlight"><pre><span></span><code>Fråga: {text}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Fråga: {text}
 
 Besvara följande fråga med &#39;a&#39;, &#39;b&#39;, &#39;c&#39; eller &#39;d&#39;, och inget annat.
-</code></pre></div></li>
-</ul>
+</code></pre></div>
 <p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>mmlu-sv
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>mmlu-sv
 </code></pre></div>
 <h3 id="unofficial-arc-sv">Unofficial: ARC-sv</h3>
 <p>This dataset is a machine translated version of the English <a href="https://doi.org/10.48550/arXiv.1803.05457">ARC
@@ -2145,7 +2198,7 @@ validation and testing, respectively. We use a 1,024 / 256 / 1,024 split for tra
 validation and testing, respectively (so 2,304 samples used in total). All new splits
 are subsets of the original splits.</p>
 <p>Here are a few examples from the training split:</p>
-<p><div class="highlight"><pre><span></span><code><span class="p">{</span>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;En typ av fågel i Afrika äter blodsugande insekter från stora däggdjur. Vilket ord beskriver bäst relationen mellan fågeln och däggdjuren?\nSvarsalternativ:\na. mutualism\nb. parasitism\nc. neutralism\nd. kommensalism&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;a&quot;</span>
 <span class="p">}</span>
@@ -2159,25 +2212,30 @@ are subsets of the original splits.</p>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;En elev tillsätter vatten och rengöringsmedel till en kopp med jord. Blandningen skakas och tillåts sätta sig. Eleven observerar att silt-partiklar förblir uppsuspenderade långt efter att de andra partiklarna bildar lager på botten av behållaren. Den mest troliga förklaringen är att silt-partiklarna är\nSvarsalternativ:\na. organiska.\nb. upplösta.\nc. mindre tätt packade.\nd. rör sig snabbare.&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;c&quot;</span>
 <span class="p">}</span>
-</code></pre></div></p>
+</code></pre></div>
 <p>When evaluating generative models, we use the following setup (see the
 <a href="/methodology">methodology</a> for more information on how these are used):</p>
 <ul>
 <li>Number of few-shot examples: 5</li>
-<li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>Följande är flervalsfrågor (med svar).
-</code></pre></div></li>
-<li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>Fråga: {text}
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Följande är flervalsfrågor (med svar).
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Fråga: {text}
 Svarsalternativ:
 a. {option_a}
 b. {option_b}
 c. {option_c}
 d. {option_d}
 Svar: {label}
-</code></pre></div></li>
-<li>Instruction-tuned prompt template:
-  <div class="highlight"><pre><span></span><code>Fråga: {text}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Fråga: {text}
 Svarsalternativ:
 a. {option_a}
 b. {option_b}
@@ -2185,16 +2243,22 @@ c. {option_c}
 d. {option_d}
 
 Besvara följande fråga med &#39;a&#39;, &#39;b&#39;, &#39;c&#39; eller &#39;d&#39;, och inget annat.
-</code></pre></div></li>
-</ul>
+</code></pre></div>
 <p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>arc-sv
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>arc-sv
 </code></pre></div>
 <h3 id="unofficial-skolprov">Unofficial: Skolprov</h3>
-<p>This dataset contains data from six Swedish knowledge tests and was published at <a href="https://huggingface.co/datasets/Ekgren/swedish_skolprov">this HuggingFace repository</a>. The dataset features multiple-choice questions from official Swedish examinations including the Swedish Scholastic Aptitude Test (högskoleprovet), medical doctor test (kunskapsprov läkare), dentist test (kunskapsprov tandläkare), audiologist test (kunskapsprov audionom), pharmacist test (kunskapsprov apotekare), and mathematics and physics test (matematik och fysikprovet).</p>
-<p>The original dataset consists of 545 samples, which we filter down to 512 samples. We use a 32 / 480 split for training and testing, respectively.</p>
+<p>This dataset contains data from six Swedish knowledge tests and was published at <a href="https://huggingface.co/datasets/Ekgren/swedish_skolprov">this
+HuggingFace repository</a>. The
+dataset features multiple-choice questions from official Swedish examinations including
+the Swedish Scholastic Aptitude Test (högskoleprovet), medical doctor test (kunskapsprov
+läkare), dentist test (kunskapsprov tandläkare), audiologist test (kunskapsprov
+audionom), pharmacist test (kunskapsprov apotekare), and mathematics and physics test
+(matematik och fysikprovet).</p>
+<p>The original dataset consists of 545 samples, which we filter down to 512 samples. We
+use a 32 / 480 split for training and testing, respectively.</p>
 <p>Here are a few examples from the training split:</p>
-<p><div class="highlight"><pre><span></span><code><span class="p">{</span>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;En man, 63 år, har en skelett-, lymfkörtel-, och levermetastaserad prostatacancer där aktiv onkologisk behandling är avslutad. Han är inskriven i ett specialiserat palliativt hemsjukvårdsteam. Han har en långverkande smärtlindring med T. oxykodon 20 mg morgon och kväll. Nu söker han akut vård på grund av buksmärta och ihållande kräkningar. Vad bör du ordinera mot mannens smärtor?\nSvarsalternativ:\na. Tablett kortverkande oxykodon 5 mg peroralt\nb. Tablett ibuprofen 400 mg peroralt\nc. Tablett kortverkande oxykodon 20 mg peroralt\nd. Inj. 5 mg kortverkande oxykodon subkutant\ne. Paracetamol 1 g intravenöst&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;d&quot;</span>
 <span class="p">}</span>
@@ -2208,25 +2272,30 @@ Besvara följande fråga med &#39;a&#39;, &#39;b&#39;, &#39;c&#39; eller &#39;d&
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Varför är det viktigt med utredande samtal?\nSvarsalternativ:\na. Det kan etablera ett ömsesidigt förtroende mellan audionom och patient som underlag inför utförandet av en individuell, kvalitativ rehabilitering.\nb. Det ger audionomen möjlighet att observera patientens kommunikation som underlag inför utförandet av en individuell, kvalitativ rehabilitering.\nc. Det kan förbättra taluppfattningen som en del i utförandet av en individuell, kvalitativ rehabilitering.\nd. Det samlar nödvändig information om patienten, som underlag inför utförandet av en individuell, kvalitativ rehabilitering.&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;d&quot;</span>
 <span class="p">}</span>
-</code></pre></div></p>
+</code></pre></div>
 <p>When evaluating generative models, we use the following setup (see the
 <a href="/methodology">methodology</a> for more information on how these are used):</p>
 <ul>
 <li>Number of few-shot examples: 5</li>
-<li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>Följande är flervalsfrågor (med svar).
-</code></pre></div></li>
-<li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>Fråga: {text}
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Följande är flervalsfrågor (med svar).
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Fråga: {text}
 Svarsalternativ:
 a. {option_a}
 b. {option_b}
 c. {option_c}
 d. {option_d}
 Svar: {label}
-</code></pre></div></li>
-<li>Instruction-tuned prompt template:
-  <div class="highlight"><pre><span></span><code>Fråga: {text}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Fråga: {text}
 Svarsalternativ:
 a. {option_a}
 b. {option_b}
@@ -2234,10 +2303,9 @@ c. {option_c}
 d. {option_d}
 
 Besvara följande fråga med &#39;a&#39;, &#39;b&#39;, &#39;c&#39; eller &#39;d&#39;, och inget annat.
-</code></pre></div></li>
-</ul>
+</code></pre></div>
 <p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>skolprov
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>skolprov
 </code></pre></div>
 <h2 id="common-sense-reasoning">Common-sense Reasoning</h2>
 <h3 id="hellaswag-sv">HellaSwag-sv</h3>
@@ -2249,7 +2317,7 @@ paper</a>, using GPT-3.5-turbo.</p>
 <p>The original full dataset consists of 9,310 samples. We use a 1,024 / 256 / 2,048 split
 for training, validation and testing, respectively (so 3,328 samples used in total).</p>
 <p>Here are a few examples from the training split:</p>
-<p><div class="highlight"><pre><span></span><code><span class="p">{</span>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;[header] Hur man hittar de perfekta brudtärneklänningarna [title] Internet är en underbar resurs för att hitta brudtärneklänningar. [step] Vi rekommenderar också att bläddra genom populära bröllopstidningar, såsom brudens och moderna brudtärnets tidningar. Rekommenderat är att bruden går och handlar med en eller två av sina brudtärnor och ser vilka stilar de gillar.\nSvarsalternativ:\na. När du har begränsat urvalet kan du sedan få input från dina andra brudtärnor om du önskar det. [title] Vilka är de senaste trenderna i brudtärneklänningar? [title] A-linje klänningar som ser bra ut på alla olika kroppsformer och storlekar är mycket populära.\nb. Tyvärr kan du inte handla lika ofta som om du letade efter matchade brudtärnor. [title] När du väljer din brud, välj tre olika stilar: [step] Klipp längd, klipp tjocklek och från de flesta \&quot;för-skjutna\&quot; stilarna till de grundläggande.\nc. Medan varje brud är annorlunda, alla är både olika och har olika smaker. [title] Se om bruden har en favoritlook för sin bröllopsklänning.\nd. [title] Börja söka efter idéer eller allmänna åsikter om särskilda bröllopsklänningar. [step] Försök att inte bli för stel och sök bara efter några klänningar som du tror kan fungera bra tillsammans.&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;a&quot;</span>
 <span class="p">}</span>
@@ -2263,25 +2331,30 @@ for training, validation and testing, respectively (so 3,328 samples used in tot
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Han fortsätter att klippa gräset. Kameran fokuserar på det rinnande vattnet igen. Den går tillbaka till mannen som klipper gräset. sedan\nSvarsalternativ:\na. den går tillbaka till filmen av mannen som klipper jord.\nb. återvänder till honom och dem som pratar igen.\nc. växlar tillbaka till det rinnande vattnet.\nd. mörk himmel igen.&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;c&quot;</span>
 <span class="p">}</span>
-</code></pre></div></p>
+</code></pre></div>
 <p>When evaluating generative models, we use the following setup (see the
 <a href="/methodology">methodology</a> for more information on how these are used):</p>
 <ul>
 <li>Number of few-shot examples: 5</li>
-<li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>Följande är flervalsfrågor (med svar).
-</code></pre></div></li>
-<li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>Fråga: {text}
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Följande är flervalsfrågor (med svar).
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Fråga: {text}
 Svarsalternativ:
 a. {option_a}
 b. {option_b}
 c. {option_c}
 d. {option_d}
 Svar: {label}
-</code></pre></div></li>
-<li>Instruction-tuned prompt template:
-  <div class="highlight"><pre><span></span><code>Fråga: {text}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Fråga: {text}
 Svarsalternativ:
 a. {option_a}
 b. {option_b}
@@ -2289,14 +2362,21 @@ c. {option_c}
 d. {option_d}
 
 Besvara följande fråga med &#39;a&#39;, &#39;b&#39;, &#39;c&#39; eller &#39;d&#39;, och inget annat.
-</code></pre></div></li>
-</ul>
+</code></pre></div>
 <p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>hellaswag-sv
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>hellaswag-sv
 </code></pre></div>
 <h3 id="unofficial-goldenswag-sv">Unofficial: GoldenSwag-sv</h3>
-<p>This dataset is a filtered and machine translated version of the English <a href="https://aclanthology.org/P19-1472/">HellaSwag dataset</a>, featuring both video descriptions from ActivityNet as well as how-to articles from WikiHow. The machine translated version was published in <a href="https://doi.org/10.48550/arXiv.2410.08928">this paper</a> and was done using DeepL, and the filtering was published in <a href="https://doi.org/10.48550/arXiv.2504.07825">this paper</a>, which resulted in higher quality samples.</p>
-<p>The original full dataset consists of 1530 / 1530 samples for training and validation, respectively. However, they are exactly equal. We use a split of 660 / 256 / 2,048 samples for training, validation, and testing, respectively.</p>
+<p>This dataset is a filtered and machine translated version of the English <a href="https://aclanthology.org/P19-1472/">HellaSwag
+dataset</a>, featuring both video descriptions from
+ActivityNet as well as how-to articles from WikiHow. The machine translated version was
+published in <a href="https://doi.org/10.48550/arXiv.2410.08928">this paper</a> and was done using
+DeepL, and the filtering was published in <a href="https://doi.org/10.48550/arXiv.2504.07825">this
+paper</a>, which resulted in higher quality
+samples.</p>
+<p>The original full dataset consists of 1530 / 1530 samples for training and validation,
+respectively. However, they are exactly equal. We use a split of 660 / 256 / 2,048
+samples for training, validation, and testing, respectively.</p>
 <p>Here are a few examples from the training split:</p>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Hur man staplar hö. Placera dina pallar på en tillgänglig plats. Det måste vara lätt att ta sig till staplarna, så välj en plats som du kan nå utan problem. Undvik att stapla balar direkt på marken.\nSvarsalternativ:\na. Håll balarna i detta område inom armlängds avstånd så att du inte skadar dig själv och andra i byggnaden. Tänk på att det bör finnas ca 6 balar så att varje person i rummet ska kunna komma åt en bal.\nb. Undvik att stapla balar på asfalterade ytor. Hitta en ojämn yta att stapla pallar på.\nc. Dina pallar måste vara lådliknande och hålla dina ben ut åt sidorna, samt stödja din fulla vikt. Använd betongblock om du har tillgång till sådana.\nd. Höet suger åt sig fukt och blir mögligt. För att förhindra detta, använd träpallar som grund.&quot;</span><span class="p">,</span>
@@ -2317,20 +2397,25 @@ Besvara följande fråga med &#39;a&#39;, &#39;b&#39;, &#39;c&#39; eller &#39;d&
 <a href="/methodology">methodology</a> for more information on how these are used):</p>
 <ul>
 <li>Number of few-shot examples: 5</li>
-<li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>Följande är flervalsfrågor (med svar).
-</code></pre></div></li>
-<li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>Fråga: {text}
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Följande är flervalsfrågor (med svar).
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Fråga: {text}
 Svarsalternativ:
 a. {option_a}
 b. {option_b}
 c. {option_c}
 d. {option_d}
 Svar: {label}
-</code></pre></div></li>
-<li>Instruction-tuned prompt template:
-  <div class="highlight"><pre><span></span><code>Fråga: {text}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Fråga: {text}
 Svarsalternativ:
 a. {option_a}
 b. {option_b}
@@ -2338,10 +2423,9 @@ c. {option_c}
 d. {option_d}
 
 Besvara följande fråga med &#39;a&#39;, &#39;b&#39;, &#39;c&#39; eller &#39;d&#39;, och inget annat.
-</code></pre></div></li>
-</ul>
+</code></pre></div>
 <p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>goldenswag-sv
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>goldenswag-sv
 </code></pre></div>
 <h3 id="unofficial-winogrande-sv">Unofficial: Winogrande-sv</h3>
 <p>This dataset was published in <a href="https://doi.org/10.48550/arXiv.2506.19468">this paper</a>
@@ -2369,27 +2453,31 @@ we use the same splits.</p>
 <a href="/methodology">methodology</a> for more information on how these are used):</p>
 <ul>
 <li>Number of few-shot examples: 5</li>
-<li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>Følgende er multiple choice spørgsmål (med svar).
-</code></pre></div></li>
-<li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>Spørgsmål: {text}
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Følgende er multiple choice spørgsmål (med svar).
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Spørgsmål: {text}
 Svarmuligheder:
 a. {option_a}
 b. {option_b}
 Svar: {label}
-</code></pre></div></li>
-<li>Instruction-tuned prompt template:
-  <div class="highlight"><pre><span></span><code>Spørgsmål: {text}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Spørgsmål: {text}
 Svarmuligheder:
 a. {option_a}
 b. {option_b}
 
 Besvar ovenstående spørgsmål ved at svare med &#39;a&#39; eller &#39;b&#39;, og intet andet.
-</code></pre></div></li>
-</ul>
+</code></pre></div>
 <p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>winogrande-sv
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>winogrande-sv
 </code></pre></div>
 <h2 id="summarisation">Summarisation</h2>
 <h3 id="swedn">SweDN</h3>
@@ -2402,7 +2490,7 @@ and testing, respectively. We use a 1,024 / 256 / 2,048 split for training, vali
 and testing, respectively (so 3,328 samples used in total). All the new splits are
 subsets of the original splits.</p>
 <p>Here are a few examples from the training split:</p>
-<p><div class="highlight"><pre><span></span><code><span class="p">{</span>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Ett överraskande ras på den ryska lastbilsmarknaden har gjort att Scania blivit frånsprunget av konkurrenten Volvo som ökat sina leveranser, skriver Dagens Industri. Bakom Scanias tapp på 24 procent ligger bland annat problem med tillstånden för att producera Euro-3 lastbilar i fabriken i S:t Petersburg. Men det räknar Scanias Rysslandschef Hans Tardell med att ta tillbaka under året. Konkurrenten Volvo, som ökat leveranserna med 40 procent och orderingången med 68 procent jämfört mot första kvartalet 2011, hoppas kunna växa ytterligare.  &quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;target_text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Ett överraskande ras på den ryska lastbilsmarknaden har gjort att Scania blivit frånsprunget av konkurrenten Volvo som ökat sina leveranser, skriver Dagens Industri.&quot;</span>
 <span class="p">}</span>
@@ -2416,26 +2504,30 @@ subsets of the original splits.</p>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Det är Gröna partiets ledare Jill Stein som har uppmanat valkommissionen i delstaten Wisconsin att räkna om rösterna, det skriver Reuters och Wisconsins valkommission. Valkommissionen skriver att man ”räknar med att omräkningen börjar inom en vecka efter det att Steins kampanj har betalat avgiften omräkningen, som vi fortfarande håller på att beräkna”. En omräkning ska vara genomförd före den 13 december. Delstaten vanns av Donald Trump med 47,9 procent av rösterna mot Hillary Clintons 46,9 procent och gav honom 10 elektorsröster. Skillnaden mellan de två kandidaterna var 23.000 röster. Jill Stein har tidigare sagt att hon är beredd att även försöka få rösterna i Michigan och Pennsylvania omräknade. Om hon ska begära en omräkning också i dessa två delstater måste den begäran inkomma under nästa vecka, skriver NBC News. Jill Stein. Foto: AP För att få till stånd en omräkning måste Gröna partiet ha pengar nog att driva en sådan. Enligt Washington Post har partiet lyckats samla in 4,5 miljoner dollar som ska täcka juridiska omkostnader och annat som har med en eventuell omräkning att göra i de tre delstaterna. Enligt tidningen kommer det sannolikt att behövas sammanlagt mellan 6 och 7 miljoner för att genomföra en omräkning. Om Clinton skulle gå segrande ur en omräkning i Wisconsin skulle detta ändå inte innebära någon skillnad när det gäller utgången av presidentvalet. Skulle Clinton vinna även i Michigan och Pennsylvania skulle det däremot betyda en annan utgång av valet. Även om få tror att en omräkning skulle betyda något i praktiken, Hillary Clinton har redan erkänt sig besegrad, så skulle en omräkning i hennes favör i Wisconsin och Pennsylvania ge henne 30 elektorsröster medan Trump förlorar lika många. Om så, rent hypotetiskt, skulle bli fallet, skiljer bara 10 elektorsröster till Trumps fördel – och då återstår ännu Michigans röster att sluträknas. Skulle Clinton vinna även dem så har hon flest antal elektorsröster. Jill Stein har i en intervju själv sagt att hon inte begär en omräkning för att gynna någon av kandidaterna utan för att ”amerikanerna inte blev särskilt glada över utgången av valet”. Sett till enbart rösterna, och inte till elektorerna, leder just nu Hillary Clinton med 48,1 procent av rösterna mot Donald Trumps 46,6 procent. I antal röster leder Clinton med 2.012.331 röster. &quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;target_text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Valkommissionen i Wisconsin i har fått en uppmaning om att rösterna i presidentvalet ska räknas om. Wisconsin har nu börjat förbereda en omräkning. Och det kan bli fler.&quot;</span>
 <span class="p">}</span>
-</code></pre></div></p>
+</code></pre></div>
 <p>When evaluating generative models, we use the following setup (see the
 <a href="/methodology">methodology</a> for more information on how these are used):</p>
 <ul>
 <li>Number of few-shot examples: 1</li>
-<li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>Nedan följer artiklar med tillhörande sammanfattningar.
-</code></pre></div></li>
-<li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>Artikel: {text}
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Nedan följer artiklar med tillhörande sammanfattningar.
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Artikel: {text}
 Sammanfattning: {target_text}
-</code></pre></div></li>
-<li>Instruction-tuned prompt template:
-  <div class="highlight"><pre><span></span><code>Artikel: {text}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Artikel: {text}
 
 Skriv en sammanfattning av artikeln ovan.
-</code></pre></div></li>
-</ul>
+</code></pre></div>
 <p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>swedn
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>swedn
 </code></pre></div>
 <h3 id="unofficial-schibsted-sv">Unofficial: Schibsted-sv</h3>
 <p>This dataset was published
@@ -2445,7 +2537,7 @@ Aftonbladet.</p>
 <p>The original dataset has 528 / 96 / 89 samples for training, validation and testing,
 respectively. We use these splits as-is.</p>
 <p>Here are a few examples from the training split:</p>
-<p><div class="highlight"><pre><span></span><code><span class="p">{</span>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Richard Jomshof blir upprörd och vägrar svara på frågor: SD-toppen Richard Jomshof vägrar kommentera kritiken efter påhoppet på Daniel Riazat (V).  När Aftonbladet möter honom i riksdagen blir han upprörd och går iväg. – Jag uppskattar inte skjutjärnsjournalistik, det är ett oseriöst sätt att jobba, säger han.  Justitieutskottets ordförande Richard Jomshof (SD) får hård kritik för sitt uttalande att V-ledamoten Daniel Riazat borde flytta från Sverige.  Flera i den politiska oppositionen dömer ut det som rasistiskt. Även i Tidöpartierna hörs protester.  ”Är man svensk medborgare så är man. Skamligt var ordet!” skriver L-politikern Jan Jönsson i ett uttalande på X.  ”Ta det med pressavdelningen” Aftonbladet var på plats utanför justitieutskottets möte i riksdagen vid lunchtid på tisdagen. Jomshof anlände först av alla ledamöter, tio minuter innan mötet inleddes, men ville inte svara på frågor.  – Du får ta det med pressavdelningen. Varför vill du inte svara, det är ju du som har skrivit de här tweetsen? – Du får ta det med pressavdelningen. Du kan läsa min senaste tweet förresten, så kan vi utgå från den. Varför tycker du att han borde lämna Sverige? – Börja med att läsa min tweet, det framgår väldigt tydligt där. ”Uppskattar inte skjutjärnsjournalistik” Inlägget som Jomshof syftar på lades upp kort innan justitieutskottets möte. Jomshof går där till nytt angrepp mot Riazat. Han anklagar honom för att ha ett ”sunkigt” beteende, att vara oförskämd och komma med aggressiva påhopp på politiska motståndare.  Mötet med justitieutskottet varade en timme, när Richard Jomshof kom ut från salen var upprörd över Aftonbladets närvaro. Detta trots att media brukar bevaka mötena och att ledamöterna i utskottet ofta tar tillfälle att ge intervjuer efteråt.  – För det första, vill ni prata med mig så går ni till pressavdelningen. Jag uppskattar inte skjutjärnsjournalistik, det är ett oseriöst sätt att jobba. Två, jag har inget mer att tillägga än det jag lagt ut på plattformen X. Där framgår det tydligt vad det här handlar om. Tre, ett tips i all vänlighet, ni kan ju prata med Riazat själv, om hans oförskämdheter och aggressiva beteende, om varför han inte vill ta politiska motståndare och kvinnor i hand. Nu tänker jag gå och äta lunch, säger Jomshof.  Busch: Jag är ganska osugen Daniel Riazat kallade igår Richard Jomshofs uttalande för rasistiskt och uppmanar statsminister Ulf Kristersson (M) att ta avstånd. Aftonbladet har sökt Kristersson, hans pressekreterare ber att få återkomma om statsministern har möjlighet att uttala sig. Vice statsminister Ebba Busch (KD) var fåordig när hon fick frågor om det på tisdagen.  – Jag är ganska osugen på att bidra till det rubrikspelet, sa hon i samband med en utfrågning i riksdagen.  Vice ordförande i justitieutskottet, Ardalan Shekarabi (S), har tidigare krävt Jomshofs avgång. Han uppmanar företrädare för regeringen att sluta ge Jomshof stöd.  – Tyvärr är det ett konsekvent beteende han har. Han verkar för splittring, motsättningar och i vissa fall hat mot folkgrupper. Han använder den plattform som ordförande i justitieutskottet medför till att bedriva den typen av agitation, säger han.  Aftonbladet har sökt Sverigedemokraternas pressavdelning. De ber om att få frågorna till Richard Jomshof på mejl och att få återkomma senare. Aftonbladet har sökt Daniel Riazat. Vänsterpartiets pressavdelning ber att få återkomma. &quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;target_text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;SD-toppen Richard Jomshof vägrar kommentera kritiken för sitt påstående att Vänsterpartiets riksdagsledamot Daniel Riazat borde lämna Sverige. Många inom den politiska oppositionen kallar uttalandet rasistiskt När Jomshof konfronteras med frågor från Aftonbladet vid ett utskottsmöte i riksdagen, blir han upprörd och går iväg utan att svara på frågorna. Han hänvisar till SD:s pressavdelning.&quot;</span>
 <span class="p">}</span>
@@ -2459,26 +2551,30 @@ respectively. We use these splits as-is.</p>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Polisen om den övergivna diplomatbilen: ”Vi undersöker immunitetsfrågan”: En diplomatbil lämnades övergiven på ett tågspår i centrala Stockholm i helgen. Fordonet tillhör Etiopiens ambassad som har bett om ursäkt för vansinnesfärden. Men när Aftonbladet knackar på är de fåordiga.  – Vi återkommer så fort det går, säger en anställd på ambassaden. Det var natten till söndag som minibussen krockade på tvärbanans spår vid Alviks strand i Stockholm. ”Vår ambassad ber om ursäkt för olyckan och besvären den orsakat. Vi har startat en internutredning för att ta reda på hur olyckan ska ha skett”, skriver Etiopiens ambassad i Stockholm i ett mail till Aftonbladet. I övrigt har de inte kommenterat händelsen och när Aftonbladet knackar på hos ambassaden är svaret kort. – Vi håller på att jobba med det. Vi återkommer så fort det går, säger en anställd på ambassaden. Men när vill de inte svara på. 17 300 kronor i obetalda böter Tågtrafiken var tillfälligt avstängd under söndagsmorgonen och bilen fick bärgas med hjälp av en spårtraktor. Den har troligtvis kört upp på spåret vid Gröndal, enligt SL. Där kör bilar och spårvagnar på gatan innan rälsen viker av på en egen banvall. – Därefter ska den i så fall ha kört två kilometer på kross och makadam innan den krockat med en stolpe, säger Claes Keisu, pressansvarig på SL. Minibussen har också obetalda böter på 17 300 kronor, enligt Transportstyrelsen.  ”Har skett en gång tidigare” Den här typen av felkörning sker cirka tio gånger om året. Under februari skedde det två gånger, just vid Gröndal. Vanligtvis upptäcks misstaget tidigt och då brukar föraren kunna backa tillbaka på vägen. – Det här fordonet har lite högre markfrigång så det kan förklara att den kunnat ta sig längre, säger Claes Keisu. Men att bilen lyckats ta sig så långt är väldigt ovanligt. – Vad vi vet har det bara skett en gång tidigare. 2012 var det en Ålänning med sin familj som kom upp på banan i Hammarby sjöstad och körde hela vägen till Gullmarsplan, säger Keisu. Föraren ska då ha kört uppemot en kilometer på spåret. ”Vi undersöker immunitetsfrågan” Polisen har inlett en förundersökning om vårdslöshet i trafik. Det är fortfarande oklart om någon kan åtalas.  – Vi undersöker immunitetsfrågan, säger Nadya Norton, presstalesperson vid Stockholmspolisen. ”Utredningen får visa om personen som körde bilen hade immunitet eller inte. Om en person har immunitet kan denne inte lagföras i Sverige”, skriver förundersökningsledaren, Timmy Malmgren, i ett mail till Aftonbladet. Diplomater får inte straffas i landet de arbetar i, enligt internationella överrenskommelser. – Jag har inga uppgifter om någon är misstänkt i ärendet, säger Nadya Norton. Hade fest under kvällen Kvällen innan bilen hittades på tågspåret ska Ambassaden anordnat en fest i sina lokaler. ”Vi på Ambassaden för Demokratiska förbundsrepubliken Etiopien på våning 3 kommer att ha ett event på lördag den 2. Observera att vi kommer ha gäster. Vi hoppas att vi inte stör er, kära grannar. Tack för er förståelse”, skriver de på en lapp som sitter i fastighetens hiss.&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;target_text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;En bil från Etiopiens ambassad lämnades övergiven på ett tågspår i centrala Stockholm under helgen, vilket ledde till tillfälligt avstängd tågtrafik. Ambassaden har bett om ursäkt och påbörjat en intern utredning för att ta reda på händelseförloppet. En polisutredning är igång för vårdslöshet i trafik, men det är oklart om någon kan åtalas på grund av diplomatisk immunitet.&quot;</span>
 <span class="p">}</span>
-</code></pre></div></p>
+</code></pre></div>
 <p>When evaluating generative models, we use the following setup (see the
 <a href="/methodology">methodology</a> for more information on how these are used):</p>
 <ul>
 <li>Number of few-shot examples: 1</li>
-<li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>Nedan följer artiklar med tillhörande sammanfattningar.
-</code></pre></div></li>
-<li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>Artikel: {text}
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Nedan följer artiklar med tillhörande sammanfattningar.
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Artikel: {text}
 Sammanfattning: {target_text}
-</code></pre></div></li>
-<li>Instruction-tuned prompt template:
-  <div class="highlight"><pre><span></span><code>Artikel: {text}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Artikel: {text}
 
 Skriv en sammanfattning av artikeln ovan.
-</code></pre></div></li>
-</ul>
+</code></pre></div>
 <p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>schibsted-sv
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>schibsted-sv
 </code></pre></div>
 
 

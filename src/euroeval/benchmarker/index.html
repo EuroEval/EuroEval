@@ -631,6 +631,8 @@
       
         
       
+        
+      
     
     
     
@@ -2738,7 +2740,7 @@
                 <span class="s2">&quot;No benchmarks to run, as all the selected models have already been &quot;</span>
                 <span class="s2">&quot;benchmarked on all the selected datasets.&quot;</span>
             <span class="p">)</span>
-            <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+            <span class="k">return</span> <span class="nb">list</span><span class="p">()</span>
 
         <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Initiated evaluation of </span><span class="si">{</span><span class="n">total_benchmarks</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2"> benchmarks.&quot;</span><span class="p">)</span>
 

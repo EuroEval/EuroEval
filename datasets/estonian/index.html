@@ -639,6 +639,8 @@
       
         
       
+        
+      
     
     
     
@@ -1177,6 +1179,29 @@
   
   
     <li class="md-nav__item">
+      <a href="../lithuanian/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    🇱🇹 Lithuanian
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../norwegian/" class="md-nav__link">
         
   
@@ -1666,7 +1691,7 @@ to 1,024 examples, and redistribute the rest to validation and test resulting in
 final size of 1,024 / 256 / 2,048 for the training, validation and test splits,
 respectively.</p>
 <p>Here are a few examples from the training split:</p>
-<p><div class="highlight"><pre><span></span><code><span class="p">{</span>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Sügisest algav pikk koolitee Oskari perekonda ei hirmuta.&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;positiivne&quot;</span>
 <span class="p">}</span>
@@ -1680,32 +1705,36 @@ respectively.</p>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;ka ainus märkimisväärne saavutus temalt selle loo esituse juures.&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;negatiivne&quot;</span>
 <span class="p">}</span>
-</code></pre></div></p>
+</code></pre></div>
 <p>When evaluating generative models, we use the following setup (see the
 <a href="/methodology">methodology</a> for more information on how these are used):</p>
 <ul>
 <li>Number of few-shot examples: 12</li>
-<li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>Järgmised on dokumendid ja nende meelestatus, mis võib olla &#39;positiivne&#39;, &#39;neutraalne&#39; või &#39;negatiivne&#39;.
-</code></pre></div></li>
-<li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>Dokument: {text}
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Järgmised on dokumendid ja nende meelestatus, mis võib olla &#39;positiivne&#39;, &#39;neutraalne&#39; või &#39;negatiivne&#39;.
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Dokument: {text}
 Meelestatus: {label}
-</code></pre></div></li>
-<li>Instruction-tuned prompt template:
-  <div class="highlight"><pre><span></span><code>Dokument: {text}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Dokument: {text}
 
 Klassifitseeri dokument meelestatuse järgi. Võimalikud vastused: &#39;positiivne&#39;, &#39;neutraalne&#39; või &#39;negatiivne&#39;. Muud vastused ei ole lubatud.
-</code></pre></div></li>
-<li>Label mapping:<ul>
+</code></pre></div>
+<ul>
+<li>Label mapping:</li>
 <li><code>positive</code> ➡️ <code>positiivne</code></li>
 <li><code>neutral</code> ➡️ <code>neutraalne</code></li>
 <li><code>negative</code> ➡️ <code>negatiivne</code></li>
 </ul>
-</li>
-</ul>
 <p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>estonian-valence
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>estonian-valence
 </code></pre></div>
 <h2 id="named-entity-recognition">Named Entity Recognition</h2>
 <h3 id="estner">EstNER</h3>
@@ -1717,7 +1746,7 @@ validation and test splits, respectively. We use 1,024 / 256 / 2,048 samples for
 training, validation and test splits, respectively. All the new splits are subsets of
 the original splits.</p>
 <p>Here are a few examples from the training split:</p>
-<p><div class="highlight"><pre><span></span><code><span class="p">{</span>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">&quot;tokens&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;Katse&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;lõpuni&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;jätkas&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;34aastane&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;tiitlijahtija&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;kolmel&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;rattal&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;.&quot;</span><span class="p">],</span>
 <span class="w">  </span><span class="nt">&quot;labels&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;O&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;O&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;O&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;O&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;O&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;O&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;O&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;O&quot;</span><span class="p">]</span>
 <span class="p">}</span>
@@ -1731,25 +1760,31 @@ the original splits.</p>
 <span class="w">  </span><span class="nt">&quot;tokens&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;Makke&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;lõpetas&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;Quincy&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;keskkooli&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;Illinoisi&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;osariigis&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;ja&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;plaanib&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;sportlasstipendiumi&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;abil&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;edasi&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;õppida&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;Lääne-Illinoisi&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;ülikoolis&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;,&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;mille&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;korvpallimeeskond&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;kuulub&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;USA&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;üliõpilasliiga&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;NCAA&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;esimesse&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;divisjoni&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;.&quot;</span><span class="p">],</span>
 <span class="w">  </span><span class="nt">&quot;labels&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;B-PER&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;O&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;B-ORG&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;I-ORG&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;B-MISC&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;I-MISC&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;O&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;O&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;O&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;O&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;O&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;O&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;B-ORG&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;I-ORG&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;O&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;O&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;O&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;O&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;B-ORG&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;I-ORG&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;B-ORG&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;O&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;O&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;O&quot;</span><span class="p">]</span>
 <span class="p">}</span>
-</code></pre></div></p>
+</code></pre></div>
 <p>When evaluating generative models, we use the following setup (see the
 <a href="/methodology">methodology</a> for more information on how these are used):</p>
 <ul>
 <li>Number of few-shot examples: 8</li>
-<li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>Allpool on laused ja JSON-sõnastikud, mis sisaldavad antud lauses esinevaid nimetatud üksuseid.
-</code></pre></div></li>
-<li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>Lause: {text}
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Allpool on laused ja JSON-sõnastikud, mis sisaldavad antud lauses esinevaid nimetatud üksuseid.
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Lause: {text}
 Nimetatud üksused: {label}
-</code></pre></div></li>
-<li>Instruction-tuned prompt template:
-  <div class="highlight"><pre><span></span><code>Lause: {text}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Lause: {text}
 
 Tuvasta lauses nimetatud üksused. Väljund peaks olema JSON-sõnastik, mille võtmed on &#39;inimene&#39;, &#39;asukoht&#39;, &#39;organisatsioon&#39; ja &#39;muu&#39;.
 Väärtused peaksid olema kindlat tüüpi nimetatud üksuste loendid, täpselt nii nagu need lauses esinevad.
-</code></pre></div></li>
-<li>Label mapping:<ul>
+</code></pre></div>
+<ul>
+<li>Label mapping:</li>
 <li><code>B-PER</code> ➡️ <code>inimene</code></li>
 <li><code>I-PER</code> ➡️ <code>inimene</code></li>
 <li><code>B-LOC</code> ➡️ <code>asukoht</code></li>
@@ -1759,10 +1794,8 @@ Väärtused peaksid olema kindlat tüüpi nimetatud üksuste loendid, täpselt n
 <li><code>B-MISC</code> ➡️ <code>muu</code></li>
 <li><code>I-MISC</code> ➡️ <code>muu</code></li>
 </ul>
-</li>
-</ul>
 <p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>estner
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>estner
 </code></pre></div>
 <h2 id="linguistic-acceptability">Linguistic Acceptability</h2>
 <h3 id="grammar-et">Grammar-et</h3>
@@ -1775,7 +1808,7 @@ respectively. The original dataset consists of 8,937 samples, from which we use 
 is extended with additional examples from the train split. The validation split is also
 created using examples from the train split.</p>
 <p>Here are a few examples from the training split:</p>
-<p><div class="highlight"><pre><span></span><code><span class="p">{</span>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Meie kahe rahva peaks lõpetama tobedused teineteise vastu ja mõista et tuleme siin naabrideks olema igavesti.&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;incorrect&quot;</span>
 <span class="p">}</span>
@@ -1789,26 +1822,30 @@ created using examples from the train split.</p>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Ma olen kindel et mitte amet rikkub inimest, aga raha.&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;incorrect&quot;</span>
 <span class="p">}</span>
-</code></pre></div></p>
+</code></pre></div>
 <p>When evaluating generative models, we use the following setup (see the
 <a href="/methodology">methodology</a> for more information on how these are used):</p>
 <ul>
 <li>Number of few-shot examples: 1</li>
-<li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>Järgnevad on laused ja kas need on grammatiliselt õiged.
-</code></pre></div></li>
-<li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>Lause: {text}
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Järgnevad on laused ja kas need on grammatiliselt õiged.
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Lause: {text}
 Grammatikaliselt õige:: {label}
-</code></pre></div></li>
-<li>Instruction-tuned prompt template:
-  <div class="highlight"><pre><span></span><code>Lause: {text}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Lause: {text}
 
 Otsusta, kas lause on grammatiliselt õige või mitte. Vasta {labels_str}, ja mitte midagi muud.
-</code></pre></div></li>
-</ul>
+</code></pre></div>
 <p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>grammar-et
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>grammar-et
 </code></pre></div>
 <h3 id="unofficial-scala-da">Unofficial: ScaLA-da</h3>
 <p>This dataset was published in <a href="https://aclanthology.org/2023.nodalida-1.20/">this paper</a>
@@ -1823,7 +1860,7 @@ the part-of-speech tags of the words in the sentence.</p>
 samples for training, validation and testing, respectively (so 3,328 samples used in
 total). These splits are used as-is in the framework.</p>
 <p>Here are a few examples from the training split:</p>
-<p><div class="highlight"><pre><span></span><code><span class="p">{</span>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Selleks kirjeldatakse programmi käitumust spetsiaalse juhtvoograafi ehk CFG abil (CFG - Control Flow Graph).&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;correct&quot;</span>
 <span class="p">}</span>
@@ -1837,31 +1874,35 @@ total). These splits are used as-is in the framework.</p>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Juta teab oma kogemusest, et selline söök tahab pikka ja tunneb kohe ära, et varem valmis tehtud asi on mikrolaineahjus üles soojendatud.&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;incorrect&quot;</span>
 <span class="p">}</span>
-</code></pre></div></p>
+</code></pre></div>
 <p>When evaluating generative models, we use the following setup (see the
 <a href="/methodology">methodology</a> for more information on how these are used):</p>
 <ul>
 <li>Number of few-shot examples: 12</li>
-<li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>Järgnevad on laused ja kas need on grammatiliselt õiged.
-</code></pre></div></li>
-<li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>Lause: {text}
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Järgnevad on laused ja kas need on grammatiliselt õiged.
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Lause: {text}
 Grammatikaliselt õige: {label}
-</code></pre></div></li>
-<li>Instruction-tuned prompt template:
-  <div class="highlight"><pre><span></span><code>Sætning: {text}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Sætning: {text}
 
 Bestem om sætningen er grammatisk korrekt eller ej. Svar med &#39;ja&#39;, hvis sætningen er korrekt, og &#39;nej&#39;, hvis den ikke er.
-</code></pre></div></li>
-<li>Label mapping:<ul>
+</code></pre></div>
+<ul>
+<li>Label mapping:</li>
 <li><code>correct</code> ➡️ <code>jah</code></li>
 <li><code>incorrect</code> ➡️ <code>ei</code></li>
 </ul>
-</li>
-</ul>
 <p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>scala-et
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>scala-et
 </code></pre></div>
 <h2 id="reading-comprehension">Reading Comprehension</h2>
 <h3 id="multiwikiqa-et">MultiWikiQA-et</h3>
@@ -1871,7 +1912,7 @@ languages.</p>
 <p>The original full dataset consists of 5,000 samples in a single split. We use a 1,024 /
 256 / 2,048 split for training, validation and testing, respectively, sampled randomly.</p>
 <p>Here are a few examples from the training split:</p>
-<p><div class="highlight"><pre><span></span><code><span class="p">{</span>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">    </span><span class="nt">&quot;context&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Kõrgõzstani 2010. aasta ülestõus, mäss,  revolutsioon või riigipööre oli sündmusteahel, mis kukutas president Kurmanbek Bakijevi ja tõi võimule ajutise valitsuse Roza Otunbajevaga eesotsas.\n\nRahutused algasid 6. aprillil Talasis ja levisid järgmisel päeval teistesse Kõrgõzstani põhjaosa linnadesse. Rahutustes hukkus vähemalt 85 inimest, täiendavaid ohvreid tõid kaasa järgnenud korratused.\n\nRahutuste põhjused \n\nVõimuvahetuse järel kokku tulnud &quot;</span><span class="err">sõl</span><span class="kc">tu</span><span class="err">ma</span><span class="kc">tu</span><span class="w"> </span><span class="err">ühisko</span><span class="kc">n</span><span class="err">dlik</span><span class="w"> </span><span class="err">komisjo</span><span class="kc">n</span><span class="s2">&quot; 6. kuni 8. aprilli sündmuste uurimiseks, leidis, et rahutused põhjustas Bakijevi korruptsioonis, onupojapoliitikas ja riigi vara kõrvaletoimetamises süüdistatud valitsuse &quot;</span><span class="err">laos</span><span class="kc">ta</span><span class="err">v</span><span class="w"> </span><span class="err">polii</span><span class="kc">t</span><span class="err">ika</span><span class="s2">&quot;, sotsiaalse kindlustunde vähenemine, laiade ühiskonnakihtide vaesumine ([48;56;245;2016;3430tostujõu vähenemine ja kiire inflatsioon), opositsiooni ja ajakirjanike laiaulatuslik tagakiusamine, poliitiliste mõrvade seeria ning sõltumatute trükiväljaannete, raadio- ja telekanalite sulgemine.\n\nRahutuste vahetuks käivitajaks on peetud hinnatõusu. Elektri- ja küttehinnad olid kahekordistunud, tõusnud olid näiteks mobiilteenuste hinnad.\n\nTalasi sündmused \n\n6. aprilli hommikul vahistati Talasis partei Ata-Meken aseesimees Bolotbek Šernijazov. Lõunaks kogunes sadu vahistatu poolehoidjaid miilitsajaoskonna juurde ja Šernijazov vabastati. Meeleavaldajad liikusid oblastivalitsuse hoone juurde ja võtsid pantvangi oblastijuhi. Hangiti kive ja bensiini, valmistati ette pudeleid süüteseguga.\n\nÕhtul saabusid Biškekist lennukid ja helikopterid 200 korrakaitsejõudude teenistujaga, kes pidid asepeaminister Akõlbek Džaparovi juhtimisel läbi viima erioperatsiooni oblastijuhi vabastamiseks. Meeleavaldajate vastu kasutati pisargaasi, kummikuule ja valgusmüra granaate(?). Oblastijuht vabastati ja Bolotbek Šernijazov võeti jõudu kasutades uuesti vahi alla.\n\nRahvahulk piiras sisse grupi miilitsatöötajaid, asus neid peksma ja süütas oblastivalitsuse hoone, kuhu umbes 150 miilitsat varjunud olid. Miilitsail lõppes erivarustus, täiendusi toonud sõiduki hõivasid mässajad ja kasutasid valdusse võetud vahendeid miilitsa vastu.\n\nÖöl vastu 7. aprilli vahistati Biškekis ja Ošis mitu opositsioonijuhti, sealhulgas Ömürbek Tekebajev, Almazbek Atambajev ja Temir Sarijev.\n\nTuhanded inimesed kogunesid piirama presidendi- ja valitsushoonet Biškekis. Julgeolekujõud kasutasid rahva laialiajamiseks tulirelvi. Bakijev lahkus pealinnast Džalal-Abadi. Roza Otunbajeva, Tekebajev, Atambajev ja teised tuntud opositsionäärid kuulutasid endid ajutiseks valitsuseks. Bakijev varjas end kuni 15. aprillini ja lahkus seejärel Valgevenesse.\n\nViited\n\nKõrgõzstani poliitika\n2010\nRevolutsioonid&quot;</span><span class="p">,</span>
 <span class="w">    </span><span class="nt">&quot;question&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Kes eemaldati võimult Kõrgõzstani 2010. aasta rahutuste ajal?&quot;</span><span class="p">,</span>
 <span class="w">    </span><span class="nt">&quot;answers&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
@@ -1897,29 +1938,33 @@ languages.</p>
 <span class="w">        </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="err">array(</span><span class="p">[</span><span class="s2">&quot;Sillamäe rikkevööndi&quot;</span><span class="p">],</span><span class="w"> </span><span class="err">d</span><span class="kc">t</span><span class="err">ype=objec</span><span class="kc">t</span><span class="err">)</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="p">}</span>
-</code></pre></div></p>
+</code></pre></div>
 <p>When evaluating generative models, we use the following setup (see the
 <a href="/methodology">methodology</a> for more information on how these are used):</p>
 <ul>
 <li>Number of few-shot examples: 4</li>
-<li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>Järgnevad on tekstid koos küsimuste ja vastustega.
-</code></pre></div></li>
-<li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>Tekst: {text}
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Järgnevad on tekstid koos küsimuste ja vastustega.
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Tekst: {text}
 Küsimus: {question}
 Vasta maksimaalselt 3 sõnaga: {label}
-</code></pre></div></li>
-<li>Instruction-tuned prompt template:
-  <div class="highlight"><pre><span></span><code>Tekst: {text}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Tekst: {text}
 
 Vasta järgmisele küsimusele ülevaltoodud teksti kohta maksimaalselt 3 sõnaga.
 
 Küsimus: {question}
-</code></pre></div></li>
-</ul>
+</code></pre></div>
 <p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>multi-wiki-qa-et
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>multi-wiki-qa-et
 </code></pre></div>
 <h2 id="knowledge">Knowledge</h2>
 <h3 id="trivia-et">Trivia-et</h3>
@@ -1949,20 +1994,25 @@ not representative of the full dataset in terms of question content to show here
 <a href="/methodology">methodology</a> for more information on how these are used):</p>
 <ul>
 <li>Number of few-shot examples: 5</li>
-<li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>Järgnevad on vastusevariantidega küsimused (koos vastustega).
-</code></pre></div></li>
-<li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>Küsimus: {text}
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Järgnevad on vastusevariantidega küsimused (koos vastustega).
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Küsimus: {text}
 Vastusevariandid:
 a. {option_a}
 b. {option_b}
 c. {option_c}
 d. {option_d}
 Vastus: {label}
-</code></pre></div></li>
-<li>Instruction-tuned prompt template:
-  <div class="highlight"><pre><span></span><code>Küsimus: {text}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Küsimus: {text}
 Vastusevariandid:
 a. {option_a}
 b. {option_b}
@@ -1970,10 +2020,9 @@ c. {option_c}
 d. {option_d}
 
 Võimalikud vastused: &#39;a&#39;, &#39;b&#39;, &#39;c&#39; or &#39;d&#39;. Muud vastused ei ole lubatud.
-</code></pre></div></li>
-</ul>
+</code></pre></div>
 <p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>trivia-et
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>trivia-et
 </code></pre></div>
 <h3 id="unofficial-exam-et">Unofficial: Exam-et</h3>
 <p>This dataset was released in <a href="https://huggingface.co/datasets/TalTechNLP/exam_et">this
@@ -1983,7 +2032,7 @@ with multiple-choice answers from Estonian high-school tests.</p>
 different subjects. We use a 512 / 64 / 896 split for training, validation and testing,
 respectively, with stratification based on the subject.</p>
 <p>Here are a few examples from the training split:</p>
-<p><div class="highlight"><pre><span></span><code><span class="p">{</span>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Kas väide iseloomustab Eestit perioodil 1920-1934 või 1934-1940: riigikogu valiti iga kolme aasta järel?\nVastusevariandid:\na. Eesti 1920-1934\nb. Eesti 1934-1940&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;a&quot;</span>
 <span class="p">}</span>
@@ -1997,23 +2046,28 @@ respectively, with stratification based on the subject.</p>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Kellel on Eesti vabariigis õigus kehtestada eriolukord?\nVastusevariandid:\na. politseil\nb. õiguskantsleril\nc. vabariigi valitsusel\nd. riigikohtul&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;c&quot;</span>
 <span class="p">}</span>
-</code></pre></div></p>
+</code></pre></div>
 <p>When evaluating generative models, we use the following setup (see the
 <a href="/methodology">methodology</a> for more information on how these are used):</p>
 <ul>
 <li>Number of few-shot examples: 5</li>
-<li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>Järgnevad on vastusevariantidega küsimused (koos vastustega).
-</code></pre></div></li>
-<li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>Küsimus: {text}
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Järgnevad on vastusevariantidega küsimused (koos vastustega).
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Küsimus: {text}
 Vastusevariandid:
 a. {option_a}
 b. {option_b}
 Vastus: {label}
-</code></pre></div></li>
-<li>Instruction-tuned prompt template:
-  <div class="highlight"><pre><span></span><code>Küsimus: {text}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Küsimus: {text}
 Vastusevariandid:
 a. {option_a}
 b. {option_b}
@@ -2022,10 +2076,9 @@ o. {option_o}
 
 Vasta ülaltoodud küsimusele ainult &#39;a&#39;, &#39;b&#39;, (...), &#39;n&#39; või &#39;o&#39;, ja mitte millegi
 muuga.
-</code></pre></div></li>
-</ul>
+</code></pre></div>
 <p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>exam-et
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>exam-et
 </code></pre></div>
 <h2 id="common-sense-reasoning">Common-sense Reasoning</h2>
 <h3 id="winogrande-et">Winogrande-et</h3>
@@ -2038,7 +2091,7 @@ final dataset size is 1,024 / 256 / 1,767 for the training, validation and test 
 respectively.</p>
 <p>Here are a few examples from the training split (note that unlike the test split these
 are machine translated):</p>
-<p><div class="highlight"><pre><span></span><code><span class="p">{</span>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Ian vabatahtlikult sõi Dennise menudo pärast seda, kui oli juba kausi söönud, sest _ põlgas soolte söömist.\nVastusevariandid:\na. Ian\nb. Dennis&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;b&quot;</span>
 <span class="p">}</span>
@@ -2052,32 +2105,36 @@ are machine translated):</p>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Ta ei tule kunagi minu koju, aga mina lähen alati tema majja, sest _ on väiksem.\nVastusevariandid:\na. kodu\nb. maja&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;a&quot;</span>
 <span class="p">}</span>
-</code></pre></div></p>
+</code></pre></div>
 <p>When evaluating generative models, we use the following setup (see the
 <a href="/methodology">methodology</a> for more information on how these are used):</p>
 <ul>
 <li>Number of few-shot examples: 5</li>
-<li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>Sulle esitatakse lüngaga (_) tekstülesanne ja kaks vastusevarianti (a ja b).
-</code></pre></div></li>
-<li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>Tekstülesanne: {text}
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Sulle esitatakse lüngaga (_) tekstülesanne ja kaks vastusevarianti (a ja b).
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Tekstülesanne: {text}
 Vastusevariandid:
 a. {option_a}
 b. {option_b}
 Vastus: {label}
-</code></pre></div></li>
-<li>Instruction-tuned prompt template:
-  <div class="highlight"><pre><span></span><code>Tekstülesanne: {text}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Tekstülesanne: {text}
 Vastusevariandid:
 a. {option_a}
 b. {option_b}
 
 Sinu ülesanne on valida lünka sobiv vastusevariant. Vasta ainult &#39;a&#39; või &#39;b&#39;. Muud vastused ei ole lubatud.
-</code></pre></div></li>
-</ul>
+</code></pre></div>
 <p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>winogrande-et
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>winogrande-et
 </code></pre></div>
 <h2 id="summarisation">Summarisation</h2>
 <h3 id="errnews">ERRNews</h3>
@@ -2089,7 +2146,7 @@ pipeline paired with the human written summary from the archive.</p>
 validation and testing, respectively. We use a 1,024 / 256 / 2,048 split for training,
 validation and testing, respectively. The test split is extended with additional
 examples from the train split.</p>
-<p><div class="highlight"><pre><span></span><code><span class="p">{</span>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Ta mainis seda, et et ta on mures, et Kreml on oma propagandakampaaniat ka Eesti suhtes tugevdanud. Aga ma ise ütlesin talle, et kui ta peab silmas seda postitust, siis tegemist on Jaak Madissoni kolme aasta taguse taguse mõtteavaldusega, nagu ta oli 20 aastane ja ei olnud veel meie erakonna liige ja, ja Jaak Madison ei ole tegelikult selle teemaga hiljem minu teada tegelenud. Jaak Madisson teemal olen rääkinud, palusin tal selle postituse kõrvaldada ja ütles ka, et nojah, et aga seal ei ole ju midagi, ma lihtsalt arutlesin sel teemal ja seal ei ole midagi, seal ei ole midagi püüda siia külge panna mingisugust silti, nagu me oleksime mingisugune Hitler, juugend. No andke andeks ja, ja mina ütlen teile, kui te seda teemat tahate üleval hoida, laske käia, me ei saa teid takistada, aga te teete Kremli tööd, tehke oma järeldused, te teete Kremli tööd, see on just see, mida Krem tahab. Et kuskilt otsitakse üles mingi vana postitus, kuskil puhutakse sellele tuul, purjedesse süüdistatakse värskelt riigikogu liikmeks saanud noort meest kolme aasta taguses naiivses poisikese sõnavõtus. Ma ei saa teid takistada selles, aga ma ütlen teile, et see ei ole õige, mida te, Jaak Madisson, sel ajal ei olnud erakonna liige, kolm aastat tagasi, kui te otsite välja kolme aasta taguse postituse, millest mul ei olnud kuni tänase päevani õrna aimugi siis ei saa see olla erakonna seisukoht. Tegemist on Jaak Madissoni kolme aasta taguse taguse mõtteavaldusega kui ta oli 20 aastane. Ja ei olnud veel meie erakonna liige.&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;target_text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Eesti Konservatiivse Rahvaerakonna esimehe Mart Helme sõnul on riigikokku valitud erakonnakaaslase Jaak Madisoni sotsiaalmeedias levinud natsi-Saksamaad kiitev blogitekst üksikisiku arvamus ning lihtsalt hinnang Saksamaale ja tolle majandusele.&quot;</span>
 <span class="p">}</span>
@@ -2103,26 +2160,30 @@ examples from the train split.</p>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Mihhail Korbilt saadikupuutumatuse äravõtmine oli vajalik selleks, et tema suhtes saaks jätkata kriminaalmenetlust. Riigiprokuratuur esitas õiguskantslerile sellekohase taotluse kuu aega tagasi. Peaprokuröri taotlusest nähtub, et riigikogu liikmele Mihhail Korbile on esitatud kahtlustus karistusseadustiku paragrahv 298 prim lõikes üks sätestatud kuriteo toimepanemises. See on mõjuvõimuga kauplemine. Lühidalt väidab peaprokurör, et Mihhail Korb lubas Hillar Tederile üheksandal veebruaril 2020 kasutada oma mõjuvõimu Tallinna linnapea Mihhail Kõlvarti üle. Selleks, et kolmas isik, porto Franco osaühing, saaks ametiisikult Mihhail Kõlvartilt avaliku huvi seisukohalt põhjendamatu eelise. See siis puudutas servituudi hinda. Ja küsimus sellest, et kas porto Franco peaks väljasõidud rajama enda maale või peaks saama rajada need linnamaale ja madalama hinna eest, kui algselt välja pakuti. Ning Madiselisas. Olles kriminaaltoimiku materjalidega ja ka jälituslubadega tutvunud kinnitan teile, et märki sellest, et tegemist oleks ilmselgelt põhjendamatu menetlusega või poliitiliselt kallutatud menetlusega. Meie ei leidnud. Mihhail Korb tuletas oma sõnavõtus meelde, et kahtlustuse esitamisest on möödas 15 kuud ja tegelikult oleks asi juba ammu võinud kohtus olla, sest tema on huvitatud maksimaalselt kiirest tõe väljaselgitamisest. Täna ma pöördun kogu saali poole, samuti toetada minul saadikute puutumatuse äravõtmise. Seda kõik selleks, et maksimaalselt kiiresti teieni jõuda. Saadikupuutumatuse äravõtmise poolt hääletas 82 saadikut, vastu ei olnud keegi, mõned jätsid hääletamata.&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;target_text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Õiguskantsler Ülle Madise tegi Riigikogule ettepaneku anda nõusolek Riigikogu liikmelt Mihhail Korbilt saadikupuutumatuse äravõtmiseks.&quot;</span>
 <span class="p">}</span>
-</code></pre></div></p>
+</code></pre></div>
 <p>When evaluating generative models, we use the following setup (see the
 <a href="/methodology">methodology</a> for more information on how these are used):</p>
 <ul>
 <li>Number of few-shot examples: 1</li>
-<li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>Allpool on dokumendid koos kokkuvõtetega.
-</code></pre></div></li>
-<li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>Dokument: {text}
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Allpool on dokumendid koos kokkuvõtetega.
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Dokument: {text}
 Kokkuvõte: {target_text}
-</code></pre></div></li>
-<li>Instruction-tuned prompt template:
-  <div class="highlight"><pre><span></span><code>Document: {text}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Document: {text}
 
 Koosta ülaltoodud dokumendi kokkuvõte.
-</code></pre></div></li>
-</ul>
+</code></pre></div>
 <p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>err-news
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>err-news
 </code></pre></div>
 
 

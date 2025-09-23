@@ -639,6 +639,8 @@
       
         
       
+        
+      
     
     
     
@@ -1195,6 +1197,29 @@
   
   
     <li class="md-nav__item">
+      <a href="../lithuanian/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    🇱🇹 Lithuanian
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../norwegian/" class="md-nav__link">
         
   
@@ -1700,7 +1725,7 @@ discarded.</p>
 validation, and testing, respectively. We use 1,024 / 256 / 2,048 samples for training,
 validation, and testing, respectively. All our splits are subsets of the original ones.</p>
 <p>Here are a few examples from the training split:</p>
-<p><div class="highlight"><pre><span></span><code><span class="p">{</span>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Ce 7ème volet ne mérite pas de notre part une grande attention, au vu du précédent New Police Story. À la limite du huis clos, Jackie évolue dans une boîte de nuit, sorte de piège du méchant cherchant à se venger, ou du moins à découvrir la vérité sur la mort de sa sœur. Notre cascadeur acteur ne bénéficie pas d&#39;un décors à la hauteur de son potentiel acrobatique et le film d&#39;un scénario à la hauteur d&#39;une production, et cette production d&#39;une large distribution, ce qui explique son arrivée direct tout étagère.&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;negative&quot;</span>
 <span class="p">}</span>
@@ -1714,26 +1739,30 @@ validation, and testing, respectively. All our splits are subsets of the origina
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Une ambiance envoûtante, un récit où se mélangent sorcellerie, croyances indiennes, enquête policière sur fond de trafic de drogue, tout est conforme au livre de Tony Hillerman, même si ce dernier a \&quot;renié\&quot; le film. Personnellement j&#39;adore. Hélas introuvable en France et diffusé seulement sur canal , il y a ..... un certain temps.&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;positive&quot;</span>
 <span class="p">}</span>
-</code></pre></div></p>
+</code></pre></div>
 <p>When evaluating generative models, we use the following setup (see the
 <a href="/methodology">methodology</a> for more information on how these are used):</p>
 <ul>
 <li>Number of few-shot examples: 4</li>
-<li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>Voici des textes et leur sentiment, qui peut être &#39;positif&#39; ou &#39;négatif&#39;.
-</code></pre></div></li>
-<li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>Texte: {text}
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Voici des textes et leur sentiment, qui peut être &#39;positif&#39; ou &#39;négatif&#39;.
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Texte: {text}
 Sentiment: {label}
-</code></pre></div></li>
-<li>Instruction-tuned prompt template:
-  <div class="highlight"><pre><span></span><code>Texte: {text}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Texte: {text}
 
 Classez le sentiment dans le texte. Répondez par ‘positif&#39; ou ‘négatif&#39;.
-</code></pre></div></li>
-</ul>
+</code></pre></div>
 <p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>allocine
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>allocine
 </code></pre></div>
 <h2 id="named-entity-recognition">Named Entity Recognition</h2>
 <h3 id="eltec">ELTeC</h3>
@@ -1756,7 +1785,7 @@ labelling scheme, which is more common in the NER literature. The mapping is as 
 <li><code>EVENT</code> ➡️ <code>O</code></li>
 </ul>
 <p>Here are a few examples from the training split:</p>
-<p><div class="highlight"><pre><span></span><code><span class="p">{</span>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="err">&#39;</span><span class="kc">t</span><span class="err">oke</span><span class="kc">ns</span><span class="err">&#39;</span><span class="p">:</span><span class="w"> </span><span class="err">array(</span><span class="p">[</span><span class="err">&#39;Jamais&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;ils&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;</span><span class="kc">ne</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;</span><span class="kc">f</span><span class="err">ire</span><span class="kc">nt</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;de&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;provisio</span><span class="kc">ns</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;</span><span class="p">,</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;excep</span><span class="kc">t</span><span class="err">é&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;quelques&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;bo</span><span class="kc">ttes</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;d&#39;ail&quot;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;ou&#39;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;d&#39;oignons&quot;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;qui&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;</span><span class="kc">ne</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;craig</span><span class="kc">na</span><span class="err">ie</span><span class="kc">nt</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;rie</span><span class="kc">n</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;e</span><span class="kc">t</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;</span><span class="kc">ne</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;coû</span><span class="kc">ta</span><span class="err">ie</span><span class="kc">nt</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;pas&#39;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;grand&#39;chose&quot;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;;&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;le&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;peu&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;de&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;bois&#39;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;qu&#39;ils&quot;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;co</span><span class="kc">ns</span><span class="err">ommaie</span><span class="kc">nt</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;e</span><span class="kc">n</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;hiver&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;</span><span class="p">,</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;la&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;Sauvia</span><span class="kc">t</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;l&#39;achetait&quot;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;aux&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;</span><span class="kc">fa</span><span class="err">go</span><span class="kc">tteurs</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;qui&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;passaie</span><span class="kc">nt</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;</span><span class="p">,</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;e</span><span class="kc">t</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;au&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;jour&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;le&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;jour&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;.&#39;</span><span class="p">],</span><span class="w"> </span><span class="err">d</span><span class="kc">t</span><span class="err">ype=objec</span><span class="kc">t</span><span class="err">)</span><span class="p">,</span>
 <span class="w">  </span><span class="err">&#39;labels&#39;</span><span class="p">:</span><span class="w"> </span><span class="err">array(</span><span class="p">[</span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;B</span><span class="mi">-</span><span class="err">PER&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">],</span><span class="w"> </span><span class="err">d</span><span class="kc">t</span><span class="err">ype=objec</span><span class="kc">t</span><span class="err">)</span>
 <span class="p">}</span>
@@ -1770,28 +1799,30 @@ labelling scheme, which is more common in the NER literature. The mapping is as 
 <span class="w">  </span><span class="err">&#39;</span><span class="kc">t</span><span class="err">oke</span><span class="kc">ns</span><span class="err">&#39;</span><span class="p">:</span><span class="w"> </span><span class="err">array(</span><span class="p">[</span><span class="err">&#39;Les&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;</span><span class="kc">fen</span><span class="err">ê</span><span class="kc">tres</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;de&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;la&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;vieille&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;demeure&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;royale&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;</span><span class="p">,</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;ordi</span><span class="kc">na</span><span class="err">ireme</span><span class="kc">nt</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;si&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;sombres&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;</span><span class="p">,</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;é</span><span class="kc">ta</span><span class="err">ie</span><span class="kc">nt</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;ardemme</span><span class="kc">nt</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;éclairées&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;;&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;les&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;places&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;e</span><span class="kc">t</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;les&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;rues&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;a</span><span class="kc">ttenantes</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;</span><span class="p">,</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;habi</span><span class="kc">tuelle</span><span class="err">me</span><span class="kc">nt</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;si&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;soli</span><span class="kc">ta</span><span class="err">ires&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;</span><span class="p">,</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;dès&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;que&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;</span><span class="kc">neuf</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;heures&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;so</span><span class="kc">nna</span><span class="err">ie</span><span class="kc">nt</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;à&#39;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;Saint-Germain-l&#39;Auxerrois&quot;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;</span><span class="p">,</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;é</span><span class="kc">ta</span><span class="err">ie</span><span class="kc">nt</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;</span><span class="p">,</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;quoiqu&#39;il&quot;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;</span><span class="kc">f</span><span class="err">û</span><span class="kc">t</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;mi</span><span class="kc">nu</span><span class="err">i</span><span class="kc">t</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;</span><span class="p">,</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;e</span><span class="kc">n</span><span class="err">combrées&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;de&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;populaire&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;.&#39;</span><span class="p">],</span><span class="w"> </span><span class="err">d</span><span class="kc">t</span><span class="err">ype=objec</span><span class="kc">t</span><span class="err">)</span><span class="p">,</span>
 <span class="w">  </span><span class="err">&#39;labels&#39;</span><span class="p">:</span><span class="w"> </span><span class="err">array(</span><span class="p">[</span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;B</span><span class="mi">-</span><span class="err">LOC&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;O&#39;</span><span class="p">],</span><span class="w"> </span><span class="err">d</span><span class="kc">t</span><span class="err">ype=objec</span><span class="kc">t</span><span class="err">)</span>
 <span class="p">}</span>
-</code></pre></div></p>
+</code></pre></div>
 <p>When evaluating generative models, we use the following setup (see the
 <a href="/methodology">methodology</a> for more information on how these are used):</p>
 <ul>
 <li>Number of few-shot examples: 8</li>
-<li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>Vous trouverez ci-dessous des phrases et des dictionnaires JSON avec les entités nommées qui apparaissent dans la phrase donnée.
-</code></pre></div></li>
-<li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>Sentence: {text}
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Vous trouverez ci-dessous des phrases et des dictionnaires JSON avec les entités nommées qui apparaissent dans la phrase donnée.
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Sentence: {text}
 Entités nommées: {label}
-</code></pre></div></li>
-<li>
-<p>Instruction-tuned prompt template:
-  <div class="highlight"><pre><span></span><code>Sentence: {text}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Sentence: {text}
 
 Identifiez les entités nommées dans la phrase. Vous devez produire ceci sous forme de dictionnaire JSON avec les clés &#39;personne&#39;, &#39;lieu&#39;, &#39;organisation&#39; et &#39;divers&#39;. Les valeurs doivent être des listes des entités nommées de ce type, exactement comme elles apparaissent dans la phrase.
-</code></pre></div></p>
-</li>
-<li>
-<p>Label mapping:</p>
+</code></pre></div>
 <ul>
+<li>Label mapping:</li>
 <li><code>B-PER</code> ➡️ <code>personne</code></li>
 <li><code>I-PER</code> ➡️ <code>personne</code></li>
 <li><code>B-LOC</code> ➡️ <code>lieu</code></li>
@@ -1801,10 +1832,8 @@ Identifiez les entités nommées dans la phrase. Vous devez produire ceci sous f
 <li><code>B-MISC</code> ➡️ <code>divers</code></li>
 <li><code>I-MISC</code> ➡️ <code>divers</code></li>
 </ul>
-</li>
-</ul>
 <p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>eltec
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>eltec
 </code></pre></div>
 <h2 id="linguistic-acceptability">Linguistic Acceptability</h2>
 <h3 id="scala-fr">ScaLA-fr</h3>
@@ -1820,7 +1849,7 @@ on the part-of-speech tags of the words in the sentence.</p>
 samples for training, validation and testing, respectively (so 3,328 samples used in
 total). These splits are used as-is in the framework.</p>
 <p>Here are a few examples from the training split:</p>
-<p><div class="highlight"><pre><span></span><code><span class="p">{</span>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Le dessert est une part minuscule de gâteau.&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;correct&quot;</span>
 <span class="p">}</span>
@@ -1834,31 +1863,35 @@ total). These splits are used as-is in the framework.</p>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Certains craignent qu&#39; un avantage compétitif trop net et trop durable favorise les positions dominantes, monopoles et oligopoles, qui limitent la et concurrence finissent par peser sur le consommateur.&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;incorrect&quot;</span>
 <span class="p">}</span>
-</code></pre></div></p>
+</code></pre></div>
 <p>When evaluating generative models, we use the following setup (see the
 <a href="/methodology">methodology</a> for more information on how these are used):</p>
 <ul>
 <li>Number of few-shot examples: 12</li>
-<li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>Les phrases suivantes indiquent si elles sont grammaticalement correctes.
-</code></pre></div></li>
-<li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>Phrase: {text}
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Les phrases suivantes indiquent si elles sont grammaticalement correctes.
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Phrase: {text}
 Correct du point de vue grammatical: {label}
-</code></pre></div></li>
-<li>Instruction-tuned prompt template:
-  <div class="highlight"><pre><span></span><code>Phrase: {text}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Phrase: {text}
 
 Déterminez si la phrase est grammaticalement correcte ou non. Répondez par &#39;oui&#39; si la phrase est correcte et par &#39;non&#39; si elle ne l&#39;est pas, et rien d&#39;autre.
-</code></pre></div></li>
-<li>Label mapping:<ul>
+</code></pre></div>
+<ul>
+<li>Label mapping:</li>
 <li><code>correct</code> ➡️ <code>oui</code></li>
 <li><code>incorrect</code> ➡️ <code>non</code></li>
 </ul>
-</li>
-</ul>
 <p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>scala-fr
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>scala-fr
 </code></pre></div>
 <h2 id="reading-comprehension">Reading Comprehension</h2>
 <h3 id="fquad">FQuAD</h3>
@@ -1872,7 +1905,7 @@ accessible, however, so we only use the training and validation split. We use 1,
 split is a subset of the original training split, and our validation and testing splits
 are subsets of the original validation split.</p>
 <p>Here are a few examples from the training split:</p>
-<p><div class="highlight"><pre><span></span><code><span class="p">{</span>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">&quot;context&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Parmi leurs thèmes récurrents, on en trouve qui sont communs à beaucoup d&#39;autres groupes contemporains ou plus anciens : les Stranglers ont décrit, à plusieurs reprises, la vie d&#39;un groupe de rock dans toutes ses dimensions (fans, autres groupes, vie en tournée). Le thème rebattu - chez les groupes des années 1960-1970 - de la drogue, est abordée sur une demi-douzaine de chansons (Don&#39;t Bring Harry), tandis que la vision angoissée du futur, dans le contexte de la guerre froide ou en lien avec les avancées de la science, a donné lieu à plusieurs titres (Curfew). On retrouve également chez eux des préoccupations écologiques (Dreamtime) ou sociales. La guerre, notamment les deux guerres mondiales (Northwinds), mais aussi les guerres contemporaines (I Don&#39;t Agree), sont à l&#39;origine de divers textes. Mais le thème qui les a le plus inspirés, c&#39;est de loin les femmes (The Man They Love to Hate).&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;question&quot;</span><span class="p">:</span><span class="w"> </span><span class="err">&#39;Sur</span><span class="w"> </span><span class="err">combie</span><span class="kc">n</span><span class="w"> </span><span class="err">de</span><span class="w"> </span><span class="err">cha</span><span class="kc">ns</span><span class="err">o</span><span class="kc">n</span><span class="w"> </span><span class="err">le</span><span class="w"> </span><span class="kc">t</span><span class="err">hème</span><span class="w"> </span><span class="err">de</span><span class="w"> </span><span class="err">la</span><span class="w"> </span><span class="err">drogue</span><span class="w"> </span><span class="err">es</span><span class="kc">t</span><span class="w"> </span><span class="err">il</span><span class="w"> </span><span class="err">abordé</span><span class="w"> </span><span class="err">?&#39;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;answers&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
@@ -1898,29 +1931,33 @@ are subsets of the original validation split.</p>
 <span class="w">    </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="err">array(</span><span class="p">[</span><span class="err">&#39;paysages&#39;</span><span class="p">],</span><span class="w"> </span><span class="err">d</span><span class="kc">t</span><span class="err">ype=objec</span><span class="kc">t</span><span class="err">)</span>
 <span class="w">  </span><span class="p">}</span>
 <span class="p">}</span>
-</code></pre></div></p>
+</code></pre></div>
 <p>When evaluating generative models, we use the following setup (see the
 <a href="/methodology">methodology</a> for more information on how these are used):</p>
 <ul>
 <li>Number of few-shot examples: 4</li>
-<li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>Les textes suivants sont accompagnés de questions et de réponses.
-</code></pre></div></li>
-<li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>Texte: {text}
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Les textes suivants sont accompagnés de questions et de réponses.
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Texte: {text}
 Question: {question}
 Réponse en 3 mots maximum: {label}
-</code></pre></div></li>
-<li>Instruction-tuned prompt template:
-  <div class="highlight"><pre><span></span><code>Texte: {text}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Texte: {text}
 
 Répondez à la question suivante sur le texte ci-dessus en 3 mots maximum.
 
 Question: {question}
-</code></pre></div></li>
-</ul>
+</code></pre></div>
 <p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>fquad
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>fquad
 </code></pre></div>
 <h3 id="unofficial-belebele-fr">Unofficial: BeleBele-fr</h3>
 <p>This dataset was published in <a href="https://aclanthology.org/2024.acl-long.44/">this paper</a>
@@ -1929,7 +1966,7 @@ and features multiple-choice reading comprehension questions across 122 language
 and questions. From these, we use a 256 / 64 / 580 split for training, validation and
 testing, respectively.</p>
 <p>Here are a few examples from the training split:</p>
-<p><div class="highlight"><pre><span></span><code><span class="p">{</span>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Texte: Lorsqu’un petit groupe d’êtres vivants (une petite population) est séparé de la population principale dont il est issu (par exemple, s’il se déplace au-dessus d’une chaîne de montagnes ou d’une rivière, ou s’il se déplace vers une nouvelle île de sorte qu’il ne peut pas facilement revenir en arrière), il se retrouve souvent dans un environnement différent de celui dans lequel il était auparavant. Ce nouvel environnement a des ressources et des concurrents différents, de sorte que la nouvelle population aura besoin de caractéristiques ou d&#39;adaptations nouvelles pour être un concurrent puissant par rapport à ce dont elle avait besoin auparavant. La population d&#39;origine n&#39;a pas changé du tout,\xa0elle a toujours besoin des mêmes adaptations. Au fil du temps, à mesure que la nouvelle population s&#39;adapte à son nouvel environnement, elle commence à ressembler de moins en moins à l&#39;autre population. Enfin, après des milliers ou même des millions d&#39;années, les deux populations paraîtront tellement différentes qu&#39;elles ne pourront plus être considérées comme appartenant à la même espèce. Nous appelons ce processus «\u2009spéciation\u2009», ce qui signifie simplement la formation de nouvelles espèces. La spéciation est une conséquence inévitable et une partie très importante de l’évolution.\nQuestion: D’après l’extrait et parmi les exemples ci-dessous, qu’est-ce qui gênerait le processus d’évolution\xa0?\nChoix:\na. La difficulté pour un petit groupe à s’épanouir dans un nouvel endroit\nb. La migration d’une portion d’une population vers un nouvel environnement\nc. L’ajustement par une population de son adaptation à un nouvel environnement\nd. Le fait qu’une population finisse par devenir deux populations distinctes&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;a&quot;</span>
 <span class="p">}</span>
@@ -1943,25 +1980,30 @@ testing, respectively.</p>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Texte: Dans de nombreuses régions du monde, faire un signe de la main est un geste amical signifiant «\u2009bonjour\u2009». En revanche, en Malaisie, du moins chez les Malais des zones rurales, cela signifie « viens par ici », comme le fait de plier l&#39;index vers soi, geste utilisé dans certains pays occidentaux, et il ne devrait être utilisé qu&#39;en ce sens. De même, un voyageur britannique en Espagne pourrait confondre un signe d&#39;adieu fait par une personne qui tourne la paume de sa main vers elle-même (plutôt que vers la personne à qui elle adresse le signe) avec une invitation à revenir.\nQuestion: Dans les zones rurales de la Malaisie, quel geste signifie « viens par ici » ?\nChoix:\na. Plier l’index\nb. Faire un signe de la main\nc. Faire un « high five »\nd. Lever le pouce&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;b&quot;</span>
 <span class="p">}</span>
-</code></pre></div></p>
+</code></pre></div>
 <p>When evaluating generative models, we use the following setup (see the
 <a href="/methodology">methodology</a> for more information on how these are used):</p>
 <ul>
 <li>Number of few-shot examples: 5</li>
-<li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>Les questions suivantes sont des questions à choix multiples (avec réponses).
-</code></pre></div></li>
-<li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>Question: {text}
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Les questions suivantes sont des questions à choix multiples (avec réponses).
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Question: {text}
 Choix:
 a. {option_a}
 b. {option_b}
 c. {option_c}
 d. {option_d}
 Réponse: {label}
-</code></pre></div></li>
-<li>Instruction-tuned prompt template:
-  <div class="highlight"><pre><span></span><code>Question: {text}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Question: {text}
 Choix:
 a. {option_a}
 b. {option_b}
@@ -1969,10 +2011,9 @@ c. {option_c}
 d. {option_d}
 
 Répondez à la question ci-dessus par &#39;a&#39;, &#39;b&#39;, &#39;c&#39; ou &#39;d&#39;, et rien d&#39;autre.
-</code></pre></div></li>
-</ul>
+</code></pre></div>
 <p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>belebele-fr
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>belebele-fr
 </code></pre></div>
 <h3 id="unofficial-multiwikiqa-fr">Unofficial: MultiWikiQA-fr</h3>
 <p>This dataset was published in <a href="https://doi.org/10.48550/arXiv.2509.04111">this paper</a>
@@ -1981,7 +2022,7 @@ languages.</p>
 <p>The original full dataset consists of 5,000 samples in a single split. We use a 1,024 /
 256 / 2,048 split for training, validation and testing, respectively, sampled randomly.</p>
 <p>Here are a few examples from the training split:</p>
-<p><div class="highlight"><pre><span></span><code><span class="p">{</span>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">    </span><span class="nt">&quot;context&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;L&#39;advocaat est une liqueur onctueuse d&#39;origine néerlandaise, faite de jaune d&#39;œuf, de sucre et d&#39;alcool. Il a un léger goût rappelant celui des amandes. Dans les pays anglophones, il contient généralement 15 % d&#39;alcool, tandis qu&#39;en Europe continentale ce taux varie selon les pays, souvent entre 14 et 20 %.\n\nOutre le jaune d&#39;œuf, l&#39;alcool et le sucre, l&#39;advocaat peut contenir du miel, de la vanille, de l&#39;eau-de-vie et parfois de la crème fraîche (ou du lait concentré non sucré). Parmi les fabricants, on trouve Warners, Bols, Verpoorten, de Korenaer, Élixir d&#39;Anvers, Warninks, De Kuyper, Dalkowski et Zwarte Kip.\n\nTypes \n\nAux Pays-Bas et dans le Tyrol, on vend un advocaat épais, souvent consommé à la cuillère, tandis qu&#39;une version plus liquide est réservée à l&#39;exportation. Cet advocaat épais entre dans la composition de plusieurs desserts, notamment des glaces et des pâtisseries. Il est aussi servi en apéritif ou en digestif. Traditionnellement, on le sert avec de la crème fouettée saupoudrée de cacao.\n\nLa qualité d&#39;exportation, plus liquide, est particulièrement bien adaptée à la fabrication de cocktails et de long drinks. Le cocktail le plus connu est le Snowball : un mélange d&#39;advocaat, de limonade et parfois de jus de citron vert (facultatif). Une autre boisson courante à base d&#39;advocaat est le bombardino, servi dans les stations de ski italiennes : c&#39;est un mélange d&#39;advocaat, de café noir et de whisky.\n\nHistoire \nL&#39;advocaat original était une liqueur créée par les Néerlandais du Suriname et de Recife avec des avocats. De retour aux Pays-Bas, où ce fruit n&#39;était pas disponible, ils reconstituèrent une texture identique avec du jaune d&#39;œuf épaissi. Le nom du fruit en nahuatl, ahuacatl, avait été transformé en espagnol en aguacate, puis en anglais en avocado et en néerlandais en advocaatpeer ou advocaat (par analogie avec la profession). De là, il se répandit dans les autres pays d&#39;Europe. Le rompope de Puebla, au Mexique, est une liqueur très similaire, à base de jaune d&#39;œuf et de vanille.\n\nVoir aussi \n\n \n Gogli\n Lait de poule\n Ponche Crema\n Rompope\n Sabayon\n\nNotes et références\n\nBibliographie \n \n \n\nLiqueur\nBoisson à base d&#39;œuf\nBoisson néerlandaise&quot;</span><span class="p">,</span>
 <span class="w">    </span><span class="nt">&quot;question&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Nommez deux marques qui produisent de l&#39;advocaat.&quot;</span><span class="p">,</span>
 <span class="w">    </span><span class="nt">&quot;answers&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
@@ -2007,29 +2048,33 @@ languages.</p>
 <span class="w">        </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="err">array(</span><span class="p">[</span><span class="s2">&quot;Michael Bryant&quot;</span><span class="p">],</span><span class="w"> </span><span class="err">d</span><span class="kc">t</span><span class="err">ype=objec</span><span class="kc">t</span><span class="err">)</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="p">}</span>
-</code></pre></div></p>
+</code></pre></div>
 <p>When evaluating generative models, we use the following setup (see the
 <a href="/methodology">methodology</a> for more information on how these are used):</p>
 <ul>
 <li>Number of few-shot examples: 4</li>
-<li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>Les textes suivants sont accompagnés de questions et de réponses.
-</code></pre></div></li>
-<li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>Texte: {text}
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Les textes suivants sont accompagnés de questions et de réponses.
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Texte: {text}
 Question: {question}
 Réponse en 3 mots maximum: {label}
-</code></pre></div></li>
-<li>Instruction-tuned prompt template:
-  <div class="highlight"><pre><span></span><code>Texte: {text}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Texte: {text}
 
 Répondez à la question suivante sur le texte ci-dessus en 3 mots maximum.
 
 Question: {question}
-</code></pre></div></li>
-</ul>
+</code></pre></div>
 <p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>multi-wiki-qa-fr
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>multi-wiki-qa-fr
 </code></pre></div>
 <h2 id="knowledge">Knowledge</h2>
 <h3 id="mmlu-fr">MMLU-fr</h3>
@@ -2044,7 +2089,7 @@ validation and testing, respectively (so 3,328 samples used in total). These spl
 new and there can thus be some overlap between the original validation and test sets and
 our validation and test sets.</p>
 <p>Here are a few examples from the training split:</p>
-<p><div class="highlight"><pre><span></span><code><span class="p">{</span>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;En 2013, la part des personnes en Ethiopie qui pensent que les partis politiques sont corrompus est\nChoix:\na. 24%\nb. 44%\nc. 64%\nd. 84%&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;a&quot;</span>
 <span class="p">}</span>
@@ -2058,25 +2103,30 @@ our validation and test sets.</p>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Quelle affirmation suivante concernant les réactions dépendantes de la lumière de la photosynthèse est correcte?\nChoix:\na. Ils fournissent le carbone qui est incorporé dans le sucre.\nb. Ils produisent du PGA, qui est converti en glucose par la fixation du carbone dans les réactions indépendantes de la lumière.\nc. L&#39;eau est séparée en fournissant des ions hydrogène et des électrons à la NADP pour un stockage temporaire.\nd. Ils se produisent dans le stroma des chloroplastes.&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;c&quot;</span>
 <span class="p">}</span>
-</code></pre></div></p>
+</code></pre></div>
 <p>When evaluating generative models, we use the following setup (see the
 <a href="/methodology">methodology</a> for more information on how these are used):</p>
 <ul>
 <li>Number of few-shot examples: 5</li>
-<li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>Les questions suivantes sont des questions à choix multiples (avec réponses).
-</code></pre></div></li>
-<li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>Question: {text}
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Les questions suivantes sont des questions à choix multiples (avec réponses).
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Question: {text}
 Choix:
 a. {option_a}
 b. {option_b}
 c. {option_c}
 d. {option_d}
 Réponse: {label}
-</code></pre></div></li>
-<li>Instruction-tuned prompt template:
-  <div class="highlight"><pre><span></span><code>Question: {text}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Question: {text}
 Choix:
 a. {option_a}
 b. {option_b}
@@ -2084,10 +2134,9 @@ c. {option_c}
 d. {option_d}
 
 Répondez à la question ci-dessus par &#39;a&#39;, &#39;b&#39;, &#39;c&#39; ou &#39;d&#39;, et rien d&#39;autre.
-</code></pre></div></li>
-</ul>
+</code></pre></div>
 <p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>mmlu-fr
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>mmlu-fr
 </code></pre></div>
 <h2 id="common-sense-reasoning">Common-sense Reasoning</h2>
 <h3 id="hellaswag-fr">HellaSwag-fr</h3>
@@ -2099,7 +2148,7 @@ paper</a>, using GPT-3.5-turbo.</p>
 <p>The original full dataset consists of 9,310 samples. We use a 1,024 / 256 / 2,048 split
 for training, validation and testing, respectively (so 3,328 samples used in total).</p>
 <p>Here are a few examples from the training split:</p>
-<p><div class="highlight"><pre><span></span><code><span class="p">{</span>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;[header] Comment dire à vos enfants que vous allez divorcer [title] Contrôlez vos émotions. [step] Vos enfants seront probablement en colère et bouleversés lorsque vous leur annoncerez le divorce, essayez donc de ne pas réagir de la même manière. Attendez de rompre la nouvelle lorsque vous pourrez discuter du sujet de manière efficace et rester maître de vos émotions.\nChoix:\na. Rappelez-vous, le but de la discussion est d&#39;être là pour les enfants - ils ne devraient pas avoir à vous réconforter. [title] Essayez de le faire ensemble, si possible.\nb. [substeps] Trouvez un moyen d&#39;éviter que vos enfants ne vous agressent verbalement. Assurez-vous d&#39;être calme et posé et ne donnez pas l&#39;impression que la nouvelle du divorce est quelque chose qui vous dérange.\nc. [substeps] Si vos enfants ont du mal à comprendre la nouvelle à distance, posez-leur des questions lors d&#39;une conversation intime et privée. Laissez-les utiliser les questions pour traiter et comprendre ce qu&#39;ils ressentent à propos de l&#39;annonce.\nd. [substeps] Si vous ne voulez pas qu&#39;ils le sachent immédiatement, partez en silence et réfléchissez un peu plus longtemps avant de leur dire. Cherchez un endroit confortable pour vous deux pour parler en privé, afin que vous puissiez tous deux prendre du temps pour traiter vos sentiments et accepter la situation.&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;a&quot;</span>
 <span class="p">}</span>
@@ -2113,25 +2162,30 @@ for training, validation and testing, respectively (so 3,328 samples used in tot
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;[header] Comment se calmer [title] Respirer. [step] Respirer. Lentement.\nChoix:\na. Concentrez-vous sur votre respiration et détendez votre corps. Continuez à inspirer et expirer lentement par le nez, en mettant une pression sur votre diaphragme et vos muscles fessiers (vos poumons).\nb. Si votre cœur bat vite ou fort, vous pourriez être en danger de tachycardie, d&#39;AVC ou de toute autre crise cardiaque. [title] Allongez-vous sur le dos et inspirez et expirez profondément.\nc. Inspirez pendant 5 secondes; retenez votre souffle pendant 5 secondes, puis expirez pendant 5 secondes. Cela fonctionne parce que vous faites l&#39;opposé de ce qu&#39;une personne excitée ferait.\nd. Inspirez pendant un compte de cinq et abaissez-vous. Expirez, expirez quatre fois de plus, aussi profondément que vous pouvez sentir, et répétez pour un total de dix.&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;c&quot;</span>
 <span class="p">}</span>
-</code></pre></div></p>
+</code></pre></div>
 <p>When evaluating generative models, we use the following setup (see the
 <a href="/methodology">methodology</a> for more information on how these are used):</p>
 <ul>
 <li>Number of few-shot examples: 5</li>
-<li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>Les questions suivantes sont des questions à choix multiples (avec réponses).
-</code></pre></div></li>
-<li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>Question: {text}
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Les questions suivantes sont des questions à choix multiples (avec réponses).
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Question: {text}
 Choix:
 a. {option_a}
 b. {option_b}
 c. {option_c}
 d. {option_d}
 Réponse: {label}
-</code></pre></div></li>
-<li>Instruction-tuned prompt template:
-  <div class="highlight"><pre><span></span><code>Question: {text}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Question: {text}
 Choix:
 a. {option_a}
 b. {option_b}
@@ -2139,10 +2193,9 @@ c. {option_c}
 d. {option_d}
 
 Répondez à la question ci-dessus par &#39;a&#39;, &#39;b&#39;, &#39;c&#39; ou &#39;d&#39;, et rien d&#39;autre.
-</code></pre></div></li>
-</ul>
+</code></pre></div>
 <p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>hellaswag-fr
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>hellaswag-fr
 </code></pre></div>
 <h3 id="unofficial-goldenswag-fr">Unofficial: GoldenSwag-fr</h3>
 <p>This dataset is a filtered and machine translated version of the English <a href="https://aclanthology.org/P19-1472/">HellaSwag
@@ -2175,20 +2228,25 @@ samples for training, validation, and testing, respectively.</p>
 <a href="/methodology">methodology</a> for more information on how these are used):</p>
 <ul>
 <li>Number of few-shot examples: 5</li>
-<li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>Les questions suivantes sont des questions à choix multiples (avec réponses).
-</code></pre></div></li>
-<li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>Question: {text}
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Les questions suivantes sont des questions à choix multiples (avec réponses).
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Question: {text}
 Choix:
 a. {option_a}
 b. {option_b}
 c. {option_c}
 d. {option_d}
 Réponse: {label}
-</code></pre></div></li>
-<li>Instruction-tuned prompt template:
-  <div class="highlight"><pre><span></span><code>Question: {text}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Question: {text}
 Choix:
 a. {option_a}
 b. {option_b}
@@ -2196,10 +2254,9 @@ c. {option_c}
 d. {option_d}
 
 Répondez à la question ci-dessus par &#39;a&#39;, &#39;b&#39;, &#39;c&#39; ou &#39;d&#39;, et rien d&#39;autre.
-</code></pre></div></li>
-</ul>
+</code></pre></div>
 <p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>goldenswag-fr
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>goldenswag-fr
 </code></pre></div>
 <h3 id="unofficial-winogrande-fr">Unofficial: Winogrande-fr</h3>
 <p>This dataset was published in <a href="https://doi.org/10.48550/arXiv.2506.19468">this paper</a>
@@ -2227,27 +2284,31 @@ we use the same splits.</p>
 <a href="/methodology">methodology</a> for more information on how these are used):</p>
 <ul>
 <li>Number of few-shot examples: 5</li>
-<li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>Les questions suivantes sont des questions à choix multiples (avec réponses).
-</code></pre></div></li>
-<li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>Question: {text}
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Les questions suivantes sont des questions à choix multiples (avec réponses).
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Question: {text}
 Choix:
 a. {option_a}
 b. {option_b}
 Réponse: {label}
-</code></pre></div></li>
-<li>Instruction-tuned prompt template:
-  <div class="highlight"><pre><span></span><code>Question: {text}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Question: {text}
 Choix:
 a. {option_a}
 b. {option_b}
 
 Répondez à la question ci-dessus par &#39;a&#39; ou &#39;b&#39;, et rien d&#39;autre.
-</code></pre></div></li>
-</ul>
+</code></pre></div>
 <p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>winogrande-fr
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>winogrande-fr
 </code></pre></div>
 <h2 id="summarisation">Summarisation</h2>
 <h3 id="orange-sum">Orange Sum</h3>
@@ -2259,7 +2320,7 @@ themselves (the "abstract" field in the original dataset).</p>
 validation and testing, respectively. We use 1,024 / 256 / 1,024 samples for training,
 validation, and testing, respectively. All our splits are subsets of the original ones.</p>
 <p>Here are a few examples from the training split:</p>
-<p><div class="highlight"><pre><span></span><code><span class="p">{</span>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Réclamé puis annoncé par Emmanuel Macron, le débat parlementaire sur l&#39;immigration s&#39;est ouvert ce lundi 7 octobre avec une allocution d&#39;Edouard Philippe devant les députés. Le Premier ministre a commencé son discours en empruntant les mots d&#39;un de ses prédécesseurs, Michel Rocard. Il a ensuite fait état d&#39;un système français d&#39;asile \&quot;saturé\&quot;. \&quot;En 2018, la France a enregistré le record de 123.000 demandes d&#39;asile\&quot;, a t-il rappelé, estimant que la France \&quot;n&#39;a pas atteint tous\&quot; ses objectifs en matière de politique migratoire et de lutte contre l&#39;immigration irrégulière. \&quot;La question d&#39;un pilotage par objectifs de l&#39;admission au séjour n&#39;est pas tabou. Je n&#39;ai pas peur de réfléchir à l&#39;idée de quotas. Il nous faut donc regarder sujet après sujet. On sait depuis longtemps que les quotas ne s&#39;appliquent ni à l&#39;asile ni à l&#39;immigration familiale. Pour autant, celle-ci ne pourrait échapper à toute maîtrise. Il faut lutter contre les abus et les fraudes, et resserrer les critères là où cela s&#39;impose\&quot; a t-il poursuivi.Le Premier ministre a en revanche balayé l&#39;idée de la fin du droit du sol, réclamée par des élus de droite. \&quot;Je ne vois pas bien en quoi à l&#39;échelle du pays, la fin du droit du sol serait une réponse\&quot;. Il a également adressé une critique virulente à l&#39;égard de la théorie de \&quot;l&#39;immigration de remplacement\&quot;, un \&quot;vocable d&#39;une laideur certaine qui fait appel aux ressorts les plus détestables du complotisme.Ces théories \&quot;inspiraient encore récemment des discours dont j&#39;ai eu l&#39;occasion de dire qu&#39;ils étaient profondément contraires à l&#39;idée dont nous nous faisons de la France et de la République\&quot; a t-il encore asséné, en référence à la récente \&quot;Convention de la droite\&quot; organisée le 28 septembre dernier autour de Marion Maréchal et Eric Zemmour.&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;target_text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Le Premier ministre a ouvert ce lundi 7 octobre le débat sur l&#39;immigration à l&#39;Assemblée nationale, déclarant que le système français d&#39;asile est aujourd&#39;hui \&quot;saturé\&quot;. Il a au passage pourfendu la théorie de \&quot;l&#39;immigration de remplacement\&quot;, qui fait selon lui appel \&quot;aux ressorts les plus détestables du complotisme\&quot;.&quot;</span>
 <span class="p">}</span>
@@ -2273,26 +2334,30 @@ validation, and testing, respectively. All our splits are subsets of the origina
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Trois ans et demi après la décision des Britanniques de quitter l&#39;Union européenne, le Brexit est finalement intervenu vendredi 31 janvier. Une mesure qui va sérieusement changer la donne pour les Britanniques qui siègent aujourd&#39;hui dans les conseils municipaux en France. Comme tous les citoyens européens, les Britanniques avaient jusqu&#39;à présent le droit de vote et d&#39;éligibilité aux élections municipales françaises. Actuellement sur 2.493 conseillers étrangers, 757 viennent du Royaume-Uni, soit environ 30%, selon le Répertoire national des élus. Ils sont nettement plus nombreux que les Belges (544 élus) et les Portugais (357). Ils résident pour la plupart dans un grand quart Sud-Ouest de la France : Charente (70 élus), Dordogne (59), Aude (52), Haute-Vienne (40), Lot-et-Garonne (31), Hérault (30), Deux Sèvres (28), Gers (26), Lot (23)...Or, avec le Brexit, ils ne pourront pas briguer de nouveau mandat, à moins d&#39;avoir acquis une autre nationalité européenne depuis les dernières élections. C&#39;est notamment le cas à Poupas, village de 85 habitants dans le Tarn-et-Garonne, où deux des trois conseillers municipaux britanniques, sur les 11 au total que compte la commune, ont obtenu la nationalité française. Le droit \&quot;de payer et de se taire\&quot;Pour certaines petites communes, où il est souvent difficile de trouver des candidats, c&#39;est un vrai casse-tête. À Perriers-en-Beauficel, dans la Manche, Patrick Head , originaire du Wiltshire (sud de l&#39;Angleterre), va ainsi terminer son mandat. Le sexagénaire avait raflé pas moins de 89,74% des suffrages dans ce petit village normand, où il a élu domicile en 2004. Soit le meilleur score de cette commune de 216 habitants, où les électeurs peuvent rayer ou ajouter un nom. \&quot;Ça va nous manquer car Patrick nous aidait beaucoup\&quot;, regrette la maire Lydie Brionne, qui explique que son colistier faisait \&quot;le lien\&quot; avec la cinquantaine de Britanniques installés dans ce coin de campagne normande. À Perriers-en-Beauficel, sur les onze élus de 2014, deux sont Britanniques. \&quot;Il va falloir trouver deux nouveaux candidats. C&#39;est difficile de trouver des gens motivés dans une petite commune\&quot;, souligne la maire, par ailleurs éleveuse de vaches laitières. \&quot;Depuis 20 ans, beaucoup de Britanniques se sont installés, ils ont repeuplé la commune, ça a donné du dynamisme\&quot;, raconte l&#39;élue. Avec le Brexit, \&quot;j&#39;ai peur qu&#39;ils soient obligés de repartir.\&quot;Loin d&#39;être isolé, le cas de ce village normand se retrouve partout où les Britanniques sont fortement implantés. À Bellegarde-du-Razès, commune de 240 habitants dans l&#39;Aude, les deux élus d&#39;Outre-Manche \&quot;apportent une valeur ajoutée\&quot; au village, avec \&quot;leur importante implication dans le milieu associatif\&quot;, estime le maire Gilbert De Paoli. L&#39;Écossaise Alisson Mackie, 63 ans, installée depuis 2011, est dépitée de ne plus pouvoir se représenter en mars. \&quot;On a construit notre maison ici, on paye des impôts ici, on consomme ici mais on a été rayés des listes électorales\&quot;, déplore-t-elle.À Jouac, village de 180 habitants en Haute-Vienne, la maire Virginie Windridge, 39 ans, elle-même mariée à un Britannique, trouve aussi \&quot;très injuste que des gens qui sont là depuis des années, payent des impôts et contribuent à la vie de la commune, aient du jour au lendemain le droit &#39;de payer et de se taire&#39;\&quot;. \&quot;C&#39;est dur à avaler\&quot;, dit-elle.Les deux élus britanniques actuels ont \&quot;un apport important\&quot;, souligne la maire. \&quot;Déjà ils sont un relais avec la communauté britannique de la commune. Et puis ils apportent des idées différentes, une autre façon de fonctionner, de voir les choses\&quot;, décrit Mme Windridge. \&quot;Ils amènent parfois un regard sur ce qui existe ou se fait ailleurs, une autre perspective\&quot;. \&quot;Et, il faut bien le dire, culturellement, quelquefois, les Britanniques sont plus ouverts aux changements que nous, ont un peu moins peur de l&#39;inconnu\&quot;, ajoute-t-elle en donnant en exemple la décision d&#39;éteindre l&#39;éclairage public nocturne. \&quot;Les élus britanniques étaient naturellement les plus ouverts sur cette idée-là, ils voyaient de suite le gagnant-gagnant, pour l&#39;environnement et le budget de la commune\&quot;, estime-t-elle.&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;target_text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;À l&#39;heure actuelle, plus de 750 Britanniques siègent dans les conseils municipaux en France. Or, avec la sortie du Royaume-Uni de l&#39;Union européenne, ils ne pourront pas se représenter en mars prochain.&quot;</span>
 <span class="p">}</span>
-</code></pre></div></p>
+</code></pre></div>
 <p>When evaluating generative models, we use the following setup (see the
 <a href="/methodology">methodology</a> for more information on how these are used):</p>
 <ul>
 <li>Number of few-shot examples: 1</li>
-<li>Prefix prompt:
-  <div class="highlight"><pre><span></span><code>Les articles suivants sont accompagnés d&#39;un résumé.
-</code></pre></div></li>
-<li>Base prompt template:
-  <div class="highlight"><pre><span></span><code>Article de presse: {text}
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Les articles suivants sont accompagnés d&#39;un résumé.
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Article de presse: {text}
 Résumé: {target_text}
-</code></pre></div></li>
-<li>Instruction-tuned prompt template:
-  <div class="highlight"><pre><span></span><code>Article de presse: {text}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Article de presse: {text}
 
 Rédigez un résumé de l&#39;article ci-dessus.
-</code></pre></div></li>
-</ul>
+</code></pre></div>
 <p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>orange-sum
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>orange-sum
 </code></pre></div>
 
 
