@@ -9,7 +9,7 @@
 # ]
 # ///
 
-"""Create the Lithuanian History multiple choice dataset and upload it to the HF Hub."""
+"""Create the LT-History knowledge dataset and upload it to the HF Hub."""
 
 from collections import Counter
 
