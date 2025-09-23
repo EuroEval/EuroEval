@@ -992,7 +992,7 @@ Here are a few examples from the training split:
 {"introduction": "En række huse er nummereret fra 1 til 2 fra venstre mod højre.\n\nI hvert hus bor en person med en unik egenskab i hver af de følgende kategorier:\n\nNationaliteter: Storbritannien og Sverige.\nKæledyr: hund og vandrende pind.\nYndlingsboggenrer: gyser og kærlighedsromaner.\n\nDerudover ved vi følgende:\n\n",
 "clues": ["1. Ejeren af en vandrende pind læser gysere.", "2. Personen med en tatovering bor ikke i hus nummer 1.", "3. Briten har en hund.", "4. Personen med en cykel har en kandidatgrad i matematik.", "5. Gyserlæseren bor til venstre for personen der læser kærlighedsromaner.", "6. Personen der synes den næstbedste frugt er mango bor ikke i hus nummer 2.", "7. Alle husene har store vinduer.", "8. Personen der elsker fysik bor ikke i hus nummer 1."],
 "format_example": "Følgende er et eksempel på svarformatet:\n\n{\n    'object_1': [\n        'nationaliteter_1',\n        'kæledyr_1',\n        'yndlingsboggenrer_1'\n    ],\n    'object_2': [\n       'nationaliteter_2',\n        'kæledyr_2',\n        'yndlingsboggenrer_2'\n    ]\n}",
-"label": {"object_1": ["hund", "krimi", "fodbold"], "object_2": ["kat", "kærlighedsromaner", "brætspil"],
+"label": {"object_1": ["hund", "krimi", "fodbold"],
           "object_2": ["kat", "kærlighedsromaner", "brætspil"]},
 }
 ```
@@ -1000,7 +1000,7 @@ Here are a few examples from the training split:
 ```json
 {"introduction": "En række huse er nummereret fra 1 til 2 fra venstre mod højre.\n\nI hvert hus bor en person med en unik egenskab i hver af de følgende kategorier:\n\nKæledyr: kat og zebra.\nDrikke: kaffe og sodavand.\nYndlingsfrugter: banan og jordbær.\n\nDerudover ved vi følgende:\n\n",
 "clues": ["1. Personen der synes den næstbedste frugt er mango har et kæledyr som er gammelt for sin art.", "2. Sild er fisk.", "3. Personen der ikke ejer en kaktus bor ikke i hus nummer 2.", "4. Sodavandsdrikkeren bor til højre for personen der elsker bananer.", "5. Katteejeren bor ved siden af personen med en cykel.", "6. Sodavandsdrikkeren ved at solsystemet bevæger sig med en fart på ca. 200 km/s rundt om galaksens centrum.", "7. Zebraejeren bor til venstre for personen der elsker jordbær."],
-"format_example": "Følgende er et eksempel på svarformatet:\n\n{\n    'object_1': [\n        'kæledyr_1',\n        'drikke_1',\n        'yndlingsfrugter_1'\n    ],\n    'object_2': [\n        'kæledyr_2',\n        'drikke_2',\n        'yndlingsfrugter_2'\n    ]\n",
+"format_example": "Følgende er et eksempel på svarformatet:\n\n{\n    'object_1': [\n        'kæledyr_1',\n        'drikke_1',\n        'yndlingsfrugter_1'\n    ],\n    'object_2': [\n        'kæledyr_2',\n        'drikke_2',\n        'yndlingsfrugter_2'\n    ]\n}",
 "label": {"object_1": ["Sverige", "te", "solbær"],
           "object_2": ["Danmark", "kaffe", "skovjordbær"]},
 }
