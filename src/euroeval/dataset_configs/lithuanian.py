@@ -43,7 +43,7 @@ MULTI_WIKI_QA_LT_CONFIG = DatasetConfig(
 
 LT_HISTORY_CONFIG = DatasetConfig(
     name="lt-history",
-    pretty_name="the Lithuanian history knowledge dataset LT-History",
+    pretty_name="the Lithuanian knowledge dataset LT-History",
     huggingface_id="EuroEval/lt-history",
     task=KNOW,
     languages=[LT],
