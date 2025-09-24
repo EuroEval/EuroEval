@@ -25,8 +25,11 @@ def main() -> None:
 
     for theme in THEMES:
         # Download the dataset
-        train_data, test_data = load_dataset(
-            path=repo_id, name="dataset_" + theme, token=True, split="val"
+        train_data = load_dataset(
+            path=repo_id, name="dataset_" + theme, token=True, split="train"
+        )
+        test_data = load_dataset(
+            path=repo_id, name="dataset_" + theme, token=True, split="test"
         )
         assert isinstance(train_data, Dataset)
         assert isinstance(test_data, Dataset)
