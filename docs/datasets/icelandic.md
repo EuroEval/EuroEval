@@ -4,7 +4,6 @@ This is an overview of all the datasets used in the Icelandic part of EuroEval. 
 datasets are grouped by their task - see the [task overview](/tasks) for more
 information about what these constitute.
 
-
 ## Sentiment Classification
 
 ### Hotter and Colder Sentiment
@@ -25,12 +24,14 @@ Here are a few examples from the training split:
   "label": "positive"
 }
 ```
+
 ```json
 {
   "text": "Jú, jú, auðvita á hann ekki að vera samstarfsmaður eða einu sinni í sama húsi og sérstakir ríkissaksóknarar í þessu máli. Sérstakir ríkissaksóknarar fyrir þetta mál eiga að liggja liggja beint undir ráðuneytinu og vera algerlega sjálfstæðir, \"untouchables\". Ég hef ekki enn séð nein rök fyrir því að Valtýr þurfi að víkja úr sínu starfi ef þessi leið verður valin? Best væri ef sérstakir ríkissaksóknarar í þessu máli væri þrepinu hærri í valdastiganum en Valtýr, ef það er hægt að koma því í gegn með snöggum lagabreytingum? Varla er þetta Stjórnarskrármál?",
   "label": "neutral"
 }
 ```
+
 ```json
 {
   "text": "Meira að segja hörðustu klappstýrur Þórólfs hljóta að hugsa, þó ekki væri í nema augnablik: Mikið er skrýtið að hann sé ekki með á hreinu af hverju fáir handleggir eru að bjóða sig í þriðju sprautuna!Annars er bara sama handritið að fara spilast aftur: Nú er haustið komið og árstíðarbundnar pestir munu rjúka upp, allar sem ein, og þá verður skellt í lás og talað um að hafa opnað of snemma.",
@@ -43,31 +44,36 @@ When evaluating generative models, we use the following setup (see the
 
 - Number of few-shot examples: 12
 - Prefix prompt:
-  ```
+
+  ```text
   Hér fyrir neðan eru textabrot ásamt lyndisgildi þeirra sem getur verið 'jákvætt', 'hlutlaust' eða 'neikvætt'.
   ```
+
 - Base prompt template:
-  ```
+
+  ```text
   Textabrot: {text}
   Lyndi: {label}
   ```
+
 - Instruction-tuned prompt template:
-  ```
+
+  ```text
   Texti: {text}
 
   Flokkaðu tilfinninguna í textanum. Svaraðu með 'jákvætt', 'hlutlaust' eða 'neikvætt'.
   ```
+
 - Label mapping:
-    - `positive` ➡️ `jákvætt`
-    - `neutral` ➡️ `hlutlaust`
-    - `negative` ➡️ `neikvætt`
+  - `positive` ➡️ `jákvætt`
+  - `neutral` ➡️ `hlutlaust`
+  - `negative` ➡️ `neikvætt`
 
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ euroeval --model <model-id> --dataset hotter-and-colder-sentiment
+euroeval --model <model-id> --dataset hotter-and-colder-sentiment
 ```
-
 
 ## Named Entity Recognition
 
@@ -93,12 +99,14 @@ Here are a few examples from the training split:
   'labels': array(['O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'B-MISC', 'O', 'O', 'B-MISC', 'O', 'O', 'O', 'O', 'O'], dtype=object)
 }
 ```
+
 ```json
 {
   'tokens': array(['Það', 'var', 'bróðir', 'Sandlers', 'sem', 'hvatti', 'hann', 'til', 'að', 'leggja', 'grínið', 'fyrir', 'sig', 'þegar', 'hann', 'var', '17', 'ára', 'að', 'aldri', '.'], dtype=object),
   'labels': array(['O', 'O', 'O', 'B-PER', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O'], dtype=object)
 }
 ```
+
 ```json
 {
   'tokens': array(['2.-', 'Erla', 'Guðný', 'Gylfad.', ',', 'Smyrill', 'frá', 'Stokkhólma', ',', '7,01', '.'], dtype=object),
@@ -111,36 +119,41 @@ When evaluating generative models, we use the following setup (see the
 
 - Number of few-shot examples: 8
 - Prefix prompt:
-  ```
+
+  ```text
   Eftirfarandi eru setningar ásamt JSON lyklum með nefndum einingum sem koma fyrir í setningunum.
   ```
+
 - Base prompt template:
-  ```
+
+  ```text
   Setning: {text}
   Nafneiningar: {label}
   ```
+
 - Instruction-tuned prompt template:
-  ```
+
+  ```text
   Setning: {text}
 
   Greindu nefndu einingarnar í setningunni. Þú ættir að skila þessu sem JSON orðabók með lyklunum 'einstaklingur', 'staðsetning', 'stofnun' og 'ýmislegt'. Gildin ættu að vera listi yfir nefndu einingarnar af þeirri gerð, nákvæmlega eins og þær koma fram í setningunni.
   ```
+
 - Label mapping:
-    - `B-PER` ➡️ `einstaklingur`
-    - `I-PER` ➡️ `einstaklingur`
-    - `B-LOC` ➡️ `staðsetning`
-    - `I-LOC` ➡️ `staðsetning`
-    - `B-ORG` ➡️ `stofnun`
-    - `I-ORG` ➡️ `stofnun`
-    - `B-MISC` ➡️ `ýmislegt`
-    - `I-MISC` ➡️ `ýmislegt`
+  - `B-PER` ➡️ `einstaklingur`
+  - `I-PER` ➡️ `einstaklingur`
+  - `B-LOC` ➡️ `staðsetning`
+  - `I-LOC` ➡️ `staðsetning`
+  - `B-ORG` ➡️ `stofnun`
+  - `I-ORG` ➡️ `stofnun`
+  - `B-MISC` ➡️ `ýmislegt`
+  - `I-MISC` ➡️ `ýmislegt`
 
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ euroeval --model <model-id> --dataset mim-gold-ner
+euroeval --model <model-id> --dataset mim-gold-ner
 ```
-
 
 ## Linguistic Acceptability
 
@@ -167,12 +180,14 @@ Here are a few examples from the training split:
   "label": "correct"
 }
 ```
+
 ```json
 {
   "text": "Það væri mun skárra, það hefði verið hægt að gera það meiri með sátt, en það var einfaldlega ekki gert.",
   "label": "incorrect"
 }
 ```
+
 ```json
 {
   "text": "Mig líka að koma að, ég gleymdi því áðan og kom því heldur ekki að, komugjöldunum eins og þau heita víst núna, ekki legugjöld lengur.",
@@ -185,30 +200,35 @@ When evaluating generative models, we use the following setup (see the
 
 - Number of few-shot examples: 12
 - Prefix prompt:
-  ```
+
+  ```text
   Hér fyrir neðan eru setningar ásamt mati á því hvort þær eru málfræðilega réttar.
   ```
+
 - Base prompt template:
-  ```
+
+  ```text
   Setning: {text}
   Málfræðilega rétt: {label}
   ```
+
 - Instruction-tuned prompt template:
-  ```
+
+  ```text
   Setning: {text}
 
   Greindu hvort setningin er málfræðilega rétt. Svaraðu með 'já' ef setningin er rétt og 'nei' ef hún er það ekki.
   ```
+
 - Label mapping:
-    - `correct` ➡️ `já`
-    - `incorrect` ➡️ `nei`
+  - `correct` ➡️ `já`
+  - `incorrect` ➡️ `nei`
 
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ euroeval --model <model-id> --dataset scala-is
+euroeval --model <model-id> --dataset scala-is
 ```
-
 
 ### Unofficial: IceEC
 
@@ -230,12 +250,14 @@ Here are a few examples from the training split:
   "label": "correct"
 }
 ```
+
 ```json
 {
   "text": "Þó svo að hann sé leiðinlegur og ekkert tívolí gaman, þá er miðlar hann þekkingu til okkar og án hans mundi enginn menntun vera.",
   "label": "incorrect"
 }
 ```
+
 ```json
 {
   "text": "Síminn er hvers manns ábyrgð.",
@@ -248,30 +270,35 @@ When evaluating generative models, we use the following setup (see the
 
 - Number of few-shot examples: 12
 - Prefix prompt:
-  ```
+
+  ```text
   Hér fyrir neðan eru setningar ásamt mati á því hvort þær eru málfræðilega réttar.
   ```
+
 - Base prompt template:
-  ```
+
+  ```text
   Setning: {text}
   Málfræðilega rétt: {label}
   ```
+
 - Instruction-tuned prompt template:
-  ```
+
+  ```text
   Setning: {text}
 
   Greindu hvort setningin er málfræðilega rétt. Svaraðu með 'já' ef setningin er rétt og 'nei' ef hún er það ekki.
   ```
+
 - Label mapping:
-    - `correct` ➡️ `já`
-    - `incorrect` ➡️ `nei`
+  - `correct` ➡️ `já`
+  - `incorrect` ➡️ `nei`
 
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ euroeval --model <model-id> --dataset ice-ec
+euroeval --model <model-id> --dataset ice-ec
 ```
-
 
 ### Unofficial: IceLinguistic
 
@@ -291,12 +318,14 @@ Here are a few examples from the training split:
   "label": "correct"
 }
 ```
+
 ```json
 {
   "text": "Af hverju fór þú ekki heim?",
   "label": "incorrect"
 }
 ```
+
 ```json
 {
   "text": "Þú borðaðir kökuna og ég kleinuhringurinn.",
@@ -309,30 +338,35 @@ When evaluating generative models, we use the following setup (see the
 
 - Number of few-shot examples: 12
 - Prefix prompt:
-  ```
+
+  ```text
   Hér fyrir neðan eru setningar ásamt mati á því hvort þær eru málfræðilega réttar.
   ```
+
 - Base prompt template:
-  ```
+
+  ```text
   Setning: {text}
   Málfræðilega rétt: {label}
   ```
+
 - Instruction-tuned prompt template:
-  ```
+
+  ```text
   Setning: {text}
 
   Greindu hvort setningin er málfræðilega rétt. Svaraðu með 'já' ef setningin er rétt og 'nei' ef hún er það ekki.
   ```
+
 - Label mapping:
-    - `correct` ➡️ `já`
-    - `incorrect` ➡️ `nei`
+  - `correct` ➡️ `já`
+  - `incorrect` ➡️ `nei`
 
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ euroeval --model <model-id> --dataset ice-linguistic
+euroeval --model <model-id> --dataset ice-linguistic
 ```
-
 
 ## Reading Comprehension
 
@@ -360,6 +394,7 @@ Here are a few examples from the training split:
   }
 }
 ```
+
 ```json
 {
   "context": 'Hvannadalshnúkur eða Hvannadalshnjúkur er hæsti tindur eldkeilunnar undir Öræfajökli og jafnframt hæsti tindur Íslands . Samkvæmt nýjustu mælingu er hæð hans 2.109,6 metrar yfir sjávarmáli . Tindurinn er staðsettur innan Vatnajökulsþjóðgarðs og er vinsæll hjá fjallgöngufólki , reyndu sem og óreyndu . Tindurinn er ekki flókinn uppgöngu og þarfnast ekki mikillar reynslu eða tækni í fjallgöngum , gangan krefst samt mikils úthalds þar sem oftast er gengið á tindinn og niður aftur á sama deginum . Hækkunin er rúmir 2000 metrar , gangan tekur oftast 12 - 14 klst í heild .',
@@ -370,6 +405,7 @@ Here are a few examples from the training split:
   }
 }
 ```
+
 ```json
 {
   "context": 'Falklandseyjar er lítill eyjaklasi út af Suður-Ameríku , um 500 km til suðausturs frá Argentínu . Þær eru undir stjórn Bretlands en Argentína hefur einnig gert tilkall til þeirra og olli það Falklandseyjastríðinu milli þjóðanna 1982 .',
@@ -386,17 +422,22 @@ When evaluating generative models, we use the following setup (see the
 
 - Number of few-shot examples: 4
 - Prefix prompt:
-  ```
+
+  ```text
   Eftirfarandi eru textar með tilheyrandi spurningum og svörum.
   ```
+
 - Base prompt template:
-  ```
+
+  ```text
   Texti: {text}
   Spurning: {question}
   Svaraðu með að hámarki 3 orðum: {label}
   ```
+
 - Instruction-tuned prompt template:
-  ```
+
+  ```text
   Texti: {text}
 
   Svaraðu eftirfarandi spurningu um textann að hámarki í 3 orðum.
@@ -407,9 +448,8 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ euroeval --model <model-id> --dataset nqii
+euroeval --model <model-id> --dataset nqii
 ```
-
 
 ### Unofficial: IcelandicQA
 
@@ -438,6 +478,7 @@ Here are a few examples from the training split:
   }
 }
 ```
+
 ```json
 {
   "context": 'Tjörn er kirkjustaður í Dalvíkurbyggð í Svarfaðardal. Bærinn stendur að vestanverðu í dalnum um 5 km innan við Dalvík. Þórarinn Kr. Eldjárn lét reisa núverandi íbúðarhús 1931. Tjarnartjörn er lítið og grunnt stöðuvatn á flatlendinu neðan við bæinn. Tjörnin er innan Friðlands Svarfdæla sem teygir sig allt til strandar. Þar er mikið fuglalíf. Tjörn er með stærri jörðum í Svarfaðardal og að líkindum landnámsjörð þótt bæjarins sé ekki getið í Landnámu. Þar hafa verið stundaðar úrkomumælingar á vegum Veðurstofunnar frá árinu 1970. Í hlíðinni ofan við Tjörn eru volgrur og í framhaldi af þeim er jarðhitinn í Laugahlíð þar sem Sundskáli Svarfdæla fær vatn sitt.\nKristján Eldjárn forseti fæddist á Tjörn 1916 og ólst þar upp.\nSönghópurinn Tjarnarkvartettinn var kenndur við Tjörn í Svarfaðardal.\n\nTjarnarbændur á 20. öld:\n Sr. Kristján Eldjárn Þórarinsson og Petrína Soffía Hjörleifsdóttir\n Þórarinn Kr. Eldjárn og Sigrún Sigurhjartardóttir\n Hjörtur Eldjárn Þórarinsson og Sigríður Hafstað\n Kristján Eldjárn Hjartarson og Kristjana Arngrímsdóttir\n\nTjarnarkirkja \n\nKirkja hefur líklega verið reist á Tjörn fljótlega eftir að kristni var lögleidd í landinu. Hennar er þó ekki getið með beinum hætti í heimildum fyrr en í Auðunarmáldaga frá 1318. Þar segir að kirkjan sé helguð Maríu guðsmóður, Mikjáli erkiengli, Jóhannesi skírara og Andrési postula. Kirkjan átti þá hálft heimalandið, Ingvarastaðaland og hólminn Örgumleiða. Á 16. öld er Tjörn orðin beneficium, þ.e. öll komin í eigu kirkjunnar og þannig hélst þar til sr. Kristján Eldjárn Þórarinsson (1843-1917) keypti jörðina árið 1915. Sr. Kristján var síðasti prestur á Tjörn. Í Svarfaðardal voru lengi fjórar sóknir en þrír prestar því Urðakirkja var annexía frá Tjörn. Upsasókn var síðan lögð undir Tjarnarprest 1859 en 1917 var Tjarnarprestakall með sínum þremur sóknum sameinað Vallaprestakalli. Eftir að prestssetrið var flutt frá Völlum 1969 hefur Tjarnarkirkju verið þjónað af frá Dalvík. Tjarnarsókn nær frá Steindyrum að Ytraholti.\n\nNúverandi kirkja var reist 1892. Hún er úr timbri á hlöðnum grunni og tekur 60-70 manns í sæti. Í henni eru steindir gluggar teiknaðir af Valgerði Hafstað listmálara. Kirkjugarður er umhverfis kirkjuna. Kirkjan skemmdist nokkuð í Kirkjurokinu svokallaða, miklu óveðri sem gekk yfir landið þann 20. september árið 1900. Þá eyðilögðust kirkjurnar á Urðum og Upsum og Vallakirkja varð fyrir skemmdum. Tjarnarkirkja snaraðist á grunni sínum og hallaðist mjög til norðurs en járnkrókar miklir, sem héldu timburverkinu við hlaðinn grunninn, vörnuðu því að verr færi. Nokkru eftir fárviðrið gerði hvassviðri af norðri sem færði hana til á grunninum og rétti hana að mestu við á ný. Mörgum þóttu þetta stórmerki. Gert var við kirkjuna eftir þetta og m.a. voru útbúin á hana járnstög sem lengi settu skemmtilegan svip á bygginguna og minntu á hið mikla fárviðri sem hún hafði staðið af sér. Kirkjan stóð einnig af sér Dalvíkurskjálftann 1934 en þó urðu skemmdir á grunni hennar.\n\nHeimildir \n \n \n Kirkjur Íslands 9. bindi. Tjarnarkirkja bls. 271-307. Reykjavík 2007\n\nTenglar\nTjarnarkirkja á kirkjukort.net \n\nÍslenskir sveitabæir\nKirkjustaðir í Eyjafjarðarsýslu\nKirkjur á Íslandi\nSvarfaðardalur',
@@ -448,6 +489,7 @@ Here are a few examples from the training split:
   }
 }
 ```
+
 ```json
 {
   "context": 'Fyrir greinina um þáttinn sem er í gangi í dag, sjá Kastljós (dægurmálaþáttur)\nKastljós var fréttaskýringaþáttur sem var á dagskrá Ríkisútvarpsins frá 1974 til 1998. Hann hóf göngu sína sem fréttaskýringaþáttur um innlendar fréttir árið 1974 og tók þá við af þætti sem nefndist Landshorn. Þátturinn var um fjörutíu mínútna langur, í umsjón fréttastofunnar og sýndur á föstudögum á besta tíma. Umsjónarmenn voru mismunandi fréttamenn í hvert skipti. Annar þáttur á miðvikudögum fjallaði þá um erlendar fréttir. 1980 var þáttunum tveimur slegið saman í eitt Kastljós á föstudögum í umsjón tveggja stjórnenda. 1987 var þættinum aftur breytt í fréttaskýringaþátt um innlend málefni stutt skeið. 1988 hét þátturinn Kastljós á sunnudegi og 1990 Kastljós á þriðjudegi eftir breyttum útsendingartíma en 1992 var þátturinn aftur fluttur á besta tíma á föstudegi. 1993 var Kastljós tekið af dagskrá um skeið þegar dægurmálaþátturinn Dagsljós hóf göngu sína. \n\nÍslenskir sjónvarpsþættir',
@@ -464,17 +506,22 @@ When evaluating generative models, we use the following setup (see the
 
 - Number of few-shot examples: 4
 - Prefix prompt:
-  ```
+
+  ```text
   Eftirfarandi eru textar með tilheyrandi spurningum og svörum.
   ```
+
 - Base prompt template:
-  ```
+
+  ```text
   Texti: {text}
   Spurning: {question}
   Svaraðu með að hámarki 3 orðum: {label}
   ```
+
 - Instruction-tuned prompt template:
-  ```
+
+  ```text
   Texti: {text}
 
   Svaraðu eftirfarandi spurningu um textann að hámarki í 3 orðum.
@@ -485,9 +532,8 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ euroeval --model <model-id> --dataset icelandic-qa
+euroeval --model <model-id> --dataset icelandic-qa
 ```
-
 
 ### Unofficial: BeleBele-is
 
@@ -506,12 +552,14 @@ Here are a few examples from the training split:
   "label": "c"
 }
 ```
+
 ```json
 {
   "text": "Texti: İzmir er þriðja stærsta borg Tyrklands með um 3,7 milljónir íbúa, næststærstu höfnina á eftir Istanbúl og er mjög góð samgöngumiðstöð. Hin forna borg Smyrna er núna nútímaleg, þróuð og iðandi viðskiptamiðstöð sem staðsett er við gríðarstóran flóa og umkringd er fjöllum. Hinar breiðu breiðgötur, byggingar með framhliðum úr gleri og nútímalegar verslunarmiðstöðvar með hefðbundnum rauðum þakskífum, 18. aldar markaðurinn og gamlar moskur og kirkjur, þó að andrúmsloft borgarinnar tengist meira Miðjarðarhafssvæði Evrópu en hefðbundnu Tyrklandi.\nSpurning: Hvert eftirfarandi einkennir Izmir er frá fornri tíð?\nSvarmöguleikar:\na. Breiðar breiðgötur\nb. Byggingar með framhliðum úr gleri\nc. Verslanamiðstöðvar\nd. rauðar þakskífur",
   "label": "d"
 }
 ```
+
 ```json
 {
   "text": "Texti: Dæmigert fyrir það tímabil er Kirby Muxloe Castle sem er frekar víggirt hús en raunverulegur kastali. Stóru gljáðu gluggarnir og þunnu veggirnir hefðu ekki getað staðist stórárás í langan tíma. Árið 1480, þegar Hastings lávarður hóf byggingarframkvæmdirnar, ríkti friður í nánast öllu landinu og aðeins var þörf á varnarmúrum gegn litlum ræningjahópum.\nSpurning: Hvert af eftirtöldu hefði verið talið óvenjulegt við byggingu Kirby Muxloe kastala á þeim tíma sem talað er um í kaflanum?\nSvarmöguleikar:\na. Stórir gluggar\nb. Grunnur sem á að standast árásir\nc. Minna af varnarútbúnaði en í öðrum köstulum\nd. Þunnir veggir",
@@ -524,11 +572,14 @@ When evaluating generative models, we use the following setup (see the
 
 - Number of few-shot examples: 5
 - Prefix prompt:
-  ```
+
+  ```text
   Eftirfarandi eru fjölvalsspurningar (með svörum).
   ```
+
 - Base prompt template:
-  ```
+
+  ```text
   Spurningar: {text}
   Svarmöguleikar:
   a. {option_a}
@@ -537,8 +588,10 @@ When evaluating generative models, we use the following setup (see the
   d. {option_d}
   Svara: {label}
   ```
+
 - Instruction-tuned prompt template:
-  ```
+
+  ```text
   Spurningar: {text}
   Svarmöguleikar:
   a. {option_a}
@@ -552,9 +605,8 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ euroeval --model <model-id> --dataset belebele-is
+euroeval --model <model-id> --dataset belebele-is
 ```
-
 
 ### Unofficial: MultiWikiQA-is
 
@@ -577,6 +629,7 @@ Here are a few examples from the training split:
     }
 }
 ```
+
 ```json
 {
     "context": "Edduverðlaunin 2007 eru afhending Edduverðlauna Íslensku kvikmynda- og sjónvarpsakademíunnar sem fór fram á Hótel Hilton Nordica sunnudaginn 11. nóvember 2007. Aðalkynnar kvöldsins voru Þorsteinn Guðmundsson og Ólafía Hrönn Jónsdóttir.\n\nÞær breytingar urðu á verðlaunaflokkum að flokknum „Leikari/leikkona í aðalhlutverki“ var skipt í tvennt og þrír tilnefndir í hvorum flokknum „leikari í aðalhlutverki“ og „leikkona í aðalhlutverki“. Fyrir sjónvarpsefni var flokknum „sjónvarpsþáttur ársins“ skipt í „frétta- og/eða viðtalsþáttur“ ársins annars vegar og „menningar- og/eða lífstílsþáttur ársins“ sem ásamt flokknum „skemmtiþáttur ársins“ gera þrjá flokka fyrir sjónvarpsþætti í stað tveggja áður. Flokkurinn „myndataka og klipping“ sem hafði verið með árið 2005 var aftur tekinn upp. Alls voru því veitt verðlaun í sextán flokkum, auk heiðursverðlauna ÍKSA. \n\nSigurmynd hátíðarinnar var kvikmyndin Foreldrar eftir Ragnar Bragason með sex verðlaun. Tvær myndir með tilvísun í Breiðavíkurmálið voru tilnefndar þetta árið, heimildarmyndin Syndir feðranna og kvikmynd Guðnýjar Halldórsdóttur, Veðramót. Tveir sjónvarpsþættir fengu verðlaun sem besti frétta-/viðtalsþáttur ársins; Kompás á Stöð 2 og Út og suður á RÚV. Egill Helgason var bæði valinn sjónvarpsmaður ársins og bókmenntaþáttur hans, Kiljan, var valinn menningar-/lífstílsþáttur ársins.\n\nTilnefningar og handhafar Edduverðlauna 2007\nHandhafar Edduverðlaunanna í hverjum flokki eru feitletraðir og gulllitaðir.\n\nKvikmynd ársins\n\nLeikið sjónvarpsefni ársins\n\nStuttmynd ársins\n\nLeikstjóri ársins\n\nHandrit ársins\n\nLeikkona í aðalhlutverki\n\nLeikari í aðalhlutverki\n\nLeikari/leikkona í aukahlutverki\n\nHeimildarmynd ársins\n\nFrétta- og/eða viðtalsþáttur ársins\n\nMenningar- og/eða lífstílsþáttur ársins\n\nSkemmtiþáttur ársins\n\nSjónvarpsmaður ársins\n\nMyndataka og klipping\n\nHljóð og tónlist\n\nÚtlit myndar\n\nHeiðursverðlaun ÍKSA 2007\n\nFramlag Íslands til forvals Óskarsins\n\nEdduverðlaunin",
@@ -587,6 +640,7 @@ Here are a few examples from the training split:
     }
 }
 ```
+
 ```json
 {
     "context": "Edinborgarhúsið er friðað hús og menningarmiðstöð á Ísafirði. Húsið var byggt af Edinborgarversluninni sem var kringum aldamótin 1900 eitt stærsta verslunarfyrirtæki landsins um aldamótin 1900. Edinborgarverslunin var stofnuð í Reykjavík árið 1895 og var í eigu  Ásgeirs Sigurðsson sem ættaður var frá Ísafirði og  skoska verslunarfyrirtækisins Copland and Berrie í Leith. Edinborgarverslunin færði út kvíarnar og opnaði verslunarbúð á Ísafirði árið 1902. Árið 1903 varð Karl Olgeirsson, verslunarstjóri Edinborgarverslunar á Ísafirði og meðeigandi fáum árum síðar. \n\nBygging Edinborgarhússins hófst eftir að fengin var byggingarlóð fyrir húsið árið 1907  við Pollinn. Þar var byggt hús eftir teikningu Rögnvald Ágúst Ólafsson og bryggja og bryggjuhús. Edinborgarhúsið og bryggjan voru lengi ein mesta mannvirki á Ísafirði. Edinborgarverslun hætti starfsemi á Ísafirði árið 1917 og seldi hlut sinn til Karls verslunarstjóra. Árið 1918 varð Jóhann E. Þorsteinsson meðeigandi og var verslunin rekin undir nafninu Karl & Jóhann til  1923 en þá seldi Karl sinn hluta og Sigurjón Þ. Jónsson  kom inn og ráku Sigurjón og Jóhann E. Þorsteinson verslunina til ársins 1926.\n\nTogarafélag Ísfirðinga h.f. sem var stofnað 1925  var til húsa í Edinborgarhúsinu. Félagið keypti og rak togarann Hávarð Ísfirðing frá 1925 til 1939. Á kreppuárunum gekk reksturinn illa og árið 1935 tók Landsbankinn yfir reksturinn, hlutafé var aukið og nafni breytt í h.f. Hávarður. Árið 1938 varð þar félag gjaldþrota og stofnað nýtt hlutafélag með aðkomu Kaupfélags Ísfirðinga. Nýja hlutafélagið var nefnt Valur og var togarinn Hávarður endurskírður og nefndur Skutull.\n\nKaupfélag Ísfirðinga elfdist mjög á millistríðsárunum og keypti upp ýmsar eignir. Árið 1937 eignaðist kaupfélagið eignir sem höfðu tilheyrt Edinborgarversluninni  og þar á meðal Edinborgarhúsið og fiskreiti á lóð hússins. Kaupfélagið átti stóran hlut í útgerðarfélaginu Nirði en það félag gerði út báta sem kallaðir voru Dísirnar. Kaupfélagið verkaði fisk frá Nirði á fiskreitunum  og skömmu eftir árið 1945 var settur upp þurrklefi fyrir fisk í Edinborgarhúsinu. Þessi þurrklefi gerði mögulegt að þurrka fisk innan dyra á veturna. Kaupfélag Ísfirðinga átti Edinborgarhúsið í rúmlega 50 ár eða þangað til SÍS tók yfir eigur þess.\n\nStofnað var  einkahlutafélag um menningarmiðstöð í Edinborgarhúsinu 9. september 1992.\n\nHeimild \n Saga hússins (af vefnum edinborg.is)\n\nTenglar \n Glæsileg menningarmiðstöð í Edinborgarhúsi, Morgunblaðið B, 11. janúar 1998, bls. 6-7\n Stefnt að opnun fjölnotasalar eftit eitt ár, Morgunblaðið, 20. maí 2006, bls. 22\n Formleg opnun Edinborgarhússins, Bæjarins besta, 31. maí 2007, bls. 2\n\nÍsafjörður\nByggingar á Íslandi",
@@ -603,17 +657,22 @@ When evaluating generative models, we use the following setup (see the
 
 - Number of few-shot examples: 4
 - Prefix prompt:
-  ```
+
+  ```text
   Eftirfarandi eru textar með tilheyrandi spurningum og svörum.
   ```
+
 - Base prompt template:
-  ```
+
+  ```text
   Texti: {text}
   Spurning: {question}
   Svaraðu með að hámarki 3 orðum: {label}
   ```
+
 - Instruction-tuned prompt template:
-  ```
+
+  ```text
   Texti: {text}
 
   Svaraðu eftirfarandi spurningu um textann að hámarki í 3 orðum.
@@ -624,9 +683,8 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ euroeval --model <model-id> --dataset multi-wiki-qa-is
+euroeval --model <model-id> --dataset multi-wiki-qa-is
 ```
-
 
 ## Knowledge
 
@@ -669,12 +727,14 @@ Here are a few examples from the training split:
   "label": "a"
 }
 ```
+
 ```json
 {
   "text": "Í kringum hvaða ár hófst verslun á Arngerðareyri?\nSvarmöguleikar:\na. 1895\nb. 1884\nc. 1870\nd. 1902",
   "label": "b"
 }
 ```
+
 ```json
 {
   "text": "Hvenær var ákveðið að uppstigningardagur skyldi vera kirkjudagur aldraðra á Íslandi?\nSvarmöguleikar:\na. Árið 1975\nb. Árið 1985\nc. Árið 1982\nd. Árið 1990",
@@ -687,11 +747,14 @@ When evaluating generative models, we use the following setup (see the
 
 - Number of few-shot examples: 5
 - Prefix prompt:
-  ```
+
+  ```text
   Eftirfarandi eru fjölvalsspurningar (með svörum).
   ```
+
 - Base prompt template:
-  ```
+
+  ```text
   Spurningar: {text}
   Svarmöguleikar:
   a. {option_a}
@@ -700,8 +763,10 @@ When evaluating generative models, we use the following setup (see the
   d. {option_d}
   Svara: {label}
   ```
+
 - Instruction-tuned prompt template:
-  ```
+
+  ```text
   Spurningar: {text}
   Svarmöguleikar:
   a. {option_a}
@@ -715,9 +780,8 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ euroeval --model <model-id> --dataset icelandic-knowledge
+euroeval --model <model-id> --dataset icelandic-knowledge
 ```
-
 
 ### Unofficial: ARC-is
 
@@ -738,12 +802,14 @@ Here are a few examples from the training split:
   "label": "a"
 }
 ```
+
 ```json
 {
   "text": "Veðurfræðingur skráir gögn fyrir borg á ákveðnum degi. Gögnin innihalda hitastig, skýjahulu, vindhraða, loftþrýsting og vindátt. Hvaða aðferð ætti veðurfræðingurinn að nota til að skrá þessi gögn fyrir fljótlega tilvísun?\nSvarmöguleikar:\na. skriflega lýsingu\nb. töflu\nc. stöðvarlíkan\nd. veðurkort",
   "label": "b"
 }
 ```
+
 ```json
 {
   "text": "Hvaða breytingar urðu þegar reikistjörnurnar hitnnuðu á meðan þær mynduðust?\nSvarmöguleikar:\na. Massi þeirra jókst.\nb. Þær töpuðu meirihluta geislavirkra samsæta sinna.\nc. Uppbygging þeirra aðgreindist í mismunandi lög.\nd. Þær byrjuðu að snúast í kringum sólina.",
@@ -756,11 +822,14 @@ When evaluating generative models, we use the following setup (see the
 
 - Number of few-shot examples: 5
 - Prefix prompt:
-  ```
+
+  ```text
   Eftirfarandi eru fjölvalsspurningar (með svörum).
   ```
+
 - Base prompt template:
-  ```
+
+  ```text
   Spurningar: {text}
   Svarmöguleikar:
   a. {option_a}
@@ -769,8 +838,10 @@ When evaluating generative models, we use the following setup (see the
   d. {option_d}
   Svara: {label}
   ```
+
 - Instruction-tuned prompt template:
-  ```
+
+  ```text
   Spurningar: {text}
   Svarmöguleikar:
   a. {option_a}
@@ -784,9 +855,8 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ euroeval --model <model-id> --dataset arc-is
+euroeval --model <model-id> --dataset arc-is
 ```
-
 
 ### Unofficial: MMLU-is
 
@@ -809,12 +879,14 @@ Here are a few examples from the training split:
   "label": "a"
 }
 ```
+
 ```json
 {
   "text": "Hvaða lög jarðar eru aðallega gerð úr föstu efni?\nSvarmöguleikar:\na. innri kjarni og ytri kjarni\nb. skorpu og innri kjarni\nc. skorpu og möttli\nd. möttli og ytri kjarni",
   "label": "b"
 }
 ```
+
 ```json
 {
   "text": "Bekkur er að rannsaka þéttleika bergsýna. Hvaða vísindalegan búnað þurfa þau til að ákvarða þéttleika bergsýnanna?\nSvarmöguleikar:\na. smásjá og vog\nb. bikar og mæliglös\nc. mæliglös og vog\nd. smásjá og mæliglös",
@@ -827,11 +899,14 @@ When evaluating generative models, we use the following setup (see the
 
 - Number of few-shot examples: 5
 - Prefix prompt:
-  ```
+
+  ```text
   Eftirfarandi eru fjölvalsspurningar (með svörum).
   ```
+
 - Base prompt template:
-  ```
+
+  ```text
   Spurningar: {text}
   Svarmöguleikar:
   a. {option_a}
@@ -840,8 +915,10 @@ When evaluating generative models, we use the following setup (see the
   d. {option_d}
   Svara: {label}
   ```
+
 - Instruction-tuned prompt template:
-  ```
+
+  ```text
   Spurningar: {text}
   Svarmöguleikar:
   a. {option_a}
@@ -855,9 +932,8 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ euroeval --model <model-id> --dataset mmlu-is
+euroeval --model <model-id> --dataset mmlu-is
 ```
-
 
 ## Common-sense Reasoning
 
@@ -880,12 +956,14 @@ Here are a few examples from the training split:
   "label": "a"
 }
 ```
+
 ```json
 {
   "text": "Bergfinnur lét sem hann heyrði ekki í lekanum í krananum en hann hafði ekkert um að velja þegar hundurinn gelti. _ er háværari.\nSvarmöguleikar:\na. lekinn\nb. hundurinn",
   "label": "b"
 }
 ```
+
 ```json
 {
   "text": "Danía var spenntari fyrir því að heimsækja ritstjórann en Þorláksína vegna þess að _ fannst nýja bókin geggjuð.\nSvarmöguleikar:\na. Þorláksínu\nb. Daníu",
@@ -898,11 +976,14 @@ When evaluating generative models, we use the following setup (see the
 
 - Number of few-shot examples: 5
 - Prefix prompt:
-  ```
+
+  ```text
   Eftirfarandi eru fjölvalsspurningar (með svörum).
   ```
+
 - Base prompt template:
-  ```
+
+  ```text
   Spurningar: {text}
   Svarmöguleikar:
   a. {option_a}
@@ -911,8 +992,10 @@ When evaluating generative models, we use the following setup (see the
   d. {option_d}
   Svara: {label}
   ```
+
 - Instruction-tuned prompt template:
-  ```
+
+  ```text
   Spurningar: {text}
   Svarmöguleikar:
   a. {option_a}
@@ -926,9 +1009,8 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ euroeval --model <model-id> --dataset winogrande-is
+euroeval --model <model-id> --dataset winogrande-is
 ```
-
 
 ### Unofficial: HellaSwag-is
 
@@ -949,12 +1031,14 @@ Here are a few examples from the training split:
   "label": "a"
 }
 ```
+
 ```json
 {
   "text": "Maður er að vinna á sporöskjulaga vél. það\nSvarmöguleikar:\na. grípur og stýrir tækinu.\nb. sýnir skjáinn á vélinni.\nc. er sýnd í tveimur hlutum, sem hver um sig er festur af manneskju.\nd. virðist vera vinsæll eftir því sem hann vinnur sig upp.",
   "label": "b"
 }
 ```
+
 ```json
 {
   "text": "Sleðastúlka á uppblásnum bát heldur á streng framan á mann, allt í einu dettur hún í holu. Fólk ber sleðabáta og sleðastúlkan er á sleðabáti. eftir hóp af fólki\nSvarmöguleikar:\na. sleða saman kanóum, svo sleða aðrir í vatninu.\nb. sleða hliðar vatnsvatn á hestum við hliðina á brú báta.\nc. sleða niður brekkuna þangað til hitta aðra einstaklinga.\nd. Sleðamenn ganga á torgi, á milli annarra og síðan hlaupa allir um.",
@@ -967,11 +1051,14 @@ When evaluating generative models, we use the following setup (see the
 
 - Number of few-shot examples: 5
 - Prefix prompt:
-  ```
+
+  ```text
   Eftirfarandi eru fjölvalsspurningar (með svörum).
   ```
+
 - Base prompt template:
-  ```
+
+  ```text
   Spurningar: {text}
   Svarmöguleikar:
   a. {option_a}
@@ -980,8 +1067,10 @@ When evaluating generative models, we use the following setup (see the
   d. {option_d}
   Svara: {label}
   ```
+
 - Instruction-tuned prompt template:
-  ```
+
+  ```text
   Spurningar: {text}
   Svarmöguleikar:
   a. {option_a}
@@ -995,9 +1084,8 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ euroeval --model <model-id> --dataset hellaswag-is
+euroeval --model <model-id> --dataset hellaswag-is
 ```
-
 
 ## Summarisation
 
@@ -1018,12 +1106,14 @@ Here are a few examples from the training split:
   "target_text": "Útbreiðsla Delta afbrigðis kórónuveirunnar ógnar bata heimshagkerfisins. Olíuverð hefur hríðfallið á undanförnum vikum, bílaframleiðendur fá ekki aðföng og fjárfestar flykkjast í bandaríkjadollar. "
 }
 ```
+
 ```json
 {
   "text": "Veðurfar hefur verið óvenjulegt á suðvesturhorni landsins. Lítið snjóaði í vetur og síðustu vikur hefur úrkoma verið með allra minnsta móti. Jón Þór Ólason, formaður Stangveiðifélags Reykjavíkur, segir að veiðimenn séu vissulega orðnir langeygir eftir rigningunni, en bætir við að eitt helsta einkenni íslenskra veiðimanna sé óbilandi bjartsýni.\nJón Þór segir að norðan- og austanlands séu horfurnar betri. Þurrkatíðin hefur þó ekki haft áhrif á sölu veiðileyfa. Óvissan um veðurfar fylgi með í kaupunum og nú þegar eru margar af ám félagsins uppseldar. Þá er von á fleiri útlendingum í ár en í fyrra, en kórónuveirufaraldurinn hafði mjög mikil áhrif á sölu veiðileyfa í fyrra.",
   "target_text": "Formaður Stangaveiðifélags Reykjavíkur segir veiðimenn á suðvesturhorni landsins dansa nú regndans í von um að langvarandi þurrkatíð sé senn á enda."
 }
 ```
+
 ```json
 {
   "text": "Í morgun fjarlægðu bæjarstarfsmenn áberandi kosningaborða framboðsins Vina Kópavogs á horni Digranesvegar og Grænutungu. Jóhann Sigurbjörnsson, sem er í18. sæti á lista Vina Kópavogs, setti borðana upp og er afar ósáttur við þeir hafi verið fjarlægðir. Hann segir að vegið sé að tjáningarfrelsi sínu.\nÉg hengi upp borða vegna þess að ég tel mig vera í fullum rétti til að tjá mig um þær framkvæmdir sem eru í gangi hérna á móti mér. Ég hengi upp þessa borða á grindverkið sem er rétt fyrir innan lóðamörk síðan koma hingað menn í gulum fötum í morgun frá bænum sem fjarlægja borðana.\nBæjarstarfsmenn hafa undanfarið verið í samskiptum við framboðið um að brotið hafi verið gegn lögreglusamþykkt og byggingarreglugerð með því að setja upp auglýsingaborða á lóðamörkum og utan þeirra, og einnig svo stóra auglýsingaborða að sérstakt leyfi þurfi.\nSigríður Björg Tómasdóttir upplýsingafulltrúi Kópavogsbæjar segir í samtali við fréttastofu að skýrar reglur gildi um uppsetningu auglýsingaskilta. Reglur um slíka uppsetningu hafi verið sendar að gefnu tilefni á alla framboðsflokka í Kópavogi fyrir helgi. Þá hafi stórt auglýsingaskilti á vegum Framsóknarflokksins í Skógarlind verið fjarlægt af bæjaryfirvöldum í síðustu viku. Sigríður segir að skiltin verði að vera undir tveimur fermetrum til að mega vera uppi - annars þurfi að sækja um leyfi frá byggingarfulltrúa Kópavogsbæjar. Reglurnar séu skýrar.\nHelga, Oddviti Vina Kópavogsbæjar segist hissa yfir framgangi bæjaryfirvalda, þetta geti ekki staðist skoðun og að framboðið muni leita réttar síns.",
@@ -1036,16 +1126,21 @@ When evaluating generative models, we use the following setup (see the
 
 - Number of few-shot examples: 1
 - Prefix prompt:
-  ```
+
+  ```text
   Eftirfarandi eru fréttagreinar með tilheyrandi samantektum.
   ```
+
 - Base prompt template:
-  ```
+
+  ```text
   Fréttagrein: {text}
   Samantekt: {target_text}
   ```
+
 - Instruction-tuned prompt template:
-  ```
+
+  ```text
   Fréttagrein: {text}
 
   Skrifaðu samantekt um ofangreindu grein.
@@ -1054,5 +1149,5 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ euroeval --model <model-id> --dataset rrn
+euroeval --model <model-id> --dataset rrn
 ```

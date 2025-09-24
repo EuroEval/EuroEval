@@ -12,7 +12,6 @@ This page covers all the evaluation tasks used in EuroEval. These tasks fall und
 categories, corresponding to whether the models should merely _understand_ the input
 documents (NLU), or rather they are also required to _generate_ new text (NLG).
 
-
 ### NLU Tasks
 
 NLU tasks are tasks where the model is required to understand the natural language input
@@ -27,7 +26,6 @@ models out there. The tasks in this category are:
 2. [Named Entity Recognition](named-entity-recognition.md)
 3. [Linguistic Acceptability](linguistic-acceptability.md)
 4. [Reading Comprehension](reading-comprehension.md)
-
 
 ### NLG Tasks
 

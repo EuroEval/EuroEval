@@ -4,7 +4,6 @@ This is an overview of all the datasets used in the English part of EuroEval. Th
 datasets are grouped by their task - see the [task overview](/tasks) for more
 information about what these constitute.
 
-
 ## Sentiment Classification
 
 ### SST-5
@@ -35,12 +34,14 @@ Here are a few examples from the training split:
   "label": "positive"
 }
 ```
+
 ```json
 {
   "text": "labute ca n't avoid a fatal mistake in the modern era : he 's changed the male academic from a lower-class brit to an american , a choice that upsets the novel 's exquisite balance and shreds the fabric of the film .",
   "label": "neutral"
 }
 ```
+
 ```json
 {
   "text": "no cliche escapes the perfervid treatment of gang warfare called ces wild .",
@@ -53,31 +54,36 @@ When evaluating generative models, we use the following setup (see the
 
 - Number of few-shot examples: 12
 - Prefix prompt:
-  ```
+
+  ```text
   The following are texts and their sentiment, which can be 'positive', 'neutral' or 'negative'.
   ```
+
 - Base prompt template:
-  ```
+
+  ```text
   Text: {text}
   Sentiment: {label}
   ```
+
 - Instruction-tuned prompt template:
-  ```
+
+  ```text
   Text: {text}
 
   Classify the sentiment in the text. Answer with 'positive', 'neutral' or 'negative'.
   ```
+
 - Label mapping:
-    - `positive` ➡️ `positive`
-    - `neutral` ➡️ `neutral`
-    - `negative` ➡️ `negative`
+  - `positive` ➡️ `positive`
+  - `neutral` ➡️ `neutral`
+  - `negative` ➡️ `negative`
 
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ euroeval --model <model-id> --dataset sst5
+euroeval --model <model-id> --dataset sst5
 ```
-
 
 ## Named Entity Recognition
 
@@ -101,12 +107,14 @@ Here are a few examples from the training split:
   'labels': array(['B-ORG', 'I-ORG', 'I-ORG', 'O', 'O', 'O', 'O', 'O', 'O', 'O'], dtype=object)
 }
 ```
+
 ```json
 {
   'tokens': array(['Guy', 'Whittingham', 'stole', 'three', 'points', 'for', 'the', 'Yorkshire', 'side', 'with', 'a', 'goal', '10', 'minutes', 'from', 'time', '.'], dtype=object),
   'labels': array(['B-PER', 'I-PER', 'O', 'O', 'O', 'O', 'O', 'B-ORG', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O'], dtype=object)
 }
 ```
+
 ```json
 {
   'tokens': array(['Dean', 'Palmer', 'hit', 'his', '30th', 'homer', 'for', 'the', 'Rangers', '.'], dtype=object),
@@ -119,36 +127,41 @@ When evaluating generative models, we use the following setup (see the
 
 - Number of few-shot examples: 8
 - Prefix prompt:
-  ```
+
+  ```text
   Below are sentences and JSON dictionaries with the named entities that occur in the given sentence.
   ```
+
 - Base prompt template:
-  ```
+
+  ```text
   Sentence: {text}
   Named entities: {label}
   ```
+
 - Instruction-tuned prompt template:
-  ```
+
+  ```text
   Sentence: {text}
 
   Identify the named entities in the sentence. You should output this as a JSON dictionary with the keys being 'person', 'location', 'organization' and 'miscellaneous'. The values should be lists of the named entities of that type, exactly as they appear in the sentence.
   ```
+
 - Label mapping:
-    - `B-PER` ➡️ `person`
-    - `I-PER` ➡️ `person`
-    - `B-LOC` ➡️ `location`
-    - `I-LOC` ➡️ `location`
-    - `B-ORG` ➡️ `organization`
-    - `I-ORG` ➡️ `organization`
-    - `B-MISC` ➡️ `miscellaneous`
-    - `I-MISC` ➡️ `miscellaneous`
+  - `B-PER` ➡️ `person`
+  - `I-PER` ➡️ `person`
+  - `B-LOC` ➡️ `location`
+  - `I-LOC` ➡️ `location`
+  - `B-ORG` ➡️ `organization`
+  - `I-ORG` ➡️ `organization`
+  - `B-MISC` ➡️ `miscellaneous`
+  - `I-MISC` ➡️ `miscellaneous`
 
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ euroeval --model <model-id> --dataset conll-en
+euroeval --model <model-id> --dataset conll-en
 ```
-
 
 ## Linguistic Acceptability
 
@@ -175,12 +188,14 @@ Here are a few examples from the training split:
   "label": "correct"
 }
 ```
+
 ```json
 {
   "text": "This couch is also quite big, it fits three people quite comfortably, and if I have or friends staying over, it opens up into a full double bed.",
   "label": "incorrect"
 }
 ```
+
 ```json
 {
   "text": "While studies the psychology of art have focused on individual works and distinctions between representative / non-representative topics, no work has been completed on the aesthetic appreciation of collections or of devotional themes.",
@@ -193,30 +208,35 @@ When evaluating generative models, we use the following setup (see the
 
 - Number of few-shot examples: 12
 - Prefix prompt:
-  ```
+
+  ```text
   The following are sentences and whether they are grammatically correct.
   ```
+
 - Base prompt template:
-  ```
+
+  ```text
   Sentence: {text}
   Grammatically correct: {label}
   ```
+
 - Instruction-tuned prompt template:
-  ```
+
+  ```text
   Sentence: {text}
 
   Determine whether the sentence is grammatically correct or not. Reply with 'yes' if the sentence is correct and 'no' if it is not.
   ```
+
 - Label mapping:
-    - `correct` ➡️ `yes`
-    - `incorrect` ➡️ `no`
+  - `correct` ➡️ `yes`
+  - `incorrect` ➡️ `no`
 
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ euroeval --model <model-id> --dataset scala-en
+euroeval --model <model-id> --dataset scala-en
 ```
-
 
 ## Reading Comprehension
 
@@ -244,6 +264,7 @@ Here are a few examples from the training split:
   }
 }
 ```
+
 ```json
 {
   "context": "London's buildings are too diverse to be characterised by any particular architectural style, partly because of their varying ages. Many grand houses and public buildings, such as the National Gallery, are constructed from Portland stone. Some areas of the city, particularly those just west of the centre, are characterised by white stucco or whitewashed buildings. Few structures in central London pre-date the Great Fire of 1666, these being a few trace Roman remains, the Tower of London and a few scattered Tudor survivors in the City. Further out is, for example, the Tudor period Hampton Court Palace, England's oldest surviving Tudor palace, built by Cardinal Thomas Wolsey c.1515.",
@@ -254,6 +275,7 @@ Here are a few examples from the training split:
   }
 }
 ```
+
 ```json
 {
   "context": 'Along with the rest of South West England, Plymouth has a temperate oceanic climate (Köppen Cfb) which is generally wetter and milder than the rest of England. This means a wide range of exotic plants can be grown. The annual mean temperature is approximately 11 °C (52 °F). Due to the modifying effect of the sea the seasonal range is less than in most other parts of the UK. As a result of this summer highs are lower than its southerly latitude should warrant, but as a contrast the coldest month of February has mean minimum temperatures as mild as between 3 and 4 °C (37 and 39 °F). Snow is rare, not usually equating to more than a few flakes, but there have been exclusions, namely the European winter storms of 2009-10 which, in early January, covered Plymouth in at least 1 inch (2.5 cm) of snow; more on higher ground. Another period of notable snow occurred from 17–19 December 2010 when up to 8 inches (20 cm) of snow fell through the period – though only 2 inches (5.1 cm) would lie at any one time due to melt. Over the 1961–1990 period, annual snowfall accumulation averaged less than 7 cm (3 in) per year. July and August are the warmest months with mean daily maxima over 19 °C (66 °F).',
@@ -270,17 +292,22 @@ When evaluating generative models, we use the following setup (see the
 
 - Number of few-shot examples: 4
 - Prefix prompt:
-  ```
+
+  ```text
   The following are texts with accompanying questions and answers.
   ```
+
 - Base prompt template:
-  ```
+
+  ```text
   Text: {text}
   Question: {question}
   Answer in max 3 words:
   ```
+
 - Instruction-tuned prompt template:
-  ```
+
+  ```text
   Text: {text}
 
   Answer the following question about the above text in at most 3 words.
@@ -291,9 +318,8 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ euroeval --model <model-id> --dataset squad
+euroeval --model <model-id> --dataset squad
 ```
-
 
 ### Unofficial: XQuAD-en
 
@@ -317,6 +343,7 @@ Here are a few examples from the training split:
     }
 }
 ```
+
 ```json
 {
     "context": "Jacksonville is in the First Coast region of northeast Florida and is centered on the banks of the St. Johns River, about 25 miles (40 km) south of the Georgia state line and about 340 miles (550 km) north of Miami. The Jacksonville Beaches communities are along the adjacent Atlantic coast. The area was originally inhabited by the Timucua people, and in 1564 was the site of the French colony of Fort Caroline, one of the earliest European settlements in what is now the continental United States. Under British rule, settlement grew at the narrow point in the river where cattle crossed, known as Wacca Pilatka to the Seminole and the Cow Ford to the British. A platted town was established there in 1822, a year after the United States gained Florida from Spain; it was named after Andrew Jackson, the first military governor of the Florida Territory and seventh President of the United States.",
@@ -327,6 +354,7 @@ Here are a few examples from the training split:
     }
 }
 ```
+
 ```json
 {
     "context": "Luther\"s hymns were frequently evoked by particular events in his life and the unfolding Reformation. This behavior started with his learning of the execution of Johann Esch and Heinrich Voes, the first individuals to be martyred by the Roman Catholic Church for Lutheran views, prompting Luther to write the hymn "Ein neues Lied wir heben an" ("A new song we raise"), which is generally known in English by John C. Messenger\"s translation by the title and first line "Flung to the Heedless Winds" and sung to the tune Ibstone composed in 1875 by Maria C. Tiddeman.",
@@ -343,17 +371,22 @@ When evaluating generative models, we use the following setup (see the
 
 - Number of few-shot examples: 4
 - Prefix prompt:
-  ```
+
+  ```text
   The following are texts with accompanying questions and answers.
   ```
+
 - Base prompt template:
-  ```
+
+  ```text
   Text: {text}
   Question: {question}
   Answer in max 3 words:
   ```
+
 - Instruction-tuned prompt template:
-  ```
+
+  ```text
   Text: {text}
 
   Answer the following question about the above text in at most 3 words.
@@ -364,9 +397,8 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ euroeval --model <model-id> --dataset xquad-en
+euroeval --model <model-id> --dataset xquad-en
 ```
-
 
 ### Unofficial: BeleBele-en
 
@@ -386,12 +418,14 @@ Here are a few examples from the training split:
   "label": "d"
 }
 ```
+
 ```json
 {
   "text": 'Text: "All of the cave entrances, which were named ""The Seven Sisters"", are at least 100 to 250 meters (328 to 820 feet) in diameter. Infrared images show that the temperature variations from night and day show that they are likely caves. ""They are cooler than the surrounding surface in the day and warmer at night. Their thermal behavior is not as steady as large caves on Earth that often maintain a fairly constant temperature, but it is consistent with these being deep holes in the ground,"" said Glen Cushing of the United States Geological Survey (USGS) Astrogeology Team and of Northern Arizona University located in Flagstaff, Arizona."\nQuestion: What information suggests that The Seven Sisters are caves?\nChoices:\na. Temperature variations\nb. The diameter of the cave entrances\nc. Geological surveys\nd. Pictures of caves on Earth',
   "label": "a"
 }
 ```
+
 ```json
 {
   "text": 'Text: The proposed amendment already passed both houses in 2011. A change was made this legislative session when the second sentence was deleted first by the House of Representatives and then was passed in a similar form by the Senate Monday. The failure of the second sentence, which proposes to ban same-sex civil unions, could possibly open the door for civil unions in the future. Following the process, HJR-3 will be reviewed again by the next elected legislature in either 2015 or 2016 to remain in process.\nQuestion: According to the passage, when was the second sentence deleted?\nChoices:\na. During the legislative session\nb. In 2011\nc. On Monday\nd. In 2015',
@@ -404,17 +438,22 @@ When evaluating generative models, we use the following setup (see the
 
 - Number of few-shot examples: 4
 - Prefix prompt:
-  ```
+
+  ```text
   The following are texts with accompanying questions and answers.
   ```
+
 - Base prompt template:
-  ```
+
+  ```text
   Text: {text}
   Question: {question}
   Answer in max 3 words:
   ```
+
 - Instruction-tuned prompt template:
-  ```
+
+  ```text
   Text: {text}
 
   Answer the following question about the above text in at most 3 words.
@@ -425,9 +464,8 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ euroeval --model <model-id> --dataset belebele-en
+euroeval --model <model-id> --dataset belebele-en
 ```
-
 
 ### Unofficial: MultiWikiQA-en
 
@@ -450,6 +488,7 @@ Here are a few examples from the training split:
     }
 }
 ```
+
 ```json
 {
     "context": "Lara Stalder (born 15 May 1994) is a Swiss ice hockey forward and member of the Swiss national ice hockey team, currently playing with Brynäs IF Dam of the Swedish Women's Hockey League (SDHL). She played with the Minnesota Duluth Bulldogs women's ice hockey team from 2013 to 2017, and with Linköping HC from 2017 to 2019.\n\nPlaying career \nAcross four seasons with Minnesota-Duluth, Stalder put up 148 points in 134 games, leading the team in points in her final season, as well as being named WCHA Player of the Year and Student-Athlete of the Year, and being a top-three finalist for the Patty Kazmaier Award. In 2016, she was drafted 20th overall by the Boston Pride of the National Women's Hockey League (NWHL).\n\nAfter missing most of the 2018–19 season due to a shoulder injury, Stalder left Linköping to sign with Brynäs. In 2020, she was named SDHL Player of the Year after putting up 71 points in 36 games, being the first woman to win Guldhjälmen. The 42 goals she would score that year is the second highest single-season total in SDHL history, and her 71 points the third highest single-season total in SDHL history.\n\nInternational  \nStalder made her senior national team debut at the 2011 IIHF Women's World Championship. She has represented Switzerland at the Winter Olympics in 2014 and won the bronze medal after defeating Sweden in the bronze medal playoff. She would score 6 points in 6 games at the 2018 Winter Olympics, as Switzerland finished in 5th place.\n\nCareer statistics\n\nAwards and honors\n\nNCAA\nWCHA Offensive Player of the Week (Week of 17 January 2017)\nWCHA Offensive Player of the Week (Week of 24 January 2017)\nWCHA Offensive Player of the Week (Week of 31 January 2017)\nWCHA Offensive Player of the Month, January 2017\nWomen's Hockey Commissioners' Association National Division I Player of the Month, January 2017\nPatty Kazmaier Award Top-3 Finalist, 2016–17 season\n2016-17 AHCA-CCM Women's University Division I First-Team All-American\n\nSDHL \n\n Guldhjälmen (Golden Helmet), MVP of the SDHL as selected by players, 2019–20 season\n SDHL Forward of the Year, 2019–20 season\n\nReferences\n\nExternal links\n\nMinnesota Duluth bio\n\n1994 births\nLiving people\nSportspeople from Lucerne\nSwiss women's ice hockey forwards\nIce hockey players at the 2014 Winter Olympics\nIce hockey players at the 2018 Winter Olympics\nIce hockey players at the 2022 Winter Olympics\nOlympic bronze medalists for Switzerland\nOlympic ice hockey players for Switzerland\nOlympic medalists in ice hockey\nMedalists at the 2014 Winter Olympics\nBrynäs IF (women) players\nLinköping HC (women) players\nMinnesota Duluth Bulldogs women's ice hockey players\nSwiss expatriate ice hockey people\nSwiss expatriate sportspeople in Sweden\nSwiss expatriate sportspeople in the United States",
@@ -460,6 +499,7 @@ Here are a few examples from the training split:
     }
 }
 ```
+
 ```json
 {
     "context": "TCG Barbaros (F 244) is the lead ship of  of the Turkish Navy.\n\nDevelopment and design \n\nBarbaros-class frigates were designed in Germany and are part of the MEKO group of modular warships, in this case the MEKO 200 design. Two ships were built in Germany and two in Turkey with German assistance. They are larger than the previous s and are also faster due to using CODOG machinery rather than pure diesels.\n\nThe first two vessels (F 244 and F 245) are defined as the Barbaros class (MEKO 200 TN Track II-A) while the last two vessels (F 246 and F 247) are defined as the Salih Reis class (MEKO 200 TN Track II-B) by the Turkish Navy.\n\nSalih Reis subclass ships are built with 8-cell Mk. 41 VLS and longer than Barbaros class vessels to accommodate 16-cell Mk. 41 VLS upgrade in the future while Barbaros-class vessels built with  Mk.29 Sea Sparrow launchers that planned to be replaced by 8-cell Mk. 41 VLS.\n\nConstruction and career \nBarbaros was launched on 29 September 1993 by Blohm+Voss in Hamburg and commissioned on 23 May 1997.\n\nOn 9 March 2019, her crew saluted to the tomb of Barbaros Hayreddin while crossing Bosporus.\n\nOn 26 August 2020, TCG Barbaros and  sailed alongside  in Eastern Mediterranean Sea. Later that year on 3 October, she underwent alongside USS Roosevelt.\n\nReferences\n\nExternal links\n\n The First Upgraded MEKO 200 Frigate Of Turkish Navy\n BARBAROS CLASS ( MEKO 200 Track II) (Turkey)\n\n1993 ships\nShips built in Germany\nFrigates of the Turkish Navy\nBarbaros-class frigates of the Turkish Navy",
@@ -476,17 +516,22 @@ When evaluating generative models, we use the following setup (see the
 
 - Number of few-shot examples: 4
 - Prefix prompt:
-  ```
+
+  ```text
   The following are texts with accompanying questions and answers.
   ```
+
 - Base prompt template:
-  ```
+
+  ```text
   Text: {text}
   Question: {question}
   Answer in max 3 words:
   ```
+
 - Instruction-tuned prompt template:
-  ```
+
+  ```text
   Text: {text}
 
   Answer the following question about the above text in at most 3 words.
@@ -497,9 +542,8 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ euroeval --model <model-id> --dataset multi-wiki-qa-en
+euroeval --model <model-id> --dataset multi-wiki-qa-en
 ```
-
 
 ## Knowledge
 
@@ -525,12 +569,14 @@ Here are a few examples from the training split:
   "label": "a"
 }
 ```
+
 ```json
 {
   "text": "What TWO houses were confronted during the Wars of the Roses?\nChoices:\na. The House of Lancaster\nb. The House of Leicester\nc. The House of Canterbury\nd. The House of York",
   "label": "a"
 }
 ```
+
 ```json
 {
   "text": "What is the name of the War Memorial located in Whitehall?\nChoices:\na. Dumfries\nb. Cenotaph\nc. Royal Crescent\nd. The White Tower",
@@ -543,11 +589,14 @@ When evaluating generative models, we use the following setup (see the
 
 - Number of few-shot examples: 5
 - Prefix prompt:
-  ```
+
+  ```text
   The following are multiple choice questions (with answers).
   ```
+
 - Base prompt template:
-  ```
+
+  ```text
   Question: {text}
   Options:
   a. {option_a}
@@ -556,8 +605,10 @@ When evaluating generative models, we use the following setup (see the
   d. {option_d}
   Answer: {label}
   ```
+
 - Instruction-tuned prompt template:
-  ```
+
+  ```text
   Question: {text}
   Options:
   a. {option_a}
@@ -571,9 +622,8 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ euroeval --model <model-id> --dataset life-in-the-uk
+euroeval --model <model-id> --dataset life-in-the-uk
 ```
-
 
 ### Unofficial: MMLU
 
@@ -595,12 +645,14 @@ Here are a few examples from the training split:
   "label": "a"
 }
 ```
+
 ```json
 {
   "text": "As of 2017, the share of GDP spent on the military by the United States is about\nChoices:\na. 1%\nb. 3%\nc. 6%\nd. 10%",
   "label": "b"
 }
 ```
+
 ```json
 {
   "text": "Question 13. A buyer sent a signed letter to a seller that stated: \"Ship 100 boxes of nails at $3 per box, the price quoted in your circular.\" The seller mailed the buyer a signed form acknowledgment that agreed to the buyer's terms and stated on the reverse side: \"Disputes regarding quality shall be arbitrated.\" The buyer did not reply to the seller's acknowledgment, and the seller shipped the nails. When the buyer received the nails, it found their quality to be unsatisfactory and sued the seller for breach of warranty. The seller has asked an attorney whether the parties' contract requires arbitration of the buyer's claim. What is the best advice the attorney can provide?\nChoices:\na. A contract was formed pursuant to conduct when the buyer received the nails, and a court would exclude the arbitration provision from the contract.\nb. A contract was formed when the seller mailed its acknowledgment, and the arbitration term became part of the contract. arbitration term became part of the contract.\nc. A contract was formed when the seller mailed its acknowledgment, and the court must decide whether the arbitration term should be excluded as a material alteration of the contract.\nd. No contract exists, because the arbitration term in the seller's acknowledgment created a counteroffer that the buyer never accepted.",
@@ -613,11 +665,14 @@ When evaluating generative models, we use the following setup (see the
 
 - Number of few-shot examples: 5
 - Prefix prompt:
-  ```
+
+  ```text
   The following are multiple choice questions (with answers).
   ```
+
 - Base prompt template:
-  ```
+
+  ```text
   Question: {text}
   Options:
   a. {option_a}
@@ -626,8 +681,10 @@ When evaluating generative models, we use the following setup (see the
   d. {option_d}
   Answer: {label}
   ```
+
 - Instruction-tuned prompt template:
-  ```
+
+  ```text
   Question: {text}
   Options:
   a. {option_a}
@@ -641,9 +698,8 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ euroeval --model <model-id> --dataset mmlu
+euroeval --model <model-id> --dataset mmlu
 ```
-
 
 ### Unofficial: ARC
 
@@ -663,12 +719,14 @@ Here are a few examples from the training split:
   "label": "a"
 }
 ```
+
 ```json
 {
   "text": "How do moose use a learned behavior to protect themselves?\nChoices:\na. They have hollow hair to keep warm in the winter.\nb. They roll in a pool of muddy water to avoid fly bites.\nc. They have keen hearing to sense danger in the forest.\nd. They use their wide hooves to prevent sinking in deep snow.",
   "label": "b"
 }
 ```
+
 ```json
 {
   "text": "A plant that grows red flowers was crossed with the same kind of plant that grows white flowers. Their offspring grew pink flowers. Which best explains why the offspring grew pink flowers?\nChoices:\na. The offspring experienced a genetic mutation.\nb. The offspring resulted from asexual reproduction.\nc. The genes for flower color exhibited incomplete dominance.\nd. A gene for pink-colored flowers was recessive in one of the parents.",
@@ -681,11 +739,14 @@ When evaluating generative models, we use the following setup (see the
 
 - Number of few-shot examples: 5
 - Prefix prompt:
-  ```
+
+  ```text
   The following are multiple choice questions (with answers).
   ```
+
 - Base prompt template:
-  ```
+
+  ```text
   Question: {text}
   Options:
   a. {option_a}
@@ -694,8 +755,10 @@ When evaluating generative models, we use the following setup (see the
   d. {option_d}
   Answer: {label}
   ```
+
 - Instruction-tuned prompt template:
-  ```
+
+  ```text
   Question: {text}
   Options:
   a. {option_a}
@@ -709,9 +772,8 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ euroeval --model <model-id> --dataset arc
+euroeval --model <model-id> --dataset arc
 ```
-
 
 ## Common-sense Reasoning
 
@@ -732,12 +794,14 @@ Here are a few examples from the training split:
   "label": "a"
 }
 ```
+
 ```json
 {
   "text": "The video begins with a title sequence. a young man\nChoices:\na. prepares to black out.\nb. is shown in a gym performing tricks with a jump rope as music plays in the background.\nc. is seen talking continuously about slamming the mouth of a chimpanzee into the camera.\nd. is standing outside with a basketball in his hand, alternating between shots of dribbling for the ball.",
   "label": "b"
 }
 ```
+
 ```json
 {
   "text": "A herb garden appears with a woman standing next to it in a large garden next to a wheelbarrow filled with mulch. the woman\nChoices:\na. moves the mulch across the ground in the wheelbarrow, falling backwards on attempts.\nb. takes some of the mulch away and starts bagging it in the wheelbarrow.\nc. begins to talk to the camera while gesturing to the flowerbed and the mulch, before eventually picking up a handful of the mulch.\nd. then begins to mulch close to the wheelbarrow with mulching tool in her hand and while waving her arms in the air.",
@@ -750,11 +814,14 @@ When evaluating generative models, we use the following setup (see the
 
 - Number of few-shot examples: 5
 - Prefix prompt:
-  ```
+
+  ```text
   The following are multiple choice questions (with answers).
   ```
+
 - Base prompt template:
-  ```
+
+  ```text
   Question: {text}
   Options:
   a. {option_a}
@@ -763,8 +830,10 @@ When evaluating generative models, we use the following setup (see the
   d. {option_d}
   Answer: {label}
   ```
+
 - Instruction-tuned prompt template:
-  ```
+
+  ```text
   Question: {text}
   Options:
   a. {option_a}
@@ -778,7 +847,7 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ euroeval --model <model-id> --dataset hellaswag
+euroeval --model <model-id> --dataset hellaswag
 ```
 
 ### Unofficial: Winogrande
@@ -815,19 +884,24 @@ When evaluating generative models, we use the following setup (see the
 
 - Number of few-shot examples: 5
 - Prefix prompt:
-  ```
+
+  ```text
   The following are multiple choice questions (with answers).
   ```
+
 - Base prompt template:
-  ```
+
+  ```text
   Question: {text}
   Options:
   a. {option_a}
   b. {option_b}
   Answer: {label}
   ```
+
 - Instruction-tuned prompt template:
-  ```
+
+  ```text
   Question: {text}
   Options:
   a. {option_a}
@@ -839,9 +913,8 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ euroeval --model <model-id> --dataset winogrande
+euroeval --model <model-id> --dataset winogrande
 ```
-
 
 ## Summarisation
 
@@ -864,12 +937,14 @@ Here are a few examples from the training split:
   "target_text": "'When you know that there is opportunity to do all you can to put yourself forward in the name of offering service, anybody would be interested'\nPalin added: 'It doesn't necessarily have to be me though'\nThe conservative firebrand appears to have a change of heart about the Oval Office needing a female touch .\nLast week she said: 'I don't give a flying flip about what gender the person will be'"
 }
 ```
+
 ```json
 {
   "text": "By . Amanda Williams . The dictionary makers have taken to Twitter to find new words for the next edition of the lexicon - asking users to choose which words should make the final edition . The latest edition of the Collins English Dictionary could include Twitter slang words such as 'adorkable' and 'fatberg'. The dictionary makers have taken to Twitter to find new words for the next edition of the lexicon - asking users to choose which words should make the final edition. The list of suggested words includes fracktivist - someone who protests against fracking - and felfie, a term used to describe a farmer who takes a selfie, or photograph of themselves. The 12th edition of the dictionary will be the first to contain a word that has been voted for by Twitter users - who have until midnight on May 28 to vote for the new word. Once selected, it will be included in the next edition of the dictionary, which is released in October. The dictionary publisher says that the rise of social media and the hashtag has seen new words and ideas - that they scout for every year - become mainstream much quicker than in the past. Andrew Freeman, associate publisher at Collins, said: 'Twitter offers us an immediate snapshot of how much a word is used. 'The tried and tested approach to compiling dictionaries has to adapt to embrace the ways in which language is developing through use on social media, and this is a fun way to get Twitter users involved in defining the English language.' Collins has been publishing the dictionary since 1819 and is the largest single volume dictionary in print, with the words it contains sourced from the Collins Corpus, which contains more than 4.5 billion words, as well as the open source site collinsdictionary.com, where users can submit words for consideration. The latest edition of the Collins English Dictionary could include Twitter slang words such as 'adorkable' The word felfie, a term used to describe a farmer who takes a selfie, or photograph of themselves could also be included . Nomakeupselfie - a selfie of a woman without make-up, posted online to raise awareness for a charity - is also in the running to be used in the dictionary . Lucy Mangan, a blogger for collinsdictionary.com and a contributor to the Collins English Dictionary, said: 'Twitter is the perfect place to find out what people are really saying and how they’re saying it. 'It’s a space in which you’re freer than almost anywhere else to combine old words, resurrect others or invent totally new ones whenever the need arises.' According to language experts, the list, which also contains the word adorkable, referring to someone who is dorky in an adorable way, is a sign of the way language is changing in the 21st century. Ian Brookes, lexicographer and consultant editor to the Collins English Dictionary, said: 'Language has always had to develop in response to changes in society and technology. In the 20th century the development of the motor car, air travel, television, and the personal computer changed the things that people did and so brought many new words into the language. 'In the 21st century, the growth of social media has had a comparable effect. Twitter users can vote for their choice by visiting twictionary.collinsdictionary.com . Adorkable - dorky in an adorable way . Fatberg - a large mass of solid waste, grease etc, clogging a sewage system . Felfie - a farmer selfie . Gaybourhood - a gay-friendly neighbourhood, e.g. Castro in San Francisco . Nomakeupselfie - a selfie of a woman without make-up, posted online to raise awareness for a charity . Vaguebooking - posting a deliberately vague status updates on social media to prompt a response . Duckface - the traditional pouting facial expression in selfies . Fracktivist - an activist who protests against fracking . Euromaiden - the original pro-Europe protests in Ukraine, named for Maidan Square in Kiev .",
   "target_text": "Dictionary makers have taken to Twitter to find new words for next edition .\nThe suggested words include fracktivist - an anti-fracking protester .\nFelfie - a term used to describe a farmer who takes a selfie - also included ."
 }
 ```
+
 ```json
 {
   "text": "There were three of them, one of them probably a child, and at least one met a gruesome end at the hands of a terrifying predator. About 67 million years later, a Wyoming rancher led scientists to their remains. Now experts are digging out one of the most complete skeletons yet of a Triceratops, the three-horned, plant-eating dinosaur that was one of the last of the giant reptiles. \"There's only three other skeletons that will match the completeness of one of the specimens we're excavating right now,\" said paleontologist Peter Larson, president of the Black Hills Institute of Geological Research. Most of the remains found before now have included fewer than half of the prehistoric creatures' bones, Larson said Monday. The most complete to date, now on display at the Houston Museum of Natural Science in Texas, has about 76% of its skeleton. \"The largest, more mature individual appears to be the most complete,\" Larson said. \"One is just a bit smaller, and there's another one that by live weight is probably only half the size.\" Will mammoths be brought back to life? Liquid blood fuels cloning hopes . The dig is going on near Newcastle, Wyoming, more than 200 miles north of Cheyenne. \"The fact that there are three of them together is really cool,\" Larson said. The trio could be male and female and their young, or they could be two females looking after a juvenile dinosaur, he said. And before now, there was no indication that the Triceratops moved in groups. The Black Hills Institute is working with the Naturalis Biodiversity Center, from the Netherlands, on the dig. Larson called the discovery of a young Triceratops a \"very significant\" find as well, since it will give scientists an insight into how the great lizards grew up. Newly discovered dinosaur fossil is a primitive bird . Triceratops lived in the twilight of the Cretaceous Period, about a half a million years before the dinosaurs' extinction. Much of what is now the Great Plains and southern Canada was once part of a vast inland sea, and the region is rich in fossils. \"Like most of the specimens that were found, it was brought to our attention by a rancher,\"  Larson said. The rancher sent photos to the Black Hills Institute, located in neighboring South Dakota, in late 2012. Excavation began in May and is expected to take about a month. So far, the bones that have turned up point to a violent end, probably at the hands of the feared Tyrannosaurus rex. On the largest of the three specimens, at least two of the major limb bones were \"bitten through,\" Larson said. \"If you can imagine, this is a bone that is nearly four feet long,\" he said. But a T.rex \"would kind of chop the carcass up with their giant, shearing jaws,\" ripping through flesh and bone alike. \"I think we also have a feeding site for Tyrannosaurus rex, which is very exciting,\" he said. \"This is potentially a site where we can learn the behavior of two different species.\" More science news on CNN's Light Years blog .",
@@ -882,16 +957,21 @@ When evaluating generative models, we use the following setup (see the
 
 - Number of few-shot examples: 1
 - Prefix prompt:
-  ```
+
+  ```text
   The following are articles with accompanying summaries.
   ```
+
 - Base prompt template:
-  ```
+
+  ```text
   News article: {text}
   Summary: {target_text}
   ```
+
 - Instruction-tuned prompt template:
-  ```
+
+  ```text
   News article: {text}
 
   Write a summary of the above article.
@@ -900,5 +980,5 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ euroeval --model <model-id> --dataset cnn-dailymail
+euroeval --model <model-id> --dataset cnn-dailymail
 ```

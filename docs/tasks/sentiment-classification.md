@@ -8,7 +8,6 @@ able to understand the overall semantics of a given document.
 
 When evaluating generative models, we allow the model to generate 5 tokens on this task.
 
-
 ## 📊 Metrics
 
 The primary metric we use when evaluating the performance of a model on the sentiment
@@ -21,12 +20,11 @@ We also report the macro-average F1-score, being the average of the
 [F1-score](https://en.wikipedia.org/wiki/F1_score) for each class, thus again weighing
 each class equally.
 
-
 ## 🛠️ How to run
 
 In the command line interface of the [EuroEval Python package](/python-package.md), you
 can benchmark your favorite model on the sentiment classification task like so:
 
 ```bash
-$ euroeval --model <model-id> --task sentiment-classification
+euroeval --model <model-id> --task sentiment-classification
 ```

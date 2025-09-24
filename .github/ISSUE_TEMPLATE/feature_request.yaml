@@ -8,7 +8,9 @@ body:
   attributes:
     label: 🚀 The feature, motivation and pitch
     description: >
-      A clear and concise description of the feature proposal. Please outline the motivation for the proposal. Is your feature request related to a specific problem? e.g., *"I'm working on X and would like Y to be possible"*.
+      A clear and concise description of the feature proposal. Please outline the
+      motivation for the proposal. Is your feature request related to a specific
+      problem? e.g., *"I'm working on X and would like Y to be possible"*.
   validations:
     required: true
 - type: markdown

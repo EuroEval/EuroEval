@@ -10,7 +10,6 @@ information from a document at once.
 When evaluating generative models, we allow the model to generate 128 tokens on this
 task.
 
-
 ## 📊 Metrics
 
 The primary metric we use when evaluating the performance of a model on the named entity
@@ -25,12 +24,11 @@ the most common metric used for this task. We find that excluding `MISC` gives a
 accurate picture of the model's performance, however, as the the `MISC` entity is not
 well-defined and varies across datasets.
 
-
 ## 🛠️ How to run
 
 In the command line interface of the [EuroEval Python package](/python-package.md), you
 can benchmark your favorite model on the named entity recognition task like so:
 
 ```bash
-$ euroeval --model <model-id> --task named-entity-recognition
+euroeval --model <model-id> --task named-entity-recognition
 ```

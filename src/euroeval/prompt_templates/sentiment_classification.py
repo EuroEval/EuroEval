@@ -14,6 +14,7 @@ from ..languages import (
     FR,
     IS,
     IT,
+    LT,
     LV,
     NB,
     NL,
@@ -152,6 +153,16 @@ SENT_TEMPLATES: dict["Language", PromptConfig] = {
         default_prompt_template="Documento: {text}\nSentimento: {label}",
         default_instruction_prompt="Documento: {text}\n\nClassificare il sentiment del "
         "documento. Rispondere con {labels_str}, e nient'altro.",
+    ),
+    LT: PromptConfig(
+        default_prompt_label_mapping=dict(
+            positive="teigiamas", neutral="neutralus", negative="neigiamas"
+        ),
+        default_prompt_prefix="Toliau pateikti dokumentai ir jų nuotaika, kuri "
+        "gali būti {labels_str}.",
+        default_prompt_template="Dokumentas: {text}\nNuotaika: {label}",
+        default_instruction_prompt="Dokumentas: {text}\n\nKlasifikuokite nuotaiką "
+        "dokumente. Atsakykite su {labels_str}, ir nieko kito.",
     ),
     LV: PromptConfig(
         default_prompt_label_mapping=dict(

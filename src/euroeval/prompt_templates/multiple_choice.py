@@ -13,6 +13,7 @@ from ..languages import (
     FR,
     IS,
     IT,
+    LT,
     LV,
     NB,
     NL,
@@ -103,6 +104,14 @@ MULTIPLE_CHOICE_TEMPLATES: dict["Language", PromptConfig] = {
         default_prompt_template="Domanda: {text}\nRisposta: {label}",
         default_instruction_prompt="Domanda: {text}\n\nRispondete alla domanda "
         "precedente con {labels_str}, e nient'altro.",
+        default_prompt_label_mapping="auto",
+    ),
+    LT: PromptConfig(
+        default_prompt_prefix="Toliau pateikti daugiavariančiai klausimai "
+        "(su atsakymais).",
+        default_prompt_template="Klausimas: {text}\nAtsakymas: {label}",
+        default_instruction_prompt="Klausimas: {text}\n\nAtsakykite į aukščiau "
+        "pateiktą klausimą atsakydami {labels_str}, ir nieko daugiau.",
         default_prompt_label_mapping="auto",
     ),
     LV: PromptConfig(

@@ -1,15 +1,20 @@
 ---
 hide:
-    - navigation
-    - toc
+- navigation
+- toc
 ---
 #
+
 <div align='center'>
-<img src="https://raw.githubusercontent.com/EuroEval/EuroEval/main/gfx/euroeval.png" height="500" width="372">
+<img
+    src="https://raw.githubusercontent.com/EuroEval/EuroEval/main/gfx/euroeval.png"
+    height="500"
+    width="372"
+>
 <h3>The robust European language model benchmark.</h3>
 </div>
 
---------------------------
+---
 
 EuroEval is a language model benchmarking framework that supports evaluating all types
 of language models out there: encoders, decoders, encoder-decoders, base models, and

@@ -11,7 +11,6 @@ the original text, but that the model has to generate new text based on the inpu
 When evaluating generative models, we allow the model to generate 256 tokens on this
 task.
 
-
 ## 📊 Metrics
 
 The primary metric used to evaluate the performance of a model on the summarization task
@@ -29,12 +28,11 @@ summary have in common. This is a more traditional metric for summarization, whi
 why we report it as well, but it correlates less well with human judgments than
 BERTScore.
 
-
 ## 🛠️ How to run
 
 In the command line interface of the [EuroEval Python package](/python-package.md), you
 can benchmark your favorite model on the summarization task like so:
 
 ```bash
-$ euroeval --model <model-id> --task summarization
+euroeval --model <model-id> --task summarization
 ```

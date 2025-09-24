@@ -13,7 +13,6 @@ the task. It [has been shown](https://doi.org/10.48550/arXiv.2309.05858) that th
 approach corresponds to finetuning in the sense of being equivalent to gradient updates
 on the training data, making the two evaluation methodologies comparable.
 
-
 ## Robust Evaluation
 
 For each model and dataset, we evaluate the model as described above 10 times, each time
@@ -29,7 +28,6 @@ The bootstrap theorem means that this mean and associated confidence interval wi
 asymptotically correct, giving us a more reliable estimate of the true performance of
 the model, rather than just the performance on a single test set, which can be noisy.
 
-
 ## Formulating NLU Tasks as Generative Tasks
 
 In this section we describe how we rephrase the NLU tasks as text-to-text tasks, which
@@ -41,7 +39,7 @@ generate the correct output.
 For the base (i.e., non-instruction tuned) models, we use the following prompt
 structure:
 
-```
+```text
 [prefix prompt]
 
 {% for each few-shot example %}
@@ -57,7 +55,7 @@ structure:
 
 For the instruction tuned models, we use the following prompt structure:
 
-```
+```text
 {% for each few-shot example %}
   USER: [instruction with few-shot example]
   ASSISTANT: [label]
@@ -85,7 +83,6 @@ JSON format, we employ structured generation using the
 [XGrammar](https://github.com/mlc-ai/xgrammar) package, which modifies the logits
 outputted by the model to ensure that the output is always a valid JSON dictionary in
 the aforementioned format.
-
 
 ## Score Aggregation
 

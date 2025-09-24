@@ -894,7 +894,7 @@ wheels = [
 
 [[package]]
 name = "euroeval"
-version = "16.2.2.dev0"
+version = "16.3.0.dev0"
 source = { editable = "." }
 dependencies = [
     { name = "accelerate" },
@@ -1016,8 +1016,8 @@ requires-dist = [
     { name = "timm", marker = "extra == 'generative'", specifier = ">=1.0.19" },
     { name = "torch", specifier = ">=2.6.0" },
     { name = "transformers", extras = ["mistral-common"], specifier = ">=4.56.0" },
-    { name = "vllm", extras = ["flashinfer"], marker = "sys_platform == 'linux' and extra == 'all'", specifier = ">=0.10.1" },
-    { name = "vllm", extras = ["flashinfer"], marker = "sys_platform == 'linux' and extra == 'generative'", specifier = ">=0.10.1" },
+    { name = "vllm", extras = ["flashinfer"], marker = "sys_platform == 'linux' and extra == 'all'", specifier = ">=0.10.1,<0.11.0" },
+    { name = "vllm", extras = ["flashinfer"], marker = "sys_platform == 'linux' and extra == 'generative'", specifier = ">=0.10.1,<0.11.0" },
 ]
 provides-extras = ["generative", "all"]
 

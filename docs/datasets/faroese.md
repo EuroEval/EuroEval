@@ -4,7 +4,6 @@ This is an overview of all the datasets used in the Faroese part of EuroEval. Th
 datasets are grouped by their task - see the [task overview](/tasks) for more
 information about what these constitute.
 
-
 ## Sentiment Classification
 
 ### FoSent
@@ -28,12 +27,14 @@ Here are a few examples from the training split:
   "label": "positive"
 }
 ```
+
 ```json
 {
   "text": "Vestmanna skúli hevur hesar leiðreglur í sambandi við sjúkar næmingar: Tað er ógvuliga umráðandi at næmingar, sum ikki eru koppsettir, og hava verið í samband við fólk, sum eru testað positiv fyri koronu, halda tilmælini. ",
   "label": "neutral"
 }
 ```
+
 ```json
 {
   "text": "Landsverk arbeiður í løtuni við at fáa trailaran, sum er fult lastaður, upp aftur, og arbeiðið fer væntandi at taka nakrar tímar, tí stórar maskinur skulu til, og tær mugu koyra um Eiðiskarð fyri at koma til hjálpar. ",
@@ -46,31 +47,36 @@ When evaluating generative models, we use the following setup (see the
 
 - Number of few-shot examples: 5
 - Prefix prompt:
-  ```
+
+  ```text
   Her eru nakrir tekstir flokkaðir eftir lyndi, sum kann vera 'positivt', 'neutralt' ella 'negativt'.
   ```
+
 - Base prompt template:
-  ```
+
+  ```text
   Text: {text}
   Lyndi: {label}
   ```
+
 - Instruction-tuned prompt template:
-  ```
+
+  ```text
   Tekstur: {text}
 
   Flokka lyndið í tekstinum. Svara við 'positivt', 'neutralt' ella 'negativt'.
   ```
+
 - Label mapping:
-    - `positive` ➡️ `positivt`
-    - `neutral` ➡️ `neutralt`
-    - `negative` ➡️ `negativt`
+  - `positive` ➡️ `positivt`
+  - `neutral` ➡️ `neutralt`
+  - `negative` ➡️ `negativt`
 
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ euroeval --model <model-id> --dataset fosent
+euroeval --model <model-id> --dataset fosent
 ```
-
 
 ## Named Entity Recognition
 
@@ -94,12 +100,14 @@ Here are a few examples from the training split:
   'labels': array(['O', 'O', 'O', 'B-PER', 'I-PER', 'O', 'O', 'O', 'O', 'O', 'B-ORG', 'O', 'O', 'O', 'O', 'B-LOC', 'O'], dtype=object)
 }
 ```
+
 ```json
 {
   'tokens': array(['Fleiri', 'læraratímar', 'skulu', 'í', 'ár', 'brúkast', 'á', 'HF', '-', 'skúlanum', 'í', 'Klaksvík', ',', 'men', 'sambært', 'leiðaranum', 'á', 'skúlanum', 'hevur', 'tað', 'bara', 'við', 'sær', ',', 'at', 'lærarar', ',', 'sum', 'eru', 'búsitandi', 'í', 'Klaksvík', ',', 'koma', 'at', 'ferðast', 'minni', 'á', 'Kambsdal', 'og', 'ístaðin', 'brúka', 'meira', 'undirvísingartíð', 'í', 'býnum', '.'], dtype=object),
   'labels': array(['O', 'O', 'O', 'O', 'O', 'O', 'O', 'B-ORG', 'I-ORG', 'I-ORG', 'O', 'B-LOC', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'B-LOC', 'O', 'O', 'O', 'O', 'O', 'O', 'B-LOC', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O'], dtype=object)
 }
 ```
+
 ```json
 {
   'tokens': array(['Soleiðis', ',', 'at', 'Starvsstovan', 'kann', 'fylgja', 'við', ',', 'at', 'tað', 'ikki', 'er', 'nýliga', 'heilivágsviðgjørdur', 'fiskur', ',', 'sum', 'tikin', 'verður', '.'], dtype=object),
@@ -112,36 +120,41 @@ When evaluating generative models, we use the following setup (see the
 
 - Number of few-shot examples: 8
 - Prefix prompt:
-  ```
+
+  ```text
   Her eru nakrir setningar og nakrar JSON orðabøkur við nevndar eindir, sum eru í setningunum.
   ```
+
 - Base prompt template:
-  ```
+
+  ```text
   Setningur: {text}
   Nevndar eindir: {label}
   ```
+
 - Instruction-tuned prompt template:
-  ```
+
+  ```text
   Setningur: {text}
 
   Greinið nevndu einingarnar í setningunni. Þú ættir að skila þessu sem JSON orðabók með lyklunum 'persónur', 'staður', 'felagsskapur' og 'ymiskt'. Gildin ættu að vera listi yfir nevndu einingarnar af þeirri gerð, nákvæmlega eins og þær koma fram í setningunni.
   ```
+
 - Label mapping:
-    - `B-PER` ➡️ `persónur`
-    - `I-PER` ➡️ `persónur`
-    - `B-LOC` ➡️ `staður`
-    - `I-LOC` ➡️ `staður`
-    - `B-ORG` ➡️ `felagsskapur`
-    - `I-ORG` ➡️ `felagsskapur`
-    - `B-MISC` ➡️ `ymiskt`
-    - `I-MISC` ➡️ `ymiskt`
+  - `B-PER` ➡️ `persónur`
+  - `I-PER` ➡️ `persónur`
+  - `B-LOC` ➡️ `staður`
+  - `I-LOC` ➡️ `staður`
+  - `B-ORG` ➡️ `felagsskapur`
+  - `I-ORG` ➡️ `felagsskapur`
+  - `B-MISC` ➡️ `ymiskt`
+  - `I-MISC` ➡️ `ymiskt`
 
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ euroeval --model <model-id> --dataset fone
+euroeval --model <model-id> --dataset fone
 ```
-
 
 ### Unofficial: WikiANN-fo
 
@@ -161,12 +174,14 @@ Here are a few examples from the training split:
   'labels': array(['O', 'O', 'B-LOC', 'O', 'O'], dtype=object)
 }
 ```
+
 ```json
 {
   'tokens': array(['Skulu', 'úrvalssvimjararnir', 'betra', 'úrslit', 'síni', ',', 'so', 'er', 'neyðugt', 'hjá', 'teimum', 'at', 'fara', 'uttanlands', 'at', 'venja', '(', 'Danmark', ',', 'USA', ')', ';', 'hinvegin', 'minkar', 'hetta', 'um', 'kappingina', 'hjá', 'teimum', 'heimligu', 'svimjarunum', '.'], dtype=object),
   'labels': array(['O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'B-LOC', 'O', 'B-LOC', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O'], dtype=object)
 }
 ```
+
 ```json
 {
   'tokens': array(['Norðuramerika', '-', '16', '%'], dtype=object),
@@ -179,36 +194,41 @@ When evaluating generative models, we use the following setup (see the
 
 - Number of few-shot examples: 8
 - Prefix prompt:
-  ```
+
+  ```text
   Her eru nakrir setningar og nakrar JSON orðabøkur við nevndar eindir, sum eru í setningunum.
   ```
+
 - Base prompt template:
-  ```
+
+  ```text
   Setningur: {text}
   Nevndar eindir: {label}
   ```
+
 - Instruction-tuned prompt template:
-  ```
+
+  ```text
   Setningur: {text}
 
   Greinið nevndu einingarnar í setningunni. Þú ættir að skila þessu sem JSON orðabók með lyklunum 'persónur', 'staður', 'felagsskapur' og 'ymiskt'. Gildin ættu að vera listi yfir nevndu einingarnar af þeirri gerð, nákvæmlega eins og þær koma fram í setningunni.
   ```
+
 - Label mapping:
-    - `B-PER` ➡️ `persónur`
-    - `I-PER` ➡️ `persónur`
-    - `B-LOC` ➡️ `staður`
-    - `I-LOC` ➡️ `staður`
-    - `B-ORG` ➡️ `felagsskapur`
-    - `I-ORG` ➡️ `felagsskapur`
-    - `B-MISC` ➡️ `ymiskt`
-    - `I-MISC` ➡️ `ymiskt`
+  - `B-PER` ➡️ `persónur`
+  - `I-PER` ➡️ `persónur`
+  - `B-LOC` ➡️ `staður`
+  - `I-LOC` ➡️ `staður`
+  - `B-ORG` ➡️ `felagsskapur`
+  - `I-ORG` ➡️ `felagsskapur`
+  - `B-MISC` ➡️ `ymiskt`
+  - `I-MISC` ➡️ `ymiskt`
 
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ euroeval --model <model-id> --dataset wikiann-fo
+euroeval --model <model-id> --dataset wikiann-fo
 ```
-
 
 ## Linguistic Acceptability
 
@@ -223,9 +243,9 @@ from a sentence, or by swapping two neighbouring words in a sentence. To ensure 
 this does indeed break the grammaticality of the sentence, a set of rules were used on
 the part-of-speech tags of the words in the sentence.
 
-The original dataset consists of 1,621 samples, from which we use 1,024 / 256 / 1,024 samples for training,
-validation and testing, respectively (so 3,328 samples used in total). These splits are
-used as-is in the framework.
+The original dataset consists of 1,621 samples, from which we use 1,024 / 256 / 1,024
+samples for training, validation and testing, respectively (so 3,328 samples used in
+total). These splits are used as-is in the framework.
 
 Here are a few examples from the training split:
 
@@ -235,12 +255,14 @@ Here are a few examples from the training split:
   "label": "correct"
 }
 ```
+
 ```json
 {
   "text": "Hann finnur fyrst bróður sín, Símun, og sigur við hann: \"hava Vit funnið Messias\" sum er tað sama sum Kristus; tað er: salvaður.",
   "label": "incorrect"
 }
 ```
+
 ```json
 {
   "text": "Hetta hendi tríggjar ferðir, og alt fyri eitt varð luturin tikin upp aftur himmals til.",
@@ -253,30 +275,35 @@ When evaluating generative models, we use the following setup (see the
 
 - Number of few-shot examples: 12
 - Prefix prompt:
-  ```
+
+  ```text
   Hetta eru nakrir setningar og um teir eru mállæruliga rættir.
   ```
+
 - Base prompt template:
-  ```
+
+  ```text
   Setningur: {text}
   Mállæruliga rættur: {label}
   ```
+
 - Instruction-tuned prompt template:
-  ```
+
+  ```text
   Setningur: {text}
 
   Greinið hvort setningurin er mállæruliga rættur ella ikki. Svarið skal vera 'ja' um setningurin er rættur og 'nei' um hann ikki er.
   ```
+
 - Label mapping:
-    - `correct` ➡️ `ja`
-    - `incorrect` ➡️ `nei`
+  - `correct` ➡️ `ja`
+  - `incorrect` ➡️ `nei`
 
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ euroeval --model <model-id> --dataset scala-fo
+euroeval --model <model-id> --dataset scala-fo
 ```
-
 
 ## Reading Comprehension
 
@@ -302,6 +329,7 @@ Here are a few examples from the training split:
   }
 }
 ```
+
 ```json
 {
   "context": "Levi Niclasen, sum yrkjari betri kendur sum Óðin Ódn (føddur 1. mai 1943 á Tvøroyri, uppvaksin í Hvalba) er ein føroyskur rithøvundur, tónleikari, lærari og politikari. \n\nAftan á barnaskúlan arbeiddi hann í kolinum í Hvalba. Í 1957 stovnaði hann saman við brøðum sínum ein tónleikabólk, og brátt blivu teir kendir sum Hvalbiarbrøðurnir. Teir góvu út tvær stak plátur í 1962. Hann var í Grønlandi 1960 og 1961 og arbeiddi á landi í Føroyingahavnini fyri Nordafar. \nHann fór síðan á læraraskúla í Havn og tók prógv frá Føroya Læraraskúla í 1967. Var settur sum lærari við Hvalbiar skúla 1. august 1967. Hevur verið skúlaleiðari við Hvalbiar skúla frá 1. august 1979. Hann hevur eisini verið á Fróðskaparsetri Føroya og fullført nám í føroyskum og bókmentum 1969-70. Hann hevur útgivið fleiri yrkingasøvn og eisini eitt stuttsøgusavn og eina bók við bæði yrkingum og stuttsøgum. Hann hevur eisini týtt tvær bøkur til føroyskt.\n\nÚtgávur  \nGivið út á egnum forlagi:\nHvirlur (yrkingasavn) 1970\nEg eri í iva (yrkingasavn) 1970 \nTey í urðini (søgusavn) 1973 \nReyðibarmur (yrkingar og stuttsøgur) 1974\nViðrák og Mótrák (yrkingasavn) 1975\nÓttast ikki (yrkingasavn) 1975\nNívandi niða (yrkingasavn) 1983 \nLovað er lygnin (yrkingasavn) 1983 \nEg eigi eina mynd (yrkingasavn) 1987\n\nTýðingar \nEydnuríki prinsurin (Oscar Wilde) (Føroya Lærarafelag 1977). \nHeilaga landið (Pär Lagerkvist) (felagið Varðin 1986).\n\nFamilja \nForeldur: Thomasia Niclasen, f. Thomasen á Giljanesi í Vágum og Hentzar Niclasen, kongsbóndi á Hamri í Hvalba. Giftist í 1971 við Súsonnu Niclasen, f. Holm. Hon er fødd í Hvalba í 1950. Tey eiga tríggjar synir: Tórarinn, Tóroddur og Njálur.\n\nKeldur \n\nFøroyskir týðarar\nFøroyskir rithøvundar\nFøroyskir yrkjarar\nFøroyskir lærarar\nHvalbingar\nFøðingar í 1943",
@@ -312,6 +340,7 @@ Here are a few examples from the training split:
   }
 }
 ```
+
 ```json
 {
   "context": "Giro d'Italia (á føroyskum Kring Italia) er ein av teimum trimum stóru teinasúkklukappingunum og verður hildin hvørt ár í mai/juni og varir í 3 vikur. Kappingin fer fram í Italia, men partar av kappigini kunnu eisini fara fram í onkrum ørðum landi í Evropa, t.d. byrjaði Giro d'Italia í Niðurlondum í 2016 og í Danmark í 2014.\n\nGiro d'Italia varð fyrstu ferð hildið í 1909, har ið tilsamans 8 teinar á 2448\xa0km vóru súkklaðir. Kappingin er saman við Tour de France og Vuelta a España ein av teimum trimum klassisku teinakappingunum, har Tour de France tó er tann mest týðandi.\n\nHar tann fremsti súkklarin í Tour de France er kendur fyri at súkkla í gulari troyggju, so súkklar fremsti súkklarin í Giro d´Italia í ljósareyðari troyggju, á italskum nevnd Maglia rosa. Tann fremsti fjallasúkklarin súkklar í grønari troyggju (Maglia Verde), meðan súkklarin við flestum stigum koyrir í lilla (Maglia ciclimano). Í 2007 varð tann hvíta ungdómstroyggjan innførd aftur, eftir at hon hevði verið burturi í nøkur ár, hon nevnist Maglia Bianca.\n\nTríggir súkklarar hava vunnið kappingina fimm ferðir: Alfredo Binda, Fausto Coppi og Eddy Merckx. Italiumaðurin Felice Gimondi hevur staðið á sigurspallinum níggju ferðir, har hann tríggjar ferðir hevur vunnið, tvær ferðir á øðrum plássi og fýra ferðir á triðjaplássi.\n\nYvirlit yvir vinnarar\n\nByrjan í øðrum londum\n\nKeldur \n\nGiro d'Italia",
@@ -328,17 +357,22 @@ When evaluating generative models, we use the following setup (see the
 
 - Number of few-shot examples: 4
 - Prefix prompt:
-  ```
+
+  ```text
   Hetta eru tekstir saman við spurningum og svar.
   ```
+
 - Base prompt template:
-  ```
+
+  ```text
   Tekstur: {text}
   Spurningur: {question}
   Svara við í mesta lagi trimum orðum: {label}
   ```
+
 - Instruction-tuned prompt template:
-  ```
+
+  ```text
   Tekstur: {text}
 
   Svara hesum spurninginum um tekstin uppiyvir við í mesta lagi trimum orðum.
@@ -349,9 +383,8 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ euroeval --model <model-id> --dataset foqa
+euroeval --model <model-id> --dataset foqa
 ```
-
 
 ### Unofficial: MultiWikiQA-fo
 
@@ -374,6 +407,7 @@ Here are a few examples from the training split:
     }
 }
 ```
+
 ```json
 {
     "context": 'Ævintýr eru sum skaldskaparslag munnbornar søgur um vanlig folk í einum yvirnatúrligum heimi. Heitið veður nýtt um fleiri sløg av søgum, ið als ikki øll hava sama yivrnatúrliga innihald. Antti Aarne og Stith Thompson hava gjørt eina skrá yvir heimsins ævintýr. Har eru tey skift sundur í 5 høvuðsbólkar ella týpur. Sum annar munnborin skaldskapur hava ævintýrini ongan kendan høvund ella upprunaligan form. Tey kennast aftur eftir greining av søgugongd og innihaldi, og á tann hátt hava Aarne og Thompson skift tey sundur í týpur hvørja við sínum nummari og stavunum AT frammanfyri. Hesar týpur og høvuðsbólkar eru: I Djóraævintýr (AT 1-299), II Eginlig ævintýr (AT 300-1199), III Skemtiævintýr (AT 1200-1999), IV Formilævintýr (AT 2000-2399) og V Ymisk ævintýr (AT 2400.2499). Hesin seinasti bólkurin umfatar tey ævintýr, ið høvundarnir ikki fingu at hóska til hinar bólkarnar. \n\nÍ øllum vanligum brúki verður oftast hugsað um søgurnar í bólki II, tá talan er um ævintýr. Serstakliga kanska undirbólk A, ið verður kallaður Gandaævintýr (AT 300-749). Í hesum bólki eru m.a. tær væl kendu søgurnar um ein fátækan drong, ið bjargar eini prinsessu, sum trøll við níggju høvdum ella onkur onnur yvirnatúrlig vera hevur tikið; í endanum giftist drongurin við prinsessuni og verður kongur. Ella eina fátæka gentu, ið bjargar einum prinsi, sum ofta er umskaptur til okkurt andskræmiligt, og síðani giftist við honum og gerst drotning. Øll liva síðani lukkuliga. \n\nHóast ævintýr sum skaldskaparslag upprunaliga eru munnbornar søgur, kenna vit tey nú í tíðini best og ivaleyst bert úr ritstjórnaðum, prentaðum útgávum. Charles Perrault (1628-1703) var hin fyrsti at geva út eitt savn við søgum, ið eru ritstjórnað ævintýr. Bókin kom í 1697 og nenvdist Søgur og frásagnir úr farnum tíðum við undirheitinum "Gásamóðir sigur frá" (Les Contes de ma Mère l’Oye). Millum søgurnar í hesum savni eru so víðagitnar søgur sum Reyðhetta, Tornarósa og Øskufía. Perrault óttaðist bókmentaliga og mentanarliga smakkin í tíðini, lagaði søgurnar til, sum honum tókti best og gav tær út í navninum á 10 ára gamla syni sínum. Bókin gjørdist ómetaliga væl umtókt og var sum frá leið týdd til flestøll fjølment evropeisk mál. Seinni fóru fólk aðrastaðni at savna og skriva upp ævintýr, og summpart við beinleiðis fyrimynd í søgunum hjá Perrault komu serliga í 19. øld fleiri kend søvn við ritstjórnaðum ævintýrum. Kendast eru ævintýrini hjá týskarunum Jacob og Wilhelm Grimm. Eisini í Norðurlondum vaks áhugin, og millum kendastu útgávur eru tær hjá Ewald Tang Christensen í Danmark, Asbjørnsen og Moe í Noregi, og Jóni Árnasyni í Íslandi. \n\nÍ Føroyum tók Jakob Jakobsen tráðin upp, og í árunum 1898-1901 gav hann út savn sítt við føroyskum sagnum og ævintýrum. Eisini hann ritstjórnaði søgurnar, sum hann savnaði, so vit kunnu siga, at soleiðis sum vit lesa tær hjá honum, hava tær ikki verið sagdar honum. Hansara ritstjórnan er mest av málsligum slag. Hann flytur munnliga frásøgn í skrift við teimum tillagingum, ið tá eru neyðugar, og hartil reinsar hann frásøgnina fyri útlendskan málburð. Mangt bendir á, at ævintýr valla eru gamal skaldskapur í Føroyum. Tað tykist, sum tey eru komin í munnliga frásøgn í Føroyum eftir fólksligum, einahelst donskum útgávum. Men sum væntandi er í munnligari søgulist, hava fólk lagað tey til so við og við, so tey ofta hava føroyskan dám í mongum lutum. Summi teirra eru tó ivaleyst gomul í Føroyum.\n\nKeldur \n\n Kirsten Brix: "Drongurin, ið burturtikin varð av sjótrøllakonginum", Varðanum bd. 59 1992, s. 188-219. \n Jakob Jakobsen: Færøske Folkesagn og Æventyr 1899-1901.\n\nÆvintýr\nFólkaminni',
@@ -384,6 +418,7 @@ Here are a few examples from the training split:
     }
 }
 ```
+
 ```json
 {
     "context": 'Trøllakampar (frøðiheiti Asplenium) hoyra til tann bólkin av plantum, ið verður kallaður blómuleysar plantur. Tað finnast 20.000 sløg av trøllakampum í heiminum, og er hetta slagríkasta fylki, aftaná fylkið við blómuplantum, ið telur 250.000 sløg. Flestu sløgini av trøllakampum finnast í tropunum og trívast best har vátt er. Trøllakampar verða mettir at vera "primitivt" plantuslag, ið er nær í ætt við upprunaplanturnar. Teir hava ikki blómur og seta ikki fræ, men nørast við grókornum, ið hjá summum trøllakampum sita í gróhópum aftanfyri á blaðnum, vardir av einum skjøldri, sum opnar seg, tá grókornini eru búgvin, so at tey kunnu spjaðast. Hjá øðrum sita teir á blaðkantinum, sum er rullaður inneftir, so leingi grókornini ikki eru búgvin. \n\nSummi trøllakampasløg hava tvey sløg av bløðum, eitt slag ið er “sterilt” og eitt sum er “fertilt”. Tað “fertila” blaðið kann hjá summum sløgum vera heilt ymiskt frá tí “sterila”. Trøllakampur kann hava grókorn í milliónatali, men bert fáar nýggjar plantur koma burturúr. Bløðini hava ymiskt skap. Tey kunnu verða innskorin eina, tvær og fleiri ferðir ella als ikki innskorin. Við sínum sermerkta vakstrarlagi líkist trøllakampur, áður enn hann er fullvaksin, einum fiólhøvdi ella tí evsta á fiólini.\n\nÚtbreiðsla\n\nTrøllakampar vóru nógv vanligari í Føroyum, áðrenn fólk settu búgv her. Hetta prógva sákornskanningar. Vøksturin í Føroyum er sum heild ávirkaður av seyðabiti, og hevur hann verið tað, síðan fólk settu búgv her. Seyðurin legðist beinanvegin eftir tí fruktagóða gróðri, sum landið var avvaksið við. Hesin gróðurin hvarv eftir stuttari tíð og broyttist til tættbitna gróðurin, sum vit kenna í dag.  Sáðkornskanningar vísa, at trøllakampar sum heild fóru nógv aftur aftan á landnám. Teir eru av elstu plantusløgum á jørð og vuksu her fyri meira enn 300 mió árum síðan. Í koltíðini vuksu trøllakampur, javni og bjølluvísa sum stórir skógir.\n\nIkki allastaðni er seyður sloppin framat at bíta. Tí sæst enn tann mest upprunaligi gróðurin í gjáum og bakkum, har seyður ikki er sloppin framat. Her er gróðurin stórur og fjølbroyttur, og kanningar bera prógv um, at hann hevur verið støðugur í langa tíð av teirri orsøk, at seyður og fólk ikki sluppu framat. Av teimum trøllakampum, ið eru vanligir í Føroyum, eru fyrst og fremst tann stórvaksni trøllakalskampurin, tann heldur fínari mjúki kvennkampurin og dimmgrøni ekstur blóðkampurin. Hesir trøllkampar eru nógv vanligari í londunum sunnan fyri enn norðan fyri okkum.\n\nFleiri sløg av trøllakampum finnast í brattlendi. Lættast er at fáa eyga á tann stórvaksna trøllakallskampin og tann næstan líka stórvaksna mjúka kvennkampin. Sáðkornskanningar hava víst, at útbreiðslan av trøllakampum minkaði ógvuliga nógv, tá ið fólk settu búgv í Føroyum og høvdu húsdjór síni við sær.\n\nFimtan sløg av trøllakampum finnast í Føroyum. Flestu av teimum dámar best at vaksa í klettarivum, har vátt og skuggi er - men eisini í grýtutum lendi, brattlendi og gjáum. Ein tann mest vanligi trøllakampurin í Føroyum er fínur klettakampur, meðan svartur trøllakampur og strálhærdur trøllakampur eru sera sjáldsamir og bert finnast á einum stað. \n\nÍ 2007 varð nýtt trøllakampaslag funnið í brattlendi í Norðuroyggjum. Hetta er tungutrøllakampur (Asplenium scolopendrium). Hesin trøllakampur er eisini sjáldsamur í hinum Norðurlondunum.\n\nKelda\n Stamps.fo\n\nSí eisini\n Plantulívið í Føroyum\n\nPlantur í Føroyum\nPlantur',
@@ -400,17 +435,22 @@ When evaluating generative models, we use the following setup (see the
 
 - Number of few-shot examples: 4
 - Prefix prompt:
-  ```
+
+  ```text
   Hetta eru tekstir saman við spurningum og svar.
   ```
+
 - Base prompt template:
-  ```
+
+  ```text
   Tekstur: {text}
   Spurningur: {question}
   Svara við í mesta lagi trimum orðum: {label}
   ```
+
 - Instruction-tuned prompt template:
-  ```
+
+  ```text
   Tekstur: {text}
 
   Svara hesum spurninginum um tekstin uppiyvir við í mesta lagi trimum orðum.
@@ -421,5 +461,5 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ euroeval --model <model-id> --dataset multi-wiki-qa-fo
+euroeval --model <model-id> --dataset multi-wiki-qa-fo
 ```
