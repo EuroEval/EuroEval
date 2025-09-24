@@ -16,6 +16,8 @@ from datasets import Dataset, DatasetDict, Split, load_dataset
 from huggingface_hub import HfApi
 
 THEMES = ["da_huse_2x3_5rh", "da_huse_4x5_5rh"]
+n_train = 128
+n_test = 1024
 
 
 def main() -> None:
@@ -25,24 +27,20 @@ def main() -> None:
 
     for theme in THEMES:
         # Download the dataset
-        train_data = load_dataset(
-            path=repo_id, name="dataset_" + theme, token=True, split="train"
+        train_data: Dataset = load_dataset(
+            path=repo_id, name=f"dataset_{theme}", token=True, split="train"
         )
-        test_data = load_dataset(
-            path=repo_id, name="dataset_" + theme, token=True, split="test"
+        test_data: Dataset = load_dataset(
+            path=repo_id, name=f"dataset_{theme}", token=True, split="test"
         )
-        assert isinstance(train_data, Dataset)
-        assert isinstance(test_data, Dataset)
 
         # Check length
-        assert len(train_data) == 128
-        assert len(test_data) == 1024
+        assert len(train_data) == n_train
+        assert len(test_data) == n_test
 
         # Convert the dataset to a dataframe
-        train_df = train_data.to_pandas()
-        test_df = test_data.to_pandas()
-        assert isinstance(train_df, pd.DataFrame)
-        assert isinstance(test_df, pd.DataFrame)
+        train_df: pd.DataFrame = train_data.to_pandas()
+        test_df: pd.DataFrame = test_data.to_pandas()
 
         # Remove unused columns
         train_df = train_df[["introduction", "clues", "format_example", "solution"]]
