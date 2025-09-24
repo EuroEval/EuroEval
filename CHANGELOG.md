@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Fixed
+
+- If a generative model consistently does not adhere to a given JSON schema, we disable
+  structured generation for that model. This was triggered by Claude models not
+  supporting Literal types in JSON schemas.
+
 ## [v16.3.0] - 2025-09-23
 
 ### Added
