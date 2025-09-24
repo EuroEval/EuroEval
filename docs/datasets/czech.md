@@ -4,7 +4,6 @@ This is an overview of all the datasets used in the Czech part of EuroEval. The
 datasets are grouped by their task - see the [task overview](/tasks) for more
 information about what these constitute.
 
-
 ## Sentiment Classification
 
 ### CSFD Sentiment
@@ -28,12 +27,14 @@ Here are a few examples from the training split:
     "label": "positive"
 }
 ```
+
 ```json
 {
     "text": "První film Woodyho Allena? Jen tak na půl. Vzhledem k tomu, že vzal již natočený japonský brak, sestříhal ho a předaboval, tak bych mu dal spíše titul režisér anglického znění. Ani to se však příliš nepovedlo – je zde pár pokusů o typický allenovský humor, ovšem je to ještě takové nijaké – jeho pravé komediální období má teprve přijít! Takže doporučuji spíše jen jako zajímavost pro milovníky tvorby Woodyho Allena.",
     "label": "neutral"
 }
 ```
+
 ```json
 {
     "text": "Tak jako písek v přesípacích hodinách, ubíhají dny našich životů, no já nevím, sledovat tenhle seriál, tak mi život neubíhá, ale pekelně se vleče...Je neuvěřitelné, kolik dokážou natočit dílů nesmyslného seriálu o ničem a je neuvěřitelné, kolik lidí se na to dokáže dívat, díky čemuž vznikají podobné katastrofy dodnes....",
@@ -46,31 +47,36 @@ When evaluating generative models, we use the following setup (see the
 
 - Number of few-shot examples: 12
 - Prefix prompt:
+
   ```
   Následují dokumenty a jejich sentiment, který může být 'pozitivní', 'neutrální' nebo 'negativní'.
   ```
+
 - Base prompt template:
+
   ```
   Dokument: {text}
   Sentiment: {label}
   ```
+
 - Instruction-tuned prompt template:
+
   ```
   Dokument: {text}
 
   Klasifikujte sentiment v dokumentu. Odpovězte pouze s 'pozitivní', 'neutrální', nebo 'negativní', a nic jiného.
   ```
+
 - Label mapping:
-    - `positive` ➡️ `pozitivní`
-    - `neutral` ➡️ `neutrální`
-    - `negative` ➡️ `negativní`
+  - `positive` ➡️ `pozitivní`
+  - `neutral` ➡️ `neutrální`
+  - `negative` ➡️ `negativní`
 
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ euroeval --model <model-id> --dataset csfd-sentiment-mini
+euroeval --model <model-id> --dataset csfd-sentiment-mini
 ```
-
 
 ## Named Entity Recognition
 
@@ -94,12 +100,14 @@ Here are a few examples from the training split:
     "labels": ["B-ORG", "I-ORG", "I-ORG", "I-ORG", "O", "B-MISC", "I-MISC", "B-LOC", "O", "O", "O", "O", "O", "B-ORG", "I-ORG", "I-ORG", "I-ORG", "I-ORG", "O", "O", "O", "O", "O", "O", "O", "O", "O", "B-MISC", "I-MISC", "I-MISC", "O"],
 }
 ```
+
 ```json
 {
     "tokens": array(["Lieldienas", "aktrise", "Torija", "Spelinga", "pavadīja", "kopā", "ar", "ģimeni", "Ķīniešu", "restorānā", ",", "svētki", "tika", "izbojāti", "mirklī", ",", "kad", "viņa", "darbinieku", "nevīžības", "dēļ", "paslīdēja", "un", "iekrita", "grilā", "."], dtype=object),
     "labels": ["B-MISC", "O", "B-PER", "I-PER", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O"],
 }
 ```
+
 ```json
 {
     "tokens": array(["Mani", "pamodinājis", "Patrīcijas", "zvans", "."], dtype=object),
@@ -112,36 +120,41 @@ When evaluating generative models, we use the following setup (see the
 
 - Number of few-shot examples: 8
 - Prefix prompt:
+
   ```
   Tālāk ir teikumi un JSON vārdnīcas ar nosauktajiem objektiem, kas parādās dotajā teikumā.
   ```
+
 - Base prompt template:
+
   ```
   Teikums: {text}
   Nosauktie objekti: {label}
   ```
+
 - Instruction-tuned prompt template:
+
   ```
   Teikums: {text}
 
   Identificējiet nosauktos objektus teikumā. Jums jāizvada šī informācija kā JSON vārdnīcu ar atslēgām 'persona', 'vieta', 'organizācija' un 'dažādi'. Vērtībām jābūt šī tipa nosaukto objektu sarakstiem, tieši tā, kā tie parādās teikumā.
   ```
+
 - Label mapping:
-    - `B-PER` ➡️ `persona`
-    - `I-PER` ➡️ `persona`
-    - `B-LOC` ➡️ `vieta`
-    - `I-LOC` ➡️ `vieta`
-    - `B-ORG` ➡️ `organizācija`
-    - `I-ORG` ➡️ `organizācija`
-    - `B-MISC` ➡️ `dažādi`
-    - `I-MISC` ➡️ `dažādi`
+  - `B-PER` ➡️ `persona`
+  - `I-PER` ➡️ `persona`
+  - `B-LOC` ➡️ `vieta`
+  - `I-LOC` ➡️ `vieta`
+  - `B-ORG` ➡️ `organizācija`
+  - `I-ORG` ➡️ `organizācija`
+  - `B-MISC` ➡️ `dažādi`
+  - `I-MISC` ➡️ `dažādi`
 
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ euroeval --model <model-id> --dataset fullstack-ner-lv
+euroeval --model <model-id> --dataset fullstack-ner-lv
 ```
-
 
 ### Unofficial: WikiANN-lv
 
@@ -167,6 +180,7 @@ Here are a few examples from the training split:
        "labels": ["O", "O", "O", "B-LOC", "I-LOC", "O", "O", "B-LOC", "I-LOC", "B-LOC", "I-LOC", "O", "O", "O", "O", "O", "B-LOC", "I-LOC", "O", "O", "B-LOC", "I-LOC", "O", "O"]
 }
 ```
+
 ```json
 {
     "tokens": array(["'", "''", "x-", "''", "Detroitas", "``", "Pistons", "''"],
@@ -174,6 +188,7 @@ Here are a few examples from the training split:
       "labels": ["O", "O", "O", "O", "B-ORG", "I-ORG", "I-ORG", "I-ORG"]
 }
 ```
+
 ```json
 {
     "tokens": array(["Kārlis", "Gustavs", "Jēkabs", "Jakobi"], dtype=object),
@@ -186,44 +201,49 @@ When evaluating generative models, we use the following setup (see the
 
 - Number of few-shot examples: 8
 - Prefix prompt:
+
   ```
   Tālāk ir teikumi un JSON vārdnīcas ar nosauktajiem objektiem, kas parādās dotajā teikumā.
   ```
+
 - Base prompt template:
+
   ```
   Teikums: {text}
   Nosauktie objekti: {label}
   ```
+
 - Instruction-tuned prompt template:
+
   ```
   Teikums: {text}
 
   Identificējiet nosauktos objektus teikumā. Jums jāizvada šī informācija kā JSON vārdnīcu ar atslēgām 'persona', 'vieta', 'organizācija' un 'dažādi'. Vērtībām jābūt šī tipa nosaukto objektu sarakstiem, tieši tā, kā tie parādās teikumā.
   ```
+
 - Label mapping:
-    - `B-PER` ➡️ `persona`
-    - `I-PER` ➡️ `persona`
-    - `B-LOC` ➡️ `vieta`
-    - `I-LOC` ➡️ `vieta`
-    - `B-ORG` ➡️ `organizācija`
-    - `I-ORG` ➡️ `organizācija`
-    - `B-MISC` ➡️ `dažādi`
-    - `I-MISC` ➡️ `dažādi`
+  - `B-PER` ➡️ `persona`
+  - `I-PER` ➡️ `persona`
+  - `B-LOC` ➡️ `vieta`
+  - `I-LOC` ➡️ `vieta`
+  - `B-ORG` ➡️ `organizācija`
+  - `I-ORG` ➡️ `organizācija`
+  - `B-MISC` ➡️ `dažādi`
+  - `I-MISC` ➡️ `dažādi`
 
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ euroeval --model <model-id> --dataset wikiann-lv
+euroeval --model <model-id> --dataset wikiann-lv
 ```
-
 
 ## Linguistic Acceptability
 
-### ScaLA-lv
+### ScaLA-cs
 
 This dataset was published in [this paper](https://aclanthology.org/2023.nodalida-1.20/)
-and was automatically created from the [Latvian Universal Dependencies
-treebank](https://github.com/UniversalDependencies/UD_Latvian-LVTB) by assuming that the
+and was automatically created from the [Czech Universal Dependencies
+treebank](https://github.com/UniversalDependencies/UD_Czech-CAC) by assuming that the
 documents in the treebank are correct, and corrupting the samples to create
 grammatically incorrect samples. The corruptions were done by either removing a word
 from a sentence, or by swapping two neighbouring words in a sentence. To ensure that
@@ -238,20 +258,22 @@ Here are a few examples from the training split:
 
 ```json
 {
-    "text": "Gultā viņam nav jādara pilnīgi nekas, lai es nonāktu līdz orgasmam.",
-    "label": "correct"
+  "text": "Tato skutečnost zásadně určuje i obsah politické čestnosti.",
+  "label": "correct"
 }
 ```
+
 ```json
 {
-    "text": "Ar savu puiku, kurš parasts.",
-    "label": "incorrect"
+  "text": "normálním průběhu sdělení se to, co je v předchozí větě jádrem, stává v další větě základem.",
+  "label": "incorrect"
 }
 ```
+
 ```json
 {
-    "text": "1992. vēl gadā Latvijā atradās no 50 000 līdz 80 000 padomju militārpersonu.",
-    "label": "incorrect"
+  "text": "Zásady ukládají věnovat maximální pozornost hospodaření vodou a negativnímu ovlivňování životního prostředí, především čistoty vod ovzduší.",
+  "label": "incorrect"
 }
 ```
 
@@ -260,30 +282,35 @@ When evaluating generative models, we use the following setup (see the
 
 - Number of few-shot examples: 12
 - Prefix prompt:
-  ```
-  Šie ir teikumi un to gramatiskie pareizumi.
-  ```
-- Base prompt template:
-  ```
-  Teikums: {text}
-  Gramatiski pareizs: {label}
-  ```
-- Instruction-tuned prompt template:
-  ```
-  Teikums: {text}
 
-  Noteiciet, vai teikums ir gramatiski pareizs vai nē. Atbildiet ar 'jā', ja teikums ir pareizs, un 'nē', ja tas nav.
   ```
+  Následující jsou věty a zda jsou gramaticky správné.
+  ```
+
+- Base prompt template:
+
+  ```
+  Věta: {text}
+  Gramaticky správná: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```
+  Věta: {text}
+
+  Určete, zda je věta gramaticky správná nebo ne. Odpovězte 'ano', pokud je věta správná, a 'ne', pokud není. Odpovězte pouze tímto slovem, a ničím jiným.
+  ```
+
 - Label mapping:
-    - `correct` ➡️ `jā`
-    - `incorrect` ➡️ `nē`
+  - `correct` ➡️ `ano`
+  - `incorrect` ➡️ `ne`
 
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ euroeval --model <model-id> --dataset scala-lv
+euroeval --model <model-id> --dataset scala-cs
 ```
-
 
 ## Reading Comprehension
 
@@ -308,6 +335,7 @@ Here are a few examples from the training split:
     }
 }
 ```
+
 ```json
 {
     "context": "Bogota (), saukta arī Santafe de Bogota (Santa Fe de Bogotá), ir pilsēta Kolumbijas centrālajā daļā, 2640 metri virs jūras līmeņa. Kolumbijas galvaspilsēta, galvenais valsts politiskais, ekonomiskais un kultūras centrs. Kaut arī pilsēta atrodas tropiskajā joslā, augstkalnu apstākļu dēļ pilsētā nav karsts (vidējā gaisa temperatūra visu gadu - apmēram +15 grādi).\n\nVēsture \n\nPirms konkistadoru ierašanās Bogotas vietā bija čibču indiāņu galvenais centrs, kuru sauca par Bakatu (Bacatá).\n\nMūsdienu pilsētu nodibināja konkistadors Gonsalo Himeness de Kvesada (Gonzalo Jiménez de Quesada) 1538. gadā.\n\n1718. gadā Bogota kļuva par spāņu Jaunās Granādas vicekaralistes (Virreinato de Nueva Granada) centru.\n\n1810. gadā iedzīvotāji sacēlās pret spāņu varu, tomēr sacelšanās tika apspiesta. 1819. gadā Bogotu ieņēma Simona Bolivāra karaspēks.\n\n1819. gadā vicekaraliste ieguva neatkarību no Spānijas un Bogota kļuva par Lielkolumbijas (Gran Colombia) galvaspilsētu. Tomēr 1830. gadā Lielkolumbija sabruka un izveidojās Jaunā Granāda (mūsdienu Kolumbija), Ekvadora un Venecuēla. 1903. gadā ar ASV atbalstu pret solījumiem atļaut būvēt Panamas kanālu, neatkarību no Kolumbijas ieguva Panama.\n\n1948. gadā Bogotā tika nogalināts populārais kolumbiešu poltiķis Horhe Gaitans. Pilsētā izcēlās plaši nemieri un ielu kaujas. Sākās politiskās nestabilitātes periods (La Violencia), kurš turpinājās 10 gadus, gāja bojā no 180 000 līdz 300 000 kolumbiešu.\n\nCilvēki \n\nBogotā dzimuši:\n\n Egans Bernals (Egan Bernal, 1997) — riteņbraucējs;\n Ingrīda Betankūra (Íngrid Betancourt, 1961) — politiķe;\n Huans Pablo Montoija (Juan Pablo Montoya, 1975) — Formula 1 pilots;\n Katalina Sandino Moreno (Catalina Sandino Moreno, 1981) — aktrise;\n Kamilo Toress Restrepo (Camilo Torres Restrepo, 1929-1966) — revolucionārs.\n\nĀrējās saites \n\nDienvidamerikas galvaspilsētas\nKolumbijas pilsētas",
@@ -318,6 +346,7 @@ Here are a few examples from the training split:
     }
 }
 ```
+
 ```json
 {
     "context": "Džastins Šulcs (; dzimis ) ir kanādiešu hokejists, aizsargs. Pašlaik (2020) Šulcs spēlē Nacionālās hokeja līgas kluba Vašingtonas "Capitals" sastāvā.\n\nSpēlētāja karjera \nPēc vairākām NCAA čempionātā aizvadītām sezonām, profesionāļa karjeru Šulcs sāka 2012.—13. gada sezonā, tajā spēles laiku dalot starp NHL klubu Edmontonas "Oilers" un AHL vienību Oklahomsitijas "Barons". "Oilers" Šulcs aizvadīja 48 spēles, savukārt AHL kļuva par līgas rezultatīvāko aizsargu, tiekot atzīts arī par līgas labāko aizsargu. 2013.—14. gada sezonu Šulcs jau pilnībā aizvadīja "Oilers" sastāvā.\n\nPēc neveiksmīga 2015.—16. gada sezonas ievada Šulcs tika aizmainīts uz Pitsburgas "Penguins". Tās sastāvā 2016. un 2017. gadā viņš izcīnīja Stenlija kausu. "Penguins" sastāvā spēlēja līdz 2020. gadam, kad pievienojās Vašingtonas "Capitals".\n\nĀrējās saites \n\n1990. gadā dzimušie\nKanādas hokejisti\nEdmontonas "Oilers" spēlētāji\nPitsburgas "Penguins" spēlētāji\nVašingtonas "Capitals" spēlētāji\nStenlija kausa ieguvēji\nBritu Kolumbijā dzimušie",
@@ -334,16 +363,21 @@ When evaluating generative models, we use the following setup (see the
 
 - Number of few-shot examples: 4
 - Prefix prompt:
+
   ```
   Turpmāk seko teksti ar atbilstošiem jautājumiem un atbildēm.
   ```
+
 - Base prompt template:
+
   ```
   Teksts: {text}
   Jautājums: {question}
   Atbildēt ar maksimāli 3 vārdiem:
   ```
+
 - Instruction-tuned prompt template:
+
   ```
   Teksts: {text}
 
@@ -355,9 +389,8 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ euroeval --model <model-id> --dataset multi-wiki-qa-lv
+euroeval --model <model-id> --dataset multi-wiki-qa-lv
 ```
-
 
 ## Knowledge
 
@@ -381,12 +414,14 @@ Here are a few examples from the training split:
   "label": "a",
 }
 ```
+
 ```json
 {
   "text": "Darbinieks sagaida lielāku konsekvenci sava priekšnieka uzvedībā, nekā tas ir pamatoti. Kurš no šiem faktoriem vislabāk izskaidro darbinieka gaidas?\nIzvēles:\na. pārmērīgas attaisnošanas hipotēze\nb. pašlabuma aizspriedumainība\nc. fundamentālais atribūcijas aizspriedums\nd. pašpārbaudes teorija",
   "label": "c",
 }
 ```
+
 ```json
 {
   "text": "Kurā no šiem diviem scenārijiem galvenais varonis (kurš lieto es/jē/man) dara kaut ko, kas ir acīmredzami morāli nepareizs, saskaņā ar parastajām morāles normām ASV no 2020. gada? scenārijs | Es atslēdzu automašīnas kruīza kontroli. scenārijs | Es izsaucu policiju savam bijušajam mīļotajam, jo viņš mani piekāva.\nIzvēles:\na. Nepareizi, nepareizi\nb. Nepareizi, nav nepareizi\nc. Nav nepareizi, nepareizi\nd. Nav nepareizi, nav nepareizi",
@@ -399,10 +434,13 @@ When evaluating generative models, we use the following setup (see the
 
 - Number of few-shot examples: 5
 - Prefix prompt:
+
   ```
   Tālāk seko jautājumi ar vairākām atbilžu izvēlēm (ar atbildēm).
   ```
+
 - Base prompt template:
+
   ```
   Jautājums: {text}
   Izvēles:
@@ -412,7 +450,9 @@ When evaluating generative models, we use the following setup (see the
   d. {option_d}
   Atbilde: {label}
   ```
+
 - Instruction-tuned prompt template:
+
   ```
   Jautājums: {text}
   Izvēles:
@@ -427,9 +467,8 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ euroeval --model <model-id> --dataset mmlu-lv
+euroeval --model <model-id> --dataset mmlu-lv
 ```
-
 
 ## Common-sense Reasoning
 
@@ -453,12 +492,14 @@ Here are a few examples from the training split (which have _not_ been post-edit
   "label": "a"
 }
 ```
+
 ```json
 {
   "text": "Svešinieks man svešvalodā kliedza.\nIzvēles:\na. ES truli blenzu uz viņu.\nb. ES apstājos, lai papļāpātu ar viņu.",
   "label": "a"
 }
 ```
+
 ```json
 {
   "text": "Pagriezu gaismas slēdzi uz augšu un uz leju.\nIzvēles:\na. Gaisma izdzisa.\nb. Gaisma mirgoja.",
@@ -471,10 +512,13 @@ When evaluating generative models, we use the following setup (see the
 
 - Number of few-shot examples: 5
 - Prefix prompt:
+
   ```
   Tālāk seko jautājumi ar vairākām atbilžu izvēlēm (ar atbildēm).
   ```
+
 - Base prompt template:
+
   ```
   Jautājums: {text}
   Izvēles:
@@ -482,7 +526,9 @@ When evaluating generative models, we use the following setup (see the
   b. {option_b}
   Atbilde: {label}
   ```
+
 - Instruction-tuned prompt template:
+
   ```
   Jautājums: {text}
   Izvēles:
@@ -495,7 +541,7 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ euroeval --model <model-id> --dataset copa-lv
+euroeval --model <model-id> --dataset copa-lv
 ```
 
 ### Unofficial: Winogrande-lv
@@ -535,10 +581,13 @@ When evaluating generative models, we use the following setup (see the
 
 - Number of few-shot examples: 5
 - Prefix prompt:
+
   ```
   Tālāk seko jautājumi ar vairākām atbilžu izvēlēm (ar atbildēm).
   ```
+
 - Base prompt template:
+
   ```
   Jautājums: {text}
   Izvēles:
@@ -546,7 +595,9 @@ When evaluating generative models, we use the following setup (see the
   b. {option_b}
   Atbilde: {label}
   ```
+
 - Instruction-tuned prompt template:
+
   ```
   Jautājums: {text}
   Izvēles:
@@ -559,9 +610,8 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ euroeval --model <model-id> --dataset winogrande-lv
+euroeval --model <model-id> --dataset winogrande-lv
 ```
-
 
 ## Summarisation
 
@@ -582,6 +632,7 @@ Here are a few examples from the training split:
   "target_text": "Viņiem bija iecerēts tikties jau šī gada sākumā, bet pandēmijas dēļ Raimonda Paula 85. jubilejai veltītais koncerts ar pasaulslavenās operdziedātājas Elīnas Garančas piedalīšanos tika pārcelts. Šajā nedēļas nogalē Nacionālo teātri beidzot pieskandinās abu izcilo mūzikas personību atkalsatikšanās ar skatītājiem koncertā “Ja tevis nebūtu...”."
 }
 ```
+
 ```json
 
 {
@@ -589,6 +640,7 @@ Here are a few examples from the training split:
 "target_text": "Ukrainā trešdienas vakarā, reaģējot uz šonedēļ lielā steigā pieņemto likumu, kas atceļ pretkorupcijas iestāžu neatkarību, tūkstošiem cilvēku izgāja ielās. Latvijas Radio bija klāt Kijivā, kur pulcējās liels skaits cilvēku."
 }
 ```
+
 ```json
 {
 "text": "Norvēģijas dziesma Eirovīzijā – folkmūzikas, elektronikas un viduslaiku estētikas sintēze\n\nAlessandro ir spāņu izcelsmes, viņš runā četrās valodās, iedvesmojas no dažādu pasaules tautu mūzikas, kā arī ir labs dejotājs. Alessandro dziesma \"Lighter\" ieturēta popmūzikas stilistikā, kurā ievīti daudz dažādi elementi. Te var sadzirdēt gan norvēģu folkmūzikas, gan elektroniskās deju mūzikas notis, gan Balkānu popmūzikai raksturīgos ritmus un pat viduslaiku estētiku. Dziesma aicina noticēt sev un būt pašam savai dzirkstij. Dziesmas \"Lighter \" vārdi Golden girl dressed in ice A heart as dark as night You got me to dim my light No more, (no more) I really think I bought your lies Did anything to keep you mine You kept me hooked on your line No more, (no more) Somewhere along the way I lost my mind I had to walk a hundred thousand miles I’m not afraid to set it all on fire I won’t fall again, I’ll be my own lighter (Eh-Eh-Eh-Eh) Nothing can burn me now (Eh-Eh-Eh-Eh) I’ll be my own lighter I feel a spark inside me I don’t need saving (No way, no way) ‘Cause I’m my own, I’m my own lighter I’m tired of a million tries To fight, the signs And when everybody tried to tell me I should’ve known that it was time to break free Your reigns that kept me at your mercy I’ll burn them to the ground No more, no more Ignite the fire Somewhere along the way I lost my mind I had to walk a hundred thousand miles I’m not afraid to set it all on fire I won’t fall again, I’ll be my own lighter (Eh-Eh-Eh-Eh) Nothing can burn me now (Eh-Eh-Eh-Eh) I’ll be my own lighter I feel a spark inside me I don’t need saving (No way, no way) ‘Cause I’m my own, I’m my own lighter Silence fills the room And I’ve taken off my jewels I wish none of this was true But there’s a fire growing too Yeah! (Eh-Eh-Eh-Eh) Nothing can burn me now (Eh-Eh-Eh-Eh) I’ll be my own lighter I feel a spark inside me I don’t need saving (No way, no way) ‘Cause I’m my own, I’m my own lighter (Eh-Eh-Eh-Eh) Nothing can burn me down (Eh-Eh-Eh-Eh) I’m my own, I’m my own lighter Eirovīzija\xa02025 – dalībnieki Vairāk KONTEKSTS: 2025. gada Eirovīzijas dziesmu konkurss notiks Šveicē, Bāzelē, un savu dalību tajā apstiprinājušas 37 valstis. 31 no visām dalībvalstīm sacentīsies pusfinālos\xa013. maijā un 15. maijā. Desmit\xa0labākie no katra pusfināla kvalificēsies lielajam finālam 17. maijā, pievienojoties pērnā gada uzvarētājai Šveicei un \"lielajam piecniekam\" – Spānijai, Apvienotajai\xa0Karalistei, Vācijai, Itālijai un Francijai. Eirovīzijas konkursa pusfināli un fināli šogad sāksies pulksten 22.00 pēc Latvijas laika. Tiešraides būs skatāmas Latvijas Sabiedriskā medija portālā LSM.lv un satura atskaņotājā REplay.lv, kā arī LTV1. Šī gada Latvijas nacionālajā atlasē \"Supernova\" uzvarēja un uz Eirovīziju dosies grupa \"Tautumeitas\" . \"Tautumeitas\" kāps uz skatuves Eirovīzijas konkursa otrajā pusfinālā. Tajā kopā ar Latviju piedalīsies arī Armēnija, Austrālija, Austrija, Grieķija, Īrija, Lietuva, Melnkalne, Čehija, Dānija, Somija, Gruzija, Izraēla, Luksemburga, Malta un Serbija.",
@@ -601,15 +653,20 @@ When evaluating generative models, we use the following setup (see the
 
 - Number of few-shot examples: 1
 - Prefix prompt:
+
   ```
   Tālāk ir dokumenti ar pievienotām kopsavilkumiem.
   ```
+
 - Base prompt template:
+
   ```
   Dokuments: {text}
   Kopsavilkums: {target_text}
   ```
+
 - Instruction-tuned prompt template:
+
   ```
   Dokuments: {text}
 
@@ -619,5 +676,5 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ euroeval --model <model-id> --dataset lsm
+euroeval --model <model-id> --dataset lsm
 ```
