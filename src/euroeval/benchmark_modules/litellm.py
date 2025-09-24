@@ -1444,7 +1444,8 @@ class LiteLLMModel(BenchmarkModule):
                 LITELLM_CLASSIFICATION_OUTPUT_KEY: (t.Literal[*localised_labels], ...)
             }
             pydantic_class = create_model("AnswerFormat", **keys_and_their_types)
-            generation_kwargs["response_format"] = pydantic_class
+            # TEMP
+            # generation_kwargs["response_format"] = pydantic_class
 
         # If the model is an Ollama reasoning model, we ensure that thinking is enabled
         if self.is_ollama and self.generative_type == GenerativeType.REASONING:
