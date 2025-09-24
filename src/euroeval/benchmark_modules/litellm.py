@@ -724,6 +724,7 @@ class LiteLLMModel(BenchmarkModule):
             for idx, response in enumerate(responses)
             if isinstance(response, Exception)
         ]
+        breakpoint()
 
         # Close connections
         for request in requests:
