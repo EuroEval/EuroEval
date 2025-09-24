@@ -2,7 +2,7 @@
 
 from ..data_models import DatasetConfig
 from ..languages import CS
-from ..tasks import LA, SENT
+from ..tasks import LA, NER, SENT
 
 ### Official datasets ###
 
@@ -27,5 +27,13 @@ CS_GEC_CONFIG = DatasetConfig(
     pretty_name="the Czech linguistic acceptability dataset CS-GEC",
     huggingface_id="EuroEval/cs-gec",
     task=LA,
+    languages=[CS],
+)
+
+PONER_CONFIG = DatasetConfig(
+    name="poner",
+    pretty_name="the Czech named entity recognition dataset PONER",
+    huggingface_id="EuroEval/poner-mini",
+    task=NER,
     languages=[CS],
 )

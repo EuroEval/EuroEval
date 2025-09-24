@@ -80,38 +80,37 @@ euroeval --model <model-id> --dataset csfd-sentiment-mini
 
 ## Named Entity Recognition
 
-### FullStack-NER-lv
+### PONER
 
-This dataset was published in [this paper](https://aclanthology.org/L18-1714/) and is
-part of a multilayered syntactically and semantically annotated text corpus for Latvian.
-The corpus text sources include approximately 60% news, 20% fiction, 10% legal texts, 5%
-spoken language transcripts, and 5% miscellaneous content from a balanced
-10-million-word corpus.
+This dataset was created [in this master thesis](https://dspace.vut.cz/items/6092e1b0-3d75-4451-8582-28573ac30404).
+The dataset consists of 9,310 Czech sentences with 14,639 named entities.
+Source data are Czech historical chronicles mostly from the first half of the 20th century.
 
-The original full dataset consists of 11,425 samples. We use 1,024 / 256 / 2,048 samples
-for our
-training, validation and test splits, respectively.
+The original dataset consists of 4,188 / 465 / 4,655 samples for the training, validation
+and test splits, respectively.
+We use 1,024 / 256 / 2,048 samples for our training, validation and test splits, respectively.
+All the new splits are subsets of the original splits.
 
 Here are a few examples from the training split:
 
 ```json
 {
-    "tokens": array(["'", "Tērvetes", "AL", "'", "reģistrēts", "2012.", "gadā", "Kroņaucē", ",", "pārņemot", "šo", "biznesu", "no", "AS", "'", "Agrofirma", "Tērvete", "'", "ar", "mērķi", "modernizēt", "ražošanu", ",", "ieguldot", "attīstībā", "vairāk", "nekā", "piecus", "miljonus", "eiro", "."], dtype=object),
-    "labels": ["B-ORG", "I-ORG", "I-ORG", "I-ORG", "O", "B-MISC", "I-MISC", "B-LOC", "O", "O", "O", "O", "O", "B-ORG", "I-ORG", "I-ORG", "I-ORG", "I-ORG", "O", "O", "O", "O", "O", "O", "O", "O", "O", "B-MISC", "I-MISC", "I-MISC", "O"],
+  "tokens": ["Předseda", "finanční", "komise", "města", "Julius", "Hegr"],
+  "labels": ["O", "O", "O", "O", "B-PER", "I-PER"]
 }
 ```
 
 ```json
 {
-    "tokens": array(["Lieldienas", "aktrise", "Torija", "Spelinga", "pavadīja", "kopā", "ar", "ģimeni", "Ķīniešu", "restorānā", ",", "svētki", "tika", "izbojāti", "mirklī", ",", "kad", "viņa", "darbinieku", "nevīžības", "dēļ", "paslīdēja", "un", "iekrita", "grilā", "."], dtype=object),
-    "labels": ["B-MISC", "O", "B-PER", "I-PER", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O"],
+  "tokens": ["Fot", ".", "dok", ".", "SV.", "I", "f.", "č.", "6."],
+  "labels": ["O", "O", "O", "O", "O", "O", "O", "O", "O"],
 }
 ```
 
 ```json
 {
-    "tokens": array(["Mani", "pamodinājis", "Patrīcijas", "zvans", "."], dtype=object),
-    "labels": ["O", "O", "B-PER", "O", "O"],
+  "tokens": ["Konala", "se", "valná", "hromada", "Čtenářského", "spolku"],
+  "labels": ["O", "O", "O", "O", "B-ORG", "I-ORG"],
 }
 ```
 
@@ -122,38 +121,38 @@ When evaluating generative models, we use the following setup (see the
 - Prefix prompt:
 
   ```
-  Tālāk ir teikumi un JSON vārdnīcas ar nosauktajiem objektiem, kas parādās dotajā teikumā.
+  Následující jsou věty a JSON slovníky s pojmenovanými entitami, které se v dané větě vyskytují.
   ```
 
 - Base prompt template:
 
   ```
-  Teikums: {text}
-  Nosauktie objekti: {label}
+  Věta: {text}
+  Pojmenované entity: {label}
   ```
 
 - Instruction-tuned prompt template:
 
   ```
-  Teikums: {text}
+  Věta: {text}
 
-  Identificējiet nosauktos objektus teikumā. Jums jāizvada šī informācija kā JSON vārdnīcu ar atslēgām 'persona', 'vieta', 'organizācija' un 'dažādi'. Vērtībām jābūt šī tipa nosaukto objektu sarakstiem, tieši tā, kā tie parādās teikumā.
+  Identifikujte pojmenované entity ve větě. Měli byste to vypsat jako JSON slovník s klíči 'osoba', 'místo', 'organizace' a 'různé'. Hodnoty by měly být seznamy pojmenovaných entit tohoto typu, přesně tak, jak se objevují ve větě.
   ```
 
 - Label mapping:
-  - `B-PER` ➡️ `persona`
-  - `I-PER` ➡️ `persona`
-  - `B-LOC` ➡️ `vieta`
-  - `I-LOC` ➡️ `vieta`
-  - `B-ORG` ➡️ `organizācija`
-  - `I-ORG` ➡️ `organizācija`
-  - `B-MISC` ➡️ `dažādi`
-  - `I-MISC` ➡️ `dažādi`
+  - `B-PER` ➡️ `osoba`
+  - `I-PER` ➡️ `osoba`
+  - `B-LOC` ➡️ `místo`
+  - `I-LOC` ➡️ `místo`
+  - `B-ORG` ➡️ `organizace`
+  - `I-ORG` ➡️ `organizace`
+  - `B-MISC` ➡️ `různé`
+  - `I-MISC` ➡️ `různé`
 
 You can evaluate this dataset directly as follows:
 
 ```bash
-euroeval --model <model-id> --dataset fullstack-ner-lv
+euroeval --model <model-id> --dataset poner-mini
 ```
 
 ### Unofficial: WikiANN-lv

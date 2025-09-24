@@ -13,7 +13,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 - Added support for Czech 🇨🇿! This includes the sentiment classification dataset
   CSFD-sentiment, the linguistic acceptability dataset ScaLA-cs, the
-  linguistic acceptability dataset CS-GEC.
+  linguistic acceptability dataset CS-GEC, the named entity recognition dataset PONER.
 - Added support for Lithuanian 🇱🇹! This includes the sentiment classification dataset
   Lithuanian Emotions, the linguistic acceptability dataset ScaLA-lt, the reading
   comprehension dataset MultiWikiQA-lt, the named entity recognition dataset WikiANN-lt,
