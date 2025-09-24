@@ -715,7 +715,11 @@ class LiteLLMModel(BenchmarkModule):
         responses = await tqdm_async.gather(*requests, leave=False)
 
         # If the outputs are empty, convert them to exceptions
-        if all(response.choices[0].message.content == "{}" for response in responses):
+        if all(
+            not isinstance(response, Exception)
+            and response.choices[0].message.content == "{}"
+            for response in responses
+        ):
             responses = [ValueError("The model returned empty outputs.")] * len(
                 responses
             )
