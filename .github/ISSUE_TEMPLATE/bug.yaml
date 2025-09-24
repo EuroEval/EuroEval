@@ -7,12 +7,15 @@ body:
 - type: markdown
   attributes:
     value: >
-      #### Before submitting a bug, please make sure the issue hasn't been already addressed by searching through [the existing and past issues](https://github.com/EuroEval/EuroEval/issues?q=is%3Aissue).
+      Before submitting a bug, please make sure the issue hasn't been already addressed
+      by searching through [the existing and past
+      issues](https://github.com/EuroEval/EuroEval/issues?q=is%3Aissue).
 - type: textarea
   attributes:
     label: 🐛 Describe the bug
-    description: |
-      Please provide a clear and concise description of what the bug is. If relevant, add a minimal example so that we can reproduce the error by running the code.
+    description: >
+      Please provide a clear and concise description of what the bug is. If relevant,
+      add a minimal example so that we can reproduce the error by running the code.
   validations:
     required: true
 - type: dropdown
