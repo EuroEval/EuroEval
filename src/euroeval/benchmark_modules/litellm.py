@@ -713,6 +713,9 @@ class LiteLLMModel(BenchmarkModule):
             ]
         responses = await tqdm_async.gather(*requests, leave=False)
 
+        # If the outputs are empty, convert them to exceptions
+        breakpoint()
+
         # Separate the successful responses from the failed ones
         successes = [
             (idx, response)
@@ -1443,8 +1446,7 @@ class LiteLLMModel(BenchmarkModule):
                 LITELLM_CLASSIFICATION_OUTPUT_KEY: (t.Literal[*localised_labels], ...)
             }
             pydantic_class = create_model("AnswerFormat", **keys_and_their_types)
-            # TEMP
-            # generation_kwargs["response_format"] = pydantic_class
+            generation_kwargs["response_format"] = pydantic_class
 
         # If the model is an Ollama reasoning model, we ensure that thinking is enabled
         if self.is_ollama and self.generative_type == GenerativeType.REASONING:
