@@ -4,6 +4,7 @@ import typing as t
 
 from ..data_models import PromptConfig
 from ..languages import (
+    CS,
     DA,
     DE,
     EN,
@@ -28,6 +29,14 @@ if t.TYPE_CHECKING:
 
 # TODO: Missing Faroese
 SUMM_TEMPLATES: dict["Language", PromptConfig] = {
+    CS: PromptConfig(
+        default_prompt_prefix=("Následující jsou dokumenty s přiloženými souhrny."),
+        default_prompt_template=("Dokument: {text}\nSouhrn: {target_text}"),
+        default_instruction_prompt=(
+            "Dokument: {text}\n\nNapište souhrn výše uvedeného dokumentu."
+        ),
+        default_prompt_label_mapping=dict(),
+    ),
     DA: PromptConfig(
         default_prompt_prefix="Følgende er dokumenter med tilhørende resuméer.",
         default_prompt_template="Dokument: {text}\nResumé: {target_text}",

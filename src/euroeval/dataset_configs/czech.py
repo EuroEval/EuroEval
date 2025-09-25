@@ -2,7 +2,7 @@
 
 from ..data_models import DatasetConfig
 from ..languages import CS
-from ..tasks import LA, NER, RC, SENT
+from ..tasks import LA, NER, RC, SENT, SUMM
 
 ### Official datasets ###
 
@@ -43,5 +43,13 @@ SQAD_CONFIG = DatasetConfig(
     pretty_name="the truncated version of the Czech reading comprehension dataset SQAD",
     huggingface_id="EuroEval/sqad-mini",
     task=RC,
+    languages=[CS],
+)
+
+CZECH_NEWS_CONFIG = DatasetConfig(
+    name="czech-news",
+    pretty_name="the Czech news summarization dataset",
+    huggingface_id="EuroEval/czech-news-mini",
+    task=SUMM,
     languages=[CS],
 )
