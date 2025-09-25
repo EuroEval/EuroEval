@@ -23,7 +23,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   and Polish, which do not have official leaderboards yet - so no leaderboards are
   affected by this change.
 - In the same vein as the above, we now use 32 samples for validation for the Lithuanian
-  LT-history dataset.
+  LT-history dataset and the Swedish Skolprov dataset.
 
 ## [v16.3.0] - 2025-09-23
 

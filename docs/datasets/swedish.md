@@ -633,7 +633,7 @@ audionom), pharmacist test (kunskapsprov apotekare), and mathematics and physics
 (matematik och fysikprovet).
 
 The original dataset consists of 545 samples, which we filter down to 512 samples. We
-use a 32 / 480 split for training and testing, respectively.
+use a 32 / 32 / 448 split for training, validation and testing, respectively.
 
 Here are a few examples from the training split:
 
