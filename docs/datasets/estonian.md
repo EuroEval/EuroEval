@@ -530,6 +530,82 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset exam-et
 ```
 
+### Unofficial: MMLU-et
+
+This dataset is a machine translated version of the English [MMLU
+dataset](https://openreview.net/forum?id=d7KBjmI3GmQ) and features questions within 57
+different topics, such as elementary mathematics, US history and law. The translation to
+Estonian was done by [the Laboratory of Language Technology at Tallinn University of
+Technology](https://taltech.ee/en/laboratory-language-technology).
+
+The original full dataset consists of 14,042 samples in a single split. We use a 1,024 /
+256 / 2,048 split for training, validation and testing, respectively (so 3,328 samples
+used in total).
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Väide 1 | Oletame, et \\\\u2211|a_i| hajub ja \\\\u2211 a_i = 2. Leidub järjestus a_i_k sellistest liikmetest, et \\\\u2211 a_i_k = 4. Väide 2 | On olemas sellised meetrilised ruumid X ja Y, kus X on kinnine ja piiritletud ning pidev kujutus f : X \\\\u2192 Y selline, et f(X) ei ole \\\\u201ckinnine ja piiritletud\\\\u201d.\nVastusevariandid:\na. Tõene, Tõene\nb. Tõene, Väär\nc. Väär, Tõene\nd. Väär, Väär",
+  "label": "a"
+}
+```
+
+```json
+{
+  "text": "Suur mees, kellel olid ähvardavad tätoveeringud kogu näo ja palja pea peal, järgnes tihedalt ärimehele, kes oli eksinud pikka pimedasse alleesse. Suur mees jälitas ärimeest mitmeid kvartaleid lõpututes, valgustamata alleedes. Äriemees oli suurtes hirmuvaludes. Suur mees oli vaid mõne jala kaugusel, lauldes laule sellest, kuidas tal on täna õhtul \"suur söömaaeg\" ja näis, et ta on \"rikastunud\", ning muid sõnu, mis viitasid võimalikule vägivallale ja röövimisele. Lõpuks viskas ärimees oma rahakoti ühes suunas ja jooksis teises suunas, hõigates: \"Võta mu raha, jäta mulle mu elu!\" Suur mees võttis rahakoti üles ja jooksis vastassuunas, kuid kui ta jõudis allee lõppu, arreteeriti ta ja tema vastu esitati süüdistus röövimises. Ta kaebas oma süüdimõistmise edasi, väites, et tal polnud kavatsust varastada ja ta üritas rahakoti ohvrile tagastada. Kas apellatsioonikohus kinnitab tõenäoliselt röövimise süüdimõistmise?\nVastusevariandid:\na. Ei, suur mehe laulud võisid olla juhuslikud või mõtlematud, ta ei teinud mingeid ähvardusi ja võis hiljem üritada rahakotti tagastada.\nb. Jah, sest suur mees järgnes liiga lähedalt ja liiga kaua, ta laulis ähvardavaid laule, mis tekitasid ärimehes hirmu, ning siis ta võttis rahakoti ja jooksis teises suunas.\nc. Jah, sest keegi ei tohiks mingil põhjusel maas lebavat võõrast rahakotti üles korjata.\nd. Ei, sest rahakott ei olnud vahetult ohvri juures, kui suur mees selle üles võttis.",
+  "label": "b"
+}
+```
+
+```json
+{
+  "text": "7-aastane õpilane saabus USA-sse aasta tagasi inglise keelt mitte rääkivast riigist, kus ta saavutas lugemises kõrged hinded. Aasta jooksul on ta saavutanud sotsiaalses inglise keeles soravuse. Pärast mõnekuist viibimist ühekeelses inglise keele teise klassi klassiruumis suunab tema õpetaja ta hindamisele, kuna tal on suuri raskusi klassis kasutatava alglugemise õppematerjaliga. Kaks õpilasele antud inglise keele oskuse testi näitavad, et tema tulemused on kõnelemises ja kuulamises üle monoliinguaalsete inglise keele eakaaslaste keskmise, kuid lugemises ja kirjutamises palju alla keskmise. Ta saab samuti oma emakeeles lugemistestides palju parema tulemuse kui eakaaslased. Ainult selle teabe põhjal, milline järgmistest on kõige täpsem tõlgendus?\nVastusevariandid:\na. Õpilase emakeele kasutamine koduses keskkonnas takistab tema inglise keele arengut.\nb. Õpilase lugemisraskus on varajane näitaja, et tal tekivad akadeemilises töös suuremad probleemid, kuna kursusetöö nõuab rohkem lugemist.\nc. Õpilase inglise keele sotsiaalsete oskuste ja lugemisoskuste erinevus on ootuspärane, arvestades rikkalikumat konteksti, milles omandatakse sotsiaalseid oskusi.\nd. Õpilase emakeele lugemisoskuse ja inglise keele lugemisoskuse erinevus on seotud inglise keele suurema keerukusega.",
+  "label": "c"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  Järgnevad on vastusevariantidega küsimused (koos vastustega).
+  ```
+
+- Base prompt template:
+
+  ```text
+  Küsimus: {text}
+  Vastusevariandid:
+  a. {option_a}
+  b. {option_b}
+  c. {option_c}
+  d. {option_d}
+  Vastus: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Küsimus: {text}
+  Vastusevariandid:
+  a. {option_a}
+  b. {option_b}
+  c. {option_c}
+  d. {option_d}
+
+  Võimalikud vastused: 'a', 'b', 'c' or 'd'. Muud vastused ei ole lubatud.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset mmlu-et
+```
+
 ## Common-sense Reasoning
 
 ### Winogrande-et
