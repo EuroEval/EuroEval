@@ -67,7 +67,7 @@ def main() -> None:
 
         # Split test set into validation and test sets
         val_size = 128
-        val_df = test_df.sample(n=val_size, random_state=42)
+        val_df = test_df.sample(n=val_size, random_state=42).reset_index(drop=True)
         test_df = test_df.drop(val_df.index.tolist()).reset_index(drop=True)
 
         train_df = prepare_dataframe(df=train_df, language=language)
