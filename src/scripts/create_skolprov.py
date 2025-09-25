@@ -11,6 +11,7 @@
 
 """Create the Swedish skolprov datasets and upload them to the HF Hub."""
 
+import logging
 from collections import Counter
 
 import pandas as pd
@@ -25,6 +26,9 @@ from constants import (
 from datasets import Dataset, DatasetDict, Split, load_dataset
 from huggingface_hub import HfApi
 from sklearn.model_selection import train_test_split
+
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(message)s")
+logger = logging.getLogger("create_skolprov")
 
 
 def main() -> None:
@@ -66,9 +70,11 @@ def main() -> None:
     ]
     assert isinstance(df, pd.DataFrame)
 
-    # Handle option_e if it exists and is not null
-    if "option_e" in df.columns:
-        df = df[df.option_e.isna() | (df.option_e.str.len() <= MAX_NUM_CHARS_IN_OPTION)]
+    # Lowercase the labels
+    df.label = df.label.str.lower()
+
+    # Remove samples where the label is the fifth 'e' option
+    df = df[df.label != "e"]
 
     def is_repetitive(text: str) -> bool:
         """Return True if the text is repetitive."""
@@ -112,16 +118,9 @@ def main() -> None:
         text += "c. " + str(row.option_c).replace("\n", " ").strip() + "\n"
         text += "d. " + str(row.option_d).replace("\n", " ").strip()
 
-        # Add option_e if it exists and is not null
-        if "option_e" in df.columns and pd.notna(row.option_e):
-            text += "\ne. " + str(row.option_e).replace("\n", " ").strip()
-
         return text
 
     df["text"] = df.apply(create_text, axis=1)
-
-    # Make the `label` column case-consistent with the `text` column
-    df.label = df.label.str.lower()
 
     # Only keep the `text`, `label` and `category` columns
     df = df[["text", "label", "category"]]
@@ -133,14 +132,9 @@ def main() -> None:
     # Create train and test splits
     train_size = 32
     val_size = 32
-    test_size = 448
 
     trainval_arr, test_arr = train_test_split(
-        df,
-        train_size=train_size + val_size,
-        test_size=test_size,
-        random_state=4242,
-        stratify=df.category,
+        df, train_size=train_size + val_size, random_state=4242, stratify=df.category
     )
     train_arr, val_arr = train_test_split(
         trainval_arr, train_size=train_size, test_size=val_size, random_state=4242
@@ -154,6 +148,10 @@ def main() -> None:
     train_df = train_df.reset_index(drop=True)
     val_df = val_df.reset_index(drop=True)
     test_df = test_df.reset_index(drop=True)
+
+    logger.info(f"Train size: {len(train_df)}")
+    logger.info(f"Validation size: {len(val_df)}")
+    logger.info(f"Test size: {len(test_df)}")
 
     # Collect datasets in a dataset dictionary
     dataset = DatasetDict(
