@@ -44,6 +44,10 @@ def compute_metrics(
     Returns:
         A dictionary with the names of the metrics as keys and the metric values as
         values.
+
+    Raises:
+        InvalidBenchmark:
+            If the metric computation fails.
     """
     model_outputs, labels = model_outputs_and_labels
 
@@ -72,7 +76,7 @@ def compute_metrics(
         ):
             metric.compute_kwargs["device"] = benchmark_config.device.type
 
-        while True:
+        for _ in range(num_attempts := 5):
             try:
                 score: float | None = metric(
                     predictions=predictions,
@@ -111,6 +115,11 @@ def compute_metrics(
                             f"{metric.pretty_name} to free up memory."
                         )
                         delattr(metric, attribute)
+        else:
+            raise InvalidBenchmark(
+                f"Could not compute the metric {metric.pretty_name} after "
+                f"{num_attempts} attempts due to out of memory errors."
+            )
 
         # The metric returns None if we are running on multi-GPU and the current
         # process is not the main process
