@@ -454,7 +454,8 @@ class LiteLLMModel(BenchmarkModule):
         requires_thinking_disabled_messages = ["thinking.type: Field required"]
         seed_pattern = re.compile(r"does not support parameters: \[.*'seed'.*\]")
         response_format_messages = [
-            "got an unexpected keyword argument 'response_format'"
+            "got an unexpected keyword argument 'response_format'",
+            "the model returned empty outputs",
         ]
 
         if any(msg.lower() in error_msg for msg in stop_messages):
@@ -712,6 +713,16 @@ class LiteLLMModel(BenchmarkModule):
                 if isinstance(input_, list)
             ]
         responses = await tqdm_async.gather(*requests, leave=False)
+
+        # If the outputs are empty, convert them to exceptions
+        if all(
+            not isinstance(response, Exception)
+            and response.choices[0].message.content == "{}"
+            for response in responses
+        ):
+            responses = [ValueError("The model returned empty outputs.")] * len(
+                responses
+            )
 
         # Separate the successful responses from the failed ones
         successes = [
