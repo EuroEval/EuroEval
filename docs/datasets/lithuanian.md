@@ -313,10 +313,9 @@ This dataset was published in [this paper](https://aclanthology.org/2025.nbreal-
 and consists of Lithuanian national and general history questions and answers.
 
 The dataset originally contains 593 samples, which are reduced to 559 after filtering.
-Due to the limited number of examples, there is no training split; instead, the data is
-divided into 47 samples for validation and 512 for testing.
+We use a 64 / 32 / 463 split for training, validation and testing, respectively.
 
-Here are a few examples from the validation split:
+Here are a few examples from the training split:
 
 ```json
 {

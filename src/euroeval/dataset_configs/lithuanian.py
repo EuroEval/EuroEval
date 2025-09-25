@@ -47,7 +47,6 @@ LT_HISTORY_CONFIG = DatasetConfig(
     huggingface_id="EuroEval/lt-history",
     task=KNOW,
     languages=[LT],
-    splits=["train", "test"],
 )
 
 WINOGRANDE_LT_CONFIG = DatasetConfig(
