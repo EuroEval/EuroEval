@@ -18,7 +18,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Used 128 of the test samples from the Winogrande datasets for validation, as we
   previously did not use a validation split. This is done for all languages except
   Icelandic and Estonian, as these are manually translated and corrected splits from a
-  different source.
+  different source. Most of these are unofficial datasets and thus won't affect the
+  leaderboard rankings. The only languages for which these are official are Lithuanian
+  and Polish, which do not have official leaderboards yet - so no leaderboards are
+  affected by this change.
 
 ## [v16.3.0] - 2025-09-23
 
