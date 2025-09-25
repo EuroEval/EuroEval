@@ -384,47 +384,52 @@ euroeval --model <model-id> --dataset cs-gec
 
 ## Reading Comprehension
 
-### MultiWikiQA-lv
+### SQAD
 
-This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2509.04111)
-and contains Wikipedia articles with LLM-generated questions and answers in 300+
-languages.
+This dataset was published in
+[this paper](https://nlp.fi.muni.cz/raslan/2019/paper14-medved.pdf)
+and has been harvested from Czech Wikipedia articles by students and
+annotated with appropriate question, answer sentence, exact answer,
+question type and answer type.
 
-The original full dataset consists of 5,000 samples in a single split. We use a 1,024 /
-256 / 2,048 split for training, validation and testing, respectively, sampled randomly.
+The original full dataset has 11,569 / 2,819 train, test samples,
+respectively. We use a 1,024 / 256 / 2,048 split for training,
+validation and testing, respectively. The train and test splits are
+subsets of the original splits, and the validation split is created
+using examples from the train split.
 
 Here are a few examples from the training split:
 
 ```json
 {
-    "context": "Zvjaheļa (, līdz 2022. gadam — Novohrada-Volinska) ir pilsēta Ukrainas ziemeļrietumos, Žitomiras apgabala rietumos, Slučas upes krastā. Tā ir Zvjaheļas rajona administratīvais centrs. Attālums līdz apgabala centram Žitomirai ir .\n\nZvjaheļa ir ukraiņu tautas dzejnieces Lesjas Ukrainkas dzimtā pilsēta.\nŠeit ir dzimis Ukrainas armijas virspavēlnieks ģenerālis Valerijs Zalužnijs.\n\nVēsture \nVēstures avtos apdzīvotā vieta pirmoreiz minēta 1256. gadā Slučas labajā krastā kā Vozvjaheļa (Возвягель) Galīcijas-Volīnijas hronikā. Gadu vēlāk to par nepaklausību nodedzināja Galīcijas karalis Danila. Nākamo reizi apdzīvotā vieta minēta 1432. gadā jau Slučas kreisajā krastā kā Vzvjahoļas (Взвяголь) miests, bet 1499. gadā\xa0— Zvjahoļa (Звяголь). 1507. gadā miests ieguva tiesības būvēt pili un veidot pilsētu. Pēc Ļubļinas ūnijas 1569. gadā miests saukts par Zvjaheļu (Звягель, ).\n\n1793. gadā Zvjaheļa nonāca Krievijas Impērijas sastāvā. 1795. gadā miests ieguva Novohradas-Volinskas nosaukumu un pilsētas tiesības, un kļuva par jaunizveidotās Volīnijas guberņas centru (līdz 1804. gadam).\n\n2022. gada 16. jūnijā Novohradas-Volinskas domes deputāti nobalsoja par pilsētas pārdēvēšanu tās vēsturiskajā nosaukumā — Zvjaheļa. Vēlāk šo lēmumu apstiprināja Žitomiras apgabala dome. Ar Ukrainas Augstākās Radas dekrētu 2022. gada 16. novembrī pilsēta tika pārdēvēta par Zvjaheļu.\n\nAtsauces\n\nĀrējās saites",
-    "question": "Kāds Ukrainas bruņoto spēku komandieris nāk no Zvjaheļas?",
-    "answers": {
-        "answer_start": array([349]),
-        "text": array(["ģenerālis Valerijs Zalužnijs"], dtype=object)
-    }
+  "context": "Právnická fakulta Masarykovy univerzity (PrF MU) je jedna z devíti fakult Masarykovy univerzity. Založena byla spolu s celou univerzitou v Brně roku 1919. V meziválečném období se proslavila školou normativní teorie práva, v roce 1950 byla zrušena a obnovena roku 1969. Sídlí v klasicizující budově na Veveří, nabízí vysokoškolské právní vzdělání na bakalářské (Bc.), magisterské (Mgr. a JUDr.) i doktorské (Ph.D.) úrovni a ve srovnání všech čtyř českých veřejných právnických fakult je pravidelně hodnocena jako nejlepší z nich. Související informace naleznete také v článku Seznam děkanů Právnické fakulty Masarykovy univerzity. Tradice univerzitní výuky práva na Moravě pochází z konce 17. století, v Brně se ale právo přednášelo jen v krátkém období 1778–1782, kdy sem byla přeložena olomoucká univerzita. Po zrušení její právnické fakulty v roce 1855 vznikla citelná potřeba existence nejen právnických studií, veškeré snahy o zřízení druhé české univerzity, která by byla situována do moravského hlavního města Brna a samozřejmě měla svou právnickou fakultu, v nichž se mj. angažoval tehdejší profesor a pozdější československý prezident T. G. Masaryk, však vyšly naprázdno. Bylo tomu tak zejména kvůli odporu Němců, kteří chtěli zachovat převážně německý charakter města, pouze některé právní obory byly vyučovány na české technice. Až po vzniku československé republiky mohla být tato myšlenka uskutečněna, roku 1919 vznikla Masarykova univerzita se sídlem v Brně a její právnická fakulta spolu s lékařskou zahájily výuku ještě ve školním roce 1919/1920.",
+  "question": "Kolik fakult má Masarykova univerzita?",
+  "answers": {
+    "answer_start": array([60], dtype=int32),
+    "text": array(["devíti"], dtype=object)
+  }
 }
 ```
 
 ```json
 {
-    "context": "Bogota (), saukta arī Santafe de Bogota (Santa Fe de Bogotá), ir pilsēta Kolumbijas centrālajā daļā, 2640 metri virs jūras līmeņa. Kolumbijas galvaspilsēta, galvenais valsts politiskais, ekonomiskais un kultūras centrs. Kaut arī pilsēta atrodas tropiskajā joslā, augstkalnu apstākļu dēļ pilsētā nav karsts (vidējā gaisa temperatūra visu gadu - apmēram +15 grādi).\n\nVēsture \n\nPirms konkistadoru ierašanās Bogotas vietā bija čibču indiāņu galvenais centrs, kuru sauca par Bakatu (Bacatá).\n\nMūsdienu pilsētu nodibināja konkistadors Gonsalo Himeness de Kvesada (Gonzalo Jiménez de Quesada) 1538. gadā.\n\n1718. gadā Bogota kļuva par spāņu Jaunās Granādas vicekaralistes (Virreinato de Nueva Granada) centru.\n\n1810. gadā iedzīvotāji sacēlās pret spāņu varu, tomēr sacelšanās tika apspiesta. 1819. gadā Bogotu ieņēma Simona Bolivāra karaspēks.\n\n1819. gadā vicekaraliste ieguva neatkarību no Spānijas un Bogota kļuva par Lielkolumbijas (Gran Colombia) galvaspilsētu. Tomēr 1830. gadā Lielkolumbija sabruka un izveidojās Jaunā Granāda (mūsdienu Kolumbija), Ekvadora un Venecuēla. 1903. gadā ar ASV atbalstu pret solījumiem atļaut būvēt Panamas kanālu, neatkarību no Kolumbijas ieguva Panama.\n\n1948. gadā Bogotā tika nogalināts populārais kolumbiešu poltiķis Horhe Gaitans. Pilsētā izcēlās plaši nemieri un ielu kaujas. Sākās politiskās nestabilitātes periods (La Violencia), kurš turpinājās 10 gadus, gāja bojā no 180 000 līdz 300 000 kolumbiešu.\n\nCilvēki \n\nBogotā dzimuši:\n\n Egans Bernals (Egan Bernal, 1997) — riteņbraucējs;\n Ingrīda Betankūra (Íngrid Betancourt, 1961) — politiķe;\n Huans Pablo Montoija (Juan Pablo Montoya, 1975) — Formula 1 pilots;\n Katalina Sandino Moreno (Catalina Sandino Moreno, 1981) — aktrise;\n Kamilo Toress Restrepo (Camilo Torres Restrepo, 1929-1966) — revolucionārs.\n\nĀrējās saites \n\nDienvidamerikas galvaspilsētas\nKolumbijas pilsētas",
-    "question": "Kad Bogata tika iecelta par Jaunās Granādas vicekaralistes centru Spānijas pakļautībā?",
-    "answers": {
-        "answer_start": array([599]),
-        "text": array(["1718. gadā"], dtype=object)
-    }
+  "context": "Rovnátka (též označovaný jako ortodontický aparát) jsou druh zdravotnické pomůcky, která slouží k narovnání, napravení, či usměrnění růstu zubů. Mohou se nandávat jak na horní, tak i dolní čelist. Fixní rovnátka jsou v ústní dutině nepřetržitě po celou dobu léčby. Jsou nalepena buď z tvářové či jazykové strany (tzv. lingvální). Častějším typem je aplikace z tvářové strany. Důvody jsou takové, že linguální rovnátka jsou dražší, jejich zavedení je náročnější a klade větší nároky na lékaře i pacienta. Snímací rovnátka se vyznačují tím, že je lze vyjmout z ústní dutiny. Používají se pro méně závažné zubní anomálie a vady. Jsou určena pro dočasný a smíšený chrup. Fóliová rovnátka (tzv. neviditelná rovnátka) jsou měkké plastové fólie vyrobené pacientu na míru podle otisku čelistí. Tyto nosiče se v průběhu léčby obměňují. Jedná se v podstatě o speciální druh snímacích rovnátek, protože je lze z úst kdykoliv vyjmout. Neviditelná rovnátka jsou americkým patentem pod názvem Invisalign. Fixní aparát klade větší požadavky na ústní hygienu pacienta, neboť bylo prokázáno, že tvorba plaku je v průběhu nošení tohoto typu rovnátek vyšší. Pacientům s nedostatečnou ústní hygienou se fixní aparát nedoporučuje či mu přímo není umožněn. Fixním aparátem se dosahuje lepších výsledků než snímacím. Používá se jej spíše u závažnějších zubních anomálií. Snímací aparát je výrazně levnější, méně náročnější na hygienu. Lze jej kdykoliv sejmout, což je jeho nevýhoda - pacient není nucen nosit ho. Vstupní pohovor, vyšetření a jeho zadokumentování. Ortodontista pacienta seznámí o výsledcích vyšetření. Návrh léčebného plánu, schválení pacientem, zubní otisky, rentgenové snímky. Léčba, která se skládá ze dvou částí: Aktivní léčba je samotný proces, který by měl vést k nápravě chrupu a estetiky obličeje. Retenční fáze následuje po aktivní léčbě. Proces má za úkol udržet výsledky ortodontické léčby co nejdéle. Pokud je zanedbána, hrozí částečný či celkový návrat k původnímu stavu chrupu. Nejčastějším typem rovnátek je fixní aparát, a proto právě jeho skladba je zde rozebrána: Ortodontický drát (označovaný též jako oblouk) je speciální typ drátu užívaný v ortodoncii. Slouží k posunování zubu/ů. Drát je fixován do zámečků. V místě požádované změny pozice zubů pak mírně ohnutý. Díky svým vlastnostem (tzv. tvarové paměti) má pak v místě ohybu tendenci se rovnat (vrátit do původní polohy). Tím se vytváří síly, které tlačí na zuby.",
+  "question": "Lze snímací rovnátka vyjmout z ústní dutiny?",
+  "answers": {
+    "answer_start": array([504], dtype=int32),
+    "text": array(["Snímací rovnátka se vyznačují tím, že je lze vyjmout z ústní dutiny."], dtype=object)
+  }
 }
 ```
 
 ```json
 {
-    "context": "Džastins Šulcs (; dzimis ) ir kanādiešu hokejists, aizsargs. Pašlaik (2020) Šulcs spēlē Nacionālās hokeja līgas kluba Vašingtonas "Capitals" sastāvā.\n\nSpēlētāja karjera \nPēc vairākām NCAA čempionātā aizvadītām sezonām, profesionāļa karjeru Šulcs sāka 2012.—13. gada sezonā, tajā spēles laiku dalot starp NHL klubu Edmontonas "Oilers" un AHL vienību Oklahomsitijas "Barons". "Oilers" Šulcs aizvadīja 48 spēles, savukārt AHL kļuva par līgas rezultatīvāko aizsargu, tiekot atzīts arī par līgas labāko aizsargu. 2013.—14. gada sezonu Šulcs jau pilnībā aizvadīja "Oilers" sastāvā.\n\nPēc neveiksmīga 2015.—16. gada sezonas ievada Šulcs tika aizmainīts uz Pitsburgas "Penguins". Tās sastāvā 2016. un 2017. gadā viņš izcīnīja Stenlija kausu. "Penguins" sastāvā spēlēja līdz 2020. gadam, kad pievienojās Vašingtonas "Capitals".\n\nĀrējās saites \n\n1990. gadā dzimušie\nKanādas hokejisti\nEdmontonas "Oilers" spēlētāji\nPitsburgas "Penguins" spēlētāji\nVašingtonas "Capitals" spēlētāji\nStenlija kausa ieguvēji\nBritu Kolumbijā dzimušie",
-    "question": "Kad Džastins Šulcs uzsāka savu profesionālo karjeru?",
-    "answers": {
-        "answer_start": array([251]),
-        "text": array(["2012.—13. gada sezonā"], dtype=object)
-    }
+  "context": "Patří mezi ně například switch, router, síťová karta apod. Pasivní prvky jsou součásti, které se na komunikaci podílejí pouze pasivně (tj. nevyžadují napájení) – propojovací kabel (strukturovaná kabeláž, optické vlákno, koaxiální kabel), konektory, u sítí Token Ring i pasivní hub. Opačným protipólem k sítím LAN jsou sítě WAN, jejichž přenosovou kapacitu si uživatelé pronajímají od specializovaných firem a jejichž přenosová kapacita je v poměru k LAN drahá. Uprostřed mezi sítěmi LAN a WAN najdeme sítě MAN. == Od historie k současnosti == První sítě LAN vznikly na konci 70. let 20. století. Sloužily k vysokorychlostnímu propojení sálových počítačů. Na začátku existovalo mnoho technologií, které navzájem nebyly kompatibilní (ARCNET, DECnet, Token ring a podobně). V současné době jsou nejpopulárnější LAN sítě vystavěné s pomocí technologie Ethernet. U osobních počítačů (PC) došlo k rozmachu budování LAN sítí po roce 1983, kdy firma Novell uvedla svůj produkt NetWare. Firma Novell byla v polovině 90. let odsunuta na okraj trhu nástupem firmy Microsoft s produkty Windows for Workgroups a Windows NT. Na počátku sítě LAN s osobními počítači používaly pro svoji jednoduchost rodinu protokolů IPX/SPX (případně NETBEUI, AppleTalk a další specializované proprietární protokoly), avšak s nástupem WWW byly na konci 90. let minulého století nahrazeny rodinou protokolů TCP/IP. == Moderní prvky LAN == V moderních sítích dnes nalézáme pokročilé technologie, které zvyšují jejich propustnost a variabilitu. Jednoduché propojovací prvky (opakovač, resp. HUB) jsou nahrazovány inteligentními zařízeními (bridge, resp. switch, router), které odstraňují kolize, omezují nežádoucí provoz v síti (broadcasty), umožňují monitorování, zabezpečení a další pokročilé zásahy do provozu sítě (např. detekce DoS, filtrování provozu a podobně).",
+  "question": "Jak se jmenuje produkt firmy Novell, který způsobil rozmach LAN sítí?",
+  "answers": {
+    "answer_start": array([969], dtype=int32),
+    "text": array(["NetWare"], dtype=object)
+  }
 }
 ```
 
@@ -435,31 +440,31 @@ When evaluating generative models, we use the following setup (see the
 - Prefix prompt:
 
   ```
-  Turpmāk seko teksti ar atbilstošiem jautājumiem un atbildēm.
+  Následující texty obsahují otázky a odpovědi.
   ```
 
 - Base prompt template:
 
   ```
-  Teksts: {text}
-  Jautājums: {question}
-  Atbildēt ar maksimāli 3 vārdiem:
+  Text: {text}
+  Otázka: {question}
+  Odpověď maximálně 3 slovy: {label}
   ```
 
 - Instruction-tuned prompt template:
 
   ```
-  Teksts: {text}
+  Text: {text}
 
-  Atbildiet uz šo jautājumu par iepriekš minēto tekstu ar maksimāli 3 vārdiem.
+  Odpovězte na následující otázku k výše uvedenému textu maximálně 3 slovy.
 
-  Jautājums: {question}
+  Otázka: {question}
   ```
 
 You can evaluate this dataset directly as follows:
 
 ```bash
-euroeval --model <model-id> --dataset multi-wiki-qa-lv
+euroeval --model <model-id> --dataset sqad-mini
 ```
 
 ## Knowledge

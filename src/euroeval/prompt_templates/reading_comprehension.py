@@ -4,6 +4,7 @@ import typing as t
 
 from ..data_models import PromptConfig
 from ..languages import (
+    CS,
     DA,
     DE,
     EN,
@@ -29,6 +30,19 @@ if t.TYPE_CHECKING:
     from ..data_models import Language
 
 RC_TEMPLATES: dict["Language", PromptConfig] = {
+    CS: PromptConfig(
+        default_prompt_prefix="Následující texty obsahují otázky a odpovědi.",
+        default_prompt_template=(
+            "Text: {text}\nOtázka: {question}\nOdpověď maximálně 3 slovy: {label}"
+        ),
+        default_instruction_prompt=(
+            "Text: {text}\n\n"
+            "Odpovězte na následující otázku k výše uvedenému textu "
+            "maximálně 3 slovy.\n\n"
+            "Otázka: {question}"
+        ),
+        default_prompt_label_mapping=dict(),
+    ),
     DA: PromptConfig(
         default_prompt_prefix="Følgende er tekster med tilhørende spørgsmål og svar.",
         default_prompt_template="Tekst: {text}\nSpørgsmål: {question}\nSvar med maks. "

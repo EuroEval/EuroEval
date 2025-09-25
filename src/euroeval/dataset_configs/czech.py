@@ -2,7 +2,7 @@
 
 from ..data_models import DatasetConfig
 from ..languages import CS
-from ..tasks import LA, NER, SENT
+from ..tasks import LA, NER, RC, SENT
 
 ### Official datasets ###
 
@@ -35,5 +35,13 @@ PONER_CONFIG = DatasetConfig(
     pretty_name="the Czech named entity recognition dataset PONER",
     huggingface_id="EuroEval/poner-mini",
     task=NER,
+    languages=[CS],
+)
+
+SQAD_CONFIG = DatasetConfig(
+    name="sqad",
+    pretty_name="the truncated version of the Czech reading comprehension dataset SQAD",
+    huggingface_id="EuroEval/sqad-mini",
+    task=RC,
     languages=[CS],
 )
