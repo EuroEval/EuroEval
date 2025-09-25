@@ -10,6 +10,7 @@
 
 """Create the Winogrande datasets and upload them to the HF Hub."""
 
+import logging
 from collections import Counter
 
 import pandas as pd
@@ -21,8 +22,12 @@ from constants import (
     MIN_NUM_CHARS_IN_INSTRUCTION,
     MIN_NUM_CHARS_IN_OPTION,
 )
-from datasets import Dataset, DatasetDict, Split, load_dataset
+from datasets import Dataset, DatasetDict, Split, disable_progress_bars, load_dataset
 from huggingface_hub import HfApi
+
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(message)s")
+logger = logging.getLogger("create_winogrande")
+
 
 LANGUAGES = [
     "da",
@@ -44,6 +49,7 @@ LANGUAGES = [
 
 def main() -> None:
     """Create the Winogrande datasets and upload them to the HF Hub."""
+    disable_progress_bars()
     repo_id = "aialt/MuBench"
 
     for language in LANGUAGES:
@@ -59,13 +65,25 @@ def main() -> None:
         assert isinstance(train_df, pd.DataFrame)
         assert isinstance(test_df, pd.DataFrame)
 
+        # Split test set into validation and test sets
+        val_size = 128
+        val_df = test_df.sample(n=val_size, random_state=42).reset_index(drop=True)
+        test_df = test_df.drop(val_df.index.tolist()).reset_index(drop=True)
+
         train_df = prepare_dataframe(df=train_df, language=language)
+        val_df = prepare_dataframe(df=val_df, language=language)
         test_df = prepare_dataframe(df=test_df, language=language)
 
         # Collect datasets in a dataset dictionary
         dataset = DatasetDict(
             train=Dataset.from_pandas(train_df, split=Split.TRAIN),
+            val=Dataset.from_pandas(val_df, split=Split.VALIDATION),
             test=Dataset.from_pandas(test_df, split=Split.TEST),
+        )
+        logger.info(
+            f"Final sizes for the Winogrande {language} dataset: "
+            f"{len(dataset['train'])} train, {len(dataset['val'])} val, "
+            f"{len(dataset['test'])} test"
         )
 
         # Push the dataset to the Hugging Face Hub

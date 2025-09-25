@@ -126,7 +126,6 @@ WINOGRANDE_ES_CONFIG = DatasetConfig(
     huggingface_id="EuroEval/winogrande-es",
     task=COMMON_SENSE,
     languages=[ES],
-    splits=["train", "test"],
     _labels=["a", "b"],
     unofficial=True,
 )

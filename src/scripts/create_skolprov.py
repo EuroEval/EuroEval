@@ -64,6 +64,7 @@ def main() -> None:
         & (df.option_d.str.len() >= MIN_NUM_CHARS_IN_OPTION)
         & (df.option_d.str.len() <= MAX_NUM_CHARS_IN_OPTION)
     ]
+    assert isinstance(df, pd.DataFrame)
 
     # Handle option_e if it exists and is not null
     if "option_e" in df.columns:
@@ -84,6 +85,7 @@ def main() -> None:
         & ~df.option_c.apply(is_repetitive)
         & ~df.option_d.apply(is_repetitive)
     ]
+    assert isinstance(df, pd.DataFrame)
 
     # Create category from test_id and section
     df["category"] = df["test_id"] + "_" + df["section"].fillna("unknown")
@@ -130,26 +132,33 @@ def main() -> None:
 
     # Create train and test splits
     train_size = 32
-    test_size = 480
+    val_size = 32
+    test_size = 448
 
-    train_arr, test_arr = train_test_split(
+    trainval_arr, test_arr = train_test_split(
         df,
-        train_size=train_size,
+        train_size=train_size + val_size,
         test_size=test_size,
         random_state=4242,
         stratify=df.category,
     )
+    train_arr, val_arr = train_test_split(
+        trainval_arr, train_size=train_size, test_size=val_size, random_state=4242
+    )
 
     train_df = pd.DataFrame(train_arr, columns=df.columns)
+    val_df = pd.DataFrame(val_arr, columns=df.columns)
     test_df = pd.DataFrame(test_arr, columns=df.columns)
 
     # Reset the index
     train_df = train_df.reset_index(drop=True)
+    val_df = val_df.reset_index(drop=True)
     test_df = test_df.reset_index(drop=True)
 
     # Collect datasets in a dataset dictionary
     dataset = DatasetDict(
         train=Dataset.from_pandas(train_df, split=Split.TRAIN),
+        val=Dataset.from_pandas(val_df, split=Split.VALIDATION),
         test=Dataset.from_pandas(test_df, split=Split.TEST),
     )
 
