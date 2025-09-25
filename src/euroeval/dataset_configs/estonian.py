@@ -104,7 +104,7 @@ EXAM_ET_CONFIG = DatasetConfig(
 
 MMLU_ET_CONFIG = DatasetConfig(
     name="mmlu-et",
-    pretty_name="the truncated version of the Danish knowledge dataset MMLU-et, "
+    pretty_name="the truncated version of the Estonian knowledge dataset MMLU-et, "
     "translated from the English MMLU dataset",
     huggingface_id="EuroEval/mmlu-et-mini",
     task=KNOW,
