@@ -854,7 +854,8 @@ euroeval --model <model-id> --dataset hellaswag
 
 This dataset was published in [this paper](https://doi.org/10.1145/3474381). The
 original full dataset consists of 47 / 1,210 samples for training and testing, and we
-use the same splits.
+use 128 of the test samples for validation, resulting in a 47 / 128 / 1,085 split for
+training, validation and testing, respectively.
 
 Here are a few examples from the training split:
 

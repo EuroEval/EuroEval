@@ -13,6 +13,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   structured generation for that model. This was triggered by Claude models not
   supporting Literal types in JSON schemas.
 
+### Changed
+
+- Used 128 of the test samples from the Winogrande datasets for validation, as we
+  previously did not use a validation split. This is done for all languages except
+  Icelandic and Estonian, as these are manually translated and corrected splits from a
+  different source.
+
 ## [v16.3.0] - 2025-09-23
 
 ### Added
