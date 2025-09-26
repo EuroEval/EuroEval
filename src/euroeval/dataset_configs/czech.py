@@ -2,7 +2,7 @@
 
 from ..data_models import DatasetConfig
 from ..languages import CS
-from ..tasks import LA, NER, RC, SENT, SUMM
+from ..tasks import COMMON_SENSE, LA, NER, RC, SENT, SUMM
 
 ### Official datasets ###
 
@@ -51,5 +51,14 @@ CZECH_NEWS_CONFIG = DatasetConfig(
     pretty_name="the Czech news summarization dataset",
     huggingface_id="EuroEval/czech-news-mini",
     task=SUMM,
+    languages=[CS],
+)
+
+HELLASWAG_CS_CONFIG = DatasetConfig(
+    name="hellaswag-cs",
+    pretty_name="the truncated version of the Czech common-sense reasoning dataset "
+    "HellaSwag-cs, translated from the English HellaSwag dataset",
+    huggingface_id="EuroEval/hellaswag-cs-mini",
+    task=COMMON_SENSE,
     languages=[CS],
 )

@@ -547,37 +547,34 @@ euroeval --model <model-id> --dataset mmlu-lv
 
 ## Common-sense Reasoning
 
-### COPA-lv
+### HellaSwag-cs
 
-This dataset was published in [this
-paper](https://aclanthology.org/2025.resourceful-1.22/) and is a translated version of
-the English [COPA dataset](https://aclanthology.org/S12-1052/), which was created from
-scratch by the authors. The dataset was machine translated using the [Tilde Translation
-service](https://tilde.ai/machine-translation/), and the test samples were manually
-post-edited.
+This dataset is a machine translated version of the English [HellaSwag
+dataset](https://aclanthology.org/P19-1472/). The dataset was translated using
+[LINDAT Translation Service](https://lindat.mff.cuni.cz/services/translation/docs).
 
-The original full dataset consists of 214 / 57 / 132 samples, and we keep the splits
-as-is.
+The original dataset has 10,000 samples. We use a 1,024 / 256 / 2,048 split for training,
+validation and testing, respectively.
 
 Here are a few examples from the training split (which have _not_ been post-edited):
 
 ```json
 {
-  "text": "Īrnieki tika izlikti no dzīvokļa.\nIzvēles:\na. Viņi savu īri nemaksāja.\nb. Viņi sapratās ar savu saimnieku.",
+  "text": "Rybaření na ledu: Vidíme úvodní titulní obrazovku. Na sněhu a ledové rybě sedí muž a chlapec. My\nVýběr:\na. vidíme města a změny kolem nich.\nb. vidíme dole kreslenou animaci bocku.\nc. pak vidíme sport.\nd. vidíme titulní obrazovku a letadlo letí na obloze a v dálce vidíme lidi na ledu a náklaďák.",
+  "label": "d"
+}
+```
+
+```json
+{
+  "text": "Běh maratonu: Sportovci dávají rozhovory a někteří předvádějí medaile za účast. Sportovci nastupují do bílých autobusů. Autobusy\nVýběr:\na. se pohybují po silnici.\nb. odstartují z rampy.\nc. se pohybují po dráze a lidé skáčou po rampách.\nd. míjí několik sportovců sedících na zelených baldachýnech.",
   "label": "a"
 }
 ```
 
 ```json
 {
-  "text": "Svešinieks man svešvalodā kliedza.\nIzvēles:\na. ES truli blenzu uz viņu.\nb. ES apstājos, lai papļāpātu ar viņu.",
-  "label": "a"
-}
-```
-
-```json
-{
-  "text": "Pagriezu gaismas slēdzi uz augšu un uz leju.\nIzvēles:\na. Gaisma izdzisa.\nb. Gaisma mirgoja.",
+  "text": "Family Life: Jak uspořádat havajskou svatební hostinu. Vyberte tradiční havajský oděv pro nevěstu a ženicha. Havajská nevěsta tradičně nosí bílé dlouhé splývavé šaty s věncem z haku neboli prstenem z hawajských květin kolem hlavy. Havajský ženich tradičně nosí bílé kalhoty a bílou košili s pestrobarevnou šerpou kolem pasu.\nVýběr:\na. Nošení hawajského věnce při příležitosti vaší recepce může také pomoci cementovat hawajské svatební sliby. Havajské splývavé šaty jsou stále tradiční se svatebním oděvem, navzdory povaze svatby.\nb. Ženich také nosí kolem krku zelenou poštolku lei.. Vyberte hawajský oděv pro svatební hostinu.\nc. Tyto prvky spolu velmi dobře splývají. Fotografie se budou odehrávat ve velkém studiu na letišti v mělké vodě.\nd. Vyberte si neformální oděv na svatbu na pláži. Havajské svatby bývají velmi formální, takže si vyberte havajské svatební šaty s motivem kasina.",
   "label": "b"
 }
 ```
@@ -589,34 +586,34 @@ When evaluating generative models, we use the following setup (see the
 - Prefix prompt:
 
   ```
-  Tālāk seko jautājumi ar vairākām atbilžu izvēlēm (ar atbildēm).
+  Následující jsou otázky s výběrem z více možností (s odpověďmi).
   ```
 
 - Base prompt template:
 
   ```
-  Jautājums: {text}
-  Izvēles:
+  Otázka: {text}
+  Možnosti:
   a. {option_a}
   b. {option_b}
-  Atbilde: {label}
+  Odpověď: {label}
   ```
 
 - Instruction-tuned prompt template:
 
   ```
-  Jautājums: {text}
-  Izvēles:
+  Otázka: {text}
+  Možnosti:
   a. {option_a}
   b. {option_b}
 
-  Atbildiet uz iepriekšējo jautājumu, atbildot ar 'a' vai 'b', un nekas cits.
+  Odpovězte na výše uvedenou otázku pomocí 'a' nebo 'b', a nic jiného.
   ```
 
 You can evaluate this dataset directly as follows:
 
 ```bash
-euroeval --model <model-id> --dataset copa-lv
+euroeval --model <model-id> --dataset hellaswag-cs
 ```
 
 ### Unofficial: Winogrande-lv
