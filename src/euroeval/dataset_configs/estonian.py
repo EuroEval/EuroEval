@@ -94,10 +94,20 @@ SCALA_ET_CONFIG = DatasetConfig(
 
 EXAM_ET_CONFIG = DatasetConfig(
     name="exam-et",
-    pretty_name="the Estonian knowledge assessment dataset Exam-et",
+    pretty_name="the Estonian knowledge dataset Exam-et",
     huggingface_id="EuroEval/exam-et",
     task=KNOW,
     languages=[ET],
     _labels=["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o"],
+    unofficial=True,
+)
+
+MMLU_ET_CONFIG = DatasetConfig(
+    name="mmlu-et",
+    pretty_name="the truncated version of the Estonian knowledge dataset MMLU-et, "
+    "translated from the English MMLU dataset",
+    huggingface_id="EuroEval/mmlu-et-mini",
+    task=KNOW,
+    languages=[ET],
     unofficial=True,
 )

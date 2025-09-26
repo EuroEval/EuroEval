@@ -608,11 +608,8 @@ def load_model_and_tokeniser(
         ),
     )
 
-    # These are used when a timeout occurs
-    attempts_left = 5
-
     model: "PreTrainedModel | None" = None
-    while True:
+    for _ in range(num_attempts := 5):
         # Get the model class associated with the task group
         model_cls_or_none: t.Type["PreTrainedModel"] | None = get_class_by_name(
             class_name=task_group_to_class_name(task_group=task_group),
@@ -648,12 +645,7 @@ def load_model_and_tokeniser(
                 continue
             else:
                 raise InvalidModel(str(e)) from e
-        except (TimeoutError, RequestError) as e:
-            attempts_left -= 1
-            if attempts_left == 0:
-                raise InvalidModel(
-                    "The model could not be loaded after 5 attempts."
-                ) from e
+        except (TimeoutError, RequestError):
             logger.info(f"Couldn't load the model {model_id!r}. Retrying.")
             sleep(5)
             continue
@@ -671,6 +663,10 @@ def load_model_and_tokeniser(
             raise InvalidModel(
                 f"The model {model_id!r} could not be loaded. The error was {e!r}."
             ) from e
+    else:
+        raise InvalidModel(
+            f"Could not load the model {model_id!r} after {num_attempts} attempts."
+        )
 
     if isinstance(model_or_tuple, tuple):
         model = model_or_tuple[0]
@@ -1006,7 +1002,7 @@ def load_hf_model_config(
     Returns:
         The Hugging Face model configuration.
     """
-    while True:
+    for _ in range(num_attempts := 5):
         try:
             config = AutoConfig.from_pretrained(
                 model_id,
@@ -1062,6 +1058,11 @@ def load_hf_model_config(
                 f"The config for the model {model_id!r} could not be loaded. The "
                 f"error was {e!r}."
             ) from e
+    else:
+        raise InvalidModel(
+            f"Couldn't load model config for {model_id!r} after {num_attempts} "
+            "attempts."
+        )
 
 
 def setup_model_for_question_answering(model: "PreTrainedModel") -> "PreTrainedModel":

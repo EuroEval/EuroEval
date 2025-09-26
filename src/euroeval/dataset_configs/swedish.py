@@ -137,7 +137,6 @@ WINOGRANDE_SV_CONFIG = DatasetConfig(
     huggingface_id="EuroEval/winogrande-sv",
     task=COMMON_SENSE,
     languages=[SV],
-    splits=["train", "test"],
     _labels=["a", "b"],
     unofficial=True,
 )
@@ -174,6 +173,5 @@ SKOLPROV_CONFIG = DatasetConfig(
     huggingface_id="EuroEval/skolprov",
     task=KNOW,
     languages=[SV],
-    splits=["train", "test"],
     unofficial=True,
 )
