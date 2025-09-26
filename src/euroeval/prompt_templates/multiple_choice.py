@@ -4,6 +4,7 @@ import typing as t
 
 from ..data_models import PromptConfig
 from ..languages import (
+    CS,
     DA,
     DE,
     EN,
@@ -29,6 +30,17 @@ if t.TYPE_CHECKING:
 
 # TODO: Missing Faroese
 MULTIPLE_CHOICE_TEMPLATES: dict["Language", PromptConfig] = {
+    CS: PromptConfig(
+        default_prompt_prefix=(
+            "Následující jsou otázky s výběrem z více možností (s odpověďmi)."
+        ),
+        default_prompt_template="Otázka: {text}\nOdpověď: {label}",
+        default_instruction_prompt=(
+            "Otázka: {text}\n\nOdpovězte na výše uvedenou otázku "
+            "pomocí {labels_str}, a nic jiného."
+        ),
+        default_prompt_label_mapping="auto",
+    ),
     DA: PromptConfig(
         default_prompt_prefix="Følgende er multiple choice spørgsmål (med svar).",
         default_prompt_template="Spørgsmål: {text}\nSvar: {label}",
