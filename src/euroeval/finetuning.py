@@ -58,6 +58,10 @@ def finetune(
 
     Returns:
         A list of dicts containing the scores for each metric for each iteration.
+
+    Raises:
+        InvalidBenchmark:
+            If the benchmark could not be completed.
     """
     # Set the data type to use for the model weights
     using_cuda = benchmark_config.device == torch.device("cuda")
@@ -80,7 +84,7 @@ def finetune(
         model_already_initialized = idx == 0
 
         # Run a loop here to deal with automatic reduction of batch size
-        while True:
+        for _ in range(num_attempts := 10):
             # Clear GPU memory
             if not model_already_initialized:
                 try:
@@ -152,6 +156,11 @@ def finetune(
 
                 bs //= 2
                 logger.debug(f"Reduced batch size to {bs}")
+
+        else:
+            raise InvalidBenchmark(
+                f"Could not benchmark the model after {num_attempts} attempts!"
+            )
 
     return scores
 
