@@ -12,12 +12,6 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Added the Estonian translation of MMLU, `mmlu-et`, as an unofficial knowledge
   dataset.
 
-### Fixed
-
-- If a generative model consistently does not adhere to a given JSON schema, we disable
-  structured generation for that model. This was triggered by Claude models not
-  supporting Literal types in JSON schemas.
-
 ### Changed
 
 - Used 128 of the test samples from the Winogrande datasets for validation, as we
@@ -29,6 +23,14 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   affected by this change.
 - In the same vein as the above, we now use 32 samples for validation for the Lithuanian
   LT-history dataset and the Swedish Skolprov dataset.
+
+### Fixed
+
+- If a generative model consistently does not adhere to a given JSON schema, we disable
+  structured generation for that model. This was triggered by Claude models not
+  supporting Literal types in JSON schemas.
+- Removed "e" options from the Skolprov multiple-choice dataset, as this inconsistency
+  in number of options caused issues when evaluating models on it.
 
 ## [v16.3.0] - 2025-09-23
 
