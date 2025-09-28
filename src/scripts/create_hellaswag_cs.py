@@ -116,13 +116,5 @@ def main() -> None:
     dataset.push_to_hub(dataset_id, private=True)
 
 
-def is_repetitive(text: str) -> bool:
-    """Return True if the text is repetitive."""
-    if text == "":
-        return False
-    max_repetitions = max(Counter(text.split()).values())
-    return max_repetitions > MAX_REPETITIONS
-
-
 if __name__ == "__main__":
     main()
