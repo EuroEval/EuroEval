@@ -2,7 +2,7 @@
 
 from ..data_models import DatasetConfig
 from ..languages import CS
-from ..tasks import COMMON_SENSE, LA, NER, RC, SENT, SUMM
+from ..tasks import COMMON_SENSE, KNOW, LA, NER, RC, SENT, SUMM
 
 ### Official datasets ###
 
@@ -60,5 +60,13 @@ HELLASWAG_CS_CONFIG = DatasetConfig(
     "HellaSwag-cs, translated from the English HellaSwag dataset",
     huggingface_id="EuroEval/hellaswag-cs-mini",
     task=COMMON_SENSE,
+    languages=[CS],
+)
+
+UMIMETO_QA_CONFIG = DatasetConfig(
+    name="umimeto-qa",
+    pretty_name="the Czech multiple-choice dataset Umimeto-qa",
+    huggingface_id="EuroEval/umimeto-qa",
+    task=KNOW,
     languages=[CS],
 )

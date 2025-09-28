@@ -42,7 +42,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   the named entity recognition dataset PONER,
   the reading comprehension dataset SQAD,
   the summarization dataset Czech News,
-  the common-sense reasoning dataset HellaSwag-cs.
+  the common-sense reasoning dataset HellaSwag-cs, and the knowledge dataset Umimeto-qa.
 - Added support for Lithuanian 🇱🇹! This includes the sentiment classification dataset
   Lithuanian Emotions, the linguistic acceptability dataset ScaLA-lt, the reading
   comprehension dataset MultiWikiQA-lt, the named entity recognition dataset WikiANN-lt,
