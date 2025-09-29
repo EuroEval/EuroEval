@@ -1603,20 +1603,20 @@
         <span class="n">default_prompt_label_mapping</span><span class="o">=</span><span class="p">{</span>
             <span class="s2">&quot;b-per&quot;</span><span class="p">:</span> <span class="s2">&quot;osoba&quot;</span><span class="p">,</span>
             <span class="s2">&quot;i-per&quot;</span><span class="p">:</span> <span class="s2">&quot;osoba&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;b-loc&quot;</span><span class="p">:</span> <span class="s2">&quot;lokalizacja&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;i-loc&quot;</span><span class="p">:</span> <span class="s2">&quot;lokalizacja&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;b-loc&quot;</span><span class="p">:</span> <span class="s2">&quot;miejsce&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;i-loc&quot;</span><span class="p">:</span> <span class="s2">&quot;miejsce&quot;</span><span class="p">,</span>
             <span class="s2">&quot;b-org&quot;</span><span class="p">:</span> <span class="s2">&quot;organizacja&quot;</span><span class="p">,</span>
             <span class="s2">&quot;i-org&quot;</span><span class="p">:</span> <span class="s2">&quot;organizacja&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;b-misc&quot;</span><span class="p">:</span> <span class="s2">&quot;różne&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;i-misc&quot;</span><span class="p">:</span> <span class="s2">&quot;różne&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;b-misc&quot;</span><span class="p">:</span> <span class="s2">&quot;inne&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;i-misc&quot;</span><span class="p">:</span> <span class="s2">&quot;inne&quot;</span><span class="p">,</span>
         <span class="p">},</span>
-        <span class="n">default_prompt_prefix</span><span class="o">=</span><span class="s2">&quot;Poniżej znajdują się zdania i słowniki JSON z nazwanymi &quot;</span>
-        <span class="s2">&quot;jednostkami występującymi w danym zdaniu.&quot;</span><span class="p">,</span>
-        <span class="n">default_prompt_template</span><span class="o">=</span><span class="s2">&quot;Zdanie: </span><span class="si">{text}</span><span class="se">\n</span><span class="s2">Nazwane jednostki: </span><span class="si">{label}</span><span class="s2">&quot;</span><span class="p">,</span>
-        <span class="n">default_instruction_prompt</span><span class="o">=</span><span class="s2">&quot;Zdanie: </span><span class="si">{text}</span><span class="se">\n\n</span><span class="s2">Zidentyfikuj nazwane jednostki &quot;</span>
-        <span class="s2">&quot;w zdaniu. Powinieneś wypisać to jako słownik JSON z kluczami &quot;</span>
-        <span class="s2">&quot;</span><span class="si">{labels_str}</span><span class="s2">. Wartości powinny być listami nazwanych jednostek &quot;</span>
-        <span class="s2">&quot;tego typu, dokładnie tak jak pojawiają się w zdaniu.&quot;</span><span class="p">,</span>
+        <span class="n">default_prompt_prefix</span><span class="o">=</span><span class="s2">&quot;Poniżej znajdują się zdania i słowniki JSON &quot;</span>
+        <span class="s2">&quot;z jednostkami nazewniczymi, które występują w danym zdaniu.&quot;</span><span class="p">,</span>
+        <span class="n">default_prompt_template</span><span class="o">=</span><span class="s2">&quot;Zdanie: </span><span class="si">{text}</span><span class="se">\n</span><span class="s2">Jednostki nazewnicze: </span><span class="si">{label}</span><span class="s2">&quot;</span><span class="p">,</span>
+        <span class="n">default_instruction_prompt</span><span class="o">=</span><span class="s2">&quot;Zdanie: </span><span class="si">{text}</span><span class="se">\n\n</span><span class="s2">Zidentyfikuj jednostki nazewnicze &quot;</span>
+        <span class="s2">&quot;w zdaniu. Wypisz je jako słownik JSON z kluczami &quot;</span>
+        <span class="s2">&quot;</span><span class="si">{labels_str}</span><span class="s2">. Wartości odpowiadające kluczom powinny być listami jednostek nazewniczych &quot;</span>
+        <span class="s2">&quot;danego typu, dokładnie tak, jak pojawiają się w zdaniu.&quot;</span><span class="p">,</span>
     <span class="p">),</span>
     <span class="n">SV</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
         <span class="n">default_prompt_label_mapping</span><span class="o">=</span><span class="p">{</span>

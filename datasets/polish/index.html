@@ -1713,29 +1713,29 @@ total.</p>
 <p>When evaluating generative models, we use the following setup (see the
 <a href="/methodology">methodology</a> for more information on how these are used):</p>
 <ul>
-<li>Liczba przykładów few-shot: 12</li>
-<li>Prefiks promptu:</li>
+<li>Number of few-shot examples: 12</li>
+<li>Prompt prefix:</li>
 </ul>
 <div class="highlight"><pre><span></span><code>Poniżej znajdują się dokumenty i ich sentyment, który może być &#39;pozytywny&#39;, &#39;neutralny&#39; lub &#39;negatywny&#39;.
 </code></pre></div>
 <ul>
-<li>Szablon podstawowy promptu:</li>
+<li>Base prompt template:</li>
 </ul>
 <div class="highlight"><pre><span></span><code>Dokument: {text}
 Sentyment: {label}
 </code></pre></div>
 <ul>
-<li>Szablon promptu instrukcyjnego:</li>
+<li>Instruction-tuned prompt template:</li>
 </ul>
 <div class="highlight"><pre><span></span><code>Dokument: {text}
 
-Klasyfikuj sentyment w dokumencie. Odpowiedz z &#39;pozytywny&#39;, &#39;neutralny&#39; lub &#39;negatywny&#39;, i nic więcej.
+Klasyfikuj sentyment w dokumencie. Odpowiedz jednym słowem: &#39;pozytywny&#39;, &#39;neutralny&#39; lub &#39;negatywny&#39;.
 </code></pre></div>
 <ul>
 <li>Label mapping:</li>
-<li><code>positive</code> ➡️ <code>positive</code></li>
-<li><code>neutral</code> ➡️ <code>neutral</code></li>
-<li><code>negative</code> ➡️ <code>negative</code></li>
+<li><code>positive</code> ➡️ <code>pozytywny</code></li>
+<li><code>neutral</code> ➡️ <code>neutralny</code></li>
+<li><code>negative</code> ➡️ <code>negatywny</code></li>
 </ul>
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>polemo2
@@ -1743,7 +1743,8 @@ Klasyfikuj sentyment w dokumencie. Odpowiedz z &#39;pozytywny&#39;, &#39;neutral
 <h2 id="named-entity-recognition">Named Entity Recognition</h2>
 <h3 id="kpwr-ner">KPWr-NER</h3>
 <p>This dataset was published in <a href="https://aclanthology.org/L12-1574/">this paper</a> and is
-part of the KPWr (KrakówPoland Wrocław) corpus - a free Polish corpus annotated with
+part of the KPWr ("Korpus Języka Polskiego Politechniki Wrocławskiej" - "Polish Corpus of Wrocław University of Technology")
+corpus - a free Polish corpus annotated with
 various types of linguistic entities including named entities. The corpus was created to
 serve as training and testing material for Machine Learning algorithms and is released
 under a Creative Commons licence. The named entity annotations include persons,
@@ -1782,31 +1783,31 @@ for our training, validation and test splits, respectively. The train and valida
 <li>Number of few-shot examples: 8</li>
 <li>Prefix prompt:</li>
 </ul>
-<div class="highlight"><pre><span></span><code>Poniżej znajdują się zdania i słowniki JSON z nazwanymi jednostkami występującymi w danym zdaniu.
+<div class="highlight"><pre><span></span><code>Poniżej znajdują się zdania i słowniki JSON z jednostkami nazewniczymi, które występują w danym zdaniu.
 </code></pre></div>
 <ul>
 <li>Base prompt template:</li>
 </ul>
 <div class="highlight"><pre><span></span><code>Zdanie: {text}
-Nazwane jednostki: {label}
+Jednostki nazewnicze: {label}
 </code></pre></div>
 <ul>
 <li>Instruction-tuned prompt template:</li>
 </ul>
 <div class="highlight"><pre><span></span><code>Zdanie: {text}
 
-Zidentyfikuj nazwane jednostki w zdaniu. Powinieneś wypisać to jako słownik JSON z kluczami &#39;osoba&#39;, &#39;lokalizacja&#39;, &#39;organizacja&#39; i &#39;różne&#39;. Wartości powinny być listami nazwanych jednostek tego typu, dokładnie tak jak pojawiają się w zdaniu.
+Zidentyfikuj jednostki nazewnicze w zdaniu. Wypisz je jako słownik JSON z kluczami &#39;osoba&#39;, &#39;miejsce&#39;, &#39;organizacja&#39; i &#39;inne&#39;. Wartości odpowiadające kluczom powinny być listami jednostek nazewniczych danego typu, dokładnie tak, jak pojawiają się w zdaniu.
 </code></pre></div>
 <ul>
 <li>Label mapping:</li>
 <li><code>B-PER</code> ➡️ <code>osoba</code></li>
 <li><code>I-PER</code> ➡️ <code>osoba</code></li>
-<li><code>B-LOC</code> ➡️ <code>lokalizacja</code></li>
-<li><code>I-LOC</code> ➡️ <code>lokalizacja</code></li>
+<li><code>B-LOC</code> ➡️ <code>miejsce</code></li>
+<li><code>I-LOC</code> ➡️ <code>miejsce</code></li>
 <li><code>B-ORG</code> ➡️ <code>organizacja</code></li>
 <li><code>I-ORG</code> ➡️ <code>organizacja</code></li>
-<li><code>B-MISC</code> ➡️ <code>różne</code></li>
-<li><code>I-MISC</code> ➡️ <code>różne</code></li>
+<li><code>B-MISC</code> ➡️ <code>inne</code></li>
+<li><code>I-MISC</code> ➡️ <code>inne</code></li>
 </ul>
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>kpwr-ner
@@ -1845,7 +1846,7 @@ the part-of-speech tags of the words in the sentence.</p>
 <li>Number of few-shot examples: 12</li>
 <li>Prefix prompt:</li>
 </ul>
-<div class="highlight"><pre><span></span><code>Poniżej znajdują się teksty i czy są gramatycznie poprawne.
+<div class="highlight"><pre><span></span><code>Poniżej znajdują się teksty i informacja, czy są gramatycznie poprawne.
 </code></pre></div>
 <ul>
 <li>Base prompt template:</li>
@@ -1858,7 +1859,7 @@ Gramatycznie poprawny: {label}
 </ul>
 <div class="highlight"><pre><span></span><code>Tekst: {text}
 
-Określ czy tekst jest gramatycznie poprawny czy nie. Odpowiedz {labels_str}, i nic więcej.
+Określ, czy tekst jest gramatycznie poprawny. Odpowiedz używając wyłącznie {labels_str}.
 </code></pre></div>
 <ul>
 <li>Label mapping:</li>
@@ -1907,14 +1908,14 @@ odpowiedziami.
 </ul>
 <div class="highlight"><pre><span></span><code>Tekst: {text}
 Pytanie: {question}
-Odpowiedź w maksymalnie 3 słowach: {label}
+Odpowiedź z użyciem maksymalnie 3 słów: {label}
 </code></pre></div>
 <ul>
 <li>Instruction-tuned prompt template:</li>
 </ul>
 <div class="highlight"><pre><span></span><code>Tekst: {text}
 
-Odpowiedz na następujące pytanie dotyczące powyższego tekstu w maksymalnie 3 słowach.
+Odpowiedz na następujące pytanie dotyczące powyższego tekstu, używając maksymalnie 3 słów.
 
 Pytanie: {question}
 </code></pre></div>
@@ -1969,14 +1970,14 @@ odpowiedziami.
 </ul>
 <div class="highlight"><pre><span></span><code>Tekst: {text}
 Pytanie: {question}
-Odpowiedź w maksymalnie 3 słowach: {label}
+Odpowiedź z użyciem maksymalnie 3 słów: {label}
 </code></pre></div>
 <ul>
 <li>Instruction-tuned prompt template:</li>
 </ul>
 <div class="highlight"><pre><span></span><code>Tekst: {text}
 
-Odpowiedz na następujące pytanie dotyczące powyższego tekstu w maksymalnie 3 słowach.
+Odpowiedz na następujące pytanie dotyczące powyższego tekstu, używając maksymalnie 3 słów.
 
 Pytanie: {question}
 </code></pre></div>
@@ -2040,7 +2041,7 @@ b. {option_b}
 c. {option_c}
 d. {option_d}
 
-Odpowiedz na powyższe pytanie, odpowiadając &#39;a&#39;, &#39;b&#39;, &#39;c&#39; lub &#39;d&#39;, i nic więcej.
+Odpowiedz na powyższe pytanie, używając &#39;a&#39;, &#39;b&#39;, &#39;c&#39; lub &#39;d&#39; i niczego więcej.
 </code></pre></div>
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>llmzszl
@@ -2094,7 +2095,7 @@ Opcje:
 a. {option_a}
 b. {option_b}
 
-Odpowiedz na powyższe pytanie, odpowiadając &#39;a&#39; lub &#39;b&#39;, i nic więcej.
+Odpowiedz na powyższe pytanie, używając &#39;a&#39; lub &#39;b&#39; i niczego więcej.
 </code></pre></div>
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>winogrande-pl
@@ -2155,7 +2156,7 @@ b. {option_b}
 c. {option_c}
 d. {option_d}
 
-Odpowiedz na powyższe pytanie, odpowiadając &#39;a&#39;, &#39;b&#39;, &#39;c&#39; lub &#39;d&#39;, i nic więcej.
+Odpowiedz na powyższe pytanie, używając &#39;a&#39;, &#39;b&#39;, &#39;c&#39; lub &#39;d&#39; i niczego więcej.
 </code></pre></div>
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>goldenswag-pl
@@ -2194,7 +2195,7 @@ the original training set.</p>
 <li>Number of few-shot examples: 1</li>
 <li>Prefix prompt:</li>
 </ul>
-<div class="highlight"><pre><span></span><code>Poniżej znajdują się artykuły z towarzyszącymi streszczeniami.
+<div class="highlight"><pre><span></span><code>Poniżej znajdują się artykuły z towarzyszącymi im streszczeniami.
 </code></pre></div>
 <ul>
 <li>Base prompt template:</li>
