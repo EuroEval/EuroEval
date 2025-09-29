@@ -140,14 +140,14 @@ When evaluating generative models, we use the following setup (see the
 - Prefix prompt:
 
   ```text
-  Poniżej znajdują się zdania i słowniki JSON z jednostkami nazwanymi, które występują w danym zdaniu.
+  Poniżej znajdują się zdania i słowniki JSON z jednostkami nazewniczymi, które występują w danym zdaniu.
   ```
 
 - Base prompt template:
 
   ```text
   Zdanie: {text}
-  Jednostki nazwane: {label}
+  Jednostki nazewnicze: {label}
   ```
 
 - Instruction-tuned prompt template:
@@ -155,7 +155,7 @@ When evaluating generative models, we use the following setup (see the
   ```text
   Zdanie: {text}
 
-  Zidentyfikuj jednostki nazwane w zdaniu. Wypisz je jako słownik JSON z kluczami 'osoba', 'lokalizacja', 'organizacja' i 'różne'. Wartości odpowiadające kluczom powinny być listami jednostek nazwanych danego typu, dokładnie tak, jak pojawiają się w zdaniu.
+  Zidentyfikuj jednostki nazewnicze w zdaniu. Wypisz je jako słownik JSON z kluczami 'osoba', 'lokalizacja', 'organizacja' i 'różne'. Wartości odpowiadające kluczom powinny być listami jednostek nazewniczych danego typu, dokładnie tak, jak pojawiają się w zdaniu.
   ```
 
 - Label mapping:
