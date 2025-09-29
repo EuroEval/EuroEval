@@ -2593,7 +2593,18 @@
 <span class="normal">1608</span>
 <span class="normal">1609</span>
 <span class="normal">1610</span>
-<span class="normal">1611</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Generative models from an inference API, using the LiteLLM framework.&quot;&quot;&quot;</span>
+<span class="normal">1611</span>
+<span class="normal">1612</span>
+<span class="normal">1613</span>
+<span class="normal">1614</span>
+<span class="normal">1615</span>
+<span class="normal">1616</span>
+<span class="normal">1617</span>
+<span class="normal">1618</span>
+<span class="normal">1619</span>
+<span class="normal">1620</span>
+<span class="normal">1621</span>
+<span class="normal">1622</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Generative models from an inference API, using the LiteLLM framework.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">asyncio</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">c</span>
@@ -3049,7 +3060,8 @@
         <span class="n">requires_thinking_disabled_messages</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;thinking.type: Field required&quot;</span><span class="p">]</span>
         <span class="n">seed_pattern</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;does not support parameters: \[.*&#39;seed&#39;.*\]&quot;</span><span class="p">)</span>
         <span class="n">response_format_messages</span> <span class="o">=</span> <span class="p">[</span>
-            <span class="s2">&quot;got an unexpected keyword argument &#39;response_format&#39;&quot;</span>
+            <span class="s2">&quot;got an unexpected keyword argument &#39;response_format&#39;&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;the model returned empty outputs&quot;</span><span class="p">,</span>
         <span class="p">]</span>
 
         <span class="k">if</span> <span class="nb">any</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="ow">in</span> <span class="n">error_msg</span> <span class="k">for</span> <span class="n">msg</span> <span class="ow">in</span> <span class="n">stop_messages</span><span class="p">):</span>
@@ -3307,6 +3319,16 @@
                 <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">input_</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span>
             <span class="p">]</span>
         <span class="n">responses</span> <span class="o">=</span> <span class="k">await</span> <span class="n">tqdm_async</span><span class="o">.</span><span class="n">gather</span><span class="p">(</span><span class="o">*</span><span class="n">requests</span><span class="p">,</span> <span class="n">leave</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+        <span class="c1"># If the outputs are empty, convert them to exceptions</span>
+        <span class="k">if</span> <span class="nb">all</span><span class="p">(</span>
+            <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">response</span><span class="p">,</span> <span class="ne">Exception</span><span class="p">)</span>
+            <span class="ow">and</span> <span class="n">response</span><span class="o">.</span><span class="n">choices</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">message</span><span class="o">.</span><span class="n">content</span> <span class="o">==</span> <span class="s2">&quot;</span><span class="si">{}</span><span class="s2">&quot;</span>
+            <span class="k">for</span> <span class="n">response</span> <span class="ow">in</span> <span class="n">responses</span>
+        <span class="p">):</span>
+            <span class="n">responses</span> <span class="o">=</span> <span class="p">[</span><span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;The model returned empty outputs.&quot;</span><span class="p">)]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span>
+                <span class="n">responses</span>
+            <span class="p">)</span>
 
         <span class="c1"># Separate the successful responses from the failed ones</span>
         <span class="n">successes</span> <span class="o">=</span> <span class="p">[</span>

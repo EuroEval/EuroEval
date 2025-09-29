@@ -1228,7 +1228,16 @@
 <span class="normal">339</span>
 <span class="normal">340</span>
 <span class="normal">341</span>
-<span class="normal">342</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Functions related to the finetuning of models.&quot;&quot;&quot;</span>
+<span class="normal">342</span>
+<span class="normal">343</span>
+<span class="normal">344</span>
+<span class="normal">345</span>
+<span class="normal">346</span>
+<span class="normal">347</span>
+<span class="normal">348</span>
+<span class="normal">349</span>
+<span class="normal">350</span>
+<span class="normal">351</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Functions related to the finetuning of models.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
@@ -1288,6 +1297,10 @@
 
 <span class="sd">    Returns:</span>
 <span class="sd">        A list of dicts containing the scores for each metric for each iteration.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        InvalidBenchmark:</span>
+<span class="sd">            If the benchmark could not be completed.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="c1"># Set the data type to use for the model weights</span>
     <span class="n">using_cuda</span> <span class="o">=</span> <span class="n">benchmark_config</span><span class="o">.</span><span class="n">device</span> <span class="o">==</span> <span class="n">torch</span><span class="o">.</span><span class="n">device</span><span class="p">(</span><span class="s2">&quot;cuda&quot;</span><span class="p">)</span>
@@ -1310,7 +1323,7 @@
         <span class="n">model_already_initialized</span> <span class="o">=</span> <span class="n">idx</span> <span class="o">==</span> <span class="mi">0</span>
 
         <span class="c1"># Run a loop here to deal with automatic reduction of batch size</span>
-        <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_attempts</span> <span class="o">:=</span> <span class="mi">10</span><span class="p">):</span>
             <span class="c1"># Clear GPU memory</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="n">model_already_initialized</span><span class="p">:</span>
                 <span class="k">try</span><span class="p">:</span>
@@ -1382,6 +1395,11 @@
 
                 <span class="n">bs</span> <span class="o">//=</span> <span class="mi">2</span>
                 <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Reduced batch size to </span><span class="si">{</span><span class="n">bs</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">InvalidBenchmark</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Could not benchmark the model after </span><span class="si">{</span><span class="n">num_attempts</span><span class="si">}</span><span class="s2"> attempts!&quot;</span>
+            <span class="p">)</span>
 
     <span class="k">return</span> <span class="n">scores</span>
 

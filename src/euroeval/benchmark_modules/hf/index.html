@@ -2285,7 +2285,8 @@
 <span class="normal">1246</span>
 <span class="normal">1247</span>
 <span class="normal">1248</span>
-<span class="normal">1249</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Encoder models from the Hugging Face Hub.&quot;&quot;&quot;</span>
+<span class="normal">1249</span>
+<span class="normal">1250</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Encoder models from the Hugging Face Hub.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">c</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
@@ -2895,11 +2896,8 @@
         <span class="p">),</span>
     <span class="p">)</span>
 
-    <span class="c1"># These are used when a timeout occurs</span>
-    <span class="n">attempts_left</span> <span class="o">=</span> <span class="mi">5</span>
-
     <span class="n">model</span><span class="p">:</span> <span class="s2">&quot;PreTrainedModel | None&quot;</span> <span class="o">=</span> <span class="kc">None</span>
-    <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+    <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_attempts</span> <span class="o">:=</span> <span class="mi">5</span><span class="p">):</span>
         <span class="c1"># Get the model class associated with the task group</span>
         <span class="n">model_cls_or_none</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Type</span><span class="p">[</span><span class="s2">&quot;PreTrainedModel&quot;</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">get_class_by_name</span><span class="p">(</span>
             <span class="n">class_name</span><span class="o">=</span><span class="n">task_group_to_class_name</span><span class="p">(</span><span class="n">task_group</span><span class="o">=</span><span class="n">task_group</span><span class="p">),</span>
@@ -2935,12 +2933,7 @@
                 <span class="k">continue</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="n">InvalidModel</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">))</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
-        <span class="k">except</span> <span class="p">(</span><span class="ne">TimeoutError</span><span class="p">,</span> <span class="n">RequestError</span><span class="p">)</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-            <span class="n">attempts_left</span> <span class="o">-=</span> <span class="mi">1</span>
-            <span class="k">if</span> <span class="n">attempts_left</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-                <span class="k">raise</span> <span class="n">InvalidModel</span><span class="p">(</span>
-                    <span class="s2">&quot;The model could not be loaded after 5 attempts.&quot;</span>
-                <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
+        <span class="k">except</span> <span class="p">(</span><span class="ne">TimeoutError</span><span class="p">,</span> <span class="n">RequestError</span><span class="p">):</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Couldn&#39;t load the model </span><span class="si">{</span><span class="n">model_id</span><span class="si">!r}</span><span class="s2">. Retrying.&quot;</span><span class="p">)</span>
             <span class="n">sleep</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span>
             <span class="k">continue</span>
@@ -2958,6 +2951,10 @@
             <span class="k">raise</span> <span class="n">InvalidModel</span><span class="p">(</span>
                 <span class="sa">f</span><span class="s2">&quot;The model </span><span class="si">{</span><span class="n">model_id</span><span class="si">!r}</span><span class="s2"> could not be loaded. The error was </span><span class="si">{</span><span class="n">e</span><span class="si">!r}</span><span class="s2">.&quot;</span>
             <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">InvalidModel</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;Could not load the model </span><span class="si">{</span><span class="n">model_id</span><span class="si">!r}</span><span class="s2"> after </span><span class="si">{</span><span class="n">num_attempts</span><span class="si">}</span><span class="s2"> attempts.&quot;</span>
+        <span class="p">)</span>
 
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">model_or_tuple</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">):</span>
         <span class="n">model</span> <span class="o">=</span> <span class="n">model_or_tuple</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
@@ -3293,7 +3290,7 @@
 <span class="sd">    Returns:</span>
 <span class="sd">        The Hugging Face model configuration.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+    <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_attempts</span> <span class="o">:=</span> <span class="mi">5</span><span class="p">):</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="n">config</span> <span class="o">=</span> <span class="n">AutoConfig</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span>
                 <span class="n">model_id</span><span class="p">,</span>
@@ -3349,6 +3346,11 @@
                 <span class="sa">f</span><span class="s2">&quot;The config for the model </span><span class="si">{</span><span class="n">model_id</span><span class="si">!r}</span><span class="s2"> could not be loaded. The &quot;</span>
                 <span class="sa">f</span><span class="s2">&quot;error was </span><span class="si">{</span><span class="n">e</span><span class="si">!r}</span><span class="s2">.&quot;</span>
             <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">InvalidModel</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;Couldn&#39;t load model config for </span><span class="si">{</span><span class="n">model_id</span><span class="si">!r}</span><span class="s2"> after </span><span class="si">{</span><span class="n">num_attempts</span><span class="si">}</span><span class="s2"> &quot;</span>
+            <span class="s2">&quot;attempts.&quot;</span>
+        <span class="p">)</span>
 
 <div class="mkapi-source-link" id="euroeval.benchmark_modules.hf.setup_model_for_question_answering"><a href="../../../../api/euroeval/benchmark_modules/hf/#euroeval.benchmark_modules.hf.setup_model_for_question_answering" title="Go to docs">[docs]</a></div>
 <span class="k">def</span><span class="w"> </span><span class="nf">setup_model_for_question_answering</span><span class="p">(</span><span class="n">model</span><span class="p">:</span> <span class="s2">&quot;PreTrainedModel&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;PreTrainedModel&quot;</span><span class="p">:</span>

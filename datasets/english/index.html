@@ -2407,7 +2407,8 @@ Answer the above question by replying with &#39;a&#39;, &#39;b&#39;, &#39;c&#39;
 <h3 id="unofficial-winogrande">Unofficial: Winogrande</h3>
 <p>This dataset was published in <a href="https://doi.org/10.1145/3474381">this paper</a>. The
 original full dataset consists of 47 / 1,210 samples for training and testing, and we
-use the same splits.</p>
+use 128 of the test samples for validation, resulting in a 47 / 128 / 1,085 split for
+training, validation and testing, respectively.</p>
 <p>Here are a few examples from the training split:</p>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Elena would grab their inventory in the back of the store for Megan to sell each time because _ was a businessperson. What does the blank _ refer to?\nChoices:\na. Elena\nb. Megan&quot;</span><span class="p">,</span>

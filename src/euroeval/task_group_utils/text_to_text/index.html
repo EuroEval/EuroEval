@@ -1006,7 +1006,16 @@
 <span class="normal">135</span>
 <span class="normal">136</span>
 <span class="normal">137</span>
-<span class="normal">138</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Utility functions related to the text-to-text task group.&quot;&quot;&quot;</span>
+<span class="normal">138</span>
+<span class="normal">139</span>
+<span class="normal">140</span>
+<span class="normal">141</span>
+<span class="normal">142</span>
+<span class="normal">143</span>
+<span class="normal">144</span>
+<span class="normal">145</span>
+<span class="normal">146</span>
+<span class="normal">147</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Utility functions related to the text-to-text task group.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">t</span>
@@ -1052,6 +1061,10 @@
 <span class="sd">    Returns:</span>
 <span class="sd">        A dictionary with the names of the metrics as keys and the metric values as</span>
 <span class="sd">        values.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        InvalidBenchmark:</span>
+<span class="sd">            If the metric computation fails.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">model_outputs</span><span class="p">,</span> <span class="n">labels</span> <span class="o">=</span> <span class="n">model_outputs_and_labels</span>
 
@@ -1080,7 +1093,7 @@
         <span class="p">):</span>
             <span class="n">metric</span><span class="o">.</span><span class="n">compute_kwargs</span><span class="p">[</span><span class="s2">&quot;device&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">benchmark_config</span><span class="o">.</span><span class="n">device</span><span class="o">.</span><span class="n">type</span>
 
-        <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_attempts</span> <span class="o">:=</span> <span class="mi">5</span><span class="p">):</span>
             <span class="k">try</span><span class="p">:</span>
                 <span class="n">score</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">metric</span><span class="p">(</span>
                     <span class="n">predictions</span><span class="o">=</span><span class="n">predictions</span><span class="p">,</span>
@@ -1119,6 +1132,11 @@
                             <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">metric</span><span class="o">.</span><span class="n">pretty_name</span><span class="si">}</span><span class="s2"> to free up memory.&quot;</span>
                         <span class="p">)</span>
                         <span class="nb">delattr</span><span class="p">(</span><span class="n">metric</span><span class="p">,</span> <span class="n">attribute</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">InvalidBenchmark</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Could not compute the metric </span><span class="si">{</span><span class="n">metric</span><span class="o">.</span><span class="n">pretty_name</span><span class="si">}</span><span class="s2"> after &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">num_attempts</span><span class="si">}</span><span class="s2"> attempts due to out of memory errors.&quot;</span>
+            <span class="p">)</span>
 
         <span class="c1"># The metric returns None if we are running on multi-GPU and the current</span>
         <span class="c1"># process is not the main process</span>

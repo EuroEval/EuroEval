@@ -2100,7 +2100,8 @@ Atbildiet uz iepriekšējo jautājumu, atbildot ar &#39;a&#39; vai &#39;b&#39;, 
 and is a translated and filtered version of the English <a href="https://doi.org/10.1145/3474381">Winogrande
 dataset</a>.</p>
 <p>The original full dataset consists of 47 / 1,210 samples for training and testing, and
-we use the same splits.</p>
+we use 128 of the test samples for validation, resulting in a 47 / 128 / 1,085 split for
+training, validation and testing, respectively.</p>
 <p>Here are a few examples from the training split:</p>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Pērkot māju, Patrīcijai nav tik daudz naudas, ko tērēt kā Tanjai, tāpēc _ nopērk vienas guļamistabas māju. Ko norāda tukšums _?\nIzvēles:\na. Opcija A: Patrīcija\nb. Opcija B: Tanja&quot;</span><span class="p">,</span>
