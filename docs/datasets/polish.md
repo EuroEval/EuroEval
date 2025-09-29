@@ -90,7 +90,8 @@ euroeval --model <model-id> --dataset polemo2
 ### KPWr-NER
 
 This dataset was published in [this paper](https://aclanthology.org/L12-1574/) and is
-part of the KPWr (KrakówPoland Wrocław) corpus - a free Polish corpus annotated with
+part of the KPWr ("Korpus Języka Polskiego Politechniki Wrocławskiej" - "Polish Corpus of Wrocław University of Technology")
+corpus - a free Polish corpus annotated with
 various types of linguistic entities including named entities. The corpus was created to
 serve as training and testing material for Machine Learning algorithms and is released
 under a Creative Commons licence. The named entity annotations include persons,
@@ -139,14 +140,14 @@ When evaluating generative models, we use the following setup (see the
 - Prefix prompt:
 
   ```text
-  Poniżej znajdują się zdania i słowniki JSON z nazwanymi jednostkami występującymi w danym zdaniu.
+  Poniżej znajdują się zdania i słowniki JSON z jednostkami nazwanymi, które występują w danym zdaniu.
   ```
 
 - Base prompt template:
 
   ```text
   Zdanie: {text}
-  Nazwane jednostki: {label}
+  Jednostki nazwane: {label}
   ```
 
 - Instruction-tuned prompt template:
@@ -154,7 +155,7 @@ When evaluating generative models, we use the following setup (see the
   ```text
   Zdanie: {text}
 
-  Zidentyfikuj nazwane jednostki w zdaniu. Powinieneś wypisać to jako słownik JSON z kluczami 'osoba', 'lokalizacja', 'organizacja' i 'różne'. Wartości powinny być listami nazwanych jednostek tego typu, dokładnie tak jak pojawiają się w zdaniu.
+  Zidentyfikuj jednostki nazwane w zdaniu. Wypisz je jako słownik JSON z kluczami 'osoba', 'lokalizacja', 'organizacja' i 'różne'. Wartości odpowiadające kluczom powinny być listami jednostek nazwanych danego typu, dokładnie tak, jak pojawiają się w zdaniu.
   ```
 
 - Label mapping:

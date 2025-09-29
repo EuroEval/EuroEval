@@ -368,13 +368,13 @@ NER_TEMPLATES: dict["Language", PromptConfig] = {
             "b-misc": "różne",
             "i-misc": "różne",
         },
-        default_prompt_prefix="Poniżej znajdują się zdania i słowniki JSON z nazwanymi "
-        "jednostkami występującymi w danym zdaniu.",
-        default_prompt_template="Zdanie: {text}\nNazwane jednostki: {label}",
-        default_instruction_prompt="Zdanie: {text}\n\nZidentyfikuj nazwane jednostki "
-        "w zdaniu. Powinieneś wypisać to jako słownik JSON z kluczami "
-        "{labels_str}. Wartości powinny być listami nazwanych jednostek "
-        "tego typu, dokładnie tak jak pojawiają się w zdaniu.",
+        default_prompt_prefix="Poniżej znajdują się zdania i słowniki JSON "
+        "z jednostkami nazwanymi, które występują w danym zdaniu.",
+        default_prompt_template="Zdanie: {text}\nJednostki nazwane: {label}",
+        default_instruction_prompt="Zdanie: {text}\n\nZidentyfikuj jednostki nazwane "
+        "w zdaniu. Wypisz je jako słownik JSON z kluczami "
+        "{labels_str}. Wartości odpowiadające kluczom powinny być listami jednostek nazwanych "
+        "danego typu, dokładnie tak, jak pojawiają się w zdaniu.",
     ),
     SV: PromptConfig(
         default_prompt_label_mapping={
