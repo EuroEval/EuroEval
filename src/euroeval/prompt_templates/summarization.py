@@ -142,7 +142,7 @@ SUMM_TEMPLATES: dict["Language", PromptConfig] = {
     ),
     PL: PromptConfig(
         default_prompt_prefix="Poniżej znajdują się artykuły z towarzyszącymi "
-        "streszczeniami.",
+        "im streszczeniami.",
         default_prompt_template="Artykuł: {text}\nStreszczenie: {target_text}",
         default_instruction_prompt="Artykuł: {text}\n\nNapisz streszczenie "
         "powyższego artykułu.",

@@ -674,7 +674,7 @@ When evaluating generative models, we use the following setup (see the
 - Prefix prompt:
 
   ```text
-  Poniżej znajdują się artykuły z towarzyszącymi streszczeniami.
+  Poniżej znajdują się artykuły z towarzyszącymi im streszczeniami.
   ```
 
 - Base prompt template:
