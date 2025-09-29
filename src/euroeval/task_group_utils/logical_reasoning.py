@@ -85,9 +85,9 @@ def compute_metrics(
         compare_all_predictions_and_labels(predictions=predictions,
                                            labels=labels)
 
-    return dict(puzzle_scores=puzzle_scores,
-                cell_scores=cell_scores,
-                best_permuted_cell_scores=best_permuted_cell_scores)
+    return dict(puzzle_level_accuracy=puzzle_scores,
+                cell_wise_accuracy=cell_scores,
+                best_permuted_cell_wise_accuracy=best_permuted_cell_scores)
 
 def compare_all_predictions_and_labels(predictions: list[dict[str,list[str]]],
                                        labels: list[dict[str,list[str]]],
