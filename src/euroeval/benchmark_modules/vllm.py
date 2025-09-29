@@ -15,9 +15,9 @@ import torch
 from huggingface_hub import snapshot_download
 from pydantic import conlist, create_model
 from tqdm.auto import tqdm
-from transformers import MistralCommonTokenizer
 from transformers.models.auto.configuration_auto import AutoConfig
 from transformers.models.auto.tokenization_auto import AutoTokenizer
+from transformers.tokenization_mistral_common import MistralCommonTokenizer
 from urllib3.exceptions import RequestError
 
 from ..constants import (

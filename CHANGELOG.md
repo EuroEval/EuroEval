@@ -6,13 +6,35 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
-
 ### Added
 
+- Added the Estonian translation of MMLU, `mmlu-et`, as an unofficial knowledge
+  dataset.
 - Added the Danish zebra puzzle dataset
   [zebra_puzzles](https://huggingface.co/datasets/alexandrainst/zebra_puzzles). The split
   is given by 128 / 1,024 samples for train / test, respectively. It is marked as
   `unofficial` for now. This was contributed by [@sofiehb](https://github.com/sofiehb) ✨
+
+
+### Changed
+
+- Used 128 of the test samples from the Winogrande datasets for validation, as we
+  previously did not use a validation split. This is done for all languages except
+  Icelandic and Estonian, as these are manually translated and corrected splits from a
+  different source. Most of these are unofficial datasets and thus won't affect the
+  leaderboard rankings. The only languages for which these are official are Lithuanian
+  and Polish, which do not have official leaderboards yet - so no leaderboards are
+  affected by this change.
+- In the same vein as the above, we now use 32 samples for validation for the Lithuanian
+  LT-history dataset and the Swedish Skolprov dataset.
+
+### Fixed
+
+- If a generative model consistently does not adhere to a given JSON schema, we disable
+  structured generation for that model. This was triggered by Claude models not
+  supporting Literal types in JSON schemas.
+- Removed "e" options from the Skolprov multiple-choice dataset, as this inconsistency
+  in number of options caused issues when evaluating models on it.
 
 ## [v16.3.0] - 2025-09-23
 

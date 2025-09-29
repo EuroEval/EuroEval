@@ -25,13 +25,15 @@ from constants import (
 )
 from datasets import Dataset, DatasetDict, Split
 from huggingface_hub import HfApi
-from sklearn.model_selection import train_test_split
 
 
 def main() -> None:
     """Create the Lithuanian History knowledge dataset and upload it to the HF Hub."""
     # Download the JSON data from GitHub
-    url = "https://raw.githubusercontent.com/OpenBabylon/NoDaLiDa2025-LT-History-Eval/refs/heads/main/lit_data.json"
+    url = (
+        "https://raw.githubusercontent.com/OpenBabylon/NoDaLiDa2025-LT-History-Eval"
+        "/refs/heads/main/lit_data.json"
+    )
     response = requests.get(url)
     response.raise_for_status()
     data = response.json()
@@ -112,24 +114,29 @@ def main() -> None:
 
     # Keep only the required columns for EuroEval format
     df = df[["text", "label"]]
+    assert isinstance(df, pd.DataFrame)
 
     # Remove duplicates
     df.drop_duplicates(inplace=True)
     df.reset_index(drop=True, inplace=True)
 
     # Create train and test splits
-    train_size = 47
-    test_arr, train_arr = train_test_split(df, test_size=train_size, random_state=4242)
-    test_df = pd.DataFrame(test_arr, columns=df.columns)
-    train_df = pd.DataFrame(train_arr, columns=df.columns)
+    train_size = 64
+    val_size = 32
+    train_df = df.sample(n=train_size, random_state=42)
+    df.drop(index=train_df.index.tolist(), inplace=True)
+    val_df = df.sample(n=val_size, random_state=42)
+    test_df = df.drop(index=val_df.index.tolist())
 
     # Reset the index
     train_df = train_df.reset_index(drop=True)
+    val_df = val_df.reset_index(drop=True)
     test_df = test_df.reset_index(drop=True)
 
     # Collect datasets in a dataset dictionary (no train split)
     dataset = DatasetDict(
         train=Dataset.from_pandas(train_df, split=Split.TRAIN),
+        val=Dataset.from_pandas(val_df, split=Split.VALIDATION),
         test=Dataset.from_pandas(test_df, split=Split.TEST),
     )
 

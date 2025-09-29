@@ -313,10 +313,9 @@ This dataset was published in [this paper](https://aclanthology.org/2025.nbreal-
 and consists of Lithuanian national and general history questions and answers.
 
 The dataset originally contains 593 samples, which are reduced to 559 after filtering.
-Due to the limited number of examples, there is no training split; instead, the data is
-divided into 47 samples for validation and 512 for testing.
+We use a 64 / 32 / 463 split for training, validation and testing, respectively.
 
-Here are a few examples from the validation split:
+Here are a few examples from the training split:
 
 ```json
 {
@@ -389,7 +388,8 @@ and is a translated and filtered version of the English [Winogrande
 dataset](https://doi.org/10.1145/3474381).
 
 The original full dataset consists of 47 / 1,210 samples for training and testing, and
-we use the same splits.
+we use 128 of the test samples for validation, resulting in a 47 / 128 / 1,085 split for
+training, validation and testing, respectively.
 
 Here are a few examples from the training split:
 

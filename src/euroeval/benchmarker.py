@@ -872,6 +872,14 @@ class Benchmarker:
 
         Returns:
             The benchmark result, or an error if the benchmark was unsuccessful.
+
+        Raises:
+            RuntimeError:
+                If the MPS fallback is not enabled when required.
+            InvalidBenchmark:
+                If the benchmark was unsuccessful.
+            InvalidModel:
+                If the model is invalid.
         """
         if model is None:
             initial_logging(
@@ -880,7 +888,7 @@ class Benchmarker:
                 benchmark_config=benchmark_config,
             )
 
-        while True:
+        for _ in range(num_attempts := 5):
             try:
                 # Set random seeds to enforce reproducibility of the randomly
                 # initialised weights
@@ -992,6 +1000,11 @@ class Benchmarker:
                 elif benchmark_config.raise_errors:
                     raise e
                 return e
+        else:
+            return InvalidBenchmark(
+                f"Failed to benchmark model {model_config.model_id!r} on dataset "
+                f"{dataset_config.name!r} after {num_attempts} attempts."
+            )
 
     def __call__(self, *args: t.Any, **kwds: t.Any) -> t.Any:  # noqa: ANN401
         """Alias for `self.benchmark()`."""
