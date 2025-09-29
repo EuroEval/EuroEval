@@ -71,11 +71,11 @@ LA_TEMPLATES: dict["Language", PromptConfig] = {
     ),
     PL: PromptConfig(
         default_prompt_label_mapping=dict(correct="tak", incorrect="nie"),
-        default_prompt_prefix="Poniżej znajdują się teksty i czy są "
+        default_prompt_prefix="Poniżej znajdują się teksty i informacja, czy są "
         "gramatycznie poprawne.",
         default_prompt_template="Tekst: {text}\nGramatycznie poprawny: {label}",
-        default_instruction_prompt="Tekst: {text}\n\nOkreśl czy tekst jest "
-        "gramatycznie poprawny czy nie. Odpowiedz {labels_str}, i nic więcej.",
+        default_instruction_prompt="Tekst: {text}\n\nOkreśl, czy tekst jest "
+        "gramatycznie poprawny. Odpowiedz używając wyłącznie {labels_str}.",
     ),
     PT: PromptConfig(
         default_prompt_label_mapping=dict(correct="sim", incorrect="não"),

@@ -220,7 +220,7 @@ When evaluating generative models, we use the following setup (see the
 - Prefix prompt:
 
   ```text
-  Poniżej znajdują się teksty i czy są gramatycznie poprawne.
+  Poniżej znajdują się teksty i informacja, czy są gramatycznie poprawne.
   ```
 
 - Base prompt template:
@@ -235,7 +235,7 @@ When evaluating generative models, we use the following setup (see the
   ```text
   Tekst: {text}
 
-  Określ czy tekst jest gramatycznie poprawny czy nie. Odpowiedz {labels_str}, i nic więcej.
+  Określ, czy tekst jest gramatycznie poprawny. Odpowiedz używając wyłącznie {labels_str}.
   ```
 
 - Label mapping:
