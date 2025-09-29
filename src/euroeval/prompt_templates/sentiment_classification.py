@@ -91,7 +91,7 @@ SENT_TEMPLATES: dict["Language", PromptConfig] = {
         default_prompt_template="Dokument: {text}\nSentyment: {label}",
         default_instruction_prompt=(
             "Dokument: {text}\n\nKlasyfikuj sentyment w dokumencie. "
-            "Odpowiedz z {labels_str}, i nic więcej."
+            "Odpowiedz jednym słowem: {labels_str}."
         ),
     ),
     PT: PromptConfig(

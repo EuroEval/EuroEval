@@ -52,32 +52,32 @@ Here are a few examples from the training split:
 When evaluating generative models, we use the following setup (see the
 [methodology](/methodology) for more information on how these are used):
 
-- Liczba przykładów few-shot: 12
-- Prefiks promptu:
+- Number of few-shot examples: 12
+- Prompt prefix:
 
   ```text
   Poniżej znajdują się dokumenty i ich sentyment, który może być 'pozytywny', 'neutralny' lub 'negatywny'.
   ```
 
-- Szablon podstawowy promptu:
+- Base prompt template:
 
   ```text
   Dokument: {text}
   Sentyment: {label}
   ```
 
-- Szablon promptu instrukcyjnego:
+- Instruction-tuned prompt template:
 
   ```text
   Dokument: {text}
 
-  Klasyfikuj sentyment w dokumencie. Odpowiedz z 'pozytywny', 'neutralny' lub 'negatywny', i nic więcej.
+  Klasyfikuj sentyment w dokumencie. Odpowiedz jednym słowem: 'pozytywny', 'neutralny' lub 'negatywny'.
   ```
 
 - Label mapping:
-  - `positive` ➡️ `positive`
-  - `neutral` ➡️ `neutral`
-  - `negative` ➡️ `negative`
+  - `positive` ➡️ `pozytywny`
+  - `neutral` ➡️ `neutralny`
+  - `negative` ➡️ `negatywny`
 
 You can evaluate this dataset directly as follows:
 
