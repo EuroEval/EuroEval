@@ -300,7 +300,7 @@ When evaluating generative models, we use the following setup (see the
   ```text
   Tekst: {text}
   Pytanie: {question}
-  Odpowiedź w maksymalnie 3 słowach: {label}
+  Odpowiedź z użyciem maksymalnie 3 słów: {label}
   ```
 
 - Instruction-tuned prompt template:
@@ -308,7 +308,7 @@ When evaluating generative models, we use the following setup (see the
   ```text
   Tekst: {text}
 
-  Odpowiedz na następujące pytanie dotyczące powyższego tekstu w maksymalnie 3 słowach.
+  Odpowiedz na następujące pytanie dotyczące powyższego tekstu, używając maksymalnie 3 słów.
 
   Pytanie: {question}
   ```

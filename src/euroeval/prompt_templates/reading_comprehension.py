@@ -172,10 +172,10 @@ RC_TEMPLATES: dict["Language", PromptConfig] = {
         default_prompt_prefix=(
             "Poniżej znajdują się teksty z towarzyszącymi pytaniami i odpowiedziami."
         ),
-        default_prompt_template="Tekst: {text}\nPytanie: {question}\nOdpowiedź w "
-        "maksymalnie 3 słowach: {label}",
+        default_prompt_template="Tekst: {text}\nPytanie: {question}\nOdpowiedź z użyciem "
+        "maksymalnie 3 słów: {label}",
         default_instruction_prompt="Tekst: {text}\n\nOdpowiedz na następujące pytanie "
-        "dotyczące powyższego tekstu w maksymalnie 3 słowach.\n\nPytanie: {question}",
+        "dotyczące powyższego tekstu, używając maksymalnie 3 słów.\n\nPytanie: {question}",
         default_prompt_label_mapping=dict(),
     ),
     PT: PromptConfig(
