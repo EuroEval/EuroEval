@@ -48,12 +48,12 @@ class PuzzleMetric(Metric):
 
 
 puzzle_level_accuracy_metric = PuzzleMetric(name="puzzle_level_accuracy",
-                                     pretty_name="Puzzle Level Accuracy")
+                                     pretty_name="Puzzle-level Accuracy")
 
 cell_wise_accuracy_metric = PuzzleMetric(name="cell_wise_accuracy",
-                                  pretty_name="Cell Wise Accuracy")
+                                  pretty_name="Cell-wise Accuracy")
 
 best_permuted_cell_wise_accuracy_metric = PuzzleMetric(
     name="best_permuted_cell_wise_accuracy",
-    pretty_name="Best Permuted Cell Wise Accuracy"
+    pretty_name="Best Permuted Cell-wise Accuracy"
 )
