@@ -198,6 +198,8 @@ def compute_cell_score(
 
     Returns:
         The cell score as a float.
+
+    # TODO: Make sure the order of attributes in each object does not matter
     """
     # Compare each cell
     cell_score: float = 0.0

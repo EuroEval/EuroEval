@@ -14,6 +14,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   [zebra_puzzles](https://huggingface.co/datasets/alexandrainst/zebra_puzzles). The split
   is given by 128 / 1,024 samples for train / test, respectively. It is marked as
   `unofficial` for now. This was contributed by [@sofiehb](https://github.com/sofiehb) ✨
+- Drafted the logical reasoning task. This was contributed by [@sofiehb]
+  (https://github.com/sofiehb) ✨
 
 
 ### Changed
