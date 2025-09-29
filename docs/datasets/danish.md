@@ -1049,6 +1049,7 @@ You can evaluate this dataset directly as follows:
 ```bash
 euroeval --model <model-id> --dataset winogrande-da
 ```
+## Logical Reasoning
 
 ### Unofficial: zebra-puzzle-da_2x3
 
@@ -1063,8 +1064,8 @@ Here are a few examples from the training split:
 {"introduction": "En række huse er nummereret fra 1 til 2 fra venstre mod højre.\n\nI hvert hus bor en person med en unik egenskab i hver af de følgende kategorier:\n\nJobs: lærer og minister.\nHobbyer: brætspil og maleri.\nYndlingsfrugter: appelsin og skovjordbær.\n\nDerudover ved vi følgende:\n\n",
 "clues": ["1. Ministeren sejler ofte.", "2. Personen der elsker fysik bor ikke i hus nummer 2.", "3. Læreren er gode venner med personen der synes den næstbedste frugt er mango.", "4. Personen der spiller brætspil bor til højre for personen der elsker appelsiner.", "5. Personen med en tatovering bor ikke i hus nummer 2.", "6. Personen med et marsvin bor i hus nummer 1.", "7. Ministeren bor ikke i hus nummer 1."],
 "format_example": "Følgende er et eksempel på svarformatet:\n\n{\n    'object_1': [\n        'jobs_1',\n        'hobbyer_1',\n        'yndlingsfrugter_1'\n    ],\n    'object_2': [\n        'jobs_2',\n        'hobbyer_2',\n        'yndlingsfrugter_2'\n    ]\n}",
-"label": {"object_1": ['lærer', 'maleri', 'appelsin'],
-          "object_2": ['minister', 'brætspil', 'skovjordbær']},
+"label": {"object_1": ["lærer", "maleri", "appelsin"],
+          "object_2": ["minister", "brætspil", "skovjordbær"]},
 }
 ```
 
@@ -1072,8 +1073,8 @@ Here are a few examples from the training split:
 {"introduction": "En række huse er nummereret fra 1 til 2 fra venstre mod højre.\n\nI hvert hus bor en person med en unik egenskab i hver af de følgende kategorier:\n\nNationaliteter: Storbritannien og Sverige.\nKæledyr: hund og vandrende pind.\nYndlingsboggenrer: gyser og kærlighedsromaner.\n\nDerudover ved vi følgende:\n\n",
 "clues": ["1. Ejeren af en vandrende pind læser gysere.", "2. Personen med en tatovering bor ikke i hus nummer 1.", "3. Briten har en hund.", "4. Personen med en cykel har en kandidatgrad i matematik.", "5. Gyserlæseren bor til venstre for personen der læser kærlighedsromaner.", "6. Personen der synes den næstbedste frugt er mango bor ikke i hus nummer 2.", "7. Alle husene har store vinduer.", "8. Personen der elsker fysik bor ikke i hus nummer 1."],
 "format_example": "Følgende er et eksempel på svarformatet:\n\n{\n    'object_1': [\n        'nationaliteter_1',\n        'kæledyr_1',\n        'yndlingsboggenrer_1'\n    ],\n    'object_2': [\n       'nationaliteter_2',\n        'kæledyr_2',\n        'yndlingsboggenrer_2'\n    ]\n}",
-"label": {"object_1": ['Sverige', 'vandrende pind', 'gyser'],
-          "object_2": ['Storbritannien', 'hund', 'kærlighedsromaner']},
+"label": {"object_1": ["Sverige", "vandrende pind", "gyser"],
+          "object_2": ["Storbritannien", "hund", "kærlighedsromaner"]},
 }
 ```
 
@@ -1081,8 +1082,8 @@ Here are a few examples from the training split:
 {"introduction": "En række huse er nummereret fra 1 til 2 fra venstre mod højre.\n\nI hvert hus bor en person med en unik egenskab i hver af de følgende kategorier:\n\nKæledyr: kat og zebra.\nDrikke: kaffe og sodavand.\nYndlingsfrugter: banan og jordbær.\n\nDerudover ved vi følgende:\n\n",
 "clues": ["1. Personen der synes den næstbedste frugt er mango har et kæledyr som er gammelt for sin art.", "2. Sild er fisk.", "3. Personen der ikke ejer en kaktus bor ikke i hus nummer 2.", "4. Sodavandsdrikkeren bor til højre for personen der elsker bananer.", "5. Katteejeren bor ved siden af personen med en cykel.", "6. Sodavandsdrikkeren ved at solsystemet bevæger sig med en fart på ca. 200 km/s rundt om galaksens centrum.", "7. Zebraejeren bor til venstre for personen der elsker jordbær."],
 "format_example": "Følgende er et eksempel på svarformatet:\n\n{\n    'object_1': [\n        'kæledyr_1',\n        'drikke_1',\n        'yndlingsfrugter_1'\n    ],\n    'object_2': [\n        'kæledyr_2',\n        'drikke_2',\n        'yndlingsfrugter_2'\n    ]\n}",
-"label": {"object_1": ['zebra', 'kaffe', 'banan'],
-          "object_2": ['kat', 'sodavand', 'jordbær']},
+"label": {"object_1": ["zebra", "kaffe", "banan"],
+          "object_2": ["kat", "sodavand", "jordbær"]},
 }
 ```
 
@@ -1093,7 +1094,7 @@ When evaluating generative models, we use the following setup (see the
 - Number of few-shot examples: 5
 - Prefix prompt:
   ```
-  Følgende er en række gåder (med svar).
+  Følgende er en række gåder med svar.
   ```
 - Base prompt template:
   ```
@@ -1183,7 +1184,7 @@ When evaluating generative models, we use the following setup (see the
 - Number of few-shot examples: 5
 - Prefix prompt:
   ```
-  Følgende er en række gåder (med svar).
+  Følgende er en række gåder med svar.
   ```
 - Base prompt template:
   ```
