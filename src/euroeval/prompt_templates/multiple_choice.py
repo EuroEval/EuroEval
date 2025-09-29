@@ -155,7 +155,7 @@ MULTIPLE_CHOICE_TEMPLATES: dict["Language", PromptConfig] = {
         "(z odpowiedziami).",
         default_prompt_template="Pytanie: {text}\nOdpowiedź: {label}",
         default_instruction_prompt="Pytanie: {text}\n\nOdpowiedz na powyższe pytanie, "
-        "odpowiadając {labels_str}, i nic więcej.",
+        "używając {labels_str} i niczego więcej.",
         default_prompt_label_mapping="auto",
     ),
     SV: PromptConfig(
