@@ -90,8 +90,8 @@ euroeval --model <model-id> --dataset polemo2
 ### KPWr-NER
 
 This dataset was published in [this paper](https://aclanthology.org/L12-1574/) and is
-part of the KPWr ("Korpus Języka Polskiego Politechniki Wrocławskiej" - "Polish Corpus of Wrocław University of Technology")
-corpus - a free Polish corpus annotated with
+part of the KPWr ("Korpus Języka Polskiego Politechniki Wrocławskiej" - "Polish Corpus
+of Wrocław University of Technology") corpus - a free Polish corpus annotated with
 various types of linguistic entities including named entities. The corpus was created to
 serve as training and testing material for Machine Learning algorithms and is released
 under a Creative Commons licence. The named entity annotations include persons,
