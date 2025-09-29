@@ -1,7 +1,7 @@
 # 🇱🇹 Lithuanian
 
 This is an overview of all the datasets used in the Lithuanian part of EuroEval. The
-datasets are grouped by their task - see the [task overview](/tasks) for more
+datasets are grouped by their task - see the [task overview](../tasks/README.md) for more
 information about what these constitute.
 
 ## Sentiment Classification
