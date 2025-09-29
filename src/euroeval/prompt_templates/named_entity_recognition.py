@@ -365,8 +365,8 @@ NER_TEMPLATES: dict["Language", PromptConfig] = {
             "i-loc": "lokalizacja",
             "b-org": "organizacja",
             "i-org": "organizacja",
-            "b-misc": "różne",
-            "i-misc": "różne",
+            "b-misc": "inne",
+            "i-misc": "inne",
         },
         default_prompt_prefix="Poniżej znajdują się zdania i słowniki JSON "
         "z jednostkami nazewniczymi, które występują w danym zdaniu.",

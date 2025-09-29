@@ -155,7 +155,7 @@ When evaluating generative models, we use the following setup (see the
   ```text
   Zdanie: {text}
 
-  Zidentyfikuj jednostki nazewnicze w zdaniu. Wypisz je jako słownik JSON z kluczami 'osoba', 'lokalizacja', 'organizacja' i 'różne'. Wartości odpowiadające kluczom powinny być listami jednostek nazewniczych danego typu, dokładnie tak, jak pojawiają się w zdaniu.
+  Zidentyfikuj jednostki nazewnicze w zdaniu. Wypisz je jako słownik JSON z kluczami 'osoba', 'lokalizacja', 'organizacja' i 'inne'. Wartości odpowiadające kluczom powinny być listami jednostek nazewniczych danego typu, dokładnie tak, jak pojawiają się w zdaniu.
   ```
 
 - Label mapping:
@@ -165,8 +165,8 @@ When evaluating generative models, we use the following setup (see the
   - `I-LOC` ➡️ `lokalizacja`
   - `B-ORG` ➡️ `organizacja`
   - `I-ORG` ➡️ `organizacja`
-  - `B-MISC` ➡️ `różne`
-  - `I-MISC` ➡️ `różne`
+  - `B-MISC` ➡️ `inne`
+  - `I-MISC` ➡️ `inne`
 
 You can evaluate this dataset directly as follows:
 
