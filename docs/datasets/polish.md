@@ -52,32 +52,32 @@ Here are a few examples from the training split:
 When evaluating generative models, we use the following setup (see the
 [methodology](/methodology) for more information on how these are used):
 
-- Liczba przykładów few-shot: 12
-- Prefiks promptu:
+- Number of few-shot examples: 12
+- Prompt prefix:
 
   ```text
   Poniżej znajdują się dokumenty i ich sentyment, który może być 'pozytywny', 'neutralny' lub 'negatywny'.
   ```
 
-- Szablon podstawowy promptu:
+- Base prompt template:
 
   ```text
   Dokument: {text}
   Sentyment: {label}
   ```
 
-- Szablon promptu instrukcyjnego:
+- Instruction-tuned prompt template:
 
   ```text
   Dokument: {text}
 
-  Klasyfikuj sentyment w dokumencie. Odpowiedz z 'pozytywny', 'neutralny' lub 'negatywny', i nic więcej.
+  Klasyfikuj sentyment w dokumencie. Odpowiedz jednym słowem: 'pozytywny', 'neutralny' lub 'negatywny'.
   ```
 
 - Label mapping:
-  - `positive` ➡️ `positive`
-  - `neutral` ➡️ `neutral`
-  - `negative` ➡️ `negative`
+  - `positive` ➡️ `pozytywny`
+  - `neutral` ➡️ `neutralny`
+  - `negative` ➡️ `negatywny`
 
 You can evaluate this dataset directly as follows:
 
@@ -90,7 +90,8 @@ euroeval --model <model-id> --dataset polemo2
 ### KPWr-NER
 
 This dataset was published in [this paper](https://aclanthology.org/L12-1574/) and is
-part of the KPWr (KrakówPoland Wrocław) corpus - a free Polish corpus annotated with
+part of the KPWr ("Korpus Języka Polskiego Politechniki Wrocławskiej" - "Polish Corpus of Wrocław University of Technology")
+corpus - a free Polish corpus annotated with
 various types of linguistic entities including named entities. The corpus was created to
 serve as training and testing material for Machine Learning algorithms and is released
 under a Creative Commons licence. The named entity annotations include persons,
@@ -139,14 +140,14 @@ When evaluating generative models, we use the following setup (see the
 - Prefix prompt:
 
   ```text
-  Poniżej znajdują się zdania i słowniki JSON z nazwanymi jednostkami występującymi w danym zdaniu.
+  Poniżej znajdują się zdania i słowniki JSON z jednostkami nazewniczymi, które występują w danym zdaniu.
   ```
 
 - Base prompt template:
 
   ```text
   Zdanie: {text}
-  Nazwane jednostki: {label}
+  Jednostki nazewnicze: {label}
   ```
 
 - Instruction-tuned prompt template:
@@ -154,18 +155,18 @@ When evaluating generative models, we use the following setup (see the
   ```text
   Zdanie: {text}
 
-  Zidentyfikuj nazwane jednostki w zdaniu. Powinieneś wypisać to jako słownik JSON z kluczami 'osoba', 'lokalizacja', 'organizacja' i 'różne'. Wartości powinny być listami nazwanych jednostek tego typu, dokładnie tak jak pojawiają się w zdaniu.
+  Zidentyfikuj jednostki nazewnicze w zdaniu. Wypisz je jako słownik JSON z kluczami 'osoba', 'miejsce', 'organizacja' i 'inne'. Wartości odpowiadające kluczom powinny być listami jednostek nazewniczych danego typu, dokładnie tak, jak pojawiają się w zdaniu.
   ```
 
 - Label mapping:
   - `B-PER` ➡️ `osoba`
   - `I-PER` ➡️ `osoba`
-  - `B-LOC` ➡️ `lokalizacja`
-  - `I-LOC` ➡️ `lokalizacja`
+  - `B-LOC` ➡️ `miejsce`
+  - `I-LOC` ➡️ `miejsce`
   - `B-ORG` ➡️ `organizacja`
   - `I-ORG` ➡️ `organizacja`
-  - `B-MISC` ➡️ `różne`
-  - `I-MISC` ➡️ `różne`
+  - `B-MISC` ➡️ `inne`
+  - `I-MISC` ➡️ `inne`
 
 You can evaluate this dataset directly as follows:
 
@@ -219,7 +220,7 @@ When evaluating generative models, we use the following setup (see the
 - Prefix prompt:
 
   ```text
-  Poniżej znajdują się teksty i czy są gramatycznie poprawne.
+  Poniżej znajdują się teksty i informacja, czy są gramatycznie poprawne.
   ```
 
 - Base prompt template:
@@ -234,7 +235,7 @@ When evaluating generative models, we use the following setup (see the
   ```text
   Tekst: {text}
 
-  Określ czy tekst jest gramatycznie poprawny czy nie. Odpowiedz {labels_str}, i nic więcej.
+  Określ, czy tekst jest gramatycznie poprawny. Odpowiedz używając wyłącznie {labels_str}.
   ```
 
 - Label mapping:
@@ -299,7 +300,7 @@ When evaluating generative models, we use the following setup (see the
   ```text
   Tekst: {text}
   Pytanie: {question}
-  Odpowiedź w maksymalnie 3 słowach: {label}
+  Odpowiedź z użyciem maksymalnie 3 słów: {label}
   ```
 
 - Instruction-tuned prompt template:
@@ -307,7 +308,7 @@ When evaluating generative models, we use the following setup (see the
   ```text
   Tekst: {text}
 
-  Odpowiedz na następujące pytanie dotyczące powyższego tekstu w maksymalnie 3 słowach.
+  Odpowiedz na następujące pytanie dotyczące powyższego tekstu, używając maksymalnie 3 słów.
 
   Pytanie: {question}
   ```
@@ -378,7 +379,7 @@ When evaluating generative models, we use the following setup (see the
   ```text
   Tekst: {text}
   Pytanie: {question}
-  Odpowiedź w maksymalnie 3 słowach: {label}
+  Odpowiedź z użyciem maksymalnie 3 słów: {label}
   ```
 
 - Instruction-tuned prompt template:
@@ -386,7 +387,7 @@ When evaluating generative models, we use the following setup (see the
   ```text
   Tekst: {text}
 
-  Odpowiedz na następujące pytanie dotyczące powyższego tekstu w maksymalnie 3 słowach.
+  Odpowiedz na następujące pytanie dotyczące powyższego tekstu, używając maksymalnie 3 słów.
 
   Pytanie: {question}
   ```
@@ -468,7 +469,7 @@ When evaluating generative models, we use the following setup (see the
   c. {option_c}
   d. {option_d}
 
-  Odpowiedz na powyższe pytanie, odpowiadając 'a', 'b', 'c' lub 'd', i nic więcej.
+  Odpowiedz na powyższe pytanie, używając 'a', 'b', 'c' lub 'd' i niczego więcej.
   ```
 
 You can evaluate this dataset directly as follows:
@@ -540,7 +541,7 @@ When evaluating generative models, we use the following setup (see the
   a. {option_a}
   b. {option_b}
 
-  Odpowiedz na powyższe pytanie, odpowiadając 'a' lub 'b', i nic więcej.
+  Odpowiedz na powyższe pytanie, używając 'a' lub 'b' i niczego więcej.
   ```
 
 You can evaluate this dataset directly as follows:
@@ -618,7 +619,7 @@ When evaluating generative models, we use the following setup (see the
   c. {option_c}
   d. {option_d}
 
-  Odpowiedz na powyższe pytanie, odpowiadając 'a', 'b', 'c' lub 'd', i nic więcej.
+  Odpowiedz na powyższe pytanie, używając 'a', 'b', 'c' lub 'd' i niczego więcej.
   ```
 
 You can evaluate this dataset directly as follows:
@@ -673,7 +674,7 @@ When evaluating generative models, we use the following setup (see the
 - Prefix prompt:
 
   ```text
-  Poniżej znajdują się artykuły z towarzyszącymi streszczeniami.
+  Poniżej znajdują się artykuły z towarzyszącymi im streszczeniami.
   ```
 
 - Base prompt template:
