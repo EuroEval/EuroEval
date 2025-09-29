@@ -361,8 +361,8 @@ NER_TEMPLATES: dict["Language", PromptConfig] = {
         default_prompt_label_mapping={
             "b-per": "osoba",
             "i-per": "osoba",
-            "b-loc": "lokalizacja",
-            "i-loc": "lokalizacja",
+            "b-loc": "miejsce",
+            "i-loc": "miejsce",
             "b-org": "organizacja",
             "i-org": "organizacja",
             "b-misc": "inne",
