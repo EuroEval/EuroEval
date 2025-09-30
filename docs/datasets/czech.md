@@ -390,7 +390,7 @@ euroeval --model <model-id> --dataset sqad
 
 ### Umimeto-qa
 
-This dataset offers selected questions from the <https://www.umimeto.org/> project and
+This dataset offers selected questions from the learning platform [Umimeto](https://www.umimeto.org) and
 has been curated by [the NLP Centre at Masaryk University](https://nlp.fi.muni.cz).
 
 The original dataset consists of 700 samples, 100 samples for each of 7 different topics.
