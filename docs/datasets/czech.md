@@ -48,7 +48,7 @@ When evaluating generative models, we use the following setup (see the
 - Number of few-shot examples: 12
 - Prefix prompt:
 
-  ```
+  ```text
   Následují dokumenty a jejich sentiment, který může být 'pozitivní', 'neutrální' nebo 'negativní'.
   ```
 
