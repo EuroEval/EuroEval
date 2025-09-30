@@ -233,7 +233,7 @@ euroeval --model <model-id> --dataset scala-cs
 ### CS-GEC
 
 This dataset is extracted by postprocessing data from
-[this paper](https://aclanthology.org/D19-5545/). Specifically,
+[this paper](https://doi.org/10.18653/v1/D19-5545). Specifically,
 grammatically incorrect sentences and their corresponding corrections
 were extracted.
 
