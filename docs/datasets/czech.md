@@ -54,7 +54,7 @@ When evaluating generative models, we use the following setup (see the
 
 - Base prompt template:
 
-  ```
+  ```text
   Dokument: {text}
   Sentiment: {label}
   ```
