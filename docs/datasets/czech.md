@@ -133,7 +133,7 @@ When evaluating generative models, we use the following setup (see the
 
 - Instruction-tuned prompt template:
 
-  ```
+  ```text
   Věta: {text}
 
   Identifikujte pojmenované entity ve větě. Měli byste to vypsat jako JSON slovník s klíči 'osoba', 'místo', 'organizace' a 'různé'. Hodnoty by měly být seznamy pojmenovaných entit tohoto typu, přesně tak, jak se objevují ve větě.
