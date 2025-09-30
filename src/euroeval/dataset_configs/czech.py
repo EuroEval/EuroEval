@@ -6,14 +6,6 @@ from ..tasks import COMMON_SENSE, KNOW, LA, NER, RC, SENT, SUMM
 
 ### Official datasets ###
 
-SCALA_CS_CONFIG = DatasetConfig(
-    name="scala-cs",
-    pretty_name="the Czech part of the linguistic acceptability dataset ScaLA",
-    huggingface_id="EuroEval/scala-cs",
-    task=LA,
-    languages=[CS],
-)
-
 CSFD_SENTIMENT_CONFIG = DatasetConfig(
     name="csfd-sentiment",
     pretty_name="the Czech Movie Database sentiment dataset",
@@ -69,4 +61,16 @@ UMIMETO_QA_CONFIG = DatasetConfig(
     huggingface_id="EuroEval/umimeto-qa",
     task=KNOW,
     languages=[CS],
+)
+
+
+### Unofficial datasets ###
+
+SCALA_CS_CONFIG = DatasetConfig(
+    name="scala-cs",
+    pretty_name="the Czech part of the linguistic acceptability dataset ScaLA",
+    huggingface_id="EuroEval/scala-cs",
+    task=LA,
+    languages=[CS],
+    unofficial=True,
 )

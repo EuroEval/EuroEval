@@ -157,7 +157,78 @@ euroeval --model <model-id> --dataset poner
 
 ## Linguistic Acceptability
 
-### ScaLA-cs
+### CS-GEC
+
+This dataset is extracted by postprocessing data from
+[this paper](https://aclanthology.org/D19-5545/). Specifically,
+grammatically incorrect sentences and their corresponding corrections
+were extracted.
+
+The original full dataset consists of 59,493 training and 4,668 test
+samples, respectively. We use a 1,024 / 256 / 2,048 split for training,
+validation, and testing, respectively. The train and test splits are
+subsets of the original splits, and the validation split is created
+using examples from the train split.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Musíme ochutnát pivo a knedlíky .",
+  "label": "incorrect"
+}
+```
+
+```json
+{
+  "text": "V budoucnosti bych chtěla mít velkou rodinu a dům mých snů .",
+  "label": "correct"
+}
+```
+
+```json
+{
+  "text": "Dědeček i babička po druhé světové válce několik let žili v ČR a pak se zase vratili do Lužice .",
+  "label": "incorrect"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 12
+- Prefix prompt:
+
+  ```text
+  Následující jsou věty a zda jsou gramaticky správné.
+  ```
+
+- Base prompt template:
+
+  ```text
+  Věta: {text}
+  Gramaticky správná: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Věta: {text}
+
+  Určete, zda je věta gramaticky správná nebo ne. Odpovězte 'ano', pokud je věta správná, a 'ne', pokud není. Odpovězte pouze tímto slovem, a ničím jiným.
+  ```
+
+- Label mapping:
+  - `correct` ➡️ `ano`
+  - `incorrect` ➡️ `ne`
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset cs-gec
+```
+
+### Unofficial: ScaLA-cs
 
 This dataset was published in [this paper](https://aclanthology.org/2023.nodalida-1.20/)
 and was automatically created from the [Czech Universal Dependencies
@@ -228,77 +299,6 @@ You can evaluate this dataset directly as follows:
 
 ```bash
 euroeval --model <model-id> --dataset scala-cs
-```
-
-### CS-GEC
-
-This dataset is extracted by postprocessing data from
-[this paper](https://aclanthology.org/D19-5545/). Specifically,
-grammatically incorrect sentences and their corresponding corrections
-were extracted.
-
-The original full dataset consists of 59,493 training and 4,668 test
-samples, respectively. We use a 1,024 / 256 / 2,048 split for training,
-validation, and testing, respectively. The train and test splits are
-subsets of the original splits, and the validation split is created
-using examples from the train split.
-
-Here are a few examples from the training split:
-
-```json
-{
-  "text": "Musíme ochutnát pivo a knedlíky .",
-  "label": "incorrect"
-}
-```
-
-```json
-{
-  "text": "V budoucnosti bych chtěla mít velkou rodinu a dům mých snů .",
-  "label": "correct"
-}
-```
-
-```json
-{
-  "text": "Dědeček i babička po druhé světové válce několik let žili v ČR a pak se zase vratili do Lužice .",
-  "label": "incorrect"
-}
-```
-
-When evaluating generative models, we use the following setup (see the
-[methodology](/methodology) for more information on how these are used):
-
-- Number of few-shot examples: 12
-- Prefix prompt:
-
-  ```text
-  Následující jsou věty a zda jsou gramaticky správné.
-  ```
-
-- Base prompt template:
-
-  ```text
-  Věta: {text}
-  Gramaticky správná: {label}
-  ```
-
-- Instruction-tuned prompt template:
-
-  ```text
-  Věta: {text}
-
-  Určete, zda je věta gramaticky správná nebo ne. Odpovězte 'ano', pokud je věta správná, a 'ne', pokud není. Odpovězte pouze tímto slovem, a ničím jiným.
-  ```
-
-- Label mapping:
-  - `correct` ➡️ `ano`
-  - `incorrect` ➡️ `ne`
-
-You can evaluate this dataset directly as follows:
-
-```bash
-euroeval --model <model-id> --dataset cs-gec
 ```
 
 ## Reading Comprehension
