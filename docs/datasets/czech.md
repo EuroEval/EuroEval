@@ -120,7 +120,7 @@ When evaluating generative models, we use the following setup (see the
 - Number of few-shot examples: 8
 - Prefix prompt:
 
-  ```
+  ```text
   Následující jsou věty a JSON slovníky s pojmenovanými entitami, které se v dané větě vyskytují.
   ```
 
