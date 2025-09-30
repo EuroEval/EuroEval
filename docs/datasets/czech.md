@@ -82,7 +82,7 @@ euroeval --model <model-id> --dataset csfd-sentiment
 
 ### PONER
 
-This dataset was created [in this master thesis](https://dspace.vut.cz/items/6092e1b0-3d75-4451-8582-28573ac30404).
+This dataset was created [in this master thesis](https://hdl.handle.net/11012/213801).
 The dataset consists of 9,310 Czech sentences with 14,639 named entities.
 Source data are Czech historical chronicles mostly from the first half of the 20th century.
 
