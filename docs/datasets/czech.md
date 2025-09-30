@@ -372,7 +372,7 @@ When evaluating generative models, we use the following setup (see the
 
 - Instruction-tuned prompt template:
 
-  ```
+  ```text
   Text: {text}
 
   Odpovězte na následující otázku k výše uvedenému textu maximálně 3 slovy.
