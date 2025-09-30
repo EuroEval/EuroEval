@@ -364,7 +364,7 @@ When evaluating generative models, we use the following setup (see the
 
 - Base prompt template:
 
-  ```
+  ```text
   Text: {text}
   Otázka: {question}
   Odpověď maximálně 3 slovy: {label}
