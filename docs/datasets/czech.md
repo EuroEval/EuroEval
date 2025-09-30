@@ -358,7 +358,7 @@ When evaluating generative models, we use the following setup (see the
 - Number of few-shot examples: 4
 - Prefix prompt:
 
-  ```
+  ```text
   Následující texty obsahují otázky a odpovědi.
   ```
 
