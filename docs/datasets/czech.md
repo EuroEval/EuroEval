@@ -272,7 +272,7 @@ When evaluating generative models, we use the following setup (see the
 - Number of few-shot examples: 12
 - Prefix prompt:
 
-  ```
+  ```text
   Následující jsou věty a zda jsou gramaticky správné.
   ```
 
