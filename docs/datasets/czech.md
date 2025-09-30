@@ -301,6 +301,77 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset scala-cs
 ```
 
+### CS-GEC
+
+This dataset is extracted by postprocessing data from
+[this paper](https://doi.org/10.18653/v1/D19-5545). Specifically,
+grammatically incorrect sentences and their corresponding corrections
+were extracted.
+
+The original full dataset consists of 59,493 training and 4,668 test
+samples, respectively. We use a 1,024 / 256 / 2,048 split for training,
+validation, and testing, respectively. The train and test splits are
+subsets of the original splits, and the validation split is created
+using examples from the train split.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Musíme ochutnát pivo a knedlíky .",
+  "label": "incorrect"
+}
+```
+
+```json
+{
+  "text": "V budoucnosti bych chtěla mít velkou rodinu a dům mých snů .",
+  "label": "correct"
+}
+```
+
+```json
+{
+  "text": "Dědeček i babička po druhé světové válce několik let žili v ČR a pak se zase vratili do Lužice .",
+  "label": "incorrect"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 12
+- Prefix prompt:
+
+  ```text
+  Následující jsou věty a zda jsou gramaticky správné.
+  ```
+
+- Base prompt template:
+
+  ```text
+  Věta: {text}
+  Gramaticky správná: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Věta: {text}
+
+  Určete, zda je věta gramaticky správná nebo ne. Odpovězte 'ano', pokud je věta správná, a 'ne', pokud není. Odpovězte pouze tímto slovem, a ničím jiným.
+  ```
+
+- Label mapping:
+  - `correct` ➡️ `ano`
+  - `incorrect` ➡️ `ne`
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset cs-gec
+```
+
 ## Reading Comprehension
 
 ### SQAD
@@ -390,8 +461,8 @@ euroeval --model <model-id> --dataset sqad
 
 ### Umimeto-qa
 
-This dataset offers selected questions from the <https://www.umimeto.org/> project and
-has been curated by [the NLP Centre at Masaryk University](https://nlp.fi.muni.cz).
+This dataset offers selected questions from the learning platform [Umimeto](https://www.umimeto.org)
+and has been curated by [the NLP Centre at Masaryk University](https://nlp.fi.muni.cz).
 
 The original dataset consists of 700 samples, 100 samples for each of 7 different topics.
 We use a 32 / 32 / 636 split for training, validation and testing, respectively.
