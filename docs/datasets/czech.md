@@ -61,7 +61,7 @@ When evaluating generative models, we use the following setup (see the
 
 - Instruction-tuned prompt template:
 
-  ```
+  ```text
   Dokument: {text}
 
   Klasifikujte sentiment v dokumentu. Odpovězte pouze s 'pozitivní', 'neutrální', nebo 'negativní', a nic jiného.
