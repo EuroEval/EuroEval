@@ -574,20 +574,20 @@ When evaluating generative models, we use the following setup (see the
 - Number of few-shot examples: 1
 - Prefix prompt:
 
-  ```
+  ```text
   Následující jsou dokumenty s přiloženými souhrny.
   ```
 
 - Base prompt template:
 
-  ```
+  ```text
   Dokument: {text}
   Souhrn: {target_text}
   ```
 
 - Instruction-tuned prompt template:
 
-  ```
+  ```text
   Dokument: {text}
 
   Napište souhrn výše uvedeného dokumentu.
