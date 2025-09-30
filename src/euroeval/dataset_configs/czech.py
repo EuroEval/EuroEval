@@ -46,20 +46,20 @@ CZECH_NEWS_CONFIG = DatasetConfig(
     languages=[CS],
 )
 
+UMIMETO_QA_CONFIG = DatasetConfig(
+    name="umimeto-qa",
+    pretty_name="the Czech multiple-choice dataset Umimeto-qa",
+    huggingface_id="EuroEval/umimeto-qa",
+    task=KNOW,
+    languages=[CS],
+)
+
 HELLASWAG_CS_CONFIG = DatasetConfig(
     name="hellaswag-cs",
     pretty_name="the truncated version of the Czech common-sense reasoning dataset "
     "HellaSwag-cs, translated from the English HellaSwag dataset",
     huggingface_id="EuroEval/hellaswag-cs-mini",
     task=COMMON_SENSE,
-    languages=[CS],
-)
-
-UMIMETO_QA_CONFIG = DatasetConfig(
-    name="umimeto-qa",
-    pretty_name="the Czech multiple-choice dataset Umimeto-qa",
-    huggingface_id="EuroEval/umimeto-qa",
-    task=KNOW,
     languages=[CS],
 )
 
