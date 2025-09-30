@@ -391,7 +391,7 @@ euroeval --model <model-id> --dataset sqad-mini
 ### Umimeto-qa
 
 This dataset offers selected questions from the <https://www.umimeto.org/> project and
-has been curated by <https://nlp.fi.muni.cz/>.
+has been curated by [the NLP Centre at Masaryk University](https://nlp.fi.muni.cz).
 
 The original dataset consists of 700 samples, 100 samples for each of 7 different topics.
 We use a 32 / 32 / 636 split for training, validation and testing, respectively.
