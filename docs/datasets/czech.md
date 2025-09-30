@@ -427,33 +427,29 @@ When evaluating generative models, we use the following setup (see the
 - Number of few-shot examples: 5
 - Prefix prompt:
 
-  ```
+  ```text
   Následující jsou otázky s výběrem z více možností (s odpověďmi).
   ```
 
 - Base prompt template:
 
-  ```
+  ```text
   Otázka: {text}
   Výběr:
   a. {option_a}
   b. {option_b}
-  c. {option_c}
-  d. {option_d}
   Odpověď: {label}
   ```
 
 - Instruction-tuned prompt template:
 
-  ```
+  ```text
   Otázka: {text}
   Výběr:
   a. {option_a}
   b. {option_b}
-  c. {option_c}
-  d. {option_d}
 
-  Odpovězte na výše uvedenou otázku pomocí 'a', 'b', 'c' nebo 'd', a nic jiného.
+  Odpovězte na výše uvedenou otázku pomocí 'a', nebo 'b', a nic jiného.
   ```
 
 You can evaluate this dataset directly as follows:
@@ -467,7 +463,7 @@ euroeval --model <model-id> --dataset umimeto-qa
 ### HellaSwag-cs
 
 This dataset is a machine translated version of the English [HellaSwag
-dataset](https://aclanthology.org/P19-1472/). The dataset was translated using
+dataset](https://doi.org/10.18653/v1/P19-1472). The dataset was translated using
 [LINDAT Translation Service](https://lindat.mff.cuni.cz/services/translation/docs).
 
 The original dataset has 10,000 samples. We use a 1,024 / 256 / 2,048 split for training,
@@ -502,29 +498,33 @@ When evaluating generative models, we use the following setup (see the
 - Number of few-shot examples: 5
 - Prefix prompt:
 
-  ```
+  ```text
   Následující jsou otázky s výběrem z více možností (s odpověďmi).
   ```
 
 - Base prompt template:
 
-  ```
+  ```text
   Otázka: {text}
   Možnosti:
   a. {option_a}
   b. {option_b}
+  c. {option_c}
+  d. {option_d}
   Odpověď: {label}
   ```
 
 - Instruction-tuned prompt template:
 
-  ```
+  ```text
   Otázka: {text}
   Možnosti:
   a. {option_a}
   b. {option_b}
+  c. {option_c}
+  d. {option_d}
 
-  Odpovězte na výše uvedenou otázku pomocí 'a' nebo 'b', a nic jiného.
+  Odpovězte na výše uvedenou otázku pomocí 'a', 'b', 'c' nebo 'd', a nic jiného.
   ```
 
 You can evaluate this dataset directly as follows:
