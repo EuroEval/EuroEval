@@ -1023,19 +1023,6 @@ def load_hf_model_config(
                 f"loaded, as the key {key!r} was not found in the config."
             ) from e
         except (OSError, GatedRepoError) as e:
-            # TEMP: When the model is gated then we cannot set cache dir, for some
-            # reason (since transformers v4.38.2, still a problem in v4.48.0). This
-            # should be included back in when this is fixed.
-            if "gated repo" in str(e):
-                logger.info(
-                    "Would have loaded model config with cache dir, but the model is "
-                    "gated. This is a bug in the transformers package since v4.38.2, "
-                    "but we can work around it by not setting the cache dir. Trying "
-                    "again without cache dir."
-                )
-                breakpoint()
-                model_cache_dir = None
-                continue
             raise InvalidModel(
                 f"Couldn't load model config for {model_id!r}. The error was "
                 f"{e!r}. Skipping"
