@@ -963,7 +963,6 @@ def get_dtype(
     Args:
         device:
             The device to use.
-            Whether the data type is set in the model configuration.
         dtype_is_set:
             Whether the data type is set in the model configuration.
         bf16_available:
