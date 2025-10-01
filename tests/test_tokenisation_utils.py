@@ -4,6 +4,7 @@ import pytest
 from transformers.models.auto.tokenization_auto import AutoTokenizer
 
 from euroeval.benchmark_modules.hf import load_hf_model_config
+from euroeval.data_models import HashableDict
 from euroeval.tokenisation_utils import (
     get_end_of_chat_token_ids,
     should_prefix_space_be_added_to_labels,
@@ -24,8 +25,8 @@ def test_should_prompts_be_stripped(model_id: str, expected: bool, auth: str) ->
     config = load_hf_model_config(
         model_id=model_id,
         num_labels=0,
-        id2label=dict(),
-        label2id=dict(),
+        id2label=HashableDict(),
+        label2id=HashableDict(),
         revision="main",
         model_cache_dir=None,
         api_key=auth,

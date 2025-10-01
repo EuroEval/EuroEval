@@ -30,7 +30,7 @@ from ..constants import (
     REASONING_TOKENS,
     VLLM_BF16_MIN_CUDA_COMPUTE_CAPABILITY,
 )
-from ..data_models import GenerativeModelOutput, ModelConfig
+from ..data_models import GenerativeModelOutput, HashableDict, ModelConfig
 from ..enums import (
     BatchingPreference,
     GenerativeType,
@@ -648,7 +648,13 @@ class VLLMModel(HuggingFaceEncoderModel):
         revision = model_id_components.revision
 
         model_info = get_model_repo_info(
-            model_id=model_id, revision=revision, benchmark_config=benchmark_config
+            model_id=model_id,
+            revision=revision,
+            api_key=benchmark_config.api_key,
+            cache_dir=benchmark_config.cache_dir,
+            trust_remote_code=benchmark_config.trust_remote_code,
+            requires_safetensors=benchmark_config.requires_safetensors,
+            run_with_cli=benchmark_config.run_with_cli,
         )
         return (
             model_info is not None
@@ -674,7 +680,11 @@ class VLLMModel(HuggingFaceEncoderModel):
         model_info = get_model_repo_info(
             model_id=model_id_components.model_id,
             revision=model_id_components.revision,
-            benchmark_config=benchmark_config,
+            api_key=benchmark_config.api_key,
+            cache_dir=benchmark_config.cache_dir,
+            trust_remote_code=benchmark_config.trust_remote_code,
+            requires_safetensors=benchmark_config.requires_safetensors,
+            run_with_cli=benchmark_config.run_with_cli,
         )
         if model_info is None:
             raise InvalidModel(f"The model {model_id!r} could not be found.")
@@ -751,8 +761,8 @@ def load_model_and_tokeniser(
     hf_model_config = load_hf_model_config(
         model_id=model_id,
         num_labels=0,
-        id2label=dict(),
-        label2id=dict(),
+        id2label=HashableDict(),
+        label2id=HashableDict(),
         revision=revision,
         model_cache_dir=model_config.model_cache_dir,
         api_key=benchmark_config.api_key,

@@ -77,6 +77,10 @@ def test_safetensors_check(
         result = get_model_repo_info(
             model_id="test-model",
             revision="main",
-            benchmark_config=cloned_benchmark_config,
+            api_key=benchmark_config.api_key,
+            cache_dir=benchmark_config.cache_dir,
+            trust_remote_code=benchmark_config.trust_remote_code,
+            requires_safetensors=benchmark_config.requires_safetensors,
+            run_with_cli=benchmark_config.run_with_cli,
         )
         assert (result is not None) == model_exists
