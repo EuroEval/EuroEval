@@ -83,7 +83,15 @@ def test_examples_in_official_datasets_are_not_too_long(
     """Test that the examples are not too long in official datasets."""
     # Skip unless we've manually chosen to run this test with a given dataset, since it
     # is quite slow to run on all datasets
-    if os.getenv("CHECK_DATASET") != dataset_config.name:
+    if os.getenv("CHECK_DATASET") is None:
+        pytest.skip(
+            reason="Skipping test for all datasets, as no dataset was explicitly "
+            "requested with the `CHECK_DATASET` environment variable."
+        )
+    datasets_to_check = [
+        dataset_name.strip() for dataset_name in os.environ["CHECK_DATASET"].split(",")
+    ]
+    if dataset_config.name not in datasets_to_check:
         pytest.skip(
             reason=f"Skipping test for dataset {dataset_config.name!r}, as it was not "
             "explicitly requested with the `CHECK_DATASET` environment variable."
