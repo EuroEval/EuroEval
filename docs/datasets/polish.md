@@ -194,7 +194,7 @@ Here are a few examples from the training split:
 
 ```json
 {
-    "text": "Papierową śmierć zafundowaliśmy zafundowali śmy już kilku osobom.",
+    "text": "Papierową śmierć zafundowaliśmy już kilku osobom.",
     "label": "correct"
 }
 ```
