@@ -34,12 +34,30 @@ def _test_load_ud_pos(
             assert rx_yay.search(row["text"]) is not None
 
 
-def test_load_ud_pos_pl_aux_clitic(tst_data_path: Path) -> None:
+def test_load_ud_pos_pl_aux_clitic_01(tst_data_path: Path) -> None:
     _test_load_ud_pos(
         tst_data_path,
         "pl_pdb-ud-train.conllu.aux_clitic_01",
         ["postanowili", "śmy"],
         "postanowiliśmy",
+    )
+
+
+def test_load_ud_pos_pl_aux_clitic_02(tst_data_path: Path) -> None:
+    _test_load_ud_pos(
+        tst_data_path,
+        "pl_pdb-ud-train.conllu.aux_clitic_02",
+        ["nadział", "em"],
+        "nadziałem",
+    )
+
+
+def test_load_ud_pos_pl_aux_clitic_03(tst_data_path: Path) -> None:
+    _test_load_ud_pos(
+        tst_data_path,
+        "pl_pdb-ud-train.conllu.aux_clitic_02",
+        ["zarzucił", "em"],
+        "zarzuciłem",
     )
 
 
