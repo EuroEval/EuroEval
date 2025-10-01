@@ -10,6 +10,8 @@
 
 """Create the SQAD-mini Czech dataset and upload it to the HF Hub."""
 
+import hashlib
+
 from constants import (
     MAX_NUM_CHARS_IN_CONTEXT,
     MAX_NUM_CHARS_IN_QUESTION,
@@ -92,6 +94,31 @@ def main() -> None:
     final_train_df = final_train_df.reset_index(drop=True)
     final_val_df = final_val_df.reset_index(drop=True)
     final_test_df = final_test_df.reset_index(drop=True)
+
+    # Add ID column
+    final_train_df["id"] = [
+        hashlib.md5(
+            (row.title + row.context + row.question).encode("utf-8")
+        ).hexdigest()
+        for _, row in final_train_df.iterrows()
+    ]
+    final_val_df["id"] = [
+        hashlib.md5(
+            (row.title + row.context + row.question).encode("utf-8")
+        ).hexdigest()
+        for _, row in final_val_df.iterrows()
+    ]
+    final_test_df["id"] = [
+        hashlib.md5(
+            (row.title + row.context + row.question).encode("utf-8")
+        ).hexdigest()
+        for _, row in final_test_df.iterrows()
+    ]
+
+    # Check that the IDs are unique
+    assert final_train_df.id.nunique() == len(final_train_df)
+    assert final_val_df.id.nunique() == len(final_val_df)
+    assert final_test_df.id.nunique() == len(final_test_df)
 
     # Create DatasetDict
     dataset_dict = DatasetDict(
