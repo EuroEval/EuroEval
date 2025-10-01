@@ -1033,6 +1033,7 @@ def load_hf_model_config(
                     "but we can work around it by not setting the cache dir. Trying "
                     "again without cache dir."
                 )
+                breakpoint()
                 model_cache_dir = None
                 continue
             raise InvalidModel(
