@@ -17,7 +17,7 @@ CSFD_SENTIMENT_CONFIG = DatasetConfig(
 CS_GEC_CONFIG = DatasetConfig(
     name="cs-gec",
     pretty_name="the Czech linguistic acceptability dataset CS-GEC",
-    huggingface_id="EuroEval/cs-gec",
+    huggingface_id="EuroEval/cs-gec-mini",
     task=LA,
     languages=[CS],
 )
