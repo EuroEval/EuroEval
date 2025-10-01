@@ -1,6 +1,6 @@
 """Unit tests for the `hf` module."""
 
-from copy import deepcopy
+import hashlib
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -64,8 +64,6 @@ def test_safetensors_check(
     benchmark_config: BenchmarkConfig,
 ) -> None:
     """Test the safetensors availability check functionality."""
-    cloned_benchmark_config = deepcopy(benchmark_config)
-    cloned_benchmark_config.requires_safetensors = requires_safetensors
     with (
         patch.object(HfApi, "list_repo_files") as mock_list_files,
         patch.object(HfApi, "model_info") as mock_model_info,
@@ -74,13 +72,17 @@ def test_safetensors_check(
         mock_model_info.return_value = MagicMock(
             id="test-model", tags=["test"], pipeline_tag="fill-mask"
         )
+        hash_model_id = hashlib.md5(
+            ",".join(repo_files).encode("utf-8")
+            + str(requires_safetensors).encode("utf-8")
+        ).hexdigest()
         result = get_model_repo_info(
-            model_id="test-model",
+            model_id=f"model-{hash_model_id}",
             revision="main",
             api_key=benchmark_config.api_key,
             cache_dir=benchmark_config.cache_dir,
             trust_remote_code=benchmark_config.trust_remote_code,
-            requires_safetensors=benchmark_config.requires_safetensors,
+            requires_safetensors=requires_safetensors,
             run_with_cli=benchmark_config.run_with_cli,
         )
         assert (result is not None) == model_exists
