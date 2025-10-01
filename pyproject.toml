@@ -189,6 +189,10 @@ testpaths = [
     "tests",
     "src/euroeval",
 ]
+pythonpath = [
+    "src",
+    "src/scripts",
+]
 
 [build-system]
 requires = ["hatchling"]
