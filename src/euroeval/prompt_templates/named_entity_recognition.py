@@ -4,6 +4,7 @@ import typing as t
 
 from ..data_models import PromptConfig
 from ..languages import (
+    CS,
     DA,
     DE,
     EN,
@@ -30,6 +31,25 @@ if t.TYPE_CHECKING:
 
 
 NER_TEMPLATES: dict["Language", PromptConfig] = {
+    CS: PromptConfig(
+        default_prompt_label_mapping={
+            "b-per": "osoba",
+            "i-per": "osoba",
+            "b-loc": "místo",
+            "i-loc": "místo",
+            "b-org": "organizace",
+            "i-org": "organizace",
+            "b-misc": "různé",
+            "i-misc": "různé",
+        },
+        default_prompt_prefix="Následující jsou věty a JSON slovníky s pojmenovanými "
+        "entitami, které se v dané větě vyskytují.",
+        default_prompt_template="Věta: {text}\nPojmenované entity: {label}",
+        default_instruction_prompt="Věta: {text}\n\nIdentifikujte pojmenované entity "
+        "ve větě. Měli byste to vypsat jako JSON slovník s klíči {labels_str}. "
+        "Hodnoty by měly být seznamy pojmenovaných entit tohoto typu, přesně tak, "
+        "jak se objevují ve větě.",
+    ),
     DA: PromptConfig(
         default_prompt_label_mapping={
             "b-per": "person",
