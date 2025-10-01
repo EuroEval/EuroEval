@@ -1015,12 +1015,7 @@ def load_hf_model_config(
                 cache_dir=model_cache_dir,
                 local_files_only=not internet_connection_available(),
             )
-            if config.eos_token_id is not None and config.pad_token_id is None:
-                if isinstance(config.eos_token_id, list):
-                    config.pad_token_id = config.eos_token_id[0]
-                else:
-                    config.pad_token_id = config.eos_token_id
-            return config
+            break
         except KeyError as e:
             key = e.args[0]
             raise InvalidModel(
@@ -1032,6 +1027,12 @@ def load_hf_model_config(
             # reason (since transformers v4.38.2, still a problem in v4.48.0). This
             # should be included back in when this is fixed.
             if "gated repo" in str(e):
+                logger.info(
+                    "Would have loaded model config with cache dir, but the model is "
+                    "gated. This is a bug in the transformers package since v4.38.2, "
+                    "but we can work around it by not setting the cache dir. Trying "
+                    "again without cache dir."
+                )
                 model_cache_dir = None
                 continue
             raise InvalidModel(
@@ -1063,6 +1064,15 @@ def load_hf_model_config(
             f"Couldn't load model config for {model_id!r} after {num_attempts} "
             "attempts."
         )
+
+    # Ensure that the PAD token ID is set
+    if config.eos_token_id is not None and config.pad_token_id is None:
+        if isinstance(config.eos_token_id, list):
+            config.pad_token_id = config.eos_token_id[0]
+        else:
+            config.pad_token_id = config.eos_token_id
+
+    return config
 
 
 def setup_model_for_question_answering(model: "PreTrainedModel") -> "PreTrainedModel":
