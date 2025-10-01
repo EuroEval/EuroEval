@@ -11,7 +11,9 @@
 import logging
 import re
 from collections import defaultdict
-from typing import Callable, Dict, List, Union
+from functools import partial
+from typing import Callable, DefaultDict, Dict, List, Union
+from urllib.parse import urlparse
 
 import pandas as pd
 import requests
@@ -378,6 +380,118 @@ def load_ltdt_pos() -> Dict[str, pd.DataFrame]:
     return load_ud_pos(train_url=train_url, val_url=val_url, test_url=test_url)
 
 
+def _load_file_or_url(url_or_path: str) -> list[str]:
+    parsed = urlparse(url_or_path)
+    if parsed.scheme.lower in ("http", "https"):
+        return requests.get(url_or_path).text.split("\n")
+    else:
+        with open(url_or_path, "r") as f:
+            logger.warning(f"Loading data from local file: {url_or_path}")
+            return [line.strip() for line in f.readlines()]
+
+
+def _append_token_data(dest: dict[str, list], src: dict[str, list], i: int) -> None:
+    dest["ids"].append(src["ids"][i])
+    dest["tokens"].append(src["tokens"][i])
+    dest["pos_tags"].append(src["pos_tags"][i])
+
+
+_RX_RANGE = re.compile(r"(\d+)-(\d+)", re.I)
+
+
+def _filter_token_rage(data_dict: dict[str, list]) -> dict[str, list]:
+    output: DefaultDict[str, list] = defaultdict(list)
+    """This function filters out tokens that are spefified in ranges in UD surce files.
+    Tokens that span more than one position are not supported by
+    create_scala's prepare_df logic.
+
+    Example files:
+
+    - tests/test_scripts/test_create_scala/test_data/de_gsd-ud-train.conllu.in_dem
+    - tests/test_scripts/test_create_scala/test_data/pl_pdb-ud-train.conllu.ismy
+    """
+
+    range_start: int = 0
+    range_end: int = 0
+
+    for i in range(len(data_dict["ids"])):
+        match = _RX_RANGE.match(data_dict["ids"][i])
+        if match is not None:
+            if range_start > 0 or range_end > 0:
+                raise ValueError(
+                    "Error: Parsing error. Only single range can be specified at a time."
+                )
+            else:
+                _append_token_data(output, data_dict, i)
+                range_start = int(match.group(1))
+                range_end = int(match.group(2))
+        else:
+            token_id = int(data_dict["ids"][i])
+            if token_id >= range_start and token_id <= range_end:
+                # Skip token if in range
+                continue
+            else:
+                _append_token_data(output, data_dict, i)
+                if token_id > range_end:
+                    # No longer in range
+                    range_start = 0
+                    range_end = 0
+
+    return output
+
+
+def _load_split(
+    *,
+    lines: list[str],
+    filter_source: str | None = None,
+    doc_process_fn: Callable[[str], str] = lambda x: x,
+) -> pd.DataFrame:
+    # Initialise the records, data dictionary and document
+    records = []
+    data_dict: Dict[str, list[Union[int, str]]] = defaultdict(list)
+    doc = ""
+    source = ""
+
+    # Iterate over the data for the given split
+    for line in lines:
+        # If we are at the first line of an entry then extract the document
+        if line.startswith("# text = "):
+            doc = re.sub("# text = ", "", line)
+
+            # Process the document if needed
+            doc = doc_process_fn(doc)
+
+        elif line.startswith("# source = "):
+            source = line.removeprefix("# source = ").strip()
+
+        # Otherwise, if the line is a comment then ignore it
+        elif line.startswith("#"):
+            continue
+
+        # Otherwise, if we have reached the end of an entry then store it to the
+        # list of records and reset the data dictionary and document
+        elif line == "":
+            if len(data_dict["tokens"]) > 0:
+                if filter_source is None or filter_source in source:
+                    merged_data_dict: Dict[str, Union[str, List[Union[int, str]]]]
+                    merged_data_dict = {**_filter_token_rage(data_dict), "doc": doc}
+                    records.append(merged_data_dict)
+            data_dict = defaultdict(list)
+            doc = ""
+            source = ""
+
+        # Otherwise we are in the middle of an entry which is not a comment, so
+        # we extract the data from the line and store it in the data dictionary
+        else:
+            data_tup = line.split("\t")
+            data_dict["ids"].append(data_tup[0])
+            data_dict["tokens"].append(data_tup[1])
+            data_dict["pos_tags"].append(data_tup[3])
+
+    # Convert the records to a dataframe
+    return pd.DataFrame.from_records(records)
+
+
 def load_ud_pos(
     train_url: str,
     val_url: str,
@@ -402,13 +516,6 @@ def load_ud_pos(
     Returns:
         The dataframes, stored in the keys `train`, `val` and `test`.
     """
-    # Download the data
-    data = dict(
-        train=requests.get(train_url).text.split("\n"),
-        val=requests.get(val_url).text.split("\n"),
-        test=requests.get(test_url).text.split("\n"),
-    )
-
     if filter_source is not None:
         logger.warning(
             f"Warning: Filtering dataset to include only entries with {filter_source=}"
@@ -416,51 +523,15 @@ def load_ud_pos(
 
     # Iterate over the data splits
     dfs = dict()
-    for split, lines in data.items():
-        # Initialise the records, data dictionary and document
-        records = list()
-        data_dict: Dict[str, List[Union[int, str]]] = defaultdict(list)
-        doc = ""
-        source = ""
 
-        # Iterate over the data for the given split
-        for line in lines:
-            # If we are at the first line of an entry then extract the document
-            if line.startswith("# text = "):
-                doc = re.sub("# text = ", "", line)
+    # Code shortcut for brevity
+    lsfunc = partial(
+        _load_split, filter_source=filter_source, doc_process_fn=doc_process_fn
+    )
 
-                # Process the document if needed
-                doc = doc_process_fn(doc)
-
-            elif line.startswith("# source = "):
-                source = line.removeprefix("# source = ").strip()
-
-            # Otherwise, if the line is a comment then ignore it
-            elif line.startswith("#"):
-                continue
-
-            # Otherwise, if we have reached the end of an entry then store it to the
-            # list of records and reset the data dictionary and document
-            elif line == "":
-                if len(data_dict["tokens"]) > 0:
-                    if filter_source is None or filter_source in source:
-                        merged_data_dict: Dict[str, Union[str, List[Union[int, str]]]]
-                        merged_data_dict = {**data_dict, "doc": doc}
-                        records.append(merged_data_dict)
-                data_dict = defaultdict(list)
-                doc = ""
-                source = ""
-
-            # Otherwise we are in the middle of an entry which is not a comment, so
-            # we extract the data from the line and store it in the data dictionary
-            else:
-                data_tup = line.split("\t")
-                data_dict["ids"].append(data_tup[0])
-                data_dict["tokens"].append(data_tup[1])
-                data_dict["pos_tags"].append(data_tup[3])
-
-        # Convert the records to a dataframe and store it
-        dfs[split] = pd.DataFrame.from_records(records)
+    dfs["train"] = lsfunc(lines=_load_file_or_url(train_url))
+    dfs["val"] = lsfunc(lines=_load_file_or_url(val_url))
+    dfs["test"] = lsfunc(lines=_load_file_or_url(test_url))
 
     # Return the dictionary of dataframes
     return dfs
