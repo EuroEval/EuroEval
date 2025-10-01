@@ -382,7 +382,7 @@ def load_ltdt_pos() -> Dict[str, pd.DataFrame]:
 
 def _load_file_or_url(url_or_path: str) -> list[str]:
     parsed = urlparse(url_or_path)
-    if parsed.scheme.lower in ("http", "https"):
+    if parsed.scheme.lower() in ("http", "https"):
         return requests.get(url_or_path).text.split("\n")
     else:
         with open(url_or_path, "r") as f:
@@ -417,25 +417,16 @@ def _filter_token_rage(data_dict: dict[str, list]) -> dict[str, list]:
     for i in range(len(data_dict["ids"])):
         match = _RX_RANGE.match(data_dict["ids"][i])
         if match is not None:
-            if range_start > 0 or range_end > 0:
-                raise ValueError(
-                    "Error: Parsing error. Only single range can be specified at a time."
-                )
-            else:
-                _append_token_data(output, data_dict, i)
-                range_start = int(match.group(1))
-                range_end = int(match.group(2))
+            _append_token_data(output, data_dict, i)
+            range_start = int(match.group(1))
+            range_end = int(match.group(2))
         else:
-            token_id = int(data_dict["ids"][i])
+            token_id = int(data_dict["ids"][i].split(".")[0])
             if token_id >= range_start and token_id <= range_end:
                 # Skip token if in range
                 continue
             else:
                 _append_token_data(output, data_dict, i)
-                if token_id > range_end:
-                    # No longer in range
-                    range_start = 0
-                    range_end = 0
 
     return output
 
