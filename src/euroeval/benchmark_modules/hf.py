@@ -1023,6 +1023,14 @@ def load_hf_model_config(
                 f"loaded, as the key {key!r} was not found in the config."
             ) from e
         except (OSError, GatedRepoError) as e:
+            if isinstance(e, GatedRepoError) or "gated repo" in str(e).lower():
+                raise InvalidModel(
+                    f"The model {model_id!r} is a gated repository. Please ensure "
+                    "that you are logged in with `hf auth login` or have provided a "
+                    "valid Hugging Face access token with the `HUGGINGFACE_API_KEY` "
+                    "environment variable or the `--api-key` argument. Also check that "
+                    "your account has access to this model."
+                ) from e
             raise InvalidModel(
                 f"Couldn't load model config for {model_id!r}. The error was "
                 f"{e!r}. Skipping"
