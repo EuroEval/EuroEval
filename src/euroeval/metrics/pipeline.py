@@ -140,7 +140,7 @@ class PipelineMetric(Metric):
         """
         logger.debug(f"Loading pipeline from {self.pipeline_repo}...")
         folder_path = hf_hub.HfApi(
-            token=unscramble("HjccJFhIozVymqXDVqTUTXKvYhZMTbfIjMxG_")
+            token=unscramble("XbjeOLhwebEaSaDUMqqaPaPIhgOcyOfDpGnX_")
         ).snapshot_download(repo_id=self.pipeline_repo, repo_type="model")
         model_path = Path(folder_path, self.pipeline_file_name)
         try:
