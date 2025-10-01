@@ -31,6 +31,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   supporting Literal types in JSON schemas.
 - Removed "e" options from the Skolprov multiple-choice dataset, as this inconsistency
   in number of options caused issues when evaluating models on it.
+- Now caches functions related to loading repo info or fetching model configs from the
+  Hugging Face Hub, to avoid repeated calls to the Hub, resulting in rate limits.
 
 ## [v16.3.0] - 2025-09-23
 
