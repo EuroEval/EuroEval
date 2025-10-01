@@ -4,7 +4,7 @@ import collections.abc as c
 import logging
 import re
 import typing as t
-from functools import cached_property, partial
+from functools import cache, cached_property, partial
 from json import JSONDecodeError
 from pathlib import Path
 from time import sleep
@@ -43,7 +43,7 @@ from ..constants import (
     MAX_CONTEXT_LENGTH,
     MERGE_TAGS,
 )
-from ..data_models import HFModelInfo, ModelConfig
+from ..data_models import HashableDict, HFModelInfo, ModelConfig
 from ..enums import (
     BatchingPreference,
     GenerativeType,
@@ -491,7 +491,11 @@ class HuggingFaceEncoderModel(BenchmarkModule):
         model_info = get_model_repo_info(
             model_id=model_id_components.model_id,
             revision=model_id_components.revision,
-            benchmark_config=benchmark_config,
+            api_key=benchmark_config.api_key,
+            cache_dir=benchmark_config.cache_dir,
+            trust_remote_code=benchmark_config.trust_remote_code,
+            requires_safetensors=benchmark_config.requires_safetensors,
+            run_with_cli=benchmark_config.run_with_cli,
         )
         return (
             model_info is not None
@@ -517,7 +521,11 @@ class HuggingFaceEncoderModel(BenchmarkModule):
         model_info = get_model_repo_info(
             model_id=model_id_components.model_id,
             revision=model_id_components.revision,
-            benchmark_config=benchmark_config,
+            api_key=benchmark_config.api_key,
+            cache_dir=benchmark_config.cache_dir,
+            trust_remote_code=benchmark_config.trust_remote_code,
+            requires_safetensors=benchmark_config.requires_safetensors,
+            run_with_cli=benchmark_config.run_with_cli,
         )
         if model_info is None:
             raise InvalidModel(f"The model {model_id!r} could not be found.")
@@ -583,8 +591,8 @@ def load_model_and_tokeniser(
     config = load_hf_model_config(
         model_id=model_id,
         num_labels=len(id2label),
-        id2label=id2label,
-        label2id={label: idx for idx, label in id2label.items()},
+        id2label=HashableDict(id2label),
+        label2id=HashableDict({label: idx for idx, label in id2label.items()}),
         revision=model_config.revision,
         model_cache_dir=model_config.model_cache_dir,
         api_key=benchmark_config.api_key,
@@ -694,8 +702,15 @@ def load_model_and_tokeniser(
     return model, tokeniser
 
 
+@cache
 def get_model_repo_info(
-    model_id: str, revision: str, benchmark_config: "BenchmarkConfig"
+    model_id: str,
+    revision: str,
+    api_key: str | None,
+    cache_dir: str,
+    trust_remote_code: bool,
+    requires_safetensors: bool,
+    run_with_cli: bool,
 ) -> "HFModelInfo | None":
     """Get the information about the model from the HF Hub or a local directory.
 
@@ -704,13 +719,11 @@ def get_model_repo_info(
             The model ID.
         revision:
             The revision of the model.
-        benchmark_config:
-            The benchmark configuration.
 
     Returns:
         The information about the model, or None if the model could not be found.
     """
-    token = get_hf_token(api_key=benchmark_config.api_key)
+    token = get_hf_token(api_key=api_key)
     hf_api = HfApi(token=token)
 
     # Get information on the model.
@@ -810,15 +823,15 @@ def get_model_repo_info(
         hf_config = load_hf_model_config(
             model_id=base_model_id or model_id,
             num_labels=0,
-            id2label=dict(),
-            label2id=dict(),
+            id2label=HashableDict(),
+            label2id=HashableDict(),
             revision=revision,
             model_cache_dir=create_model_cache_dir(
-                cache_dir=benchmark_config.cache_dir, model_id=model_id
+                cache_dir=cache_dir, model_id=model_id
             ),
-            api_key=benchmark_config.api_key,
-            trust_remote_code=benchmark_config.trust_remote_code,
-            run_with_cli=benchmark_config.run_with_cli,
+            api_key=api_key,
+            trust_remote_code=trust_remote_code,
+            run_with_cli=run_with_cli,
         )
         class_names = hf_config.architectures
         generative_class_names = [
@@ -833,12 +846,12 @@ def get_model_repo_info(
         else:
             pipeline_tag = "fill-mask"
 
-    if benchmark_config.requires_safetensors:
+    if requires_safetensors:
         repo_files = hf_api.list_repo_files(repo_id=model_id, revision=revision)
         has_safetensors = any(f.endswith(".safetensors") for f in repo_files)
         if not has_safetensors:
             msg = f"Model {model_id} does not have safetensors weights available. "
-            if benchmark_config.run_with_cli:
+            if run_with_cli:
                 msg += "Skipping since the `--only-allow-safetensors` flag is set."
             else:
                 msg += (
@@ -859,7 +872,7 @@ def get_model_repo_info(
                     f"Base model {base_model_id} does not have safetensors weights "
                     "available."
                 )
-                if benchmark_config.run_with_cli:
+                if run_with_cli:
                     msg += " Skipping since the `--only-allow-safetensors` flag is set."
                 else:
                     msg += (
@@ -941,6 +954,7 @@ def load_tokeniser(
     return tokeniser
 
 
+@cache
 def get_dtype(
     device: torch.device, dtype_is_set: bool, bf16_available: bool
 ) -> str | torch.dtype:
@@ -949,6 +963,7 @@ def get_dtype(
     Args:
         device:
             The device to use.
+        dtype_is_set:
             Whether the data type is set in the model configuration.
         bf16_available:
             Whether bfloat16 is available.
@@ -966,6 +981,7 @@ def get_dtype(
     return torch.float32
 
 
+@cache
 def load_hf_model_config(
     model_id: str,
     num_labels: int,
@@ -1231,6 +1247,7 @@ def align_model_and_tokeniser(
     return model, tokeniser
 
 
+@cache
 def task_group_to_class_name(task_group: TaskGroup) -> str:
     """Convert a task group to a class name.
 

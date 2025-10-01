@@ -4,6 +4,7 @@ import typing as t
 
 from ..data_models import PromptConfig
 from ..languages import (
+    CS,
     DA,
     DE,
     EN,
@@ -38,6 +39,16 @@ SENT_TEMPLATES: dict["Language", PromptConfig] = {
         default_prompt_template="Dokument: {text}\nSentiment: {label}",
         default_instruction_prompt="Dokument: {text}\n\nKlassificer sentimentet i "
         "dokumentet. Svar kun med {labels_str}, og intet andet.",
+    ),
+    CS: PromptConfig(
+        default_prompt_label_mapping=dict(
+            positive="pozitivní", neutral="neutrální", negative="negativní"
+        ),
+        default_prompt_prefix="Následují dokumenty a jejich sentiment, který může být "
+        "{labels_str}.",
+        default_prompt_template="Dokument: {text}\nSentiment: {label}",
+        default_instruction_prompt="Dokument: {text}\n\nKlasifikujte sentiment v "
+        "dokumentu. Odpovězte pouze s {labels_str}, a nic jiného.",
     ),
     DE: PromptConfig(
         default_prompt_label_mapping=dict(

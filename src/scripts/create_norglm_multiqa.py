@@ -13,6 +13,7 @@
 """Create the NorGLM NO-multi question answering dataset."""
 
 import ast
+import hashlib
 import os
 
 import pandas as pd
@@ -199,6 +200,25 @@ def main() -> None:
     val_df = val_df.reset_index(drop=True)
     test_df = test_df.reset_index(drop=True)
     train_df = train_df.reset_index(drop=True)
+
+    # Add ID column
+    train_df["id"] = [
+        hashlib.md5((row.context + row.question).encode("utf-8")).hexdigest()
+        for _, row in train_df.iterrows()
+    ]
+    val_df["id"] = [
+        hashlib.md5((row.context + row.question).encode("utf-8")).hexdigest()
+        for _, row in val_df.iterrows()
+    ]
+    test_df["id"] = [
+        hashlib.md5((row.context + row.question).encode("utf-8")).hexdigest()
+        for _, row in test_df.iterrows()
+    ]
+
+    # Check that the IDs are unique
+    assert train_df.id.nunique() == len(train_df)
+    assert val_df.id.nunique() == len(val_df)
+    assert test_df.id.nunique() == len(test_df)
 
     # Collect datasets in a dataset dictionary
     dataset = DatasetDict(

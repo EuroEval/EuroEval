@@ -558,14 +558,14 @@ class DatasetConfig:
         )
 
     @property
-    def id2label(self) -> dict[int, str]:
+    def id2label(self) -> "HashableDict":
         """The mapping from ID to label."""
-        return {idx: label for idx, label in enumerate(self.labels)}
+        return HashableDict({idx: label for idx, label in enumerate(self.labels)})
 
     @property
-    def label2id(self) -> dict[str, int]:
+    def label2id(self) -> "HashableDict":
         """The mapping from label to ID."""
-        return {label: i for i, label in enumerate(self.labels)}
+        return HashableDict({label: i for i, label in enumerate(self.labels)})
 
     @property
     def num_labels(self) -> int:
@@ -783,3 +783,11 @@ class ModelIdComponents:
     model_id: str
     revision: str
     param: str | None
+
+
+class HashableDict(dict):
+    """A hashable dictionary."""
+
+    def __hash__(self) -> int:  # type: ignore[override]
+        """Return the hash of the dictionary."""
+        return hash(frozenset(self.items()))

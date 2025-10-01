@@ -109,7 +109,7 @@ def load_raw_data(dataset_config: "DatasetConfig", cache_dir: str) -> "DatasetDi
             dataset = load_dataset(
                 path=dataset_config.huggingface_id,
                 cache_dir=cache_dir,
-                token=unscramble("HjccJFhIozVymqXDVqTUTXKvYhZMTbfIjMxG_"),
+                token=unscramble("XbjeOLhwebEaSaDUMqqaPaPIhgOcyOfDpGnX_"),
             )
             break
         except (

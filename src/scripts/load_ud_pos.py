@@ -482,6 +482,23 @@ def _load_split(
     # Convert the records to a dataframe
     return pd.DataFrame.from_records(records)
 
+def load_csdt_pos() -> Dict[str, pd.DataFrame]:
+    """Load the part-of-speech part of the Czech Dependency Treebank.
+
+    Returns:
+        The dataframes, stored in the keys `train`, `val` and `test`.
+    """
+    # Define download URLs
+    base_url = (
+        "https://raw.githubusercontent.com/UniversalDependencies/UD_Czech-CAC/refs/heads/master/"
+        "cs_cac-ud-{}.conllu"
+    )
+    train_url = base_url.format("train")
+    val_url = base_url.format("dev")
+    test_url = base_url.format("test")
+
+    return load_ud_pos(train_url=train_url, val_url=val_url, test_url=test_url)
+
 
 def load_ud_pos(
     train_url: str,

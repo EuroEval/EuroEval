@@ -31,13 +31,22 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   supporting Literal types in JSON schemas.
 - Removed "e" options from the Skolprov multiple-choice dataset, as this inconsistency
   in number of options caused issues when evaluating models on it.
+- Now caches functions related to loading repo info or fetching model configs from the
+  Hugging Face Hub, to avoid repeated calls to the Hub, resulting in rate limits.
 
 ## [v16.3.0] - 2025-09-23
 
 ### Added
 
+- Added support for Czech 🇨🇿! This includes the sentiment classification dataset
+  CSFD-sentiment, the linguistic acceptability dataset ScaLA-cs, the
+  linguistic acceptability dataset CS-GEC,
+  the named entity recognition dataset PONER,
+  the reading comprehension dataset SQAD,
+  the summarization dataset Czech News,
+  the common-sense reasoning dataset HellaSwag-cs, and the knowledge dataset Umimeto-qa.
 - Added support for Lithuanian 🇱🇹! This includes the sentiment classification dataset
-  Lithuanian Emotions, the linguistic acceptability dataset ScaLA-lt, the reading
+  Lithuanian Emotions, the linguistic acceptability dataset ScaLA-lt (unofficial), the reading
   comprehension dataset MultiWikiQA-lt, the named entity recognition dataset WikiANN-lt,
   the the history knowledge dataset LT-History, and the common-sense reasoning dataset
   Winogrande-lt. This was contributed by @oliverkinch ✨
