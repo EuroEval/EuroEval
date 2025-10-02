@@ -37,6 +37,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   or provide a Hugging Face Hub access token to evaluate the model.
 - Now caches functions related to loading repo info or fetching model configs from the
   Hugging Face Hub, to avoid repeated calls to the Hub, resulting in rate limits.
+- When running an evaluation that required the test split (e.g., European values
+  evaluation) as the last benchmark for a given model, then subsequent models would
+  continue to be evaluated on the test split, even if the user requested to use the
+  validation split. We now reset this not just after each dataset, but also after each
+  model, so that this does not happen.
 
 ## [v16.3.0] - 2025-09-23
 

@@ -661,6 +661,7 @@ class Benchmarker:
 
         num_finished_benchmarks = 0
         current_benchmark_results: list[BenchmarkResult] = list()
+        benchmark_params_to_revert: dict[str, t.Any] = dict()
         for model_config in model_configs:
             if not model_config_to_dataset_configs[model_config]:
                 logger.debug(
@@ -691,7 +692,6 @@ class Benchmarker:
                     )
 
             loaded_model: BenchmarkModule | None = None
-            benchmark_params_to_revert: dict[str, t.Any] = dict()
             for dataset_config in model_config_to_dataset_configs[model_config]:
                 # Revert any changes to the benchmark configuration made for the
                 # previous dataset
