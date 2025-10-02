@@ -407,8 +407,8 @@ def _filter_token_rage(data_dict: dict[str, list]) -> dict[str, list]:
 
     Example files:
 
-    - tests/test_scripts/test_create_scala/test_data/de_gsd-ud-train.conllu.in_dem
-    - tests/test_scripts/test_create_scala/test_data/pl_pdb-ud-train.conllu.ismy
+    - tests/test_scripts/test_create_scala/test_data/de_gsd-ud-train.conllu.adp_det
+    - tests/test_scripts/test_create_scala/test_data/pl_pdb-ud-train.conllu.aux_clitic_*
     """
 
     range_start: int = 0
