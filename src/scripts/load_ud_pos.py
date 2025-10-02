@@ -381,6 +381,14 @@ def load_ltdt_pos() -> Dict[str, pd.DataFrame]:
 
 
 def _load_file_or_url(url_or_path: str) -> list[str]:
+    """Load a file from a URL or local path.
+
+    Args:
+        url_or_path: The URL or local path to load.
+
+    Returns:
+        The list of strings, one per line.
+    """
     parsed = urlparse(url_or_path)
     if parsed.scheme.lower() in ("http", "https"):
         return requests.get(url_or_path).text.split("\n")
@@ -391,6 +399,13 @@ def _load_file_or_url(url_or_path: str) -> list[str]:
 
 
 def _append_token_data(dest: dict[str, list], src: dict[str, list], i: int) -> None:
+    """Append token data from src to dest at index i.
+
+    Args:
+        dest: The destination dictionary.
+        src: The source dictionary.
+        i: The index to copy.
+    """
     dest["ids"].append(src["ids"][i])
     dest["tokens"].append(src["tokens"][i])
     dest["pos_tags"].append(src["pos_tags"][i])
@@ -399,9 +414,9 @@ def _append_token_data(dest: dict[str, list], src: dict[str, list], i: int) -> N
 _RX_RANGE = re.compile(r"(\d+)-(\d+)", re.I)
 
 
-def _filter_token_rage(data_dict: dict[str, list]) -> dict[str, list]:
+def _filter_token_range(data_dict: dict[str, list]) -> dict[str, list]:
     output: DefaultDict[str, list] = defaultdict(list)
-    """This function filters out tokens that are specified in ranges in UD source files.
+    """This function filters out tokens that belong to ranges in UD source files.
     Tokens that span more than one position are not supported by
     create_scala's prepare_df logic.
 
@@ -409,6 +424,12 @@ def _filter_token_rage(data_dict: dict[str, list]) -> dict[str, list]:
 
     - tests/test_scripts/test_create_scala/test_data/de_gsd-ud-train.conllu.adp_det
     - tests/test_scripts/test_create_scala/test_data/pl_pdb-ud-train.conllu.aux_clitic_*
+
+    Args:
+        data_dict: The input data dictionary.
+    Returns:
+        The filtered data dictionary. Its format is identical to the input.
+
     """
 
     range_start: int = 0
@@ -437,6 +458,19 @@ def _load_split(
     filter_source: str | None = None,
     doc_process_fn: Callable[[str], str] = lambda x: x,
 ) -> pd.DataFrame:
+    """Load single split of the part-of-speech part of a Universal Dependencies treebank.
+
+    Args:
+        lines: The lines of the file to process.
+        filter_source:
+            If not `None`, only include entries with this source in the dataset.
+        doc_process_fn:
+            A function to apply to each document before parsing it.
+
+    Returns:
+        The dataframe for the given split.
+
+    """
     # Initialise the records, data dictionary and document
     records = []
     data_dict: Dict[str, list[Union[int, str]]] = defaultdict(list)
@@ -465,7 +499,7 @@ def _load_split(
             if len(data_dict["tokens"]) > 0:
                 if filter_source is None or filter_source in source:
                     merged_data_dict: Dict[str, Union[str, List[Union[int, str]]]]
-                    merged_data_dict = {**_filter_token_rage(data_dict), "doc": doc}
+                    merged_data_dict = {**_filter_token_range(data_dict), "doc": doc}
                     records.append(merged_data_dict)
             data_dict = defaultdict(list)
             doc = ""
@@ -481,6 +515,7 @@ def _load_split(
 
     # Convert the records to a dataframe
     return pd.DataFrame.from_records(records)
+
 
 def load_csdt_pos() -> Dict[str, pd.DataFrame]:
     """Load the part-of-speech part of the Czech Dependency Treebank.
@@ -533,13 +568,13 @@ def load_ud_pos(
     dfs = dict()
 
     # Code shortcut for brevity
-    lsfunc = partial(
+    split_loader = partial(
         _load_split, filter_source=filter_source, doc_process_fn=doc_process_fn
     )
 
-    dfs["train"] = lsfunc(lines=_load_file_or_url(train_url))
-    dfs["val"] = lsfunc(lines=_load_file_or_url(val_url))
-    dfs["test"] = lsfunc(lines=_load_file_or_url(test_url))
+    dfs["train"] = split_loader(lines=_load_file_or_url(train_url))
+    dfs["val"] = split_loader(lines=_load_file_or_url(val_url))
+    dfs["test"] = split_loader(lines=_load_file_or_url(test_url))
 
     # Return the dictionary of dataframes
     return dfs
