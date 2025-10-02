@@ -67,7 +67,7 @@ def test_load_ud_pos_pl_aux_clitic_04(tst_data_path: Path) -> None:
     _test_load_ud_pos(
         tst_data_path,
         "pl_pdb-ud-train.conllu.aux_clitic_03",
-        [_wb("chiał"), _wb("by"), _wb("m")],
+        [_wb("chciał"), _wb("by"), _wb("m")],
         _wb("chciałbym"),
     )
 
