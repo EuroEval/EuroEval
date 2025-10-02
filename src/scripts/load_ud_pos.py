@@ -401,7 +401,7 @@ _RX_RANGE = re.compile(r"(\d+)-(\d+)", re.I)
 
 def _filter_token_rage(data_dict: dict[str, list]) -> dict[str, list]:
     output: DefaultDict[str, list] = defaultdict(list)
-    """This function filters out tokens that are spefified in ranges in UD surce files.
+    """This function filters out tokens that are specified in ranges in UD source files.
     Tokens that span more than one position are not supported by
     create_scala's prepare_df logic.
 
