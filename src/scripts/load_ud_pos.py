@@ -470,7 +470,6 @@ def _load_split(
 
     Returns:
         The dataframe for the given split.
-
     """
     # Initialise the records, data dictionary and document
     records = []
