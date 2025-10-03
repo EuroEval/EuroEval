@@ -12,7 +12,7 @@ import logging
 import re
 from collections import defaultdict
 from functools import partial
-from typing import Callable, DefaultDict, Dict, List, Union
+from typing import Callable, DefaultDict
 from urllib.parse import urlparse
 
 import pandas as pd
@@ -22,7 +22,7 @@ logging.basicConfig(format="%(asctime)s ⋅ %(message)s", level=logging.INFO)
 logger = logging.getLogger("load_ud_pos")
 
 
-def load_dadt_pos() -> Dict[str, pd.DataFrame]:
+def load_dadt_pos() -> dict[str, pd.DataFrame]:
     """Load the part-of-speech part of the Danish Dependency Treebank.
 
     Returns:
@@ -40,7 +40,7 @@ def load_dadt_pos() -> Dict[str, pd.DataFrame]:
     return load_ud_pos(train_url=train_url, val_url=val_url, test_url=test_url)
 
 
-def load_ptdt_pos() -> Dict[str, pd.DataFrame]:
+def load_ptdt_pos() -> dict[str, pd.DataFrame]:
     """Load the part-of-speech part of the Portuguese Dependency Treebank.
 
     Returns:
@@ -63,7 +63,7 @@ def load_ptdt_pos() -> Dict[str, pd.DataFrame]:
     )
 
 
-def load_fodt_pos() -> Dict[str, pd.DataFrame]:
+def load_fodt_pos() -> dict[str, pd.DataFrame]:
     """Load the part-of-speech part of the Faroese Dependency Treebank.
 
     Returns:
@@ -81,7 +81,7 @@ def load_fodt_pos() -> Dict[str, pd.DataFrame]:
     return load_ud_pos(train_url=train_url, val_url=val_url, test_url=test_url)
 
 
-def load_isdt_pos() -> Dict[str, pd.DataFrame]:
+def load_isdt_pos() -> dict[str, pd.DataFrame]:
     """Load the part-of-speech part of the Icelandic Dependency Treebank.
 
     Returns:
@@ -99,7 +99,7 @@ def load_isdt_pos() -> Dict[str, pd.DataFrame]:
     return load_ud_pos(train_url=train_url, val_url=val_url, test_url=test_url)
 
 
-def load_nodt_nb_pos() -> Dict[str, pd.DataFrame]:
+def load_nodt_nb_pos() -> dict[str, pd.DataFrame]:
     """Load the part-of-speech part of the Norwegian Bokmål Dependency Treebank.
 
     Returns:
@@ -117,7 +117,7 @@ def load_nodt_nb_pos() -> Dict[str, pd.DataFrame]:
     return load_ud_pos(train_url=train_url, val_url=val_url, test_url=test_url)
 
 
-def load_nodt_nn_pos() -> Dict[str, pd.DataFrame]:
+def load_nodt_nn_pos() -> dict[str, pd.DataFrame]:
     """Load the part-of-speech part of the Norwegian Nynorsk Dependency Treebank.
 
     Returns:
@@ -135,7 +135,7 @@ def load_nodt_nn_pos() -> Dict[str, pd.DataFrame]:
     return load_ud_pos(train_url=train_url, val_url=val_url, test_url=test_url)
 
 
-def load_svdt_pos() -> Dict[str, pd.DataFrame]:
+def load_svdt_pos() -> dict[str, pd.DataFrame]:
     """Load the part-of-speech part of the Swedish Dependency Treebank.
 
     Returns:
@@ -182,7 +182,7 @@ def load_svdt_pos() -> Dict[str, pd.DataFrame]:
     )
 
 
-def load_dedt_pos() -> Dict[str, pd.DataFrame]:
+def load_dedt_pos() -> dict[str, pd.DataFrame]:
     """Load the part-of-speech part of the German Dependency Treebank.
 
     Returns:
@@ -200,7 +200,7 @@ def load_dedt_pos() -> Dict[str, pd.DataFrame]:
     return load_ud_pos(train_url=train_url, val_url=val_url, test_url=test_url)
 
 
-def load_nldt_pos() -> Dict[str, pd.DataFrame]:
+def load_nldt_pos() -> dict[str, pd.DataFrame]:
     """Load the part-of-speech part of the Dutch Dependency Treebank.
 
     Returns:
@@ -218,7 +218,7 @@ def load_nldt_pos() -> Dict[str, pd.DataFrame]:
     return load_ud_pos(train_url=train_url, val_url=val_url, test_url=test_url)
 
 
-def load_endt_pos() -> Dict[str, pd.DataFrame]:
+def load_endt_pos() -> dict[str, pd.DataFrame]:
     """Load the part-of-speech part of the English Dependency Treebank.
 
     Returns:
@@ -236,7 +236,7 @@ def load_endt_pos() -> Dict[str, pd.DataFrame]:
     return load_ud_pos(train_url=train_url, val_url=val_url, test_url=test_url)
 
 
-def load_frdt_pos() -> Dict[str, pd.DataFrame]:
+def load_frdt_pos() -> dict[str, pd.DataFrame]:
     """Load the part-of-speech part of the French Dependency Treebank.
 
     Returns:
@@ -254,7 +254,7 @@ def load_frdt_pos() -> Dict[str, pd.DataFrame]:
     return load_ud_pos(train_url=train_url, val_url=val_url, test_url=test_url)
 
 
-def load_itdt_pos() -> Dict[str, pd.DataFrame]:
+def load_itdt_pos() -> dict[str, pd.DataFrame]:
     """Load the part-of-speech part of the Italian Dependency Treebank.
 
     Returns:
@@ -272,7 +272,7 @@ def load_itdt_pos() -> Dict[str, pd.DataFrame]:
     return load_ud_pos(train_url=train_url, val_url=val_url, test_url=test_url)
 
 
-def load_esdt_pos() -> Dict[str, pd.DataFrame]:
+def load_esdt_pos() -> dict[str, pd.DataFrame]:
     """Load the part-of-speech part of the Spanish Dependency Treebank.
 
     Returns:
@@ -290,7 +290,7 @@ def load_esdt_pos() -> Dict[str, pd.DataFrame]:
     return load_ud_pos(train_url=train_url, val_url=val_url, test_url=test_url)
 
 
-def load_fidt_pos() -> Dict[str, pd.DataFrame]:
+def load_fidt_pos() -> dict[str, pd.DataFrame]:
     """Load the part-of-speech part of the Finnish Dependency Treebank.
 
     Returns:
@@ -308,7 +308,7 @@ def load_fidt_pos() -> Dict[str, pd.DataFrame]:
     return load_ud_pos(train_url=train_url, val_url=val_url, test_url=test_url)
 
 
-def load_lvdt_pos() -> Dict[str, pd.DataFrame]:
+def load_lvdt_pos() -> dict[str, pd.DataFrame]:
     """Load the part-of-speech part of the Latvian Dependency Treebank.
 
     Returns:
@@ -326,7 +326,7 @@ def load_lvdt_pos() -> Dict[str, pd.DataFrame]:
     return load_ud_pos(train_url=train_url, val_url=val_url, test_url=test_url)
 
 
-def load_etdt_pos() -> Dict[str, pd.DataFrame]:
+def load_etdt_pos() -> dict[str, pd.DataFrame]:
     """Load the part-of-speech part of the Estonian Dependency Treebank.
 
     Returns:
@@ -344,7 +344,7 @@ def load_etdt_pos() -> Dict[str, pd.DataFrame]:
     return load_ud_pos(train_url=train_url, val_url=val_url, test_url=test_url)
 
 
-def load_pldt_pos() -> Dict[str, pd.DataFrame]:
+def load_pldt_pos() -> dict[str, pd.DataFrame]:
     """Load the part-of-speech part of the Polish Dependency Treebank.
 
     Returns:
@@ -362,7 +362,7 @@ def load_pldt_pos() -> Dict[str, pd.DataFrame]:
     return load_ud_pos(train_url=train_url, val_url=val_url, test_url=test_url)
 
 
-def load_ltdt_pos() -> Dict[str, pd.DataFrame]:
+def load_ltdt_pos() -> dict[str, pd.DataFrame]:
     """Load the part-of-speech part of the Lithuanian Dependency Treebank.
 
     Returns:
@@ -474,7 +474,7 @@ def _load_split(
     """
     # Initialise the records, data dictionary and document
     records = []
-    data_dict: Dict[str, list[Union[int, str]]] = defaultdict(list)
+    data_dict: dict[str, list[int | str]] = defaultdict(list)
     doc = ""
     source = ""
 
@@ -499,7 +499,7 @@ def _load_split(
         elif line == "":
             if len(data_dict["tokens"]) > 0:
                 if filter_source is None or filter_source in source:
-                    merged_data_dict: Dict[str, Union[str, List[Union[int, str]]]]
+                    merged_data_dict: dict[str, str | list[int | str]]
                     merged_data_dict = {**_filter_token_range(data_dict), "doc": doc}
                     records.append(merged_data_dict)
             data_dict = defaultdict(list)
@@ -518,7 +518,7 @@ def _load_split(
     return pd.DataFrame.from_records(records)
 
 
-def load_csdt_pos() -> Dict[str, pd.DataFrame]:
+def load_csdt_pos() -> dict[str, pd.DataFrame]:
     """Load the part-of-speech part of the Czech Dependency Treebank.
 
     Returns:
@@ -542,7 +542,7 @@ def load_ud_pos(
     test_url: str,
     doc_process_fn: Callable[[str], str] = lambda x: x,
     filter_source: str | None = None,
-) -> Dict[str, pd.DataFrame]:
+) -> dict[str, pd.DataFrame]:
     """Load the part-of-speech part of a Universal Dependencies treebank.
 
     Args:
