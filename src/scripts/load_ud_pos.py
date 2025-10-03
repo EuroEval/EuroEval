@@ -411,10 +411,10 @@ def _append_token_data(dest: dict[str, list], src: dict[str, list], i: int) -> N
     dest["pos_tags"].append(src["pos_tags"][i])
 
 
-_RX_RANGE = re.compile(r"(\d+)-(\d+)", re.I)
-
-
-def _filter_token_range(data_dict: dict[str, list]) -> dict[str, list]:
+def _filter_token_range(
+    data_dict: dict[str, list],
+    RX_RANGE: re.Pattern[str] = re.compile(r"(\d+)-(\d+)", re.I),
+) -> dict[str, list]:
     """This function filters out tokens that belong to ranges in UD source files.
 
     Tokens that span more than one position are not supported by
@@ -427,6 +427,7 @@ def _filter_token_range(data_dict: dict[str, list]) -> dict[str, list]:
 
     Args:
         data_dict: The input data dictionary.
+        RX_RANGE: A regex pattern to identify ranges. Used to cache compiled regex.
 
     Returns:
         The filtered data dictionary. Its format is identical to the input.
@@ -437,7 +438,7 @@ def _filter_token_range(data_dict: dict[str, list]) -> dict[str, list]:
     range_end: int = 0
 
     for i in range(len(data_dict["ids"])):
-        match = _RX_RANGE.match(data_dict["ids"][i])
+        match = RX_RANGE.match(data_dict["ids"][i])
         if match is not None:
             _append_token_data(output, data_dict, i)
             range_start = int(match.group(1))
