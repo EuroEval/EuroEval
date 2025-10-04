@@ -6,6 +6,7 @@ from .data_models import Task
 from .enums import GenerativeType, ModelType, TaskGroup
 from .prompt_templates import (
     LA_TEMPLATES,
+    LOGIC_TEMPLATES,
     MULTIPLE_CHOICE_TEMPLATES,
     NER_TEMPLATES,
     RC_TEMPLATES,
@@ -158,4 +159,16 @@ SPEED = Task(
     default_num_few_shot_examples=0,
     default_max_generated_tokens=5,
     default_labels=[],
+)
+
+
+LOGIC = Task(
+    name="logical-reasoning",
+    task_group=TaskGroup.LOGICAL_REASONING,
+    template_dict=LOGIC_TEMPLATES,
+    metrics=[m.puzzle_level_accuracy_metric, m.cell_wise_accuracy_metric],
+    default_num_few_shot_examples=8,
+    default_max_generated_tokens=256,
+    default_labels=[],
+    uses_structured_output=True,
 )
