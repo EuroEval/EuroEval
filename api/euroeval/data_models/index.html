@@ -641,6 +641,8 @@
       
         
       
+        
+      
     
     
     
@@ -997,6 +999,8 @@
       
         
           
+        
+      
         
       
         
@@ -1763,6 +1767,15 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#euroeval.data_models.HashableDict" class="md-nav__link">
+    <span class="md-ellipsis">
+      HashableDict
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -2455,6 +2468,15 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#euroeval.data_models.HashableDict" class="md-nav__link">
+    <span class="md-ellipsis">
+      HashableDict
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -2558,6 +2580,11 @@ Configuration for task-specific prompting across languages.</p>
 <p><span class="mkapi-item-name"><a href="./#euroeval.data_models.ModelIdComponents" title="euroeval.data_models.ModelIdComponents">ModelIdComponents</a></span>
  <span class="mkapi-dash">&mdash;</span>
 A model ID split into its components.</p>
+</li>
+<li>
+<p><span class="mkapi-item-name"><a href="./#euroeval.data_models.HashableDict" title="euroeval.data_models.HashableDict">HashableDict</a></span>
+ <span class="mkapi-dash">&mdash;</span>
+A hashable dictionary.</p>
 </li>
 </ul>
 </div>
@@ -3228,12 +3255,12 @@ The ISO 639-1 language codes of the entries in the dataset.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">id2label</span> : 
-<span class="mkapi-item-type">dict[int, str]</span> <span class="mkapi-dash">&mdash;</span>
+<span class="mkapi-item-type"><a href="./#euroeval.data_models.HashableDict" title="euroeval.data_models.HashableDict">HashableDict</a></span> <span class="mkapi-dash">&mdash;</span>
 The mapping from ID to label.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">label2id</span> : 
-<span class="mkapi-item-type">dict[str, int]</span> <span class="mkapi-dash">&mdash;</span>
+<span class="mkapi-item-type"><a href="./#euroeval.data_models.HashableDict" title="euroeval.data_models.HashableDict">HashableDict</a></span> <span class="mkapi-dash">&mdash;</span>
 The mapping from label to ID.</p>
 </li>
 <li>
@@ -3580,7 +3607,7 @@ Converts a set of labels to a natural string, in the specified language.</p>
 </span>
 </span><span class="mkapi-object-kind">property</span>
 <span class="mkapi-object-parent">
-<a href="./#euroeval.data_models.DatasetConfig" title="euroeval.data_models.DatasetConfig">DatasetConfig</a><span class="mkapi-dot">.</span></span><span class="mkapi-object-name"><a href="./#euroeval.data_models.DatasetConfig.id2label" title="euroeval.data_models.DatasetConfig.id2label">id2label</a></span><span class="mkapi-signature"><span class="mkapi-colon">: </span><span class="mkapi-return">dict[int, str]</span></span>
+<a href="./#euroeval.data_models.DatasetConfig" title="euroeval.data_models.DatasetConfig">DatasetConfig</a><span class="mkapi-dot">.</span></span><span class="mkapi-object-name"><a href="./#euroeval.data_models.DatasetConfig.id2label" title="euroeval.data_models.DatasetConfig.id2label">id2label</a></span><span class="mkapi-signature"><span class="mkapi-colon">: </span><span class="mkapi-return"><a href="./#euroeval.data_models.HashableDict" title="euroeval.data_models.HashableDict">HashableDict</a></span></span>
 </p>
 <div class="mkapi-document">
 <p>The mapping from ID to label.</p>
@@ -3597,7 +3624,7 @@ Converts a set of labels to a natural string, in the specified language.</p>
 </span>
 </span><span class="mkapi-object-kind">property</span>
 <span class="mkapi-object-parent">
-<a href="./#euroeval.data_models.DatasetConfig" title="euroeval.data_models.DatasetConfig">DatasetConfig</a><span class="mkapi-dot">.</span></span><span class="mkapi-object-name"><a href="./#euroeval.data_models.DatasetConfig.label2id" title="euroeval.data_models.DatasetConfig.label2id">label2id</a></span><span class="mkapi-signature"><span class="mkapi-colon">: </span><span class="mkapi-return">dict[str, int]</span></span>
+<a href="./#euroeval.data_models.DatasetConfig" title="euroeval.data_models.DatasetConfig">DatasetConfig</a><span class="mkapi-dot">.</span></span><span class="mkapi-object-name"><a href="./#euroeval.data_models.DatasetConfig.label2id" title="euroeval.data_models.DatasetConfig.label2id">label2id</a></span><span class="mkapi-signature"><span class="mkapi-colon">: </span><span class="mkapi-return"><a href="./#euroeval.data_models.HashableDict" title="euroeval.data_models.HashableDict">HashableDict</a></span></span>
 </p>
 <div class="mkapi-document">
 <p>The mapping from label to ID.</p>
@@ -4007,6 +4034,22 @@ The parameter of the model, if any.</p>
 </li>
 </ul>
 </div>
+</div>
+<p class="mkapi-object mkapi-page-source" id="euroeval.data_models.HashableDict">
+<span class="mkapi-object-link">
+
+
+<a href="../../../src/euroeval/data_models/#euroeval.data_models.HashableDict" title="Go to source">source</a>
+<span class="mkapi-document-toggle" title="Toggle all docs">
+<i class="fa-regular fa-square-minus"></i>
+</span>
+</span><span class="mkapi-object-kind">class</span>
+<span class="mkapi-object-name"><a href="./#euroeval.data_models.HashableDict" title="euroeval.data_models.HashableDict">HashableDict</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-paren">)</span></span>
+</p>
+<div class="mkapi-document">
+<p class="mkapi-bases">Bases :
+<span class="mkapi-base">dict</span></p>
+<p>A hashable dictionary.</p>
 </div>
 
 

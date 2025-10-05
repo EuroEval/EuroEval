@@ -641,6 +641,8 @@
       
         
       
+        
+      
     
     
     
@@ -1355,6 +1357,8 @@
       
         
           
+        
+      
         
       
         
@@ -3115,7 +3119,7 @@ A pair (model, tokeniser), with the loaded model and tokeniser</p>
 <i class="fa-regular fa-square-minus"></i>
 </span>
 </span>
-<span class="mkapi-object-name"><a href="./#euroeval.benchmark_modules.hf.get_model_repo_info" title="euroeval.benchmark_modules.hf.get_model_repo_info">get_model_repo_info</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">model_id</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str</span><span class="mkapi-comma">, </span><span class="mkapi-arg">revision</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str</span><span class="mkapi-comma">, </span><span class="mkapi-arg">benchmark_config</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><a href="../../data_models/#euroeval.data_models.BenchmarkConfig" title="euroeval.data_models.BenchmarkConfig">BenchmarkConfig</a></span><span class="mkapi-paren">)</span><span class="mkapi-arrow"> → </span><span class="mkapi-return"><a href="../../data_models/#euroeval.data_models.HFModelInfo" title="euroeval.data_models.HFModelInfo">HFModelInfo</a> | None</span></span>
+<span class="mkapi-object-name"><a href="./#euroeval.benchmark_modules.hf.get_model_repo_info" title="euroeval.benchmark_modules.hf.get_model_repo_info">get_model_repo_info</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">model_id</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str</span><span class="mkapi-comma">, </span><span class="mkapi-arg">revision</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str</span><span class="mkapi-comma">, </span><span class="mkapi-arg">api_key</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str | None</span><span class="mkapi-comma">, </span><span class="mkapi-arg">cache_dir</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str</span><span class="mkapi-comma">, </span><span class="mkapi-arg">trust_remote_code</span><span class="mkapi-colon">: </span><span class="mkapi-ann">bool</span><span class="mkapi-comma">, </span><span class="mkapi-arg">requires_safetensors</span><span class="mkapi-colon">: </span><span class="mkapi-ann">bool</span><span class="mkapi-comma">, </span><span class="mkapi-arg">run_with_cli</span><span class="mkapi-colon">: </span><span class="mkapi-ann">bool</span><span class="mkapi-paren">)</span><span class="mkapi-arrow"> → </span><span class="mkapi-return"><a href="../../data_models/#euroeval.data_models.HFModelInfo" title="euroeval.data_models.HFModelInfo">HFModelInfo</a> | None</span></span>
 </p>
 <div class="mkapi-document">
 <p>Get the information about the model from the HF Hub or a local directory.</p>
@@ -3138,11 +3142,6 @@ The model ID.</p>
 <p><span class="mkapi-item-name">revision</span> : 
 <span class="mkapi-item-type">str</span> <span class="mkapi-dash">&mdash;</span>
 The revision of the model.</p>
-</li>
-<li>
-<p><span class="mkapi-item-name">benchmark_config</span> : 
-<span class="mkapi-item-type"><a href="../../data_models/#euroeval.data_models.BenchmarkConfig" title="euroeval.data_models.BenchmarkConfig">BenchmarkConfig</a></span> <span class="mkapi-dash">&mdash;</span>
-The benchmark configuration.</p>
 </li>
 </ul>
 </div>
@@ -3282,7 +3281,11 @@ The loaded tokeniser.</p>
 <li>
 <p><span class="mkapi-item-name">device</span> : 
 <span class="mkapi-item-type"><span class="mkapi-tooltip" title="torch">torch</span>.<span class="mkapi-tooltip" title="torch.device">device</span></span> <span class="mkapi-dash">&mdash;</span>
-The device to use.
+The device to use.</p>
+</li>
+<li>
+<p><span class="mkapi-item-name">dtype_is_set</span> : 
+<span class="mkapi-item-type">bool</span> <span class="mkapi-dash">&mdash;</span>
 Whether the data type is set in the model configuration.</p>
 </li>
 <li>

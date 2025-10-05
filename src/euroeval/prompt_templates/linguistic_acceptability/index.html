@@ -633,6 +633,8 @@
       
         
       
+        
+      
     
     
     
@@ -1027,12 +1029,21 @@
 <span class="normal">182</span>
 <span class="normal">183</span>
 <span class="normal">184</span>
-<span class="normal">185</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Templates for the Linguistic Acceptability task.&quot;&quot;&quot;</span>
+<span class="normal">185</span>
+<span class="normal">186</span>
+<span class="normal">187</span>
+<span class="normal">188</span>
+<span class="normal">189</span>
+<span class="normal">190</span>
+<span class="normal">191</span>
+<span class="normal">192</span>
+<span class="normal">193</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Templates for the Linguistic Acceptability task.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">t</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">..data_models</span><span class="w"> </span><span class="kn">import</span> <span class="n">PromptConfig</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..languages</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">CS</span><span class="p">,</span>
     <span class="n">DA</span><span class="p">,</span>
     <span class="n">DE</span><span class="p">,</span>
     <span class="n">EN</span><span class="p">,</span>
@@ -1058,6 +1069,13 @@
     <span class="kn">from</span><span class="w"> </span><span class="nn">..data_models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Language</span>
 
 <span class="n">LA_TEMPLATES</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="s2">&quot;Language&quot;</span><span class="p">,</span> <span class="n">PromptConfig</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="n">CS</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
+        <span class="n">default_prompt_label_mapping</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">correct</span><span class="o">=</span><span class="s2">&quot;ano&quot;</span><span class="p">,</span> <span class="n">incorrect</span><span class="o">=</span><span class="s2">&quot;ne&quot;</span><span class="p">),</span>
+        <span class="n">default_prompt_prefix</span><span class="o">=</span><span class="s2">&quot;Následující jsou věty a zda jsou gramaticky správné.&quot;</span><span class="p">,</span>
+        <span class="n">default_prompt_template</span><span class="o">=</span><span class="s2">&quot;Věta: </span><span class="si">{text}</span><span class="se">\n</span><span class="s2">Gramaticky správná: </span><span class="si">{label}</span><span class="s2">&quot;</span><span class="p">,</span>
+        <span class="n">default_instruction_prompt</span><span class="o">=</span><span class="s2">&quot;Věta: </span><span class="si">{text}</span><span class="se">\n\n</span><span class="s2">Určete, zda je věta gramaticky &quot;</span>
+        <span class="s2">&quot;správná nebo ne. Odpovězte </span><span class="si">{labels_str}</span><span class="s2">, a nic jiného.&quot;</span><span class="p">,</span>
+    <span class="p">),</span>
     <span class="n">DA</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
         <span class="n">default_prompt_label_mapping</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">correct</span><span class="o">=</span><span class="s2">&quot;ja&quot;</span><span class="p">,</span> <span class="n">incorrect</span><span class="o">=</span><span class="s2">&quot;nej&quot;</span><span class="p">),</span>
         <span class="n">default_prompt_prefix</span><span class="o">=</span><span class="s2">&quot;Følgende er sætninger og om de er grammatisk korrekte.&quot;</span><span class="p">,</span>

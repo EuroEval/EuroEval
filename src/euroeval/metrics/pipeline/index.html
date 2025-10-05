@@ -633,6 +633,8 @@
       
         
       
+        
+      
     
     
     
@@ -1309,7 +1311,7 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Loading pipeline from </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">pipeline_repo</span><span class="si">}</span><span class="s2">...&quot;</span><span class="p">)</span>
         <span class="n">folder_path</span> <span class="o">=</span> <span class="n">hf_hub</span><span class="o">.</span><span class="n">HfApi</span><span class="p">(</span>
-            <span class="n">token</span><span class="o">=</span><span class="n">unscramble</span><span class="p">(</span><span class="s2">&quot;HjccJFhIozVymqXDVqTUTXKvYhZMTbfIjMxG_&quot;</span><span class="p">)</span>
+            <span class="n">token</span><span class="o">=</span><span class="n">unscramble</span><span class="p">(</span><span class="s2">&quot;XbjeOLhwebEaSaDUMqqaPaPIhgOcyOfDpGnX_&quot;</span><span class="p">)</span>
         <span class="p">)</span><span class="o">.</span><span class="n">snapshot_download</span><span class="p">(</span><span class="n">repo_id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">pipeline_repo</span><span class="p">,</span> <span class="n">repo_type</span><span class="o">=</span><span class="s2">&quot;model&quot;</span><span class="p">)</span>
         <span class="n">model_path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">folder_path</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">pipeline_file_name</span><span class="p">)</span>
         <span class="k">try</span><span class="p">:</span>

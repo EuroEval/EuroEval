@@ -633,6 +633,8 @@
       
         
       
+        
+      
     
     
     
@@ -1116,6 +1118,15 @@
   <a href="#euroeval.data_models.ModelIdComponents" class="md-nav__link">
     <span class="md-ellipsis">
       ModelIdComponents
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#euroeval.data_models.HashableDict" class="md-nav__link">
+    <span class="md-ellipsis">
+      HashableDict
     </span>
   </a>
   
@@ -1932,7 +1943,15 @@
 <span class="normal">782</span>
 <span class="normal">783</span>
 <span class="normal">784</span>
-<span class="normal">785</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Data models used in EuroEval.&quot;&quot;&quot;</span>
+<span class="normal">785</span>
+<span class="normal">786</span>
+<span class="normal">787</span>
+<span class="normal">788</span>
+<span class="normal">789</span>
+<span class="normal">790</span>
+<span class="normal">791</span>
+<span class="normal">792</span>
+<span class="normal">793</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Data models used in EuroEval.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">pathlib</span>
@@ -2492,14 +2511,14 @@
         <span class="p">)</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">id2label</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span><div class="mkapi-source-link" id="euroeval.data_models.DatasetConfig.id2label"><a href="../../../api/euroeval/data_models/#euroeval.data_models.DatasetConfig.id2label" title="Go to docs">[docs]</a></div>
+    <span class="k">def</span><span class="w"> </span><span class="nf">id2label</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;HashableDict&quot;</span><span class="p">:</span><div class="mkapi-source-link" id="euroeval.data_models.DatasetConfig.id2label"><a href="../../../api/euroeval/data_models/#euroeval.data_models.DatasetConfig.id2label" title="Go to docs">[docs]</a></div>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;The mapping from ID to label.&quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="p">{</span><span class="n">idx</span><span class="p">:</span> <span class="n">label</span> <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">label</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">labels</span><span class="p">)}</span>
+        <span class="k">return</span> <span class="n">HashableDict</span><span class="p">({</span><span class="n">idx</span><span class="p">:</span> <span class="n">label</span> <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">label</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">labels</span><span class="p">)})</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">label2id</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">]:</span><div class="mkapi-source-link" id="euroeval.data_models.DatasetConfig.label2id"><a href="../../../api/euroeval/data_models/#euroeval.data_models.DatasetConfig.label2id" title="Go to docs">[docs]</a></div>
+    <span class="k">def</span><span class="w"> </span><span class="nf">label2id</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;HashableDict&quot;</span><span class="p">:</span><div class="mkapi-source-link" id="euroeval.data_models.DatasetConfig.label2id"><a href="../../../api/euroeval/data_models/#euroeval.data_models.DatasetConfig.label2id" title="Go to docs">[docs]</a></div>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;The mapping from label to ID.&quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="p">{</span><span class="n">label</span><span class="p">:</span> <span class="n">i</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">label</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">labels</span><span class="p">)}</span>
+        <span class="k">return</span> <span class="n">HashableDict</span><span class="p">({</span><span class="n">label</span><span class="p">:</span> <span class="n">i</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">label</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">labels</span><span class="p">)})</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">num_labels</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span><div class="mkapi-source-link" id="euroeval.data_models.DatasetConfig.num_labels"><a href="../../../api/euroeval/data_models/#euroeval.data_models.DatasetConfig.num_labels" title="Go to docs">[docs]</a></div>
@@ -2717,6 +2736,14 @@
     <span class="n">model_id</span><span class="p">:</span> <span class="nb">str</span>
     <span class="n">revision</span><span class="p">:</span> <span class="nb">str</span>
     <span class="n">param</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">HashableDict</span><span class="p">(</span><span class="nb">dict</span><span class="p">):</span><div class="mkapi-source-link" id="euroeval.data_models.HashableDict"><a href="../../../api/euroeval/data_models/#euroeval.data_models.HashableDict" title="Go to docs">[docs]</a></div>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;A hashable dictionary.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__hash__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>  <span class="c1"># type: ignore[override]</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the hash of the dictionary.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">hash</span><span class="p">(</span><span class="nb">frozenset</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">items</span><span class="p">()))</span>
 </code></pre></div></td></tr></table></div>
 
 

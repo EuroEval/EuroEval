@@ -633,6 +633,8 @@
       
         
       
+        
+      
     
     
     
@@ -1240,12 +1242,33 @@
 <span class="normal">395</span>
 <span class="normal">396</span>
 <span class="normal">397</span>
-<span class="normal">398</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Templates for the Named Entity Recognition task.&quot;&quot;&quot;</span>
+<span class="normal">398</span>
+<span class="normal">399</span>
+<span class="normal">400</span>
+<span class="normal">401</span>
+<span class="normal">402</span>
+<span class="normal">403</span>
+<span class="normal">404</span>
+<span class="normal">405</span>
+<span class="normal">406</span>
+<span class="normal">407</span>
+<span class="normal">408</span>
+<span class="normal">409</span>
+<span class="normal">410</span>
+<span class="normal">411</span>
+<span class="normal">412</span>
+<span class="normal">413</span>
+<span class="normal">414</span>
+<span class="normal">415</span>
+<span class="normal">416</span>
+<span class="normal">417</span>
+<span class="normal">418</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Templates for the Named Entity Recognition task.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">t</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">..data_models</span><span class="w"> </span><span class="kn">import</span> <span class="n">PromptConfig</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..languages</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">CS</span><span class="p">,</span>
     <span class="n">DA</span><span class="p">,</span>
     <span class="n">DE</span><span class="p">,</span>
     <span class="n">EN</span><span class="p">,</span>
@@ -1272,6 +1295,25 @@
 
 
 <span class="n">NER_TEMPLATES</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="s2">&quot;Language&quot;</span><span class="p">,</span> <span class="n">PromptConfig</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="n">CS</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
+        <span class="n">default_prompt_label_mapping</span><span class="o">=</span><span class="p">{</span>
+            <span class="s2">&quot;b-per&quot;</span><span class="p">:</span> <span class="s2">&quot;osoba&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;i-per&quot;</span><span class="p">:</span> <span class="s2">&quot;osoba&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;b-loc&quot;</span><span class="p">:</span> <span class="s2">&quot;místo&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;i-loc&quot;</span><span class="p">:</span> <span class="s2">&quot;místo&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;b-org&quot;</span><span class="p">:</span> <span class="s2">&quot;organizace&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;i-org&quot;</span><span class="p">:</span> <span class="s2">&quot;organizace&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;b-misc&quot;</span><span class="p">:</span> <span class="s2">&quot;různé&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;i-misc&quot;</span><span class="p">:</span> <span class="s2">&quot;různé&quot;</span><span class="p">,</span>
+        <span class="p">},</span>
+        <span class="n">default_prompt_prefix</span><span class="o">=</span><span class="s2">&quot;Následující jsou věty a JSON slovníky s pojmenovanými &quot;</span>
+        <span class="s2">&quot;entitami, které se v dané větě vyskytují.&quot;</span><span class="p">,</span>
+        <span class="n">default_prompt_template</span><span class="o">=</span><span class="s2">&quot;Věta: </span><span class="si">{text}</span><span class="se">\n</span><span class="s2">Pojmenované entity: </span><span class="si">{label}</span><span class="s2">&quot;</span><span class="p">,</span>
+        <span class="n">default_instruction_prompt</span><span class="o">=</span><span class="s2">&quot;Věta: </span><span class="si">{text}</span><span class="se">\n\n</span><span class="s2">Identifikujte pojmenované entity &quot;</span>
+        <span class="s2">&quot;ve větě. Měli byste to vypsat jako JSON slovník s klíči </span><span class="si">{labels_str}</span><span class="s2">. &quot;</span>
+        <span class="s2">&quot;Hodnoty by měly být seznamy pojmenovaných entit tohoto typu, přesně tak, &quot;</span>
+        <span class="s2">&quot;jak se objevují ve větě.&quot;</span><span class="p">,</span>
+    <span class="p">),</span>
     <span class="n">DA</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
         <span class="n">default_prompt_label_mapping</span><span class="o">=</span><span class="p">{</span>
             <span class="s2">&quot;b-per&quot;</span><span class="p">:</span> <span class="s2">&quot;person&quot;</span><span class="p">,</span>
@@ -1613,10 +1655,10 @@
         <span class="n">default_prompt_prefix</span><span class="o">=</span><span class="s2">&quot;Poniżej znajdują się zdania i słowniki JSON &quot;</span>
         <span class="s2">&quot;z jednostkami nazewniczymi, które występują w danym zdaniu.&quot;</span><span class="p">,</span>
         <span class="n">default_prompt_template</span><span class="o">=</span><span class="s2">&quot;Zdanie: </span><span class="si">{text}</span><span class="se">\n</span><span class="s2">Jednostki nazewnicze: </span><span class="si">{label}</span><span class="s2">&quot;</span><span class="p">,</span>
-        <span class="n">default_instruction_prompt</span><span class="o">=</span><span class="s2">&quot;Zdanie: </span><span class="si">{text}</span><span class="se">\n\n</span><span class="s2">Zidentyfikuj jednostki nazewnicze &quot;</span>
-        <span class="s2">&quot;w zdaniu. Wypisz je jako słownik JSON z kluczami &quot;</span>
-        <span class="s2">&quot;</span><span class="si">{labels_str}</span><span class="s2">. Wartości odpowiadające kluczom powinny być listami jednostek nazewniczych &quot;</span>
-        <span class="s2">&quot;danego typu, dokładnie tak, jak pojawiają się w zdaniu.&quot;</span><span class="p">,</span>
+        <span class="n">default_instruction_prompt</span><span class="o">=</span><span class="s2">&quot;Zdanie: </span><span class="si">{text}</span><span class="se">\n\n</span><span class="s2">Zidentyfikuj jednostki &quot;</span>
+        <span class="s2">&quot;nazewnicze w zdaniu. Wypisz je jako słownik JSON z kluczami &quot;</span>
+        <span class="s2">&quot;</span><span class="si">{labels_str}</span><span class="s2">. Wartości odpowiadające kluczom powinny być listami jednostek &quot;</span>
+        <span class="s2">&quot;nazewniczych danego typu, dokładnie tak, jak pojawiają się w zdaniu.&quot;</span><span class="p">,</span>
     <span class="p">),</span>
     <span class="n">SV</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
         <span class="n">default_prompt_label_mapping</span><span class="o">=</span><span class="p">{</span>
