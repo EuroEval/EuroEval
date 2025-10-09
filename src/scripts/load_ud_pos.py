@@ -460,7 +460,7 @@ def _load_split(
     filter_source: str | None = None,
     doc_process_fn: Callable[[str], str] = lambda x: x,
 ) -> pd.DataFrame:
-    """Load single split of the part-of-speech part of a Universal Dependencies treebank.
+    """Load single split of the POS part of a Universal Dependencies treebank.
 
     Args:
         lines: The lines of the file to process.
