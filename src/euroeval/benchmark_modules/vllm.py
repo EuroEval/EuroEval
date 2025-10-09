@@ -86,7 +86,7 @@ if t.TYPE_CHECKING or importlib.util.find_spec("vllm") is not None:
         destroy_model_parallel,
     )
     from vllm.lora.request import LoRARequest
-    from vllm.sampling_params import GuidedDecodingParams
+    from vllm.sampling_params import StructuredOutputsParams
 
 if t.TYPE_CHECKING:
     from datasets import DatasetDict
@@ -394,7 +394,7 @@ class VLLMModel(HuggingFaceEncoderModel):
             self.dataset_config.task.uses_structured_output
             or (self.dataset_config.task.uses_logprobs and self.dataset_config.labels)
         ) and self.generative_type == GenerativeType.REASONING:
-            guided_decoding = None
+            structured_outputs = None
             logger.debug(
                 "The dataset uses structured output, but we are not using it as the "
                 "model is a reasoning model."
@@ -412,9 +412,11 @@ class VLLMModel(HuggingFaceEncoderModel):
                 f"{json.dumps(structured_generation_schema)}",
                 level=logging.DEBUG,
             )
-            guided_decoding = GuidedDecodingParams(json=structured_generation_schema)
+            structured_outputs = StructuredOutputsParams(
+                json=structured_generation_schema
+            )
         elif self.dataset_config.task.uses_logprobs and self.dataset_config.labels:
-            guided_decoding = GuidedDecodingParams(
+            structured_outputs = StructuredOutputsParams(
                 choice=[
                     self.dataset_config.prompt_label_mapping[label]
                     for label in self.dataset_config.labels
@@ -422,11 +424,11 @@ class VLLMModel(HuggingFaceEncoderModel):
             )
             log_once(
                 "Using structured generation with the choices: "
-                f"{guided_decoding.choice!r}.",
+                f"{structured_outputs.choice!r}.",
                 level=logging.DEBUG,
             )
         else:
-            guided_decoding = None
+            structured_outputs = None
             log_once(
                 "Not using structured generation as the dataset does not require it.",
                 level=logging.DEBUG,
@@ -445,7 +447,7 @@ class VLLMModel(HuggingFaceEncoderModel):
             else None,
             temperature=0.0,
             stop=[stop_token for stop_token in stop_tokens if stop_token],
-            guided_decoding=guided_decoding,
+            structured_outputs=structured_outputs,
         )
 
         # If any of the prompts are empty then we need to replace them with a BOS token
