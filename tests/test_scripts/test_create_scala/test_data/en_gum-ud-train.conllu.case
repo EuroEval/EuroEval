@@ -68,4 +68,3 @@
 59	[	[	PUNCT	-LRB-	_	60	punct	60:punct	Discourse=explanation-evidence:77->74:1:grf-prn-624,626|SpaceAfter=No
 60	14	14	NUM	CD	NumForm=Digit|NumType=Card	13	dep	13:dep	Entity=(99-abstract-new-nnnnn-cf12-1-sgl)|SpaceAfter=No|XML=<ref></ref>
 61	]	]	PUNCT	-RRB-	_	60	punct	60:punct	_
-
