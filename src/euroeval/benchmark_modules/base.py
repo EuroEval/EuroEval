@@ -15,6 +15,7 @@ from tqdm.auto import tqdm
 from ..enums import TaskGroup
 from ..exceptions import InvalidBenchmark, NeedsEnvironmentVariable, NeedsExtraInstalled
 from ..task_group_utils import (
+    logical_reasoning,
     question_answering,
     sequence_classification,
     text_to_text,
@@ -204,6 +205,12 @@ class BenchmarkModule(ABC):
             case TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION:
                 return partial(
                     sequence_classification.compute_metrics,
+                    dataset_config=self.dataset_config,
+                    benchmark_config=self.benchmark_config,
+                )
+            case TaskGroup.LOGICAL_REASONING:
+                return partial(
+                    logical_reasoning.compute_metrics,
                     dataset_config=self.dataset_config,
                     benchmark_config=self.benchmark_config,
                 )
