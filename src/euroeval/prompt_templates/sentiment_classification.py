@@ -23,6 +23,7 @@ from ..languages import (
     NO,
     PL,
     PT,
+    SK,
     SV,
 )
 
@@ -224,6 +225,16 @@ SENT_TEMPLATES: dict["Language", PromptConfig] = {
         default_prompt_template="Dokument: {text}\nSentiment: {label}",
         default_instruction_prompt="Dokument: {text}\n\nKlassifiser følelsen i "
         "teksten. Svar med {labels_str}, og ikke noe annet.",
+    ),
+    SK: PromptConfig(
+        default_prompt_label_mapping=dict(
+            positive="pozitívne", neutral="neutrálne", negative="negatívne"
+        ),
+        default_prompt_prefix="Nižšie sú dokumenty a ich sentiment, ktorý môže byť "
+        "{labels_str}.",
+        default_prompt_template="Dokument: {text}\nSentiment: {label}",
+        default_instruction_prompt="Dokument: {text}\n\nKlasifikujte pocit v "
+        "dokumente. Odpovedzte so {labels_str}, a nič iné.",
     ),
     SV: PromptConfig(
         default_prompt_label_mapping=dict(

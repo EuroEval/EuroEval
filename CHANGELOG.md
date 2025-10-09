@@ -47,6 +47,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 
+- Added support for Slovak 🇸🇰! This includes the sentiment classification dataset
+  CSFD-sentiment-sk.
 - Added support for Czech 🇨🇿! This includes the sentiment classification dataset
   CSFD-sentiment, the linguistic acceptability dataset ScaLA-cs, the
   linguistic acceptability dataset CS-GEC,
