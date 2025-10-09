@@ -23,6 +23,7 @@ from ..languages import (
     NO,
     PL,
     PT,
+    SK,
     SV,
 )
 
@@ -35,7 +36,7 @@ LA_TEMPLATES: dict["Language", PromptConfig] = {
         default_prompt_prefix="Následující jsou věty a zda jsou gramaticky správné.",
         default_prompt_template="Věta: {text}\nGramaticky správná: {label}",
         default_instruction_prompt="Věta: {text}\n\nUrčete, zda je věta gramaticky "
-        "správná nebo ne. Odpovězte {labels_str}, a nic jiného.",
+        "správná nebo ne. Odpovězte {labels_str}, a nic jiné.",
     ),
     DA: PromptConfig(
         default_prompt_label_mapping=dict(correct="ja", incorrect="nej"),
@@ -181,6 +182,15 @@ LA_TEMPLATES: dict["Language", PromptConfig] = {
         default_prompt_template="Setning: {text}\nGrammatisk korrekt: {label}",
         default_instruction_prompt="Setning: {text}\n\nBestem om setningen er "
         "grammatisk korrekt eller ikke. Svar med {labels_str}, og ikke noe annet.",
+    ),
+    SK: PromptConfig(
+        default_prompt_label_mapping=dict(correct="áno", incorrect="nie"),
+        default_prompt_prefix="Nasledujú vety a či sú gramaticky správne.",
+        default_prompt_template="Veta: {text}\nGramaticky správna: {label}",
+        default_instruction_prompt=(
+            "Veta: {text}\n\nUrčite, či je veta gramaticky správna alebo nie. "
+            "Odpovedzte so {labels_str}, a nič iné."
+        ),
     ),
     SV: PromptConfig(
         default_prompt_label_mapping=dict(correct="ja", incorrect="nej"),

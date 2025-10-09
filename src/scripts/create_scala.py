@@ -40,6 +40,7 @@ from load_ud_pos import (
     load_nodt_nn_pos,
     load_pldt_pos,
     load_ptdt_pos,
+    load_skdt_pos,
     load_svdt_pos,
 )
 from pandas.errors import SettingWithCopyWarning
@@ -69,6 +70,7 @@ def main() -> None:
         "pl": load_pldt_pos,
         "lt": load_ltdt_pos,
         "cs": load_csdt_pos,
+        "sk": load_skdt_pos,
     }
 
     # Set up the progress bar and iterate over the languages
