@@ -43,6 +43,7 @@ LANGUAGES = [
     "no",
     "pl",
     "pt",
+    "sk",
     "sv",
 ]
 

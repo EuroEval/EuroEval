@@ -2,7 +2,7 @@
 
 from ..data_models import DatasetConfig
 from ..languages import SK
-from ..tasks import KNOW, LA, NER, RC, SENT
+from ..tasks import COMMON_SENSE, KNOW, LA, NER, RC, SENT
 
 ### Official datasets ###
 
@@ -43,5 +43,14 @@ MMLU_SK_CONFIG = DatasetConfig(
     pretty_name="the Slovak part of the multiple-choice classification dataset MMLU",
     huggingface_id="EuroEval/mmlu-sk-mini",
     task=KNOW,
+    languages=[SK],
+)
+
+WINOGRANDE_SK_CONFIG = DatasetConfig(
+    name="winogrande-sk",
+    pretty_name="the Slovak common-sense reasoning dataset Winogrande-sk, translated "
+    "from the English Winogrande dataset",
+    huggingface_id="EuroEval/winogrande-sk",
+    task=COMMON_SENSE,
     languages=[SK],
 )

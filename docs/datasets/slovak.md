@@ -507,36 +507,32 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset mmlu-sk
 ```
 
-## Common-sense Reasoning
+### Winogrande
 
-### HellaSwag-cs
+This dataset was published in [this paper](https://doi.org/10.1145/3474381). The
+original full dataset consists of 47 / 1,210 samples for training and testing, and we
+use 128 of the test samples for validation, resulting in a 47 / 128 / 1,085 split for
+training, validation and testing, respectively.
 
-This dataset is a machine translated version of the English [HellaSwag
-dataset](https://doi.org/10.18653/v1/P19-1472). The dataset was translated using
-[LINDAT Translation Service](https://lindat.mff.cuni.cz/services/translation/docs).
-
-The original dataset has 10,000 samples. We use a 1,024 / 256 / 2,048 split for training,
-validation and testing, respectively.
-
-Here are a few examples from the training split (which have _not_ been post-edited):
+Here are a few examples from the training split:
 
 ```json
 {
-  "text": "Rybaření na ledu: Vidíme úvodní titulní obrazovku. Na sněhu a ledové rybě sedí muž a chlapec. My\nVýběr:\na. vidíme města a změny kolem nich.\nb. vidíme dole kreslenou animaci bocku.\nc. pak vidíme sport.\nd. vidíme titulní obrazovku a letadlo letí na obloze a v dálce vidíme lidi na ledu a náklaďák.",
-  "label": "d"
-}
-```
-
-```json
-{
-  "text": "Běh maratonu: Sportovci dávají rozhovory a někteří předvádějí medaile za účast. Sportovci nastupují do bílých autobusů. Autobusy\nVýběr:\na. se pohybují po silnici.\nb. odstartují z rampy.\nc. se pohybují po dráze a lidé skáčou po rampách.\nd. míjí několik sportovců sedících na zelených baldachýnech.",
+  "text": "Nedokázal som ovládať vlhkosť ako som ovládal dážď, pretože _ prichádzalo odvšadiaľ. Na koho sa vzťahuje prázdne miesto _?\nMožnosti:\na. Možnosť A: vlhkosť\nb. Možnosť B: dážď",
   "label": "a"
 }
 ```
 
 ```json
 {
-  "text": "Family Life: Jak uspořádat havajskou svatební hostinu. Vyberte tradiční havajský oděv pro nevěstu a ženicha. Havajská nevěsta tradičně nosí bílé dlouhé splývavé šaty s věncem z haku neboli prstenem z hawajských květin kolem hlavy. Havajský ženich tradičně nosí bílé kalhoty a bílou košili s pestrobarevnou šerpou kolem pasu.\nVýběr:\na. Nošení hawajského věnce při příležitosti vaší recepce může také pomoci cementovat hawajské svatební sliby. Havajské splývavé šaty jsou stále tradiční se svatebním oděvem, navzdory povaze svatby.\nb. Ženich také nosí kolem krku zelenou poštolku lei.. Vyberte hawajský oděv pro svatební hostinu.\nc. Tyto prvky spolu velmi dobře splývají. Fotografie se budou odehrávat ve velkém studiu na letišti v mělké vodě.\nd. Vyberte si neformální oděv na svatbu na pláži. Havajské svatby bývají velmi formální, takže si vyberte havajské svatební šaty s motivem kasina.",
+  "text": "Jessica si myslela, že Sandstorm je najlepšia pieseň, aká bola kedy napísaná, ale Patricia ju nenávidela. _ si kúpila lístok na jazzový koncert. Na koho sa vzťahuje prázdne miesto _?\nMožnosti:\na. Možnosť A: Jessica\nb. Možnosť B: Patricia",
+  "label": "b"
+}
+```
+
+```json
+{
+  "text": "Termostat ukazoval, že dole bolo o dvadsať stupňov chladnejšie ako hore, takže Byron zostal v _ pretože mu bola zima. Na koho sa vzťahuje prázdne miesto _?\nMožnosti:\na. Možnosť A: dole\nb. Možnosť B: hore",
   "label": "b"
 }
 ```
@@ -548,7 +544,7 @@ When evaluating generative models, we use the following setup (see the
 - Prefix prompt:
 
   ```text
-  Následující jsou otázky s výběrem z více možností (s odpověďmi).
+  Nasledujú otázky s viacerými možnosťami (s odpoveďami).
   ```
 
 - Base prompt template:
@@ -558,9 +554,7 @@ When evaluating generative models, we use the following setup (see the
   Možnosti:
   a. {option_a}
   b. {option_b}
-  c. {option_c}
-  d. {option_d}
-  Odpověď: {label}
+  Odpoveď: {label}
   ```
 
 - Instruction-tuned prompt template:
@@ -570,80 +564,12 @@ When evaluating generative models, we use the following setup (see the
   Možnosti:
   a. {option_a}
   b. {option_b}
-  c. {option_c}
-  d. {option_d}
 
-  Odpovězte na výše uvedenou otázku pomocí 'a', 'b', 'c' nebo 'd', a nic jiného.
+  Odpovedzte na nasledujúcu otázku použitím 'a' alebo 'b', a nič iné.
   ```
 
 You can evaluate this dataset directly as follows:
 
 ```bash
-euroeval --model <model-id> --dataset hellaswag-cs
-```
-
-## Summarisation
-
-### Czech News
-
-This dataset was published in
-[this paper](https://doi.org/10.48550/arXiv.2307.10666) and contains news articles
-from major online news outlets collected from 2000-2022.
-
-The original dataset consists of 1,641,471 / 144,836 / 144,837 samples for training,
-validation and testing, respectively. We use a 1,024 / 256 / 2,048 split for training,
-validation and testing, respectively, sampled from the original splits.
-
-Here are a few examples from the training split:
-
-```json
-{
-  "text": "Vymetám zákoutí, oči na šťopkách, kde ještě něco zůstalo, abych to mohl popsat a tím popsáním zaevidovat, zkatalogizovat. Třeba na tom Smíchově, tam je to o život. Ale výsledky jsou. Před hostincem U Smolíků, šikmo naproti Smíchovskému nádraží, bylo na tabuli křídou, kterou vedla pevná ruka, naškrábáno jako součást nabídky: V úterý od 18 na hoře bez koz. Autor je bezesporu velkým básníkem, jeho rozmáchlá gesta nepotřebují dodatečné korekce. Představte si tu nádheru - po šesté večerní nastupuje na plac servírka plochá jak lineál. Chlapům sklapne čelist a o to více vypijí hladinek. Mezitím, než jsem dofabuloval, vy už přecházíte do haly zmíněného nádraží, na jehož pravém konci si četbymilovný odjížděč či přijížděč může zakoupit knihy v antikvariátu. A já zde zase jako vandal vyloupávám zasazené démanty, kterých si nikdo nevšímá. Nad přihrádkou, kde na obálkách knih a časopisů převažuje ta partie ženského těla, o které byla řeč výše, umístil prodejce sémanticky neobyčejně komplikovaný nápis: Erotika není k prohlížení! No není to krása? To, co "dělá" erotiku erotikou, je zde výslovně zapovězeno. Je třeba kupovat, a ne jen listovat a zadarmiko se vzrušovat! A já hned vytahuji zápisníček a v tom dusném nádražním prostředí zachycuji tuto opozdilou slzu ztracenou z grálu. Co s tím má co dělat ta sebelítost? Zatímco si tady hraju na soukromého badatele, který pak plody práce věnuje svému národu, v centru Prahy se dějou zásadní věci, proti kterým je tohle moje motýlkaření pouhým okresním přeborem. A je mi to líto. www.desir.cz 5. října 2004 proběhla v nejpoužívanějším pražském demonstračním prostoru Demonstrace za nic. Demonstranti nesli prázdné transparenty (povolené byly pouze tečky, vykřičníky a otazníky), dokonce i průhledné transparenty (ty byly absolutně transparentní) a rozdávali prázdné letáky. Akce byla řádně nahlášena, proto ji doprovázeli orgáni vpředu a vzadu. Končilo se (150-200 osob) pod ocasem, kde byla držena minuta ticha za nic. Geniální pakárna, švejkárna i kafkárna. Tento zásadní názor občanské angažovanosti proběhl pod taktovkou partičky jménem DĚSÍR (DĚti SÍdlištní Recese), která pořádá recesní a hravé akce v Praze se zaměřením na školáky ze SŠ a VŠ. Ve svém programu mají napsáno: Chceme využít městských prvků ve prospěch blaha hravých jedinců. Na jejich stránkách najdete mj. položky: Fotogalerie, Kronika, Kalendář akcí, Pravidla her. Podle návodu si můžete sami zahrát třeba hry Lapni dav nebo Piškvorky nabíjené tramvají. Domnívám se, už bez lítosti, že DĚSÍR je daleko více literárnější než mnoho praktikujících spisovatelů. Tohle je živá abeceda, tamti kladou už jen mrtvé litery.",
-  "target_text": "Už dlouho jsem neprováděl cvičení v sebelítosti. Čas běží tak rychle, že zapomínám věnovat se těmto laciným koníčkům. Tak se v tom zas trošku procvičím.Jiní si užívají života, a já se tady pachtím jako motýlkář za prchavými křídly, za okamžiky, za těmi Hrabalovými perličkami"
-}
-```
-
-```json
-{
-  "text": "Dillí - Indický nejvyšší soud zakázal turistiku ve stanovených zónách více než 40 tygřích rezervací pod správou centrální vlády. Šesti státům, které nedodržovaly předchozí směrnice, navíc uložil pokuty. Ve volné přírodě subkontinentu žije podle posledního sčítání z loňského roku kolem 1700 tygrů. Ještě před 100 lety přitom v indické divočině podle BBC žilo na 100 tisíc těchto kočkovitých šelem. Organizace na ochranu přírody verdikt soudu uvítaly. Rozhodnutí vychází vstříc příslušné petici, která žádala vytlačení komerčních turistických aktivit z oblastí nejčastějšího výskytu tygrů v rezervacích. V zónách stanovených soudem žije většina indických tygrů. Tygrům se daří také v pražské zoo: Související Pražská zoo představila tygří mláďata, jsou to samičky 6 fotografií I když je rozhodnutí soudu označováno za významné, není jasné, jaký dopad bude mít na turismus. Ten se soustřeďuje do takzvaných nárazníkových zón, což jsou až deset kilometrů široká pásma kolem vymezených zón. Soudní verdikt je jedním z řady kroků, které indické orgány v poslední době podnikly na ochranu tygrů. V únoru byla ve státě Rádžasthán přestěhována celá vesnice, jež musela zvířatům ustoupit. Opatření zjevně zabírají. Podle úřadů počet tygrů v Indii opět roste. Nadále je ale ohrožují lidé žijící uvnitř nebo na okraji rezervací.",
-  "target_text": "Nejvyšší soud zakázal vstup do 40 tygřích rezervací"
-}
-```
-
-```json
-{
-  "text": "V Klementinu byly například objeveny tři studny, pozůstatky kamenných domů nebo část trativodu z období 16. až 17. století. V základech barokní stavby byly objeveny části klenebních žeber či ostění oken, které s největší pravděpodobností pocházejí z konstrukcí středověkého kláštera odstraněného při výstavbě Klementina. Novinky o tom informovala Irena Maňáková z Národní knihovny ČR. Archeologové slaví v Národní knihovně mnoho úspěchů. FOTO: Národní knihovna ČR K nejvýznamnějšímu nálezu podle ní došlo při přesunu výzkumu ze západního křídla do traktu mezi Studentským a Révovým nádvořím, kde byly pod barokní podlahou suterénu odkryty zbytky zdiv náležejících k dominikánskému klášteru, který zde stál od 30. let 13. století. Odkryli i množství reliktů „Význam nálezu spočívá především v tom, že se jedná o první hmotný doklad tohoto kláštera, o němž jsme dosud věděli pouze z písemných pramenů,“ vysvětlil vedoucí archeolog Jan Havrda. Nálezy dokládají i výstavnost gotické stavby, jež ve své době představovala jednu z nejvýznamnějších pražských církevních institucí. Při výzkumu byly rovněž odkryty četné relikty středověké a raně novověké zástavby, která byla odstraněna v souvislosti s výstavbou této části barokního areálu v roce 1654. Vysoká památková hodnota Kromě pozůstatků kamenných domů byly odkryty i tři středověké studny, z nichž některé později sloužily jako odpadní jímky. Nejvýznamnějším nálezem v těchto prostorách byla lineární zděná konstrukce vystavěná románskou technikou. Zaznamenaná délka 0,7 metru široké zdi dosahuje 11,7 metru a její koruna se nalézala bezprostředně pod současnou podlahou sklepa. Archeologové učinili přes zimu hned několik zajímavých objevů. Pozůstatky dominikánského kláštera ze 13. století jsou však nejvýznamnější. FOTO: Národní knihovna ČR „Jedná se o unikátní architektonickou památku náležející ke skupině pražských profánních románských staveb, které představují nejstarší horizont kamenné architektury na území Pražské památkové rezervace a jejichž památková hodnota je nesporná. Interpretace tohoto nálezu není jednoznačná, mohlo by se však jednat o severní obvodovou zeď rozlehlejšího románského domu,“ uvedl Havrda.",
-  "target_text": "Archeologové pracují přes zimu v Národní knihovně jako o život. V poslední době zkoumali klementinské suterény pod západním křídlem bývalé jezuitské koleje a sklepní trakt mezi Studentským a Révovým nádvořím. Nejvýznamnějším nálezem je objev zbytků zdiv, které poprvé hmotně dokládají existenci zdejšího dominikánského kláštera ze 13. století"
-}
-```
-
-When evaluating generative models, we use the following setup (see the
-[methodology](/methodology) for more information on how these are used):
-
-- Number of few-shot examples: 1
-- Prefix prompt:
-
-  ```text
-  Následující jsou dokumenty s přiloženými souhrny.
-  ```
-
-- Base prompt template:
-
-  ```text
-  Dokument: {text}
-  Souhrn: {target_text}
-  ```
-
-- Instruction-tuned prompt template:
-
-  ```text
-  Dokument: {text}
-
-  Napište souhrn výše uvedeného dokumentu.
-  ```
-
-You can evaluate this dataset directly as follows:
-
-```bash
-euroeval --model <model-id> --dataset czech-news
+euroeval --model <model-id> --dataset winogrande-sk
 ```
