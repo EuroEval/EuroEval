@@ -372,53 +372,35 @@ euroeval --model <model-id> --dataset cs-gec
 
 ## Reading Comprehension
 
-### SQAD
+### MultiWikiQA-sk
 
-This dataset was published in
-[this paper](https://nlp.fi.muni.cz/raslan/2019/paper14-medved.pdf)
-and has been harvested from Czech Wikipedia articles by students and
-annotated with appropriate question, answer sentence, exact answer,
-question type and answer type.
+This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2509.04111)
+and contains Wikipedia articles with LLM-generated questions and answers in 300+
+languages.
 
-The original full dataset has 11,569 / 2,819 train, test samples,
-respectively. We use a 1,024 / 256 / 2,048 split for training,
-validation and testing, respectively. The train and test splits are
-subsets of the original splits, and the validation split is created
-using examples from the train split.
+The original full dataset consists of 5,000 samples in a single split. We use a 1,024 /
+256 / 2,048 split for training, validation and testing, respectively, sampled randomly.
 
 Here are a few examples from the training split:
 
 ```json
 {
-  "context": "Právnická fakulta Masarykovy univerzity (PrF MU) je jedna z devíti fakult Masarykovy univerzity. Založena byla spolu s celou univerzitou v Brně roku 1919. V meziválečném období se proslavila školou normativní teorie práva, v roce 1950 byla zrušena a obnovena roku 1969. Sídlí v klasicizující budově na Veveří, nabízí vysokoškolské právní vzdělání na bakalářské (Bc.), magisterské (Mgr. a JUDr.) i doktorské (Ph.D.) úrovni a ve srovnání všech čtyř českých veřejných právnických fakult je pravidelně hodnocena jako nejlepší z nich. Související informace naleznete také v článku Seznam děkanů Právnické fakulty Masarykovy univerzity. Tradice univerzitní výuky práva na Moravě pochází z konce 17. století, v Brně se ale právo přednášelo jen v krátkém období 1778–1782, kdy sem byla přeložena olomoucká univerzita. Po zrušení její právnické fakulty v roce 1855 vznikla citelná potřeba existence nejen právnických studií, veškeré snahy o zřízení druhé české univerzity, která by byla situována do moravského hlavního města Brna a samozřejmě měla svou právnickou fakultu, v nichž se mj. angažoval tehdejší profesor a pozdější československý prezident T. G. Masaryk, však vyšly naprázdno. Bylo tomu tak zejména kvůli odporu Němců, kteří chtěli zachovat převážně německý charakter města, pouze některé právní obory byly vyučovány na české technice. Až po vzniku československé republiky mohla být tato myšlenka uskutečněna, roku 1919 vznikla Masarykova univerzita se sídlem v Brně a její právnická fakulta spolu s lékařskou zahájily výuku ještě ve školním roce 1919/1920.",
-  "question": "Kolik fakult má Masarykova univerzita?",
-  "answers": {
-    "answer_start": array([60], dtype=int32),
-    "text": array(["devíti"], dtype=object)
-  }
-}
+  "context": "Register toxických účinkov chemických látok (anglicky Registry of Toxic Effects of Chemical Substances, RTECS) je databáza toxikologických informácií zostavených z voľne dostupnej vedeckej literatúry bez odkazu na platnosť alebo užitočnosť publikovaných štúdií. Do roku 2001 bola databáza spravovaná americkou organizáciou NIOSH (National Institute for Occupational Safety and Health, slov. Národný ústav pre bezpečnosť a ochranu zdravia pri práci) ako verejne dostupná publikácia. Teraz ju spravuje súkromná spoločnosť Symyx Technologies a je dostupná len za poplatok.\n\nObsah \nDatabáza obsahuje šesť typov toxikologických informácií:\n primárne podráždenie\n mutagénne účinky\n reprodukčné účinky\n karcinogénne účinky\n akútna toxicita\n toxicita viacnásobných dávok\nV databáze sa spomínajú ako špecifické číselné hodnoty, ako napríklad LD50, LC50, TDLo alebo TCLo, tak aj študované organizmy a spôsob podávania látky. Pre všetky dáta sú uvedené bibliografické zdroje. Štúdie pritom nie sú nijako hodnotené.\n\nHistória \nDatabáza RTECS bola aktivitou schválenou americkým Kongresom, zakotvenou v Sekcii 20(a)(6) zákona Occupational Safety and Health Act z roku 1970 (PL 91-596). Pôvodné vydanie, známe ako Zoznam toxických látok (Toxic Substances List), bolo publikované 28. júna 1971 a obsahovalo toxikologické dáta o približne 5 000 chemikáliách. Názov bol neskôr zmenený na dnešný Register toxických účinkov chemických látok (Registry of Toxic Effects of Chemical Substances). V januári 2001 databáza obsahovala 152 970 chemikálií. V decembri 2001 bola správa RTECS prevedená z NIOSH do súkromnej firmy Elsevier MDL. Túto firmu kúpila v roku 2007 spoločnosť Symyx, súčasťou akvizície bola aj databáza RTECS. Tá je teraz dostupná len za poplatok vo forme ročného predplatného.\n\nRTECS je k dispozícii v angličtine, francúzštine a španielčine, a to prostredníctvom Kanadského centra pre bezpečnosť a ochranu zdravia pri práci. Predplatitelia majú prístup cez web, na CD-ROM a vo formáte pre intranet. Databáza je dostupná na webe aj cez NISC (National Information Services Corporation) a ExPub (Expert Publishing, LLC).\n\nExterné odkazy \n\n RTECS overview \n Symyx website \n Expert Publishing, LLC Website\n\nZdroj \n\nChemické názvy a kódy\nToxikológia",
+  "question": "Aké sú tri možnosti prístupu k databáze RTECS, ak som predplatiteľ?",
+  "answers": {"answer_start": [1949], "text": ["cez web, na CD-ROM a vo formáte pre intranet"]}}
 ```
 
 ```json
 {
-  "context": "Rovnátka (též označovaný jako ortodontický aparát) jsou druh zdravotnické pomůcky, která slouží k narovnání, napravení, či usměrnění růstu zubů. Mohou se nandávat jak na horní, tak i dolní čelist. Fixní rovnátka jsou v ústní dutině nepřetržitě po celou dobu léčby. Jsou nalepena buď z tvářové či jazykové strany (tzv. lingvální). Častějším typem je aplikace z tvářové strany. Důvody jsou takové, že linguální rovnátka jsou dražší, jejich zavedení je náročnější a klade větší nároky na lékaře i pacienta. Snímací rovnátka se vyznačují tím, že je lze vyjmout z ústní dutiny. Používají se pro méně závažné zubní anomálie a vady. Jsou určena pro dočasný a smíšený chrup. Fóliová rovnátka (tzv. neviditelná rovnátka) jsou měkké plastové fólie vyrobené pacientu na míru podle otisku čelistí. Tyto nosiče se v průběhu léčby obměňují. Jedná se v podstatě o speciální druh snímacích rovnátek, protože je lze z úst kdykoliv vyjmout. Neviditelná rovnátka jsou americkým patentem pod názvem Invisalign. Fixní aparát klade větší požadavky na ústní hygienu pacienta, neboť bylo prokázáno, že tvorba plaku je v průběhu nošení tohoto typu rovnátek vyšší. Pacientům s nedostatečnou ústní hygienou se fixní aparát nedoporučuje či mu přímo není umožněn. Fixním aparátem se dosahuje lepších výsledků než snímacím. Používá se jej spíše u závažnějších zubních anomálií. Snímací aparát je výrazně levnější, méně náročnější na hygienu. Lze jej kdykoliv sejmout, což je jeho nevýhoda - pacient není nucen nosit ho. Vstupní pohovor, vyšetření a jeho zadokumentování. Ortodontista pacienta seznámí o výsledcích vyšetření. Návrh léčebného plánu, schválení pacientem, zubní otisky, rentgenové snímky. Léčba, která se skládá ze dvou částí: Aktivní léčba je samotný proces, který by měl vést k nápravě chrupu a estetiky obličeje. Retenční fáze následuje po aktivní léčbě. Proces má za úkol udržet výsledky ortodontické léčby co nejdéle. Pokud je zanedbána, hrozí částečný či celkový návrat k původnímu stavu chrupu. Nejčastějším typem rovnátek je fixní aparát, a proto právě jeho skladba je zde rozebrána: Ortodontický drát (označovaný též jako oblouk) je speciální typ drátu užívaný v ortodoncii. Slouží k posunování zubu/ů. Drát je fixován do zámečků. V místě požádované změny pozice zubů pak mírně ohnutý. Díky svým vlastnostem (tzv. tvarové paměti) má pak v místě ohybu tendenci se rovnat (vrátit do původní polohy). Tím se vytváří síly, které tlačí na zuby.",
-  "question": "Lze snímací rovnátka vyjmout z ústní dutiny?",
-  "answers": {
-    "answer_start": array([504], dtype=int32),
-    "text": array(["Snímací rovnátka se vyznačují tím, že je lze vyjmout z ústní dutiny."], dtype=object)
-  }
-}
+  "context": "Herta Naglová-Docekalová (* 29. máj 1944, Wels, Rakúsko) je rakúska filozofka a profesorka, členka vedenia Medzinárodnej asociácie filozofiek (IAPf), Österreichische Akademie der Wissenschaften, Institut International de Philosophie (Paríž), viceprezidentka Fédération Internationale des Sociétés de Philosophie (FISP), zakladajúca členka interdisciplinárnych pracovných skupín Frauengeschichte a Philosophische Frauenforschung na Viedenskej univerzite, členka redakčných rád popredných vedeckých časopisov, napr. Philosophin, L´Homme, Deutsche Zeitschrift für Philosophie.\n\nŽivotopis \nVyštudovala históriu, filozofiu a germanistiku na Viedenskej univerzite. V roku 1967 získala na svojej alma mater doktorát z histórie prácou o filozofovi dejín Ernstovi von Lasaulx). V rokoch 1968 - 1985 bola asistentkou na Inštitúte filozofie Viedenskej univerzity. V lete 1980 prednášala na Millersville University of Pennsylvania v USA.\n\nV roku 1981 sa habilitovala z filozofie na Viedenskej univerzite dielom Die Objektivität der Geschichtswissenschaft. V rokoch 1985 až 2009 bola profesorkou Inštitútu filozofie Viedenskej univerzity. Od roku 2009 je univerzitnou profesorkou na dôchodku (Universitätsprofessorin i. R.)\n\nBola hosťujúcou profesorkou v roku 1990 na Universiteit Utrecht v holandskom Utrechte; v Nemecku 1991/1992 na Goethe-Universität Frankfurt vo Frankfurte nad Mohanom; 1993 na Universität Konstanz v Konstanzi; 1994/1995 na Freie Universität Berlin v Berlíne. V rokoch 1995/1996 prednášala na Universität Innsbruck a 2011 na univerzite v Petrohrade v Rusku.\n\nDielo (výber) \n Jenseits der Säkularisierung. Religionsphilosophische Studien. - Berlin 2008 (Hg., gem.m. Friedrich Wolfram).\n Viele Religionen - eine Vernunft? Ein Disput zu Hegel. - Wien/Berlin 2008 (Hg., gem.m. Wolfgang Kaltenbacher und Ludwig Nagl).\n Glauben und Wissen. Ein Symposium mit Jürgen Habermas. - Wien/Berlin 2007 (Hg., gem.m. Rudolf Langthaler).\n Geschichtsphilosophie und Kulturkritik. - Darmstadt 2003 (Hrsg., gem.m. Johannes Rohbeck).\n Feministische Philosophie. Ergebnisse, Probleme, Perspektiven. - Frankfurt a.M. 2000 a 2004 \n Continental Philosophy in Feminist Perspective. - Pennsylviania State University Press 2000 (Hg. gem.m. Cornelia Klingler).\n Der Sinn des Historischen. - Frankfurt a.M. 1996 (Hrsg.).\n Politische Theorie. Differenz und Lebensqualität. - Frankfurt a.M. 1996 (Hrsg. gem.m. Herlinde Pauer-Studer).\n Postkoloniales Philosophieren: Afrika. - Wien/München 1992 (Hrsg., gem.m. Franz Wimmer).\n Tod des Subjekts? - Wien/München 1987 (Hrsg., gem.m. Helmuth Vetter).\n Die Objektivität der Geschichtswissenschaft. Systematische Untersuchungen zum wissenschaftlichen Status der Historie. - Wien/München 1982\n spoluvydavateľka: Wiener Reihe. Themen der Philosophie (od 1986). \n spoluvydavateľka: Deutsche Zeitschrift für Philosophie (1993-2004). \n spoluvydavateľka: L'Homme. Europäische Zeitschrift für feministische Geschichtswissenschaft (1990 - 2003).\n\nOcenenia \n Förderpreis mesta Viedeň, 1983\n Käthe Leichter Preis (rakúska štátna cena), 1997 \n Preis für Geistes- und Sozialwissenschaften der Stadt Wien, 2009\n\nReferencie\n\nExterné odkazy \n Oficiálna stránka, Universität Wien \n Austria Forum, Wissenssammlungen/Biographien: Herta Nagl-Docekal\n\nZdroj \n\nRakúski filozofi",
+  "question": "Kedy prišla na svet Herta Naglová-Docekalová?",
+  "answers": {"answer_start": [28], "text": ["29. máj 1944"]}}
 ```
 
 ```json
-{
-  "context": "Patří mezi ně například switch, router, síťová karta apod. Pasivní prvky jsou součásti, které se na komunikaci podílejí pouze pasivně (tj. nevyžadují napájení) – propojovací kabel (strukturovaná kabeláž, optické vlákno, koaxiální kabel), konektory, u sítí Token Ring i pasivní hub. Opačným protipólem k sítím LAN jsou sítě WAN, jejichž přenosovou kapacitu si uživatelé pronajímají od specializovaných firem a jejichž přenosová kapacita je v poměru k LAN drahá. Uprostřed mezi sítěmi LAN a WAN najdeme sítě MAN. == Od historie k současnosti == První sítě LAN vznikly na konci 70. let 20. století. Sloužily k vysokorychlostnímu propojení sálových počítačů. Na začátku existovalo mnoho technologií, které navzájem nebyly kompatibilní (ARCNET, DECnet, Token ring a podobně). V současné době jsou nejpopulárnější LAN sítě vystavěné s pomocí technologie Ethernet. U osobních počítačů (PC) došlo k rozmachu budování LAN sítí po roce 1983, kdy firma Novell uvedla svůj produkt NetWare. Firma Novell byla v polovině 90. let odsunuta na okraj trhu nástupem firmy Microsoft s produkty Windows for Workgroups a Windows NT. Na počátku sítě LAN s osobními počítači používaly pro svoji jednoduchost rodinu protokolů IPX/SPX (případně NETBEUI, AppleTalk a další specializované proprietární protokoly), avšak s nástupem WWW byly na konci 90. let minulého století nahrazeny rodinou protokolů TCP/IP. == Moderní prvky LAN == V moderních sítích dnes nalézáme pokročilé technologie, které zvyšují jejich propustnost a variabilitu. Jednoduché propojovací prvky (opakovač, resp. HUB) jsou nahrazovány inteligentními zařízeními (bridge, resp. switch, router), které odstraňují kolize, omezují nežádoucí provoz v síti (broadcasty), umožňují monitorování, zabezpečení a další pokročilé zásahy do provozu sítě (např. detekce DoS, filtrování provozu a podobně).",
-  "question": "Jak se jmenuje produkt firmy Novell, který způsobil rozmach LAN sítí?",
-  "answers": {
-    "answer_start": array([969], dtype=int32),
-    "text": array(["NetWare"], dtype=object)
-  }
-}
+{"context": "Martin Bareš (* 25. november 1968, Brno) je český profesor neurológie, od septembra 2019 rektor Masarykovej univerzity, predtým od februára 2018 do septembra 2019 dekan Lekárskej fakulty Masarykovej univerzity.\n\nRiadiace funkcie \nVo februári 2018 sa stal dekanom Lekárskej fakulty Masarykovej univerzity. Funkciu prevzal po Jiřím Mayerovi, ktorý zastával pozíciu dekana v období 20102018. S nástupom na post dekana ukončil svoje pôsobenie ako prorektor univerzity, ako i zástupca prednostu I. neurologickej kliniky pre vedu a výskum.\n\nDo funkcie rektora univerzity bol zvolený 1. apríla 2019 Akademickým senátom Masarykovej univerzity. V prvom kole tajnej voľby získal Bareš 36 hlasov z 50 prítomných senátorov. Protikandidáta, prodekana Prírodovedeckej fakulty Jaromíra Leichmana, volilo 11 senátorov. 3 odovzdané hlasy boli neplatné.\n\nSkúsenosti s pôsobením vo vedení školy zbieral Bareš v rokoch 20112018, kedy pôsobil najskôr ako jej prorektor pre rozvoj a potom ako prorektor pre akademické záležitosti. Za svoje priority označil Bareš v dobe voľby posilňovanie role univerzity ako piliera slobody v súčasnej spoločnosti a zvýšenie kvality vzdelávania, vedy a výskumu na medzinárodnej úrovni.\n\nDo funkcie rektora ho vymenoval 11. júna 2019 prezident Miloš Zeman s účinnosťou od 1. septembra 2019. Vo funkcii tak nahradil Mikuláša Beka, ktorému sa skončilo druhé volebné obdobie a o zvolenie sa teda už opäť uchádzať nemohol. Bareš k 1. septembru 2019 rezignoval na post dekana Lekárskej fakulty.\n\nVedecká činnosť \nJe prednášajúcim v odboroch všeobecné lekárstvo, zubné lekárstvo, optometria, fyzioterapia, neurofyziológia pre študentov prírodných vied Lekárskej fakulty Masarykovej univerzity a školiteľ doktorandov odborovej rady neurológia a neurovedy.\n\nPôsobí v týchto vedeckých radách: Masarykova univerzita, Lekárska fakulta Masarykovej univerzity a CEITEC MU. Ďalej tiež Univerzita Palackého v Olomouci, Lekárska fakulta UPOL, Fakulta veterinárního lékařství VFU, ďalej je tiež členom Českej lekárskej komory, Českej neurologickej spoločnosti, Českej spoločnosti klinickej neurofyziológie, Českej lekárskej spoločnosti Jana Evangelisty Purkyně, Movement Disorders Society, Society for the Research on the Cerebellum a Society for Neuroscience. Takisto je členom redakčnej rady časopisov Clinical Neurophysiology, Behavioural Neurology, Tremor and Other Hyperkinetic Movements a Biomedical Papers.\n\nOsobný život \nJe ženatý, má dvoch synov a dcéru.\n\nReferencie\n\nExterné odkazy \n Martin Bareš\n\nZdroj \n\nČeskí lekári\nNeurológovia\nRektori Masarykovej univerzity\nČeskí univerzitní profesori\nDekani Lekárskej fakulty Masarykovej univerzity\nAbsolventi Lekárskej fakulty Masarykovej univerzity\nOsobnosti z Brna",
+"question": "Akú pozíciu mal Martin Bareš na Masarykovej univerzite počnúc septembrom 2019?",
+"answers": {"answer_start": [89], "text": ["rektor"]}}
 ```
 
 When evaluating generative models, we use the following setup (see the
@@ -428,7 +410,7 @@ When evaluating generative models, we use the following setup (see the
 - Prefix prompt:
 
   ```text
-  Následující texty obsahují otázky a odpovědi.
+  Nasledujú texty s pridruženými otázkami a odpoveďami.
   ```
 
 - Base prompt template:
@@ -436,7 +418,7 @@ When evaluating generative models, we use the following setup (see the
   ```text
   Text: {text}
   Otázka: {question}
-  Odpověď maximálně 3 slovy: {label}
+  Odpoveď na maximálne 3 slová:
   ```
 
 - Instruction-tuned prompt template:
@@ -444,7 +426,7 @@ When evaluating generative models, we use the following setup (see the
   ```text
   Text: {text}
 
-  Odpovězte na následující otázku k výše uvedenému textu maximálně 3 slovy.
+  Odpovedzte na nasledujúcu otázku týkajúcu sa textu uvedeného vyššie maximálne 3 slovami.
 
   Otázka: {question}
   ```
@@ -452,7 +434,7 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-euroeval --model <model-id> --dataset sqad
+euroeval --model <model-id> --dataset multi-wiki-qa-sk
 ```
 
 ## Knowledge

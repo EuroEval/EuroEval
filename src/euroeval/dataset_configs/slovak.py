@@ -2,7 +2,7 @@
 
 from ..data_models import DatasetConfig
 from ..languages import SK
-from ..tasks import LA, NER, SENT
+from ..tasks import LA, NER, RC, SENT
 
 ### Official datasets ###
 
@@ -27,5 +27,13 @@ UNER_SK_CONFIG = DatasetConfig(
     pretty_name="the Slovak named entity recognition dataset UNER-sk",
     huggingface_id="EuroEval/uner-sk-mini",
     task=NER,
+    languages=[SK],
+)
+
+MULTI_WIKI_QA_SK_CONFIG = DatasetConfig(
+    name="multi-wiki-qa-sk",
+    pretty_name="the Slovak part of the reading comprehension dataset MultiWikiQA",
+    huggingface_id="EuroEval/multi-wiki-qa-sk-mini",
+    task=RC,
     languages=[SK],
 )
