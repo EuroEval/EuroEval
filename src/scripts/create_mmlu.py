@@ -37,7 +37,6 @@ def main() -> None:
     repo_id = "alexandrainst/m_mmlu"
 
     for language in LANGUAGES:
-        language = "sk"
         # Download the dataset
         try:
             dataset = load_dataset(path=repo_id, name=language, token=True)
