@@ -439,36 +439,40 @@ euroeval --model <model-id> --dataset multi-wiki-qa-sk
 
 ## Knowledge
 
-### Umimeto-qa
+### MMLU-sk
 
-This dataset offers selected questions from the learning platform [Umimeto](https://www.umimeto.org)
-and has been curated by [the NLP Centre at Masaryk University](https://nlp.fi.muni.cz).
+This dataset is a machine translated version of the English [MMLU
+dataset](https://openreview.net/forum?id=d7KBjmI3GmQ) and features questions within 57
+different topics, such as elementary mathematics, US history and law. The translation to
+Swedish was done by the University of Oregon as part of [this
+paper](https://aclanthology.org/2023.emnlp-demo.28/), using GPT-3.5-turbo.
 
-The original dataset consists of 700 samples, 100 samples for each of 7 different topics.
-We use a 32 / 32 / 636 split for training, validation and testing, respectively.
-
-Each question in the dataset comes with only two options (a and b) for answers.
+The original full dataset consists of 269 / 1,410 / 13,200 samples for training,
+validation and testing, respectively. We use a 1,024 / 256 / 2,048 split for training,
+validation and testing, respectively (so 3,328 samples used in total). These splits are
+new and there can thus be some overlap between the original validation and test sets and
+our validation and test sets.
 
 Here are a few examples from the training split:
 
 ```json
 {
-  "text": "bazický\nVýběr:\na. kyselý\nb. zásaditý",
-  "label": "b"
+  "text": "V akých smeroch je prípad pre humanitárnu intervenciu, ako je uvedené v tejto kapitol... mocnými štátmi.\nd. Všetky tieto možnosti.",
+  "label": "d",
 }
 ```
 
 ```json
 {
-  "text": "RPSN\nVýběr:\na. roční procentní sazba nákladů\nb. roční průměrná splátka nedoplatků",
+  "text": "FAKTORIÁLOVÝ ANOVA sa používa v prípade, že štúdia zahŕňa viac ako 1 VI. Aký je INTER...činok VI na rovnakej úrovni ako ostatné VI",
   "label": "a"
 }
 ```
 
 ```json
 {
-  "text": "Jak se jmenoval slavný ruský vojevůdce v napoleonských válkách?\nVýběr:\na. Kutuzov\nb. Hannibal",
-  "label": "a"
+  "text": "Pre ktorú z týchto dvoch situácií urobí hlavná postava (ktorá používa ja/mňa/môj) nie...ie zlé\nc. Nie zlé, zlé\nd. Nie zlé, nie zlé",
+  "label": "d",
 }
 ```
 
@@ -479,34 +483,28 @@ When evaluating generative models, we use the following setup (see the
 - Prefix prompt:
 
   ```text
-  Následující jsou otázky s výběrem z více možností (s odpověďmi).
+  Nasledujú otázky s viacerými možnosťami (s odpoveďami).
   ```
 
 - Base prompt template:
 
   ```text
   Otázka: {text}
-  Výběr:
-  a. {option_a}
-  b. {option_b}
-  Odpověď: {label}
+  Odpoveď: {label}
   ```
 
 - Instruction-tuned prompt template:
 
   ```text
   Otázka: {text}
-  Výběr:
-  a. {option_a}
-  b. {option_b}
 
-  Odpovězte na výše uvedenou otázku pomocí 'a', nebo 'b', a nic jiného.
+  Odpovedzte na nasledujúcu otázku použitím 'a', 'b', 'c' alebo 'd', a nič iné.
   ```
 
 You can evaluate this dataset directly as follows:
 
 ```bash
-euroeval --model <model-id> --dataset umimeto-qa
+euroeval --model <model-id> --dataset mmlu-sk
 ```
 
 ## Common-sense Reasoning

@@ -28,7 +28,7 @@ from datasets import Dataset, DatasetDict, Split, load_dataset
 from huggingface_hub import HfApi
 from sklearn.model_selection import train_test_split
 
-LANGUAGES = ["da", "de", "en", "es", "fr", "is", "it", "nl", "no", "pt", "sv"]
+LANGUAGES = ["da", "de", "en", "es", "fr", "is", "it", "nl", "no", "pt", "sk", "sv"]
 
 
 def main() -> None:
@@ -37,6 +37,7 @@ def main() -> None:
     repo_id = "alexandrainst/m_mmlu"
 
     for language in LANGUAGES:
+        language = "sk"
         # Download the dataset
         try:
             dataset = load_dataset(path=repo_id, name=language, token=True)

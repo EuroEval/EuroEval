@@ -22,6 +22,7 @@ from ..languages import (
     NO,
     PL,
     PT,
+    SK,
     SV,
 )
 
@@ -168,6 +169,17 @@ MULTIPLE_CHOICE_TEMPLATES: dict["Language", PromptConfig] = {
         default_prompt_template="Pytanie: {text}\nOdpowiedź: {label}",
         default_instruction_prompt="Pytanie: {text}\n\nOdpowiedz na powyższe pytanie, "
         "używając {labels_str} i niczego więcej.",
+        default_prompt_label_mapping="auto",
+    ),
+    SK: PromptConfig(
+        default_prompt_prefix=(
+            "Nasledujú otázky s viacerými možnosťami (s odpoveďami)."
+        ),
+        default_prompt_template="Otázka: {text}\nOdpoveď: {label}",
+        default_instruction_prompt=(
+            "Otázka: {text}\n\n"
+            "Odpovedzte na nasledujúcu otázku použitím {labels_str}, a nič iné."
+        ),
         default_prompt_label_mapping="auto",
     ),
     SV: PromptConfig(

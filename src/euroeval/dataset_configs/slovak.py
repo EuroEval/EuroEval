@@ -2,7 +2,7 @@
 
 from ..data_models import DatasetConfig
 from ..languages import SK
-from ..tasks import LA, NER, RC, SENT
+from ..tasks import KNOW, LA, NER, RC, SENT
 
 ### Official datasets ###
 
@@ -35,5 +35,13 @@ MULTI_WIKI_QA_SK_CONFIG = DatasetConfig(
     pretty_name="the Slovak part of the reading comprehension dataset MultiWikiQA",
     huggingface_id="EuroEval/multi-wiki-qa-sk-mini",
     task=RC,
+    languages=[SK],
+)
+
+MMLU_SK_CONFIG = DatasetConfig(
+    name="mmlu-sk",
+    pretty_name="the Slovak part of the multiple-choice classification dataset MMLU",
+    huggingface_id="EuroEval/mmlu-sk-mini",
+    task=KNOW,
     languages=[SK],
 )
