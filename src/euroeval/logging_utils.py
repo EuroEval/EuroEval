@@ -6,6 +6,7 @@ import os
 import sys
 import warnings
 from functools import cache
+from io import TextIOWrapper
 
 import litellm
 from datasets.utils import disable_progress_bars as disable_datasets_progress_bars
@@ -170,18 +171,18 @@ class no_terminal_output:
                 If True, this context manager does nothing.
         """
         self.disable = disable
-        self._original_stdout = sys.stdout
-        self._original_stderr = sys.stderr
         self._cpp_stdout_file = os.dup(sys.stdout.fileno())
         self._cpp_stderr_file = os.dup(sys.stderr.fileno())
+        self.nothing_file: TextIOWrapper | None = None
 
     def __enter__(self) -> None:
         """Suppress all terminal output."""
         if not self.disable:
-            sys.stdout = open(os.devnull, "w")
-            sys.stderr = open(os.devnull, "w")
-            os.dup2(os.open(os.devnull, os.O_WRONLY), self._cpp_stdout_file)
-            os.dup2(os.open(os.devnull, os.O_WRONLY), self._cpp_stderr_file)
+            self.nothing_file = open(os.devnull, "w")
+            os.dup2(fd=self.nothing_file.fileno(), fd2=sys.stdout.fileno())
+            os.dup2(fd=self.nothing_file.fileno(), fd2=sys.stderr.fileno())
+            # sys.stdout = self.nothing_file
+            # sys.stderr = self.nothing_file
 
     def __exit__(
         self,
@@ -191,12 +192,10 @@ class no_terminal_output:
     ) -> None:
         """Re-enable terminal output."""
         if not self.disable:
-            sys.stdout.close()
-            sys.stderr.close()
-            sys.stdout = self._original_stdout
-            sys.stderr = self._original_stderr
-            os.dup2(self._cpp_stdout_file, sys.stdout.fileno())
-            os.dup2(self._cpp_stderr_file, sys.stderr.fileno())
+            if self.nothing_file is not None:
+                self.nothing_file.close()
+            os.dup2(fd=self._cpp_stdout_file, fd2=sys.stdout.fileno())
+            os.dup2(fd=self._cpp_stderr_file, fd2=sys.stderr.fileno())
 
 
 def adjust_logging_level(verbose: bool, ignore_testing: bool = False) -> int:
