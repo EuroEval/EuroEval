@@ -176,6 +176,8 @@ class no_terminal_output:
         """
         self.disable = disable
         self.nothing_file: TextIOWrapper | None = None
+        self._cpp_stdout_file: int | None = None
+        self._cpp_stderr_file: int | None = None
         try:
             self._cpp_stdout_file = os.dup(sys.stdout.fileno())
             self._cpp_stderr_file = os.dup(sys.stderr.fileno())
@@ -211,8 +213,10 @@ class no_terminal_output:
             if self.nothing_file is not None:
                 self.nothing_file.close()
             try:
-                os.dup2(fd=self._cpp_stdout_file, fd2=sys.stdout.fileno())
-                os.dup2(fd=self._cpp_stderr_file, fd2=sys.stderr.fileno())
+                if self._cpp_stdout_file is not None:
+                    os.dup2(fd=self._cpp_stdout_file, fd2=sys.stdout.fileno())
+                if self._cpp_stderr_file is not None:
+                    os.dup2(fd=self._cpp_stderr_file, fd2=sys.stderr.fileno())
             except OSError:
                 self._log_windows_warning()
 
