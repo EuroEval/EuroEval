@@ -35,7 +35,7 @@ def load_model(
     Returns:
         The model.
     """
-    log("Loading model...")
+    log(f"Loading {model_config.model_id}...")
 
     # The order matters; the first model type that matches will be used. For this
     # reason, they have been ordered in terms of the most common model types.
