@@ -49,7 +49,7 @@ from ..generation_utils import (
     raise_if_wrong_params,
 )
 from ..languages import get_all_languages
-from ..logging_utils import get_pbar, log, log_once
+from ..logging_utils import get_pbar, log, log_once, no_terminal_output
 from ..task_group_utils import (
     question_answering,
     sequence_classification,
@@ -129,8 +129,7 @@ class VLLMModel(HuggingFaceEncoderModel):
             model_config=model_config, allowed_params=self.allowed_params
         )
 
-        # with no_terminal_output(disable=benchmark_config.verbose):
-        with contextlib.redirect_stdout(None), contextlib.redirect_stderr(None):
+        with no_terminal_output(disable=benchmark_config.verbose):
             model, tokeniser = load_model_and_tokeniser(
                 model_config=model_config, benchmark_config=benchmark_config
             )

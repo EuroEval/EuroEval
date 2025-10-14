@@ -172,12 +172,16 @@ class no_terminal_output:
         self.disable = disable
         self._original_stdout = sys.stdout
         self._original_stderr = sys.stderr
+        self._cpp_stdout_file = os.dup(sys.stdout.fileno())
+        self._cpp_stderr_file = os.dup(sys.stderr.fileno())
 
     def __enter__(self) -> None:
         """Suppress all terminal output."""
         if not self.disable:
             sys.stdout = open(os.devnull, "w")
             sys.stderr = open(os.devnull, "w")
+            os.dup2(os.open(os.devnull, os.O_WRONLY), self._cpp_stdout_file)
+            os.dup2(os.open(os.devnull, os.O_WRONLY), self._cpp_stderr_file)
 
     def __exit__(
         self,
@@ -191,6 +195,8 @@ class no_terminal_output:
             sys.stderr.close()
             sys.stdout = self._original_stdout
             sys.stderr = self._original_stderr
+            os.dup2(self._cpp_stdout_file, sys.stdout.fileno())
+            os.dup2(self._cpp_stderr_file, sys.stderr.fileno())
 
 
 def adjust_logging_level(verbose: bool, ignore_testing: bool = False) -> int:
