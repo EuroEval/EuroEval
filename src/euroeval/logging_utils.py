@@ -171,18 +171,30 @@ class no_terminal_output:
                 If True, this context manager does nothing.
         """
         self.disable = disable
-        self._cpp_stdout_file = os.dup(sys.stdout.fileno())
-        self._cpp_stderr_file = os.dup(sys.stderr.fileno())
         self.nothing_file: TextIOWrapper | None = None
+        try:
+            self._cpp_stdout_file = os.dup(sys.stdout.fileno())
+            self._cpp_stderr_file = os.dup(sys.stderr.fileno())
+        except OSError:
+            self._log_windows_warning()
+
+    def _log_windows_warning(self) -> None:
+        """Log a warning about Windows not supporting blocking terminal output."""
+        log_once(
+            "Your operating system (probably Windows) does not support blocking "
+            "terminal output, so expect more messy output - sorry!",
+            level=logging.WARNING,
+        )
 
     def __enter__(self) -> None:
         """Suppress all terminal output."""
         if not self.disable:
             self.nothing_file = open(os.devnull, "w")
-            os.dup2(fd=self.nothing_file.fileno(), fd2=sys.stdout.fileno())
-            os.dup2(fd=self.nothing_file.fileno(), fd2=sys.stderr.fileno())
-            # sys.stdout = self.nothing_file
-            # sys.stderr = self.nothing_file
+            try:
+                os.dup2(fd=self.nothing_file.fileno(), fd2=sys.stdout.fileno())
+                os.dup2(fd=self.nothing_file.fileno(), fd2=sys.stderr.fileno())
+            except OSError:
+                self._log_windows_warning()
 
     def __exit__(
         self,
@@ -194,8 +206,11 @@ class no_terminal_output:
         if not self.disable:
             if self.nothing_file is not None:
                 self.nothing_file.close()
-            os.dup2(fd=self._cpp_stdout_file, fd2=sys.stdout.fileno())
-            os.dup2(fd=self._cpp_stderr_file, fd2=sys.stderr.fileno())
+            try:
+                os.dup2(fd=self._cpp_stdout_file, fd2=sys.stdout.fileno())
+                os.dup2(fd=self._cpp_stderr_file, fd2=sys.stderr.fileno())
+            except OSError:
+                self._log_windows_warning()
 
 
 def adjust_logging_level(verbose: bool, ignore_testing: bool = False) -> int:
