@@ -49,7 +49,7 @@ from ..generation_utils import (
     raise_if_wrong_params,
 )
 from ..languages import get_all_languages
-from ..logging_utils import get_pbar, log, log_once, no_terminal_output
+from ..logging_utils import get_pbar, log, log_once
 from ..task_group_utils import (
     question_answering,
     sequence_classification,
@@ -122,7 +122,6 @@ class VLLMModel(HuggingFaceEncoderModel):
             log_metadata:
                 Whether to log the model and dataset metadata.
         """
-        breakpoint()
         if importlib.util.find_spec("vllm") is None:
             raise NeedsExtraInstalled(extra="generative")
 
@@ -130,7 +129,8 @@ class VLLMModel(HuggingFaceEncoderModel):
             model_config=model_config, allowed_params=self.allowed_params
         )
 
-        with no_terminal_output(disable=benchmark_config.verbose):
+        # with no_terminal_output(disable=benchmark_config.verbose):
+        with contextlib.redirect_stdout(None), contextlib.redirect_stderr(None):
             model, tokeniser = load_model_and_tokeniser(
                 model_config=model_config, benchmark_config=benchmark_config
             )
