@@ -718,13 +718,6 @@ class Benchmarker:
                 # We do not re-initialise generative models as their architecture is not
                 # customised to specific datasets
                 if model_config.model_type == ModelType.GENERATIVE:
-                    initial_logging(
-                        model_config=model_config,
-                        dataset_config=dataset_config,
-                        benchmark_config=benchmark_config,
-                        num_finished_benchmarks=num_finished_benchmarks,
-                        num_total_benchmarks=total_benchmarks,
-                    )
                     if loaded_model is None:
                         try:
                             loaded_model = load_model(
@@ -882,15 +875,6 @@ class Benchmarker:
             InvalidModel:
                 If the model is invalid.
         """
-        if model is None:
-            initial_logging(
-                model_config=model_config,
-                dataset_config=dataset_config,
-                benchmark_config=benchmark_config,
-                num_finished_benchmarks=num_finished_benchmarks,
-                num_total_benchmarks=num_total_benchmarks,
-            )
-
         for _ in range(num_attempts := 5):
             try:
                 # Set random seeds to enforce reproducibility of the randomly
@@ -904,6 +888,14 @@ class Benchmarker:
                         benchmark_config=benchmark_config,
                     )
                 assert model is not None
+
+                initial_logging(
+                    model_config=model_config,
+                    dataset_config=dataset_config,
+                    benchmark_config=benchmark_config,
+                    num_finished_benchmarks=num_finished_benchmarks,
+                    num_total_benchmarks=num_total_benchmarks,
+                )
 
                 if dataset_config.task == SPEED:
                     scores = benchmark_speed(
@@ -1136,14 +1128,14 @@ def initial_logging(
     else:
         eval_type = "Benchmarking"
 
-    log(
+    log_once(
         f"\n{eval_type} {model_id} on the {split_type} split of "
         f"{dataset_config.pretty_name} ({num_finished_benchmarks + 1}/"
         f"{num_total_benchmarks} benchmarks)..."
     )
 
     if dataset_config.unofficial:
-        log(
+        log_once(
             f"Note that the {dataset_config.name!r} dataset is unofficial, "
             "meaning that the resulting evaluation will not be included in the "
             "official leaderboard.",
@@ -1151,7 +1143,7 @@ def initial_logging(
         )
 
     if benchmark_config.debug:
-        log(
+        log_once(
             "Running in debug mode. This will output additional information, as "
             "well as store the model outputs in the current directory after each "
             "batch. For this reason, evaluation will be slower.",
