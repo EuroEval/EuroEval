@@ -140,6 +140,9 @@ def block_terminal_output() -> None:
     os.environ["LOG_LEVEL"] = "CRITICAL"
     os.environ["VLLM_CONFIGURE_LOGGING"] = "0"
 
+    # Disable flashinfer logging
+    os.environ["FLASHINFER_LOGGING_LEVEL"] = "CRITICAL"
+
     # Disable datasets logging
     logging.getLogger("datasets").setLevel(logging.CRITICAL)
     logging.getLogger("filelock").setLevel(logging.CRITICAL)
