@@ -56,7 +56,11 @@ def log(message: str, level: int = logging.INFO, colour: str | None = None) -> N
     match level:
         case logging.DEBUG:
             message = colored(
-                text=f"[{dt.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] {message}",
+                text=(
+                    "[DEBUG] "
+                    + dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    + " · {message}"
+                ),
                 color=colour or "light_blue",
             )
             logger.debug(message)
