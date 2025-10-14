@@ -2,7 +2,7 @@
 
 from ..data_models import DatasetConfig
 from ..languages import SK
-from ..tasks import LA, SENT
+from ..tasks import LA, NER, SENT
 
 ### Official datasets ###
 
@@ -19,5 +19,13 @@ SCALA_SK_CONFIG = DatasetConfig(
     pretty_name="the Slovak part of the linguistic acceptability dataset ScaLA",
     huggingface_id="EuroEval/scala-cs",
     task=LA,
+    languages=[SK],
+)
+
+UNER_SK_CONFIG = DatasetConfig(
+    name="uner-sk",
+    pretty_name="the Slovak named entity recognition dataset UNER-sk",
+    huggingface_id="EuroEval/uner-sk-mini",
+    task=NER,
     languages=[SK],
 )

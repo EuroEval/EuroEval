@@ -78,37 +78,37 @@ euroeval --model <model-id> --dataset csfd-sentiment-sk
 
 ## Named Entity Recognition
 
-### PONER
+### UNER-sk
 
-This dataset was created [in this master thesis](https://hdl.handle.net/11012/213801).
-The dataset consists of 9,310 Czech sentences with 14,639 named entities.
-Source data are Czech historical chronicles mostly from the first half of the 20th century.
+This dataset was published in
+[this paper](https://aclanthology.org/2024.naacl-long.243/).
 
-The original dataset consists of 4,188 / 465 / 4,655 samples for the training, validation
-and test splits, respectively.
-We use 1,024 / 256 / 2,048 samples for our training, validation and test splits, respectively.
-All the new splits are subsets of the original splits.
+The original dataset consists of 8,482 / 1,059 / 1,060 samples for the
+training, validation, and test splits, respectively. We use 1,024 / 256 / 2,048
+samples for our training, validation and test splits, respectively. The train and
+validation splits are subsets of the original splits, while the test split is
+created using additional samples from the train split.
 
 Here are a few examples from the training split:
 
 ```json
 {
-  "tokens": ["Předseda", "finanční", "komise", "města", "Julius", "Hegr"],
-  "labels": ["O", "O", "O", "O", "B-PER", "I-PER"]
+  "tokens": ["Bude", "mať", "názov", "Shanghai", "Noon", "a", "režisérom", "bude", "debutujúci", "Tom", "Dey", "."],
+  "labels": ["O", "O", "O", "O", "O", "O", "O", "O", "O", "B-PER", "I-PER", "O"]
 }
 ```
 
 ```json
 {
-  "tokens": ["Fot", ".", "dok", ".", "SV.", "I", "f.", "č.", "6."],
-  "labels": ["O", "O", "O", "O", "O", "O", "O", "O", "O"],
+  "tokens": ["Ako", "šesťročného", "(", "o", "rok", "skôr", ",", "než", "bolo", "zvykom", ")", "ho", "na", "základe", "zvláštnej", "výnimky", "prijali", "medzi", "Zvedov", "a", "ako", "deväťročný", "sa", "stal", "vedúcim", "skupiny", "."],
+  "labels": ["O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "B-ORG", "O", "O", "O", "O", "O", "O", "O", "O"]
 }
 ```
 
 ```json
 {
-  "tokens": ["Konala", "se", "valná", "hromada", "Čtenářského", "spolku"],
-  "labels": ["O", "O", "O", "O", "B-ORG", "I-ORG"],
+  "tokens": ["To", "predsa", "stojí", "za", "pokus", "!"],
+  "labels": ["O", "O", "O", "O", "O", "O"]
 }
 ```
 
@@ -119,38 +119,38 @@ When evaluating generative models, we use the following setup (see the
 - Prefix prompt:
 
   ```text
-  Následující jsou věty a JSON slovníky s pojmenovanými entitami, které se v dané větě vyskytují.
+  Nasledujúce sú vety a JSON-objekty s pomenovanými entitami, ktoré sa nachádzajú v danej vete.
   ```
 
 - Base prompt template:
 
   ```text
-  Věta: {text}
-  Pojmenované entity: {label}
+  Veta: {text}
+  Pomenované entity: {label}
   ```
 
 - Instruction-tuned prompt template:
 
   ```text
-  Věta: {text}
+  Veta: {text}
 
-  Identifikujte pojmenované entity ve větě. Měli byste to vypsat jako JSON slovník s klíči 'osoba', 'místo', 'organizace' a 'různé'. Hodnoty by měly být seznamy pojmenovaných entit tohoto typu, přesně tak, jak se objevují ve větě.
+  Identifikujte pomenované entity vo vete. Výstup by mal byť vo forme JSON-objektu s kľúčmi 'osoba', 'miesto', 'organizácia' a 'rôzne'. Hodnoty by mali byť zoznamy pomenovaných entít danej kategórie, presne tak, ako sa vyskytujú vo vete.
   ```
 
 - Label mapping:
   - `B-PER` ➡️ `osoba`
   - `I-PER` ➡️ `osoba`
-  - `B-LOC` ➡️ `místo`
-  - `I-LOC` ➡️ `místo`
-  - `B-ORG` ➡️ `organizace`
-  - `I-ORG` ➡️ `organizace`
-  - `B-MISC` ➡️ `různé`
-  - `I-MISC` ➡️ `různé`
+  - `B-LOC` ➡️ `miesto`
+  - `I-LOC` ➡️ `miesto`
+  - `B-ORG` ➡️ `organizácia`
+  - `I-ORG` ➡️ `organizácia`
+  - `B-MISC` ➡️ `rôzne`
+  - `I-MISC` ➡️ `rôzne`
 
 You can evaluate this dataset directly as follows:
 
 ```bash
-euroeval --model <model-id> --dataset poner
+euroeval --model <model-id> --dataset uner-sk
 ```
 
 ## Linguistic Acceptability
