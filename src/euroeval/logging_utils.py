@@ -59,7 +59,7 @@ def log(message: str, level: int = logging.INFO, colour: str | None = None) -> N
                 text=(
                     "[DEBUG] "
                     + dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                    + " · {message}"
+                    + f" · {message}"
                 ),
                 color=colour or "light_blue",
             )
