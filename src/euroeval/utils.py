@@ -9,30 +9,21 @@ import os
 import random
 import re
 import socket
-import sys
 import typing as t
-import warnings
 from functools import cache
 from pathlib import Path
 
 import demjson3
 import huggingface_hub as hf_hub
-import litellm
 import numpy as np
 import torch
-from datasets.utils import disable_progress_bar
-from transformers import logging as tf_logging
 
 from .exceptions import InvalidBenchmark, InvalidModel, NaNValueInModelOutput
+from .logging_utils import log, log_once
 
 if t.TYPE_CHECKING:
-    from types import TracebackType
-
     from .data_models import ModelIdComponents
     from .types import Predictions
-
-
-logger = logging.getLogger("euroeval")
 
 
 def create_model_cache_dir(cache_dir: str, model_id: str) -> str:
@@ -149,68 +140,6 @@ def enforce_reproducibility(seed: int = 4242) -> np.random.Generator:
     return rng
 
 
-def block_terminal_output() -> None:
-    """Blocks libraries from writing output to the terminal.
-
-    This filters warnings from some libraries, sets the logging level to ERROR for some
-    libraries, disabled tokeniser progress bars when using Hugging Face tokenisers, and
-    disables most of the logging from the `transformers` library.
-    """
-    if os.getenv("FULL_LOG") == "1":
-        return
-
-    # Ignore miscellaneous warnings
-    warnings.filterwarnings("ignore", category=UserWarning)
-    warnings.filterwarnings("ignore", category=FutureWarning)
-    logging.getLogger("absl").setLevel(logging.CRITICAL)
-
-    # Disable matplotlib logging
-    logging.getLogger("matplotlib.font_manager").setLevel(logging.CRITICAL)
-
-    # Disable PyTorch logging
-    logging.getLogger("torch.utils.cpp_extension").setLevel(logging.CRITICAL)
-    warnings.filterwarnings(action="ignore", module="torch*")
-    os.environ["TORCH_LOGS"] = "-all"
-
-    # Disable huggingface_hub logging
-    logging.getLogger("huggingface_hub").setLevel(logging.CRITICAL)
-
-    # Disable LiteLLM logging
-    logging.getLogger("LiteLLM").setLevel(logging.CRITICAL)
-    logging.getLogger("LiteLLM Router").setLevel(logging.CRITICAL)
-    logging.getLogger("LiteLLM Proxy").setLevel(logging.CRITICAL)
-    logging.getLogger("openai").setLevel(logging.CRITICAL)
-    logging.getLogger("httpx").setLevel(logging.CRITICAL)
-    litellm.suppress_debug_info = True
-
-    # Disable vLLM logging
-    logging.getLogger("vllm").setLevel(logging.CRITICAL)
-    logging.getLogger("vllm.engine.llm_engine").setLevel(logging.CRITICAL)
-    logging.getLogger("vllm.transformers_utils.tokenizer").setLevel(logging.CRITICAL)
-    logging.getLogger("vllm.core.scheduler").setLevel(logging.CRITICAL)
-    logging.getLogger("vllm.model_executor.weight_utils").setLevel(logging.CRITICAL)
-    logging.getLogger("vllm.platforms").setLevel(logging.CRITICAL)
-    logging.getLogger("mistral_common.tokens.tokenizers.tekken").setLevel(
-        logging.CRITICAL
-    )
-    os.environ["LOG_LEVEL"] = "CRITICAL"
-    os.environ["VLLM_CONFIGURE_LOGGING"] = "0"
-
-    # Disable datasets logging
-    logging.getLogger("datasets").setLevel(logging.CRITICAL)
-    logging.getLogger("filelock").setLevel(logging.CRITICAL)
-    disable_progress_bar()
-
-    # Disable evaluate logging
-    warnings.filterwarnings("ignore", module="seqeval*")
-
-    # Disable most of the `transformers` logging
-    tf_logging._default_log_level = logging.CRITICAL
-    tf_logging.set_verbosity(logging.CRITICAL)
-    logging.getLogger("transformers.trainer").setLevel(logging.CRITICAL)
-    logging.getLogger("accelerate").setLevel(logging.CRITICAL)
-
-
 def get_class_by_name(class_name: str | list[str], module_name: str) -> t.Type | None:
     """Get a class by its name.
 
@@ -240,9 +169,10 @@ def get_class_by_name(class_name: str | list[str], module_name: str) -> t.Type |
 
     if error_messages:
         errors = "\n- " + "\n- ".join(error_messages)
-        logger.debug(
+        log(
             f"Could not find the class with the name(s) {', '.join(class_name)}. The "
-            f"following error messages were raised: {errors}"
+            f"following error messages were raised: {errors}",
+            level=logging.DEBUG,
         )
 
     # If the class could not be found, return None
@@ -284,29 +214,6 @@ def internet_connection_available() -> bool:
         if type(e).__name__ in pytest_socket_errors or isinstance(e, OSError):
             return False
         raise e
-
-
-class HiddenPrints:
-    """Context manager which removes all terminal output."""
-
-    def __enter__(self) -> None:
-        """Enter the context manager."""
-        self._original_stdout = sys.stdout
-        self._original_stderr = sys.stderr
-        sys.stdout = open(os.devnull, "w")
-        sys.stderr = open(os.devnull, "w")
-
-    def __exit__(
-        self,
-        exc_type: t.Type[BaseException],
-        exc_val: BaseException,
-        exc_tb: "TracebackType",
-    ) -> None:
-        """Exit the context manager."""
-        sys.stdout.close()
-        sys.stderr.close()
-        sys.stdout = self._original_stdout
-        sys.stderr = self._original_stderr
 
 
 def raise_if_model_output_contains_nan_values(model_output: "Predictions") -> None:
@@ -362,34 +269,6 @@ def unscramble(scrambled_text: str) -> str:
     inverse_permutation = np.argsort(permutation)
     unscrambled = "".join(scrambled_text[i] for i in inverse_permutation)
     return unscrambled
-
-
-@cache
-def log_once(message: str, level: int = logging.INFO) -> None:
-    """Log a message once.
-
-    This is ensured by caching the input/output pairs of this function, using the
-    `functools.cache` decorator.
-
-    Args:
-        message:
-            The message to log.
-        level:
-            The logging level. Defaults to logging.INFO.
-    """
-    match level:
-        case logging.DEBUG:
-            logger.debug(message)
-        case logging.INFO:
-            logger.info(message)
-        case logging.WARNING:
-            logger.warning(message)
-        case logging.ERROR:
-            logger.error(message)
-        case logging.CRITICAL:
-            logger.critical(message)
-        case _:
-            raise ValueError(f"Invalid logging level: {level}")
 
 
 def get_package_version(package_name: str) -> str | None:
@@ -464,31 +343,35 @@ def extract_json_dict_from_string(s: str) -> dict | None:
     """
     json_regex = r"\{[^{}]*?\}"
     if (json_match := re.search(pattern=json_regex, string=s, flags=re.DOTALL)) is None:
-        logger.debug(
+        log(
             "The model output does not contain any JSON dictionary, so cannot parse "
-            f"it. Skipping. Here is the output: {s!r}"
+            f"it. Skipping. Here is the output: {s!r}",
+            level=logging.DEBUG,
         )
         return None
     json_string = json_match.group()
     try:
         json_output = demjson3.decode(txt=json_string)
     except demjson3.JSONDecodeError:
-        logger.debug(
+        log(
             "The model output is not valid JSON, so cannot parse it. Skipping. "
-            f"Here is the output: {json_string!r}"
+            f"Here is the output: {json_string!r}",
+            level=logging.DEBUG,
         )
         return None
     if not isinstance(json_output, dict):
-        logger.debug(
+        log(
             "The model output is not a JSON dictionary, so cannot parse "
-            f"it. Skipping. Here is the output: {json_string!r}"
+            f"it. Skipping. Here is the output: {json_string!r}",
+            level=logging.DEBUG,
         )
         return None
     elif not all(isinstance(key, str) for key in json_output.keys()):
-        logger.debug(
+        log(
             "The model output is not a JSON dictionary with string keys, "
             "so cannot parse it. Skipping. Here is the output: "
-            f"{json_string!r}"
+            f"{json_string!r}",
+            level=logging.DEBUG,
         )
         return None
     return json_output

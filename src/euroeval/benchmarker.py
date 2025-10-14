@@ -4,7 +4,6 @@ import contextlib
 import json
 import logging
 import re
-import sys
 import typing as t
 from pathlib import Path
 from shutil import rmtree
@@ -12,7 +11,6 @@ from time import sleep
 
 from huggingface_hub.constants import HF_HUB_ENABLE_HF_TRANSFER
 from torch.distributed import destroy_process_group
-from tqdm.auto import tqdm
 
 from .benchmark_config_factory import build_benchmark_config
 from .constants import GENERATIVE_PIPELINE_TAGS
@@ -23,6 +21,7 @@ from .enums import Device, GenerativeType, ModelType
 from .exceptions import HuggingFaceHubDown, InvalidBenchmark, InvalidModel
 from .finetuning import finetune
 from .generation import generate
+from .logging_utils import adjust_logging_level, get_pbar, log, log_once
 from .model_config import get_model_config
 from .model_loading import load_model
 from .scores import log_scores
@@ -32,16 +31,12 @@ from .utils import (
     enforce_reproducibility,
     get_package_version,
     internet_connection_available,
-    log_once,
     split_model_id,
 )
 
 if t.TYPE_CHECKING:
     from .benchmark_modules import BenchmarkModule
     from .data_models import BenchmarkConfig, DatasetConfig, ModelConfig
-
-
-logger = logging.getLogger("euroeval")
 
 
 class Benchmarker:
@@ -301,7 +296,6 @@ class Benchmarker:
         )
         del dataset
 
-        log_once(f"Loading model {model_config.model_id}", level=logging.INFO)
         model = load_model(
             model_config=model_config,
             dataset_config=dataset_config,
@@ -611,7 +605,7 @@ class Benchmarker:
 
         # Get all the model configs
         model_configs: list[ModelConfig] = list()
-        for model_id in tqdm(
+        for model_id in get_pbar(
             iterable=model_ids,
             desc="Fetching model configurations",
             disable=not benchmark_config.verbose or not benchmark_config.progress_bar,
@@ -622,7 +616,7 @@ class Benchmarker:
                 )
                 model_configs.append(model_config)
             except InvalidModel as e:
-                logger.info(e.message)
+                log(e.message, level=logging.ERROR)
 
         # Create a dictionary that takes each model config to the dataset configs that
         # we need to benchmark the model on. Here we remove the datasets that the model
@@ -651,22 +645,21 @@ class Benchmarker:
             for dataset_configs in model_config_to_dataset_configs.values()
         )
         if total_benchmarks == 0:
-            logger.info(
+            log(
                 "No benchmarks to run, as all the selected models have already been "
                 "benchmarked on all the selected datasets."
             )
             return list()
-
-        logger.info(f"Initiated evaluation of {total_benchmarks:,} benchmarks.")
 
         num_finished_benchmarks = 0
         current_benchmark_results: list[BenchmarkResult] = list()
         benchmark_params_to_revert: dict[str, t.Any] = dict()
         for model_config in model_configs:
             if not model_config_to_dataset_configs[model_config]:
-                logger.debug(
+                log(
                     f"Skipping model {model_config.model_id!r} because it has "
-                    "already been benchmarked on all valid datasets."
+                    "already been benchmarked on all valid datasets.",
+                    level=logging.DEBUG,
                 )
                 continue
 
@@ -704,18 +697,20 @@ class Benchmarker:
                     "val" not in dataset_config.splits
                     and not benchmark_config.evaluate_test_split
                 ):
-                    logger.debug(
+                    log(
                         "The dataset does not have a validation split, so even though "
                         "you requested evaluating the validation split (the default), "
-                        "we will evaluate on the test split."
+                        "we will evaluate on the test split.",
+                        level=logging.DEBUG,
                     )
                     benchmark_params_to_revert["evaluate_test_split"] = False
                     benchmark_config.evaluate_test_split = True
                 if dataset_config.task.requires_zero_shot and benchmark_config.few_shot:
-                    logger.debug(
+                    log(
                         "The task requires zero-shot evaluation, so even though you "
                         "requested few-shot evaluation (the default), we will evaluate "
-                        "zero-shot."
+                        "zero-shot.",
+                        level=logging.DEBUG,
                     )
                     benchmark_params_to_revert["few_shot"] = True
                     benchmark_config.few_shot = False
@@ -727,9 +722,10 @@ class Benchmarker:
                         model_config=model_config,
                         dataset_config=dataset_config,
                         benchmark_config=benchmark_config,
+                        num_finished_benchmarks=num_finished_benchmarks,
+                        num_total_benchmarks=total_benchmarks,
                     )
                     if loaded_model is None:
-                        logger.info("Loading model...")
                         try:
                             loaded_model = load_model(
                                 model_config=model_config,
@@ -739,7 +735,7 @@ class Benchmarker:
                         except InvalidModel as e:
                             if benchmark_config.raise_errors:
                                 raise e
-                            logger.info(e.message)
+                            log(e.message, level=logging.ERROR)
 
                             # Add the remaining number of benchmarks for the model to
                             # our benchmark counter, since we're skipping the rest of
@@ -759,12 +755,13 @@ class Benchmarker:
                         loaded_model.generative_type
                         not in dataset_config.allowed_generative_types
                     ):
-                        logger.debug(
+                        log(
                             f"Skipping the benchmark of model "
                             f"{model_config.model_id!r}on dataset "
                             f"{dataset_config.name!r} because the model has generative "
                             f"type {loaded_model.generative_type} and the dataset "
-                            f"only allows {dataset_config.allowed_generative_types}."
+                            f"only allows {dataset_config.allowed_generative_types}.",
+                            level=logging.DEBUG,
                         )
                         num_finished_benchmarks += 1
                         continue
@@ -775,6 +772,8 @@ class Benchmarker:
                     model_config=model_config,
                     dataset_config=dataset_config,
                     benchmark_config=benchmark_config,
+                    num_finished_benchmarks=num_finished_benchmarks,
+                    num_total_benchmarks=total_benchmarks,
                 )
 
                 if (
@@ -784,12 +783,12 @@ class Benchmarker:
                     raise benchmark_output_or_err
 
                 elif isinstance(benchmark_output_or_err, InvalidBenchmark):
-                    logger.info(benchmark_output_or_err.message)
+                    log(benchmark_output_or_err.message, level=logging.WARNING)
                     num_finished_benchmarks += 1
                     continue
 
                 elif isinstance(benchmark_output_or_err, InvalidModel):
-                    logger.info(benchmark_output_or_err.message)
+                    log(benchmark_output_or_err.message, level=logging.WARNING)
 
                     # Add the remaining number of benchmarks for the model to our
                     # benchmark counter, since we're skipping the rest of them
@@ -805,10 +804,6 @@ class Benchmarker:
                         record.append_to_results(results_path=self.results_path)
 
                 num_finished_benchmarks += 1
-                logger.info(
-                    f"Finished {num_finished_benchmarks} out of "
-                    f"{total_benchmarks} benchmarks."
-                )
 
             del loaded_model
             if benchmark_config.clear_model_cache:
@@ -857,6 +852,8 @@ class Benchmarker:
         model_config: "ModelConfig",
         dataset_config: "DatasetConfig",
         benchmark_config: "BenchmarkConfig",
+        num_finished_benchmarks: int,
+        num_total_benchmarks: int,
     ) -> BenchmarkResult | InvalidBenchmark | InvalidModel:
         """Benchmark a single model on a single dataset.
 
@@ -869,6 +866,10 @@ class Benchmarker:
                 The configuration of the dataset we are evaluating on.
             benchmark_config:
                 The general benchmark configuration.
+            num_finished_benchmarks:
+                The number of benchmarks that have already been completed.
+            num_total_benchmarks:
+                The total number of benchmarks to be completed.
 
         Returns:
             The benchmark result, or an error if the benchmark was unsuccessful.
@@ -886,6 +887,8 @@ class Benchmarker:
                 model_config=model_config,
                 dataset_config=dataset_config,
                 benchmark_config=benchmark_config,
+                num_finished_benchmarks=num_finished_benchmarks,
+                num_total_benchmarks=num_total_benchmarks,
             )
 
         for _ in range(num_attempts := 5):
@@ -895,7 +898,6 @@ class Benchmarker:
                 rng = enforce_reproducibility()
 
                 if model is None or model_config.model_type != ModelType.GENERATIVE:
-                    logger.info("Loading model...")
                     model = load_model(
                         model_config=model_config,
                         dataset_config=dataset_config,
@@ -970,14 +972,15 @@ class Benchmarker:
                     few_shot=benchmark_config.few_shot,
                     validation_split=not benchmark_config.evaluate_test_split,
                 )
-                logger.debug(f"Results:\n{results}")
+                log(f"Results:\n{results}", level=logging.DEBUG)
                 return record
 
             except HuggingFaceHubDown:
                 wait_time = 30
-                logger.debug(
+                log(
                     f"The Hugging Face Hub seems to be down. Retrying in {wait_time} "
-                    "seconds."
+                    "seconds.",
+                    level=logging.DEBUG,
                 )
                 sleep(wait_time)
                 continue
@@ -1008,9 +1011,10 @@ class Benchmarker:
 
     def __call__(self, *args: t.Any, **kwds: t.Any) -> t.Any:  # noqa: ANN401
         """Alias for `self.benchmark()`."""
-        logger.warning(
+        log(
             "Calling the `Benchmarker` class directly is deprecated. Please use the "
-            "`benchmark` function instead. This will be removed in a future version."
+            "`benchmark` function instead. This will be removed in a future version.",
+            level=logging.WARNING,
         )
         return self.benchmark(*args, **kwds)
 
@@ -1063,28 +1067,6 @@ def model_has_been_benchmarked(
     return False
 
 
-def adjust_logging_level(verbose: bool, ignore_testing: bool = False) -> int:
-    """Adjust the logging level based on verbosity.
-
-    Args:
-        verbose:
-            Whether to output additional output.
-        ignore_testing:
-            Whether to ignore the testing flag.
-
-    Returns:
-        The logging level that was set.
-    """
-    if hasattr(sys, "_called_from_test") and not ignore_testing:
-        logging_level = logging.CRITICAL
-    elif verbose:
-        logging_level = logging.DEBUG
-    else:
-        logging_level = logging.INFO
-    logger.setLevel(logging_level)
-    return logging_level
-
-
 def clear_model_cache_fn(cache_dir: str) -> None:
     """Clear the model cache.
 
@@ -1122,6 +1104,8 @@ def initial_logging(
     model_config: "ModelConfig",
     dataset_config: "DatasetConfig",
     benchmark_config: "BenchmarkConfig",
+    num_finished_benchmarks: int,
+    num_total_benchmarks: int,
 ) -> None:
     """Initial logging at the start of the benchmarking process.
 
@@ -1132,6 +1116,10 @@ def initial_logging(
             The configuration of the dataset we are evaluating on.
         benchmark_config:
             The general benchmark configuration.
+        num_finished_benchmarks:
+            The number of benchmarks that have already been finished.
+        num_total_benchmarks:
+            The total number of benchmarks to be run.
     """
     model_id = model_config.model_id
     if model_config.revision and model_config.revision != "main":
@@ -1148,21 +1136,24 @@ def initial_logging(
     else:
         eval_type = "Benchmarking"
 
-    logger.info(
-        f"{eval_type} {model_id} on the {split_type} split of "
-        f"{dataset_config.pretty_name}"
+    log(
+        f"\n{eval_type} {model_id} on the {split_type} split of "
+        f"{dataset_config.pretty_name} ({num_finished_benchmarks + 1}/"
+        f"{num_total_benchmarks} benchmarks)..."
     )
 
     if dataset_config.unofficial:
-        logger.info(
+        log(
             f"Note that the {dataset_config.name!r} dataset is unofficial, "
             "meaning that the resulting evaluation will not be included in the "
-            "official leaderboard."
+            "official leaderboard.",
+            level=logging.WARNING,
         )
 
     if benchmark_config.debug:
-        logger.info(
+        log(
             "Running in debug mode. This will output additional information, as "
             "well as store the model outputs in the current directory after each "
-            "batch. For this reason, evaluation will be slower."
+            "batch. For this reason, evaluation will be slower.",
+            level=logging.WARNING,
         )

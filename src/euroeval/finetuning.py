@@ -6,7 +6,6 @@ import typing as t
 from functools import partial
 
 import torch
-from tqdm.auto import tqdm
 from transformers.trainer_callback import (
     EarlyStoppingCallback,
     PrinterCallback,
@@ -18,21 +17,15 @@ from transformers.training_args import OptimizerNames, TrainingArguments
 from .callbacks import NeverLeaveProgressCallback
 from .enums import DataType
 from .exceptions import InvalidBenchmark, NaNValueInModelOutput
+from .logging_utils import block_terminal_output, get_pbar, log, log_once
 from .model_loading import load_model
-from .utils import (
-    block_terminal_output,
-    clear_memory,
-    enforce_reproducibility,
-    log_once,
-)
+from .utils import clear_memory, enforce_reproducibility
 
 if t.TYPE_CHECKING:
     from datasets import DatasetDict
 
     from .benchmark_modules import BenchmarkModule
     from .data_models import BenchmarkConfig, DatasetConfig, ModelConfig
-
-logger = logging.getLogger("euroeval")
 
 
 def finetune(
@@ -74,7 +67,7 @@ def finetune(
 
     bs: int = benchmark_config.batch_size
     scores: list[dict[str, float]] = list()
-    for idx in tqdm(
+    for idx in get_pbar(
         iterable=range(benchmark_config.num_iterations),
         desc="Benchmarking",
         disable=not benchmark_config.progress_bar,
@@ -116,7 +109,10 @@ def finetune(
                 )
 
                 scores.append(itr_scores)
-                logger.debug(f"Test scores for iteration {idx}: {itr_scores}")
+                log(
+                    f"Test scores for iteration {idx}: {itr_scores}",
+                    level=logging.DEBUG,
+                )
 
                 break
 
@@ -127,9 +123,10 @@ def finetune(
                 if dtype != DataType.FP32:
                     dtype = DataType.FP32
                     model_already_initialized = False
-                    logger.debug(
+                    log(
                         "NaN value detected in model outputs while using mixed "
-                        "precision. Retrying with full fp32 precision."
+                        "precision. Retrying with full fp32 precision.",
+                        level=logging.DEBUG,
                     )
                 else:
                     raise InvalidBenchmark(
@@ -155,7 +152,7 @@ def finetune(
                 model_already_initialized = False
 
                 bs //= 2
-                logger.debug(f"Reduced batch size to {bs}")
+                log(f"Reduced batch size to {bs}", level=logging.DEBUG)
 
         else:
             raise InvalidBenchmark(

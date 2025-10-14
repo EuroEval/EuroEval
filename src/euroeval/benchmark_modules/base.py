@@ -3,24 +3,22 @@
 import collections.abc as c
 import logging
 import re
-import sys
 import typing as t
 from abc import ABC, abstractmethod
 from functools import cached_property, partial
 
 from datasets import Dataset, DatasetDict
 from torch import nn
-from tqdm.auto import tqdm
 
 from ..enums import TaskGroup
 from ..exceptions import InvalidBenchmark, NeedsEnvironmentVariable, NeedsExtraInstalled
+from ..logging_utils import get_pbar, log_once
 from ..task_group_utils import (
     question_answering,
     sequence_classification,
     text_to_text,
     token_classification,
 )
-from ..utils import log_once
 
 if t.TYPE_CHECKING:
     from transformers.tokenization_utils import PreTrainedTokenizer
@@ -35,8 +33,6 @@ if t.TYPE_CHECKING:
     )
     from ..enums import BatchingPreference, GenerativeType
     from ..types import ComputeMetricsFunction, ExtractLabelsFunction
-
-logger = logging.getLogger("euroeval")
 
 
 class BenchmarkModule(ABC):
@@ -87,16 +83,7 @@ class BenchmarkModule(ABC):
 
     def _log_metadata(self) -> None:
         """Log the metadata of the model."""
-        # Set logging level based on verbosity
-        if hasattr(sys, "_called_from_test"):
-            logging_level = logging.CRITICAL
-        elif self.benchmark_config.verbose:
-            logging_level = logging.DEBUG
-        else:
-            logging_level = logging.INFO
-        logger.setLevel(logging_level)
-
-        logging_msg: str = ""
+        logging_msg: str = "    ↳ "
         if self.num_params < 0:
             logging_msg += "The model has an unknown number of parameters, "
         else:
@@ -273,7 +260,7 @@ class BenchmarkModule(ABC):
                 tasks.
         """
         for idx, dataset in enumerate(
-            tqdm(iterable=datasets, desc="Preparing datasets")
+            get_pbar(iterable=datasets, desc="Preparing datasets")
         ):
             prepared_dataset = self.prepare_dataset(
                 dataset=dataset, task=task, itr_idx=idx

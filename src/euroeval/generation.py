@@ -11,12 +11,13 @@ from tqdm.auto import tqdm
 
 from .enums import BatchingPreference, TaskGroup
 from .exceptions import InvalidBenchmark
+from .logging_utils import get_pbar, log, log_once
 from .model_cache import (
     ModelCache,
     load_cached_model_outputs,
     split_dataset_into_cached_and_non_cached,
 )
-from .utils import clear_memory, log_once
+from .utils import clear_memory
 
 if t.TYPE_CHECKING:
     from datasets import DatasetDict
@@ -28,8 +29,6 @@ if t.TYPE_CHECKING:
         GenerativeModelOutput,
         ModelConfig,
     )
-
-logger = logging.getLogger("euroeval")
 
 
 def generate(
@@ -78,7 +77,7 @@ def generate(
     )
 
     scores: list[dict[str, float]] = list()
-    for idx in tqdm(
+    for idx in get_pbar(
         iterable=range(len(datasets)),
         desc="Benchmarking",
         disable=not benchmark_config.progress_bar,
@@ -90,7 +89,7 @@ def generate(
             dataset_config=dataset_config,
             benchmark_config=benchmark_config,
         )
-        logger.debug(f"Test scores for iteration {idx}: {test_scores}")
+        log(f"Test scores for iteration {idx}: {test_scores}", level=logging.DEBUG)
         scores.append(test_scores)
         clear_memory()
 
@@ -142,14 +141,14 @@ def generate_single_iteration(
         itr: t.Iterable
         match model.batching_preference:
             case BatchingPreference.SINGLE_SAMPLE:
-                itr = tqdm(iterable=non_cached_dataset, leave=False)
+                itr = get_pbar(iterable=non_cached_dataset)
             case BatchingPreference.ALL_AT_ONCE:
                 itr = [non_cached_dataset[:]]
             case _:
                 num_batches = len(non_cached_dataset) // benchmark_config.batch_size
                 if len(non_cached_dataset) % benchmark_config.batch_size != 0:
                     num_batches += 1
-                itr = tqdm(
+                itr = get_pbar(
                     iterable=mit.batched(
                         iterable=non_cached_dataset, n=benchmark_config.batch_size
                     ),
@@ -297,7 +296,7 @@ def debug_log(
                         + "\n"
                         + "\t".join(labels)
                     )
-            logger.info("\n\n".join(log_msgs))
+            log("\n\n".join(log_msgs))
             return
 
         case (
@@ -347,6 +346,4 @@ def debug_log(
         if labels[idx]:
             data_to_log["Label"] = labels[idx]
         data_to_log |= {key.capitalize(): batch[key][idx] for key in metadata_keys}
-        logger.info(
-            "\n".join(f"{key}: {value!r}" for key, value in data_to_log.items())
-        )
+        log("\n".join(f"{key}: {value!r}" for key, value in data_to_log.items()))

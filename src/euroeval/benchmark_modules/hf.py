@@ -60,6 +60,7 @@ from ..exceptions import (
 )
 from ..generation_utils import raise_if_wrong_params
 from ..languages import get_all_languages
+from ..logging_utils import block_terminal_output, log, log_once
 from ..task_group_utils import (
     multiple_choice_classification,
     question_answering,
@@ -67,12 +68,10 @@ from ..task_group_utils import (
 )
 from ..tokenisation_utils import get_bos_token, get_eos_token
 from ..utils import (
-    block_terminal_output,
     create_model_cache_dir,
     get_class_by_name,
     get_hf_token,
     internet_connection_available,
-    log_once,
     split_model_id,
 )
 from .base import BenchmarkModule
@@ -84,8 +83,6 @@ if t.TYPE_CHECKING:
 
     from ..data_models import BenchmarkConfig, DatasetConfig, Task
     from ..types import ExtractLabelsFunction
-
-logger = logging.getLogger("euroeval")
 
 
 class HuggingFaceEncoderModel(BenchmarkModule):
@@ -183,12 +180,13 @@ class HuggingFaceEncoderModel(BenchmarkModule):
         elif hasattr(self._model, "parameters"):
             num_params = sum(p.numel() for p in self._model.parameters())
         else:
-            logger.warning(
+            log(
                 "The number of parameters could not be determined for the model, since "
                 "the model is not stored in the safetensors format. If this is your "
                 "own model, then you can use this Hugging Face Space to convert your "
                 "model to the safetensors format: "
-                "https://huggingface.co/spaces/safetensors/convert."
+                "https://huggingface.co/spaces/safetensors/convert.",
+                level=logging.WARNING,
             )
             num_params = -1
         return num_params
@@ -644,17 +642,21 @@ def load_model_and_tokeniser(
             break
         except (KeyError, RuntimeError) as e:
             if not model_kwargs["ignore_mismatched_sizes"]:
-                logger.debug(
+                log(
                     f"{type(e).__name__} occurred during the loading "
                     f"of the {model_id!r} model. Retrying with "
-                    "`ignore_mismatched_sizes` set to True."
+                    "`ignore_mismatched_sizes` set to True.",
+                    level=logging.DEBUG,
                 )
                 model_kwargs["ignore_mismatched_sizes"] = True
                 continue
             else:
                 raise InvalidModel(str(e)) from e
         except (TimeoutError, RequestError):
-            logger.info(f"Couldn't load the model {model_id!r}. Retrying.")
+            log(
+                f"Couldn't load the model {model_id!r}. Retrying.",
+                level=logging.WARNING,
+            )
             sleep(5)
             continue
         except (OSError, ValueError) as e:
@@ -731,7 +733,7 @@ def get_model_repo_info(
     # model info object.
     model_info: HfApiModelInfo | None = None
     if Path(model_id).is_dir():
-        logger.debug(f"Checking for local model in {model_id}.")
+        log(f"Checking for local model in {model_id}.", level=logging.DEBUG)
         if all(
             (Path(model_id) / required_file).exists()
             for required_file in LOCAL_MODELS_REQUIRED_FILES
@@ -757,17 +759,19 @@ def get_model_repo_info(
             except (GatedRepoError, LocalTokenNotFoundError) as e:
                 try:
                     hf_whoami(token=token)
-                    logger.debug(
+                    log(
                         f"Could not access the model {model_id} with the revision "
-                        f"{revision}. The error was {str(e)!r}."
+                        f"{revision}. The error was {str(e)!r}.",
+                        level=logging.DEBUG,
                     )
                     return None
                 except LocalTokenNotFoundError:
-                    logger.debug(
+                    log(
                         f"Could not access the model {model_id} with the revision "
                         f"{revision}. The error was {str(e)!r}. Please set the "
                         "`HUGGINGFACE_API_KEY` environment variable or use the "
-                        "`--api-key` argument."
+                        "`--api-key` argument.",
+                        level=logging.DEBUG,
                     )
                     return None
             except (RepositoryNotFoundError, HFValidationError):
@@ -783,16 +787,18 @@ def get_model_repo_info(
                 if internet_connection_available():
                     errors.append(e)
                     continue
-                logger.debug(
+                log(
                     "Could not access the Hugging Face Hub. Please check your internet "
-                    "connection."
+                    "connection.",
+                    level=logging.DEBUG,
                 )
                 return None
         else:
-            logger.debug(
+            log(
                 f"Could not access model info for the model {model_id!r} from the "
                 f"Hugging Face Hub, after {num_attempts} attempts. The errors "
-                f"encountered were {errors!r}."
+                f"encountered were {errors!r}.",
+                level=logging.DEBUG,
             )
             return None
 
@@ -858,7 +864,7 @@ def get_model_repo_info(
                     "Skipping since the `requires_safetensors` argument is set "
                     "to `True`."
                 )
-            logger.warning(msg)
+            log(msg, level=logging.WARNING)
             return None
 
         # Also check base model if we are evaluating an adapter
@@ -938,7 +944,10 @@ def load_tokeniser(
                 f"Could not load tokeniser for model {model_id!r}."
             ) from e
         except (TimeoutError, RequestError):
-            logger.info(f"Couldn't load tokeniser for {model_id!r}. Retrying.")
+            log(
+                f"Couldn't load tokeniser for {model_id!r}. Retrying.",
+                level=logging.WARNING,
+            )
             sleep(5)
             continue
     else:
@@ -1052,7 +1061,10 @@ def load_hf_model_config(
                 f"{e!r}. Skipping"
             ) from e
         except (TimeoutError, RequestError):
-            logger.info(f"Couldn't load model config for {model_id!r}. Retrying.")
+            log(
+                f"Couldn't load model config for {model_id!r}. Retrying.",
+                level=logging.WARNING,
+            )
             sleep(5)
             continue
         except ValueError as e:

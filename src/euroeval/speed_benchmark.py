@@ -4,18 +4,16 @@ import logging
 import typing as t
 
 import pyinfer
-from tqdm.auto import tqdm
 from transformers.models.auto.tokenization_auto import AutoTokenizer
 
 from .benchmark_modules import HuggingFaceEncoderModel, LiteLLMModel, VLLMModel
 from .exceptions import InvalidBenchmark
+from .logging_utils import get_pbar, log
 from .utils import clear_memory
 
 if t.TYPE_CHECKING:
     from .benchmark_modules import BenchmarkModule
     from .data_models import BenchmarkConfig
-
-logger = logging.getLogger("euroeval")
 
 
 def benchmark_speed(
@@ -33,7 +31,7 @@ def benchmark_speed(
         Dictionary of scores.
     """
     scores: list[dict[str, float]] = list()
-    for idx in tqdm(
+    for idx in get_pbar(
         iterable=range(benchmark_config.num_iterations),
         desc="Benchmarking",
         disable=not benchmark_config.progress_bar,
@@ -41,7 +39,7 @@ def benchmark_speed(
         itr_scores = benchmark_speed_single_iteration(model=model, itr_idx=idx)
         clear_memory()
         scores.append(itr_scores)
-        logger.debug(f"Scores for iteration {idx}: {itr_scores}")
+        log(f"Scores for iteration {idx}: {itr_scores}", level=logging.DEBUG)
     return scores
 
 

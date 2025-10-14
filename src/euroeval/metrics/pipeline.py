@@ -11,6 +11,7 @@ import numpy as np
 from scipy.special import expit as sigmoid
 
 from ..exceptions import InvalidBenchmark
+from ..logging_utils import log, no_terminal_output
 from ..utils import unscramble
 from .base import Metric
 
@@ -19,8 +20,6 @@ if t.TYPE_CHECKING:
     from sklearn.pipeline import Pipeline
 
     from ..data_models import BenchmarkConfig, DatasetConfig
-
-logger: logging.Logger = logging.getLogger("euroeval")
 
 
 T = t.TypeVar("T", bound=int | float | str | bool)
@@ -121,15 +120,21 @@ class PipelineMetric(Metric):
             The calculated metric score, or None if the score should be ignored.
         """
         if self.pipeline is None:
-            self.pipeline = self._download_pipeline()
+            self.pipeline = self._download_pipeline(
+                cache_dir=benchmark_config.cache_dir
+            )
         if self.preprocessing_fn is not None:
             predictions = self.preprocessing_fn(
                 predictions=predictions, dataset=dataset
             )
         return self.pipeline_scoring_function(self.pipeline, predictions)
 
-    def _download_pipeline(self) -> "Pipeline":
+    def _download_pipeline(self, cache_dir: str) -> "Pipeline":
         """Download the scikit-learn pipeline from the given URL.
+
+        Args:
+            cache_dir:
+                The directory to use for caching the downloaded pipeline.
 
         Returns:
             The downloaded scikit-learn pipeline.
@@ -138,10 +143,13 @@ class PipelineMetric(Metric):
             InvalidBenchmark:
                 If the loading of the pipeline fails for any reason.
         """
-        logger.debug(f"Loading pipeline from {self.pipeline_repo}...")
-        folder_path = hf_hub.HfApi(
-            token=unscramble("XbjeOLhwebEaSaDUMqqaPaPIhgOcyOfDpGnX_")
-        ).snapshot_download(repo_id=self.pipeline_repo, repo_type="model")
+        log(f"Loading pipeline from {self.pipeline_repo}...", level=logging.DEBUG)
+        with no_terminal_output():
+            folder_path = hf_hub.HfApi(
+                token=unscramble("XbjeOLhwebEaSaDUMqqaPaPIhgOcyOfDpGnX_")
+            ).snapshot_download(
+                repo_id=self.pipeline_repo, repo_type="model", cache_dir=cache_dir
+            )
         model_path = Path(folder_path, self.pipeline_file_name)
         try:
             with model_path.open(mode="rb") as f:
@@ -150,7 +158,7 @@ class PipelineMetric(Metric):
             raise InvalidBenchmark(
                 f"Failed to load pipeline from {self.pipeline_repo!r}: {e}"
             ) from e
-        logger.debug(f"Successfully loaded pipeline: {pipeline}")
+        log(f"Successfully loaded pipeline: {pipeline}", level=logging.DEBUG)
         return pipeline
 
 

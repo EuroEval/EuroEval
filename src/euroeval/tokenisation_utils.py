@@ -5,20 +5,17 @@ import re
 import typing as t
 
 import torch
-from transformers import MistralCommonTokenizer
+from transformers.tokenization_mistral_common import MistralCommonTokenizer
 
 from .enums import GenerativeType
 from .exceptions import InvalidModel
-from .utils import log_once
+from .logging_utils import log, log_once
 
 if t.TYPE_CHECKING:
     from transformers.tokenization_utils import PreTrainedTokenizer
     from transformers.tokenization_utils_base import PreTrainedTokenizerBase
 
     from .data_models import DatasetConfig, ModelConfig
-
-
-logger = logging.getLogger("euroeval")
 
 
 def get_special_token_metadata(tokeniser: "PreTrainedTokenizerBase") -> dict:
@@ -182,7 +179,7 @@ def get_bos_token(
             "The model does not have a beginning-of-sequence token. Please ensure that "
             "this has been set in the tokeniser's configuration. Using no BOS token."
             " This may lead to unexpected behavior in the model.",
-            level=logging.INFO,
+            level=logging.WARNING,
         )
         return None, None
 
@@ -223,14 +220,14 @@ def get_eos_token(
             "The model does not have an end-of-sequence token. Please ensure that this "
             "has been set in the tokeniser's configuration. Using no EOS token. This "
             "may lead to unexpected behavior in the model.",
-            level=logging.INFO,
+            level=logging.WARNING,
         )
         return None, None
 
     log_once(
         f"End-of-sequence token was not set, but detected it as {eos_token!r} with "
         f"ID {eos_token_id}.",
-        level=logging.DEBUG,
+        level=logging.WARNING,
     )
     return eos_token, eos_token_id
 
@@ -306,7 +303,7 @@ def get_pad_token(
                 "Could not identify a padding token for the model. Please ensure that "
                 "this has been set in the tokeniser's configuration. Using no padding "
                 "token. This may lead to unexpected behavior in the model.",
-                level=logging.INFO,
+                level=logging.WARNING,
             )
             return None, None
 
@@ -358,12 +355,16 @@ def get_end_of_chat_token_ids(
             x_token_index = idx
             break
     else:
-        logger.debug("Could not locate the end-of-chat token for the model.")
+        log(
+            "Could not locate the end-of-chat token for the model.", level=logging.DEBUG
+        )
         return None
 
     end_of_chat_tokens = token_ids[x_token_index + 1 :]
     if len(end_of_chat_tokens) == 0:
-        logger.debug("Could not locate the end-of-chat token for the model.")
+        log(
+            "Could not locate the end-of-chat token for the model.", level=logging.DEBUG
+        )
         return None
 
     log_once(
@@ -506,7 +507,8 @@ def get_first_label_token_mapping(
             log_once(
                 "We will not use logprobs with the model since the first tokens of the "
                 "labels are not distinct. The first tokens for the labels "
-                f"{local_labels} are {first_tokens}"
+                f"{local_labels} are {first_tokens}",
+                level=logging.DEBUG,
             )
         return False
 

@@ -1,6 +1,5 @@
 """Factory class for creating dataset configurations."""
 
-import logging
 import sys
 import typing as t
 
@@ -15,9 +14,6 @@ from .tasks import SPEED, get_all_tasks
 
 if t.TYPE_CHECKING:
     from .data_models import Language, Task
-
-
-logger = logging.getLogger("euroeval")
 
 
 def build_benchmark_config(

@@ -12,4 +12,3 @@
 7	zarzucił	zarzucić	VERB	praet:sg:m1:perf	Animacy=Hum|Aspect=Perf|Gender=Masc|Mood=Ind|Number=Sing|Tense=Past|VerbForm=Fin|Voice=Act	1	conj	0:root|1:conj	_
 8	em	być	AUX	aglt:sg:pri:imperf:wok	Aspect=Imp|Number=Sing|Person=1|Variant=Long	7	aux:clitic	7:aux:clitic	_
 9	.	.	PUNCT	interp	PunctType=Peri	1	punct	1:punct	_
-

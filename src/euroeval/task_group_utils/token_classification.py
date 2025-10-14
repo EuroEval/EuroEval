@@ -7,6 +7,7 @@ from copy import deepcopy
 import numpy as np
 
 from ..exceptions import InvalidBenchmark
+from ..logging_utils import log
 from ..utils import (
     extract_json_dict_from_string,
     raise_if_model_output_contains_nan_values,
@@ -20,9 +21,6 @@ if t.TYPE_CHECKING:
 
     from ..data_models import BenchmarkConfig, DatasetConfig, GenerativeModelOutput
     from ..types import Labels, Predictions
-
-
-logger = logging.getLogger("euroeval")
 
 
 def compute_metrics(
@@ -216,17 +214,19 @@ def extract_labels_from_generation(
         prompt_label_mapping = dataset_config.prompt_label_mapping
         for prompt_tag_name, named_entities in prediction_dict.items():
             if not isinstance(named_entities, list):
-                logger.debug(
+                log(
                     "The model produced an invalid format for the named entities. "
-                    f"Expected a list but got {type(named_entities)}. Skipping."
+                    f"Expected a list but got {type(named_entities)}. Skipping.",
+                    level=logging.DEBUG,
                 )
                 continue
             try:
                 named_entities = [str(ne) for ne in named_entities]
             except Exception:
-                logger.debug(
+                log(
                     "The model produced an invalid format for the named entities. "
-                    f"Expected a list of strings but got {named_entities}. Skipping."
+                    f"Expected a list of strings but got {named_entities}. Skipping.",
+                    level=logging.DEBUG,
                 )
                 continue
             try:
@@ -236,9 +236,10 @@ def extract_labels_from_generation(
                     if prompt_tag == prompt_tag_name
                 ][0]
             except IndexError:
-                logger.debug(
+                log(
                     "The model produced an invalid prompt tag name, "
-                    f"{prompt_tag_name}. Skipping."
+                    f"{prompt_tag_name}. Skipping.",
+                    level=logging.DEBUG,
                 )
                 continue
 

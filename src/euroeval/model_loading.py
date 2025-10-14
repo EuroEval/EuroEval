@@ -10,6 +10,7 @@ from .benchmark_modules import (
 )
 from .enums import InferenceBackend, ModelType
 from .exceptions import InvalidModel
+from .logging_utils import log
 
 if t.TYPE_CHECKING:
     from .benchmark_modules import BenchmarkModule
@@ -34,6 +35,8 @@ def load_model(
     Returns:
         The model.
     """
+    log("Loading model...")
+
     # The order matters; the first model type that matches will be used. For this
     # reason, they have been ordered in terms of the most common model types.
     model_class: t.Type[BenchmarkModule]

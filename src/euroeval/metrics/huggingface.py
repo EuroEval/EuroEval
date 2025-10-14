@@ -1,7 +1,6 @@
 """All the Hugging Face metrics used in EuroEval."""
 
 import collections.abc as c
-import logging
 import typing as t
 from pathlib import Path
 
@@ -9,7 +8,7 @@ import evaluate
 import numpy as np
 from datasets import DownloadConfig
 
-from ..utils import HiddenPrints
+from ..logging_utils import no_terminal_output
 from .base import Metric
 
 if t.TYPE_CHECKING:
@@ -17,8 +16,6 @@ if t.TYPE_CHECKING:
     from evaluate import EvaluationModule
 
     from ..data_models import BenchmarkConfig, DatasetConfig
-
-logger: logging.Logger = logging.getLogger("euroeval")
 
 
 class HuggingFaceMetric(Metric):
@@ -126,7 +123,7 @@ class HuggingFaceMetric(Metric):
 
         assert self.metric is not None
 
-        with HiddenPrints():
+        with no_terminal_output(disable=benchmark_config.verbose):
             results = self.metric.compute(
                 predictions=predictions, references=references, **self.compute_kwargs
             )

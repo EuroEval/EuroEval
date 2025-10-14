@@ -14,6 +14,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Changed
 
+- Updated vLLM to `>=0.11.0`, which features several breaking changes, so we had to
+  force the minimum version. This also features support for multiple new models, such as
+  Qwen3-Next and OLMo3.
 - Used 128 of the test samples from the Winogrande datasets for validation, as we
   previously did not use a validation split. This is done for all languages except
   Icelandic and Estonian, as these are manually translated and corrected splits from a
@@ -23,6 +26,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   affected by this change.
 - In the same vein as the above, we now use 32 samples for validation for the Lithuanian
   LT-history dataset and the Swedish Skolprov dataset.
+- Changed logging styling.
 
 ### Fixed
 

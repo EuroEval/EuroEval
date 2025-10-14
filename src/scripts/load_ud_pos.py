@@ -388,8 +388,8 @@ def load_csdt_pos() -> dict[str, pd.DataFrame]:
     """
     # Define download URLs
     base_url = (
-        "https://raw.githubusercontent.com/UniversalDependencies/UD_Czech-CAC/refs/heads/master/"
-        "cs_cac-ud-{}.conllu"
+        "https://raw.githubusercontent.com/UniversalDependencies/UD_Czech-CAC/refs/"
+        "heads/master/cs_cac-ud-{}.conllu"
     )
     train_url = base_url.format("train")
     val_url = base_url.format("dev")
@@ -434,27 +434,11 @@ def _load_file_or_url(url_or_path: str) -> list[str]:
             return [line.strip() for line in f.readlines()]
 
 
-def _append_token_data(dest: dict[str, list], src: dict[str, list], i: int) -> None:
-    """Append token data from src to dest at index i.
+def _filter_token_range(data_dict: dict[str, list]) -> dict[str, list]:
+    """Filter out tokens that belong to ranges in UD source files.
 
-    Args:
-        dest: The destination dictionary.
-        src: The source dictionary.
-        i: The index to copy.
-    """
-    dest["ids"].append(src["ids"][i])
-    dest["tokens"].append(src["tokens"][i])
-    dest["pos_tags"].append(src["pos_tags"][i])
-
-
-def _filter_token_range(
-    data_dict: dict[str, list],
-    RX_RANGE: re.Pattern[str] = re.compile(r"(\d+)-(\d+)", re.I),
-) -> dict[str, list]:
-    """This function filters out tokens that belong to ranges in UD source files.
-
-    Tokens that span more than one position are not supported by
-    create_scala's prepare_df logic.
+    Tokens that span more than one position are not supported by create_scala's
+    prepare_df logic.
 
     Example files:
 
@@ -463,7 +447,6 @@ def _filter_token_range(
 
     Args:
         data_dict: The input data dictionary.
-        RX_RANGE: A regex pattern to identify ranges. Used to cache compiled regex.
 
     Returns:
         The filtered data dictionary. Its format is identical to the input.
@@ -473,10 +456,15 @@ def _filter_token_range(
     range_start: int = 0
     range_end: int = 0
 
+    # Pattern used to detect merged IDs
+    merged_ids_pattern = re.compile(r"(\d+)-(\d+)", re.I)
+
     for i in range(len(data_dict["ids"])):
-        match = RX_RANGE.match(data_dict["ids"][i])
+        match = merged_ids_pattern.match(data_dict["ids"][i])
         if match is not None:
-            _append_token_data(output, data_dict, i)
+            output["ids"].append(data_dict["ids"][i])
+            output["tokens"].append(data_dict["tokens"][i])
+            output["pos_tags"].append(data_dict["pos_tags"][i])
             range_start = int(match.group(1))
             range_end = int(match.group(2))
         else:
@@ -485,7 +473,9 @@ def _filter_token_range(
                 # Skip token if in range
                 continue
             else:
-                _append_token_data(output, data_dict, i)
+                output["ids"].append(data_dict["ids"][i])
+                output["tokens"].append(data_dict["tokens"][i])
+                output["pos_tags"].append(data_dict["pos_tags"][i])
 
     return output
 
@@ -496,7 +486,7 @@ def _load_split(
     filter_source: str | None = None,
     doc_process_fn: Callable[[str], str] = lambda x: x,
 ) -> pd.DataFrame:
-    """Load split of the part-of-speech part of a Universal Dependencies treebank.
+    """Load single split of the POS part of a Universal Dependencies treebank.
 
     Args:
         lines: The lines of the file to process.
@@ -509,13 +499,13 @@ def _load_split(
         The dataframe for the given split.
     """
     # Initialise the records, data dictionary and document
-    records = []
-    data_dict: dict[str, list[int | str]] = defaultdict(list)
-    doc = ""
-    source = ""
+    records: list[dict] = []
+    data_dict: dict[str, list[list[int | str] | str]] = defaultdict(list)
 
     # Iterate over the data for the given split
-    for line in lines:
+    doc = ""
+    source = ""
+    for line_idx, line in enumerate(lines):
         # If we are at the first line of an entry then extract the document
         if line.startswith("# text = "):
             doc = re.sub("# text = ", "", line)
@@ -532,7 +522,7 @@ def _load_split(
 
         # Otherwise, if we have reached the end of an entry then store it to the
         # list of records and reset the data dictionary and document
-        elif line == "":
+        elif line == "" or line_idx == len(lines) - 1:
             if len(data_dict["tokens"]) > 0:
                 if filter_source is None or filter_source in source:
                     merged_data_dict: dict[str, str | list[int | str]]
@@ -583,17 +573,20 @@ def load_ud_pos(
             f"Warning: Filtering dataset to include only entries with {filter_source=}"
         )
 
-    # Iterate over the data splits
-    dfs = dict()
+    # Load the lines of the splits
+    train_lines = _load_file_or_url(url_or_path=train_url)
+    val_lines = _load_file_or_url(url_or_path=val_url)
+    test_lines = _load_file_or_url(url_or_path=test_url)
 
-    # Code shortcut for brevity
+    # Load the splits
     split_loader = partial(
         _load_split, filter_source=filter_source, doc_process_fn=doc_process_fn
     )
-
-    dfs["train"] = split_loader(lines=_load_file_or_url(train_url))
-    dfs["val"] = split_loader(lines=_load_file_or_url(val_url))
-    dfs["test"] = split_loader(lines=_load_file_or_url(test_url))
+    dfs = dict(
+        train=split_loader(lines=train_lines),
+        val=split_loader(lines=val_lines),
+        test=split_loader(lines=test_lines),
+    )
 
     # Return the dictionary of dataframes
     return dfs

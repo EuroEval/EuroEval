@@ -1,7 +1,6 @@
 """Utility functions related to the multiple-choice classification task group."""
 
 import hashlib
-import logging
 import re
 import typing as t
 from collections import defaultdict
@@ -17,8 +16,6 @@ if t.TYPE_CHECKING:
     from transformers.tokenization_utils_base import BatchEncoding
 
     from ..types import Labels, Predictions
-
-logger = logging.getLogger("euroeval")
 
 
 class MultipleChoiceClassificationTrainer(Trainer):

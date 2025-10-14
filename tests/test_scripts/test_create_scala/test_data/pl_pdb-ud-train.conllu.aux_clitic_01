@@ -9,4 +9,3 @@
 5	tym	ten	DET	adj:sg:inst:m3:pos	Animacy=Inan|Case=Ins|Gender=Masc|Number=Sing|PronType=Dem	6	det	6:det	_
 6	pomysłem	pomysł	NOUN	subst:sg:inst:m3	Animacy=Inan|Case=Ins|Gender=Masc|Number=Sing	3	obl:arg	3:obl:arg	SpaceAfter=No
 7	.	.	PUNCT	interp	PunctType=Peri	1	punct	1:punct	_
-

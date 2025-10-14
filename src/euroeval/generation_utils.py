@@ -9,16 +9,15 @@ import typing as t
 
 from .enums import GenerativeType, TaskGroup
 from .exceptions import InvalidBenchmark, InvalidModel
+from .logging_utils import log_once
 from .tokenisation_utils import apply_chat_template
-from .utils import extract_multiple_choice_labels, log_once
+from .utils import extract_multiple_choice_labels
 
 if t.TYPE_CHECKING:
     from datasets import DatasetDict
     from transformers.tokenization_utils import PreTrainedTokenizer
 
     from .data_models import BenchmarkConfig, DatasetConfig, ModelConfig
-
-logger = logging.getLogger("euroeval")
 
 
 def extract_few_shot_examples(

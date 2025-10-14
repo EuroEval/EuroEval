@@ -7,6 +7,7 @@ import numpy as np
 
 from ..constants import METRIC_ATTRIBUTES_TAKING_UP_MEMORY
 from ..exceptions import InvalidBenchmark
+from ..logging_utils import log
 from ..metrics import HuggingFaceMetric
 from ..utils import raise_if_model_output_contains_nan_values
 
@@ -16,9 +17,6 @@ if t.TYPE_CHECKING:
 
     from ..data_models import BenchmarkConfig, DatasetConfig, GenerativeModelOutput
     from ..types import Labels, Predictions
-
-
-logger = logging.getLogger("euroeval")
 
 
 def compute_metrics(
@@ -100,19 +98,21 @@ def compute_metrics(
                     and metric.compute_kwargs.get("device", "cpu") != "cpu"
                 ):
                     metric.compute_kwargs["device"] = "cpu"
-                    logger.debug(
+                    log(
                         "Out of memory error occurred during the computation of "
                         f"the metric {metric.pretty_name}. Moving the computation to "
-                        "the CPU."
+                        "the CPU.",
+                        level=logging.DEBUG,
                     )
                 else:
                     raise InvalidBenchmark(str(e)) from e
             finally:
                 for attribute in METRIC_ATTRIBUTES_TAKING_UP_MEMORY:
                     if hasattr(metric, attribute):
-                        logger.debug(
+                        log(
                             f"Deleting the {attribute!r} attribute of the metric "
-                            f"{metric.pretty_name} to free up memory."
+                            f"{metric.pretty_name} to free up memory.",
+                            level=logging.DEBUG,
                         )
                         delattr(metric, attribute)
         else:

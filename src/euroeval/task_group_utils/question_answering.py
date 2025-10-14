@@ -1,7 +1,6 @@
 """Utility functions related to the question-answering task group."""
 
 import collections.abc as c
-import logging
 import typing as t
 from collections import defaultdict
 
@@ -25,8 +24,6 @@ if t.TYPE_CHECKING:
 
     from ..data_models import BenchmarkConfig, DatasetConfig, GenerativeModelOutput
     from ..types import Labels, Predictions
-
-logger = logging.getLogger("euroeval")
 
 
 class QuestionAnsweringTrainer(Trainer):

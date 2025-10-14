@@ -12,6 +12,7 @@ from huggingface_hub.errors import HfHubHTTPError
 from numpy.random import Generator
 
 from .exceptions import HuggingFaceHubDown, InvalidBenchmark
+from .logging_utils import log, no_terminal_output
 from .tasks import EUROPEAN_VALUES
 from .utils import unscramble
 
@@ -19,8 +20,6 @@ if t.TYPE_CHECKING:
     from datasets import Dataset
 
     from .data_models import BenchmarkConfig, DatasetConfig
-
-logger = logging.getLogger("euroeval")
 
 
 def load_data(
@@ -106,11 +105,12 @@ def load_raw_data(dataset_config: "DatasetConfig", cache_dir: str) -> "DatasetDi
     num_attempts = 5
     for _ in range(num_attempts):
         try:
-            dataset = load_dataset(
-                path=dataset_config.huggingface_id,
-                cache_dir=cache_dir,
-                token=unscramble("XbjeOLhwebEaSaDUMqqaPaPIhgOcyOfDpGnX_"),
-            )
+            with no_terminal_output():
+                dataset = load_dataset(
+                    path=dataset_config.huggingface_id,
+                    cache_dir=cache_dir,
+                    token=unscramble("XbjeOLhwebEaSaDUMqqaPaPIhgOcyOfDpGnX_"),
+                )
             break
         except (
             FileNotFoundError,
@@ -119,8 +119,10 @@ def load_raw_data(dataset_config: "DatasetConfig", cache_dir: str) -> "DatasetDi
             requests.ConnectionError,
             requests.ReadTimeout,
         ):
-            logger.debug(
-                f"Failed to load dataset {dataset_config.huggingface_id!r}. Retrying..."
+            log(
+                f"Failed to load dataset {dataset_config.huggingface_id!r}. "
+                "Retrying...",
+                level=logging.DEBUG,
             )
             time.sleep(1)
             continue

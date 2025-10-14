@@ -8,6 +8,7 @@ from pathlib import Path
 from pydantic import BaseModel, Field
 
 from ..exceptions import InvalidBenchmark
+from ..logging_utils import log
 from ..model_cache import ModelCache
 from ..utils import extract_json_dict_from_string
 from .base import Metric
@@ -16,8 +17,6 @@ if t.TYPE_CHECKING:
     from datasets.arrow_dataset import Dataset
 
     from ..data_models import BenchmarkConfig, DatasetConfig
-
-logger: logging.Logger = logging.getLogger("euroeval")
 
 
 class LLMAsAJudgeMetric(Metric):
@@ -190,7 +189,10 @@ class LLMAsAJudgeMetric(Metric):
         # Calculate the scores using the scoring function
         scores = [self.scoring_fn(output) for output in outputs]
         if not scores:
-            logger.warning(f"No scores were calculated for {self.pretty_name}.")
+            log(
+                f"No scores were calculated for {self.pretty_name}.",
+                level=logging.WARNING,
+            )
             return None
         return sum(scores) / len(scores)
 

@@ -8,19 +8,14 @@ import typing as t
 from collections import defaultdict
 from dataclasses import asdict
 
-from tqdm.auto import tqdm
-
 from .constants import NUM_GENERATION_TOKENS_FOR_CLASSIFICATION
 from .data_models import GenerativeModelOutput, SingleGenerativeModelOutput
-from .utils import log_once
+from .logging_utils import get_pbar, log, log_once
 
 if t.TYPE_CHECKING:
     from pathlib import Path
 
     from datasets import Dataset
-
-
-logger = logging.getLogger("euroeval")
 
 
 class ModelCache:
@@ -65,9 +60,10 @@ class ModelCache:
             with self.cache_path.open() as f:
                 json_cache = json.load(f)
         except json.JSONDecodeError:
-            logger.warning(
+            log(
                 f"Failed to load the cache from {self.cache_path}. The cache will be "
-                f"re-initialised."
+                f"re-initialised.",
+                level=logging.WARNING,
             )
             json_cache = dict()
             with self.cache_path.open("w") as f:
@@ -89,9 +85,10 @@ class ModelCache:
             with self.cache_path.open("w") as f:
                 json.dump(dumpable_cache, f)
         except KeyError:
-            logger.warning(
+            log(
                 f"Failed to load the cache from {self.cache_path}. The cache will be "
-                f"re-initialised."
+                f"re-initialised.",
+                level=logging.WARNING,
             )
             self.cache = dict()
             with self.cache_path.open("w") as f:
@@ -172,18 +169,18 @@ class ModelCache:
 
         # Double check that the number of inputs and outputs match
         if not len(model_inputs) == len(model_output.sequences):
-            logger.warning(
+            log(
                 f"Number of model inputs ({len(model_inputs)}) does not match the "
                 f"number of model outputs ({len(model_output.sequences)}). We will not "
-                f"cache the model outputs."
+                f"cache the model outputs.",
+                level=logging.WARNING,
             )
             return
 
         # Store the generated sequences in the cache, one by one
-        with tqdm(
+        with get_pbar(
             iterable=model_inputs,
             desc="Caching model outputs",
-            leave=False,
             disable=hasattr(sys, "_called_from_test"),
         ) as pbar:
             for sample_idx, model_input in enumerate(pbar):

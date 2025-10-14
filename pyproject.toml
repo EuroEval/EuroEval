@@ -45,13 +45,13 @@ dependencies = [
 [project.optional-dependencies]
 generative = [
     "bitsandbytes>=0.43.1; platform_system == 'Linux'",
-    "vllm[flashinfer]>=0.10.1,<0.11.0; platform_system == 'Linux'",
+    "vllm[flashinfer]>=0.11.0; platform_system == 'Linux'",
     "fbgemm-gpu>=1.0.0; platform_system == 'Linux'",
     "timm>=1.0.19",
 ]
 all = [
     "bitsandbytes>=0.43.1; platform_system == 'Linux'",
-    "vllm[flashinfer]>=0.10.1,<0.11.0; platform_system == 'Linux'",
+    "vllm[flashinfer]>=0.11.0; platform_system == 'Linux'",
     "fbgemm-gpu>=1.0.0; platform_system == 'Linux'",
     "timm>=1.0.19",
 ]
