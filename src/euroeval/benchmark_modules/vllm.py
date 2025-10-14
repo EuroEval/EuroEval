@@ -122,6 +122,7 @@ class VLLMModel(HuggingFaceEncoderModel):
             log_metadata:
                 Whether to log the model and dataset metadata.
         """
+        breakpoint()
         if importlib.util.find_spec("vllm") is None:
             raise NeedsExtraInstalled(extra="generative")
 
