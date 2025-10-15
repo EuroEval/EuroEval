@@ -3,6 +3,7 @@
 import contextlib
 import json
 import logging
+import os
 import re
 import typing as t
 from pathlib import Path
@@ -194,6 +195,10 @@ class Benchmarker:
                 "package is not available in your environment. "
                 "Try installing it with `pip install hf_transfer`."
             )
+
+        # If FULL_LOG has been set, then force verbose mode
+        if os.getenv("FULL_LOG", "0") == "1":
+            verbose = True
 
         self.benchmark_config_default_params = BenchmarkConfigParams(
             task=task,
