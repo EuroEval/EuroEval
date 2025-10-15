@@ -32,11 +32,11 @@ SUC3_CONFIG = DatasetConfig(
     languages=[SV],
 )
 
-SCANDIQA_SV_CONFIG = DatasetConfig(
-    name="scandiqa-sv",
-    pretty_name="the Swedish part of the truncated version of the question answering "
-    "dataset ScandiQA",
-    huggingface_id="EuroEval/scandiqa-sv-mini",
+MULTI_WIKI_QA_SV_CONFIG = DatasetConfig(
+    name="multi-wiki-qa-sv",
+    pretty_name="the truncated version of the Swedish part of the reading "
+    "comprehension dataset MultiWikiQA",
+    huggingface_id="EuroEval/multi-wiki-qa-sv-mini",
     task=RC,
     languages=[SV],
 )
@@ -110,11 +110,11 @@ BELEBELE_SV_CONFIG = DatasetConfig(
     unofficial=True,
 )
 
-MULTI_WIKI_QA_SV_CONFIG = DatasetConfig(
-    name="multi-wiki-qa-sv",
-    pretty_name="the truncated version of the Swedish part of the reading "
-    "comprehension dataset MultiWikiQA",
-    huggingface_id="EuroEval/multi-wiki-qa-sv-mini",
+SCANDIQA_SV_CONFIG = DatasetConfig(
+    name="scandiqa-sv",
+    pretty_name="the Swedish part of the truncated version of the question answering "
+    "dataset ScandiQA",
+    huggingface_id="EuroEval/scandiqa-sv-mini",
     task=RC,
     languages=[SV],
     unofficial=True,

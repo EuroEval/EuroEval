@@ -17,6 +17,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Updated vLLM to `>=0.11.0`, which features several breaking changes, so we had to
   force the minimum version. This also features support for multiple new models, such as
   Qwen3-Next and OLMo3.
+- Now uses MultiWikiQA-da and MultiWikiQA-sv as the official Danish and Swedish reading
+  comprehension datasets, respectively, as the quality is substantially better than
+  ScandiQA-da and ScandiQA-sv.
 - Used 128 of the test samples from the Winogrande datasets for validation, as we
   previously did not use a validation split. This is done for all languages except
   Icelandic and Estonian, as these are manually translated and corrected splits from a
