@@ -237,7 +237,7 @@ euroeval --model <model-id> --dataset scala-sv
 
 ## Reading Comprehension
 
-### Unofficial: MultiWikiQA-sv
+### MultiWikiQA-sv
 
 This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2509.04111)
 and contains Wikipedia articles with LLM-generated questions and answers in 300+
