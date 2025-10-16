@@ -501,7 +501,10 @@ class VLLMModel(HuggingFaceEncoderModel):
                     re.search(pattern, str(e), flags=re.IGNORECASE) is not None
                     for pattern in truncate_error_messages
                 ):
-                    log("Prompts are too long, so truncating them and trying again...")
+                    log(
+                        "Prompts are too long, so truncating them and trying again...",
+                        level=logging.WARNING,
+                    )
                     log(f"The error message was: {str(e)}", level=logging.DEBUG)
 
                     # If we have already tried truncating the prompts a few times, then
@@ -818,7 +821,8 @@ def load_model_and_tokeniser(
         log(
             "You are loading a quantized model with dtype "
             f"{hf_model_config.dtype}, which vLLM does not support. Setting "
-            "dtype to float16 instead."
+            "dtype to float16 instead.",
+            level=logging.WARNING,
         )
         dtype = torch.float16
 

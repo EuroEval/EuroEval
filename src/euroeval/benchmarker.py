@@ -1,6 +1,7 @@
 """Class that benchmarks language models."""
 
 import contextlib
+import datetime as dt
 import json
 import logging
 import os
@@ -652,7 +653,8 @@ class Benchmarker:
         if total_benchmarks == 0:
             log(
                 "No benchmarks to run, as all the selected models have already been "
-                "benchmarked on all the selected datasets."
+                "benchmarked on all the selected datasets.",
+                level=logging.INFO,
             )
             return list()
 
@@ -806,6 +808,8 @@ class Benchmarker:
             del loaded_model
             if benchmark_config.clear_model_cache:
                 clear_model_cache_fn(cache_dir=benchmark_config.cache_dir)
+
+        log(f"Completed {num_finished_benchmarks:,} benchmarks.\n", level=logging.INFO)
 
         # This avoids the following warning at the end of the benchmarking:
         #   Warning: WARNING: process group has NOT been destroyed before we destruct
@@ -1134,6 +1138,7 @@ def initial_logging(
         eval_type = "Benchmarking"
 
     log_once(
+        f"\n[{dt.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}]"
         f"\n{eval_type} {model_id} on the {split_type} split of "
         f"{dataset_config.pretty_name} ({num_finished_benchmarks + 1}/"
         f"{num_total_benchmarks} benchmarks)..."
