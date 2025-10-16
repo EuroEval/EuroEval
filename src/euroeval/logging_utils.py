@@ -40,7 +40,7 @@ def get_pbar(*tqdm_args, **tqdm_kwargs) -> tqdm:
     return tqdm(*tqdm_args, **tqdm_kwargs)
 
 
-def log(message: str, level: int = logging.INFO, colour: str | None = None) -> None:
+def log(message: str, level: int, colour: str | None = None) -> None:
     """Log a message.
 
     Args:
@@ -48,6 +48,9 @@ def log(message: str, level: int = logging.INFO, colour: str | None = None) -> N
             The message to log.
         level:
             The logging level. Defaults to logging.INFO.
+        colour:
+            The colour to use for the message. If None, a default colour will be used
+            based on the logging level.
 
     Raises:
         ValueError:

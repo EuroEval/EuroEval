@@ -296,7 +296,7 @@ def debug_log(
                         + "\n"
                         + "\t".join(labels)
                     )
-            log("\n\n".join(log_msgs))
+            log("\n\n".join(log_msgs), level=logging.DEBUG)
             return
 
         case (
@@ -346,4 +346,7 @@ def debug_log(
         if labels[idx]:
             data_to_log["Label"] = labels[idx]
         data_to_log |= {key.capitalize(): batch[key][idx] for key in metadata_keys}
-        log("\n".join(f"{key}: {value!r}" for key, value in data_to_log.items()))
+        log(
+            "\n".join(f"{key}: {value!r}" for key, value in data_to_log.items()),
+            level=logging.DEBUG,
+        )

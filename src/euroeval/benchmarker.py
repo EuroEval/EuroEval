@@ -652,7 +652,8 @@ class Benchmarker:
         if total_benchmarks == 0:
             log(
                 "No benchmarks to run, as all the selected models have already been "
-                "benchmarked on all the selected datasets."
+                "benchmarked on all the selected datasets.",
+                level=logging.INFO,
             )
             return list()
 
