@@ -1,5 +1,6 @@
 """Aggregation of raw scores into the mean and a confidence interval."""
 
+import logging
 import typing as t
 import warnings
 
@@ -61,7 +62,7 @@ def log_scores(
             else f"- {metric.pretty_name}: {test_score_str}"
         )
         all_log_strs.append(log_str)
-    log("\n".join(all_log_strs))
+    log("\n".join(all_log_strs), level=logging.INFO)
 
     return dict(raw=scores, total=total_dict)
 

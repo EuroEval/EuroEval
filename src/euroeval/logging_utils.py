@@ -6,6 +6,7 @@ import os
 import sys
 import warnings
 from functools import cache
+from io import TextIOWrapper
 
 import litellm
 from datasets.utils import disable_progress_bars as disable_datasets_progress_bars
@@ -39,7 +40,7 @@ def get_pbar(*tqdm_args, **tqdm_kwargs) -> tqdm:
     return tqdm(*tqdm_args, **tqdm_kwargs)
 
 
-def log(message: str, level: int = logging.INFO, colour: str | None = None) -> None:
+def log(message: str, level: int, colour: str | None = None) -> None:
     """Log a message.
 
     Args:
@@ -47,6 +48,9 @@ def log(message: str, level: int = logging.INFO, colour: str | None = None) -> N
             The message to log.
         level:
             The logging level. Defaults to logging.INFO.
+        colour:
+            The colour to use for the message. If None, a default colour will be used
+            based on the logging level.
 
     Raises:
         ValueError:
@@ -55,7 +59,11 @@ def log(message: str, level: int = logging.INFO, colour: str | None = None) -> N
     match level:
         case logging.DEBUG:
             message = colored(
-                text=f"[{dt.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] {message}",
+                text=(
+                    "[DEBUG] "
+                    + dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    + f" · {message}"
+                ),
                 color=colour or "light_blue",
             )
             logger.debug(message)
@@ -140,6 +148,9 @@ def block_terminal_output() -> None:
     os.environ["LOG_LEVEL"] = "CRITICAL"
     os.environ["VLLM_CONFIGURE_LOGGING"] = "0"
 
+    # Disable flashinfer logging
+    os.environ["FLASHINFER_LOGGING_LEVEL"] = "CRITICAL"
+
     # Disable datasets logging
     logging.getLogger("datasets").setLevel(logging.CRITICAL)
     logging.getLogger("filelock").setLevel(logging.CRITICAL)
@@ -167,14 +178,32 @@ class no_terminal_output:
                 If True, this context manager does nothing.
         """
         self.disable = disable
-        self._original_stdout = sys.stdout
-        self._original_stderr = sys.stderr
+        self.nothing_file: TextIOWrapper | None = None
+        self._cpp_stdout_file: int | None = None
+        self._cpp_stderr_file: int | None = None
+        try:
+            self._cpp_stdout_file = os.dup(sys.stdout.fileno())
+            self._cpp_stderr_file = os.dup(sys.stderr.fileno())
+        except OSError:
+            self._log_windows_warning()
+
+    def _log_windows_warning(self) -> None:
+        """Log a warning about Windows not supporting blocking terminal output."""
+        log_once(
+            "Your operating system (probably Windows) does not support blocking "
+            "terminal output, so expect more messy output - sorry!",
+            level=logging.WARNING,
+        )
 
     def __enter__(self) -> None:
         """Suppress all terminal output."""
         if not self.disable:
-            sys.stdout = open(os.devnull, "w")
-            sys.stderr = open(os.devnull, "w")
+            self.nothing_file = open(os.devnull, "w")
+            try:
+                os.dup2(fd=self.nothing_file.fileno(), fd2=sys.stdout.fileno())
+                os.dup2(fd=self.nothing_file.fileno(), fd2=sys.stderr.fileno())
+            except OSError:
+                self._log_windows_warning()
 
     def __exit__(
         self,
@@ -184,10 +213,15 @@ class no_terminal_output:
     ) -> None:
         """Re-enable terminal output."""
         if not self.disable:
-            sys.stdout.close()
-            sys.stderr.close()
-            sys.stdout = self._original_stdout
-            sys.stderr = self._original_stderr
+            if self.nothing_file is not None:
+                self.nothing_file.close()
+            try:
+                if self._cpp_stdout_file is not None:
+                    os.dup2(fd=self._cpp_stdout_file, fd2=sys.stdout.fileno())
+                if self._cpp_stderr_file is not None:
+                    os.dup2(fd=self._cpp_stderr_file, fd2=sys.stderr.fileno())
+            except OSError:
+                self._log_windows_warning()
 
 
 def adjust_logging_level(verbose: bool, ignore_testing: bool = False) -> int:
