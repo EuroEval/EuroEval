@@ -226,7 +226,7 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset cs-gec
 ```
 
-### Unofficial: ScaLA-sk
+### ScaLA-sk
 
 This dataset was published in [this paper](https://aclanthology.org/2023.nodalida-1.20/)
 and was automatically created from the [Slovak Universal Dependencies
