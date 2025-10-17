@@ -17,7 +17,7 @@ CSFD_SENTIMENT_CONFIG = DatasetConfig(
 SCALA_SK_CONFIG = DatasetConfig(
     name="scala-sk",
     pretty_name="the Slovak part of the linguistic acceptability dataset ScaLA",
-    huggingface_id="EuroEval/scala-cs",
+    huggingface_id="EuroEval/scala-sk",
     task=LA,
     languages=[SK],
 )
