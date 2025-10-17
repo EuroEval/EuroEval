@@ -8,7 +8,7 @@
 # ]
 # ///
 
-"""Create the UNER-Slovak NER dataset and upload it to the HF Hub."""
+"""Create the UNER-sk NER dataset and upload it to the HF Hub."""
 
 import json
 import re
