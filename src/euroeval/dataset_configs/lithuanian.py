@@ -2,7 +2,7 @@
 
 from ..data_models import DatasetConfig
 from ..languages import LT
-from ..tasks import COMMON_SENSE, KNOW, LA, NER, RC, SENT
+from ..tasks import COMMON_SENSE, KNOW, LA, NER, RC, SENT, SUMM
 
 ### Official datasets ###
 
@@ -38,6 +38,14 @@ MULTI_WIKI_QA_LT_CONFIG = DatasetConfig(
     "comprehension dataset MultiWikiQA",
     huggingface_id="EuroEval/multi-wiki-qa-lt-mini",
     task=RC,
+    languages=[LT],
+)
+
+LSM_CONFIG = DatasetConfig(
+    name="lrytas",
+    pretty_name="the truncated version of the Lithuanian summarisation dataset Lrytas",
+    huggingface_id="EuroEval/lrytas-mini",
+    task=SUMM,
     languages=[LT],
 )
 
