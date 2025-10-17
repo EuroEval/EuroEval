@@ -1026,6 +1026,7 @@
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">..constants</span><span class="w"> </span><span class="kn">import</span> <span class="n">METRIC_ATTRIBUTES_TAKING_UP_MEMORY</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..exceptions</span><span class="w"> </span><span class="kn">import</span> <span class="n">InvalidBenchmark</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..logging_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">log</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..metrics</span><span class="w"> </span><span class="kn">import</span> <span class="n">HuggingFaceMetric</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">raise_if_model_output_contains_nan_values</span>
 
@@ -1035,9 +1036,6 @@
 
     <span class="kn">from</span><span class="w"> </span><span class="nn">..data_models</span><span class="w"> </span><span class="kn">import</span> <span class="n">BenchmarkConfig</span><span class="p">,</span> <span class="n">DatasetConfig</span><span class="p">,</span> <span class="n">GenerativeModelOutput</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">..types</span><span class="w"> </span><span class="kn">import</span> <span class="n">Labels</span><span class="p">,</span> <span class="n">Predictions</span>
-
-
-<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">&quot;euroeval&quot;</span><span class="p">)</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">compute_metrics</span><span class="p">(</span><div class="mkapi-source-link" id="euroeval.task_group_utils.text_to_text.compute_metrics"><a href="../../../../api/euroeval/task_group_utils/text_to_text/#euroeval.task_group_utils.text_to_text.compute_metrics" title="Go to docs">[docs]</a></div>
@@ -1119,19 +1117,21 @@
                     <span class="ow">and</span> <span class="n">metric</span><span class="o">.</span><span class="n">compute_kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;device&quot;</span><span class="p">,</span> <span class="s2">&quot;cpu&quot;</span><span class="p">)</span> <span class="o">!=</span> <span class="s2">&quot;cpu&quot;</span>
                 <span class="p">):</span>
                     <span class="n">metric</span><span class="o">.</span><span class="n">compute_kwargs</span><span class="p">[</span><span class="s2">&quot;device&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;cpu&quot;</span>
-                    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+                    <span class="n">log</span><span class="p">(</span>
                         <span class="s2">&quot;Out of memory error occurred during the computation of &quot;</span>
                         <span class="sa">f</span><span class="s2">&quot;the metric </span><span class="si">{</span><span class="n">metric</span><span class="o">.</span><span class="n">pretty_name</span><span class="si">}</span><span class="s2">. Moving the computation to &quot;</span>
-                        <span class="s2">&quot;the CPU.&quot;</span>
+                        <span class="s2">&quot;the CPU.&quot;</span><span class="p">,</span>
+                        <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
                     <span class="p">)</span>
                 <span class="k">else</span><span class="p">:</span>
                     <span class="k">raise</span> <span class="n">InvalidBenchmark</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">))</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
             <span class="k">finally</span><span class="p">:</span>
                 <span class="k">for</span> <span class="n">attribute</span> <span class="ow">in</span> <span class="n">METRIC_ATTRIBUTES_TAKING_UP_MEMORY</span><span class="p">:</span>
                     <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">metric</span><span class="p">,</span> <span class="n">attribute</span><span class="p">):</span>
-                        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+                        <span class="n">log</span><span class="p">(</span>
                             <span class="sa">f</span><span class="s2">&quot;Deleting the </span><span class="si">{</span><span class="n">attribute</span><span class="si">!r}</span><span class="s2"> attribute of the metric &quot;</span>
-                            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">metric</span><span class="o">.</span><span class="n">pretty_name</span><span class="si">}</span><span class="s2"> to free up memory.&quot;</span>
+                            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">metric</span><span class="o">.</span><span class="n">pretty_name</span><span class="si">}</span><span class="s2"> to free up memory.&quot;</span><span class="p">,</span>
+                            <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
                         <span class="p">)</span>
                         <span class="nb">delattr</span><span class="p">(</span><span class="n">metric</span><span class="p">,</span> <span class="n">attribute</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>

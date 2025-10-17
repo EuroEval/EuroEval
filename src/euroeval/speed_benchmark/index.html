@@ -991,26 +991,22 @@
 <span class="normal">118</span>
 <span class="normal">119</span>
 <span class="normal">120</span>
-<span class="normal">121</span>
-<span class="normal">122</span>
-<span class="normal">123</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Benchmarking model inference speed.&quot;&quot;&quot;</span>
+<span class="normal">121</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Benchmarking model inference speed.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">t</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">pyinfer</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">tqdm.auto</span><span class="w"> </span><span class="kn">import</span> <span class="n">tqdm</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">transformers.models.auto.tokenization_auto</span><span class="w"> </span><span class="kn">import</span> <span class="n">AutoTokenizer</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">.benchmark_modules</span><span class="w"> </span><span class="kn">import</span> <span class="n">HuggingFaceEncoderModel</span><span class="p">,</span> <span class="n">LiteLLMModel</span><span class="p">,</span> <span class="n">VLLMModel</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.exceptions</span><span class="w"> </span><span class="kn">import</span> <span class="n">InvalidBenchmark</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.logging_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_pbar</span><span class="p">,</span> <span class="n">log</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">clear_memory</span>
 
 <span class="k">if</span> <span class="n">t</span><span class="o">.</span><span class="n">TYPE_CHECKING</span><span class="p">:</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">.benchmark_modules</span><span class="w"> </span><span class="kn">import</span> <span class="n">BenchmarkModule</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">.data_models</span><span class="w"> </span><span class="kn">import</span> <span class="n">BenchmarkConfig</span>
-
-<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">&quot;euroeval&quot;</span><span class="p">)</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">benchmark_speed</span><span class="p">(</span><div class="mkapi-source-link" id="euroeval.speed_benchmark.benchmark_speed"><a href="../../../api/euroeval/speed_benchmark/#euroeval.speed_benchmark.benchmark_speed" title="Go to docs">[docs]</a></div>
@@ -1028,7 +1024,7 @@
 <span class="sd">        Dictionary of scores.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">scores</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]]</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
-    <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="n">tqdm</span><span class="p">(</span>
+    <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="n">get_pbar</span><span class="p">(</span>
         <span class="n">iterable</span><span class="o">=</span><span class="nb">range</span><span class="p">(</span><span class="n">benchmark_config</span><span class="o">.</span><span class="n">num_iterations</span><span class="p">),</span>
         <span class="n">desc</span><span class="o">=</span><span class="s2">&quot;Benchmarking&quot;</span><span class="p">,</span>
         <span class="n">disable</span><span class="o">=</span><span class="ow">not</span> <span class="n">benchmark_config</span><span class="o">.</span><span class="n">progress_bar</span><span class="p">,</span>
@@ -1036,7 +1032,7 @@
         <span class="n">itr_scores</span> <span class="o">=</span> <span class="n">benchmark_speed_single_iteration</span><span class="p">(</span><span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span> <span class="n">itr_idx</span><span class="o">=</span><span class="n">idx</span><span class="p">)</span>
         <span class="n">clear_memory</span><span class="p">()</span>
         <span class="n">scores</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">itr_scores</span><span class="p">)</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Scores for iteration </span><span class="si">{</span><span class="n">idx</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">itr_scores</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="n">log</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Scores for iteration </span><span class="si">{</span><span class="n">idx</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">itr_scores</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">scores</span>
 
 

@@ -869,15 +869,6 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#euroeval.benchmarker.adjust_logging_level" class="md-nav__link">
-    <span class="md-ellipsis">
-      adjust_logging_level
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
   <a href="#euroeval.benchmarker.clear_model_cache_fn" class="md-nav__link">
     <span class="md-ellipsis">
       clear_model_cache_fn
@@ -2091,20 +2082,14 @@
 <span class="normal">1158</span>
 <span class="normal">1159</span>
 <span class="normal">1160</span>
-<span class="normal">1161</span>
-<span class="normal">1162</span>
-<span class="normal">1163</span>
-<span class="normal">1164</span>
-<span class="normal">1165</span>
-<span class="normal">1166</span>
-<span class="normal">1167</span>
-<span class="normal">1168</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Class that benchmarks language models.&quot;&quot;&quot;</span>
+<span class="normal">1161</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Class that benchmarks language models.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">contextlib</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">dt</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">t</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">shutil</span><span class="w"> </span><span class="kn">import</span> <span class="n">rmtree</span>
@@ -2112,7 +2097,6 @@
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">huggingface_hub.constants</span><span class="w"> </span><span class="kn">import</span> <span class="n">HF_HUB_ENABLE_HF_TRANSFER</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">torch.distributed</span><span class="w"> </span><span class="kn">import</span> <span class="n">destroy_process_group</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">tqdm.auto</span><span class="w"> </span><span class="kn">import</span> <span class="n">tqdm</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">.benchmark_config_factory</span><span class="w"> </span><span class="kn">import</span> <span class="n">build_benchmark_config</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.constants</span><span class="w"> </span><span class="kn">import</span> <span class="n">GENERATIVE_PIPELINE_TAGS</span>
@@ -2123,6 +2107,7 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">.exceptions</span><span class="w"> </span><span class="kn">import</span> <span class="n">HuggingFaceHubDown</span><span class="p">,</span> <span class="n">InvalidBenchmark</span><span class="p">,</span> <span class="n">InvalidModel</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.finetuning</span><span class="w"> </span><span class="kn">import</span> <span class="n">finetune</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.generation</span><span class="w"> </span><span class="kn">import</span> <span class="n">generate</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.logging_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">adjust_logging_level</span><span class="p">,</span> <span class="n">get_pbar</span><span class="p">,</span> <span class="n">log</span><span class="p">,</span> <span class="n">log_once</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.model_config</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_model_config</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.model_loading</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_model</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.scores</span><span class="w"> </span><span class="kn">import</span> <span class="n">log_scores</span>
@@ -2132,16 +2117,12 @@
     <span class="n">enforce_reproducibility</span><span class="p">,</span>
     <span class="n">get_package_version</span><span class="p">,</span>
     <span class="n">internet_connection_available</span><span class="p">,</span>
-    <span class="n">log_once</span><span class="p">,</span>
     <span class="n">split_model_id</span><span class="p">,</span>
 <span class="p">)</span>
 
 <span class="k">if</span> <span class="n">t</span><span class="o">.</span><span class="n">TYPE_CHECKING</span><span class="p">:</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">.benchmark_modules</span><span class="w"> </span><span class="kn">import</span> <span class="n">BenchmarkModule</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">.data_models</span><span class="w"> </span><span class="kn">import</span> <span class="n">BenchmarkConfig</span><span class="p">,</span> <span class="n">DatasetConfig</span><span class="p">,</span> <span class="n">ModelConfig</span>
-
-
-<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">&quot;euroeval&quot;</span><span class="p">)</span>
 
 
 <span class="k">class</span><span class="w"> </span><span class="nc">Benchmarker</span><span class="p">:</span><div class="mkapi-source-link" id="euroeval.benchmarker.Benchmarker"><a href="../../../api/euroeval/benchmarker/#euroeval.benchmarker.Benchmarker" title="Go to docs">[docs]</a></div>
@@ -2300,6 +2281,10 @@
                 <span class="s2">&quot;Try installing it with `pip install hf_transfer`.&quot;</span>
             <span class="p">)</span>
 
+        <span class="c1"># If FULL_LOG has been set, then force verbose mode</span>
+        <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;FULL_LOG&quot;</span><span class="p">,</span> <span class="s2">&quot;0&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="s2">&quot;1&quot;</span><span class="p">:</span>
+            <span class="n">verbose</span> <span class="o">=</span> <span class="kc">True</span>
+
         <span class="bp">self</span><span class="o">.</span><span class="n">benchmark_config_default_params</span> <span class="o">=</span> <span class="n">BenchmarkConfigParams</span><span class="p">(</span>
             <span class="n">task</span><span class="o">=</span><span class="n">task</span><span class="p">,</span>
             <span class="n">dataset</span><span class="o">=</span><span class="n">dataset</span><span class="p">,</span>
@@ -2401,7 +2386,6 @@
         <span class="p">)</span>
         <span class="k">del</span> <span class="n">dataset</span>
 
-        <span class="n">log_once</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Loading model </span><span class="si">{</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">)</span>
         <span class="n">model</span> <span class="o">=</span> <span class="n">load_model</span><span class="p">(</span>
             <span class="n">model_config</span><span class="o">=</span><span class="n">model_config</span><span class="p">,</span>
             <span class="n">dataset_config</span><span class="o">=</span><span class="n">dataset_config</span><span class="p">,</span>
@@ -2711,7 +2695,7 @@
 
         <span class="c1"># Get all the model configs</span>
         <span class="n">model_configs</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">ModelConfig</span><span class="p">]</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
-        <span class="k">for</span> <span class="n">model_id</span> <span class="ow">in</span> <span class="n">tqdm</span><span class="p">(</span>
+        <span class="k">for</span> <span class="n">model_id</span> <span class="ow">in</span> <span class="n">get_pbar</span><span class="p">(</span>
             <span class="n">iterable</span><span class="o">=</span><span class="n">model_ids</span><span class="p">,</span>
             <span class="n">desc</span><span class="o">=</span><span class="s2">&quot;Fetching model configurations&quot;</span><span class="p">,</span>
             <span class="n">disable</span><span class="o">=</span><span class="ow">not</span> <span class="n">benchmark_config</span><span class="o">.</span><span class="n">verbose</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">benchmark_config</span><span class="o">.</span><span class="n">progress_bar</span><span class="p">,</span>
@@ -2722,7 +2706,7 @@
                 <span class="p">)</span>
                 <span class="n">model_configs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">model_config</span><span class="p">)</span>
             <span class="k">except</span> <span class="n">InvalidModel</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">message</span><span class="p">)</span>
+                <span class="n">log</span><span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">message</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">ERROR</span><span class="p">)</span>
 
         <span class="c1"># Create a dictionary that takes each model config to the dataset configs that</span>
         <span class="c1"># we need to benchmark the model on. Here we remove the datasets that the model</span>
@@ -2751,22 +2735,22 @@
             <span class="k">for</span> <span class="n">dataset_configs</span> <span class="ow">in</span> <span class="n">model_config_to_dataset_configs</span><span class="o">.</span><span class="n">values</span><span class="p">()</span>
         <span class="p">)</span>
         <span class="k">if</span> <span class="n">total_benchmarks</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+            <span class="n">log</span><span class="p">(</span>
                 <span class="s2">&quot;No benchmarks to run, as all the selected models have already been &quot;</span>
-                <span class="s2">&quot;benchmarked on all the selected datasets.&quot;</span>
+                <span class="s2">&quot;benchmarked on all the selected datasets.&quot;</span><span class="p">,</span>
+                <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">,</span>
             <span class="p">)</span>
             <span class="k">return</span> <span class="nb">list</span><span class="p">()</span>
-
-        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Initiated evaluation of </span><span class="si">{</span><span class="n">total_benchmarks</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2"> benchmarks.&quot;</span><span class="p">)</span>
 
         <span class="n">num_finished_benchmarks</span> <span class="o">=</span> <span class="mi">0</span>
         <span class="n">current_benchmark_results</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">BenchmarkResult</span><span class="p">]</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
         <span class="n">benchmark_params_to_revert</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">t</span><span class="o">.</span><span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
         <span class="k">for</span> <span class="n">model_config</span> <span class="ow">in</span> <span class="n">model_configs</span><span class="p">:</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="n">model_config_to_dataset_configs</span><span class="p">[</span><span class="n">model_config</span><span class="p">]:</span>
-                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+                <span class="n">log</span><span class="p">(</span>
                     <span class="sa">f</span><span class="s2">&quot;Skipping model </span><span class="si">{</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span><span class="si">!r}</span><span class="s2"> because it has &quot;</span>
-                    <span class="s2">&quot;already been benchmarked on all valid datasets.&quot;</span>
+                    <span class="s2">&quot;already been benchmarked on all valid datasets.&quot;</span><span class="p">,</span>
+                    <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
                 <span class="p">)</span>
                 <span class="k">continue</span>
 
@@ -2804,18 +2788,20 @@
                     <span class="s2">&quot;val&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">dataset_config</span><span class="o">.</span><span class="n">splits</span>
                     <span class="ow">and</span> <span class="ow">not</span> <span class="n">benchmark_config</span><span class="o">.</span><span class="n">evaluate_test_split</span>
                 <span class="p">):</span>
-                    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+                    <span class="n">log</span><span class="p">(</span>
                         <span class="s2">&quot;The dataset does not have a validation split, so even though &quot;</span>
                         <span class="s2">&quot;you requested evaluating the validation split (the default), &quot;</span>
-                        <span class="s2">&quot;we will evaluate on the test split.&quot;</span>
+                        <span class="s2">&quot;we will evaluate on the test split.&quot;</span><span class="p">,</span>
+                        <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
                     <span class="p">)</span>
                     <span class="n">benchmark_params_to_revert</span><span class="p">[</span><span class="s2">&quot;evaluate_test_split&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
                     <span class="n">benchmark_config</span><span class="o">.</span><span class="n">evaluate_test_split</span> <span class="o">=</span> <span class="kc">True</span>
                 <span class="k">if</span> <span class="n">dataset_config</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">requires_zero_shot</span> <span class="ow">and</span> <span class="n">benchmark_config</span><span class="o">.</span><span class="n">few_shot</span><span class="p">:</span>
-                    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+                    <span class="n">log</span><span class="p">(</span>
                         <span class="s2">&quot;The task requires zero-shot evaluation, so even though you &quot;</span>
                         <span class="s2">&quot;requested few-shot evaluation (the default), we will evaluate &quot;</span>
-                        <span class="s2">&quot;zero-shot.&quot;</span>
+                        <span class="s2">&quot;zero-shot.&quot;</span><span class="p">,</span>
+                        <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
                     <span class="p">)</span>
                     <span class="n">benchmark_params_to_revert</span><span class="p">[</span><span class="s2">&quot;few_shot&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
                     <span class="n">benchmark_config</span><span class="o">.</span><span class="n">few_shot</span> <span class="o">=</span> <span class="kc">False</span>
@@ -2823,13 +2809,7 @@
                 <span class="c1"># We do not re-initialise generative models as their architecture is not</span>
                 <span class="c1"># customised to specific datasets</span>
                 <span class="k">if</span> <span class="n">model_config</span><span class="o">.</span><span class="n">model_type</span> <span class="o">==</span> <span class="n">ModelType</span><span class="o">.</span><span class="n">GENERATIVE</span><span class="p">:</span>
-                    <span class="n">initial_logging</span><span class="p">(</span>
-                        <span class="n">model_config</span><span class="o">=</span><span class="n">model_config</span><span class="p">,</span>
-                        <span class="n">dataset_config</span><span class="o">=</span><span class="n">dataset_config</span><span class="p">,</span>
-                        <span class="n">benchmark_config</span><span class="o">=</span><span class="n">benchmark_config</span><span class="p">,</span>
-                    <span class="p">)</span>
                     <span class="k">if</span> <span class="n">loaded_model</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-                        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Loading model...&quot;</span><span class="p">)</span>
                         <span class="k">try</span><span class="p">:</span>
                             <span class="n">loaded_model</span> <span class="o">=</span> <span class="n">load_model</span><span class="p">(</span>
                                 <span class="n">model_config</span><span class="o">=</span><span class="n">model_config</span><span class="p">,</span>
@@ -2839,7 +2819,7 @@
                         <span class="k">except</span> <span class="n">InvalidModel</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
                             <span class="k">if</span> <span class="n">benchmark_config</span><span class="o">.</span><span class="n">raise_errors</span><span class="p">:</span>
                                 <span class="k">raise</span> <span class="n">e</span>
-                            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">message</span><span class="p">)</span>
+                            <span class="n">log</span><span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">message</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">ERROR</span><span class="p">)</span>
 
                             <span class="c1"># Add the remaining number of benchmarks for the model to</span>
                             <span class="c1"># our benchmark counter, since we&#39;re skipping the rest of</span>
@@ -2859,12 +2839,13 @@
                         <span class="n">loaded_model</span><span class="o">.</span><span class="n">generative_type</span>
                         <span class="ow">not</span> <span class="ow">in</span> <span class="n">dataset_config</span><span class="o">.</span><span class="n">allowed_generative_types</span>
                     <span class="p">):</span>
-                        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+                        <span class="n">log</span><span class="p">(</span>
                             <span class="sa">f</span><span class="s2">&quot;Skipping the benchmark of model &quot;</span>
                             <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span><span class="si">!r}</span><span class="s2">on dataset &quot;</span>
                             <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">dataset_config</span><span class="o">.</span><span class="n">name</span><span class="si">!r}</span><span class="s2"> because the model has generative &quot;</span>
                             <span class="sa">f</span><span class="s2">&quot;type </span><span class="si">{</span><span class="n">loaded_model</span><span class="o">.</span><span class="n">generative_type</span><span class="si">}</span><span class="s2"> and the dataset &quot;</span>
-                            <span class="sa">f</span><span class="s2">&quot;only allows </span><span class="si">{</span><span class="n">dataset_config</span><span class="o">.</span><span class="n">allowed_generative_types</span><span class="si">}</span><span class="s2">.&quot;</span>
+                            <span class="sa">f</span><span class="s2">&quot;only allows </span><span class="si">{</span><span class="n">dataset_config</span><span class="o">.</span><span class="n">allowed_generative_types</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">,</span>
+                            <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
                         <span class="p">)</span>
                         <span class="n">num_finished_benchmarks</span> <span class="o">+=</span> <span class="mi">1</span>
                         <span class="k">continue</span>
@@ -2875,6 +2856,8 @@
                     <span class="n">model_config</span><span class="o">=</span><span class="n">model_config</span><span class="p">,</span>
                     <span class="n">dataset_config</span><span class="o">=</span><span class="n">dataset_config</span><span class="p">,</span>
                     <span class="n">benchmark_config</span><span class="o">=</span><span class="n">benchmark_config</span><span class="p">,</span>
+                    <span class="n">num_finished_benchmarks</span><span class="o">=</span><span class="n">num_finished_benchmarks</span><span class="p">,</span>
+                    <span class="n">num_total_benchmarks</span><span class="o">=</span><span class="n">total_benchmarks</span><span class="p">,</span>
                 <span class="p">)</span>
 
                 <span class="k">if</span> <span class="p">(</span>
@@ -2884,12 +2867,12 @@
                     <span class="k">raise</span> <span class="n">benchmark_output_or_err</span>
 
                 <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">benchmark_output_or_err</span><span class="p">,</span> <span class="n">InvalidBenchmark</span><span class="p">):</span>
-                    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">benchmark_output_or_err</span><span class="o">.</span><span class="n">message</span><span class="p">)</span>
+                    <span class="n">log</span><span class="p">(</span><span class="n">benchmark_output_or_err</span><span class="o">.</span><span class="n">message</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">)</span>
                     <span class="n">num_finished_benchmarks</span> <span class="o">+=</span> <span class="mi">1</span>
                     <span class="k">continue</span>
 
                 <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">benchmark_output_or_err</span><span class="p">,</span> <span class="n">InvalidModel</span><span class="p">):</span>
-                    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">benchmark_output_or_err</span><span class="o">.</span><span class="n">message</span><span class="p">)</span>
+                    <span class="n">log</span><span class="p">(</span><span class="n">benchmark_output_or_err</span><span class="o">.</span><span class="n">message</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">)</span>
 
                     <span class="c1"># Add the remaining number of benchmarks for the model to our</span>
                     <span class="c1"># benchmark counter, since we&#39;re skipping the rest of them</span>
@@ -2905,14 +2888,12 @@
                         <span class="n">record</span><span class="o">.</span><span class="n">append_to_results</span><span class="p">(</span><span class="n">results_path</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">results_path</span><span class="p">)</span>
 
                 <span class="n">num_finished_benchmarks</span> <span class="o">+=</span> <span class="mi">1</span>
-                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
-                    <span class="sa">f</span><span class="s2">&quot;Finished </span><span class="si">{</span><span class="n">num_finished_benchmarks</span><span class="si">}</span><span class="s2"> out of &quot;</span>
-                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">total_benchmarks</span><span class="si">}</span><span class="s2"> benchmarks.&quot;</span>
-                <span class="p">)</span>
 
             <span class="k">del</span> <span class="n">loaded_model</span>
             <span class="k">if</span> <span class="n">benchmark_config</span><span class="o">.</span><span class="n">clear_model_cache</span><span class="p">:</span>
                 <span class="n">clear_model_cache_fn</span><span class="p">(</span><span class="n">cache_dir</span><span class="o">=</span><span class="n">benchmark_config</span><span class="o">.</span><span class="n">cache_dir</span><span class="p">)</span>
+
+        <span class="n">log</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Completed </span><span class="si">{</span><span class="n">num_finished_benchmarks</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2"> benchmarks.</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">)</span>
 
         <span class="c1"># This avoids the following warning at the end of the benchmarking:</span>
         <span class="c1">#   Warning: WARNING: process group has NOT been destroyed before we destruct</span>
@@ -2957,6 +2938,8 @@
         <span class="n">model_config</span><span class="p">:</span> <span class="s2">&quot;ModelConfig&quot;</span><span class="p">,</span>
         <span class="n">dataset_config</span><span class="p">:</span> <span class="s2">&quot;DatasetConfig&quot;</span><span class="p">,</span>
         <span class="n">benchmark_config</span><span class="p">:</span> <span class="s2">&quot;BenchmarkConfig&quot;</span><span class="p">,</span>
+        <span class="n">num_finished_benchmarks</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">num_total_benchmarks</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BenchmarkResult</span> <span class="o">|</span> <span class="n">InvalidBenchmark</span> <span class="o">|</span> <span class="n">InvalidModel</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Benchmark a single model on a single dataset.</span>
 
@@ -2969,6 +2952,10 @@
 <span class="sd">                The configuration of the dataset we are evaluating on.</span>
 <span class="sd">            benchmark_config:</span>
 <span class="sd">                The general benchmark configuration.</span>
+<span class="sd">            num_finished_benchmarks:</span>
+<span class="sd">                The number of benchmarks that have already been completed.</span>
+<span class="sd">            num_total_benchmarks:</span>
+<span class="sd">                The total number of benchmarks to be completed.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The benchmark result, or an error if the benchmark was unsuccessful.</span>
@@ -2981,13 +2968,6 @@
 <span class="sd">            InvalidModel:</span>
 <span class="sd">                If the model is invalid.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="n">model</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">initial_logging</span><span class="p">(</span>
-                <span class="n">model_config</span><span class="o">=</span><span class="n">model_config</span><span class="p">,</span>
-                <span class="n">dataset_config</span><span class="o">=</span><span class="n">dataset_config</span><span class="p">,</span>
-                <span class="n">benchmark_config</span><span class="o">=</span><span class="n">benchmark_config</span><span class="p">,</span>
-            <span class="p">)</span>
-
         <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_attempts</span> <span class="o">:=</span> <span class="mi">5</span><span class="p">):</span>
             <span class="k">try</span><span class="p">:</span>
                 <span class="c1"># Set random seeds to enforce reproducibility of the randomly</span>
@@ -2995,13 +2975,20 @@
                 <span class="n">rng</span> <span class="o">=</span> <span class="n">enforce_reproducibility</span><span class="p">()</span>
 
                 <span class="k">if</span> <span class="n">model</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">model_config</span><span class="o">.</span><span class="n">model_type</span> <span class="o">!=</span> <span class="n">ModelType</span><span class="o">.</span><span class="n">GENERATIVE</span><span class="p">:</span>
-                    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Loading model...&quot;</span><span class="p">)</span>
                     <span class="n">model</span> <span class="o">=</span> <span class="n">load_model</span><span class="p">(</span>
                         <span class="n">model_config</span><span class="o">=</span><span class="n">model_config</span><span class="p">,</span>
                         <span class="n">dataset_config</span><span class="o">=</span><span class="n">dataset_config</span><span class="p">,</span>
                         <span class="n">benchmark_config</span><span class="o">=</span><span class="n">benchmark_config</span><span class="p">,</span>
                     <span class="p">)</span>
                 <span class="k">assert</span> <span class="n">model</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+
+                <span class="n">initial_logging</span><span class="p">(</span>
+                    <span class="n">model_config</span><span class="o">=</span><span class="n">model_config</span><span class="p">,</span>
+                    <span class="n">dataset_config</span><span class="o">=</span><span class="n">dataset_config</span><span class="p">,</span>
+                    <span class="n">benchmark_config</span><span class="o">=</span><span class="n">benchmark_config</span><span class="p">,</span>
+                    <span class="n">num_finished_benchmarks</span><span class="o">=</span><span class="n">num_finished_benchmarks</span><span class="p">,</span>
+                    <span class="n">num_total_benchmarks</span><span class="o">=</span><span class="n">num_total_benchmarks</span><span class="p">,</span>
+                <span class="p">)</span>
 
                 <span class="k">if</span> <span class="n">dataset_config</span><span class="o">.</span><span class="n">task</span> <span class="o">==</span> <span class="n">SPEED</span><span class="p">:</span>
                     <span class="n">scores</span> <span class="o">=</span> <span class="n">benchmark_speed</span><span class="p">(</span>
@@ -3070,14 +3057,15 @@
                     <span class="n">few_shot</span><span class="o">=</span><span class="n">benchmark_config</span><span class="o">.</span><span class="n">few_shot</span><span class="p">,</span>
                     <span class="n">validation_split</span><span class="o">=</span><span class="ow">not</span> <span class="n">benchmark_config</span><span class="o">.</span><span class="n">evaluate_test_split</span><span class="p">,</span>
                 <span class="p">)</span>
-                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Results:</span><span class="se">\n</span><span class="si">{</span><span class="n">results</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="n">log</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Results:</span><span class="se">\n</span><span class="si">{</span><span class="n">results</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">)</span>
                 <span class="k">return</span> <span class="n">record</span>
 
             <span class="k">except</span> <span class="n">HuggingFaceHubDown</span><span class="p">:</span>
                 <span class="n">wait_time</span> <span class="o">=</span> <span class="mi">30</span>
-                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+                <span class="n">log</span><span class="p">(</span>
                     <span class="sa">f</span><span class="s2">&quot;The Hugging Face Hub seems to be down. Retrying in </span><span class="si">{</span><span class="n">wait_time</span><span class="si">}</span><span class="s2"> &quot;</span>
-                    <span class="s2">&quot;seconds.&quot;</span>
+                    <span class="s2">&quot;seconds.&quot;</span><span class="p">,</span>
+                    <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
                 <span class="p">)</span>
                 <span class="n">sleep</span><span class="p">(</span><span class="n">wait_time</span><span class="p">)</span>
                 <span class="k">continue</span>
@@ -3108,9 +3096,10 @@
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Any</span><span class="p">,</span> <span class="o">**</span><span class="n">kwds</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Any</span><span class="p">:</span>  <span class="c1"># noqa: ANN401</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Alias for `self.benchmark()`.&quot;&quot;&quot;</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+        <span class="n">log</span><span class="p">(</span>
             <span class="s2">&quot;Calling the `Benchmarker` class directly is deprecated. Please use the &quot;</span>
-            <span class="s2">&quot;`benchmark` function instead. This will be removed in a future version.&quot;</span>
+            <span class="s2">&quot;`benchmark` function instead. This will be removed in a future version.&quot;</span><span class="p">,</span>
+            <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">benchmark</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwds</span><span class="p">)</span>
 
@@ -3162,28 +3151,6 @@
             <span class="k">return</span> <span class="kc">True</span>
     <span class="k">return</span> <span class="kc">False</span>
 
-<div class="mkapi-source-link" id="euroeval.benchmarker.adjust_logging_level"><a href="../../../api/euroeval/benchmarker/#euroeval.benchmarker.adjust_logging_level" title="Go to docs">[docs]</a></div>
-<span class="k">def</span><span class="w"> </span><span class="nf">adjust_logging_level</span><span class="p">(</span><span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span> <span class="n">ignore_testing</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Adjust the logging level based on verbosity.</span>
-
-<span class="sd">    Args:</span>
-<span class="sd">        verbose:</span>
-<span class="sd">            Whether to output additional output.</span>
-<span class="sd">        ignore_testing:</span>
-<span class="sd">            Whether to ignore the testing flag.</span>
-
-<span class="sd">    Returns:</span>
-<span class="sd">        The logging level that was set.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">sys</span><span class="p">,</span> <span class="s2">&quot;_called_from_test&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">ignore_testing</span><span class="p">:</span>
-        <span class="n">logging_level</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">CRITICAL</span>
-    <span class="k">elif</span> <span class="n">verbose</span><span class="p">:</span>
-        <span class="n">logging_level</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="n">logging_level</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">INFO</span>
-    <span class="n">logger</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">logging_level</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">logging_level</span>
-
 
 <span class="k">def</span><span class="w"> </span><span class="nf">clear_model_cache_fn</span><span class="p">(</span><span class="n">cache_dir</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span><div class="mkapi-source-link" id="euroeval.benchmarker.clear_model_cache_fn"><a href="../../../api/euroeval/benchmarker/#euroeval.benchmarker.clear_model_cache_fn" title="Go to docs">[docs]</a></div>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Clear the model cache.</span>
@@ -3222,6 +3189,8 @@
     <span class="n">model_config</span><span class="p">:</span> <span class="s2">&quot;ModelConfig&quot;</span><span class="p">,</span>
     <span class="n">dataset_config</span><span class="p">:</span> <span class="s2">&quot;DatasetConfig&quot;</span><span class="p">,</span>
     <span class="n">benchmark_config</span><span class="p">:</span> <span class="s2">&quot;BenchmarkConfig&quot;</span><span class="p">,</span>
+    <span class="n">num_finished_benchmarks</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">num_total_benchmarks</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Initial logging at the start of the benchmarking process.</span>
 
@@ -3232,6 +3201,10 @@
 <span class="sd">            The configuration of the dataset we are evaluating on.</span>
 <span class="sd">        benchmark_config:</span>
 <span class="sd">            The general benchmark configuration.</span>
+<span class="sd">        num_finished_benchmarks:</span>
+<span class="sd">            The number of benchmarks that have already been finished.</span>
+<span class="sd">        num_total_benchmarks:</span>
+<span class="sd">            The total number of benchmarks to be run.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">model_id</span> <span class="o">=</span> <span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span>
     <span class="k">if</span> <span class="n">model_config</span><span class="o">.</span><span class="n">revision</span> <span class="ow">and</span> <span class="n">model_config</span><span class="o">.</span><span class="n">revision</span> <span class="o">!=</span> <span class="s2">&quot;main&quot;</span><span class="p">:</span>
@@ -3248,23 +3221,27 @@
     <span class="k">else</span><span class="p">:</span>
         <span class="n">eval_type</span> <span class="o">=</span> <span class="s2">&quot;Benchmarking&quot;</span>
 
-    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
-        <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">eval_type</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">model_id</span><span class="si">}</span><span class="s2"> on the </span><span class="si">{</span><span class="n">split_type</span><span class="si">}</span><span class="s2"> split of &quot;</span>
-        <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">dataset_config</span><span class="o">.</span><span class="n">pretty_name</span><span class="si">}</span><span class="s2">&quot;</span>
+    <span class="n">log_once</span><span class="p">(</span>
+        <span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">[</span><span class="si">{</span><span class="n">dt</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s1">&#39;%Y-%m-</span><span class="si">%d</span><span class="s1"> %H:%M:%S&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2">]&quot;</span>
+        <span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="si">{</span><span class="n">eval_type</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">model_id</span><span class="si">}</span><span class="s2"> on the </span><span class="si">{</span><span class="n">split_type</span><span class="si">}</span><span class="s2"> split of &quot;</span>
+        <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">dataset_config</span><span class="o">.</span><span class="n">pretty_name</span><span class="si">}</span><span class="s2"> (</span><span class="si">{</span><span class="n">num_finished_benchmarks</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s2">/&quot;</span>
+        <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">num_total_benchmarks</span><span class="si">}</span><span class="s2"> benchmarks)...&quot;</span>
     <span class="p">)</span>
 
     <span class="k">if</span> <span class="n">dataset_config</span><span class="o">.</span><span class="n">unofficial</span><span class="p">:</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+        <span class="n">log_once</span><span class="p">(</span>
             <span class="sa">f</span><span class="s2">&quot;Note that the </span><span class="si">{</span><span class="n">dataset_config</span><span class="o">.</span><span class="n">name</span><span class="si">!r}</span><span class="s2"> dataset is unofficial, &quot;</span>
             <span class="s2">&quot;meaning that the resulting evaluation will not be included in the &quot;</span>
-            <span class="s2">&quot;official leaderboard.&quot;</span>
+            <span class="s2">&quot;official leaderboard.&quot;</span><span class="p">,</span>
+            <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">,</span>
         <span class="p">)</span>
 
     <span class="k">if</span> <span class="n">benchmark_config</span><span class="o">.</span><span class="n">debug</span><span class="p">:</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+        <span class="n">log_once</span><span class="p">(</span>
             <span class="s2">&quot;Running in debug mode. This will output additional information, as &quot;</span>
             <span class="s2">&quot;well as store the model outputs in the current directory after each &quot;</span>
-            <span class="s2">&quot;batch. For this reason, evaluation will be slower.&quot;</span>
+            <span class="s2">&quot;batch. For this reason, evaluation will be slower.&quot;</span><span class="p">,</span>
+            <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">,</span>
         <span class="p">)</span>
 </code></pre></div></td></tr></table></div>
 

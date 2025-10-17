@@ -920,7 +920,9 @@
 <span class="normal">73</span>
 <span class="normal">74</span>
 <span class="normal">75</span>
-<span class="normal">76</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;All Czech dataset configurations used in EuroEval.&quot;&quot;&quot;</span>
+<span class="normal">76</span>
+<span class="normal">77</span>
+<span class="normal">78</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;All Czech dataset configurations used in EuroEval.&quot;&quot;&quot;</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">..data_models</span><span class="w"> </span><span class="kn">import</span> <span class="n">DatasetConfig</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..languages</span><span class="w"> </span><span class="kn">import</span> <span class="n">CS</span>
@@ -930,7 +932,7 @@
 
 <span class="n">CSFD_SENTIMENT_CONFIG</span> <span class="o">=</span> <span class="n">DatasetConfig</span><span class="p">(</span>
     <span class="n">name</span><span class="o">=</span><span class="s2">&quot;csfd-sentiment&quot;</span><span class="p">,</span>
-    <span class="n">pretty_name</span><span class="o">=</span><span class="s2">&quot;the Czech Movie Database sentiment dataset&quot;</span><span class="p">,</span>
+    <span class="n">pretty_name</span><span class="o">=</span><span class="s2">&quot;the truncated version of the Czech Movie Database sentiment dataset&quot;</span><span class="p">,</span>
     <span class="n">huggingface_id</span><span class="o">=</span><span class="s2">&quot;EuroEval/csfd-sentiment-mini&quot;</span><span class="p">,</span>
     <span class="n">task</span><span class="o">=</span><span class="n">SENT</span><span class="p">,</span>
     <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">CS</span><span class="p">],</span>
@@ -938,7 +940,8 @@
 
 <span class="n">CS_GEC_CONFIG</span> <span class="o">=</span> <span class="n">DatasetConfig</span><span class="p">(</span>
     <span class="n">name</span><span class="o">=</span><span class="s2">&quot;cs-gec&quot;</span><span class="p">,</span>
-    <span class="n">pretty_name</span><span class="o">=</span><span class="s2">&quot;the Czech linguistic acceptability dataset CS-GEC&quot;</span><span class="p">,</span>
+    <span class="n">pretty_name</span><span class="o">=</span><span class="s2">&quot;the truncated version of the Czech linguistic acceptability dataset &quot;</span>
+    <span class="s2">&quot;CS-GEC&quot;</span><span class="p">,</span>
     <span class="n">huggingface_id</span><span class="o">=</span><span class="s2">&quot;EuroEval/cs-gec-mini&quot;</span><span class="p">,</span>
     <span class="n">task</span><span class="o">=</span><span class="n">LA</span><span class="p">,</span>
     <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">CS</span><span class="p">],</span>
@@ -946,7 +949,8 @@
 
 <span class="n">PONER_CONFIG</span> <span class="o">=</span> <span class="n">DatasetConfig</span><span class="p">(</span>
     <span class="n">name</span><span class="o">=</span><span class="s2">&quot;poner&quot;</span><span class="p">,</span>
-    <span class="n">pretty_name</span><span class="o">=</span><span class="s2">&quot;the Czech named entity recognition dataset PONER&quot;</span><span class="p">,</span>
+    <span class="n">pretty_name</span><span class="o">=</span><span class="s2">&quot;the truncated version of the Czech named entity recognition dataset &quot;</span>
+    <span class="s2">&quot;PONER&quot;</span><span class="p">,</span>
     <span class="n">huggingface_id</span><span class="o">=</span><span class="s2">&quot;EuroEval/poner-mini&quot;</span><span class="p">,</span>
     <span class="n">task</span><span class="o">=</span><span class="n">NER</span><span class="p">,</span>
     <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">CS</span><span class="p">],</span>
@@ -962,7 +966,7 @@
 
 <span class="n">CZECH_NEWS_CONFIG</span> <span class="o">=</span> <span class="n">DatasetConfig</span><span class="p">(</span>
     <span class="n">name</span><span class="o">=</span><span class="s2">&quot;czech-news&quot;</span><span class="p">,</span>
-    <span class="n">pretty_name</span><span class="o">=</span><span class="s2">&quot;the Czech news summarization dataset&quot;</span><span class="p">,</span>
+    <span class="n">pretty_name</span><span class="o">=</span><span class="s2">&quot;the truncated version of the Czech summarisation dataset&quot;</span><span class="p">,</span>
     <span class="n">huggingface_id</span><span class="o">=</span><span class="s2">&quot;EuroEval/czech-news-mini&quot;</span><span class="p">,</span>
     <span class="n">task</span><span class="o">=</span><span class="n">SUMM</span><span class="p">,</span>
     <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">CS</span><span class="p">],</span>
@@ -970,7 +974,7 @@
 
 <span class="n">UMIMETO_QA_CONFIG</span> <span class="o">=</span> <span class="n">DatasetConfig</span><span class="p">(</span>
     <span class="n">name</span><span class="o">=</span><span class="s2">&quot;umimeto-qa&quot;</span><span class="p">,</span>
-    <span class="n">pretty_name</span><span class="o">=</span><span class="s2">&quot;the Czech multiple-choice dataset Umimeto-qa&quot;</span><span class="p">,</span>
+    <span class="n">pretty_name</span><span class="o">=</span><span class="s2">&quot;the Czech knowledge dataset UmimetoQA&quot;</span><span class="p">,</span>
     <span class="n">huggingface_id</span><span class="o">=</span><span class="s2">&quot;EuroEval/umimeto-qa&quot;</span><span class="p">,</span>
     <span class="n">task</span><span class="o">=</span><span class="n">KNOW</span><span class="p">,</span>
     <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">CS</span><span class="p">],</span>

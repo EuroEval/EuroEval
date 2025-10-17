@@ -937,20 +937,17 @@
 <span class="normal">73</span>
 <span class="normal">74</span>
 <span class="normal">75</span>
-<span class="normal">76</span>
-<span class="normal">77</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Functions related to getting the model configuration.&quot;&quot;&quot;</span>
+<span class="normal">76</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Functions related to getting the model configuration.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">t</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">.</span><span class="w"> </span><span class="kn">import</span> <span class="n">benchmark_modules</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.exceptions</span><span class="w"> </span><span class="kn">import</span> <span class="n">InvalidModel</span><span class="p">,</span> <span class="n">NeedsEnvironmentVariable</span><span class="p">,</span> <span class="n">NeedsExtraInstalled</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.logging_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">log</span>
 
 <span class="k">if</span> <span class="n">t</span><span class="o">.</span><span class="n">TYPE_CHECKING</span><span class="p">:</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">.data_models</span><span class="w"> </span><span class="kn">import</span> <span class="n">BenchmarkConfig</span><span class="p">,</span> <span class="n">ModelConfig</span>
-
-
-<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">&quot;euroeval&quot;</span><span class="p">)</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">get_model_config</span><span class="p">(</span><div class="mkapi-source-link" id="euroeval.model_config.get_model_config"><a href="../../../api/euroeval/model_config/#euroeval.model_config.get_model_config" title="Go to docs">[docs]</a></div>
@@ -991,9 +988,10 @@
         <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">exists_or_err</span><span class="p">,</span> <span class="n">NeedsEnvironmentVariable</span><span class="p">):</span>
             <span class="n">needs_env_vars</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">exists_or_err</span><span class="o">.</span><span class="n">env_var</span><span class="p">)</span>
         <span class="k">elif</span> <span class="n">exists_or_err</span> <span class="ow">is</span> <span class="kc">True</span><span class="p">:</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+            <span class="n">log</span><span class="p">(</span>
                 <span class="sa">f</span><span class="s2">&quot;The model </span><span class="si">{</span><span class="n">model_id</span><span class="si">!r}</span><span class="s2"> was identified by the &quot;</span>
-                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">benchmark_module</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2"> benchmark module.&quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">benchmark_module</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2"> benchmark module.&quot;</span><span class="p">,</span>
+                <span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
             <span class="p">)</span>
             <span class="n">model_config</span> <span class="o">=</span> <span class="n">benchmark_module</span><span class="o">.</span><span class="n">get_model_config</span><span class="p">(</span>
                 <span class="n">model_id</span><span class="o">=</span><span class="n">model_id</span><span class="p">,</span> <span class="n">benchmark_config</span><span class="o">=</span><span class="n">benchmark_config</span>

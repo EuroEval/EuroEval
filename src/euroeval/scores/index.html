@@ -979,11 +979,11 @@
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 
+<span class="kn">from</span><span class="w"> </span><span class="nn">.logging_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">log</span>
+
 <span class="k">if</span> <span class="n">t</span><span class="o">.</span><span class="n">TYPE_CHECKING</span><span class="p">:</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">.metrics</span><span class="w"> </span><span class="kn">import</span> <span class="n">Metric</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">ScoreDict</span>
-
-<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">&quot;euroeval&quot;</span><span class="p">)</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">log_scores</span><span class="p">(</span><div class="mkapi-source-link" id="euroeval.scores.log_scores"><a href="../../../api/euroeval/scores/#euroeval.scores.log_scores" title="Go to docs">[docs]</a></div>
@@ -1021,9 +1021,8 @@
     <span class="k">if</span> <span class="n">model_param</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">model_id</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot;#</span><span class="si">{</span><span class="n">model_param</span><span class="si">}</span><span class="s2">&quot;</span>
 
-    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Finished evaluation of </span><span class="si">{</span><span class="n">model_id</span><span class="si">}</span><span class="s2"> on </span><span class="si">{</span><span class="n">dataset_name</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">)</span>
-
     <span class="n">total_dict</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+    <span class="n">all_log_strs</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="sa">f</span><span class="s2">&quot;Finished benchmarking </span><span class="si">{</span><span class="n">model_id</span><span class="si">}</span><span class="s2"> on </span><span class="si">{</span><span class="n">dataset_name</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">]</span>
     <span class="k">for</span> <span class="n">metric</span> <span class="ow">in</span> <span class="n">metrics</span><span class="p">:</span>
         <span class="n">test_score</span><span class="p">,</span> <span class="n">test_se</span> <span class="o">=</span> <span class="n">aggregate_scores</span><span class="p">(</span><span class="n">scores</span><span class="o">=</span><span class="n">scores</span><span class="p">,</span> <span class="n">metric</span><span class="o">=</span><span class="n">metric</span><span class="p">)</span>
         <span class="n">test_score</span><span class="p">,</span> <span class="n">test_score_str</span> <span class="o">=</span> <span class="n">metric</span><span class="o">.</span><span class="n">postprocessing_fn</span><span class="p">(</span><span class="n">test_score</span><span class="p">)</span>
@@ -1031,11 +1030,12 @@
         <span class="n">total_dict</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;test_</span><span class="si">{</span><span class="n">metric</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">test_score</span>
         <span class="n">total_dict</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;test_</span><span class="si">{</span><span class="n">metric</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">_se&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">test_se</span>
         <span class="n">log_str</span> <span class="o">=</span> <span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">metric</span><span class="o">.</span><span class="n">pretty_name</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">test_score_str</span><span class="si">}</span><span class="s2"> ± </span><span class="si">{</span><span class="n">test_se_str</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;- </span><span class="si">{</span><span class="n">metric</span><span class="o">.</span><span class="n">pretty_name</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">test_score_str</span><span class="si">}</span><span class="s2"> ± </span><span class="si">{</span><span class="n">test_se_str</span><span class="si">}</span><span class="s2">&quot;</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">test_se</span><span class="p">)</span>
-            <span class="k">else</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">metric</span><span class="o">.</span><span class="n">pretty_name</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">test_score_str</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="k">else</span> <span class="sa">f</span><span class="s2">&quot;- </span><span class="si">{</span><span class="n">metric</span><span class="o">.</span><span class="n">pretty_name</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">test_score_str</span><span class="si">}</span><span class="s2">&quot;</span>
         <span class="p">)</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">log_str</span><span class="p">)</span>
+        <span class="n">all_log_strs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">log_str</span><span class="p">)</span>
+    <span class="n">log</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">all_log_strs</span><span class="p">),</span> <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">)</span>
 
     <span class="k">return</span> <span class="nb">dict</span><span class="p">(</span><span class="n">raw</span><span class="o">=</span><span class="n">scores</span><span class="p">,</span> <span class="n">total</span><span class="o">=</span><span class="n">total_dict</span><span class="p">)</span>
 

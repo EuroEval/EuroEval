@@ -1348,8 +1348,7 @@
 <span class="normal">466</span>
 <span class="normal">467</span>
 <span class="normal">468</span>
-<span class="normal">469</span>
-<span class="normal">470</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Utility functions related to generative models.&quot;&quot;&quot;</span>
+<span class="normal">469</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Utility functions related to generative models.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">itertools</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">it</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
@@ -1360,16 +1359,15 @@
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">.enums</span><span class="w"> </span><span class="kn">import</span> <span class="n">GenerativeType</span><span class="p">,</span> <span class="n">TaskGroup</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.exceptions</span><span class="w"> </span><span class="kn">import</span> <span class="n">InvalidBenchmark</span><span class="p">,</span> <span class="n">InvalidModel</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.logging_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">log_once</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.tokenisation_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">apply_chat_template</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">extract_multiple_choice_labels</span><span class="p">,</span> <span class="n">log_once</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">extract_multiple_choice_labels</span>
 
 <span class="k">if</span> <span class="n">t</span><span class="o">.</span><span class="n">TYPE_CHECKING</span><span class="p">:</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">datasets</span><span class="w"> </span><span class="kn">import</span> <span class="n">DatasetDict</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">transformers.tokenization_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">PreTrainedTokenizer</span>
 
     <span class="kn">from</span><span class="w"> </span><span class="nn">.data_models</span><span class="w"> </span><span class="kn">import</span> <span class="n">BenchmarkConfig</span><span class="p">,</span> <span class="n">DatasetConfig</span><span class="p">,</span> <span class="n">ModelConfig</span>
-
-<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">&quot;euroeval&quot;</span><span class="p">)</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">extract_few_shot_examples</span><span class="p">(</span><div class="mkapi-source-link" id="euroeval.generation_utils.extract_few_shot_examples"><a href="../../../api/euroeval/generation_utils/#euroeval.generation_utils.extract_few_shot_examples" title="Go to docs">[docs]</a></div>

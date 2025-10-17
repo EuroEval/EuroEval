@@ -1236,10 +1236,7 @@
 <span class="normal">345</span>
 <span class="normal">346</span>
 <span class="normal">347</span>
-<span class="normal">348</span>
-<span class="normal">349</span>
-<span class="normal">350</span>
-<span class="normal">351</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Functions related to the finetuning of models.&quot;&quot;&quot;</span>
+<span class="normal">348</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Functions related to the finetuning of models.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
@@ -1247,7 +1244,6 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">functools</span><span class="w"> </span><span class="kn">import</span> <span class="n">partial</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">tqdm.auto</span><span class="w"> </span><span class="kn">import</span> <span class="n">tqdm</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">transformers.trainer_callback</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">EarlyStoppingCallback</span><span class="p">,</span>
     <span class="n">PrinterCallback</span><span class="p">,</span>
@@ -1259,21 +1255,15 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">.callbacks</span><span class="w"> </span><span class="kn">import</span> <span class="n">NeverLeaveProgressCallback</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.enums</span><span class="w"> </span><span class="kn">import</span> <span class="n">DataType</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.exceptions</span><span class="w"> </span><span class="kn">import</span> <span class="n">InvalidBenchmark</span><span class="p">,</span> <span class="n">NaNValueInModelOutput</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.logging_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">block_terminal_output</span><span class="p">,</span> <span class="n">get_pbar</span><span class="p">,</span> <span class="n">log</span><span class="p">,</span> <span class="n">log_once</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.model_loading</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_model</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">.utils</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-    <span class="n">block_terminal_output</span><span class="p">,</span>
-    <span class="n">clear_memory</span><span class="p">,</span>
-    <span class="n">enforce_reproducibility</span><span class="p">,</span>
-    <span class="n">log_once</span><span class="p">,</span>
-<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">clear_memory</span><span class="p">,</span> <span class="n">enforce_reproducibility</span>
 
 <span class="k">if</span> <span class="n">t</span><span class="o">.</span><span class="n">TYPE_CHECKING</span><span class="p">:</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">datasets</span><span class="w"> </span><span class="kn">import</span> <span class="n">DatasetDict</span>
 
     <span class="kn">from</span><span class="w"> </span><span class="nn">.benchmark_modules</span><span class="w"> </span><span class="kn">import</span> <span class="n">BenchmarkModule</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">.data_models</span><span class="w"> </span><span class="kn">import</span> <span class="n">BenchmarkConfig</span><span class="p">,</span> <span class="n">DatasetConfig</span><span class="p">,</span> <span class="n">ModelConfig</span>
-
-<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">&quot;euroeval&quot;</span><span class="p">)</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">finetune</span><span class="p">(</span><div class="mkapi-source-link" id="euroeval.finetuning.finetune"><a href="../../../api/euroeval/finetuning/#euroeval.finetuning.finetune" title="Go to docs">[docs]</a></div>
@@ -1315,7 +1305,7 @@
 
     <span class="n">bs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">benchmark_config</span><span class="o">.</span><span class="n">batch_size</span>
     <span class="n">scores</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]]</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
-    <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="n">tqdm</span><span class="p">(</span>
+    <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="n">get_pbar</span><span class="p">(</span>
         <span class="n">iterable</span><span class="o">=</span><span class="nb">range</span><span class="p">(</span><span class="n">benchmark_config</span><span class="o">.</span><span class="n">num_iterations</span><span class="p">),</span>
         <span class="n">desc</span><span class="o">=</span><span class="s2">&quot;Benchmarking&quot;</span><span class="p">,</span>
         <span class="n">disable</span><span class="o">=</span><span class="ow">not</span> <span class="n">benchmark_config</span><span class="o">.</span><span class="n">progress_bar</span><span class="p">,</span>
@@ -1357,7 +1347,10 @@
                 <span class="p">)</span>
 
                 <span class="n">scores</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">itr_scores</span><span class="p">)</span>
-                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Test scores for iteration </span><span class="si">{</span><span class="n">idx</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">itr_scores</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="n">log</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;Test scores for iteration </span><span class="si">{</span><span class="n">idx</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">itr_scores</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                    <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
+                <span class="p">)</span>
 
                 <span class="k">break</span>
 
@@ -1368,9 +1361,10 @@
                 <span class="k">if</span> <span class="n">dtype</span> <span class="o">!=</span> <span class="n">DataType</span><span class="o">.</span><span class="n">FP32</span><span class="p">:</span>
                     <span class="n">dtype</span> <span class="o">=</span> <span class="n">DataType</span><span class="o">.</span><span class="n">FP32</span>
                     <span class="n">model_already_initialized</span> <span class="o">=</span> <span class="kc">False</span>
-                    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+                    <span class="n">log</span><span class="p">(</span>
                         <span class="s2">&quot;NaN value detected in model outputs while using mixed &quot;</span>
-                        <span class="s2">&quot;precision. Retrying with full fp32 precision.&quot;</span>
+                        <span class="s2">&quot;precision. Retrying with full fp32 precision.&quot;</span><span class="p">,</span>
+                        <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
                     <span class="p">)</span>
                 <span class="k">else</span><span class="p">:</span>
                     <span class="k">raise</span> <span class="n">InvalidBenchmark</span><span class="p">(</span>
@@ -1396,7 +1390,7 @@
                 <span class="n">model_already_initialized</span> <span class="o">=</span> <span class="kc">False</span>
 
                 <span class="n">bs</span> <span class="o">//=</span> <span class="mi">2</span>
-                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Reduced batch size to </span><span class="si">{</span><span class="n">bs</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="n">log</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Reduced batch size to </span><span class="si">{</span><span class="n">bs</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">)</span>
 
         <span class="k">else</span><span class="p">:</span>
             <span class="k">raise</span> <span class="n">InvalidBenchmark</span><span class="p">(</span>

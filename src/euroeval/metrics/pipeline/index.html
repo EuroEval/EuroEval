@@ -1169,7 +1169,15 @@
 <span class="normal">278</span>
 <span class="normal">279</span>
 <span class="normal">280</span>
-<span class="normal">281</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Metrics based on a scikit-learn Pipeline.&quot;&quot;&quot;</span>
+<span class="normal">281</span>
+<span class="normal">282</span>
+<span class="normal">283</span>
+<span class="normal">284</span>
+<span class="normal">285</span>
+<span class="normal">286</span>
+<span class="normal">287</span>
+<span class="normal">288</span>
+<span class="normal">289</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Metrics based on a scikit-learn Pipeline.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">c</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
@@ -1182,6 +1190,7 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">scipy.special</span><span class="w"> </span><span class="kn">import</span> <span class="n">expit</span> <span class="k">as</span> <span class="n">sigmoid</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">..exceptions</span><span class="w"> </span><span class="kn">import</span> <span class="n">InvalidBenchmark</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..logging_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">log</span><span class="p">,</span> <span class="n">no_terminal_output</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">unscramble</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">Metric</span>
 
@@ -1190,8 +1199,6 @@
     <span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.pipeline</span><span class="w"> </span><span class="kn">import</span> <span class="n">Pipeline</span>
 
     <span class="kn">from</span><span class="w"> </span><span class="nn">..data_models</span><span class="w"> </span><span class="kn">import</span> <span class="n">BenchmarkConfig</span><span class="p">,</span> <span class="n">DatasetConfig</span>
-
-<span class="n">logger</span><span class="p">:</span> <span class="n">logging</span><span class="o">.</span><span class="n">Logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">&quot;euroeval&quot;</span><span class="p">)</span>
 
 
 <span class="n">T</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">TypeVar</span><span class="p">(</span><span class="s2">&quot;T&quot;</span><span class="p">,</span> <span class="n">bound</span><span class="o">=</span><span class="nb">int</span> <span class="o">|</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">bool</span><span class="p">)</span>
@@ -1292,15 +1299,21 @@
 <span class="sd">            The calculated metric score, or None if the score should be ignored.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">pipeline</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">pipeline</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_download_pipeline</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">pipeline</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_download_pipeline</span><span class="p">(</span>
+                <span class="n">cache_dir</span><span class="o">=</span><span class="n">benchmark_config</span><span class="o">.</span><span class="n">cache_dir</span>
+            <span class="p">)</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">preprocessing_fn</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">predictions</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">preprocessing_fn</span><span class="p">(</span>
                 <span class="n">predictions</span><span class="o">=</span><span class="n">predictions</span><span class="p">,</span> <span class="n">dataset</span><span class="o">=</span><span class="n">dataset</span>
             <span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">pipeline_scoring_function</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pipeline</span><span class="p">,</span> <span class="n">predictions</span><span class="p">)</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="nf">_download_pipeline</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Pipeline&quot;</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_download_pipeline</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cache_dir</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Pipeline&quot;</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Download the scikit-learn pipeline from the given URL.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            cache_dir:</span>
+<span class="sd">                The directory to use for caching the downloaded pipeline.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The downloaded scikit-learn pipeline.</span>
@@ -1309,10 +1322,13 @@
 <span class="sd">            InvalidBenchmark:</span>
 <span class="sd">                If the loading of the pipeline fails for any reason.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Loading pipeline from </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">pipeline_repo</span><span class="si">}</span><span class="s2">...&quot;</span><span class="p">)</span>
-        <span class="n">folder_path</span> <span class="o">=</span> <span class="n">hf_hub</span><span class="o">.</span><span class="n">HfApi</span><span class="p">(</span>
-            <span class="n">token</span><span class="o">=</span><span class="n">unscramble</span><span class="p">(</span><span class="s2">&quot;XbjeOLhwebEaSaDUMqqaPaPIhgOcyOfDpGnX_&quot;</span><span class="p">)</span>
-        <span class="p">)</span><span class="o">.</span><span class="n">snapshot_download</span><span class="p">(</span><span class="n">repo_id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">pipeline_repo</span><span class="p">,</span> <span class="n">repo_type</span><span class="o">=</span><span class="s2">&quot;model&quot;</span><span class="p">)</span>
+        <span class="n">log</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Loading pipeline from </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">pipeline_repo</span><span class="si">}</span><span class="s2">...&quot;</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">)</span>
+        <span class="k">with</span> <span class="n">no_terminal_output</span><span class="p">():</span>
+            <span class="n">folder_path</span> <span class="o">=</span> <span class="n">hf_hub</span><span class="o">.</span><span class="n">HfApi</span><span class="p">(</span>
+                <span class="n">token</span><span class="o">=</span><span class="n">unscramble</span><span class="p">(</span><span class="s2">&quot;XbjeOLhwebEaSaDUMqqaPaPIhgOcyOfDpGnX_&quot;</span><span class="p">)</span>
+            <span class="p">)</span><span class="o">.</span><span class="n">snapshot_download</span><span class="p">(</span>
+                <span class="n">repo_id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">pipeline_repo</span><span class="p">,</span> <span class="n">repo_type</span><span class="o">=</span><span class="s2">&quot;model&quot;</span><span class="p">,</span> <span class="n">cache_dir</span><span class="o">=</span><span class="n">cache_dir</span>
+            <span class="p">)</span>
         <span class="n">model_path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">folder_path</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">pipeline_file_name</span><span class="p">)</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="k">with</span> <span class="n">model_path</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s2">&quot;rb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
@@ -1321,7 +1337,7 @@
             <span class="k">raise</span> <span class="n">InvalidBenchmark</span><span class="p">(</span>
                 <span class="sa">f</span><span class="s2">&quot;Failed to load pipeline from </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">pipeline_repo</span><span class="si">!r}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span>
             <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Successfully loaded pipeline: </span><span class="si">{</span><span class="n">pipeline</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="n">log</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Successfully loaded pipeline: </span><span class="si">{</span><span class="n">pipeline</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">pipeline</span>
 
 

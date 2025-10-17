@@ -1098,13 +1098,9 @@
 <span class="normal">201</span>
 <span class="normal">202</span>
 <span class="normal">203</span>
-<span class="normal">204</span>
-<span class="normal">205</span>
-<span class="normal">206</span>
-<span class="normal">207</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Utility functions related to the multiple-choice classification task group.&quot;&quot;&quot;</span>
+<span class="normal">204</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Utility functions related to the multiple-choice classification task group.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">hashlib</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">t</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">collections</span><span class="w"> </span><span class="kn">import</span> <span class="n">defaultdict</span>
@@ -1120,8 +1116,6 @@
     <span class="kn">from</span><span class="w"> </span><span class="nn">transformers.tokenization_utils_base</span><span class="w"> </span><span class="kn">import</span> <span class="n">BatchEncoding</span>
 
     <span class="kn">from</span><span class="w"> </span><span class="nn">..types</span><span class="w"> </span><span class="kn">import</span> <span class="n">Labels</span><span class="p">,</span> <span class="n">Predictions</span>
-
-<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">&quot;euroeval&quot;</span><span class="p">)</span>
 
 
 <span class="k">class</span><span class="w"> </span><span class="nc">MultipleChoiceClassificationTrainer</span><span class="p">(</span><span class="n">Trainer</span><span class="p">):</span><div class="mkapi-source-link" id="euroeval.task_group_utils.multiple_choice_classification.MultipleChoiceClassificationTrainer"><a href="../../../../api/euroeval/task_group_utils/multiple_choice_classification/#euroeval.task_group_utils.multiple_choice_classification.MultipleChoiceClassificationTrainer" title="Go to docs">[docs]</a></div>

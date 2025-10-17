@@ -1638,13 +1638,9 @@
 <span class="normal">696</span>
 <span class="normal">697</span>
 <span class="normal">698</span>
-<span class="normal">699</span>
-<span class="normal">700</span>
-<span class="normal">701</span>
-<span class="normal">702</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Utility functions related to the question-answering task group.&quot;&quot;&quot;</span>
+<span class="normal">699</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Utility functions related to the question-answering task group.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">c</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">t</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">collections</span><span class="w"> </span><span class="kn">import</span> <span class="n">defaultdict</span>
 
@@ -1668,8 +1664,6 @@
 
     <span class="kn">from</span><span class="w"> </span><span class="nn">..data_models</span><span class="w"> </span><span class="kn">import</span> <span class="n">BenchmarkConfig</span><span class="p">,</span> <span class="n">DatasetConfig</span><span class="p">,</span> <span class="n">GenerativeModelOutput</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">..types</span><span class="w"> </span><span class="kn">import</span> <span class="n">Labels</span><span class="p">,</span> <span class="n">Predictions</span>
-
-<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">&quot;euroeval&quot;</span><span class="p">)</span>
 
 
 <span class="k">class</span><span class="w"> </span><span class="nc">QuestionAnsweringTrainer</span><span class="p">(</span><span class="n">Trainer</span><span class="p">):</span><div class="mkapi-source-link" id="euroeval.task_group_utils.question_answering.QuestionAnsweringTrainer"><a href="../../../../api/euroeval/task_group_utils/question_answering/#euroeval.task_group_utils.question_answering.QuestionAnsweringTrainer" title="Go to docs">[docs]</a></div>

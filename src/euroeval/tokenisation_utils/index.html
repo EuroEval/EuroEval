@@ -1543,27 +1543,26 @@
 <span class="normal">598</span>
 <span class="normal">599</span>
 <span class="normal">600</span>
-<span class="normal">601</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Utility functions related to tokenisation.&quot;&quot;&quot;</span>
+<span class="normal">601</span>
+<span class="normal">602</span>
+<span class="normal">603</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Utility functions related to tokenisation.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">t</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">MistralCommonTokenizer</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">transformers.tokenization_mistral_common</span><span class="w"> </span><span class="kn">import</span> <span class="n">MistralCommonTokenizer</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">.enums</span><span class="w"> </span><span class="kn">import</span> <span class="n">GenerativeType</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.exceptions</span><span class="w"> </span><span class="kn">import</span> <span class="n">InvalidModel</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">log_once</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.logging_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">log</span><span class="p">,</span> <span class="n">log_once</span>
 
 <span class="k">if</span> <span class="n">t</span><span class="o">.</span><span class="n">TYPE_CHECKING</span><span class="p">:</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">transformers.tokenization_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">PreTrainedTokenizer</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">transformers.tokenization_utils_base</span><span class="w"> </span><span class="kn">import</span> <span class="n">PreTrainedTokenizerBase</span>
 
     <span class="kn">from</span><span class="w"> </span><span class="nn">.data_models</span><span class="w"> </span><span class="kn">import</span> <span class="n">DatasetConfig</span><span class="p">,</span> <span class="n">ModelConfig</span>
-
-
-<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">&quot;euroeval&quot;</span><span class="p">)</span>
 
 <div class="mkapi-source-link" id="euroeval.tokenisation_utils.get_special_token_metadata"><a href="../../../api/euroeval/tokenisation_utils/#euroeval.tokenisation_utils.get_special_token_metadata" title="Go to docs">[docs]</a></div>
 <span class="k">def</span><span class="w"> </span><span class="nf">get_special_token_metadata</span><span class="p">(</span><span class="n">tokeniser</span><span class="p">:</span> <span class="s2">&quot;PreTrainedTokenizerBase&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
@@ -1727,7 +1726,7 @@
             <span class="s2">&quot;The model does not have a beginning-of-sequence token. Please ensure that &quot;</span>
             <span class="s2">&quot;this has been set in the tokeniser&#39;s configuration. Using no BOS token.&quot;</span>
             <span class="s2">&quot; This may lead to unexpected behavior in the model.&quot;</span><span class="p">,</span>
-            <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">,</span>
+            <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="k">return</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span>
 
@@ -1768,14 +1767,14 @@
             <span class="s2">&quot;The model does not have an end-of-sequence token. Please ensure that this &quot;</span>
             <span class="s2">&quot;has been set in the tokeniser&#39;s configuration. Using no EOS token. This &quot;</span>
             <span class="s2">&quot;may lead to unexpected behavior in the model.&quot;</span><span class="p">,</span>
-            <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">,</span>
+            <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="k">return</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span>
 
     <span class="n">log_once</span><span class="p">(</span>
         <span class="sa">f</span><span class="s2">&quot;End-of-sequence token was not set, but detected it as </span><span class="si">{</span><span class="n">eos_token</span><span class="si">!r}</span><span class="s2"> with &quot;</span>
         <span class="sa">f</span><span class="s2">&quot;ID </span><span class="si">{</span><span class="n">eos_token_id</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">,</span>
-        <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
+        <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">,</span>
     <span class="p">)</span>
     <span class="k">return</span> <span class="n">eos_token</span><span class="p">,</span> <span class="n">eos_token_id</span>
 
@@ -1851,7 +1850,7 @@
                 <span class="s2">&quot;Could not identify a padding token for the model. Please ensure that &quot;</span>
                 <span class="s2">&quot;this has been set in the tokeniser&#39;s configuration. Using no padding &quot;</span>
                 <span class="s2">&quot;token. This may lead to unexpected behavior in the model.&quot;</span><span class="p">,</span>
-                <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">,</span>
+                <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">,</span>
             <span class="p">)</span>
             <span class="k">return</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span>
 
@@ -1903,12 +1902,16 @@
             <span class="n">x_token_index</span> <span class="o">=</span> <span class="n">idx</span>
             <span class="k">break</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Could not locate the end-of-chat token for the model.&quot;</span><span class="p">)</span>
+        <span class="n">log</span><span class="p">(</span>
+            <span class="s2">&quot;Could not locate the end-of-chat token for the model.&quot;</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span>
+        <span class="p">)</span>
         <span class="k">return</span> <span class="kc">None</span>
 
     <span class="n">end_of_chat_tokens</span> <span class="o">=</span> <span class="n">token_ids</span><span class="p">[</span><span class="n">x_token_index</span> <span class="o">+</span> <span class="mi">1</span> <span class="p">:]</span>
     <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">end_of_chat_tokens</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Could not locate the end-of-chat token for the model.&quot;</span><span class="p">)</span>
+        <span class="n">log</span><span class="p">(</span>
+            <span class="s2">&quot;Could not locate the end-of-chat token for the model.&quot;</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span>
+        <span class="p">)</span>
         <span class="k">return</span> <span class="kc">None</span>
 
     <span class="n">log_once</span><span class="p">(</span>
@@ -2051,7 +2054,8 @@
             <span class="n">log_once</span><span class="p">(</span>
                 <span class="s2">&quot;We will not use logprobs with the model since the first tokens of the &quot;</span>
                 <span class="s2">&quot;labels are not distinct. The first tokens for the labels &quot;</span>
-                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">local_labels</span><span class="si">}</span><span class="s2"> are </span><span class="si">{</span><span class="n">first_tokens</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">local_labels</span><span class="si">}</span><span class="s2"> are </span><span class="si">{</span><span class="n">first_tokens</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
             <span class="p">)</span>
         <span class="k">return</span> <span class="kc">False</span>
 

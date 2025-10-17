@@ -2311,7 +2311,19 @@
 <span class="normal">1270</span>
 <span class="normal">1271</span>
 <span class="normal">1272</span>
-<span class="normal">1273</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Encoder models from the Hugging Face Hub.&quot;&quot;&quot;</span>
+<span class="normal">1273</span>
+<span class="normal">1274</span>
+<span class="normal">1275</span>
+<span class="normal">1276</span>
+<span class="normal">1277</span>
+<span class="normal">1278</span>
+<span class="normal">1279</span>
+<span class="normal">1280</span>
+<span class="normal">1281</span>
+<span class="normal">1282</span>
+<span class="normal">1283</span>
+<span class="normal">1284</span>
+<span class="normal">1285</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Encoder models from the Hugging Face Hub.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">c</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
@@ -2373,6 +2385,7 @@
 <span class="p">)</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..generation_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">raise_if_wrong_params</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..languages</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_all_languages</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..logging_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">block_terminal_output</span><span class="p">,</span> <span class="n">log</span><span class="p">,</span> <span class="n">log_once</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..task_group_utils</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">multiple_choice_classification</span><span class="p">,</span>
     <span class="n">question_answering</span><span class="p">,</span>
@@ -2380,12 +2393,10 @@
 <span class="p">)</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..tokenisation_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_bos_token</span><span class="p">,</span> <span class="n">get_eos_token</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..utils</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-    <span class="n">block_terminal_output</span><span class="p">,</span>
     <span class="n">create_model_cache_dir</span><span class="p">,</span>
     <span class="n">get_class_by_name</span><span class="p">,</span>
     <span class="n">get_hf_token</span><span class="p">,</span>
     <span class="n">internet_connection_available</span><span class="p">,</span>
-    <span class="n">log_once</span><span class="p">,</span>
     <span class="n">split_model_id</span><span class="p">,</span>
 <span class="p">)</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">BenchmarkModule</span>
@@ -2397,8 +2408,6 @@
 
     <span class="kn">from</span><span class="w"> </span><span class="nn">..data_models</span><span class="w"> </span><span class="kn">import</span> <span class="n">BenchmarkConfig</span><span class="p">,</span> <span class="n">DatasetConfig</span><span class="p">,</span> <span class="n">Task</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">..types</span><span class="w"> </span><span class="kn">import</span> <span class="n">ExtractLabelsFunction</span>
-
-<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">&quot;euroeval&quot;</span><span class="p">)</span>
 
 
 <span class="k">class</span><span class="w"> </span><span class="nc">HuggingFaceEncoderModel</span><span class="p">(</span><span class="n">BenchmarkModule</span><span class="p">):</span><div class="mkapi-source-link" id="euroeval.benchmark_modules.hf.HuggingFaceEncoderModel"><a href="../../../../api/euroeval/benchmark_modules/hf/#euroeval.benchmark_modules.hf.HuggingFaceEncoderModel" title="Go to docs">[docs]</a></div>
@@ -2496,12 +2505,13 @@
         <span class="k">elif</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_model</span><span class="p">,</span> <span class="s2">&quot;parameters&quot;</span><span class="p">):</span>
             <span class="n">num_params</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">numel</span><span class="p">()</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_model</span><span class="o">.</span><span class="n">parameters</span><span class="p">())</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+            <span class="n">log</span><span class="p">(</span>
                 <span class="s2">&quot;The number of parameters could not be determined for the model, since &quot;</span>
                 <span class="s2">&quot;the model is not stored in the safetensors format. If this is your &quot;</span>
                 <span class="s2">&quot;own model, then you can use this Hugging Face Space to convert your &quot;</span>
                 <span class="s2">&quot;model to the safetensors format: &quot;</span>
-                <span class="s2">&quot;https://huggingface.co/spaces/safetensors/convert.&quot;</span>
+                <span class="s2">&quot;https://huggingface.co/spaces/safetensors/convert.&quot;</span><span class="p">,</span>
+                <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">,</span>
             <span class="p">)</span>
             <span class="n">num_params</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
         <span class="k">return</span> <span class="n">num_params</span>
@@ -2957,17 +2967,21 @@
             <span class="k">break</span>
         <span class="k">except</span> <span class="p">(</span><span class="ne">KeyError</span><span class="p">,</span> <span class="ne">RuntimeError</span><span class="p">)</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="n">model_kwargs</span><span class="p">[</span><span class="s2">&quot;ignore_mismatched_sizes&quot;</span><span class="p">]:</span>
-                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+                <span class="n">log</span><span class="p">(</span>
                     <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2"> occurred during the loading &quot;</span>
                     <span class="sa">f</span><span class="s2">&quot;of the </span><span class="si">{</span><span class="n">model_id</span><span class="si">!r}</span><span class="s2"> model. Retrying with &quot;</span>
-                    <span class="s2">&quot;`ignore_mismatched_sizes` set to True.&quot;</span>
+                    <span class="s2">&quot;`ignore_mismatched_sizes` set to True.&quot;</span><span class="p">,</span>
+                    <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
                 <span class="p">)</span>
                 <span class="n">model_kwargs</span><span class="p">[</span><span class="s2">&quot;ignore_mismatched_sizes&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
                 <span class="k">continue</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="n">InvalidModel</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">))</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
         <span class="k">except</span> <span class="p">(</span><span class="ne">TimeoutError</span><span class="p">,</span> <span class="n">RequestError</span><span class="p">):</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Couldn&#39;t load the model </span><span class="si">{</span><span class="n">model_id</span><span class="si">!r}</span><span class="s2">. Retrying.&quot;</span><span class="p">)</span>
+            <span class="n">log</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Couldn&#39;t load the model </span><span class="si">{</span><span class="n">model_id</span><span class="si">!r}</span><span class="s2">. Retrying.&quot;</span><span class="p">,</span>
+                <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">,</span>
+            <span class="p">)</span>
             <span class="n">sleep</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span>
             <span class="k">continue</span>
         <span class="k">except</span> <span class="p">(</span><span class="ne">OSError</span><span class="p">,</span> <span class="ne">ValueError</span><span class="p">)</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
@@ -3044,7 +3058,7 @@
     <span class="c1"># model info object.</span>
     <span class="n">model_info</span><span class="p">:</span> <span class="n">HfApiModelInfo</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="k">if</span> <span class="n">Path</span><span class="p">(</span><span class="n">model_id</span><span class="p">)</span><span class="o">.</span><span class="n">is_dir</span><span class="p">():</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Checking for local model in </span><span class="si">{</span><span class="n">model_id</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">)</span>
+        <span class="n">log</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Checking for local model in </span><span class="si">{</span><span class="n">model_id</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">)</span>
         <span class="k">if</span> <span class="nb">all</span><span class="p">(</span>
             <span class="p">(</span><span class="n">Path</span><span class="p">(</span><span class="n">model_id</span><span class="p">)</span> <span class="o">/</span> <span class="n">required_file</span><span class="p">)</span><span class="o">.</span><span class="n">exists</span><span class="p">()</span>
             <span class="k">for</span> <span class="n">required_file</span> <span class="ow">in</span> <span class="n">LOCAL_MODELS_REQUIRED_FILES</span>
@@ -3070,17 +3084,19 @@
             <span class="k">except</span> <span class="p">(</span><span class="n">GatedRepoError</span><span class="p">,</span> <span class="n">LocalTokenNotFoundError</span><span class="p">)</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
                 <span class="k">try</span><span class="p">:</span>
                     <span class="n">hf_whoami</span><span class="p">(</span><span class="n">token</span><span class="o">=</span><span class="n">token</span><span class="p">)</span>
-                    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+                    <span class="n">log</span><span class="p">(</span>
                         <span class="sa">f</span><span class="s2">&quot;Could not access the model </span><span class="si">{</span><span class="n">model_id</span><span class="si">}</span><span class="s2"> with the revision &quot;</span>
-                        <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">revision</span><span class="si">}</span><span class="s2">. The error was </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">!r}</span><span class="s2">.&quot;</span>
+                        <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">revision</span><span class="si">}</span><span class="s2">. The error was </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">!r}</span><span class="s2">.&quot;</span><span class="p">,</span>
+                        <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
                     <span class="p">)</span>
                     <span class="k">return</span> <span class="kc">None</span>
                 <span class="k">except</span> <span class="n">LocalTokenNotFoundError</span><span class="p">:</span>
-                    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+                    <span class="n">log</span><span class="p">(</span>
                         <span class="sa">f</span><span class="s2">&quot;Could not access the model </span><span class="si">{</span><span class="n">model_id</span><span class="si">}</span><span class="s2"> with the revision &quot;</span>
                         <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">revision</span><span class="si">}</span><span class="s2">. The error was </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">!r}</span><span class="s2">. Please set the &quot;</span>
                         <span class="s2">&quot;`HUGGINGFACE_API_KEY` environment variable or use the &quot;</span>
-                        <span class="s2">&quot;`--api-key` argument.&quot;</span>
+                        <span class="s2">&quot;`--api-key` argument.&quot;</span><span class="p">,</span>
+                        <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
                     <span class="p">)</span>
                     <span class="k">return</span> <span class="kc">None</span>
             <span class="k">except</span> <span class="p">(</span><span class="n">RepositoryNotFoundError</span><span class="p">,</span> <span class="n">HFValidationError</span><span class="p">):</span>
@@ -3096,16 +3112,18 @@
                 <span class="k">if</span> <span class="n">internet_connection_available</span><span class="p">():</span>
                     <span class="n">errors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
                     <span class="k">continue</span>
-                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+                <span class="n">log</span><span class="p">(</span>
                     <span class="s2">&quot;Could not access the Hugging Face Hub. Please check your internet &quot;</span>
-                    <span class="s2">&quot;connection.&quot;</span>
+                    <span class="s2">&quot;connection.&quot;</span><span class="p">,</span>
+                    <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
                 <span class="p">)</span>
                 <span class="k">return</span> <span class="kc">None</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+            <span class="n">log</span><span class="p">(</span>
                 <span class="sa">f</span><span class="s2">&quot;Could not access model info for the model </span><span class="si">{</span><span class="n">model_id</span><span class="si">!r}</span><span class="s2"> from the &quot;</span>
                 <span class="sa">f</span><span class="s2">&quot;Hugging Face Hub, after </span><span class="si">{</span><span class="n">num_attempts</span><span class="si">}</span><span class="s2"> attempts. The errors &quot;</span>
-                <span class="sa">f</span><span class="s2">&quot;encountered were </span><span class="si">{</span><span class="n">errors</span><span class="si">!r}</span><span class="s2">.&quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;encountered were </span><span class="si">{</span><span class="n">errors</span><span class="si">!r}</span><span class="s2">.&quot;</span><span class="p">,</span>
+                <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
             <span class="p">)</span>
             <span class="k">return</span> <span class="kc">None</span>
 
@@ -3171,7 +3189,7 @@
                     <span class="s2">&quot;Skipping since the `requires_safetensors` argument is set &quot;</span>
                     <span class="s2">&quot;to `True`.&quot;</span>
                 <span class="p">)</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+            <span class="n">log</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">)</span>
             <span class="k">return</span> <span class="kc">None</span>
 
         <span class="c1"># Also check base model if we are evaluating an adapter</span>
@@ -3251,7 +3269,10 @@
                 <span class="sa">f</span><span class="s2">&quot;Could not load tokeniser for model </span><span class="si">{</span><span class="n">model_id</span><span class="si">!r}</span><span class="s2">.&quot;</span>
             <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
         <span class="k">except</span> <span class="p">(</span><span class="ne">TimeoutError</span><span class="p">,</span> <span class="n">RequestError</span><span class="p">):</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Couldn&#39;t load tokeniser for </span><span class="si">{</span><span class="n">model_id</span><span class="si">!r}</span><span class="s2">. Retrying.&quot;</span><span class="p">)</span>
+            <span class="n">log</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Couldn&#39;t load tokeniser for </span><span class="si">{</span><span class="n">model_id</span><span class="si">!r}</span><span class="s2">. Retrying.&quot;</span><span class="p">,</span>
+                <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">,</span>
+            <span class="p">)</span>
             <span class="n">sleep</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span>
             <span class="k">continue</span>
     <span class="k">else</span><span class="p">:</span>
@@ -3365,7 +3386,10 @@
                 <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">e</span><span class="si">!r}</span><span class="s2">. Skipping&quot;</span>
             <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
         <span class="k">except</span> <span class="p">(</span><span class="ne">TimeoutError</span><span class="p">,</span> <span class="n">RequestError</span><span class="p">):</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Couldn&#39;t load model config for </span><span class="si">{</span><span class="n">model_id</span><span class="si">!r}</span><span class="s2">. Retrying.&quot;</span><span class="p">)</span>
+            <span class="n">log</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Couldn&#39;t load model config for </span><span class="si">{</span><span class="n">model_id</span><span class="si">!r}</span><span class="s2">. Retrying.&quot;</span><span class="p">,</span>
+                <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">,</span>
+            <span class="p">)</span>
             <span class="n">sleep</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span>
             <span class="k">continue</span>
         <span class="k">except</span> <span class="ne">ValueError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>

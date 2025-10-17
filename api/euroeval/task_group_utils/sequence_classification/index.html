@@ -873,6 +873,8 @@
       
         
       
+        
+      
     
     
     
@@ -1781,6 +1783,29 @@
   
   
     <li class="md-nav__item">
+      <a href="../../logging_utils/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    euroeval.logging_utils
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../model_cache/" class="md-nav__link">
         
   
@@ -2180,7 +2205,7 @@ values.</p>
 <i class="fa-regular fa-square-minus"></i>
 </span>
 </span>
-<span class="mkapi-object-name"><a href="./#euroeval.task_group_utils.sequence_classification.extract_labels_from_generation" title="euroeval.task_group_utils.sequence_classification.extract_labels_from_generation">extract_labels_from_generation</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">input_batch</span><span class="mkapi-colon">: </span><span class="mkapi-ann">dict[str, list]</span><span class="mkapi-comma">, </span><span class="mkapi-arg">model_output</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><a href="../../data_models/#euroeval.data_models.GenerativeModelOutput" title="euroeval.data_models.GenerativeModelOutput">GenerativeModelOutput</a></span><span class="mkapi-comma">, </span><span class="mkapi-arg">dataset_config</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><a href="../../data_models/#euroeval.data_models.DatasetConfig" title="euroeval.data_models.DatasetConfig">DatasetConfig</a></span><span class="mkapi-comma">, </span><span class="mkapi-arg">first_label_token_mapping</span><span class="mkapi-colon">: </span><span class="mkapi-ann">dict[str, str] | bool</span><span class="mkapi-paren">)</span><span class="mkapi-arrow"> → </span><span class="mkapi-return">list[str]</span></span>
+<span class="mkapi-object-name"><a href="./#euroeval.task_group_utils.sequence_classification.extract_labels_from_generation" title="euroeval.task_group_utils.sequence_classification.extract_labels_from_generation">extract_labels_from_generation</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">input_batch</span><span class="mkapi-colon">: </span><span class="mkapi-ann">dict[str, list]</span><span class="mkapi-comma">, </span><span class="mkapi-arg">model_output</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><a href="../../data_models/#euroeval.data_models.GenerativeModelOutput" title="euroeval.data_models.GenerativeModelOutput">GenerativeModelOutput</a></span><span class="mkapi-comma">, </span><span class="mkapi-arg">dataset_config</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><a href="../../data_models/#euroeval.data_models.DatasetConfig" title="euroeval.data_models.DatasetConfig">DatasetConfig</a></span><span class="mkapi-comma">, </span><span class="mkapi-arg">model_config</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><a href="../../data_models/#euroeval.data_models.ModelConfig" title="euroeval.data_models.ModelConfig">ModelConfig</a></span><span class="mkapi-comma">, </span><span class="mkapi-arg">first_label_token_mapping</span><span class="mkapi-colon">: </span><span class="mkapi-ann">dict[str, str] | bool</span><span class="mkapi-paren">)</span><span class="mkapi-arrow"> → </span><span class="mkapi-return">list[str]</span></span>
 </p>
 <div class="mkapi-document">
 <p>Extract the predicted labels from the generated output.</p>
@@ -2209,6 +2234,11 @@ The raw generated output of the model.</p>
 <p><span class="mkapi-item-name">dataset_config</span> : 
 <span class="mkapi-item-type"><a href="../../data_models/#euroeval.data_models.DatasetConfig" title="euroeval.data_models.DatasetConfig">DatasetConfig</a></span> <span class="mkapi-dash">&mdash;</span>
 The configuration of the dataset.</p>
+</li>
+<li>
+<p><span class="mkapi-item-name">model_config</span> : 
+<span class="mkapi-item-type"><a href="../../data_models/#euroeval.data_models.ModelConfig" title="euroeval.data_models.ModelConfig">ModelConfig</a></span> <span class="mkapi-dash">&mdash;</span>
+The configuration of the model.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">first_label_token_mapping</span> : 

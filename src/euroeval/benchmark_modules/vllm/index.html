@@ -959,15 +959,6 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#euroeval.benchmark_modules.vllm.get_pbar_without_leave" class="md-nav__link">
-    <span class="md-ellipsis">
-      get_pbar_without_leave
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
   <a href="#euroeval.benchmark_modules.vllm.get_vllm_tokenisation_params" class="md-nav__link">
     <span class="md-ellipsis">
       get_vllm_tokenisation_params
@@ -2266,9 +2257,7 @@
 <span class="normal">1261</span>
 <span class="normal">1262</span>
 <span class="normal">1263</span>
-<span class="normal">1264</span>
-<span class="normal">1265</span>
-<span class="normal">1266</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Generative models using the vLLM inference framework.&quot;&quot;&quot;</span>
+<span class="normal">1264</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Generative models using the vLLM inference framework.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">c</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">contextlib</span>
@@ -2284,7 +2273,6 @@
 <span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">huggingface_hub</span><span class="w"> </span><span class="kn">import</span> <span class="n">snapshot_download</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">pydantic</span><span class="w"> </span><span class="kn">import</span> <span class="n">conlist</span><span class="p">,</span> <span class="n">create_model</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">tqdm.auto</span><span class="w"> </span><span class="kn">import</span> <span class="n">tqdm</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">transformers.models.auto.configuration_auto</span><span class="w"> </span><span class="kn">import</span> <span class="n">AutoConfig</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">transformers.models.auto.tokenization_auto</span><span class="w"> </span><span class="kn">import</span> <span class="n">AutoTokenizer</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">transformers.tokenization_mistral_common</span><span class="w"> </span><span class="kn">import</span> <span class="n">MistralCommonTokenizer</span>
@@ -2320,6 +2308,7 @@
     <span class="n">raise_if_wrong_params</span><span class="p">,</span>
 <span class="p">)</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..languages</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_all_languages</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..logging_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_pbar</span><span class="p">,</span> <span class="n">log</span><span class="p">,</span> <span class="n">log_once</span><span class="p">,</span> <span class="n">no_terminal_output</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..task_group_utils</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">question_answering</span><span class="p">,</span>
     <span class="n">sequence_classification</span><span class="p">,</span>
@@ -2343,7 +2332,6 @@
     <span class="n">get_hf_token</span><span class="p">,</span>
     <span class="n">get_min_cuda_compute_capability</span><span class="p">,</span>
     <span class="n">internet_connection_available</span><span class="p">,</span>
-    <span class="n">log_once</span><span class="p">,</span>
     <span class="n">resolve_model_path</span><span class="p">,</span>
     <span class="n">split_model_id</span><span class="p">,</span>
 <span class="p">)</span>
@@ -2356,7 +2344,7 @@
         <span class="n">destroy_model_parallel</span><span class="p">,</span>
     <span class="p">)</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">vllm.lora.request</span><span class="w"> </span><span class="kn">import</span> <span class="n">LoRARequest</span>
-    <span class="kn">from</span><span class="w"> </span><span class="nn">vllm.sampling_params</span><span class="w"> </span><span class="kn">import</span> <span class="n">GuidedDecodingParams</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">vllm.sampling_params</span><span class="w"> </span><span class="kn">import</span> <span class="n">StructuredOutputsParams</span>
 
 <span class="k">if</span> <span class="n">t</span><span class="o">.</span><span class="n">TYPE_CHECKING</span><span class="p">:</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">datasets</span><span class="w"> </span><span class="kn">import</span> <span class="n">DatasetDict</span>
@@ -2364,8 +2352,6 @@
     <span class="kn">from</span><span class="w"> </span><span class="nn">transformers.trainer</span><span class="w"> </span><span class="kn">import</span> <span class="n">Trainer</span>
 
     <span class="kn">from</span><span class="w"> </span><span class="nn">..data_models</span><span class="w"> </span><span class="kn">import</span> <span class="n">BenchmarkConfig</span><span class="p">,</span> <span class="n">DatasetConfig</span><span class="p">,</span> <span class="n">Task</span>
-
-<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">&quot;euroeval&quot;</span><span class="p">)</span>
 
 
 <span class="k">class</span><span class="w"> </span><span class="nc">VLLMModel</span><span class="p">(</span><span class="n">HuggingFaceEncoderModel</span><span class="p">):</span><div class="mkapi-source-link" id="euroeval.benchmark_modules.vllm.VLLMModel"><a href="../../../../api/euroeval/benchmark_modules/vllm/#euroeval.benchmark_modules.vllm.VLLMModel" title="Go to docs">[docs]</a></div>
@@ -2402,9 +2388,10 @@
             <span class="n">model_config</span><span class="o">=</span><span class="n">model_config</span><span class="p">,</span> <span class="n">allowed_params</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">allowed_params</span>
         <span class="p">)</span>
 
-        <span class="n">model</span><span class="p">,</span> <span class="n">tokeniser</span> <span class="o">=</span> <span class="n">load_model_and_tokeniser</span><span class="p">(</span>
-            <span class="n">model_config</span><span class="o">=</span><span class="n">model_config</span><span class="p">,</span> <span class="n">benchmark_config</span><span class="o">=</span><span class="n">benchmark_config</span>
-        <span class="p">)</span>
+        <span class="k">with</span> <span class="n">no_terminal_output</span><span class="p">(</span><span class="n">disable</span><span class="o">=</span><span class="n">benchmark_config</span><span class="o">.</span><span class="n">verbose</span><span class="p">):</span>
+            <span class="n">model</span><span class="p">,</span> <span class="n">tokeniser</span> <span class="o">=</span> <span class="n">load_model_and_tokeniser</span><span class="p">(</span>
+                <span class="n">model_config</span><span class="o">=</span><span class="n">model_config</span><span class="p">,</span> <span class="n">benchmark_config</span><span class="o">=</span><span class="n">benchmark_config</span>
+            <span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_model</span><span class="p">:</span> <span class="s2">&quot;LLM&quot;</span> <span class="o">=</span> <span class="n">model</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_tokeniser</span><span class="p">:</span> <span class="s2">&quot;PreTrainedTokenizer&quot;</span> <span class="o">=</span> <span class="n">tokeniser</span>
 
@@ -2515,6 +2502,7 @@
                 <span class="k">return</span> <span class="n">partial</span><span class="p">(</span>
                     <span class="n">sequence_classification</span><span class="o">.</span><span class="n">extract_labels_from_generation</span><span class="p">,</span>
                     <span class="n">dataset_config</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dataset_config</span><span class="p">,</span>
+                    <span class="n">model_config</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="p">,</span>
                     <span class="n">first_label_token_mapping</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">buffer</span><span class="p">[</span><span class="s2">&quot;first_label_token_mapping&quot;</span><span class="p">],</span>
                 <span class="p">)</span>
             <span class="k">case</span> <span class="n">TaskGroup</span><span class="o">.</span><span class="n">TEXT_TO_TEXT</span><span class="p">:</span>
@@ -2664,10 +2652,11 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">dataset_config</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">uses_structured_output</span>
             <span class="ow">or</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dataset_config</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">uses_logprobs</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">dataset_config</span><span class="o">.</span><span class="n">labels</span><span class="p">)</span>
         <span class="p">)</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">generative_type</span> <span class="o">==</span> <span class="n">GenerativeType</span><span class="o">.</span><span class="n">REASONING</span><span class="p">:</span>
-            <span class="n">guided_decoding</span> <span class="o">=</span> <span class="kc">None</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+            <span class="n">structured_outputs</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="n">log</span><span class="p">(</span>
                 <span class="s2">&quot;The dataset uses structured output, but we are not using it as the &quot;</span>
-                <span class="s2">&quot;model is a reasoning model.&quot;</span>
+                <span class="s2">&quot;model is a reasoning model.&quot;</span><span class="p">,</span>
+                <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
             <span class="p">)</span>
         <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">dataset_config</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">uses_structured_output</span><span class="p">:</span>
             <span class="n">ner_tag_names</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dataset_config</span><span class="o">.</span><span class="n">prompt_label_mapping</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
@@ -2682,9 +2671,11 @@
                 <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">structured_generation_schema</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
                 <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
             <span class="p">)</span>
-            <span class="n">guided_decoding</span> <span class="o">=</span> <span class="n">GuidedDecodingParams</span><span class="p">(</span><span class="n">json</span><span class="o">=</span><span class="n">structured_generation_schema</span><span class="p">)</span>
+            <span class="n">structured_outputs</span> <span class="o">=</span> <span class="n">StructuredOutputsParams</span><span class="p">(</span>
+                <span class="n">json</span><span class="o">=</span><span class="n">structured_generation_schema</span>
+            <span class="p">)</span>
         <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">dataset_config</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">uses_logprobs</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">dataset_config</span><span class="o">.</span><span class="n">labels</span><span class="p">:</span>
-            <span class="n">guided_decoding</span> <span class="o">=</span> <span class="n">GuidedDecodingParams</span><span class="p">(</span>
+            <span class="n">structured_outputs</span> <span class="o">=</span> <span class="n">StructuredOutputsParams</span><span class="p">(</span>
                 <span class="n">choice</span><span class="o">=</span><span class="p">[</span>
                     <span class="bp">self</span><span class="o">.</span><span class="n">dataset_config</span><span class="o">.</span><span class="n">prompt_label_mapping</span><span class="p">[</span><span class="n">label</span><span class="p">]</span>
                     <span class="k">for</span> <span class="n">label</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">dataset_config</span><span class="o">.</span><span class="n">labels</span>
@@ -2692,11 +2683,11 @@
             <span class="p">)</span>
             <span class="n">log_once</span><span class="p">(</span>
                 <span class="s2">&quot;Using structured generation with the choices: &quot;</span>
-                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">guided_decoding</span><span class="o">.</span><span class="n">choice</span><span class="si">!r}</span><span class="s2">.&quot;</span><span class="p">,</span>
+                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">structured_outputs</span><span class="o">.</span><span class="n">choice</span><span class="si">!r}</span><span class="s2">.&quot;</span><span class="p">,</span>
                 <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
             <span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="n">guided_decoding</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="n">structured_outputs</span> <span class="o">=</span> <span class="kc">None</span>
             <span class="n">log_once</span><span class="p">(</span>
                 <span class="s2">&quot;Not using structured generation as the dataset does not require it.&quot;</span><span class="p">,</span>
                 <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
@@ -2715,14 +2706,14 @@
             <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
             <span class="n">temperature</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>
             <span class="n">stop</span><span class="o">=</span><span class="p">[</span><span class="n">stop_token</span> <span class="k">for</span> <span class="n">stop_token</span> <span class="ow">in</span> <span class="n">stop_tokens</span> <span class="k">if</span> <span class="n">stop_token</span><span class="p">],</span>
-            <span class="n">guided_decoding</span><span class="o">=</span><span class="n">guided_decoding</span><span class="p">,</span>
+            <span class="n">structured_outputs</span><span class="o">=</span><span class="n">structured_outputs</span><span class="p">,</span>
         <span class="p">)</span>
 
         <span class="c1"># If any of the prompts are empty then we need to replace them with a BOS token</span>
         <span class="c1"># so that the vLLM model can generate from them</span>
         <span class="n">prompts</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">inputs</span><span class="p">[</span><span class="s2">&quot;text&quot;</span><span class="p">]</span>
         <span class="k">if</span> <span class="nb">any</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">prompt</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span> <span class="k">for</span> <span class="n">prompt</span> <span class="ow">in</span> <span class="n">prompts</span><span class="p">):</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Found empty prompts, replacing with BOS token.&quot;</span><span class="p">)</span>
+            <span class="n">log</span><span class="p">(</span><span class="s2">&quot;Found empty prompts, replacing with BOS token.&quot;</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">)</span>
             <span class="n">prompts</span> <span class="o">=</span> <span class="p">[</span>
                 <span class="n">prompt</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">prompt</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_tokeniser</span><span class="o">.</span><span class="n">bos_token</span><span class="p">)</span>
                 <span class="k">for</span> <span class="n">prompt</span> <span class="ow">in</span> <span class="n">prompts</span>
@@ -2750,13 +2741,14 @@
                 <span class="n">raw_outputs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_model</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span>
                     <span class="n">prompts</span><span class="o">=</span><span class="n">prompts</span><span class="p">,</span>
                     <span class="n">sampling_params</span><span class="o">=</span><span class="n">sampling_params</span><span class="p">,</span>
-                    <span class="n">use_tqdm</span><span class="o">=</span><span class="kc">False</span> <span class="k">if</span> <span class="n">input_is_a_test</span> <span class="k">else</span> <span class="n">get_pbar_without_leave</span><span class="p">,</span>
+                    <span class="n">use_tqdm</span><span class="o">=</span><span class="kc">False</span> <span class="k">if</span> <span class="n">input_is_a_test</span> <span class="k">else</span> <span class="n">get_pbar</span><span class="p">,</span>
                     <span class="n">lora_request</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">buffer</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;lora_request&quot;</span><span class="p">),</span>
                 <span class="p">)</span>
                 <span class="k">break</span>
             <span class="k">except</span> <span class="ne">TypeError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
-                    <span class="sa">f</span><span class="s2">&quot;Encountered error during vLLM generation: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">. Retrying...&quot;</span>
+                <span class="n">log</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;Encountered error during vLLM generation: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">. Retrying...&quot;</span><span class="p">,</span>
+                    <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
                 <span class="p">)</span>
                 <span class="n">sleep</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
             <span class="k">except</span> <span class="ne">ValueError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
@@ -2768,10 +2760,11 @@
                     <span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">pattern</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">),</span> <span class="n">flags</span><span class="o">=</span><span class="n">re</span><span class="o">.</span><span class="n">IGNORECASE</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
                     <span class="k">for</span> <span class="n">pattern</span> <span class="ow">in</span> <span class="n">truncate_error_messages</span>
                 <span class="p">):</span>
-                    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
-                        <span class="s2">&quot;Prompts are too long, so truncating them and trying again...&quot;</span>
+                    <span class="n">log</span><span class="p">(</span>
+                        <span class="s2">&quot;Prompts are too long, so truncating them and trying again...&quot;</span><span class="p">,</span>
+                        <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">,</span>
                     <span class="p">)</span>
-                    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;The error message was: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                    <span class="n">log</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;The error message was: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">)</span>
 
                     <span class="c1"># If we have already tried truncating the prompts a few times, then</span>
                     <span class="c1"># we truncate a bit more aggressively</span>
@@ -2814,15 +2807,16 @@
                     <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">num_extra_outputs</span><span class="si">!r}</span><span class="s2"> extra outputs.&quot;</span>
                 <span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
-                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+                <span class="n">log</span><span class="p">(</span>
                     <span class="sa">f</span><span class="s2">&quot;Filtered out </span><span class="si">{</span><span class="n">num_extra_outputs</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2"> extra outputs from the model, &quot;</span>
                     <span class="s2">&quot;which occured as we interupted the generation when we truncated &quot;</span>
-                    <span class="s2">&quot;the prompts.&quot;</span>
+                    <span class="s2">&quot;the prompts.&quot;</span><span class="p">,</span>
+                    <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
                 <span class="p">)</span>
 
         <span class="c1"># Parse the raw model outputs</span>
         <span class="n">completion_ids</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[</span>
-            <span class="n">output</span><span class="o">.</span><span class="n">outputs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">token_ids</span> <span class="k">for</span> <span class="n">output</span> <span class="ow">in</span> <span class="n">raw_outputs</span>
+            <span class="nb">list</span><span class="p">(</span><span class="n">output</span><span class="o">.</span><span class="n">outputs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">token_ids</span><span class="p">)</span> <span class="k">for</span> <span class="n">output</span> <span class="ow">in</span> <span class="n">raw_outputs</span>
         <span class="p">]</span>
         <span class="n">completions</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tokeniser</span><span class="o">.</span><span class="n">batch_decode</span><span class="p">(</span>
             <span class="n">sequences</span><span class="o">=</span><span class="p">[</span>
@@ -2833,30 +2827,29 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">end_of_reasoning_token</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
             <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">generative_type</span> <span class="o">==</span> <span class="n">GenerativeType</span><span class="o">.</span><span class="n">REASONING</span>
         <span class="p">):</span>
+            <span class="n">num_samples_without_eor_token</span> <span class="o">=</span> <span class="mi">0</span>
             <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">completions</span><span class="p">)):</span>
                 <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">end_of_reasoning_token</span> <span class="ow">in</span> <span class="n">completions</span><span class="p">[</span><span class="n">idx</span><span class="p">]:</span>
                     <span class="n">completions</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">=</span> <span class="n">completions</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span>
                         <span class="bp">self</span><span class="o">.</span><span class="n">end_of_reasoning_token</span>
                     <span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
-                <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">benchmark_config</span><span class="o">.</span><span class="n">verbose</span><span class="p">:</span>
-                    <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
-                        <span class="sa">f</span><span class="s2">&quot;The model </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span><span class="si">!r}</span><span class="s2"> is a reasoning &quot;</span>
-                        <span class="s2">&quot;model, but the generated output does not contain the end of &quot;</span>
-                        <span class="sa">f</span><span class="s2">&quot;reasoning token (</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">end_of_reasoning_token</span><span class="si">!r}</span><span class="s2">). Using &quot;</span>
-                        <span class="s2">&quot;an empty string as the prediction instead.&quot;</span>
-                    <span class="p">)</span>
-                    <span class="n">completions</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
                 <span class="k">else</span><span class="p">:</span>
-                    <span class="n">log_once</span><span class="p">(</span>
-                        <span class="sa">f</span><span class="s2">&quot;The model </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span><span class="si">!r}</span><span class="s2"> is a reasoning &quot;</span>
-                        <span class="s2">&quot;model, but the generated output does not contain the end of &quot;</span>
-                        <span class="sa">f</span><span class="s2">&quot;reasoning token (</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">end_of_reasoning_token</span><span class="si">!r}</span><span class="s2">). Using &quot;</span>
-                        <span class="s2">&quot;an empty string as the prediction instead. Only showing &quot;</span>
-                        <span class="s2">&quot;this warning once - see all occurrences if you run with the &quot;</span>
-                        <span class="s2">&quot;`verbose` flag.&quot;</span><span class="p">,</span>
-                        <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">,</span>
-                    <span class="p">)</span>
+                    <span class="n">num_samples_without_eor_token</span> <span class="o">+=</span> <span class="mi">1</span>
                     <span class="n">completions</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+            <span class="k">if</span> <span class="n">num_samples_without_eor_token</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">log_once</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;The model </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span><span class="si">!r}</span><span class="s2"> is a reasoning &quot;</span>
+                    <span class="s2">&quot;model, but the generated output did not contain the end of &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;reasoning token (</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">end_of_reasoning_token</span><span class="si">!r}</span><span class="s2">) in &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">num_samples_without_eor_token</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">completions</span><span class="p">)</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2"> of &quot;</span>
+                    <span class="s2">&quot;the samples. Using an empty string for all these samples &quot;</span>
+                    <span class="s2">&quot;instead.&quot;</span><span class="p">,</span>
+                    <span class="n">level</span><span class="o">=</span><span class="p">(</span>
+                        <span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span>
+                        <span class="k">if</span> <span class="n">num_samples_without_eor_token</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">completions</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mf">0.5</span>
+                        <span class="k">else</span> <span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span>
+                    <span class="p">),</span>
+                <span class="p">)</span>
         <span class="n">stop_token_pattern</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span>
             <span class="s2">&quot;|&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">re</span><span class="o">.</span><span class="n">escape</span><span class="p">(</span><span class="n">stop_token</span><span class="p">)</span> <span class="k">for</span> <span class="n">stop_token</span> <span class="ow">in</span> <span class="n">stop_tokens</span><span class="p">)</span>
         <span class="p">)</span>
@@ -2877,10 +2870,10 @@
             <span class="n">scores</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]]]]</span> <span class="o">=</span> <span class="p">[</span>
                 <span class="p">[</span>
                     <span class="p">[</span>
-                        <span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">decoded_token</span><span class="p">,</span> <span class="n">obj</span><span class="o">.</span><span class="n">logprob</span><span class="p">)</span>
+                        <span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">decoded_token</span> <span class="ow">or</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">obj</span><span class="o">.</span><span class="n">logprob</span><span class="p">)</span>
                         <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="n">token_logprobs_dict</span><span class="o">.</span><span class="n">values</span><span class="p">()</span>
                     <span class="p">]</span>
-                    <span class="k">for</span> <span class="n">token_logprobs_dict</span> <span class="ow">in</span> <span class="n">raw_output</span><span class="o">.</span><span class="n">outputs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">logprobs</span>
+                    <span class="k">for</span> <span class="n">token_logprobs_dict</span> <span class="ow">in</span> <span class="n">raw_output</span><span class="o">.</span><span class="n">outputs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">logprobs</span> <span class="ow">or</span> <span class="nb">list</span><span class="p">()</span>
                 <span class="p">]</span>
                 <span class="k">for</span> <span class="n">raw_output</span> <span class="ow">in</span> <span class="n">raw_outputs</span>
             <span class="p">]</span>
@@ -3059,32 +3052,36 @@
     <span class="c1"># Choose bf16 over fp16 if the model is a fp32 model and the GPU supports it</span>
     <span class="k">if</span> <span class="n">hf_model_config</span><span class="o">.</span><span class="n">dtype</span> <span class="o">==</span> <span class="n">torch</span><span class="o">.</span><span class="n">float32</span><span class="p">:</span>
         <span class="k">if</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">is_bf16_supported</span><span class="p">():</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+            <span class="n">log</span><span class="p">(</span>
                 <span class="s2">&quot;You are loading a model with dtype FP32, which we will convert to &quot;</span>
                 <span class="s2">&quot;BF16 as FP32 is not supported by vLLM and BF16 is supported by your &quot;</span>
-                <span class="s2">&quot;GPU.&quot;</span>
+                <span class="s2">&quot;GPU.&quot;</span><span class="p">,</span>
+                <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">,</span>
             <span class="p">)</span>
             <span class="n">dtype</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">bfloat16</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+            <span class="n">log</span><span class="p">(</span>
                 <span class="s2">&quot;You are loading a model with dtype FP32, which we will convert to &quot;</span>
                 <span class="s2">&quot;FP16 as FP32 is not supported by vLLM and BF16 is not supported by &quot;</span>
-                <span class="s2">&quot;your GPU.&quot;</span>
+                <span class="s2">&quot;your GPU.&quot;</span><span class="p">,</span>
+                <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">,</span>
             <span class="p">)</span>
             <span class="n">dtype</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">float16</span>
 
     <span class="c1"># If the model is a quantized model, we might need to change the dtype</span>
     <span class="k">if</span> <span class="n">quantization</span> <span class="o">==</span> <span class="s2">&quot;mxfp4&quot;</span> <span class="ow">and</span> <span class="n">hf_model_config</span><span class="o">.</span><span class="n">dtype</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">dtype</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">bfloat16</span> <span class="k">if</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">is_bf16_supported</span><span class="p">()</span> <span class="k">else</span> <span class="n">torch</span><span class="o">.</span><span class="n">float16</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+        <span class="n">log</span><span class="p">(</span>
             <span class="s2">&quot;You are loading a quantized model where `dtype` has not been set. &quot;</span>
-            <span class="sa">f</span><span class="s2">&quot;Setting dtype to </span><span class="si">{</span><span class="n">dtype</span><span class="si">!r}</span><span class="s2">.&quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;Setting dtype to </span><span class="si">{</span><span class="n">dtype</span><span class="si">!r}</span><span class="s2">.&quot;</span><span class="p">,</span>
+            <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
         <span class="p">)</span>
     <span class="k">elif</span> <span class="n">quantization</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">hf_model_config</span><span class="o">.</span><span class="n">dtype</span> <span class="o">!=</span> <span class="n">torch</span><span class="o">.</span><span class="n">float16</span><span class="p">:</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+        <span class="n">log</span><span class="p">(</span>
             <span class="s2">&quot;You are loading a quantized model with dtype &quot;</span>
             <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">hf_model_config</span><span class="o">.</span><span class="n">dtype</span><span class="si">}</span><span class="s2">, which vLLM does not support. Setting &quot;</span>
-            <span class="s2">&quot;dtype to float16 instead.&quot;</span>
+            <span class="s2">&quot;dtype to float16 instead.&quot;</span><span class="p">,</span>
+            <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="n">dtype</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">float16</span>
 
@@ -3095,12 +3092,13 @@
 
         <span class="k">if</span> <span class="n">min_cuda_compute_capability</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">min_cuda_compute_capability</span> <span class="o">&lt;</span> <span class="n">required_capability</span><span class="p">:</span>
-                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+                <span class="n">log</span><span class="p">(</span>
                     <span class="sa">f</span><span class="s2">&quot;You are loading a model with dtype </span><span class="si">{</span><span class="n">hf_model_config</span><span class="o">.</span><span class="n">dtype</span><span class="si">}</span><span class="s2">, &quot;</span>
                     <span class="s2">&quot;which vLLM only supports for CUDA devices with CUDA compute &quot;</span>
                     <span class="sa">f</span><span class="s2">&quot;capability &gt;=</span><span class="si">{</span><span class="n">required_capability</span><span class="si">}</span><span class="s2">. You are using one or more &quot;</span>
                     <span class="sa">f</span><span class="s2">&quot;devices with compute capability </span><span class="si">{</span><span class="n">min_cuda_compute_capability</span><span class="si">}</span><span class="s2">. &quot;</span>
-                    <span class="s2">&quot;Setting dtype to float16 instead.&quot;</span>
+                    <span class="s2">&quot;Setting dtype to float16 instead.&quot;</span><span class="p">,</span>
+                    <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">,</span>
                 <span class="p">)</span>
                 <span class="n">dtype</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">float16</span>
 
@@ -3267,13 +3265,17 @@
                     <span class="sa">f</span><span class="s2">&quot;Could not load tokeniser for model </span><span class="si">{</span><span class="n">model_id</span><span class="si">!r}</span><span class="s2">. The error was &quot;</span>
                     <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">.&quot;</span>
                 <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+            <span class="n">log</span><span class="p">(</span>
                 <span class="sa">f</span><span class="s2">&quot;Could not load tokeniser for </span><span class="si">{</span><span class="n">model_id</span><span class="si">!r}</span><span class="s2">. Falling back to &quot;</span>
-                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">adapter_base_model_id</span><span class="si">!r}</span><span class="s2">.&quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">adapter_base_model_id</span><span class="si">!r}</span><span class="s2">.&quot;</span><span class="p">,</span>
+                <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
             <span class="p">)</span>
             <span class="n">model_id</span> <span class="o">=</span> <span class="n">adapter_base_model_id</span>
         <span class="k">except</span> <span class="p">(</span><span class="ne">TimeoutError</span><span class="p">,</span> <span class="n">RequestError</span><span class="p">):</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Couldn&#39;t load tokeniser for </span><span class="si">{</span><span class="n">model_id</span><span class="si">!r}</span><span class="s2">. Retrying.&quot;</span><span class="p">)</span>
+            <span class="n">log</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Couldn&#39;t load tokeniser for </span><span class="si">{</span><span class="n">model_id</span><span class="si">!r}</span><span class="s2">. Retrying.&quot;</span><span class="p">,</span>
+                <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">,</span>
+            <span class="p">)</span>
             <span class="n">sleep</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span>
             <span class="k">continue</span>
         <span class="k">except</span> <span class="p">(</span><span class="ne">KeyError</span><span class="p">,</span> <span class="ne">ValueError</span><span class="p">)</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
@@ -3472,30 +3474,15 @@
         <span class="k">if</span> <span class="n">stop_token</span> <span class="ow">in</span> <span class="n">prompt</span> <span class="ow">or</span> <span class="n">stop_token</span> <span class="ow">in</span> <span class="n">completion</span>
     <span class="p">]</span>
     <span class="k">if</span> <span class="n">stop_tokens</span><span class="p">:</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+        <span class="n">log</span><span class="p">(</span>
             <span class="sa">f</span><span class="s2">&quot;Found the following custom stop tokens for model </span><span class="si">{</span><span class="n">model_id</span><span class="si">!r}</span><span class="s2">: &quot;</span>
-            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">stop_tokens</span><span class="si">}</span><span class="s2">.&quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">stop_tokens</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">,</span>
+            <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
         <span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Found no custom stop tokens for model </span><span class="si">{</span><span class="n">model_id</span><span class="si">!r}</span><span class="s2">.&quot;</span><span class="p">)</span>
+        <span class="n">log</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Found no custom stop tokens for model </span><span class="si">{</span><span class="n">model_id</span><span class="si">!r}</span><span class="s2">.&quot;</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">)</span>
 
     <span class="k">return</span> <span class="n">stop_tokens</span>
-
-
-<span class="k">def</span><span class="w"> </span><span class="nf">get_pbar_without_leave</span><span class="p">(</span><span class="o">*</span><span class="n">tqdm_args</span><span class="p">,</span> <span class="o">**</span><span class="n">tqdm_kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">tqdm</span><span class="p">:</span><div class="mkapi-source-link" id="euroeval.benchmark_modules.vllm.get_pbar_without_leave"><a href="../../../../api/euroeval/benchmark_modules/vllm/#euroeval.benchmark_modules.vllm.get_pbar_without_leave" title="Go to docs">[docs]</a></div>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get a progress bar for vLLM which disappears after completion.</span>
-
-<span class="sd">    Args:</span>
-<span class="sd">        *tqdm_args:</span>
-<span class="sd">            Positional arguments to pass to tqdm.</span>
-<span class="sd">        **tqdm_kwargs:</span>
-<span class="sd">            Additional keyword arguments to pass to tqdm.</span>
-
-<span class="sd">    Returns:</span>
-<span class="sd">        A tqdm progress bar.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">tqdm_kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;leave&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>  <span class="c1"># Remove the &#39;leave&#39; key if it exists</span>
-    <span class="k">return</span> <span class="n">tqdm</span><span class="p">(</span><span class="o">*</span><span class="n">tqdm_args</span><span class="p">,</span> <span class="n">leave</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">tqdm_kwargs</span><span class="p">)</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">get_vllm_tokenisation_params</span><span class="p">(</span><div class="mkapi-source-link" id="euroeval.benchmark_modules.vllm.get_vllm_tokenisation_params"><a href="../../../../api/euroeval/benchmark_modules/vllm/#euroeval.benchmark_modules.vllm.get_vllm_tokenisation_params" title="Go to docs">[docs]</a></div>

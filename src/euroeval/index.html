@@ -1009,7 +1009,8 @@
 <span class="normal">112</span>
 <span class="normal">113</span>
 <span class="normal">114</span>
-<span class="normal">115</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;EuroEval - A benchmarking framework for language models.&quot;&quot;&quot;</span>
+<span class="normal">115</span>
+<span class="normal">116</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;EuroEval - A benchmarking framework for language models.&quot;&quot;&quot;</span>
 
 <span class="c1">### STAGE 1 ###</span>
 <span class="c1">### Block unwanted terminal output that happens on importing external modules ###</span>
@@ -1032,7 +1033,8 @@
     <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">&quot;VLLM_CONFIGURE_LOGGING&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;0&quot;</span>
 
 <span class="c1"># Set up logging</span>
-<span class="n">fmt</span> <span class="o">=</span> <span class="n">colored</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%(asctime)s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="s2">&quot;light_blue&quot;</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot; ⋅ &quot;</span> <span class="o">+</span> <span class="n">colored</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%(message)s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="s2">&quot;green&quot;</span><span class="p">)</span>
+<span class="c1"># fmt = colored(&quot;%(asctime)s&quot;, &quot;light_blue&quot;) + &quot; ⋅ &quot; + colored(&quot;%(message)s&quot;, &quot;green&quot;)</span>
+<span class="n">fmt</span> <span class="o">=</span> <span class="n">colored</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%(message)s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="s2">&quot;light_yellow&quot;</span><span class="p">)</span>
 <span class="n">logging</span><span class="o">.</span><span class="n">basicConfig</span><span class="p">(</span>
     <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">CRITICAL</span> <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">sys</span><span class="p">,</span> <span class="s2">&quot;_called_from_test&quot;</span><span class="p">)</span> <span class="k">else</span> <span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">,</span>
     <span class="nb">format</span><span class="o">=</span><span class="n">fmt</span><span class="p">,</span>
@@ -1061,7 +1063,7 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">dotenv</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_dotenv</span>  <span class="c1"># noqa: E402</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">.benchmarker</span><span class="w"> </span><span class="kn">import</span> <span class="n">Benchmarker</span>  <span class="c1"># noqa: E402</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">block_terminal_output</span>  <span class="c1"># noqa: E402</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.logging_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">block_terminal_output</span>  <span class="c1"># noqa: E402</span>
 
 <span class="c1"># Block unwanted terminal outputs. This blocks way more than the above, but since it</span>
 <span class="c1"># relies on importing from the `utils` module, external modules are already imported</span>

@@ -1236,7 +1236,8 @@
 <span class="normal">312</span>
 <span class="normal">313</span>
 <span class="normal">314</span>
-<span class="normal">315</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Freshly initialised encoder models.&quot;&quot;&quot;</span>
+<span class="normal">315</span>
+<span class="normal">316</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Freshly initialised encoder models.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">t</span>
@@ -1265,7 +1266,8 @@
     <span class="n">NeedsExtraInstalled</span><span class="p">,</span>
 <span class="p">)</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..generation_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">raise_if_wrong_params</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">..utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">block_terminal_output</span><span class="p">,</span> <span class="n">create_model_cache_dir</span><span class="p">,</span> <span class="n">get_hf_token</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..logging_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">block_terminal_output</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_model_cache_dir</span><span class="p">,</span> <span class="n">get_hf_token</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.hf</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">HuggingFaceEncoderModel</span><span class="p">,</span>
     <span class="n">align_model_and_tokeniser</span><span class="p">,</span>
