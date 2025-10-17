@@ -8,7 +8,7 @@ from ..tasks import COMMON_SENSE, KNOW, LA, NER, RC, SENT, SUMM
 
 CSFD_SENTIMENT_CONFIG = DatasetConfig(
     name="csfd-sentiment",
-    pretty_name="the Czech Movie Database sentiment dataset",
+    pretty_name="the truncated version of the Czech Movie Database sentiment dataset",
     huggingface_id="EuroEval/csfd-sentiment-mini",
     task=SENT,
     languages=[CS],
@@ -16,7 +16,8 @@ CSFD_SENTIMENT_CONFIG = DatasetConfig(
 
 CS_GEC_CONFIG = DatasetConfig(
     name="cs-gec",
-    pretty_name="the Czech linguistic acceptability dataset CS-GEC",
+    pretty_name="the truncated version of the Czech linguistic acceptability dataset "
+    "CS-GEC",
     huggingface_id="EuroEval/cs-gec-mini",
     task=LA,
     languages=[CS],
@@ -24,7 +25,8 @@ CS_GEC_CONFIG = DatasetConfig(
 
 PONER_CONFIG = DatasetConfig(
     name="poner",
-    pretty_name="the Czech named entity recognition dataset PONER",
+    pretty_name="the truncated version of the Czech named entity recognition dataset "
+    "PONER",
     huggingface_id="EuroEval/poner-mini",
     task=NER,
     languages=[CS],
@@ -40,7 +42,7 @@ SQAD_CONFIG = DatasetConfig(
 
 CZECH_NEWS_CONFIG = DatasetConfig(
     name="czech-news",
-    pretty_name="the Czech news summarization dataset",
+    pretty_name="the truncated version of the Czech summarisation dataset",
     huggingface_id="EuroEval/czech-news-mini",
     task=SUMM,
     languages=[CS],
@@ -48,7 +50,7 @@ CZECH_NEWS_CONFIG = DatasetConfig(
 
 UMIMETO_QA_CONFIG = DatasetConfig(
     name="umimeto-qa",
-    pretty_name="the Czech multiple-choice dataset Umimeto-qa",
+    pretty_name="the Czech knowledge dataset UmimetoQA",
     huggingface_id="EuroEval/umimeto-qa",
     task=KNOW,
     languages=[CS],

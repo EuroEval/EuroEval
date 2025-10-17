@@ -32,11 +32,11 @@ DANSK_CONFIG = DatasetConfig(
     languages=[DA],
 )
 
-SCANDIQA_DA_CONFIG = DatasetConfig(
-    name="scandiqa-da",
-    pretty_name="the Danish part of the truncated version of the question answering "
-    "dataset ScandiQA",
-    huggingface_id="EuroEval/scandiqa-da-mini",
+MULTI_WIKI_QA_DA_CONFIG = DatasetConfig(
+    name="multi-wiki-qa-da",
+    pretty_name="the truncated version of the Danish part of the reading "
+    "comprehension dataset MultiWikiQA",
+    huggingface_id="EuroEval/multi-wiki-qa-da-mini",
     task=RC,
     languages=[DA],
 )
@@ -129,11 +129,11 @@ BELEBELE_DA_CONFIG = DatasetConfig(
     unofficial=True,
 )
 
-MULTI_WIKI_QA_DA_CONFIG = DatasetConfig(
-    name="multi-wiki-qa-da",
-    pretty_name="the truncated version of the Danish part of the reading "
-    "comprehension dataset MultiWikiQA",
-    huggingface_id="EuroEval/multi-wiki-qa-da-mini",
+SCANDIQA_DA_CONFIG = DatasetConfig(
+    name="scandiqa-da",
+    pretty_name="the Danish part of the truncated version of the question answering "
+    "dataset ScandiQA",
+    huggingface_id="EuroEval/scandiqa-da-mini",
     task=RC,
     languages=[DA],
     unofficial=True,
