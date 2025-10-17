@@ -57,7 +57,7 @@ def main() -> None:
 
     dataset_dict = DatasetDict(
         train=Dataset.from_pandas(final_train_df),
-        validation=Dataset.from_pandas(final_val_df),
+        val=Dataset.from_pandas(final_val_df),
         test=Dataset.from_pandas(final_test_df),
     )
 
