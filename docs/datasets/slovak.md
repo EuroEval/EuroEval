@@ -375,7 +375,7 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset mmlu-sk
 ```
 
-### Winogrande
+### Winogrande-sk
 
 This dataset was published in [this paper](https://doi.org/10.1145/3474381). The
 original full dataset consists of 47 / 1,210 samples for training and testing, and we
