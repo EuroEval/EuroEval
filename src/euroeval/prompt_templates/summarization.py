@@ -12,8 +12,8 @@ from ..languages import (
     ET,
     FI,
     FR,
-    IS,
     IT,
+    LT,
     LV,
     NB,
     NL,
@@ -105,11 +105,14 @@ SUMM_TEMPLATES: dict["Language", PromptConfig] = {
         ),
         default_prompt_label_mapping=dict(),
     ),
-    IS: PromptConfig(
-        default_prompt_prefix="Eftirfarandi eru skjöl með meðfylgjandi samantektum.",
-        default_prompt_template="Skjal: {text}\nSamantekt: {target_text}",
-        default_instruction_prompt="Skjal: {text}\n\nSkrifaðu samantekt á ofangreindu "
-        "skjali.",
+    LT: PromptConfig(
+        default_prompt_prefix=(
+            "Žemiau pateikiami dokumentai su pridėtomis santraukomis."
+        ),
+        default_prompt_template=("Dokumentas: {text}\nSantrauka: {target_text}"),
+        default_instruction_prompt=(
+            "Dokumentas: {text}\n\nParašykite aukščiau pateikto dokumento santrauką."
+        ),
         default_prompt_label_mapping=dict(),
     ),
     IT: PromptConfig(

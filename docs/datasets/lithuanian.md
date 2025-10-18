@@ -450,3 +450,68 @@ You can evaluate this dataset directly as follows:
 ```bash
 euroeval --model <model-id> --dataset winogrande-lt
 ```
+
+## Summarisation
+
+### Lrytas
+
+This dataset contains news articles and their corresponding summaries from the Lithuanian
+public media news portal [Lrytas.lt](https://www.lrytas.lt/).
+
+Samples were collected using the
+[lrytas_scraper](https://github.com/alexandrainst/lrytas). We use 1,024 / 256 / 2,048
+samples for training, validation and testing, respectively.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "2025 m. „Tesla Model Y Performance“ testas: superautomobilis visai šeimai Karščiausia „Tesla“ naujiena – jau Lietuvoje\n\nŠiemet nuo 2022 metų gaminamas „Model Y“ buvo atnaujintas, o šių metų pradžioje aš bandžiau modelį iki atnaujinimo. Testą rasite čia: Vizualiai jis nemažai skiriasi nuo ankstesnės versijos – vientisa šviesų juosta priekyje, kitokie sujungti žibintai gale. Salone priekinės sėdynės dabar ne tik šildomos, bet ir vėdinamos, buvo sumontuotas papildomas ekranas gale sėdintiems keleiviams, pagerinta apdailos medžiagų kokybė, pagerintos važiavimo savybės. Įdomu tai, kad atnaujinto bazinio modelio kaina nepadidėjo ir prasideda nuo 45 970 eurų – tai yra automobilis su mažesnės 60 kWh talpos akumuliatoriumi. O modelis su 82 kWh akumuliatoriumi (įkraunama 79 kWh, gamintojo nurodomas nuvažiuojamas atstumas – 622 kilometrai) ir galiniais varančiaisiais ratais atsieis vis dar įmones tenkinančius 49 970 eurų (taikoma 4 metų garantija, papildomai galima įsigyti pratęstą „Mango Insurance“ garantiją, o pasinaudojus nuoroda po vaizdo apžvalga, bus suteikta papildoma 10 proc. nuolaida). Tačiau čia – „Performance“ modelis, kurio du elektros motorai pasiekia net 461 kilovatą arba 627 arklio galias ir 741 Nm – tai leidžia šiam nemažam ir erdviam (JAV galima ir septynių sėdimų vietų versija) elektromobiliui iki 100 km/h įsibėgėti vos per 3,5 sekundes, maksimalus greitis siekia 250 km/h, o kaina yra 62 970 eurų – už modelį iki atnaujinimo gamintojas prašė 4000 eurų mažiau. Bet ką ten ta kaina, kai iš po kojos veržiasi tokia elektros galia – išbandžiau beveik visus, išskyrus maksimalų greitį, dinaminius parametrus. Ir turiu pasakyti, kad kol kas nematau kitų elektromobilių, kurie savo kainos, praktiškumo ir dinamikos santykiu prilygtų šiam modeliui. Nebent išskyrus vis daugiau mūsų šalyje atsirandančių elektromobilių iš Kinijos – atrodo, kad bent jau kol kas „Tesla“ yra vienintelė atsvara šioms mašinoms iš Rytų. Tad nieko keisto, kad tai – ir populiariausias elektromobilis tiek Lietuvoje, tiek ir visame pasaulyje. O dar labai patiko „Performance“ modelyje komplektuojama nustatomo standumo pakaba – galima važiuoti tiek komfortiškai, oriai linguojant per nelygumus, tiek ir gerokai standžiau brėžiant posūkius, bet be dantis kratančio kietumo – puikiai suderintos savybės tarp komforto ir sportiškumo. Ir šis 4,8 m ilgio elektromobilis su 2,9 m atstumu tarp ašių puikiai tinka azartiškam važiavimui ne tik tiesiai – žemas svorio centras, standus kėbulas ir, svarbiausia, dėl kėbului daug naudoto lengvo aliuminio sąlyginai kaip elektromobiliui nedidelis svoris (tai yra sunkiausia „Model Y“ versija, sverianti 2108 kilogramus), jis pasižymi tiek geru valdymu (žinoma, žemesnis tos pačios platformos „Model 3“ būtų smagesnis), tiek ir jau ne kartą įtikinusiomis mažomis energijos sąnaudomis – net ir po aktyvaus važiavimo, jos buvo tik 18,3 kWh/100 km. Daugiau apie naują „Tesla Model Y Performance“ žiūrėkite vaizdo medžiagoje: automobilio bandymas elektromobilis Pakaba Rodyti daugiau žymių",
+  "target_text": "Vos prieš kelias savaites Europoje pristatyta galingiausia 2025 metų „Tesla Model Y“ versija „Performance“ labai greitai pasiekė ir Lietuvą, tad pasinaudojau galimybe vienas pirmųjų sėsti prie jo vairo."
+}
+```
+
+```json
+{
+  "text": "Žalgirietis Ą. Tubelis prieš debiutą Eurolygoje: „Neperspaudžiu savęs“\n\n„Tikrai laukiu, tačiau per daug neperspaudžiu savęs ir stengiuosi žiūrėti į tai, kaip į dar vienas rungtynes. Nekeisiu savo rutinos, neplanuoju daryti kažko naujo – tiesiog ruošiamės su komanda, atiduodame visą save, dirbame per treniruotes, tad manau, kad to ir reikia pergalei pasiekti – susikaupimo ir juodo darbo“, – apie asmeninį ir komandos nusiteikimą kalbėjo aukštaūgis. Paklaustas apie padidėjusį fiziškumą, Ą.Tubelis neslėpė, kad kartais atsilaikyti nėra lengva. „Stiprūs kūnai, kartais būna sunku, bet gavau patirties tiek vasarą grumdamasis su Eurolygos ir NBA žaidėjais, tiek ir Turkijoje dar spėjau sužaisti prieš „Anadolu Efes“, tai skirtumas tikrai jaučiasi, kartais sunku pastumti, bet tuomet reikia naudoti savo protą ir bandyti tuos kūnus apeiti“, – perėjimą į aukštesnį lygį įvertino lietuvis. Ą.Tubelis pabrėžė ir LKL susitikimų svarbą prieš Eurolygos sezono startą. „LKL rungtynės tikrai padėjo – ne tik man asmeniškai, bet ir susilipdyti visai komandai. Taip pat naudingos ir treniruotės, kuriose gal labai daug naujų dalykų ir neišmokstame, tačiau pastoviai taisome savo klaidas, žiūrime labai daug video medžiagos. Poros treniruočių dar gal ir reiktų, bet manau, kad viskas labai gerai juda į priekį“, – teigiamai apie pasiruošimą sezonui atsiliepė aukštaūgis. Ą.Tubelis kalbėjo ir apie žaidimo planą prieš „Monaco“ ekipą, tad kviečiame įsijungti pilną video ir išgirsti „Žalgirio“ naujoko mintis apie svarbiausią ateinančio mačo žaidimo aspektą. Po šių rungtynių, jau penktadienį žalgiriečiai žais pirmąsias Eurolygos naujojo sezono namų rungtynes, kuriose sausakimšoje arenoje į kovą stos prieš Šarūno Jasikevičiaus Stambulo „Fenerbahce“. Kitos Eurolygos namų rungtynės laukia spalio 16-ąją prieš Milano „Olimpia“. Ąžuolas Tubelis Kauno Žalgiris Eurolyga",
+  "target_text": "Kauno „Žalgirio“ krepšininkai jau trečiadienį išvykoje pradės naująjį Eurolygos sezoną susitikime su praėjusio sezono vicečempionų komanda iš Monako. Po vienos iš paskutinių žalgiriečių treniruočių prieš Vassilio Spanoulio auklėtinių iššūkį, mintimis pasidalijo ir Ąžuolas Tubelis, kurio laukia Eurolygos debiutas."
+}
+```
+
+```json
+{
+  "text": "Iš „aušriečių“ – žinia dėl naujo kultūros ministro\n\n„Šiai dienai ji (Kultūros ministerija – ELTA) priklauso „Nemuno aušrai“ ir mes ieškosime kito kandidato, kuris ir mums tiktų, ir visuomenei tiktų, ir Vyriausybei, ir visiems žmonėms“, – žurnalistams Seime sakė „Nemuno aušros“ pirmininko pavaduotojas Robertas Puchovičius. „Prioritetas yra partinis (kandidatas – ELTA), bet tikrai svarstysime visus variantus“, – pridūrė jis. Politiko teigimu, artimiausiu metu šį klausimą svarstys partijos organai. „Bus sušaukta mūsų valdyba, taryba ir ieškosime sprendimo. Šiai dienai Kultūros ministerija priklauso „Nemuno aušrai“ ir niekas nesikeičia“, – sakė jis. Adomavičius galėtų užimti kitas pareigas Kultūros ministerijoje Tuo metu kalbėdamas apie I. Adomavičiaus ateitį, R. Puchovičius patikino, kad jis galėtų užimti viceministro, kanclerio ar ministro patarėjo pareigas Kultūros ministerijoje. „Galės grįžti į savo senas pareigas – būti Raimundo Šukio patarėju, gal jam kitas pareigas pasiūlys, kol kas neskubėkime dalinti pareigų“, – tikino „aušrietis“. „Jis parodė, kad jis tikrai yra geras ministras, darbuotojas. Jam tikrai rūpėjo kultūra, jis tikrai galėtų užimti pareigas ir tęsti darbą. Matyčiau jį kiekvienoje pozicijoje, tačiau svarbiausia, kuris ateis ministras ir jis jau matys“, – akcentavo politikas. Pasak jo, I. Adomavičius nusprendė trauktis ne dėl pastarųjų pasisakymų apie Krymą. „Čia nebuvo nei Krymo klausimas, nei kiti dalykai. Matėme, kad buvo labai didelis spaudimas, labai daug puolama. Turbūt žmogus atsikelia su spaudimu, eina miegoti su spaudimu. Jis yra ministras, bet jis yra ir vyras, ir tėvas, turi šeimą, reikia grįžti namo ir tuos nervus atlaikyti“, – kalbėjo R. Puchovičius. „Ignotas padarė tikrai didelį darbą, matome, kad jis gali toliau tęsti savo karjerą politikoje ir matome, kad jis turi didelį pasitikėjimą visuomenėje“, – tikino jis. Kaip skelbta anksčiau, I. Adomavičius sakė, jog klausimai apie tai, kam priklauso Rusijos aneksuotas Krymas, yra provokuojantys. Interviu naujienų portalui „Lrytas“ politikas tvirtino nenorįs kalbėti šiais klausimais. Tačiau netrukus po interviu ministras savo poziciją patikslino. Tačiau atsakyti, kaip įsivaizduoja ir ką jam reiškia Ukrainos pergalė, politikas vengė atsakyti. Ministerijos atsisakyti nesvarsto Apie galimą ministerijos atidavimą kol kas nesvarstoTiesa, kultūros bendruomenei piktinantis, kad ministeriją nuspręsta patikėti „Nemuno aušrai“, R. Puchovičius sako, kad kol kas „aušriečiai“ nesvarsto apie galima jos perdavimą koalicijos partneriams. „Kalbėti visada galime, derėtis visada galime, tačiau kol kas galime daryti tik sąmokslo teoriją. Šiai dienai ji (ministerija – ELTA) priklauso „Nemuno aušrai“ ir mes ieškosime kito kandidato, kuris ir mums tiktų, ir visuomenei tiktų“, – kalbėjo politikas. „Yra ta visuomenė, kuri nepalaiko. Su ja laukia sunkus darbas, kad pakeistume jų nuomonę. Bet yra ir kita pusė, kuri mus palaiko. Mes negalime nusileisti vienai pusei nepabandžius to klausimo išspręsti ir pavesti kitą pusę, kuri mus palaiko. Ieškosime sprendimo, kad visi būtų patenkinti“, – pabrėžė jis. ELTA primena, kad po skandalą sukėlusio pasisakymo apie Krymą „aušriečių“ deleguotas kultūros ministras I. Adomavičius pranešė, kad traukiasi iš pareigų. Apie tai, kad I. Adomavičius turėtų trauktis, penktadienį užsiminė ir premjerė Inga Ruginienė. Šalies vadovui paskyrus „aušrietį“ Ignotą Adomavičių naujuoju kultūros ministru, kilo pasipiktinimo banga – keliami klausimai dėl politiko kompetentingumo, sugebėjimų, nevienareikšmiškų pasisakymų. Netrukus dėmesio centre atsidūrė politiko pasisakymai apie Krymą, Ukrainą, klausimų kėlė kuriam laikui iš ministerijos patalpų dingusios Ukrainos vėliavos. Savo ruožtu praėjusią savaitę Simono Daukanto aikštėje prie Prezidentūros buvo surengtas protestas – bene tūkstantis susirinkusių kultūros sektoriaus atstovų reikalavo, kad Kultūros ministerija neliktų „Nemuno aušros“ rankose. Kultūrininkai taip pat platina ir peticiją – ją jau pasirašė per 67 tūkst. žmonių. Sekmadienį, spalio 5 d., menininkai rengia įspėjamąjį streiką „Tai gali būti paskutinis kartas“. Robert Puchovič Nemuno aušra Ignotas Adomavičius Rodyti daugiau žymių",
+  "target_text": "Ignotui Adomavičiui nusprendus trauktis iš kultūros ministro pareigų, politiką delegavusi „Nemuno aušra“ ieškos naujo kandidato šioms pareigoms."
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 1
+- Prefix prompt:
+
+  ```text
+  Žemiau pateikiami dokumentai su pridėtomis santraukomis.
+  ```
+
+- Base prompt template:
+
+  ```text
+  Dokumentas: {text}
+  Santrauka: {target_text}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Dokumentas: {text}
+
+  Parašykite aukščiau pateikto dokumento santrauką.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset lrytas
+```

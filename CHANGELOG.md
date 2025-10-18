@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 
+- Added the Lithuanian summarisation dataset Lrytas based on the Lithuanian
+  public media news portal [Lrytas.lt](https://www.lrytas.lt/).
 - Added the Estonian translation of MMLU, `mmlu-et`, as an unofficial knowledge
   dataset.
 
