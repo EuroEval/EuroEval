@@ -421,6 +421,7 @@ class LiteLLMModel(BenchmarkModule):
             "'stop' is not supported with this model",
             "'$.stop' is invalid",
         ]
+        stop_pattern = re.compile(r"does not support parameters: \[.*'stop'.*\]")
         logprobs_messages = [
             "you are not allowed to request logprobs",
             "you've reached the maximum number of requests with logprobs",
@@ -428,7 +429,7 @@ class LiteLLMModel(BenchmarkModule):
             "logprobs is not enabled",
         ]
         top_logprobs_messages = ["got an unexpected keyword argument 'top_logprobs'"]
-        logprobs_pattern = re.compile(
+        top_logprobs_pattern = re.compile(
             r"does not support parameters: \[.*'top_logprobs'.*\]"
         )
         max_completion_tokens_pattern = re.compile(
@@ -437,6 +438,7 @@ class LiteLLMModel(BenchmarkModule):
         temperature_messages = [
             "'temperature' is not supported with this model.",
             "temperature is not supported with this model",
+            r"does not support parameters: \[.*'temperature'.*\]",
         ]
         temperature_must_be_one_messages = [
             "`temperature` may only be set to 1",
@@ -457,7 +459,10 @@ class LiteLLMModel(BenchmarkModule):
             "the model returned empty outputs",
         ]
 
-        if any(msg.lower() in error_msg for msg in stop_messages):
+        if (
+            any(msg.lower() in error_msg for msg in stop_messages)
+            or stop_pattern.search(string=error_msg) is not None
+        ):
             log_once(
                 f"The model {model_id!r} does not support "
                 "stop sequences, so disabling them.",
@@ -467,7 +472,6 @@ class LiteLLMModel(BenchmarkModule):
             return generation_kwargs
         elif (
             any(msg.lower() in error_msg for msg in logprobs_messages)
-            or logprobs_pattern.search(string=error_msg)
             # Special case for Vertex AI models, since they have strict rate
             # limits on using logprobs. They also have a cap of 5 logprobs, but
             # we ignore this since the rate limiting makes it unusable anyway.
@@ -480,7 +484,10 @@ class LiteLLMModel(BenchmarkModule):
             generation_kwargs.pop("logprobs", None)
             generation_kwargs.pop("top_logprobs", None)
             return generation_kwargs
-        elif any(msg.lower() in error_msg for msg in top_logprobs_messages):
+        elif (
+            any(msg.lower() in error_msg for msg in top_logprobs_messages)
+            or top_logprobs_pattern.search(string=error_msg) is not None
+        ):
             log_once(
                 f"The model {model_id!r} does not support the `top_logprobs` argument, "
                 "so moving the value to `logprobs`.",
