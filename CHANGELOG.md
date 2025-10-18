@@ -51,6 +51,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   continue to be evaluated on the test split, even if the user requested to use the
   validation split. We now reset this not just after each dataset, but also after each
   model, so that this does not happen.
+- Now catches more errors when evaluating LiteLLM models, which were related to some
+  generation parameters not being supported (such as stop sequences) for some models.
 
 ## [v16.3.0] - 2025-09-23
 
