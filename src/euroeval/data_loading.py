@@ -118,10 +118,10 @@ def load_raw_data(dataset_config: "DatasetConfig", cache_dir: str) -> "DatasetDi
             DatasetsError,
             requests.ConnectionError,
             requests.ReadTimeout,
-        ):
+        ) as e:
             log(
-                f"Failed to load dataset {dataset_config.huggingface_id!r}. "
-                "Retrying...",
+                f"Failed to load dataset {dataset_config.huggingface_id!r}, due to "
+                f"the following error: {e}. Retrying...",
                 level=logging.DEBUG,
             )
             time.sleep(1)
@@ -131,7 +131,8 @@ def load_raw_data(dataset_config: "DatasetConfig", cache_dir: str) -> "DatasetDi
     else:
         raise InvalidBenchmark(
             f"Failed to load dataset {dataset_config.huggingface_id!r} after "
-            f"{num_attempts} attempts."
+            f"{num_attempts} attempts. Run with verbose mode to see the individual "
+            "errors."
         )
     assert isinstance(dataset, DatasetDict)  # type: ignore[used-before-def]
     missing_keys = [key for key in dataset_config.splits if key not in dataset]

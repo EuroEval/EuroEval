@@ -28,7 +28,7 @@ from datasets import Dataset, DatasetDict, Split, load_dataset
 from huggingface_hub import HfApi
 from sklearn.model_selection import train_test_split
 
-LANGUAGES = ["da", "de", "en", "es", "fr", "is", "it", "nl", "no", "pt", "sv"]
+LANGUAGES = ["da", "de", "en", "es", "fr", "is", "it", "nl", "no", "pt", "sk", "sv"]
 
 
 def main() -> None:

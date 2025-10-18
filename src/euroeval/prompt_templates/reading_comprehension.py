@@ -23,6 +23,7 @@ from ..languages import (
     NO,
     PL,
     PT,
+    SK,
     SV,
 )
 
@@ -200,6 +201,18 @@ RC_TEMPLATES: dict["Language", PromptConfig] = {
         "um máximo de 3 palavras: {label}",
         default_instruction_prompt="Texto: {text}\n\nResponde à seguinte pergunta "
         "sobre o texto acima num máximo de 3 palavras.\n\nPergunta: {question}",
+        default_prompt_label_mapping=dict(),
+    ),
+    SK: PromptConfig(
+        default_prompt_prefix=("Nasledujú texty s pridruženými otázkami a odpoveďami."),
+        default_prompt_template=(
+            "Text: {text}\nOtázka: {question}\nOdpoveď na maximálne 3 slová: {label}"
+        ),
+        default_instruction_prompt=(
+            "Text: {text}\n\n"
+            "Odpovedzte na nasledujúcu otázku týkajúcu sa textu uvedeného vyššie "
+            "maximálne 3 slovami.\n\nOtázka: {question}"
+        ),
         default_prompt_label_mapping=dict(),
     ),
     SV: PromptConfig(

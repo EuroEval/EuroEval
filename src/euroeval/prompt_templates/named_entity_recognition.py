@@ -23,6 +23,7 @@ from ..languages import (
     NO,
     PL,
     PT,
+    SK,
     SV,
 )
 
@@ -395,6 +396,25 @@ NER_TEMPLATES: dict["Language", PromptConfig] = {
         "nazewnicze w zdaniu. Wypisz je jako słownik JSON z kluczami "
         "{labels_str}. Wartości odpowiadające kluczom powinny być listami jednostek "
         "nazewniczych danego typu, dokładnie tak, jak pojawiają się w zdaniu.",
+    ),
+    SK: PromptConfig(
+        default_prompt_label_mapping={
+            "b-per": "osoba",
+            "i-per": "osoba",
+            "b-loc": "miesto",
+            "i-loc": "miesto",
+            "b-org": "organizácia",
+            "i-org": "organizácia",
+            "b-misc": "rôzne",
+            "i-misc": "rôzne",
+        },
+        default_prompt_prefix="Nasledujúce sú vety a JSON-objekty s pomenovanými "
+        "entitami, ktoré sa nachádzajú v danej vete.",
+        default_prompt_template="Veta: {text}\nPomenované entity: {label}",
+        default_instruction_prompt="Veta: {text}\n\nIdentifikujte pomenované "
+        "entity vo vete. Výstup by mal byť vo forme JSON-objektu s kľúčmi "
+        "{labels_str}. Hodnoty by mali byť zoznamy pomenovaných entít danej "
+        "kategórie, presne tak, ako sa vyskytujú vo vete.",
     ),
     SV: PromptConfig(
         default_prompt_label_mapping={
