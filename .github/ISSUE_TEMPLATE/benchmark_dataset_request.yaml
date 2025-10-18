@@ -24,6 +24,7 @@ body:
     label: Dataset languages
     description: What languages is the dataset in?
     options:
+      - label: Czech
       - label: Danish
       - label: Dutch
       - label: English
@@ -39,6 +40,7 @@ body:
       - label: Norwegian (Bokmål or Nynorsk)
       - label: Polish
       - label: Portuguese
+      - label: Slovak
       - label: Spanish
       - label: Swedish
   validations:

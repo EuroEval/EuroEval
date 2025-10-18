@@ -8,7 +8,8 @@ from ..tasks import COMMON_SENSE, KNOW, LA, NER, RC, SENT, SUMM
 
 CSFD_SENTIMENT_CONFIG = DatasetConfig(
     name="csfd-sentiment",
-    pretty_name="the truncated version of the Czech Movie Database sentiment dataset",
+    pretty_name="the truncated version of the Czech sentiment classification dataset "
+    "CSFD Sentiment",
     huggingface_id="EuroEval/csfd-sentiment-mini",
     task=SENT,
     languages=[CS],
