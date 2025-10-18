@@ -637,6 +637,25 @@ class LiteLLMModel(BenchmarkModule):
             sleep(10)
             return generation_kwargs
 
+        if (
+            isinstance(error, BadRequestError)
+            and (
+                retry_match := re.search(
+                    pattern=r"\bretry in ([0-9]+(.[0-9]+)?) ?(s|seconds)\b",
+                    string=error_msg,
+                )
+            )
+            is not None
+        ):
+            retry_seconds = float(retry_match.group(1))
+            log(
+                f"Bad request error encountered. Retrying in {retry_seconds:.1f} "
+                "seconds...",
+                level=logging.DEBUG,
+            )
+            sleep(retry_seconds)
+            return generation_kwargs
+
         if isinstance(error, AuthenticationError):
             raise NeedsAdditionalArgument(
                 cli_argument="--api-key",

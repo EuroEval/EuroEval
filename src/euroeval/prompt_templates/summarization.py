@@ -12,6 +12,7 @@ from ..languages import (
     ET,
     FI,
     FR,
+    IS,
     IT,
     LT,
     LV,
@@ -121,6 +122,13 @@ SUMM_TEMPLATES: dict["Language", PromptConfig] = {
         default_prompt_template="Documento: {text}\nSintesi: {target_text}",
         default_instruction_prompt="Documento: {text}\n\nScrivete una sintesi del "
         "documento di cui sopra.",
+        default_prompt_label_mapping=dict(),
+    ),
+    IS: PromptConfig(
+        default_prompt_prefix="Eftirfarandi eru skjöl með meðfylgjandi samantektum.",
+        default_prompt_template="Skjal: {text}\nSamantekt: {target_text}",
+        default_instruction_prompt="Skjal: {text}\n\nSkrifaðu samantekt á ofangreindu "
+        "skjali.",
         default_prompt_label_mapping=dict(),
     ),
     NB: PromptConfig(
