@@ -629,10 +629,13 @@ class LiteLLMModel(BenchmarkModule):
             ) from error
 
         if isinstance(error, RateLimitError):
-            raise InvalidModel(
+            log(
                 f"You have encountered your rate limit for model {model_id!r}. "
-                "Skipping."
-            ) from error
+                "Retrying in 10 seconds...",
+                level=logging.DEBUG,
+            )
+            sleep(10)
+            return generation_kwargs
 
         if isinstance(error, AuthenticationError):
             raise NeedsAdditionalArgument(
