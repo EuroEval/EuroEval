@@ -275,20 +275,17 @@ def load_cached_model_outputs(
 
 
 def cache_arguments(
-    arguments: str | list[str] | None = None,
+    *arguments: str,
 ) -> t.Callable[[t.Callable[..., T]], t.Callable[..., T]]:
     """Cache the first argument of a function.
 
     Args:
         arguments:
-            The list of argument names to cache. Can also be a string if only a single
-            argument is to be cached. If None, all arguments are cached.
+            The list of argument names to cache. If empty, all arguments are cached.
 
     Returns:
         A decorator that caches the specified arguments of a function.
     """
-    if isinstance(arguments, str):
-        arguments = [arguments]
 
     def caching_decorator(func: t.Callable[..., T]) -> t.Callable[..., T]:
         """Decorator that caches the specified arguments of a function.
@@ -319,7 +316,7 @@ def cache_arguments(
                 ValueError:
                     If an argument name is not found in the function parameters.
             """
-            if arguments is None:
+            if not arguments:
                 key = args + tuple(sorted(kwargs.items()))
             else:
                 func_params = func.__code__.co_varnames

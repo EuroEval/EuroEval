@@ -4,7 +4,7 @@ import collections.abc as c
 import logging
 import re
 import typing as t
-from functools import cache, cached_property, partial
+from functools import cached_property, partial
 from json import JSONDecodeError
 from pathlib import Path
 from time import sleep
@@ -36,6 +36,7 @@ from transformers.models.auto.tokenization_auto import AutoTokenizer
 from transformers.trainer import Trainer
 from urllib3.exceptions import RequestError
 
+from ..caching_utils import cache_arguments
 from ..constants import (
     DUMMY_FILL_VALUE,
     GENERATIVE_PIPELINE_TAGS,
@@ -704,7 +705,7 @@ def load_model_and_tokeniser(
     return model, tokeniser
 
 
-@cache
+@cache_arguments("model_id", "revision")
 def get_model_repo_info(
     model_id: str,
     revision: str,
@@ -963,7 +964,7 @@ def load_tokeniser(
     return tokeniser
 
 
-@cache
+@cache_arguments()
 def get_dtype(
     device: torch.device, dtype_is_set: bool, bf16_available: bool
 ) -> str | torch.dtype:
@@ -990,7 +991,7 @@ def get_dtype(
     return torch.float32
 
 
-@cache
+@cache_arguments("model_id", "revision", "num_labels", "id2label", "label2id")
 def load_hf_model_config(
     model_id: str,
     num_labels: int,
@@ -1265,7 +1266,7 @@ def align_model_and_tokeniser(
     return model, tokeniser
 
 
-@cache
+@cache_arguments()
 def task_group_to_class_name(task_group: TaskGroup) -> str:
     """Convert a task group to a class name.
 

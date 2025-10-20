@@ -6,7 +6,7 @@ import json
 import logging
 import re
 import typing as t
-from functools import cache, cached_property, partial
+from functools import cached_property, partial
 from time import sleep
 
 import litellm
@@ -37,6 +37,7 @@ from pydantic import conlist, create_model
 from requests.exceptions import RequestException
 from tqdm.asyncio import tqdm as tqdm_async
 
+from ..caching_utils import cache_arguments
 from ..constants import (
     JSON_STRIP_CHARACTERS,
     LITELLM_CLASSIFICATION_OUTPUT_KEY,
@@ -1417,7 +1418,7 @@ class LiteLLMModel(BenchmarkModule):
 
         return dataset
 
-    @cache
+    @cache_arguments()
     def get_generation_kwargs(self, dataset_config: DatasetConfig) -> dict[str, t.Any]:
         """Get the generation arguments for the model.
 
