@@ -485,6 +485,7 @@ class LiteLLMModel(BenchmarkModule):
             self.buffer["first_label_token_mapping"] = False
             generation_kwargs.pop("logprobs", None)
             generation_kwargs.pop("top_logprobs", None)
+            generation_kwargs.pop("response_format", None)
             return generation_kwargs
         elif (
             any(msg.lower() in error_msg for msg in top_logprobs_messages)
