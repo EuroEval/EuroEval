@@ -18,14 +18,13 @@ import numpy as np
 import torch
 
 from .caching_utils import cache_arguments
+from .constants import T
 from .exceptions import InvalidBenchmark, InvalidModel, NaNValueInModelOutput
 from .logging_utils import log, log_once
 
 if t.TYPE_CHECKING:
     from .data_models import ModelIdComponents
     from .types import Predictions
-
-T = t.TypeVar("T", bound=object)
 
 
 def create_model_cache_dir(cache_dir: str, model_id: str) -> str:

@@ -9,7 +9,7 @@ from collections import defaultdict
 from dataclasses import asdict
 from functools import wraps
 
-from .constants import NUM_GENERATION_TOKENS_FOR_CLASSIFICATION
+from .constants import NUM_GENERATION_TOKENS_FOR_CLASSIFICATION, T
 from .data_models import GenerativeModelOutput, SingleGenerativeModelOutput
 from .logging_utils import get_pbar, log, log_once
 
@@ -17,8 +17,6 @@ if t.TYPE_CHECKING:
     from pathlib import Path
 
     from datasets import Dataset
-
-T = t.TypeVar("T", bound=object)
 
 
 class ModelCache:
