@@ -17,7 +17,7 @@ from termcolor import colored
 from tqdm.auto import tqdm
 from transformers import logging as tf_logging
 
-from .utils import cache_arguments
+from .caching_utils import cache_arguments
 
 logger = logging.getLogger("euroeval")
 
