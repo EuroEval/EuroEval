@@ -6,7 +6,7 @@ from ..tasks import COMMON_SENSE, KNOW, LA, NER, RC, SENT
 
 ### Official datasets ###
 
-CSFD_SENTIMENT_CONFIG = DatasetConfig(
+CSFD_SENTIMENT_SK_CONFIG = DatasetConfig(
     name="csfd-sentiment-sk",
     pretty_name="the truncated version of the Slovak sentiment classification dataset "
     "CSFD-sentiment-sk",
