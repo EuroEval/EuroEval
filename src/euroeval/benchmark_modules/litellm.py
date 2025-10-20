@@ -429,6 +429,9 @@ class LiteLLMModel(BenchmarkModule):
             "logprobs is not enabled",
             "Invalid value at 'generation_config.response_logprobs' (TYPE_BOOL)",
         ]
+        logprobs_pattern = re.compile(
+            r"does not support parameters: \[.*'logprobs'.*\]"
+        )
         top_logprobs_messages = ["got an unexpected keyword argument 'top_logprobs'"]
         top_logprobs_pattern = re.compile(
             r"does not support parameters: \[.*'top_logprobs'.*\]"
@@ -473,6 +476,7 @@ class LiteLLMModel(BenchmarkModule):
             return generation_kwargs
         elif (
             any(msg.lower() in error_msg for msg in logprobs_messages)
+            or logprobs_pattern.search(string=error_msg) is not None
             # Special case for Vertex AI models, since they have strict rate
             # limits on using logprobs. They also have a cap of 5 logprobs, but
             # we ignore this since the rate limiting makes it unusable anyway.
