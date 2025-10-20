@@ -428,6 +428,9 @@ class LiteLLMModel(BenchmarkModule):
             "logprobs is not supported",
             "logprobs is not enabled",
         ]
+        logprobs_should_be_bool_messages = [
+            "Invalid value at 'generation_config.response_logprobs' (TYPE_BOOL)"
+        ]
         top_logprobs_messages = ["got an unexpected keyword argument 'top_logprobs'"]
         top_logprobs_pattern = re.compile(
             r"does not support parameters: \[.*'top_logprobs'.*\]"
@@ -470,6 +473,14 @@ class LiteLLMModel(BenchmarkModule):
             )
             generation_kwargs["stop"] = None
             return generation_kwargs
+        elif any(msg.lower() in error_msg for msg in logprobs_should_be_bool_messages):
+            log_once(
+                f"The model {model_id!r} requires logprobs to be a Boolean, so "
+                "setting it to True.",
+                level=logging.DEBUG,
+            )
+            generation_kwargs["logprobs"] = True
+            return generation_kwargs
         elif (
             any(msg.lower() in error_msg for msg in logprobs_messages)
             # Special case for Vertex AI models, since they have strict rate
@@ -481,7 +492,6 @@ class LiteLLMModel(BenchmarkModule):
                 f"The model {model_id!r} does not support logprobs, so disabling it.",
                 level=logging.DEBUG,
             )
-            breakpoint()
             generation_kwargs.pop("logprobs", None)
             generation_kwargs.pop("top_logprobs", None)
             return generation_kwargs
@@ -494,7 +504,6 @@ class LiteLLMModel(BenchmarkModule):
                 "so moving the value to `logprobs`.",
                 level=logging.DEBUG,
             )
-            breakpoint()
             generation_kwargs["logprobs"] = generation_kwargs.pop("top_logprobs", None)
             return generation_kwargs
         elif max_completion_tokens_pattern.search(string=error_msg):
