@@ -142,6 +142,13 @@ class HuggingFaceMetric(Metric):
 
         return score
 
+    def __del__(self) -> None:
+        """Clean up the metric from memory."""
+        if self.metric is not None:
+            if self.metric.writer is not None:
+                self.metric.writer.close()
+            del self.metric
+
 
 mcc_metric = HuggingFaceMetric(
     name="mcc",
