@@ -309,7 +309,6 @@ class LiteLLMModel(BenchmarkModule):
             InvalidBenchmark:
                 If the inputs do not contain either 'messages' or 'text' keys.
         """
-        breakpoint()
         model_inputs: list[list[litellm.AllMessageValues] | str]
         if "messages" in inputs:
             model_inputs = inputs["messages"]
@@ -428,9 +427,7 @@ class LiteLLMModel(BenchmarkModule):
             "you've reached the maximum number of requests with logprobs",
             "logprobs is not supported",
             "logprobs is not enabled",
-        ]
-        logprobs_should_be_bool_messages = [
-            "Invalid value at 'generation_config.response_logprobs' (TYPE_BOOL)"
+            "Invalid value at 'generation_config.response_logprobs' (TYPE_BOOL)",
         ]
         top_logprobs_messages = ["got an unexpected keyword argument 'top_logprobs'"]
         top_logprobs_pattern = re.compile(
@@ -473,14 +470,6 @@ class LiteLLMModel(BenchmarkModule):
                 level=logging.DEBUG,
             )
             generation_kwargs["stop"] = None
-            return generation_kwargs
-        elif any(msg.lower() in error_msg for msg in logprobs_should_be_bool_messages):
-            log_once(
-                f"The model {model_id!r} requires logprobs to be a Boolean, so "
-                "setting it to True.",
-                level=logging.DEBUG,
-            )
-            generation_kwargs["logprobs"] = True
             return generation_kwargs
         elif (
             any(msg.lower() in error_msg for msg in logprobs_messages)
