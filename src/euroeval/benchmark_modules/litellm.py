@@ -482,6 +482,7 @@ class LiteLLMModel(BenchmarkModule):
                 f"The model {model_id!r} does not support logprobs, so disabling it.",
                 level=logging.DEBUG,
             )
+            self.buffer["first_label_token_mapping"] = False
             generation_kwargs.pop("logprobs", None)
             generation_kwargs.pop("top_logprobs", None)
             return generation_kwargs
