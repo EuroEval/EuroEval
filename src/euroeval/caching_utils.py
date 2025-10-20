@@ -277,7 +277,7 @@ def load_cached_model_outputs(
 def cache_arguments(
     *arguments: str,
 ) -> t.Callable[[t.Callable[..., T]], t.Callable[..., T]]:
-    """Cache the first argument of a function.
+    """Cache specified arguments of a function.
 
     Args:
         arguments:
