@@ -349,6 +349,7 @@ class LiteLLMModel(BenchmarkModule):
                     **generation_kwargs,
                 )
             )
+            breakpoint()
 
             # Store the successful model outputs
             for idx, response in successes:
