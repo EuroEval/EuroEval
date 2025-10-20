@@ -271,6 +271,7 @@ def get_closest_logprobs_labels(
         InvalidBenchmark:
             If no candidate label can be found for any of the generated labels.
     """
+    breakpoint()
     output_labels: list[str] = list()
     for idx, sample in enumerate(generation_logprobs):
         for logprob_list in sample:
