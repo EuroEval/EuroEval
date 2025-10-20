@@ -315,7 +315,7 @@ def cache_arguments(
                     If an argument name is not found in the function parameters.
             """
             if not arguments:
-                key = args + tuple(sorted(kwargs.items()))
+                key = args + tuple(kwargs[k] for k in sorted(kwargs.keys()))
             else:
                 func_params = func.__code__.co_varnames
                 key_items: list[t.Any] = []
