@@ -53,6 +53,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   model, so that this does not happen.
 - Now catches more errors when evaluating LiteLLM models, which were related to some
   generation parameters not being supported (such as stop sequences) for some models.
+- We now clean up metric writers when we're done with them, which prevents a "too many
+  open files" error when evaluating many models and datasets in a single run.
 
 ## [v16.3.0] - 2025-09-23
 
