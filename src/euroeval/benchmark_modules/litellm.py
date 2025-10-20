@@ -309,6 +309,7 @@ class LiteLLMModel(BenchmarkModule):
             InvalidBenchmark:
                 If the inputs do not contain either 'messages' or 'text' keys.
         """
+        breakpoint()
         model_inputs: list[list[litellm.AllMessageValues] | str]
         if "messages" in inputs:
             model_inputs = inputs["messages"]
@@ -349,7 +350,6 @@ class LiteLLMModel(BenchmarkModule):
                     **generation_kwargs,
                 )
             )
-            breakpoint()
 
             # Store the successful model outputs
             for idx, response in successes:
