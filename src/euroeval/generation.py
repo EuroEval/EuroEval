@@ -9,14 +9,14 @@ import more_itertools as mit
 from datasets import Dataset
 from tqdm.auto import tqdm
 
-from .enums import BatchingPreference, TaskGroup
-from .exceptions import InvalidBenchmark
-from .logging_utils import get_pbar, log, log_once
-from .model_cache import (
+from .caching_utils import (
     ModelCache,
     load_cached_model_outputs,
     split_dataset_into_cached_and_non_cached,
 )
+from .enums import BatchingPreference, TaskGroup
+from .exceptions import InvalidBenchmark
+from .logging_utils import get_pbar, log, log_once
 from .utils import clear_memory
 
 if t.TYPE_CHECKING:

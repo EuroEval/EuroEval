@@ -10,7 +10,6 @@ import random
 import re
 import socket
 import typing as t
-from functools import cache
 from pathlib import Path
 
 import demjson3
@@ -18,12 +17,15 @@ import huggingface_hub as hf_hub
 import numpy as np
 import torch
 
+from .caching_utils import cache_arguments
 from .exceptions import InvalidBenchmark, InvalidModel, NaNValueInModelOutput
 from .logging_utils import log, log_once
 
 if t.TYPE_CHECKING:
     from .data_models import ModelIdComponents
     from .types import Predictions
+
+T = t.TypeVar("T", bound=object)
 
 
 def create_model_cache_dir(cache_dir: str, model_id: str) -> str:
@@ -194,7 +196,7 @@ def get_min_cuda_compute_capability() -> float | None:
     return float(f"{major}.{minor}")
 
 
-@cache
+@cache_arguments()
 def internet_connection_available() -> bool:
     """Checks if internet connection is available by pinging google.com.
 
@@ -287,9 +289,6 @@ def get_package_version(package_name: str) -> str | None:
         return None
 
 
-T = t.TypeVar("T", bound=object)
-
-
 def safe_run(coroutine: t.Coroutine[t.Any, t.Any, T]) -> T:
     """Run a coroutine, ensuring that the event loop is always closed when we're done.
 
@@ -377,7 +376,7 @@ def extract_json_dict_from_string(s: str) -> dict | None:
     return json_output
 
 
-@cache
+@cache_arguments()
 def get_hf_token(api_key: str | None) -> str | bool:
     """Get the Hugging Face token.
 

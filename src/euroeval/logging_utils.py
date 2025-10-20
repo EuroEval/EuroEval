@@ -5,7 +5,6 @@ import logging
 import os
 import sys
 import warnings
-from functools import cache
 from io import TextIOWrapper
 
 import litellm
@@ -17,6 +16,8 @@ from huggingface_hub.utils.tqdm import (
 from termcolor import colored
 from tqdm.auto import tqdm
 from transformers import logging as tf_logging
+
+from .utils import cache_arguments
 
 logger = logging.getLogger("euroeval")
 
@@ -84,20 +85,23 @@ def log(message: str, level: int, colour: str | None = None) -> None:
             raise ValueError(f"Invalid logging level: {level}")
 
 
-@cache
-def log_once(message: str, level: int = logging.INFO) -> None:
+@cache_arguments("message")
+def log_once(message: str, level: int = logging.INFO, prefix: str = "") -> None:
     """Log a message once.
 
-    This is ensured by caching the input/output pairs of this function, using the
-    `functools.cache` decorator.
+    This is ensured by caching the "message" argument and only logging it the first time
+    this function is called with that message.
 
     Args:
         message:
             The message to log.
         level:
             The logging level. Defaults to logging.INFO.
+        prefix:
+            A prefix to add to the message, which is not considered when determining if
+            the message has been logged before.
     """
-    log(message=message, level=level)
+    log(message=prefix + message, level=level)
 
 
 def block_terminal_output() -> None:

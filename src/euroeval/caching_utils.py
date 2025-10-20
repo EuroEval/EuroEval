@@ -7,6 +7,7 @@ import sys
 import typing as t
 from collections import defaultdict
 from dataclasses import asdict
+from functools import wraps
 
 from .constants import NUM_GENERATION_TOKENS_FOR_CLASSIFICATION
 from .data_models import GenerativeModelOutput, SingleGenerativeModelOutput
@@ -16,6 +17,8 @@ if t.TYPE_CHECKING:
     from pathlib import Path
 
     from datasets import Dataset
+
+T = t.TypeVar("T", bound=object)
 
 
 class ModelCache:
@@ -269,3 +272,76 @@ def load_cached_model_outputs(
 
     cached_scores = [model_output.scores or [] for model_output in cached_model_outputs]
     return GenerativeModelOutput(sequences=cached_sequences, scores=cached_scores)
+
+
+def cache_arguments(
+    arguments: str | list[str] | None = None,
+) -> t.Callable[[t.Callable[..., T]], t.Callable[..., T]]:
+    """Cache the first argument of a function.
+
+    Args:
+        arguments:
+            The list of argument names to cache. Can also be a string if only a single
+            argument is to be cached. If None, all arguments are cached.
+
+    Returns:
+        A decorator that caches the specified arguments of a function.
+    """
+    if isinstance(arguments, str):
+        arguments = [arguments]
+
+    def caching_decorator(func: t.Callable[..., T]) -> t.Callable[..., T]:
+        """Decorator that caches the specified arguments of a function.
+
+        Args:
+            func:
+                The function to decorate.
+
+        Returns:
+            The decorated function.
+        """
+        cache: dict[tuple, T] = dict()
+
+        @wraps(func)
+        def wrapper(*args, **kwargs) -> T:
+            """Wrapper function that caches the specified arguments.
+
+            Args:
+                *args:
+                    The positional arguments to the function.
+                **kwargs:
+                    The keyword arguments to the function.
+
+            Returns:
+                The result of the function.
+
+            Raises:
+                ValueError:
+                    If an argument name is not found in the function parameters.
+            """
+            if arguments is None:
+                key = args + tuple(sorted(kwargs.items()))
+            else:
+                func_params = func.__code__.co_varnames
+                key_items: list[t.Any] = []
+                for arg_name in arguments:
+                    if arg_name in kwargs:
+                        key_items.append(kwargs[arg_name])
+                    else:
+                        try:
+                            arg_index = func_params.index(arg_name)
+                            key_items.append(args[arg_index])
+                        except (ValueError, IndexError):
+                            raise ValueError(
+                                f"Argument {arg_name} not found in function "
+                                f"{func.__name__} parameters."
+                            )
+                key = tuple(key_items)
+
+            if key not in cache:
+                cache[key] = func(*args, **kwargs)
+            return cache[key]
+
+        return wrapper
+
+    return caching_decorator

@@ -1138,10 +1138,10 @@ def initial_logging(
         eval_type = "Benchmarking"
 
     log_once(
-        f"\n[{dt.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}]"
         f"\n{eval_type} {model_id} on the {split_type} split of "
         f"{dataset_config.pretty_name} ({num_finished_benchmarks + 1}/"
-        f"{num_total_benchmarks} benchmarks)..."
+        f"{num_total_benchmarks} benchmarks)...",
+        prefix=f"\n[{dt.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}]",
     )
 
     if dataset_config.unofficial:
