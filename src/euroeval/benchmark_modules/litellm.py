@@ -481,6 +481,7 @@ class LiteLLMModel(BenchmarkModule):
                 f"The model {model_id!r} does not support logprobs, so disabling it.",
                 level=logging.DEBUG,
             )
+            breakpoint()
             generation_kwargs.pop("logprobs", None)
             generation_kwargs.pop("top_logprobs", None)
             return generation_kwargs
@@ -493,6 +494,7 @@ class LiteLLMModel(BenchmarkModule):
                 "so moving the value to `logprobs`.",
                 level=logging.DEBUG,
             )
+            breakpoint()
             generation_kwargs["logprobs"] = generation_kwargs.pop("top_logprobs", None)
             return generation_kwargs
         elif max_completion_tokens_pattern.search(string=error_msg):
