@@ -42,6 +42,7 @@ from load_ud_pos import (
     load_ptdt_pos,
     load_skdt_pos,
     load_svdt_pos,
+    load_ukdt_pos,
 )
 from pandas.errors import SettingWithCopyWarning
 from tqdm.auto import tqdm
@@ -71,6 +72,7 @@ def main() -> None:
         "lt": load_ltdt_pos,
         "cs": load_csdt_pos,
         "sk": load_skdt_pos,
+        "uk": load_ukdt_pos,
     }
 
     # Set up the progress bar and iterate over the languages

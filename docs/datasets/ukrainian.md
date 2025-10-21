@@ -153,12 +153,12 @@ euroeval --model <model-id> --dataset uner-sk
 
 ## Linguistic Acceptability
 
-### ScaLA-sk
+### ScaLA-uk
 
 This dataset was published in [this paper](https://aclanthology.org/2023.nodalida-1.20/)
-and was automatically created from the [Slovak Universal Dependencies
-treebank](https://github.com/UniversalDependencies/UD_Slovak-SNK) by assuming that the
-documents in the treebank are correct, and corrupting the samples to create
+and was automatically created from the [Ukrainian Universal Dependencies
+treebank](https://github.com/UniversalDependencies/UD_Ukrainian-ParlaMint) by assuming that
+the documents in the treebank are correct, and corrupting the samples to create
 grammatically incorrect samples. The corruptions were done by either removing a word
 from a sentence, or by swapping two neighbouring words in a sentence. To ensure that
 this does indeed break the grammaticality of the sentence, a set of rules were used on
@@ -172,22 +172,22 @@ Here are a few examples from the training split:
 
 ```json
 {
-    "text": "Niektorí pozorovatelia považujú ropné záujmy USA za jednu z hlavných motivácií vstupu do vojny v Iraku.",
-    "label": "correct"
+  "text": "Під патронатом Президента України в цьому році проведено ІІ Всеукраїнські літні спортивні ігри, які стали важливим етапом у підготовці до кваліфікаційних змагань по відбору до Літньої олімпіади в Афінах, сприяли зміцненню фізкультурно-спортивного руху, охопивши всі верстви населення.",
+  "label": "correct"
 }
 ```
 
 ```json
 {
-    "text": "Popáliť sa na jedinom písmene je klasický prípad, ktorý sa môže vyskytnúť v rôznych podobách.",
-    "label": "correct"
+  "text": "І прошу, давайте подякуємо за допомогу нашим білоруським сусідам.",
+  "label": "correct"
 }
 ```
 
 ```json
 {
-    "text": "Zo strachu o seba, pre svoju povýšenú zbabelosť zaprel svojho Majstra Pána.",
-    "label": "incorrect"
+  "text": "Шановні колеги, тепер переходимо до наступного.",
+  "label": "incorrect"
 }
 ```
 
@@ -198,32 +198,32 @@ When evaluating generative models, we use the following setup (see the
 - Prefix prompt:
 
   ```text
-  Nasledujú vety a či sú gramaticky správne.
+  Нижче наведені речення і їхня граматична правильність.
   ```
 
 - Base prompt template:
 
   ```text
-  Veta: {text}
-  Gramaticky správna: {label}
+  Речення: {text}
+  Граматично правильно: {label}
   ```
 
 - Instruction-tuned prompt template:
 
   ```text
-  Veta: {text}
+  Речення: {text}
 
-  Určite, či je veta gramaticky správna alebo nie. Odpovedzte so 'áno', ak je veta správna, a 'nie', ak nie je. Odpovedzte iba týmto slovom, a nič iné.
+  Визначте, чи речення граматично правильне чи ні. Відповідайте 'так', якщо речення правильне, і 'ні', якщо ні. Відповідайте лише цим словом, і нічим більше.
   ```
 
 - Label mapping:
-  - `correct` ➡️ `áno`
-  - `incorrect` ➡️ `nie`
+  - `correct` ➡️ `так`
+  - `incorrect` ➡️ `ні`
 
 You can evaluate this dataset directly as follows:
 
 ```bash
-euroeval --model <model-id> --dataset scala-sk
+euroeval --model <model-id> --dataset scala-uk
 ```
 
 ## Reading Comprehension
