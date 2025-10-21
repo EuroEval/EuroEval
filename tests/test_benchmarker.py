@@ -42,6 +42,7 @@ def test_benchmark_results_is_a_list(benchmarker: Benchmarker) -> None:
 
 
 @pytest.mark.dependency(name="encoder_benchmark")
+@pytest.mark.flaky(reruns=3, reruns_delay=5)
 def test_benchmark_encoder(
     benchmarker: Benchmarker, task: Task, language: Language, encoder_model_id: str
 ) -> None:
@@ -97,6 +98,7 @@ def test_benchmark_generative_adapter(
     condition=os.getenv("OPENAI_API_KEY") is None,
     reason="OpenAI API key is not available.",
 )
+@pytest.mark.flaky(reruns=3, reruns_delay=5)
 def test_benchmark_openai(
     benchmarker: Benchmarker, task: Task, language: Language, openai_model_id: str
 ) -> None:
@@ -111,6 +113,7 @@ def test_benchmark_openai(
 @pytest.mark.skipif(
     condition=os.system("uv run ollama -v") != 0, reason="Ollama is not available."
 )
+@pytest.mark.flaky(reruns=3, reruns_delay=5)
 def test_benchmark_ollama(
     benchmarker: Benchmarker, task: Task, language: Language, ollama_model_id: str
 ) -> None:
