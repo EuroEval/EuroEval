@@ -635,6 +635,8 @@
       
         
       
+        
+      
     
     
     
@@ -1262,7 +1264,27 @@
 <span class="normal">415</span>
 <span class="normal">416</span>
 <span class="normal">417</span>
-<span class="normal">418</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Templates for the Named Entity Recognition task.&quot;&quot;&quot;</span>
+<span class="normal">418</span>
+<span class="normal">419</span>
+<span class="normal">420</span>
+<span class="normal">421</span>
+<span class="normal">422</span>
+<span class="normal">423</span>
+<span class="normal">424</span>
+<span class="normal">425</span>
+<span class="normal">426</span>
+<span class="normal">427</span>
+<span class="normal">428</span>
+<span class="normal">429</span>
+<span class="normal">430</span>
+<span class="normal">431</span>
+<span class="normal">432</span>
+<span class="normal">433</span>
+<span class="normal">434</span>
+<span class="normal">435</span>
+<span class="normal">436</span>
+<span class="normal">437</span>
+<span class="normal">438</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Templates for the Named Entity Recognition task.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">t</span>
 
@@ -1287,6 +1309,7 @@
     <span class="n">NO</span><span class="p">,</span>
     <span class="n">PL</span><span class="p">,</span>
     <span class="n">PT</span><span class="p">,</span>
+    <span class="n">SK</span><span class="p">,</span>
     <span class="n">SV</span><span class="p">,</span>
 <span class="p">)</span>
 
@@ -1659,6 +1682,25 @@
         <span class="s2">&quot;nazewnicze w zdaniu. Wypisz je jako słownik JSON z kluczami &quot;</span>
         <span class="s2">&quot;</span><span class="si">{labels_str}</span><span class="s2">. Wartości odpowiadające kluczom powinny być listami jednostek &quot;</span>
         <span class="s2">&quot;nazewniczych danego typu, dokładnie tak, jak pojawiają się w zdaniu.&quot;</span><span class="p">,</span>
+    <span class="p">),</span>
+    <span class="n">SK</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
+        <span class="n">default_prompt_label_mapping</span><span class="o">=</span><span class="p">{</span>
+            <span class="s2">&quot;b-per&quot;</span><span class="p">:</span> <span class="s2">&quot;osoba&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;i-per&quot;</span><span class="p">:</span> <span class="s2">&quot;osoba&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;b-loc&quot;</span><span class="p">:</span> <span class="s2">&quot;miesto&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;i-loc&quot;</span><span class="p">:</span> <span class="s2">&quot;miesto&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;b-org&quot;</span><span class="p">:</span> <span class="s2">&quot;organizácia&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;i-org&quot;</span><span class="p">:</span> <span class="s2">&quot;organizácia&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;b-misc&quot;</span><span class="p">:</span> <span class="s2">&quot;rôzne&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;i-misc&quot;</span><span class="p">:</span> <span class="s2">&quot;rôzne&quot;</span><span class="p">,</span>
+        <span class="p">},</span>
+        <span class="n">default_prompt_prefix</span><span class="o">=</span><span class="s2">&quot;Nasledujúce sú vety a JSON-objekty s pomenovanými &quot;</span>
+        <span class="s2">&quot;entitami, ktoré sa nachádzajú v danej vete.&quot;</span><span class="p">,</span>
+        <span class="n">default_prompt_template</span><span class="o">=</span><span class="s2">&quot;Veta: </span><span class="si">{text}</span><span class="se">\n</span><span class="s2">Pomenované entity: </span><span class="si">{label}</span><span class="s2">&quot;</span><span class="p">,</span>
+        <span class="n">default_instruction_prompt</span><span class="o">=</span><span class="s2">&quot;Veta: </span><span class="si">{text}</span><span class="se">\n\n</span><span class="s2">Identifikujte pomenované &quot;</span>
+        <span class="s2">&quot;entity vo vete. Výstup by mal byť vo forme JSON-objektu s kľúčmi &quot;</span>
+        <span class="s2">&quot;</span><span class="si">{labels_str}</span><span class="s2">. Hodnoty by mali byť zoznamy pomenovaných entít danej &quot;</span>
+        <span class="s2">&quot;kategórie, presne tak, ako sa vyskytujú vo vete.&quot;</span><span class="p">,</span>
     <span class="p">),</span>
     <span class="n">SV</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
         <span class="n">default_prompt_label_mapping</span><span class="o">=</span><span class="p">{</span>

@@ -635,6 +635,8 @@
       
         
       
+        
+      
     
     
     
@@ -1057,7 +1059,20 @@
 <span class="normal">210</span>
 <span class="normal">211</span>
 <span class="normal">212</span>
-<span class="normal">213</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Templates for the Reading Comprehension task.&quot;&quot;&quot;</span>
+<span class="normal">213</span>
+<span class="normal">214</span>
+<span class="normal">215</span>
+<span class="normal">216</span>
+<span class="normal">217</span>
+<span class="normal">218</span>
+<span class="normal">219</span>
+<span class="normal">220</span>
+<span class="normal">221</span>
+<span class="normal">222</span>
+<span class="normal">223</span>
+<span class="normal">224</span>
+<span class="normal">225</span>
+<span class="normal">226</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Templates for the Reading Comprehension task.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">t</span>
 
@@ -1082,6 +1097,7 @@
     <span class="n">NO</span><span class="p">,</span>
     <span class="n">PL</span><span class="p">,</span>
     <span class="n">PT</span><span class="p">,</span>
+    <span class="n">SK</span><span class="p">,</span>
     <span class="n">SV</span><span class="p">,</span>
 <span class="p">)</span>
 
@@ -1259,6 +1275,18 @@
         <span class="s2">&quot;um máximo de 3 palavras: </span><span class="si">{label}</span><span class="s2">&quot;</span><span class="p">,</span>
         <span class="n">default_instruction_prompt</span><span class="o">=</span><span class="s2">&quot;Texto: </span><span class="si">{text}</span><span class="se">\n\n</span><span class="s2">Responde à seguinte pergunta &quot;</span>
         <span class="s2">&quot;sobre o texto acima num máximo de 3 palavras.</span><span class="se">\n\n</span><span class="s2">Pergunta: </span><span class="si">{question}</span><span class="s2">&quot;</span><span class="p">,</span>
+        <span class="n">default_prompt_label_mapping</span><span class="o">=</span><span class="nb">dict</span><span class="p">(),</span>
+    <span class="p">),</span>
+    <span class="n">SK</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
+        <span class="n">default_prompt_prefix</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;Nasledujú texty s pridruženými otázkami a odpoveďami.&quot;</span><span class="p">),</span>
+        <span class="n">default_prompt_template</span><span class="o">=</span><span class="p">(</span>
+            <span class="s2">&quot;Text: </span><span class="si">{text}</span><span class="se">\n</span><span class="s2">Otázka: </span><span class="si">{question}</span><span class="se">\n</span><span class="s2">Odpoveď na maximálne 3 slová: </span><span class="si">{label}</span><span class="s2">&quot;</span>
+        <span class="p">),</span>
+        <span class="n">default_instruction_prompt</span><span class="o">=</span><span class="p">(</span>
+            <span class="s2">&quot;Text: </span><span class="si">{text}</span><span class="se">\n\n</span><span class="s2">&quot;</span>
+            <span class="s2">&quot;Odpovedzte na nasledujúcu otázku týkajúcu sa textu uvedeného vyššie &quot;</span>
+            <span class="s2">&quot;maximálne 3 slovami.</span><span class="se">\n\n</span><span class="s2">Otázka: </span><span class="si">{question}</span><span class="s2">&quot;</span>
+        <span class="p">),</span>
         <span class="n">default_prompt_label_mapping</span><span class="o">=</span><span class="nb">dict</span><span class="p">(),</span>
     <span class="p">),</span>
     <span class="n">SV</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>

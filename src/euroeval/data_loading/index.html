@@ -635,6 +635,8 @@
       
         
       
+        
+      
     
     
     
@@ -1013,7 +1015,8 @@
 <span class="normal">140</span>
 <span class="normal">141</span>
 <span class="normal">142</span>
-<span class="normal">143</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Functions related to the loading of the data.&quot;&quot;&quot;</span>
+<span class="normal">143</span>
+<span class="normal">144</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Functions related to the loading of the data.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
@@ -1133,10 +1136,10 @@
             <span class="n">DatasetsError</span><span class="p">,</span>
             <span class="n">requests</span><span class="o">.</span><span class="n">ConnectionError</span><span class="p">,</span>
             <span class="n">requests</span><span class="o">.</span><span class="n">ReadTimeout</span><span class="p">,</span>
-        <span class="p">):</span>
+        <span class="p">)</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
             <span class="n">log</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;Failed to load dataset </span><span class="si">{</span><span class="n">dataset_config</span><span class="o">.</span><span class="n">huggingface_id</span><span class="si">!r}</span><span class="s2">. &quot;</span>
-                <span class="s2">&quot;Retrying...&quot;</span><span class="p">,</span>
+                <span class="sa">f</span><span class="s2">&quot;Failed to load dataset </span><span class="si">{</span><span class="n">dataset_config</span><span class="o">.</span><span class="n">huggingface_id</span><span class="si">!r}</span><span class="s2">, due to &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;the following error: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">. Retrying...&quot;</span><span class="p">,</span>
                 <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
             <span class="p">)</span>
             <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
@@ -1146,7 +1149,8 @@
     <span class="k">else</span><span class="p">:</span>
         <span class="k">raise</span> <span class="n">InvalidBenchmark</span><span class="p">(</span>
             <span class="sa">f</span><span class="s2">&quot;Failed to load dataset </span><span class="si">{</span><span class="n">dataset_config</span><span class="o">.</span><span class="n">huggingface_id</span><span class="si">!r}</span><span class="s2"> after &quot;</span>
-            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">num_attempts</span><span class="si">}</span><span class="s2"> attempts.&quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">num_attempts</span><span class="si">}</span><span class="s2"> attempts. Run with verbose mode to see the individual &quot;</span>
+            <span class="s2">&quot;errors.&quot;</span>
         <span class="p">)</span>
     <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="n">DatasetDict</span><span class="p">)</span>  <span class="c1"># type: ignore[used-before-def]</span>
     <span class="n">missing_keys</span> <span class="o">=</span> <span class="p">[</span><span class="n">key</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">dataset_config</span><span class="o">.</span><span class="n">splits</span> <span class="k">if</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">dataset</span><span class="p">]</span>

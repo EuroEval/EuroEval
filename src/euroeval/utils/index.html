@@ -635,6 +635,8 @@
       
         
       
+        
+      
     
     
     
@@ -1499,8 +1501,8 @@
 <span class="kn">import</span><span class="w"> </span><span class="nn">random</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">socket</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">t</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">functools</span><span class="w"> </span><span class="kn">import</span> <span class="n">cache</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">demjson3</span>
@@ -1508,6 +1510,8 @@
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
 
+<span class="kn">from</span><span class="w"> </span><span class="nn">.caching_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">cache_arguments</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.constants</span><span class="w"> </span><span class="kn">import</span> <span class="n">T</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.exceptions</span><span class="w"> </span><span class="kn">import</span> <span class="n">InvalidBenchmark</span><span class="p">,</span> <span class="n">InvalidModel</span><span class="p">,</span> <span class="n">NaNValueInModelOutput</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.logging_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">log</span><span class="p">,</span> <span class="n">log_once</span>
 
@@ -1684,26 +1688,27 @@
     <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">major</span><span class="si">}</span><span class="s2">.</span><span class="si">{</span><span class="n">minor</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
 
-<span class="nd">@cache</span>
+<span class="nd">@cache_arguments</span><span class="p">(</span><span class="n">disable_condition</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">sys</span><span class="p">,</span> <span class="s2">&quot;_called_from_test&quot;</span><span class="p">))</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">internet_connection_available</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span><div class="mkapi-source-link" id="euroeval.utils.internet_connection_available"><a href="../../../api/euroeval/utils/#euroeval.utils.internet_connection_available" title="Go to docs">[docs]</a></div>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Checks if internet connection is available by pinging google.com.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        Whether or not internet connection is available.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">internet_available</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+
     <span class="k">try</span><span class="p">:</span>
         <span class="n">s</span> <span class="o">=</span> <span class="n">socket</span><span class="o">.</span><span class="n">create_connection</span><span class="p">((</span><span class="s2">&quot;1.1.1.1&quot;</span><span class="p">,</span> <span class="mi">80</span><span class="p">))</span>
         <span class="n">s</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
-        <span class="k">return</span> <span class="kc">True</span>
-
-    <span class="c1"># We want to only catch exceptions related to socket connections, but as we cannot</span>
-    <span class="c1"># import these here as they&#39;re developer dependencies, we check the exception name</span>
-    <span class="c1"># instead. If the exception is not related to socket connections, we reraise it.</span>
+        <span class="n">internet_available</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="k">except</span> <span class="ne">OSError</span><span class="p">:</span>
+        <span class="k">pass</span>
     <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
         <span class="n">pytest_socket_errors</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;SocketConnectBlockedError&quot;</span><span class="p">,</span> <span class="s2">&quot;SocketBlockedError&quot;</span><span class="p">]</span>
-        <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span> <span class="ow">in</span> <span class="n">pytest_socket_errors</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">e</span><span class="p">,</span> <span class="ne">OSError</span><span class="p">):</span>
-            <span class="k">return</span> <span class="kc">False</span>
-        <span class="k">raise</span> <span class="n">e</span>
+        <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">pytest_socket_errors</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">e</span>
+
+    <span class="k">return</span> <span class="n">internet_available</span>
 
 <div class="mkapi-source-link" id="euroeval.utils.raise_if_model_output_contains_nan_values"><a href="../../../api/euroeval/utils/#euroeval.utils.raise_if_model_output_contains_nan_values" title="Go to docs">[docs]</a></div>
 <span class="k">def</span><span class="w"> </span><span class="nf">raise_if_model_output_contains_nan_values</span><span class="p">(</span><span class="n">model_output</span><span class="p">:</span> <span class="s2">&quot;Predictions&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
@@ -1775,9 +1780,6 @@
         <span class="k">return</span> <span class="n">importlib</span><span class="o">.</span><span class="n">metadata</span><span class="o">.</span><span class="n">version</span><span class="p">(</span><span class="n">package_name</span><span class="p">)</span>
     <span class="k">except</span> <span class="n">importlib</span><span class="o">.</span><span class="n">metadata</span><span class="o">.</span><span class="n">PackageNotFoundError</span><span class="p">:</span>
         <span class="k">return</span> <span class="kc">None</span>
-
-
-<span class="n">T</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">TypeVar</span><span class="p">(</span><span class="s2">&quot;T&quot;</span><span class="p">,</span> <span class="n">bound</span><span class="o">=</span><span class="nb">object</span><span class="p">)</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">safe_run</span><span class="p">(</span><span class="n">coroutine</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Coroutine</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">Any</span><span class="p">,</span> <span class="n">t</span><span class="o">.</span><span class="n">Any</span><span class="p">,</span> <span class="n">T</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">T</span><span class="p">:</span><div class="mkapi-source-link" id="euroeval.utils.safe_run"><a href="../../../api/euroeval/utils/#euroeval.utils.safe_run" title="Go to docs">[docs]</a></div>
@@ -1867,7 +1869,7 @@
     <span class="k">return</span> <span class="n">json_output</span>
 
 
-<span class="nd">@cache</span>
+<span class="nd">@cache_arguments</span><span class="p">()</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">get_hf_token</span><span class="p">(</span><span class="n">api_key</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">bool</span><span class="p">:</span><div class="mkapi-source-link" id="euroeval.utils.get_hf_token"><a href="../../../api/euroeval/utils/#euroeval.utils.get_hf_token" title="Go to docs">[docs]</a></div>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the Hugging Face token.</span>
 

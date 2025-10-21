@@ -635,6 +635,8 @@
       
         
       
+        
+      
     
     
     
@@ -2323,13 +2325,14 @@
 <span class="normal">1282</span>
 <span class="normal">1283</span>
 <span class="normal">1284</span>
-<span class="normal">1285</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Encoder models from the Hugging Face Hub.&quot;&quot;&quot;</span>
+<span class="normal">1285</span>
+<span class="normal">1286</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Encoder models from the Hugging Face Hub.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">c</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">t</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">functools</span><span class="w"> </span><span class="kn">import</span> <span class="n">cache</span><span class="p">,</span> <span class="n">cached_property</span><span class="p">,</span> <span class="n">partial</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">functools</span><span class="w"> </span><span class="kn">import</span> <span class="n">cached_property</span><span class="p">,</span> <span class="n">partial</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">json</span><span class="w"> </span><span class="kn">import</span> <span class="n">JSONDecodeError</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">time</span><span class="w"> </span><span class="kn">import</span> <span class="n">sleep</span>
@@ -2361,6 +2364,7 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">transformers.trainer</span><span class="w"> </span><span class="kn">import</span> <span class="n">Trainer</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">urllib3.exceptions</span><span class="w"> </span><span class="kn">import</span> <span class="n">RequestError</span>
 
+<span class="kn">from</span><span class="w"> </span><span class="nn">..caching_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">cache_arguments</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..constants</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">DUMMY_FILL_VALUE</span><span class="p">,</span>
     <span class="n">GENERATIVE_PIPELINE_TAGS</span><span class="p">,</span>
@@ -3029,7 +3033,7 @@
     <span class="k">return</span> <span class="n">model</span><span class="p">,</span> <span class="n">tokeniser</span>
 
 
-<span class="nd">@cache</span>
+<span class="nd">@cache_arguments</span><span class="p">(</span><span class="s2">&quot;model_id&quot;</span><span class="p">,</span> <span class="s2">&quot;revision&quot;</span><span class="p">)</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">get_model_repo_info</span><span class="p">(</span><div class="mkapi-source-link" id="euroeval.benchmark_modules.hf.get_model_repo_info"><a href="../../../../api/euroeval/benchmark_modules/hf/#euroeval.benchmark_modules.hf.get_model_repo_info" title="Go to docs">[docs]</a></div>
     <span class="n">model_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">revision</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
@@ -3288,7 +3292,7 @@
     <span class="k">return</span> <span class="n">tokeniser</span>
 
 
-<span class="nd">@cache</span>
+<span class="nd">@cache_arguments</span><span class="p">()</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">get_dtype</span><span class="p">(</span><div class="mkapi-source-link" id="euroeval.benchmark_modules.hf.get_dtype"><a href="../../../../api/euroeval/benchmark_modules/hf/#euroeval.benchmark_modules.hf.get_dtype" title="Go to docs">[docs]</a></div>
     <span class="n">device</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">device</span><span class="p">,</span> <span class="n">dtype_is_set</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span> <span class="n">bf16_available</span><span class="p">:</span> <span class="nb">bool</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">torch</span><span class="o">.</span><span class="n">dtype</span><span class="p">:</span>
@@ -3315,7 +3319,7 @@
     <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">float32</span>
 
 
-<span class="nd">@cache</span>
+<span class="nd">@cache_arguments</span><span class="p">(</span><span class="s2">&quot;model_id&quot;</span><span class="p">,</span> <span class="s2">&quot;revision&quot;</span><span class="p">,</span> <span class="s2">&quot;num_labels&quot;</span><span class="p">,</span> <span class="s2">&quot;id2label&quot;</span><span class="p">,</span> <span class="s2">&quot;label2id&quot;</span><span class="p">)</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">load_hf_model_config</span><span class="p">(</span><div class="mkapi-source-link" id="euroeval.benchmark_modules.hf.load_hf_model_config"><a href="../../../../api/euroeval/benchmark_modules/hf/#euroeval.benchmark_modules.hf.load_hf_model_config" title="Go to docs">[docs]</a></div>
     <span class="n">model_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">num_labels</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
@@ -3590,7 +3594,7 @@
     <span class="k">return</span> <span class="n">model</span><span class="p">,</span> <span class="n">tokeniser</span>
 
 
-<span class="nd">@cache</span>
+<span class="nd">@cache_arguments</span><span class="p">()</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">task_group_to_class_name</span><span class="p">(</span><span class="n">task_group</span><span class="p">:</span> <span class="n">TaskGroup</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span><div class="mkapi-source-link" id="euroeval.benchmark_modules.hf.task_group_to_class_name"><a href="../../../../api/euroeval/benchmark_modules/hf/#euroeval.benchmark_modules.hf.task_group_to_class_name" title="Go to docs">[docs]</a></div>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Convert a task group to a class name.</span>
 

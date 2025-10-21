@@ -641,6 +641,8 @@
       
         
       
+        
+      
     
     
     
@@ -873,6 +875,8 @@
       
         
       
+        
+      
     
     
     
@@ -999,6 +1003,8 @@
       
         
           
+        
+      
         
       
         
@@ -1312,6 +1318,29 @@
   
   <span class="md-ellipsis">
     euroeval.benchmark_config_factory
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../caching_utils/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    euroeval.caching_utils
     
   </span>
   
@@ -2811,7 +2840,7 @@ The version of the package, or None if the package is not installed.</p>
 <i class="fa-regular fa-square-minus"></i>
 </span>
 </span>
-<span class="mkapi-object-name"><a href="./#euroeval.utils.safe_run" title="euroeval.utils.safe_run">safe_run</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">coroutine</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="typing">t</span>.<span class="mkapi-tooltip" title="typing.Coroutine">Coroutine</span>[<span class="mkapi-tooltip" title="typing">t</span>.<span class="mkapi-tooltip" title="typing.Any">Any</span>, <span class="mkapi-tooltip" title="typing">t</span>.<span class="mkapi-tooltip" title="typing.Any">Any</span>, <span class="mkapi-tooltip" title="euroeval.utils.T">T</span>]</span><span class="mkapi-paren">)</span><span class="mkapi-arrow"> → </span><span class="mkapi-return"><span class="mkapi-tooltip" title="euroeval.utils.T">T</span></span></span>
+<span class="mkapi-object-name"><a href="./#euroeval.utils.safe_run" title="euroeval.utils.safe_run">safe_run</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">coroutine</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="typing">t</span>.<span class="mkapi-tooltip" title="typing.Coroutine">Coroutine</span>[<span class="mkapi-tooltip" title="typing">t</span>.<span class="mkapi-tooltip" title="typing.Any">Any</span>, <span class="mkapi-tooltip" title="typing">t</span>.<span class="mkapi-tooltip" title="typing.Any">Any</span>, <span class="mkapi-tooltip" title="euroeval.constants.T">T</span>]</span><span class="mkapi-paren">)</span><span class="mkapi-arrow"> → </span><span class="mkapi-return"><span class="mkapi-tooltip" title="euroeval.constants.T">T</span></span></span>
 </p>
 <div class="mkapi-document">
 <p>Run a coroutine, ensuring that the event loop is always closed when we're done.</p>
@@ -2827,7 +2856,7 @@ The version of the package, or None if the package is not installed.</p>
 <ul class="mkapi-item-list">
 <li>
 <p><span class="mkapi-item-name">coroutine</span> : 
-<span class="mkapi-item-type"><span class="mkapi-tooltip" title="typing">t</span>.<span class="mkapi-tooltip" title="typing.Coroutine">Coroutine</span>[<span class="mkapi-tooltip" title="typing">t</span>.<span class="mkapi-tooltip" title="typing.Any">Any</span>, <span class="mkapi-tooltip" title="typing">t</span>.<span class="mkapi-tooltip" title="typing.Any">Any</span>, <span class="mkapi-tooltip" title="euroeval.utils.T">T</span>]</span> <span class="mkapi-dash">&mdash;</span>
+<span class="mkapi-item-type"><span class="mkapi-tooltip" title="typing">t</span>.<span class="mkapi-tooltip" title="typing.Coroutine">Coroutine</span>[<span class="mkapi-tooltip" title="typing">t</span>.<span class="mkapi-tooltip" title="typing.Any">Any</span>, <span class="mkapi-tooltip" title="typing">t</span>.<span class="mkapi-tooltip" title="typing.Any">Any</span>, <span class="mkapi-tooltip" title="euroeval.constants.T">T</span>]</span> <span class="mkapi-dash">&mdash;</span>
 The coroutine to run.</p>
 </li>
 </ul>
@@ -2843,7 +2872,7 @@ The coroutine to run.</p>
 <div class="mkapi-section-content">
 <ul class="mkapi-item-list">
 <li>
-<p><span class="mkapi-item-type"><span class="mkapi-tooltip" title="euroeval.utils.T">T</span></span> <span class="mkapi-dash">&mdash;</span>
+<p><span class="mkapi-item-type"><span class="mkapi-tooltip" title="euroeval.constants.T">T</span></span> <span class="mkapi-dash">&mdash;</span>
 The result of the coroutine.</p>
 </li>
 </ul>
@@ -2858,7 +2887,7 @@ The result of the coroutine.</p>
 <i class="fa-regular fa-square-minus"></i>
 </span>
 </span><span class="mkapi-object-kind">async</span>
-<span class="mkapi-object-name"><a href="./#euroeval.utils.add_semaphore_and_catch_exception" title="euroeval.utils.add_semaphore_and_catch_exception">add_semaphore_and_catch_exception</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">coroutine</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="typing">t</span>.<span class="mkapi-tooltip" title="typing.Coroutine">Coroutine</span>[<span class="mkapi-tooltip" title="typing">t</span>.<span class="mkapi-tooltip" title="typing.Any">Any</span>, <span class="mkapi-tooltip" title="typing">t</span>.<span class="mkapi-tooltip" title="typing.Any">Any</span>, <span class="mkapi-tooltip" title="euroeval.utils.T">T</span>]</span><span class="mkapi-comma">, </span><span class="mkapi-arg">semaphore</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="asyncio">asyncio</span>.<span class="mkapi-tooltip" title="asyncio.locks.Semaphore">Semaphore</span></span><span class="mkapi-paren">)</span><span class="mkapi-arrow"> → </span><span class="mkapi-return"><span class="mkapi-tooltip" title="euroeval.utils.T">T</span> | Exception</span></span>
+<span class="mkapi-object-name"><a href="./#euroeval.utils.add_semaphore_and_catch_exception" title="euroeval.utils.add_semaphore_and_catch_exception">add_semaphore_and_catch_exception</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">coroutine</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="typing">t</span>.<span class="mkapi-tooltip" title="typing.Coroutine">Coroutine</span>[<span class="mkapi-tooltip" title="typing">t</span>.<span class="mkapi-tooltip" title="typing.Any">Any</span>, <span class="mkapi-tooltip" title="typing">t</span>.<span class="mkapi-tooltip" title="typing.Any">Any</span>, <span class="mkapi-tooltip" title="euroeval.constants.T">T</span>]</span><span class="mkapi-comma">, </span><span class="mkapi-arg">semaphore</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="asyncio">asyncio</span>.<span class="mkapi-tooltip" title="asyncio.locks.Semaphore">Semaphore</span></span><span class="mkapi-paren">)</span><span class="mkapi-arrow"> → </span><span class="mkapi-return"><span class="mkapi-tooltip" title="euroeval.constants.T">T</span> | Exception</span></span>
 </p>
 <div class="mkapi-document">
 <p>Run a coroutine with a semaphore.</p>
@@ -2874,7 +2903,7 @@ The result of the coroutine.</p>
 <ul class="mkapi-item-list">
 <li>
 <p><span class="mkapi-item-name">coroutine</span> : 
-<span class="mkapi-item-type"><span class="mkapi-tooltip" title="typing">t</span>.<span class="mkapi-tooltip" title="typing.Coroutine">Coroutine</span>[<span class="mkapi-tooltip" title="typing">t</span>.<span class="mkapi-tooltip" title="typing.Any">Any</span>, <span class="mkapi-tooltip" title="typing">t</span>.<span class="mkapi-tooltip" title="typing.Any">Any</span>, <span class="mkapi-tooltip" title="euroeval.utils.T">T</span>]</span> <span class="mkapi-dash">&mdash;</span>
+<span class="mkapi-item-type"><span class="mkapi-tooltip" title="typing">t</span>.<span class="mkapi-tooltip" title="typing.Coroutine">Coroutine</span>[<span class="mkapi-tooltip" title="typing">t</span>.<span class="mkapi-tooltip" title="typing.Any">Any</span>, <span class="mkapi-tooltip" title="typing">t</span>.<span class="mkapi-tooltip" title="typing.Any">Any</span>, <span class="mkapi-tooltip" title="euroeval.constants.T">T</span>]</span> <span class="mkapi-dash">&mdash;</span>
 The coroutine to run.</p>
 </li>
 <li>
@@ -2895,7 +2924,7 @@ The semaphore to use.</p>
 <div class="mkapi-section-content">
 <ul class="mkapi-item-list">
 <li>
-<p><span class="mkapi-item-type"><span class="mkapi-tooltip" title="euroeval.utils.T">T</span> | Exception</span> <span class="mkapi-dash">&mdash;</span>
+<p><span class="mkapi-item-type"><span class="mkapi-tooltip" title="euroeval.constants.T">T</span> | Exception</span> <span class="mkapi-dash">&mdash;</span>
 The result of the coroutine.</p>
 </li>
 </ul>

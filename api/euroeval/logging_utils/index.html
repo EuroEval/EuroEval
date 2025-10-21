@@ -643,6 +643,8 @@
       
         
       
+        
+      
     
     
     
@@ -875,6 +877,8 @@
       
         
       
+        
+      
     
     
     
@@ -1001,6 +1005,8 @@
       
         
           
+        
+      
         
       
         
@@ -1314,6 +1320,29 @@
   
   <span class="md-ellipsis">
     euroeval.benchmark_config_factory
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../caching_utils/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    euroeval.caching_utils
     
   </span>
   
@@ -2202,12 +2231,12 @@ If the logging level is invalid.</p>
 <i class="fa-regular fa-square-minus"></i>
 </span>
 </span>
-<span class="mkapi-object-name"><a href="./#euroeval.logging_utils.log_once" title="euroeval.logging_utils.log_once">log_once</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">message</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str</span><span class="mkapi-comma">, </span><span class="mkapi-arg">level</span><span class="mkapi-colon">: </span><span class="mkapi-ann">int</span><span class="mkapi-equal"> = </span><span class="mkapi-default"><span class="mkapi-tooltip" title="logging">logging</span>.<span class="mkapi-tooltip" title="logging.INFO">INFO</span></span><span class="mkapi-paren">)</span><span class="mkapi-arrow"> → </span><span class="mkapi-return">None</span></span>
+<span class="mkapi-object-name"><a href="./#euroeval.logging_utils.log_once" title="euroeval.logging_utils.log_once">log_once</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">message</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str</span><span class="mkapi-comma">, </span><span class="mkapi-arg">level</span><span class="mkapi-colon">: </span><span class="mkapi-ann">int</span><span class="mkapi-equal"> = </span><span class="mkapi-default"><span class="mkapi-tooltip" title="logging">logging</span>.<span class="mkapi-tooltip" title="logging.INFO">INFO</span></span><span class="mkapi-comma">, </span><span class="mkapi-arg">prefix</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str</span><span class="mkapi-equal"> = </span><span class="mkapi-default">''</span><span class="mkapi-paren">)</span><span class="mkapi-arrow"> → </span><span class="mkapi-return">None</span></span>
 </p>
 <div class="mkapi-document">
 <p>Log a message once.</p>
-<p>This is ensured by caching the input/output pairs of this function, using the
-<span class="mkapi-tooltip" title="functools.cache"><code>functools.cache</code></span> decorator.</p>
+<p>This is ensured by caching the "message" argument and only logging it the first time
+this function is called with that message.</p>
 <p class="mkapi-section">
 <span class="mkapi-object-link">
 <span class="mkapi-section-toggle" title="Toggle parameters">
@@ -2227,6 +2256,12 @@ The message to log.</p>
 <p><span class="mkapi-item-name">level</span> : 
 <span class="mkapi-item-type">int</span> <span class="mkapi-dash">&mdash;</span>
 The logging level. Defaults to logging.INFO.</p>
+</li>
+<li>
+<p><span class="mkapi-item-name">prefix</span> : 
+<span class="mkapi-item-type">str</span> <span class="mkapi-dash">&mdash;</span>
+A prefix to add to the message, which is not considered when determining if
+the message has been logged before.</p>
 </li>
 </ul>
 </div>
