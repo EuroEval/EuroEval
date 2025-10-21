@@ -51,6 +51,7 @@ from ..generation_utils import (
 from ..languages import get_all_languages
 from ..logging_utils import get_pbar, log, log_once, no_terminal_output
 from ..task_group_utils import (
+    logical_reasoning,
     question_answering,
     sequence_classification,
     text_to_text,
@@ -246,6 +247,8 @@ class VLLMModel(HuggingFaceEncoderModel):
                     model_config=self.model_config,
                     first_label_token_mapping=self.buffer["first_label_token_mapping"],
                 )
+            case TaskGroup.LOGICAL_REASONING:
+                return logical_reasoning.extract_labels_from_generation
             case TaskGroup.TEXT_TO_TEXT:
                 return text_to_text.extract_labels_from_generation
             case TaskGroup.TOKEN_CLASSIFICATION:
