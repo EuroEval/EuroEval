@@ -22,6 +22,7 @@ from .portuguese import *  # noqa: F403
 from .slovak import *  # noqa: F403
 from .spanish import *  # noqa: F403
 from .swedish import *  # noqa: F403
+from .ukrainian import *  # noqa: F403
 
 
 def get_all_dataset_configs() -> dict[str, DatasetConfig]:

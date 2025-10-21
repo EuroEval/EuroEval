@@ -76,12 +76,13 @@ euroeval --model <model-id> --dataset cross-domain-uk-reviews
 
 ## Named Entity Recognition
 
-### UNER-sk
+### NER-uk
 
-This dataset was published in
-[this paper](https://aclanthology.org/2024.naacl-long.243/).
+The dataset can be found [here](https://github.com/lang-uk/ner-uk).
+The dataset primarily consists of text from the
+[Open Corpus of Ukrainian Texts](https://github.com/brown-uk/corpus).
 
-The original dataset consists of 8,482 / 1,059 / 1,060 samples for the
+The original dataset consists of 10,833 / 668 / 1,307 samples for the
 training, validation, and test splits, respectively. We use 1,024 / 256 / 2,048
 samples for our training, validation and test splits, respectively. The train and
 validation splits are subsets of the original splits, while the test split is
@@ -91,22 +92,22 @@ Here are a few examples from the training split:
 
 ```json
 {
-  "tokens": ["Bude", "mať", "názov", "Shanghai", "Noon", "a", "režisérom", "bude", "debutujúci", "Tom", "Dey", "."],
-  "labels": ["O", "O", "O", "O", "O", "O", "O", "O", "O", "B-PER", "I-PER", "O"]
+  "tokens": ["Хоча", "непросто", "про", "неї", "розповісти", "»", ".", "Ведмідь", "замовк", ",", "подивився", "на", "друзів", ",", "які", "уважно", "його", "слухали", ",", "і", "запитав", ":"],
+  "labels": ["O", "O", "O", "O", "O", "O", "O", "B-PER", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O"]
 }
 ```
 
 ```json
 {
-  "tokens": ["Ako", "šesťročného", "(", "o", "rok", "skôr", ",", "než", "bolo", "zvykom", ")", "ho", "na", "základe", "zvláštnej", "výnimky", "prijali", "medzi", "Zvedov", "a", "ako", "deväťročný", "sa", "stal", "vedúcim", "skupiny", "."],
-  "labels": ["O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "B-ORG", "O", "O", "O", "O", "O", "O", "O", "O"]
+  "tokens": ["Експериментальний", "матеріал", "було", "оброблено", "статистично", ".", "Метою", "запропонованої", "статті", "є", "аналіз", "структурно-змістових", "особливостей", "перетворень", "у", "районній", "пресі", "Тернопільщини", "означеного", "періоду", "."],
+  "labels": ["O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "B-LOC", "O", "O", "O"]
 }
 ```
 
 ```json
 {
-  "tokens": ["To", "predsa", "stojí", "za", "pokus", "!"],
-  "labels": ["O", "O", "O", "O", "O", "O"]
+  "tokens": ["Як", "відомо", ",", "рішення", "«", "Про", "вихід", "зі", "складу", "засновників", "редакції", "газети", "«", "Житомирщина", "»", "з", "ініціативи", "голови", "обласної", "ради", "було", "прийнято", "на", "другій", "сесії", "обласної", "ради", "24", "грудня", "минулого", "року", "—", "саме", "того", "дня", ",", "коли", "Верховна", "Рада", "ухвалила", "в", "остаточній", "редакції", "Закон", "про", "реформування", "преси", "."],
+  "labels": ["O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "B-ORG", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "B-ORG", "I-ORG", "O", "O", "O", "O", "O", "O", "O", "O", "O"]
 }
 ```
 
@@ -117,38 +118,38 @@ When evaluating generative models, we use the following setup (see the
 - Prefix prompt:
 
   ```text
-  Nasledujúce sú vety a JSON-objekty s pomenovanými entitami, ktoré sa nachádzajú v danej vete.
+  Нижче наведені речення та JSON-словники з іменованими сутностями, які присутні у даному реченні.
   ```
 
 - Base prompt template:
 
   ```text
-  Veta: {text}
-  Pomenované entity: {label}
+  Речення: {text}
+  Іменовані сутності: {label}
   ```
 
 - Instruction-tuned prompt template:
 
   ```text
-  Veta: {text}
+  Речення: {text}
 
-  Identifikujte pomenované entity vo vete. Výstup by mal byť vo forme JSON-objektu s kľúčmi 'osoba', 'miesto', 'organizácia' a 'rôzne'. Hodnoty by mali byť zoznamy pomenovaných entít danej kategórie, presne tak, ako sa vyskytujú vo vete.
+  Ідентифікуйте іменовані сутності у реченні. Ви повинні вивести це як JSON-словник з ключами 'особа', 'місце', 'організація' та 'різне'. Значення мають бути списками іменованих сутностей цього типу, точно такими, як вони з'являються у реченні.
   ```
 
 - Label mapping:
-  - `B-PER` ➡️ `osoba`
-  - `I-PER` ➡️ `osoba`
-  - `B-LOC` ➡️ `miesto`
-  - `I-LOC` ➡️ `miesto`
-  - `B-ORG` ➡️ `organizácia`
-  - `I-ORG` ➡️ `organizácia`
-  - `B-MISC` ➡️ `rôzne`
-  - `I-MISC` ➡️ `rôzne`
+  - `B-PER` ➡️ `особа`
+  - `I-PER` ➡️ `особа`
+  - `B-LOC` ➡️ `місце`
+  - `I-LOC` ➡️ `місце`
+  - `B-ORG` ➡️ `організація`
+  - `I-ORG` ➡️ `організація`
+  - `B-MISC` ➡️ `різне`
+  - `I-MISC` ➡️ `різне`
 
 You can evaluate this dataset directly as follows:
 
 ```bash
-euroeval --model <model-id> --dataset uner-sk
+euroeval --model <model-id> --dataset ner-uk-mini
 ```
 
 ## Linguistic Acceptability

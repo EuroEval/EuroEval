@@ -25,6 +25,7 @@ from ..languages import (
     PT,
     SK,
     SV,
+    UK,
 )
 
 if t.TYPE_CHECKING:
@@ -434,5 +435,25 @@ NER_TEMPLATES: dict["Language", PromptConfig] = {
         "enheterna i meningen. Du ska outputta detta som en JSON-ordbok med nycklarna "
         "{labels_str}. Värdena ska vara listor över de namngivna enheter av den "
         "typen, precis som de förekommer i meningen.",
+    ),
+    UK: PromptConfig(
+        default_prompt_label_mapping={
+            "b-per": "особа",
+            "i-per": "особа",
+            "b-loc": "місце",
+            "i-loc": "місце",
+            "b-org": "організація",
+            "i-org": "організація",
+            "b-misc": "різне",
+            "i-misc": "різне",
+        },
+        default_prompt_prefix="Нижче наведені речення та JSON-словники з іменованими "
+        "сутностями, які присутні у даному реченні.",
+        default_prompt_template="Речення: {text}\nІменовані сутності: {label}",
+        default_instruction_prompt="Речення: {text}\n\n"
+        "Ідентифікуйте іменовані сутності у "
+        "реченні. Ви повинні вивести це як JSON-словник з ключами {labels_str}. "
+        "Значення мають бути списками іменованих сутностей цього типу, точно "
+        "такими, як вони з'являються у реченні.",
     ),
 }

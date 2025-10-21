@@ -2,7 +2,7 @@
 
 from ..data_models import DatasetConfig
 from ..languages import UK
-from ..tasks import LA, SENT
+from ..tasks import LA, NER, SENT
 
 ### Official datasets ###
 
@@ -20,5 +20,14 @@ SCALA_UK_CONFIG = DatasetConfig(
     pretty_name="the Ukrainian part of the linguistic acceptability dataset ScaLA",
     huggingface_id="EuroEval/scala-uk",
     task=LA,
+    languages=[UK],
+)
+
+NER_UK_CONFIG = DatasetConfig(
+    name="ner-uk",
+    pretty_name="the truncated version of the Ukrainian named entity recognition "
+    "dataset NER-uk",
+    huggingface_id="EuroEval/ner-uk-mini",
+    task=NER,
     languages=[UK],
 )
