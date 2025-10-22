@@ -149,7 +149,7 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-euroeval --model <model-id> --dataset ner-uk-mini
+euroeval --model <model-id> --dataset ner-uk
 ```
 
 ## Linguistic Acceptability
