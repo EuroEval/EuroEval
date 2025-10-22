@@ -66,4 +66,5 @@ WINOGRANDE_UK_CONFIG = DatasetConfig(
     huggingface_id="EuroEval/winogrande-uk",
     task=COMMON_SENSE,
     languages=[UK],
+    _labels=["a", "b"],
 )
