@@ -1,4 +1,4 @@
-"""All Slovak dataset configurations used in EuroEval."""
+"""All Greek dataset configurations used in EuroEval."""
 
 from ..data_models import DatasetConfig
 from ..languages import EL
