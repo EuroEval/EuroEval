@@ -148,8 +148,11 @@ class HuggingFaceMetric(Metric):
 
     def close(self) -> None:
         """Close any resources held by the metric."""
-        if self.metric is not None and self.metric.writer is not None:
-            self.metric.writer.finalize(close_stream=True)
+        if self.metric is not None:
+            if self.metric.filelock is not None:
+                self.metric.filelock.release(force=True)
+            if self.metric.writer is not None:
+                self.metric.writer.finalize(close_stream=True)
 
     def __del__(self) -> None:
         """Clean up the metric from memory."""
