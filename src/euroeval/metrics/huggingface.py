@@ -121,7 +121,10 @@ class HuggingFaceMetric(Metric):
         if self.metric is None:
             self.download(cache_dir=benchmark_config.cache_dir)
 
-        assert self.metric is not None
+        assert self.metric is not None, (
+            "Metric has not been downloaded. Please call download() before using the "
+            "__call__ method."
+        )
 
         with no_terminal_output(disable=benchmark_config.verbose):
             results = self.metric.compute(
@@ -140,13 +143,21 @@ class HuggingFaceMetric(Metric):
         if isinstance(score, np.floating):
             score = float(score)
 
+        self.close()
         return score
+
+    def close(self) -> None:
+        """Close any resources held by the metric."""
+        if self.metric is not None:
+            if self.metric.filelock is not None:
+                self.metric.filelock.release(force=True)
+            if self.metric.writer is not None:
+                self.metric.writer.finalize(close_stream=True)
 
     def __del__(self) -> None:
         """Clean up the metric from memory."""
         if self.metric is not None:
-            if self.metric.writer is not None:
-                self.metric.writer.close()
+            self.close()
             del self.metric
 
 
