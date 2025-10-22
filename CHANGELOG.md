@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Fixed
+
+- The previous fix to close arrow writers in metrics did not work as intended, as the
+  "too many open files" error still occurred. We now ensure that the writers are closed
+  properly after each metric computation to avoid this issue.
+
 ## [v16.4.0] - 2025-10-21
 
 ### Added

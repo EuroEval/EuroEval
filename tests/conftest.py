@@ -11,7 +11,7 @@ from click import ParamType
 
 from euroeval.cli import benchmark
 from euroeval.data_models import BenchmarkConfig, DatasetConfig, ModelConfig, Task
-from euroeval.dataset_configs import SPEED_CONFIG, get_all_dataset_configs
+from euroeval.dataset_configs import get_all_dataset_configs
 from euroeval.enums import InferenceBackend, ModelType
 from euroeval.languages import DA, get_all_languages
 from euroeval.metrics import HuggingFaceMetric
@@ -29,15 +29,24 @@ def pytest_unconfigure() -> None:
     delattr(sys, "_called_from_test")
 
 
-if os.environ.get("TEST_ALL_LANGUAGES", "0") == "1":
+if os.environ.get("CHECK_DATASET") is not None:
+    dataset_configs = [
+        dataset_config
+        for dataset_config in get_all_dataset_configs().values()
+        if dataset_config.task != SPEED
+        and (
+            dataset_config.name in os.environ["CHECK_DATASET"].split(",")
+            or any(
+                language.code in os.environ["CHECK_DATASET"].split(",")
+                for language in dataset_config.languages
+            )
+            or "all" in os.environ["CHECK_DATASET"].split(",")
+        )
+    ]
     ACTIVE_LANGUAGES = {
         language_code: language
         for language_code, language in get_all_languages().items()
-        if any(
-            language in cfg.languages
-            for cfg in get_all_dataset_configs().values()
-            if cfg != SPEED_CONFIG
-        )
+        if any(language in cfg.languages for cfg in dataset_configs)
     }
 else:
     ACTIVE_LANGUAGES = dict(da=DA)
