@@ -11,7 +11,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 - Added support for Ukrainian 🇺🇦! This includes the sentiment classification dataset
   Cross-Domain UK Reviews, the linguistic acceptability dataset ScaLA-uk, the named
-  entity recognition dataset NER-uk, the reading comprehension dataset MultiWikiQA-uk.
+  entity recognition dataset NER-uk, the reading comprehension dataset MultiWikiQA-uk,
+  the summarisation dataset LR-Sum-uk.
 - Added the Lithuanian summarisation dataset Lrytas based on the Lithuanian
   public media news portal [Lrytas.lt](https://www.lrytas.lt/).
 - Added the Estonian translation of MMLU, `mmlu-et`, as an unofficial knowledge

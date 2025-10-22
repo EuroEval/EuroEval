@@ -23,6 +23,7 @@ from ..languages import (
     PL,
     PT,
     SV,
+    UK,
 )
 
 if t.TYPE_CHECKING:
@@ -173,6 +174,14 @@ SUMM_TEMPLATES: dict["Language", PromptConfig] = {
         default_prompt_template="Dokument: {text}\nSammanfattning: {target_text}",
         default_instruction_prompt="Dokument: {text}\n\nSkriv en sammanfattning av "
         "ovanstående dokument.",
+        default_prompt_label_mapping=dict(),
+    ),
+    UK: PromptConfig(
+        default_prompt_prefix="Нижче наведено документи з супровідними резюме.",
+        default_prompt_template="Документ: {text}\nРезюме: {target_text}",
+        default_instruction_prompt=(
+            "Документ: {text}\n\nНапишіть резюме наведеного вище документа."
+        ),
         default_prompt_label_mapping=dict(),
     ),
 }
