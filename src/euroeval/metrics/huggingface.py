@@ -156,8 +156,8 @@ class HuggingFaceMetric(Metric):
 
     def __del__(self) -> None:
         """Clean up the metric from memory."""
-        self.close()
         if self.metric is not None:
+            self.close()
             del self.metric
 
 
