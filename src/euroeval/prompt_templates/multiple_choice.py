@@ -24,6 +24,7 @@ from ..languages import (
     PT,
     SK,
     SV,
+    UK,
 )
 
 if t.TYPE_CHECKING:
@@ -187,6 +188,18 @@ MULTIPLE_CHOICE_TEMPLATES: dict["Language", PromptConfig] = {
         default_prompt_template="Fråga: {text}\nSvar: {label}",
         default_instruction_prompt="Fråga: {text}\n\nBesvara följande fråga med "
         "{labels_str}, och inget annat.",
+        default_prompt_label_mapping="auto",
+    ),
+    UK: PromptConfig(
+        default_prompt_prefix=(
+            "Нижче наведено питання з кількома варіантами відповідей (з відповідями)."
+        ),
+        default_prompt_template=("Питання: {text}\nВідповідь: {label}"),
+        default_instruction_prompt=(
+            "Питання: {text}\n\n"
+            "Дайте відповідь на наведене вище питання, використовуючи "
+            "{labels_str}, і нічого іншого."
+        ),
         default_prompt_label_mapping="auto",
     ),
 }

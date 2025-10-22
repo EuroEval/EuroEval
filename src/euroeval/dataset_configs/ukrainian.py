@@ -2,7 +2,7 @@
 
 from ..data_models import DatasetConfig
 from ..languages import UK
-from ..tasks import LA, NER, RC, SENT, SUMM
+from ..tasks import KNOW, LA, NER, RC, SENT, SUMM
 
 ### Official datasets ###
 
@@ -47,5 +47,14 @@ LR_SUM_UK_CONFIG = DatasetConfig(
     "summarisation dataset LR-Sum",
     huggingface_id="EuroEval/lr-sum-uk-mini",
     task=SUMM,
+    languages=[UK],
+)
+
+GLOBAL_MMLU_UK_CONFIG = DatasetConfig(
+    name="global-mmlu-uk",
+    pretty_name="the truncated version of the Ukrainian part of the "
+    "machine translated version of the English MMLU dataset",
+    huggingface_id="EuroEval/global-mmlu-uk-mini",
+    task=KNOW,
     languages=[UK],
 )

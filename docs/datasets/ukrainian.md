@@ -308,40 +308,39 @@ euroeval --model <model-id> --dataset multi-wiki-qa-uk
 
 ## Knowledge
 
-### MMLU-sk
+### Global-MMLU-uk
 
-This dataset is a machine translated version of the English [MMLU
+Global-MMLU is a machine translated version of the English [MMLU
 dataset](https://openreview.net/forum?id=d7KBjmI3GmQ) and features questions within 57
 different topics, such as elementary mathematics, US history and law. The translation to
-Slovak was done by the University of Oregon as part of [this
-paper](https://aclanthology.org/2023.emnlp-demo.28/), using GPT-3.5-turbo.
+Ukrainian was done by the [Cohere Labs Community](https://cohere.com/research).
 
-The original full dataset consists of 269 / 1,410 / 13,200 samples for training,
+The original full dataset consists of 285 / 14,042 samples for
 validation and testing, respectively. We use a 1,024 / 256 / 2,048 split for training,
-validation and testing, respectively (so 3,328 samples used in total). These splits are
-new and there can thus be some overlap between the original validation and test sets and
-our validation and test sets.
+validation and testing, respectively (so 3,328 samples used in total).
+The validation set is sampled from the dev set, and the new train and test
+sets are sampled from the test set.
 
 Here are a few examples from the training split:
 
 ```json
 {
-  "text": "V akých smeroch je prípad pre humanitárnu intervenciu, ako je uvedené v tejto kapitol... mocnými štátmi.\nd. Všetky tieto možnosti.",
-  "label": "d",
+  "text": "Після того, як призначену одиницю продукту крові було отримано з банку крові та вилучено з холодильника, протягом якого періоду часу слід розпочати переливання, перш ніж він почне псуватися (за медичними даними 2020 року)?\nВаріанти:\na. 30 хвилин.\nb. 90 хвилин.\nc. 4 години.\nd. 12 годин.",
+  "label": "a",
 }
 ```
 
 ```json
 {
-  "text": "FAKTORIÁLOVÝ ANOVA sa používa v prípade, že štúdia zahŕňa viac ako 1 VI. Aký je INTER...činok VI na rovnakej úrovni ako ostatné VI",
-  "label": "a"
+  "text": "У якому з цих двох сценаріїв головний герой (який використовує I/me/my) робить щось явно морально неправильне відповідно до звичайних моральних стандартів у США станом на 2020 рік? Сценарій 1 | Я взяв 1 мільйон доларів у друзів. Сценарій 2 | Я подав на роботі свій табель із зазначенням точного робочого часу.\nВаріанти:\na. Неправильно, Неправильно\nb. Помилка, не помилка\nc. Не неправильно, неправильно\nd. Не помилився, не помилився",
+  "label": "b",
 }
 ```
 
 ```json
 {
-  "text": "Pre ktorú z týchto dvoch situácií urobí hlavná postava (ktorá používa ja/mňa/môj) nie...ie zlé\nc. Nie zlé, zlé\nd. Nie zlé, nie zlé",
-  "label": "d",
+  "text": "Яку з наведених нижче процедур бухгалтер найменше виконає під час перевірки фінансової звітності неемітента?\nВаріанти:\na. Запитувати керівництво про дії, прийняті на засіданнях ради директорів.\nb. Вивчіть взаємозв’язки елементів фінансової звітності, які, як очікується, мають відповідати передбачуваним моделям.\nc. Визначте заходи внутрішнього контролю, які можуть запобігти або виявити суттєві викривлення.\nd. Порівняйте фінансові звіти з очікуваними результатами в бюджетах і прогнозах.",
+  "label": "c",
 }
 ```
 
@@ -352,33 +351,33 @@ When evaluating generative models, we use the following setup (see the
 - Prefix prompt:
 
   ```text
-  Nasledujú otázky s viacerými možnosťami (s odpoveďami).
+  Нижче наведено питання з кількома варіантами відповідей (з відповідями).
   ```
 
 - Base prompt template:
 
   ```text
-  Otázka: {text}
-  Možnosti:
+  Питання: {text}
+  Варіанти:
   a. {option_a}
   b. {option_b}
   c. {option_c}
   d. {option_d}
-  Odpoveď: {label}
+  Відповідь: {label}
   ```
 
 - Instruction-tuned prompt template:
 
   ```text
-  Otázka: {text}
+  Питання: {text}
 
-  Odpovedzte na nasledujúcu otázku použitím 'a', 'b', 'c' alebo 'd', a nič iné.
+  Дайте відповідь на наведене вище питання, використовуючи 'a', 'b', 'c' або 'd', і нічого іншого.
   ```
 
 You can evaluate this dataset directly as follows:
 
 ```bash
-euroeval --model <model-id> --dataset mmlu-sk
+euroeval --model <model-id> --dataset global-mmlu-uk
 ```
 
 ### Winogrande-sk
