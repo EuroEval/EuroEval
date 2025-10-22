@@ -57,7 +57,7 @@ def main() -> None:
     HfApi().delete_repo(dataset_id, repo_type="dataset", missing_ok=True)
     dataset.push_to_hub(dataset_id, private=True)
 
-    delete_file(file_path=file_path)
+    file_path.unlink(missing_ok=True)
 
 
 def download_file(url: str, file_path: Path) -> None:
@@ -110,16 +110,6 @@ def create_uniform_label_distribution(
     )
 
     return balanced_df
-
-
-def delete_file(file_path: Path) -> None:
-    """Delete a specified file.
-
-    Args:
-        file_path: The path to the file to delete.
-    """
-    if file_path.exists():
-        file_path.unlink()
 
 
 if __name__ == "__main__":
