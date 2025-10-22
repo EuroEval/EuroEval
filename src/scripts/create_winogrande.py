@@ -32,6 +32,7 @@ logger = logging.getLogger("create_winogrande")
 LANGUAGES = [
     "da",
     "de",
+    "el",
     "en",
     "es",
     "fi",

@@ -2,7 +2,7 @@
 
 from ..data_models import DatasetConfig
 from ..languages import EL
-from ..tasks import KNOW, LA, NER, RC, SENT, SUMM
+from ..tasks import COMMON_SENSE, KNOW, LA, NER, RC, SENT, SUMM
 
 ### Official datasets ###
 
@@ -57,5 +57,14 @@ GLOBAL_MMLU_EL_CONFIG = DatasetConfig(
     "GlobalMMLU-el, machine translated from the English GlobalMMLU dataset",
     huggingface_id="EuroEval/global-mmlu-el-mini",
     task=KNOW,
+    languages=[EL],
+)
+
+WINOGRANDE_EL_CONFIG = DatasetConfig(
+    name="winogrande-el",
+    pretty_name="the Greek common-sense reasoning dataset Winogrande-el, translated "
+    "from the English Winogrande dataset",
+    huggingface_id="EuroEval/winogrande-el",
+    task=COMMON_SENSE,
     languages=[EL],
 )

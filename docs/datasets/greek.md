@@ -386,22 +386,21 @@ Here are a few examples from the training split:
 
 ```json
 {
-  "text": "Nedokázal som ovládať vlhkosť ako som ovládal dážď, pretože _ prichádzalo odvšadiaľ. Na koho sa vzťahuje prázdne miesto _?\nMožnosti:\na. Možnosť A: vlhkosť\nb. Možnosť B: dážď",
-  "label": "a"
+    "text": "Δεν μπορούσα να ελέγξω την υγρασία όπως έλεγχα τη βροχή, γιατί το _ έμπαινε παντού. Σε τι αναφέρεται το κενό _;\nΕπιλογές:\na. Επιλογή A: υγρασία\nb. Επιλογή B: βροχή",
+    "label": "a"
 }
 ```
 
 ```json
 {
-  "text": "Jessica si myslela, že Sandstorm je najlepšia pieseň, aká bola kedy napísaná, ale Patricia ju nenávidela. _ si kúpila lístok na jazzový koncert. Na koho sa vzťahuje prázdne miesto _?\nMožnosti:\na. Možnosť A: Jessica\nb. Možnosť B: Patricia",
-  "label": "b"
+    "text": "Η Τζέσικα πίστευε ότι το Sandstorm ήταν το καλύτερο τραγούδι που γράφτηκε ποτέ, αλλά η Πατρίσια το μισούσε. _ αγόρασε ένα εισιτήριο για τη συναυλία τζαζ. Σε τι αναφέρεται το κενό _;\nΕπιλογές:\na. Επιλογή A: Τζέσικα\nb. Επιλογή B: Πατρίσια", "label": "b"
 }
 ```
 
 ```json
 {
-  "text": "Termostat ukazoval, že dole bolo o dvadsať stupňov chladnejšie ako hore, takže Byron zostal v _ pretože mu bola zima. Na koho sa vzťahuje prázdne miesto _?\nMožnosti:\na. Možnosť A: dole\nb. Možnosť B: hore",
-  "label": "b"
+    "text": "Ο θερμοστάτης έδειξε ότι ήταν είκοσι βαθμούς πιο κρύο κάτω από ό,τι ήταν πάνω, οπότε ο Byron έμεινε στο _ επειδή κρύωνε. Σε τι αναφέρεται το κενό _;\nΕπιλογές:\na. Επιλογή A: κάτω\nb. Επιλογή B: πάνω",
+    "label": "b"
 }
 ```
 
@@ -412,34 +411,34 @@ When evaluating generative models, we use the following setup (see the
 - Prefix prompt:
 
   ```text
-  Nasledujú otázky s viacerými možnosťami (s odpoveďami).
+  Ακολουθούν ερωτήσεις πολλαπλής επιλογής (με απαντήσεις).
   ```
 
 - Base prompt template:
 
   ```text
-  Otázka: {text}
-  Možnosti:
+  Ερώτηση: {text}
+  Επιλογές:
   a. {option_a}
   b. {option_b}
-  Odpoveď: {label}
+  Απάντηση: {label}
   ```
 
 - Instruction-tuned prompt template:
 
   ```text
-  Otázka: {text}
-  Možnosti:
+  Ερώτηση: {text}
+  Επιλογές:
   a. {option_a}
   b. {option_b}
 
-  Odpovedzte na nasledujúcu otázku použitím 'a' alebo 'b', a nič iné.
+  Απαντήστε στην παραπάνω ερώτηση χρησιμοποιώντας 'a' ή 'b', και τίποτα άλλο.
   ```
 
 You can evaluate this dataset directly as follows:
 
 ```bash
-euroeval --model <model-id> --dataset winogrande-sk
+euroeval --model <model-id> --dataset winogrande-el
 ```
 
 ## Summarisation
