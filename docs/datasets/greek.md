@@ -76,37 +76,36 @@ euroeval --model <model-id> --dataset greek-sa
 
 ## Named Entity Recognition
 
-### UNER-sk
+### elNER
 
 This dataset was published in
-[this paper](https://aclanthology.org/2024.naacl-long.243/).
+[this paper](https://doi.org/10.1145/3411408.3411437).
 
-The original dataset consists of 8,482 / 1,059 / 1,060 samples for the
+The original dataset consists of 16,798 / 1,901 / 2,103 samples for the
 training, validation, and test splits, respectively. We use 1,024 / 256 / 2,048
-samples for our training, validation and test splits, respectively. The train and
-validation splits are subsets of the original splits, while the test split is
-created using additional samples from the train split.
+samples for our training, validation and test splits, respectively. The new splits
+are subsets of the original splits.
 
 Here are a few examples from the training split:
 
 ```json
 {
-  "tokens": ["Bude", "mať", "názov", "Shanghai", "Noon", "a", "režisérom", "bude", "debutujúci", "Tom", "Dey", "."],
-  "labels": ["O", "O", "O", "O", "O", "O", "O", "O", "O", "B-PER", "I-PER", "O"]
+    "tokens": ["Επιστήμονες", "στη", "Βρετανία", "μετέτρεψαν", "αρσενικά", "ποντίκια", "σε", "θηλυκά", "κάνοντας", "παρεμβάσεις", "στο", "γονιδίωμά", "τους", "και", "αφαιρώντας", "ορισμένα", "τμήματα", "του", "DNA", "τους", "."],
+    "labels": ["O", "O", "B-LOC", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O"]
 }
 ```
 
 ```json
 {
-  "tokens": ["Ako", "šesťročného", "(", "o", "rok", "skôr", ",", "než", "bolo", "zvykom", ")", "ho", "na", "základe", "zvláštnej", "výnimky", "prijali", "medzi", "Zvedov", "a", "ako", "deväťročný", "sa", "stal", "vedúcim", "skupiny", "."],
-  "labels": ["O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "B-ORG", "O", "O", "O", "O", "O", "O", "O", "O"]
+    "tokens": ["Στο", "μεταξύ", ",", "μία", "άλλη", "δέσμη", "κατευθυντήριων", "γραμμών", "της", "ΕΚΤ", ",", "που", "αφορά", "τα", "δάνεια", "που", "θα", "γίνουν", "«", "κόκκινα", "»", "στο", "μέλλον", ",", "συνάντησε", "αντιδράσεις", "από", "αρκετά", "μέλη", "της", "Ευρωβουλής", ",", "ιδιαίτερα", "από", "την", "Ιταλία", ",", "καθώς", "και", "από", "λομπίστες", "."],
+    "labels": ["O", "O", "O", "O", "O", "O", "O", "O", "O", "B-ORG", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "B-ORG", "O", "O", "O", "O", "B-LOC", "O", "O", "O", "O", "O", "O"]
 }
 ```
 
 ```json
 {
-  "tokens": ["To", "predsa", "stojí", "za", "pokus", "!"],
-  "labels": ["O", "O", "O", "O", "O", "O"]
+    "tokens": ["Είναι", "σημαντικό", "η", "Ελλάδα", "να", "συνεχίσει", "σε", "αυτή", "την", "πορεία", "για", "να", "ανακτήσει", "σταθερή", "πρόσβαση", "στις", "αγορές", "...", "Παρά", "την", "ενισχυμένη", "εμπιστοσύνη", "των", "αγορών", ",", "η", "ελληνική", "οικονομία", "αντιμετωπίζει", "ένα", "δύσκολο", "οικονομικό", "και", "χρηματοοικονομικό", "περιβάλλον", "."],
+    "labels": ["O", "O", "O", "B-LOC", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "B-MISC", "O", "O", "O", "O", "O", "O"]
 }
 ```
 
@@ -117,38 +116,38 @@ When evaluating generative models, we use the following setup (see the
 - Prefix prompt:
 
   ```text
-  Nasledujúce sú vety a JSON-objekty s pomenovanými entitami, ktoré sa nachádzajú v danej vete.
+  Ακολουθούν προτάσεις και λεξικά JSON με τις ονομαστικές οντότητες που εμφανίζονται στην δεδομένη πρόταση.
   ```
 
 - Base prompt template:
 
   ```text
-  Veta: {text}
-  Pomenované entity: {label}
+  Πρόταση: {text}
+  Ονομαστικές οντότητες: {label}
   ```
 
 - Instruction-tuned prompt template:
 
   ```text
-  Veta: {text}
+  Πρόταση: {text}
 
-  Identifikujte pomenované entity vo vete. Výstup by mal byť vo forme JSON-objektu s kľúčmi 'osoba', 'miesto', 'organizácia' a 'rôzne'. Hodnoty by mali byť zoznamy pomenovaných entít danej kategórie, presne tak, ako sa vyskytujú vo vete.
+  Αναγνωρίστε τις ονομαστικές οντότητες στην πρόταση. Θα πρέπει να παράγετε αυτό ως λεξικό JSON με κλειδιά 'πρόσωπο', 'τοποθεσία', 'οργανισμός' και 'διάφορα'. Οι τιμές πρέπει να είναι λίστες των ονομαστικών οντοτήτων αυτού του τύπου, ακριβώς όπως εμφανίζονται στην πρόταση.
   ```
 
 - Label mapping:
-  - `B-PER` ➡️ `osoba`
-  - `I-PER` ➡️ `osoba`
-  - `B-LOC` ➡️ `miesto`
-  - `I-LOC` ➡️ `miesto`
-  - `B-ORG` ➡️ `organizácia`
-  - `I-ORG` ➡️ `organizácia`
-  - `B-MISC` ➡️ `rôzne`
-  - `I-MISC` ➡️ `rôzne`
+  - `B-PER` ➡️ `πρόσωπο`
+  - `I-PER` ➡️ `πρόσωπο`
+  - `B-LOC` ➡️ `τοποθεσία`
+  - `I-LOC` ➡️ `τοποθεσία`
+  - `B-ORG` ➡️ `οργανισμός`
+  - `I-ORG` ➡️ `οργανισμός`
+  - `B-MISC` ➡️ `διάφορα`
+  - `I-MISC` ➡️ `διάφορα`
 
 You can evaluate this dataset directly as follows:
 
 ```bash
-euroeval --model <model-id> --dataset uner-sk
+euroeval --model <model-id> --dataset elner
 ```
 
 ## Linguistic Acceptability

@@ -2,7 +2,7 @@
 
 from ..data_models import DatasetConfig
 from ..languages import EL
-from ..tasks import LA, SENT
+from ..tasks import LA, NER, SENT
 
 ### Official datasets ###
 
@@ -21,5 +21,14 @@ SCALA_EL_CONFIG = DatasetConfig(
     pretty_name="the Greek part of the linguistic acceptability dataset ScaLA",
     huggingface_id="EuroEval/scala-el",
     task=LA,
+    languages=[EL],
+)
+
+ELNER_CONFIG = DatasetConfig(
+    name="elner",
+    pretty_name="the truncated version of the Greek named entity "
+    "recognition dataset elNER",
+    huggingface_id="EuroEval/elner-mini",
+    task=NER,
     languages=[EL],
 )
