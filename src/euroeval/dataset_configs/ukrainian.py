@@ -52,8 +52,8 @@ LR_SUM_UK_CONFIG = DatasetConfig(
 
 GLOBAL_MMLU_UK_CONFIG = DatasetConfig(
     name="global-mmlu-uk",
-    pretty_name="the truncated version of the Ukrainian part of the "
-    "machine translated version of the English MMLU dataset",
+    pretty_name="the truncated version of the Ukrainian knowledge dataset "
+    "GlobalMMLU-uk, machine translated from the English GlobalMMLU dataset",
     huggingface_id="EuroEval/global-mmlu-uk-mini",
     task=KNOW,
     languages=[UK],
@@ -66,4 +66,5 @@ WINOGRANDE_UK_CONFIG = DatasetConfig(
     huggingface_id="EuroEval/winogrande-uk",
     task=COMMON_SENSE,
     languages=[UK],
+    _labels=["a", "b"],
 )
