@@ -2,7 +2,7 @@
 
 from ..data_models import DatasetConfig
 from ..languages import EL
-from ..tasks import LA, NER, RC, SENT, SUMM
+from ..tasks import KNOW, LA, NER, RC, SENT, SUMM
 
 ### Official datasets ###
 
@@ -48,5 +48,14 @@ GREEK_WIKIPEDIA_CONFIG = DatasetConfig(
     "Greek-Wikipedia",
     huggingface_id="EuroEval/greek-wikipedia-mini",
     task=SUMM,
+    languages=[EL],
+)
+
+GLOBAL_MMLU_EL_CONFIG = DatasetConfig(
+    name="global-mmlu-el",
+    pretty_name="the truncated version of the Greek knowledge dataset "
+    "GlobalMMLU-el, machine translated from the English GlobalMMLU dataset",
+    huggingface_id="EuroEval/global-mmlu-el-mini",
+    task=KNOW,
     languages=[EL],
 )

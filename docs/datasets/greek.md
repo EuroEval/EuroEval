@@ -305,40 +305,39 @@ euroeval --model <model-id> --dataset multi-wiki-qa-el
 
 ## Knowledge
 
-### MMLU-sk
+### Global-MMLU-el
 
-This dataset is a machine translated version of the English [MMLU
+Global-MMLU is a machine translated version of the English [MMLU
 dataset](https://openreview.net/forum?id=d7KBjmI3GmQ) and features questions within 57
 different topics, such as elementary mathematics, US history and law. The translation to
-Slovak was done by the University of Oregon as part of [this
-paper](https://aclanthology.org/2023.emnlp-demo.28/), using GPT-3.5-turbo.
+Ukrainian was done by the [Cohere Labs Community](https://cohere.com/research).
 
-The original full dataset consists of 269 / 1,410 / 13,200 samples for training,
+The original full dataset consists of 285 / 14,042 samples for
 validation and testing, respectively. We use a 1,024 / 256 / 2,048 split for training,
-validation and testing, respectively (so 3,328 samples used in total). These splits are
-new and there can thus be some overlap between the original validation and test sets and
-our validation and test sets.
+validation and testing, respectively (so 3,328 samples used in total).
+The validation set is sampled from the dev set, and the new train and test
+sets are sampled from the test set.
 
 Here are a few examples from the training split:
 
 ```json
 {
-  "text": "V akých smeroch je prípad pre humanitárnu intervenciu, ako je uvedené v tejto kapitol... mocnými štátmi.\nd. Všetky tieto možnosti.",
-  "label": "d",
+    "text": "Συμπεριλαμβανομένου του πυθμένα, πόσες πλευρές υπάρχουν σε μια πυραμίδα με τετράγωνο;\nВаріанти:\na. τρία\nb. τέσσερις\nc. πέντε\nd. έξι",
+    "label": "c",
 }
 ```
 
 ```json
 {
-  "text": "FAKTORIÁLOVÝ ANOVA sa používa v prípade, že štúdia zahŕňa viac ako 1 VI. Aký je INTER...činok VI na rovnakej úrovni ako ostatné VI",
-  "label": "a"
+    "text": "Κάθε χώρα με ακτές έχει αποκλειστική οικονομική ζώνη (ΑΟΖ) σύμφωνα με τη Σύμβαση του ΟΗΕ για το Δίκαιο της Θάλασσας. Ποια από τις παρακάτω προτάσεις σχετικά με το Δίκαιο της Θάλασσας και την ΑΟΖ ΔΕΝ είναι σωστή;\nВаріанти:\na. Η ΑΟΖ εκτείνεται έως και 200 \u200b\u200bναυτικά μίλια (370 χλμ.) από την ακτογραμμή.\nb. Οι χώρες έχουν το δικαίωμα να εκμεταλλεύονται τους φυσικούς πόρους στην ΑΟΖ τους.\nc. Οι χώρες μπορούν να εκμεταλλευτούν πόρους στην υφαλοκρηπίδα που εκτείνονται έως και 350 ναυτικά μίλια (560 km) πέρα \u200b\u200bαπό την ΑΟΖ τους.\nd. Μια χώρα δεν έχει το δικαίωμα να εκμεταλλεύεται τους έμβιους πόρους στην ΑΟΖ της.",
+    "label": "d",
 }
 ```
 
 ```json
 {
-  "text": "Pre ktorú z týchto dvoch situácií urobí hlavná postava (ktorá používa ja/mňa/môj) nie...ie zlé\nc. Nie zlé, zlé\nd. Nie zlé, nie zlé",
-  "label": "d",
+    "text": "Αυτή η ερώτηση αναφέρεται στις ακόλουθες πληροφορίες. \"Χθες, 7 Δεκεμβρίου 1941 - μια ημερομηνία που θα ζήσει με δυστυχία - οι Ηνωμένες Πολιτείες της Αμερικής δέχθηκαν ξαφνική και εσκεμμένη επίθεση από ναυτικές και αεροπορικές δυνάμεις της Αυτοκρατορίας της Ιαπωνίας. Οι Ηνωμένες Πολιτείες ήταν σε ειρήνη με αυτό το έθνος και, Πράγματι, μία ώρα αφότου οι ιαπωνικές αεροπορικές μοίρες είχαν αρχίσει να βομβαρδίζουν… ο Ιάπωνας πρεσβευτής στις Ηνωμένες Πολιτείες και ο συνάδελφός του παρέδωσαν στον Υπουργό. Επίσημη απάντηση του Κράτους σε πρόσφατο αμερικανικό μήνυμα Ενώ αυτή η απάντηση ανέφερε ότι φαινόταν άχρηστο να συνεχιστούν οι υπάρχουσες διπλωματικές διαπραγματεύσεις, δεν περιείχε καμία απειλή ή υπαινιγμό για πόλεμο ή ένοπλη επίθεση….Η επίθεση χθες…προκάλεσε σοβαρές ζημιές στο αμερικανικό ναυτικό. Και στρατιωτικές δυνάμεις έχουν χαθεί. Επιπλέον, έχουν αναφερθεί τορπιλισμένα αμερικανικά πλοία στην ανοιχτή θάλασσα… Ως Αρχηγός του Στρατού και του Ναυτικού, έχω δώσει εντολή να ληφθούν όλα τα μέτρα για την άμυνά μας. \" Πρόεδρος Franklin D. Roosevelt, ραδιοφωνική ομιλία, 8 Δεκεμβρίου 1941 Ποιο από τα παρακάτω ήταν η πιο άμεση συνέπεια των γεγονότων που περιγράφονται στο παραπάνω απόσπασμα;\nВаріанти:\na. Τα εμπορικά εμπάργκο με την Ιαπωνία επεκτείνονται μέχρι τη δεκαετία του 1980\nb. Η Μάχη της Νορμανδίας\nc. Ο εγκλεισμός των Ιαπωνοαμερικανών\nd. Ο βομβαρδισμός στο Ναγκασάκι",
+    "label": "c",
 }
 ```
 
@@ -349,36 +348,31 @@ When evaluating generative models, we use the following setup (see the
 - Prefix prompt:
 
   ```text
-  Nasledujú otázky s viacerými možnosťami (s odpoveďami).
+  Ακολουθούν ερωτήσεις πολλαπλών επιλογών (με απαντήσεις).
   ```
 
 - Base prompt template:
 
   ```text
-  Otázka: {text}
-  Možnosti:
-  a. {option_a}
-  b. {option_b}
-  c. {option_c}
-  d. {option_d}
-  Odpoveď: {label}
+  Ερώτηση: {text}
+  Απάντηση: {label}
   ```
 
 - Instruction-tuned prompt template:
 
   ```text
-  Otázka: {text}
+  Ερώτηση: {text}
 
-  Odpovedzte na nasledujúcu otázku použitím 'a', 'b', 'c' alebo 'd', a nič iné.
+  Απαντήστε στην παραπάνω ερώτηση χρησιμοποιώντας 'a', 'b', 'c' ή 'd', και τίποτα άλλο.
   ```
 
 You can evaluate this dataset directly as follows:
 
 ```bash
-euroeval --model <model-id> --dataset mmlu-sk
+euroeval --model <model-id> --dataset global-mmlu-el
 ```
 
-### Winogrande-sk
+### Winogrande-el
 
 This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2506.19468)
 and is a translated and filtered version of the English [Winogrande
