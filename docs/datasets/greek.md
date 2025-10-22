@@ -153,11 +153,11 @@ euroeval --model <model-id> --dataset uner-sk
 
 ## Linguistic Acceptability
 
-### ScaLA-sk
+### ScaLA-el
 
 This dataset was published in [this paper](https://aclanthology.org/2023.nodalida-1.20/)
-and was automatically created from the [Slovak Universal Dependencies
-treebank](https://github.com/UniversalDependencies/UD_Slovak-SNK) by assuming that the
+and was automatically created from the [Greek Universal Dependencies
+treebank](https://github.com/UniversalDependencies/UD_Greek-GUD) by assuming that the
 documents in the treebank are correct, and corrupting the samples to create
 grammatically incorrect samples. The corruptions were done by either removing a word
 from a sentence, or by swapping two neighbouring words in a sentence. To ensure that
@@ -172,22 +172,22 @@ Here are a few examples from the training split:
 
 ```json
 {
-    "text": "Niektorí pozorovatelia považujú ropné záujmy USA za jednu z hlavných motivácií vstupu do vojny v Iraku.",
+    "text": "Πίσω σ το γραφείο, προσπαθώ να βάλω σε τάξη τις σκέψεις μου.",
     "label": "correct"
 }
 ```
 
 ```json
 {
-    "text": "Popáliť sa na jedinom písmene je klasický prípad, ktorý sa môže vyskytnúť v rôznych podobách.",
+    "text": "Πρώτα έκανε την κουτσουκέλα της και μετά άρχιζε τις διαχύσεις.",
     "label": "correct"
 }
 ```
 
 ```json
 {
-    "text": "Zo strachu o seba, pre svoju povýšenú zbabelosť zaprel svojho Majstra Pána.",
-    "label": "incorrect"
+    "text": "Αν αποφασίσει ότι πρέπει να συνεχίσουμε την έρευνα, θα ζητήσουμε γραπτή εντολή.",
+    "label": "correct"
 }
 ```
 
@@ -198,32 +198,32 @@ When evaluating generative models, we use the following setup (see the
 - Prefix prompt:
 
   ```text
-  Nasledujú vety a či sú gramaticky správne.
+  Οι ακόλουθες είναι προτάσεις και εάν είναι γραμματικά σωστές.
   ```
 
 - Base prompt template:
 
   ```text
-  Veta: {text}
-  Gramaticky správna: {label}
+  Πρόταση: {text}
+  Γραμματικά σωστή: {label}
   ```
 
 - Instruction-tuned prompt template:
 
   ```text
-  Veta: {text}
+  Πρόταση: {text}
 
-  Určite, či je veta gramaticky správna alebo nie. Odpovedzte so 'áno', ak je veta správna, a 'nie', ak nie je. Odpovedzte iba týmto slovom, a nič iné.
+  Προσδιορίστε εάν η πρόταση είναι γραμματικά σωστή ή όχι. Απαντήστε με 'ναι' αν είναι σωστή, ή 'όχι' αν δεν είναι. Απαντήστε μόνο με αυτή τη λέξη, και τίποτα άλλο.
   ```
 
 - Label mapping:
-  - `correct` ➡️ `áno`
-  - `incorrect` ➡️ `nie`
+  - `correct` ➡️ `ναι`
+  - `incorrect` ➡️ `όχι`
 
 You can evaluate this dataset directly as follows:
 
 ```bash
-euroeval --model <model-id> --dataset scala-sk
+euroeval --model <model-id> --dataset scala-el
 ```
 
 ## Reading Comprehension
