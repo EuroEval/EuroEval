@@ -265,8 +265,11 @@ def prepare_train_examples(
     max_question_tokens = max(len(tokeniser(q).input_ids) for q in examples["question"])
     num_special_tokens = int(has_cls_token) + int(has_sep_token)
     stride = tokeniser.model_max_length // 4
-    max_length = tokeniser.model_max_length - stride
-    stride = min(stride, max_length - max_question_tokens - num_special_tokens)
+    stride = min(
+        stride,
+        tokeniser.model_max_length - stride - max_question_tokens - num_special_tokens,
+    )
+    stride = max(stride, 0)
     max_length = tokeniser.model_max_length - stride
 
     # Tokenise our examples with truncation and padding, but keep the overflows using a
@@ -335,9 +338,17 @@ def prepare_train_examples(
             end_char = start_char + len(answers["text"][0])
 
             # Start token index of the current span in the text.
-            token_start_index = 0
-            while sequence_ids[token_start_index] != 1:
-                token_start_index += 1
+            try:
+                token_start_index = 0
+                while sequence_ids[token_start_index] != 1:
+                    token_start_index += 1
+
+            # If it turns out that we cannot find the context in the span, then we
+            # treat this as an impossible case
+            except IndexError:
+                tokenised_examples.start_positions.append(cls_index)
+                tokenised_examples.end_positions.append(cls_index)
+                continue
 
             # End token index of the current span in the text.
             token_end_index = len(input_ids) - 1
