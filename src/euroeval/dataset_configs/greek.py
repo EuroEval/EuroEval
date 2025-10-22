@@ -2,7 +2,7 @@
 
 from ..data_models import DatasetConfig
 from ..languages import EL
-from ..tasks import LA, NER, RC, SENT
+from ..tasks import LA, NER, RC, SENT, SUMM
 
 ### Official datasets ###
 
@@ -39,5 +39,14 @@ MULTI_WIKI_QA_EL_CONFIG = DatasetConfig(
     "dataset MultiWikiQA",
     huggingface_id="EuroEval/multi-wiki-qa-el-mini",
     task=RC,
+    languages=[EL],
+)
+
+GREEK_WIKIPEDIA_CONFIG = DatasetConfig(
+    name="greek-wikipedia",
+    pretty_name="the truncated version of the Greek summarisation dataset "
+    "Greek-Wikipedia",
+    huggingface_id="EuroEval/greek-wikipedia-mini",
+    task=SUMM,
     languages=[EL],
 )
