@@ -25,6 +25,7 @@ from ..languages import (
     PT,
     SK,
     SV,
+    UK,
 )
 
 if t.TYPE_CHECKING:
@@ -221,6 +222,20 @@ RC_TEMPLATES: dict["Language", PromptConfig] = {
         "{label}",
         default_instruction_prompt="Text: {text}\n\nBesvara följande fråga om texten "
         "ovan med högst 3 ord.\n\nFråga: {question}",
+        default_prompt_label_mapping=dict(),
+    ),
+    UK: PromptConfig(
+        default_prompt_prefix=(
+            "Нижче наведені тексти з відповідними питаннями та відповідями."
+        ),
+        default_prompt_template=(
+            "Текст: {text}\nПитання: {question}\nВідповідь максимум 3 словами: {label}"
+        ),
+        default_instruction_prompt=(
+            "Текст: {text}\n\n"
+            "Відповідь на наступне питання про вищезазначений текст максимум 3 "
+            "словами.\n\nПитання: {question}"
+        ),
         default_prompt_label_mapping=dict(),
     ),
 }

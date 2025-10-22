@@ -229,7 +229,7 @@ euroeval --model <model-id> --dataset scala-uk
 
 ## Reading Comprehension
 
-### MultiWikiQA-sk
+### MultiWikiQA-uk
 
 This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2509.04111)
 and contains Wikipedia articles with LLM-generated questions and answers in 300+
@@ -242,26 +242,33 @@ Here are a few examples from the training split:
 
 ```json
 {
-  "context": "Register toxických účinkov chemických látok (anglicky Registry of Toxic Effects of Chemical Substances, RTECS) je databáza toxikologických informácií zostavených z voľne dostupnej vedeckej literatúry bez odkazu na platnosť alebo užitočnosť publikovaných štúdií. Do roku 2001 bola databáza spravovaná americkou organizáciou NIOSH (National Institute for Occupational Safety and Health, slov. Národný ústav pre bezpečnosť a ochranu zdravia pri práci) ako verejne dostupná publikácia. Teraz ju spravuje súkromná spoločnosť Symyx Technologies a je dostupná len za poplatok.\n\nObsah \nDatabáza obsahuje šesť typov toxikologických informácií:\n primárne podráždenie\n mutagénne účinky\n reprodukčné účinky\n karcinogénne účinky\n akútna toxicita\n toxicita viacnásobných dávok\nV databáze sa spomínajú ako špecifické číselné hodnoty, ako napríklad LD50, LC50, TDLo alebo TCLo, tak aj študované organizmy a spôsob podávania látky. Pre všetky dáta sú uvedené bibliografické zdroje. Štúdie pritom nie sú nijako hodnotené.\n\nHistória \nDatabáza RTECS bola aktivitou schválenou americkým Kongresom, zakotvenou v Sekcii 20(a)(6) zákona Occupational Safety and Health Act z roku 1970 (PL 91-596). Pôvodné vydanie, známe ako Zoznam toxických látok (Toxic Substances List), bolo publikované 28. júna 1971 a obsahovalo toxikologické dáta o približne 5 000 chemikáliách. Názov bol neskôr zmenený na dnešný Register toxických účinkov chemických látok (Registry of Toxic Effects of Chemical Substances). V januári 2001 databáza obsahovala 152 970 chemikálií. V decembri 2001 bola správa RTECS prevedená z NIOSH do súkromnej firmy Elsevier MDL. Túto firmu kúpila v roku 2007 spoločnosť Symyx, súčasťou akvizície bola aj databáza RTECS. Tá je teraz dostupná len za poplatok vo forme ročného predplatného.\n\nRTECS je k dispozícii v angličtine, francúzštine a španielčine, a to prostredníctvom Kanadského centra pre bezpečnosť a ochranu zdravia pri práci. Predplatitelia majú prístup cez web, na CD-ROM a vo formáte pre intranet. Databáza je dostupná na webe aj cez NISC (National Information Services Corporation) a ExPub (Expert Publishing, LLC).\n\nExterné odkazy \n\n RTECS overview \n Symyx website \n Expert Publishing, LLC Website\n\nZdroj \n\nChemické názvy a kódy\nToxikológia",
-  "question": "Aké sú tri možnosti prístupu k databáze RTECS, ak som predplatiteľ?",
-  "answers": {"answer_start": [1949], "text": ["cez web, na CD-ROM a vo formáte pre intranet"]}}
-```
-
-```json
-{
-  "context": "Herta Naglová-Docekalová (* 29. máj 1944, Wels, Rakúsko) je rakúska filozofka a profesorka, členka vedenia Medzinárodnej asociácie filozofiek (IAPf), Österreichische Akademie der Wissenschaften, Institut International de Philosophie (Paríž), viceprezidentka Fédération Internationale des Sociétés de Philosophie (FISP), zakladajúca členka interdisciplinárnych pracovných skupín Frauengeschichte a Philosophische Frauenforschung na Viedenskej univerzite, členka redakčných rád popredných vedeckých časopisov, napr. Philosophin, L´Homme, Deutsche Zeitschrift für Philosophie.\n\nŽivotopis \nVyštudovala históriu, filozofiu a germanistiku na Viedenskej univerzite. V roku 1967 získala na svojej alma mater doktorát z histórie prácou o filozofovi dejín Ernstovi von Lasaulx). V rokoch 1968 - 1985 bola asistentkou na Inštitúte filozofie Viedenskej univerzity. V lete 1980 prednášala na Millersville University of Pennsylvania v USA.\n\nV roku 1981 sa habilitovala z filozofie na Viedenskej univerzite dielom Die Objektivität der Geschichtswissenschaft. V rokoch 1985 až 2009 bola profesorkou Inštitútu filozofie Viedenskej univerzity. Od roku 2009 je univerzitnou profesorkou na dôchodku (Universitätsprofessorin i. R.)\n\nBola hosťujúcou profesorkou v roku 1990 na Universiteit Utrecht v holandskom Utrechte; v Nemecku 1991/1992 na Goethe-Universität Frankfurt vo Frankfurte nad Mohanom; 1993 na Universität Konstanz v Konstanzi; 1994/1995 na Freie Universität Berlin v Berlíne. V rokoch 1995/1996 prednášala na Universität Innsbruck a 2011 na univerzite v Petrohrade v Rusku.\n\nDielo (výber) \n Jenseits der Säkularisierung. Religionsphilosophische Studien. - Berlin 2008 (Hg., gem.m. Friedrich Wolfram).\n Viele Religionen - eine Vernunft? Ein Disput zu Hegel. - Wien/Berlin 2008 (Hg., gem.m. Wolfgang Kaltenbacher und Ludwig Nagl).\n Glauben und Wissen. Ein Symposium mit Jürgen Habermas. - Wien/Berlin 2007 (Hg., gem.m. Rudolf Langthaler).\n Geschichtsphilosophie und Kulturkritik. - Darmstadt 2003 (Hrsg., gem.m. Johannes Rohbeck).\n Feministische Philosophie. Ergebnisse, Probleme, Perspektiven. - Frankfurt a.M. 2000 a 2004 \n Continental Philosophy in Feminist Perspective. - Pennsylviania State University Press 2000 (Hg. gem.m. Cornelia Klingler).\n Der Sinn des Historischen. - Frankfurt a.M. 1996 (Hrsg.).\n Politische Theorie. Differenz und Lebensqualität. - Frankfurt a.M. 1996 (Hrsg. gem.m. Herlinde Pauer-Studer).\n Postkoloniales Philosophieren: Afrika. - Wien/München 1992 (Hrsg., gem.m. Franz Wimmer).\n Tod des Subjekts? - Wien/München 1987 (Hrsg., gem.m. Helmuth Vetter).\n Die Objektivität der Geschichtswissenschaft. Systematische Untersuchungen zum wissenschaftlichen Status der Historie. - Wien/München 1982\n spoluvydavateľka: Wiener Reihe. Themen der Philosophie (od 1986). \n spoluvydavateľka: Deutsche Zeitschrift für Philosophie (1993-2004). \n spoluvydavateľka: L'Homme. Europäische Zeitschrift für feministische Geschichtswissenschaft (1990 - 2003).\n\nOcenenia \n Förderpreis mesta Viedeň, 1983\n Käthe Leichter Preis (rakúska štátna cena), 1997 \n Preis für Geistes- und Sozialwissenschaften der Stadt Wien, 2009\n\nReferencie\n\nExterné odkazy \n Oficiálna stránka, Universität Wien \n Austria Forum, Wissenssammlungen/Biographien: Herta Nagl-Docekal\n\nZdroj \n\nRakúski filozofi",
-  "question": "Kedy prišla na svet Herta Naglová-Docekalová?",
-  "answers": {"answer_start": [28], "text": ["29. máj 1944"]}}
-```
-
-```json
-{
-  "context": "Martin Bareš (* 25. november 1968, Brno) je český profesor neurológie, od septembra 2019 rektor Masarykovej univerzity, predtým od februára 2018 do septembra 2019 dekan Lekárskej fakulty Masarykovej univerzity.\n\nRiadiace funkcie \nVo februári 2018 sa stal dekanom Lekárskej fakulty Masarykovej univerzity. Funkciu prevzal po Jiřím Mayerovi, ktorý zastával pozíciu dekana v období 20102018. S nástupom na post dekana ukončil svoje pôsobenie ako prorektor univerzity, ako i zástupca prednostu I. neurologickej kliniky pre vedu a výskum.\n\nDo funkcie rektora univerzity bol zvolený 1. apríla 2019 Akademickým senátom Masarykovej univerzity. V prvom kole tajnej voľby získal Bareš 36 hlasov z 50 prítomných senátorov. Protikandidáta, prodekana Prírodovedeckej fakulty Jaromíra Leichmana, volilo 11 senátorov. 3 odovzdané hlasy boli neplatné.\n\nSkúsenosti s pôsobením vo vedení školy zbieral Bareš v rokoch 20112018, kedy pôsobil najskôr ako jej prorektor pre rozvoj a potom ako prorektor pre akademické záležitosti. Za svoje priority označil Bareš v dobe voľby posilňovanie role univerzity ako piliera slobody v súčasnej spoločnosti a zvýšenie kvality vzdelávania, vedy a výskumu na medzinárodnej úrovni.\n\nDo funkcie rektora ho vymenoval 11. júna 2019 prezident Miloš Zeman s účinnosťou od 1. septembra 2019. Vo funkcii tak nahradil Mikuláša Beka, ktorému sa skončilo druhé volebné obdobie a o zvolenie sa teda už opäť uchádzať nemohol. Bareš k 1. septembru 2019 rezignoval na post dekana Lekárskej fakulty.\n\nVedecká činnosť \nJe prednášajúcim v odboroch všeobecné lekárstvo, zubné lekárstvo, optometria, fyzioterapia, neurofyziológia pre študentov prírodných vied Lekárskej fakulty Masarykovej univerzity a školiteľ doktorandov odborovej rady neurológia a neurovedy.\n\nPôsobí v týchto vedeckých radách: Masarykova univerzita, Lekárska fakulta Masarykovej univerzity a CEITEC MU. Ďalej tiež Univerzita Palackého v Olomouci, Lekárska fakulta UPOL, Fakulta veterinárního lékařství VFU, ďalej je tiež členom Českej lekárskej komory, Českej neurologickej spoločnosti, Českej spoločnosti klinickej neurofyziológie, Českej lekárskej spoločnosti Jana Evangelisty Purkyně, Movement Disorders Society, Society for the Research on the Cerebellum a Society for Neuroscience. Takisto je členom redakčnej rady časopisov Clinical Neurophysiology, Behavioural Neurology, Tremor and Other Hyperkinetic Movements a Biomedical Papers.\n\nOsobný život \nJe ženatý, má dvoch synov a dcéru.\n\nReferencie\n\nExterné odkazy \n Martin Bareš\n\nZdroj \n\nČeskí lekári\nNeurológovia\nRektori Masarykovej univerzity\nČeskí univerzitní profesori\nDekani Lekárskej fakulty Masarykovej univerzity\nAbsolventi Lekárskej fakulty Masarykovej univerzity\nOsobnosti z Brna",
-  "question": "Akú pozíciu mal Martin Bareš na Masarykovej univerzite počnúc septembrom 2019?",
+  "context": "Thalassema thalassema\xa0— вид ехіур родини Thalassematidae.\n\nПоширення \nВид поширений у припливній зоні вздовж європейського узбережжя Атлантичного океану та Середземного моря.\n\nОпис \nЧерв'як завдовжки 2-7\xa0см. На передньому кінці тіла розташований червоний м'язистий хоботок, який може розтягуватись на 10-20\xa0см у довжину. Рот знаходиться біля основи хоботка. Забарвлення тіла може бути різноманітним\xa0— синє, сіре, жовте, помаранчеве, рожеве. На передньому кінці тіла дві черевці щетинки, на задньому кінці вони відсутні.\n\nСпосіб життя \nМешкає у піску та мулі припливної зони. Живиться детритом та мікроорганізмами. Активний вночі.\n\nРозмноження \nСтатевий диморфізм відсутній. Запліднення зовнішнє. Плаваюча личинка трохофора живе деякий час як зоопланктон, потім осідає на дно і перетворюється на черв'яка.\n\nПосилання \n Lexikon der Biologie: Thalassema\n Saskiya Richards: A spoon worm (Thalassema thalassema)  MarLIN, The Marine Life Information Network, 2009.\n\nЕхіури\nКільчасті черви Атлантичного океану\nФауна Середземного моря\nТварини, описані 1774",
+  "question": "Яка кількість черевних щетинок розташована на передній частині тіла Thalassema thalassema?",
   "answers": {
-    "answer_start": [89],
-    "text": ["rektor"]
-  }
+    "answer_start": [466],
+    "text": ["дві"]
+    }
+}
+```
+
+```json
+{
+  "context": "Сезон 2007–08 в Серії A\xa0— футбольне змагання у найвищому дивізіоні чемпіонату Італії, що проходило між 26 серпня 2007 та 18 травня 2008 року. Став 76-м турніром з моменту заснування Серії A. Участь у змаганні брали 20 команд, у тому числі 3 команди, які попереднього сезону підвищилися у класі з Серії B. За результатами сезону 17 команд продовжили виступи в елітному дивізіоні, а три найгірших клуби вибули до Серії B.\n\nПереможцем турніру став міланський «Інтернаціонале», який здобув свій третій поспіль та 16-й в історії чемпіонський титул. Майбутні чемпіони захопили одноосібне лідерство у 6 турі турніру, після чого вже не залишали першого рядка турнірної таблиці. Хоча посеред змагання відрив основного переслідувача, «Роми», від лідера сягав 11 очок, перед останнім туром команди розділяв лише один заліковий пункт. «Інтер» забезпечив перемогу в сезоні, здолавши в цьому останньому турі одного з аутсайдерів сезону, «Парму», з рахунком 2:0.\n\nКоманди \n\nУчасть у турнірі Серії A сезону 2007–08 брали 20 команд:\n\nТурнірна таблиця\n\nРезультати\n\nБомбардири \nЗа результатами сезону таблицю найкращих бомбардирів Серії А очолила пара нападників туринського «Ювентуса»\xa0— Алессандро Дель П'єро та Давід Трезеге, які забили відповідно 21 та 20 голів в матчах турніру.\n\nПовний перелік гравців, що забили принаймні 10 голів в рамках Серії A сезону 2007—08:\n\n 21 гол\n  Алессандро Дель П'єро («Ювентус»)\n 20 голів\n  Давід Трезеге («Ювентус»)\n 19 голів\n  Марко Боррієлло («Дженоа»)\n 17 голів\n  Антоніо Ді Натале («Удінезе»)\n  Златан Ібрагімович («Інтернаціонале»)\n  Адріан Муту («Фіорентина»)\n 15 голів\n  Амаурі («Палермо»)\n  Кака («Мілан»)\n 14 голів\n  Горан Пандев («Лаціо»)\n  Томмазо Роккі («Лаціо»)\n  Франческо Тотті («Рома»)\n 13 голів\n  Хуліо Рікардо Крус («Інтернаціонале»)\n  Массімо Маккароне («Сієна»)\n 12 голів\n  Нікола Аморузо («Реджина»)\n  Клаудіо Белуччі («Сампдорія»)\n  Крістіано Доні («Аталанта»)\n  Фабіо Квальярелла («Удінезе»)\n 11 голів\n  Філіппо Індзагі («Мілан»)\n 10 голів\n  Роберт Аквафреска («Кальярі»)\n  Антоніо Кассано («Сампдорія»)\n  Франческо Тавано («Ліворно»)\n\nАльберто Джилардіно, Давід Трезеге і Нікола Аморузо забили по сто м'ячів у матчах Серії «А». По завершенні сезону, до десятки найвлучніших голеадорів ліги входять: Сільвіо Піола (275), Гуннар Нордаль (225), Джузеппе Меацца (216), Жозе Алтафіні (216), Роберто Баджо (205), Курт Хамрін (190), Джузеппе Сіньйорі (188), Габрієль Батістута (184), Джамп'єро Боніперті (178), Амедео Амадеї (174).\n\nПосилання \n Серія A 2007–08 на RSSSF  \n\n2007-2008\n2007 у футболі\n2008 у футболі\n2007 в італійському спорті\n2008 в італійському спорті", "question": "Яка кількість голів була забита Алессандро Дель П'єро протягом сезону Серії А 2007–2008 років?",
+  "answers": {
+    "answer_start": [1353],
+    "text": ['21 гол']
+    }
+}
+```
+
+```json
+{
+  "context": "Тім Смолдерс (,  26 серпня 1980, Гел)\xa0— бельгійський футболіст, що грав на позиції півзахисника. По завершенні ігрової кар'єри\xa0— тренер.\n\nІгрова кар'єра \nУ дорослому футболі дебютував 1998 року виступами за команду «Брюгге», в якій провів шість сезонів, взявши участь у 63 матчах чемпіонату. За цей час виборов титул чемпіона Бельгії.\n\nЗгодом з 2004 по 2015 рік грав у складі нідерландського «Росендала», а також на батьківщині за «Шарлеруа», «Гент» та «Серкль».\n\nПротягом 2015—2018 років грав за нижчоліговий «Звевезеле».\n\nКар'єра тренера\nПерший досвід тренерської роботи отримав ще граючи на полі як помічник головного тренера «Серкля» у 2014—2015 роках.\n\nЗгодом входив до тренерських штабів юнацької збірної Бельгії (U-19) та молодіжної команди «Брюгге».\n\n2021 року очолив футбольну академію «Брюгге».\n\nТитули і досягнення\n Чемпіон Бельгії (1):\n«Брюгге»: 2002-2003\n Володар Кубка Бельгії (2):\n«Брюгге»: 2002, 2004\n Володар Суперкубка Бельгії (3):\n«Брюгге»: 1998, 2002, 2003\n\nПосилання \n\nбельгійські футболісти\nбельгійські футбольні тренери\nФутболісти «Брюгге»\nФутболісти «Росендала»\nФутболісти «Шарлеруа»\nФутболісти «Гента»\nФутболісти «Серкля»\nТренери ФК «Серкль»\nТренери юнацької збірної Бельгії з футболу\nТренери ФК «Брюгге»\nбельгійські футбольні легіонери\nФутбольні легіонери в Нідерландах",
+  "question": "Де Смолдерс вперше спробував себе в ролі тренера?",
+  "answers": {
+    "answer_start": [629],
+    "text": ["«Серкля»"]
+    }
 }
 ```
 
@@ -272,31 +279,31 @@ When evaluating generative models, we use the following setup (see the
 - Prefix prompt:
 
   ```text
-  Nasledujú texty s pridruženými otázkami a odpoveďami.
+  Нижче наведені тексти з відповідними питаннями та відповідями.
   ```
 
 - Base prompt template:
 
   ```text
-  Text: {text}
-  Otázka: {question}
-  Odpoveď na maximálne 3 slová:
+  Текст: {text}
+  Питання: {question}
+  Відповідь максимум 3 словами:
   ```
 
 - Instruction-tuned prompt template:
 
   ```text
-  Text: {text}
+  Текст: {text}
 
-  Odpovedzte na nasledujúcu otázku týkajúcu sa textu uvedeného vyššie maximálne 3 slovami.
+  Відповідь на наступне питання про вищезазначений текст максимум 3 словами.
 
-  Otázka: {question}
+  Питання: {question}
   ```
 
 You can evaluate this dataset directly as follows:
 
 ```bash
-euroeval --model <model-id> --dataset multi-wiki-qa-sk
+euroeval --model <model-id> --dataset multi-wiki-qa-uk
 ```
 
 ## Knowledge

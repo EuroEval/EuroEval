@@ -2,7 +2,7 @@
 
 from ..data_models import DatasetConfig
 from ..languages import UK
-from ..tasks import LA, NER, SENT
+from ..tasks import LA, NER, RC, SENT
 
 ### Official datasets ###
 
@@ -29,5 +29,14 @@ NER_UK_CONFIG = DatasetConfig(
     "dataset NER-uk",
     huggingface_id="EuroEval/ner-uk-mini",
     task=NER,
+    languages=[UK],
+)
+
+MULTI_WIKI_QA_UK_CONFIG = DatasetConfig(
+    name="multi-wiki-qa-uk",
+    pretty_name="the truncated version of the Ukrainian part of the reading "
+    "comprehension dataset MultiWikiQA",
+    huggingface_id="EuroEval/multi-wiki-qa-uk-mini",
+    task=RC,
     languages=[UK],
 )
