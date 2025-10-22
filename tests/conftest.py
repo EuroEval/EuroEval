@@ -21,7 +21,7 @@ from euroeval.tasks import SENT, SPEED, get_all_tasks
 def pytest_configure() -> None:
     """Set a global flag when `pytest` is being run."""
     setattr(sys, "_called_from_test", True)
-    os.environ["CUDA_VISIBLE_DEVICES"] = "0"  # Ensure only one GPU is used in tests
+    os.environ["CUDA_VISIBLE_DEVICES"] = "-1"  # Ensure no GPUs are used in tests
 
 
 def pytest_unconfigure() -> None:
@@ -29,15 +29,18 @@ def pytest_unconfigure() -> None:
     delattr(sys, "_called_from_test")
 
 
-ACTIVE_LANGUAGES = {
-    language_code: language
-    for language_code, language in get_all_languages().items()
-    if any(
-        language in cfg.languages
-        for cfg in get_all_dataset_configs().values()
-        if cfg != SPEED_CONFIG
-    )
-}
+if os.environ.get("TEST_ALL_LANGUAGES", "0") == "1":
+    ACTIVE_LANGUAGES = {
+        language_code: language
+        for language_code, language in get_all_languages().items()
+        if any(
+            language in cfg.languages
+            for cfg in get_all_dataset_configs().values()
+            if cfg != SPEED_CONFIG
+        )
+    }
+else:
+    ACTIVE_LANGUAGES = dict(da=DA)
 
 
 @pytest.fixture(scope="session")

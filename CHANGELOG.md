@@ -7,14 +7,28 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [v16.4.0] - 2025-10-21
+
 ### Added
 
 - Added support for Ukrainian 🇺🇦! This includes the sentiment classification dataset
   Cross-Domain UK Reviews, the linguistic acceptability dataset ScaLA-uk, the named
   entity recognition dataset NER-uk, the reading comprehension dataset MultiWikiQA-uk,
   the summarisation dataset LR-Sum-uk.
+- Added support for Slovak 🇸🇰! This includes the sentiment classification dataset
+  CSFD-sentiment-sk, the linguistic acceptability dataset ScaLA-sk, the named entity
+  recognition dataset UNER-sk, the reading comprehension dataset MultiWikiQA-sk, the
+  multiple-choice classification dataset MMLU-sk, and the common-sense reasoning dataset
+  Winogrande-sk. This was contributed by @oliverkinch ✨
+- Added support for Czech 🇨🇿! This includes the sentiment classification dataset
+  CSFD-sentiment, the linguistic acceptability dataset ScaLA-cs, the linguistic
+  acceptability dataset CS-GEC, the named entity recognition dataset PONER, the reading
+  comprehension dataset SQAD, the summarization dataset Czech News, the common-sense
+  reasoning dataset HellaSwag-cs, and the knowledge dataset Umimeto-qa. This was
+  contributed by @oliverkinch ✨
 - Added the Lithuanian summarisation dataset Lrytas based on the Lithuanian
-  public media news portal [Lrytas.lt](https://www.lrytas.lt/).
+  public media news portal [Lrytas.lt](https://www.lrytas.lt/). This was contributed by
+  @oliverkinch ✨
 - Added the Estonian translation of MMLU, `mmlu-et`, as an unofficial knowledge
   dataset.
 
@@ -64,23 +78,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 
-- Added support for Slovak 🇸🇰! This includes the sentiment classification dataset
-  CSFD-sentiment-sk, the linguistic acceptability dataset ScaLA-sk, the named entity
-  recognition dataset UNER-sk, the reading comprehension dataset MultiWikiQA-sk, the
-  multiple-choice classification dataset MMLU-sk, and the common-sense reasoning dataset
-  Winogrande-sk.
-- Added support for Czech 🇨🇿! This includes the sentiment classification dataset
-  CSFD-sentiment, the linguistic acceptability dataset ScaLA-cs, the
-  linguistic acceptability dataset CS-GEC,
-  the named entity recognition dataset PONER,
-  the reading comprehension dataset SQAD,
-  the summarization dataset Czech News,
-  the common-sense reasoning dataset HellaSwag-cs, and the knowledge dataset Umimeto-qa.
 - Added support for Lithuanian 🇱🇹! This includes the sentiment classification dataset
-  Lithuanian Emotions, the linguistic acceptability dataset ScaLA-lt (unofficial), the reading
-  comprehension dataset MultiWikiQA-lt, the named entity recognition dataset WikiANN-lt,
-  the the history knowledge dataset LT-History, and the common-sense reasoning dataset
-  Winogrande-lt. This was contributed by @oliverkinch ✨
+  Lithuanian Emotions, the linguistic acceptability dataset ScaLA-lt (unofficial), the
+  reading comprehension dataset MultiWikiQA-lt, the named entity recognition dataset
+  WikiANN-lt, the the history knowledge dataset LT-History, and the common-sense
+  reasoning dataset Winogrande-lt. This was contributed by @oliverkinch ✨
 - Added "slow-tokenizer" model parameter, which can be used to force the use of a slow
   tokenizer when loading it. Use this by replacing your model ID with
   `<model-id>#slow-tokenizer`.
