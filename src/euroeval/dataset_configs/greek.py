@@ -2,7 +2,7 @@
 
 from ..data_models import DatasetConfig
 from ..languages import EL
-from ..tasks import LA, NER, SENT
+from ..tasks import LA, NER, RC, SENT
 
 ### Official datasets ###
 
@@ -30,5 +30,14 @@ ELNER_CONFIG = DatasetConfig(
     "recognition dataset elNER",
     huggingface_id="EuroEval/elner-mini",
     task=NER,
+    languages=[EL],
+)
+
+MULTI_WIKI_QA_EL_CONFIG = DatasetConfig(
+    name="multi-wiki-qa-el",
+    pretty_name="the truncated version of the Greek part of the reading comprehension "
+    "dataset MultiWikiQA",
+    huggingface_id="EuroEval/multi-wiki-qa-el-mini",
+    task=RC,
     languages=[EL],
 )

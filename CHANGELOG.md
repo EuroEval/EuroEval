@@ -582,7 +582,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 - Added support for Greek 🇬🇷! This includes the binary sentiment classification dataset
   Greek-SA, the linguistic acceptability dataset ScaLA-el, the named entity recognition
-  dataset elNER.
+  dataset elNER, the reading comprehension dataset MultiWikiQA-el.
 - Added support for Finnish 🇫🇮! This includes the Finnish part of the reading
   comprehension dataset
   [TydiQA-fi](https://huggingface.co/datasets/google-research-datasets/tydiqa/viewer/secondary_task?views%5B%5D=secondary_task_train),
