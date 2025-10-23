@@ -453,7 +453,7 @@ NER_TEMPLATES: dict["Language", PromptConfig] = {
         default_prompt_template="Mening: {text}\nNamngivna entiteter: {label}",
         default_instruction_prompt="Mening: {text}\n\nIdentifiera de namngivna "
         "enheterna i meningen. Du ska outputta detta som en JSON-ordbok med nycklarna "
-        "{labels_str}. Värdena ska vara listor över de namngivna enheterna av den "
+        "{labels_str}. Värdena ska vara listor över de namngivna enheter av den "
         "typen, precis som de förekommer i meningen.",
     ),
     UK: PromptConfig(
