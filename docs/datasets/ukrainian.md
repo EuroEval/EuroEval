@@ -380,6 +380,8 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset global-mmlu-uk
 ```
 
+## Common-sense Reasoning
+
 ### Winogrande-uk
 
 This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2506.19468)
