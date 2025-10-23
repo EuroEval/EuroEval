@@ -311,39 +311,37 @@ euroeval --model <model-id> --dataset multi-wiki-qa-bg
 
 ## Knowledge
 
-### Global-MMLU-uk
+### Exams-bg
 
-Global-MMLU is a machine translated version of the English [MMLU
-dataset](https://openreview.net/forum?id=d7KBjmI3GmQ) and features questions within 57
-different topics, such as elementary mathematics, US history and law. The translation to
-Ukrainian was done by the [Cohere Labs Community](https://cohere.com/research).
+This dataset was published in [this paper](https://aclanthology.org/2023.acl-long.487/)
+and contains questions collected from high school (HS) examinations in Bulgaria.
 
-The original full dataset consists of 285 / 14,042 samples for
-validation and testing, respectively. We use a 1,024 / 256 / 2,048 split for training,
-validation and testing, respectively (so 3,328 samples used in total).
-The validation set is sampled from the dev set, and the new train and test
-sets are sampled from the test set.
+The original full dataset consists of 1,329 / 365 / 1,472 samples for
+training, validation and testing, respectively. We only keep samples that have 4 choices,
+and we thus use a 1,024 / 94 / 2,048 split for training, validation and testing,
+respectively. The train and validation set are sampled from the original splits, but
+the test set has additional samples from both the original train and validation sets.
 
 Here are a few examples from the training split:
 
 ```json
 {
-  "text": "Після того, як призначену одиницю продукту крові було отримано з банку крові та вилучено з холодильника, протягом якого періоду часу слід розпочати переливання, перш ніж він почне псуватися (за медичними даними 2020 року)?\nВаріанти:\na. 30 хвилин.\nb. 90 хвилин.\nc. 4 години.\nd. 12 годин.",
-  "label": "a",
+    "text": "При свързването на три аминокиселини се образува:\nВъзможности:\na. тризахарид\nb. трипептид\nc. тринуклеотид\nd. триглицерид",
+    "label": "b"
 }
 ```
 
 ```json
 {
-  "text": "У якому з цих двох сценаріїв головний герой (який використовує I/me/my) робить щось явно морально неправильне відповідно до звичайних моральних стандартів у США станом на 2020 рік? Сценарій 1 | Я взяв 1 мільйон доларів у друзів. Сценарій 2 | Я подав на роботі свій табель із зазначенням точного робочого часу.\nВаріанти:\na. Неправильно, Неправильно\nb. Помилка, не помилка\nc. Не неправильно, неправильно\nd. Не помилився, не помилився",
-  "label": "b",
+    "text": "През 1911 г. Българското книжовно дружество се преименува на:\nВъзможности:\na. Народна библиотека „Кирил и Методий”\nb. Софийски държавен университет\nc. Българска академия на науките\nd. Висше педагогическо училище",
+    "label": "c"
 }
 ```
 
 ```json
 {
-  "text": "Яку з наведених нижче процедур бухгалтер найменше виконає під час перевірки фінансової звітності неемітента?\nВаріанти:\na. Запитувати керівництво про дії, прийняті на засіданнях ради директорів.\nb. Вивчіть взаємозв’язки елементів фінансової звітності, які, як очікується, мають відповідати передбачуваним моделям.\nc. Визначте заходи внутрішнього контролю, які можуть запобігти або виявити суттєві викривлення.\nd. Порівняйте фінансові звіти з очікуваними результатами в бюджетах і прогнозах.",
-  "label": "c",
+    "text": "Коя земеделска култура се отглежда само в Южна България?\nВъзможности:\na. тютюн\nb. слънчоглед\nc. ориз\nd. царевица",
+    "label": "c"
 }
 ```
 
@@ -354,33 +352,33 @@ When evaluating generative models, we use the following setup (see the
 - Prefix prompt:
 
   ```text
-  Нижче наведено питання з кількома варіантами відповідей (з відповідями).
+  Следват въпроси с множествен избор (с отговори).
   ```
 
 - Base prompt template:
 
   ```text
-  Питання: {text}
-  Варіанти:
+  Въпрос: {text}
+  Възможности:
   a. {option_a}
   b. {option_b}
   c. {option_c}
   d. {option_d}
-  Відповідь: {label}
+  Отговор: {label}
   ```
 
 - Instruction-tuned prompt template:
 
   ```text
-  Питання: {text}
+  Въпрос: {text}
 
-  Дайте відповідь на наведене вище питання, використовуючи 'a', 'b', 'c' або 'd', і нічого іншого.
+  Отговорете на горния въпрос като отговорите с 'a', 'b', 'c' или 'd', и нищо друго.
   ```
 
 You can evaluate this dataset directly as follows:
 
 ```bash
-euroeval --model <model-id> --dataset global-mmlu-uk
+euroeval --model <model-id> --dataset exams-bg
 ```
 
 ### Winogrande-uk

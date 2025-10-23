@@ -2,7 +2,7 @@
 
 from ..data_models import DatasetConfig
 from ..languages import BG
-from ..tasks import LA, NER, RC, SENT
+from ..tasks import KNOW, LA, NER, RC, SENT
 
 ### Official datasets ###
 
@@ -38,5 +38,14 @@ MULTI_WIKI_QA_BG_CONFIG = DatasetConfig(
     "comprehension dataset MultiWikiQA",
     huggingface_id="EuroEval/multi-wiki-qa-bg-mini",
     task=RC,
+    languages=[BG],
+)
+
+EXAMS_BG_CONFIG = DatasetConfig(
+    name="exams-bg",
+    pretty_name="the truncated version of the Bulgarian highschool examinations "
+    "dataset Exams-bg",
+    huggingface_id="EuroEval/exams-bg-mini",
+    task=KNOW,
     languages=[BG],
 )
