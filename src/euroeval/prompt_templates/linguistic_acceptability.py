@@ -7,6 +7,7 @@ from ..languages import (
     CS,
     DA,
     DE,
+    EL,
     EN,
     ES,
     ET,
@@ -54,6 +55,14 @@ LA_TEMPLATES: dict["Language", PromptConfig] = {
         default_instruction_prompt="Satz: {text}\n\nBestimmen Sie, ob der Satz "
         "grammatikalisch korrekt ist oder nicht. Antworten Sie mit {labels_str}, und "
         "nichts anderes.",
+    ),
+    EL: PromptConfig(
+        default_prompt_label_mapping=dict(correct="ναι", incorrect="όχι"),
+        default_prompt_prefix="Οι ακόλουθες είναι προτάσεις και εάν είναι "
+        "γραμματικά σωστές.",
+        default_prompt_template="Πρόταση: {text}\nΓραμματικά σωστή: {label}",
+        default_instruction_prompt="Πρόταση: {text}\n\nΠροσδιορίστε εάν η πρόταση "
+        "είναι γραμματικά σωστή ή όχι. Απαντήστε με {labels_str}, και τίποτα άλλο.",
     ),
     EN: PromptConfig(
         default_prompt_label_mapping=dict(correct="yes", incorrect="no"),

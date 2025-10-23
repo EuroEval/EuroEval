@@ -7,6 +7,7 @@ from ..languages import (
     CS,
     DA,
     DE,
+    EL,
     EN,
     ES,
     ET,
@@ -56,6 +57,14 @@ MULTIPLE_CHOICE_TEMPLATES: dict["Language", PromptConfig] = {
         default_prompt_template="Frage: {text}\nAntwort: {label}",
         default_instruction_prompt="Frage: {text}\n\nBeantworten Sie die obige Frage "
         "mit {labels_str}, und nichts anderes.",
+        default_prompt_label_mapping="auto",
+    ),
+    EL: PromptConfig(
+        default_prompt_prefix="Ακολουθούν ερωτήσεις πολλαπλών επιλογών "
+        "(με απαντήσεις).",
+        default_prompt_template="Ερώτηση: {text}\nΑπάντηση: {label}",
+        default_instruction_prompt="Ερώτηση: {text}\n\nΑπαντήστε στην παραπάνω ερώτηση "
+        "χρησιμοποιώντας {labels_str}, και τίποτα άλλο.",
         default_prompt_label_mapping="auto",
     ),
     EN: PromptConfig(

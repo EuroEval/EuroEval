@@ -7,6 +7,7 @@ from ..languages import (
     CS,
     DA,
     DE,
+    EL,
     EN,
     ES,
     ET,
@@ -52,6 +53,13 @@ SUMM_TEMPLATES: dict["Language", PromptConfig] = {
         default_prompt_template="Dokument: {text}\nZusammenfassung: {target_text}",
         default_instruction_prompt="Nachrichtenartikel: {text}\n\nSchreiben Sie eine "
         "Zusammenfassung des oben genannten Dokuments.",
+        default_prompt_label_mapping=dict(),
+    ),
+    EL: PromptConfig(
+        default_prompt_prefix="Ακολουθούν έγγραφα με συνοδευτικές περιλήψεις.",
+        default_prompt_template="Έγγραφο: {text}\nΠερίληψη: {target_text}",
+        default_instruction_prompt="Έγγραφο: {text}\n\nΓράψτε μια περίληψη του "
+        "παραπάνω εγγράφου.",
         default_prompt_label_mapping=dict(),
     ),
     EN: PromptConfig(

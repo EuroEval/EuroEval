@@ -45,6 +45,7 @@ LANGUAGES = [
     "lt",
     "sk",
     "uk",
+    "el",
 ]
 
 

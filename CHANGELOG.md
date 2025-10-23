@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 
+- Added support for Greek 🇬🇷! This includes the binary sentiment classification dataset
+  Greek-SA, the linguistic acceptability dataset ScaLA-el, the named entity recognition
+  dataset elNER, the reading comprehension dataset MultiWikiQA-el, the summarisation
+  dataset Greek-Wikipedia, the knowledge dataset Global-MMLU-el, and the common-sense
+  reasoning dataset Winogrande-el. This was contributed by @oliverkinch ✨
 - Added support for Ukrainian 🇺🇦! This includes the sentiment classification dataset
   Cross-Domain UK Reviews, the linguistic acceptability dataset ScaLA-uk, the named
   entity recognition dataset NER-uk, the reading comprehension dataset MultiWikiQA-uk,

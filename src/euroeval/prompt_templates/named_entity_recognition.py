@@ -7,6 +7,7 @@ from ..languages import (
     CS,
     DA,
     DE,
+    EL,
     EN,
     ES,
     ET,
@@ -89,6 +90,25 @@ NER_TEMPLATES: dict["Language", PromptConfig] = {
         "Entitäten im Satz. Sie sollten dies als JSON-Wörterbuch mit den "
         "Schlüsseln {labels_str} ausgeben. Die Werte sollten Listen der "
         "benannten Entitäten dieses Typs sein, genau wie sie im Satz erscheinen.",
+    ),
+    EL: PromptConfig(
+        default_prompt_label_mapping={
+            "b-per": "πρόσωπο",
+            "i-per": "πρόσωπο",
+            "b-loc": "τοποθεσία",
+            "i-loc": "τοποθεσία",
+            "b-org": "οργανισμός",
+            "i-org": "οργανισμός",
+            "b-misc": "διάφορα",
+            "i-misc": "διάφορα",
+        },
+        default_prompt_prefix="Ακολουθούν προτάσεις και λεξικά JSON με τις "
+        "ονομαστικές οντότητες που εμφανίζονται στην δεδομένη πρόταση.",
+        default_prompt_template="Πρόταση: {text}\nΟνομαστικές οντότητες: {label}",
+        default_instruction_prompt="Πρόταση: {text}\n\nΑναγνωρίστε τις ονομαστικές "
+        "οντότητες στην πρόταση. Θα πρέπει να παράγετε αυτό ως λεξικό JSON με "
+        "κλειδιά {labels_str}. Οι τιμές πρέπει να είναι λίστες των ονομαστικών "
+        "οντοτήτων αυτού του τύπου, ακριβώς όπως εμφανίζονται στην πρόταση.",
     ),
     EN: PromptConfig(
         default_prompt_label_mapping={

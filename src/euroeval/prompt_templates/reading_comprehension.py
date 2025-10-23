@@ -7,6 +7,7 @@ from ..languages import (
     CS,
     DA,
     DE,
+    EL,
     EN,
     ES,
     ET,
@@ -60,6 +61,15 @@ RC_TEMPLATES: dict["Language", PromptConfig] = {
         "maximal 3 Wörtern: {label}",
         default_instruction_prompt="Text: {text}\n\nBeantworten Sie die folgende Frage "
         "zum obigen Text in höchstens 3 Wörtern.\n\nFrage: {question}",
+        default_prompt_label_mapping=dict(),
+    ),
+    EL: PromptConfig(
+        default_prompt_prefix="Ακολουθούν κείμενα με τις αντίστοιχες ερωτήσεις και "
+        "απαντήσεις.",
+        default_prompt_template="Κείμενο: {text}\nΕρώτηση: {question}\nΑπάντηση σε το "
+        "πολύ 3 λέξεις: {label}",
+        default_instruction_prompt="Κείμενο: {text}\n\nΑπαντήστε την παρακάτω ερώτηση "
+        "σχετικά με το παραπάνω κείμενο σε το πολύ 3 λέξεις.\n\nΕρώτηση: {question}",
         default_prompt_label_mapping=dict(),
     ),
     EN: PromptConfig(
