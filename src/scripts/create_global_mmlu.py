@@ -35,7 +35,6 @@ def main() -> None:
     languages = ["uk", "el"]
 
     for language in languages:
-        language = "el"
         # Load the dataset
         dataset = load_dataset(path=repo_id, name=language)
         assert isinstance(dataset, DatasetDict)
