@@ -3,6 +3,7 @@
 from ..data_models import DatasetConfig
 from ..languages import get_all_languages
 from ..tasks import SPEED
+from .bulgarian import *  # noqa: F403
 from .czech import *  # noqa: F403
 from .danish import *  # noqa: F403
 from .dutch import *  # noqa: F403
