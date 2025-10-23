@@ -824,21 +824,21 @@ Here are a few examples from the training split:
 
 ```json
 {
-  "text": "Emily vroeg haar zus Sarah of ze tampons of maandverband nodig had uit de winkel, hoewel _ dat niet nodig had omdat ze was overgestapt op het gebruik van menstruatiecups. Waar verwijst de lege _ naar?\nAntwoordopties:\na. Optie A: Emily\nb. Optie B: Sarah",
+  "text": "Emily vroeg haar zus Sarah of ze tampons of maandverband nodig had uit de winkel, hoewel _ dat niet nodig had omdat ze was overgestapt op het gebruik van menstruatiecups. Waar verwijst de lege _ naar?\nAntwoordopties:\na. Emily\nb. Sarah",
   "label": "a"
 }
 ```
 
 ```json
 {
-  "text": "Bij het kopen van een huis heeft Patricia niet zoveel geld te besteden als Tanya, dus _ koopt een huis met 1 slaapkamer. Waar verwijst de lege _ naar?\nAntwoordopties:\na. Optie A: Patricia\nb. Optie B: Tanya",
+  "text": "Bij het kopen van een huis heeft Patricia niet zoveel geld te besteden als Tanya, dus _ koopt een huis met 1 slaapkamer. Waar verwijst de lege _ naar?\nAntwoordopties:\na. Patricia\nb. Tanya",
   "label": "a"
 }
 ```
 
 ```json
 {
-  "text": "Eenmaal in Polen genoot Dennis meer van de reis dan Jason omdat _ een oppervlakkige kennis van de Poolse taal had. Waar verwijst de lege _ naar?\nAntwoordopties:\na. Optie A: Dennis\nb. Optie B: Jason",
+  "text": "Eenmaal in Polen genoot Dennis meer van de reis dan Jason omdat _ een oppervlakkige kennis van de Poolse taal had. Waar verwijst de lege _ naar?\nAntwoordopties:\na. Dennis\nb. Jason",
   "label": "b"
 }
 ```

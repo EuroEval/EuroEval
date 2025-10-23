@@ -30,6 +30,7 @@ CHOICES_MAPPING = {
     "cs": "Výběr",
     "da": "Svarmuligheder",
     "de": "Antwortmöglichkeiten",
+    "el": "Επιλογές",
     "en": "Choices",
     "es": "Opciones",
     "et": "Vastusevariandid",

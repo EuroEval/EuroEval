@@ -494,21 +494,21 @@ Here are a few examples from the training split:
 
 ```json
 {
-  "text": "Gęsi wolą gniazdować na polach niż w lasach, ponieważ na _ drapieżniki są bardzo widoczne. Do kogo odnosi się puste miejsce _?\nOpcje:\na. Opcja A: pola\nb. Opcja B: lasy",
+  "text": "Gęsi wolą gniazdować na polach niż w lasach, ponieważ na _ drapieżniki są bardzo widoczne. Do kogo odnosi się puste miejsce _?\nOpcje:\na. pola\nb. lasy",
   "label": "a"
 }
 ```
 
 ```json
 {
-  "text": "Kyle czuł się bardziej komfortowo, mówiąc przed dużymi grupami niż Nick, ponieważ _ brał udział w kursach przemówień publicznych na studiach. Do kogo odnosi się puste miejsce _?\nOpcje:\na. Opcja A: Kyle\nb. Opcja B: Nick",
+  "text": "Kyle czuł się bardziej komfortowo, mówiąc przed dużymi grupami niż Nick, ponieważ _ brał udział w kursach przemówień publicznych na studiach. Do kogo odnosi się puste miejsce _?\nOpcje:\na. Kyle\nb. Nick",
   "label": "a"
 }
 ```
 
 ```json
 {
-  "text": "Nie mogłem kontrolować wilgoci tak jak kontrolowałem deszcz, ponieważ _ wchodziła w jednym miejscu. Do kogo odnosi się puste miejsce _?\nOpcje:\na. Opcja A: wilgoci\nb. Opcja B: deszcz",
+  "text": "Nie mogłem kontrolować wilgoci tak jak kontrolowałem deszcz, ponieważ _ wchodziła w jednym miejscu. Do kogo odnosi się puste miejsce _?\nOpcje:\na. wilgoci\nb. deszcz",
   "label": "b"
 }
 ```

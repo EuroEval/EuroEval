@@ -13,6 +13,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   Cinexio, the linguistic acceptability dataset ScaLA-bg, the named entity recognition
   dataset BG-NER-BSNLP, the reading comprehension dataset MultiWikiQA-bg, the knowledge
   dataset Exams-bg.
+- Added support for Greek 🇬🇷! This includes the binary sentiment classification dataset
+  Greek-SA, the linguistic acceptability dataset ScaLA-el, the named entity recognition
+  dataset elNER, the reading comprehension dataset MultiWikiQA-el, the summarisation
+  dataset Greek-Wikipedia, the knowledge dataset Global-MMLU-el, and the common-sense
+  reasoning dataset Winogrande-el. This was contributed by @oliverkinch ✨
 - Added support for Ukrainian 🇺🇦! This includes the sentiment classification dataset
   Cross-Domain UK Reviews, the linguistic acceptability dataset ScaLA-uk, the named
   entity recognition dataset NER-uk, the reading comprehension dataset MultiWikiQA-uk,
@@ -21,6 +26,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Fixed
 
+- Fixed the "double option" problem in Winogrande datasets across all languages. Previously,
+  option labels were duplicated for multiple languages
+  (e.g., "Svarmuligheder:\na. Valgmulighed A: Natalie\nb. Valgmulighed B: Betty"
+  instead of just "Svarmuligheder:\na. Natalie\nb. Betty").
 - The previous fix to close arrow writers in metrics did not work as intended, as the
   "too many open files" error still occurred. We now ensure that the writers are closed
   properly after each metric computation to avoid this issue.

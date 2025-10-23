@@ -395,21 +395,21 @@ Here are a few examples from the training split:
 
 ```json
 {
-  "text": "Derrick negalėjo susikoncentruoti darbe, skirtingai nei Justin, nes _ turėjo smagų darbą. Ką reiškia tuščia vieta _?\nPasirinkimai:\na. Pasirinkimas A: Derrick\nb. Pasirinkimas B: Justin",
+  "text": "Derrick negalėjo susikoncentruoti darbe, skirtingai nei Justin, nes _ turėjo smagų darbą. Ką reiškia tuščia vieta _?\nPasirinkimai:\na. Derrick\nb. Justin",
   "label": "b"
 }
 ```
 
 ```json
 {
-  "text": "Vieną kartą Lenkijoje Dennis mėgavosi kelione labiau nei Jason, nes _ turėjo paviršutinišką lenkų kalbos supratimą. Ką reiškia tuščia vieta _?\nPasirinkimai:\na. Pasirinkimas A: Dennis\nb. Pasirinkimas B: Jason",
+  "text": "Vieną kartą Lenkijoje Dennis mėgavosi kelione labiau nei Jason, nes _ turėjo paviršutinišką lenkų kalbos supratimą. Ką reiškia tuščia vieta _?\nPasirinkimai:\na. Dennis\nb. Jason",
   "label": "b"
 }
 ```
 
 ```json
 {
-  "text": "Natalie mano, kad smaragdai yra gražūs brangakmeniai, bet Betty taip nemano. _ nusipirko vėrinį su dideliu smaragdu. Ką reiškia tuščia vieta _?\nPasirinkimai:\na. Pasirinkimas A: Natalie\nb. Pasirinkimas B: Betty",
+  "text": "Natalie mano, kad smaragdai yra gražūs brangakmeniai, bet Betty taip nemano. _ nusipirko vėrinį su dideliu smaragdu. Ką reiškia tuščia vieta _?\nPasirinkimai:\na. Natalie\nb. Betty",
   "label": "a"
 }
 ```

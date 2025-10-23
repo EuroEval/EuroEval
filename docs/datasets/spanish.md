@@ -783,21 +783,21 @@ Here are a few examples from the training split:
 
 ```json
 {
-  "text": "Joseph tenía que tener las uñas bien cuidadas para el trabajo, pero no Kevin, porque _ trabajaba en un banco. ¿A qué se refiere el espacio en blanco _?\nOpciones:\na. Opción A: Joseph\nb. Opción B: Kevin",
+  "text": "Joseph tenía que tener las uñas bien cuidadas para el trabajo, pero no Kevin, porque _ trabajaba en un banco. ¿A qué se refiere el espacio en blanco _?\nOpciones:\na. Joseph\nb. Kevin",
   "label": "a"
 }
 ```
 
 ```json
 {
-  "text": "Craig realmente ama limpiar todo el tiempo pero Derrick no porque _ es muy ordenado. ¿A qué se refiere el espacio en blanco _?\nOpciones:\na. Opción A: Craig\nb. Opción B: Derrick",
+  "text": "Craig realmente ama limpiar todo el tiempo pero Derrick no porque _ es muy ordenado. ¿A qué se refiere el espacio en blanco _?\nOpciones:\na. Craig\nb. Derrick",
   "label": "a"
 }
 ```
 
 ```json
 {
-  "text": "Una vez en Polonia, Dennis disfrutó del viaje más que Jason porque _ tenía un conocimiento superficial del idioma polaco. ¿A qué se refiere el espacio en blanco _?\nOpciones:\na. Opción A: Dennis\nb. Opción B: Jason",
+  "text": "Una vez en Polonia, Dennis disfrutó del viaje más que Jason porque _ tenía un conocimiento superficial del idioma polaco. ¿A qué se refiere el espacio en blanco _?\nOpciones:\na. Dennis\nb. Jason",
   "label": "b"
 }
 ```

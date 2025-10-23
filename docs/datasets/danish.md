@@ -995,21 +995,21 @@ Here are a few examples from the training split:
 
 ```json
 {
-  "text": "Natalie synes, at smaragder er smukke ædelstene, men Betty gør ikke. _ købte en halskæde med en stor smaragd. Hvad refererer det tomme _ til?\nSvarmuligheder:\na. Valgmulighed A: Natalie\nb. Valgmulighed B: Betty",
+  "text": "Natalie synes, at smaragder er smukke ædelstene, men Betty gør ikke. _ købte en halskæde med en stor smaragd. Hvad refererer det tomme _ til?\nSvarmuligheder:\na. Natalie\nb. Betty",
   "label": "a"
 }
 ```
 
 ```json
 {
-  "text": "Natalie synes, at smaragder er smukke ædelstene, men Betty gør ikke. _ købte en halskæde med en stor smaragd. Hvad refererer det tomme _ til?\nSvarmuligheder:\na. Valgmulighed A: Natalie\nb. Valgmulighed B: Betty",
+  "text": "Natalie synes, at smaragder er smukke ædelstene, men Betty gør ikke. _ købte en halskæde med en stor smaragd. Hvad refererer det tomme _ til?\nSvarmuligheder:\na. Natalie\nb. Betty",
   "label": "a"
 }
 ```
 
 ```json
 {
-  "text": "At håndtere nødsituationer var aldrig særlig svært for Kevin, men det var det for Nelson, fordi _ ikke var i stand til at forblive rolig under pres. Hvad refererer det tomme _ til?\nSvarmuligheder:\na. Valgmulighed A: Kevin\nb. Valgmulighed B: Nelson",
+  "text": "At håndtere nødsituationer var aldrig særlig svært for Kevin, men det var det for Nelson, fordi _ ikke var i stand til at forblive rolig under pres. Hvad refererer det tomme _ til?\nSvarmuligheder:\na. Kevin\nb. Nelson",
   "label": "b"
 }
 ```
