@@ -4,6 +4,7 @@ import typing as t
 
 from ..data_models import PromptConfig
 from ..languages import (
+    BG,
     CS,
     DA,
     DE,
@@ -33,6 +34,25 @@ if t.TYPE_CHECKING:
 
 
 NER_TEMPLATES: dict["Language", PromptConfig] = {
+    BG: PromptConfig(
+        default_prompt_label_mapping={
+            "b-per": "лице",
+            "i-per": "лице",
+            "b-loc": "място",
+            "i-loc": "място",
+            "b-org": "организация",
+            "i-org": "организация",
+            "b-misc": "разни",
+            "i-misc": "разни",
+        },
+        default_prompt_prefix="По-долу са изречения и JSON речници с именуваните "
+        "обекти, които се срещат в дадените изречения.",
+        default_prompt_template="Изречение: {text}\nИменувани обекти: {label}",
+        default_instruction_prompt="Изречение: {text}\n\nИдентифицирайте именуваните "
+        "обекти в изречението. Трябва да изведете това като JSON речник с ключовете "
+        "{labels_str}. Стойностите трябва да бъдат списъци на именуваните обекти от "
+        "този тип, точно както се появяват в изречението.",
+    ),
     CS: PromptConfig(
         default_prompt_label_mapping={
             "b-per": "osoba",
@@ -433,7 +453,7 @@ NER_TEMPLATES: dict["Language", PromptConfig] = {
         default_prompt_template="Mening: {text}\nNamngivna entiteter: {label}",
         default_instruction_prompt="Mening: {text}\n\nIdentifiera de namngivna "
         "enheterna i meningen. Du ska outputta detta som en JSON-ordbok med nycklarna "
-        "{labels_str}. Värdena ska vara listor över de namngivna enheter av den "
+        "{labels_str}. Värdena ska vara listor över de namngivna enheterna av den "
         "typen, precis som de förekommer i meningen.",
     ),
     UK: PromptConfig(

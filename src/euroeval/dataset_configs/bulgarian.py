@@ -2,7 +2,7 @@
 
 from ..data_models import DatasetConfig
 from ..languages import BG
-from ..tasks import LA, SENT
+from ..tasks import LA, NER, SENT
 
 ### Official datasets ###
 
@@ -20,5 +20,14 @@ SCALA_BG_CONFIG = DatasetConfig(
     pretty_name="the Bulgarian part of the linguistic acceptability dataset ScaLA",
     huggingface_id="EuroEval/scala-bg",
     task=LA,
+    languages=[BG],
+)
+
+BG_NER_BSNLP_CONFIG = DatasetConfig(
+    name="bg-ner-bsnlp",
+    pretty_name="the truncated version of the Bulgarian named entity recognition "
+    "dataset BG-NER-BSNLP",
+    huggingface_id="EuroEval/bg-ner-bsnlp-mini",
+    task=NER,
     languages=[BG],
 )

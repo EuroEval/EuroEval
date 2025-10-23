@@ -10,7 +10,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Added
 
 - Added support for Bulgarian 🇧🇬! This includes the sentiment classification dataset
-  Cinexio, the linguistic acceptability dataset ScaLA-bg.
+  Cinexio, the linguistic acceptability dataset ScaLA-bg, the named entity recognition
+  dataset BG-NER-BSNLP.
 - Added support for Ukrainian 🇺🇦! This includes the sentiment classification dataset
   Cross-Domain UK Reviews, the linguistic acceptability dataset ScaLA-uk, the named
   entity recognition dataset NER-uk, the reading comprehension dataset MultiWikiQA-uk,

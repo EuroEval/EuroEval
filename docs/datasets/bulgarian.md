@@ -79,38 +79,37 @@ euroeval --model <model-id> --dataset cinexio
 
 ## Named Entity Recognition
 
-### NER-uk
+### BG-NER-BSNLP
 
-The dataset can be found [here](https://github.com/lang-uk/ner-uk).
-The dataset primarily consists of text from the
-[Open Corpus of Ukrainian Texts](https://github.com/brown-uk/corpus).
+This dataset was published in [this paper](https://aclanthology.org/W19-3709/)
+and consists of Web documents.
 
-The original dataset consists of 10,833 / 668 / 1,307 samples for the
-training, validation, and test splits, respectively. We use 1,024 / 256 / 2,048
+The original dataset consists of 6,701 / 2,179 samples for the
+training and test splits, respectively. We use 1,024 / 256 / 2,048
 samples for our training, validation and test splits, respectively. The train and
-validation splits are subsets of the original splits, while the test split is
-created using additional samples from the train split.
+tests splits are subsets of the original splits, and the validation split is
+created from the training split.
 
 Here are a few examples from the training split:
 
 ```json
 {
-  "tokens": ["Хоча", "непросто", "про", "неї", "розповісти", "»", ".", "Ведмідь", "замовк", ",", "подивився", "на", "друзів", ",", "які", "уважно", "його", "слухали", ",", "і", "запитав", ":"],
-  "labels": ["O", "O", "O", "O", "O", "O", "O", "B-PER", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O"]
+    "tokens": ["За", "всички", "нас", "е", "по-добре", "да", "постигнем", "споразумение", "възможно", "най-скоро", "\"", ",", "каза", "Захариева", "."],
+    "labels": ["O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "B-PER", "O"]
 }
 ```
 
 ```json
 {
-  "tokens": ["Експериментальний", "матеріал", "було", "оброблено", "статистично", ".", "Метою", "запропонованої", "статті", "є", "аналіз", "структурно-змістових", "особливостей", "перетворень", "у", "районній", "пресі", "Тернопільщини", "означеного", "періоду", "."],
-  "labels": ["O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "B-LOC", "O", "O", "O"]
+    "tokens": ["Но", "съм", "уверена", ",", "че", "можем", "да", "сключим", "споразумение", "\"", "."],
+    "labels": ["O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O"]
 }
 ```
 
 ```json
 {
-  "tokens": ["Як", "відомо", ",", "рішення", "«", "Про", "вихід", "зі", "складу", "засновників", "редакції", "газети", "«", "Житомирщина", "»", "з", "ініціативи", "голови", "обласної", "ради", "було", "прийнято", "на", "другій", "сесії", "обласної", "ради", "24", "грудня", "минулого", "року", "—", "саме", "того", "дня", ",", "коли", "Верховна", "Рада", "ухвалила", "в", "остаточній", "редакції", "Закон", "про", "реформування", "преси", "."],
-  "labels": ["O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "B-ORG", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "B-ORG", "I-ORG", "O", "O", "O", "O", "O", "O", "O", "O", "O"]
+    "tokens": ["Според", "тях", "130_000", "граждани", "на", "ЕС", "са", "напуснали", "страната", "до", "септември", "миналата", "година", ",", "което", "е", "най-големият", "брой", "от", "2008", "г.", "досега", "."],
+    "labels": ["O", "O", "O", "O", "O", "B-ORG", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O"]
 }
 ```
 
@@ -121,38 +120,38 @@ When evaluating generative models, we use the following setup (see the
 - Prefix prompt:
 
   ```text
-  Нижче наведені речення та JSON-словники з іменованими сутностями, які присутні у даному реченні.
+  По-долу са изречения и JSON речници с именуваните обекти, които се срещат в дадените изречения.
   ```
 
 - Base prompt template:
 
   ```text
-  Речення: {text}
-  Іменовані сутності: {label}
+  Изречение: {text}
+  Именувани обекти: {label}
   ```
 
 - Instruction-tuned prompt template:
 
   ```text
-  Речення: {text}
+  Изречение: {text}
 
-  Ідентифікуйте іменовані сутності у реченні. Ви повинні вивести це як JSON-словник з ключами 'особа', 'місце', 'організація' та 'різне'. Значення мають бути списками іменованих сутностей цього типу, точно такими, як вони з'являються у реченні.
+  Идентифицирайте именуваните обекти в изречението. Трябва да изведете това като JSON речник с ключовете 'лице', 'място', 'организация' и 'разни'. Стойностите трябва да бъдат списъци на именуваните обекти от този тип, точно както се появяват в изречението.
   ```
 
 - Label mapping:
-  - `B-PER` ➡️ `особа`
-  - `I-PER` ➡️ `особа`
-  - `B-LOC` ➡️ `місце`
-  - `I-LOC` ➡️ `місце`
-  - `B-ORG` ➡️ `організація`
-  - `I-ORG` ➡️ `організація`
-  - `B-MISC` ➡️ `різне`
-  - `I-MISC` ➡️ `різне`
+  - `B-PER` ➡️ `лице`
+  - `I-PER` ➡️ `лице`
+  - `B-LOC` ➡️ `място`
+  - `I-LOC` ➡️ `място`
+  - `B-ORG` ➡️ `организация`
+  - `I-ORG` ➡️ `организация`
+  - `B-MISC` ➡️ `разни`
+  - `I-MISC` ➡️ `разни`
 
 You can evaluate this dataset directly as follows:
 
 ```bash
-euroeval --model <model-id> --dataset ner-uk
+euroeval --model <model-id> --dataset bg-ner-bsnlp
 ```
 
 ## Linguistic Acceptability
