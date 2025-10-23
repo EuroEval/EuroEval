@@ -11,6 +11,7 @@
 """Create the Winogrande datasets and upload them to the HF Hub."""
 
 import logging
+import re
 from collections import Counter
 
 import pandas as pd
@@ -28,25 +29,26 @@ from huggingface_hub import HfApi
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(message)s")
 logger = logging.getLogger("create_winogrande")
 
-LANGUAGE_TO_OPTION: dict[str, str] = {
-    "da": "Valgmulighed",
-    "de": "Option",
-    "el": "Επιλογή",
-    "en": "Option",
-    "es": "Opción",
-    "fi": "Vaihtoehto",
-    "fr": "Option",
-    "it": "Opzione",
-    "lt": "Pasirinkimas",
-    "lv": "Opcija",
-    "nl": "Optie",
-    "no": "Alternativ",
-    "pl": "Opcja",
-    "pt": "Opção",
-    "sk": "Možnosť",
-    "sv": "Alternativ",
-    "uk": "Варіант",
-}
+
+LANGUAGES = [
+    "da",
+    "de",
+    "el",
+    "en",
+    "es",
+    "fi",
+    "fr",
+    "it",
+    "lt",
+    "lv",
+    "nl",
+    "no",
+    "pl",
+    "pt",
+    "sk",
+    "sv",
+    "uk",
+]
 
 
 def main() -> None:
@@ -54,7 +56,7 @@ def main() -> None:
     disable_progress_bars()
     repo_id = "aialt/MuBench"
 
-    for language in LANGUAGE_TO_OPTION.keys():
+    for language in LANGUAGES:
         # Download the dataset
         dataset = load_dataset(
             path=repo_id, name=f"WinoGrandeDataset_local_template_{language}"
@@ -82,6 +84,7 @@ def main() -> None:
             val=Dataset.from_pandas(val_df, split=Split.VALIDATION),
             test=Dataset.from_pandas(test_df, split=Split.TEST),
         )
+
         logger.info(
             f"Final sizes for the Winogrande {language} dataset: "
             f"{len(dataset['train'])} train, {len(dataset['val'])} val, "
@@ -121,14 +124,10 @@ def prepare_dataframe(df: pd.DataFrame, language: str) -> pd.DataFrame:
         "Not all instructions have exactly 6 lines!"
     )
     df["option_a"] = df.instruction.map(
-        lambda x: x.split("\n")[2]
-        .replace(f"{LANGUAGE_TO_OPTION[language]} A:", "")
-        .strip()
+        lambda x: re.sub(r"[^ ]+ A: ?", "", x.split("\n")[2]).strip()
     )
     df["option_b"] = df.instruction.map(
-        lambda x: x.split("\n")[3]
-        .replace(f"{LANGUAGE_TO_OPTION[language]} B:", "")
-        .strip()
+        lambda x: re.sub(r"[^ ]+ B: ?", "", x.split("\n")[3]).strip()
     )
     df.instruction = df.instruction.map(lambda x: " ".join(x.split("\n")[:2]).strip())
 
