@@ -2,7 +2,7 @@
 
 from ..data_models import DatasetConfig
 from ..languages import BG
-from ..tasks import LA, NER, SENT
+from ..tasks import LA, NER, RC, SENT
 
 ### Official datasets ###
 
@@ -29,5 +29,14 @@ BG_NER_BSNLP_CONFIG = DatasetConfig(
     "dataset BG-NER-BSNLP",
     huggingface_id="EuroEval/bg-ner-bsnlp-mini",
     task=NER,
+    languages=[BG],
+)
+
+MULTI_WIKI_QA_BG_CONFIG = DatasetConfig(
+    name="multi-wiki-qa-bg",
+    pretty_name="the truncated version of the Bulgarian part of the reading "
+    "comprehension dataset MultiWikiQA",
+    huggingface_id="EuroEval/multi-wiki-qa-bg-mini",
+    task=RC,
     languages=[BG],
 )

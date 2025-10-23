@@ -4,6 +4,7 @@ import typing as t
 
 from ..data_models import PromptConfig
 from ..languages import (
+    BG,
     CS,
     DA,
     DE,
@@ -32,6 +33,14 @@ if t.TYPE_CHECKING:
     from ..data_models import Language
 
 RC_TEMPLATES: dict["Language", PromptConfig] = {
+    BG: PromptConfig(
+        default_prompt_prefix="Следват текстове със съответни въпроси и отговори.",
+        default_prompt_template="Текст: {text}\nВъпрос: {question}\nОтговор с максимум "
+        "3 думи: {label}",
+        default_instruction_prompt="Текст: {text}\n\nОтговорете на следния въпрос "
+        "относно текста по-горе с максимум 3 думи.\n\nВъпрос: {question}",
+        default_prompt_label_mapping=dict(),
+    ),
     CS: PromptConfig(
         default_prompt_prefix="Následující texty obsahují otázky a odpovědi.",
         default_prompt_template=(
