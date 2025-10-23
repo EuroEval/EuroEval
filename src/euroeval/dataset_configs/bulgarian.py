@@ -2,7 +2,7 @@
 
 from ..data_models import DatasetConfig
 from ..languages import BG
-from ..tasks import KNOW, LA, NER, RC, SENT
+from ..tasks import COMMON_SENSE, KNOW, LA, NER, RC, SENT
 
 ### Official datasets ###
 
@@ -48,4 +48,14 @@ EXAMS_BG_CONFIG = DatasetConfig(
     huggingface_id="EuroEval/exams-bg-mini",
     task=KNOW,
     languages=[BG],
+)
+
+WINOGRANDE_BG_CONFIG = DatasetConfig(
+    name="winogrande-bg",
+    pretty_name="the Bulgarian common-sense reasoning dataset Winogrande-bg, "
+    "translated from the English Winogrande dataset",
+    huggingface_id="EuroEval/winogrande-bg",
+    task=COMMON_SENSE,
+    languages=[BG],
+    _labels=["a", "b"],
 )

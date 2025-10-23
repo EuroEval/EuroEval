@@ -381,7 +381,9 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset exams-bg
 ```
 
-### Winogrande-uk
+## Common-sense Reasoning
+
+### Winogrande-bg
 
 This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2506.19468)
 and is a translated and filtered version of the English [Winogrande
@@ -395,22 +397,22 @@ Here are a few examples from the training split:
 
 ```json
 {
-  "text": "Я не міг контролювати вологу так, як контролював дощ, тому що _ надходила звідусіль. До кого відноситься пропуск _?\nВаріанти:\na. Варіант A: волога\nb. Варіант B: дощ",
-  "label": "a"
+    "text": "Не можех да контролирам влагата както контролирах дъжда, защото _ идваше отвсякъде. На какво се отнася празното място _?\nВъзможности:\na. влага\nb. дъжд",
+    "label": "a"
 }
 ```
 
 ```json
 {
-  "text": "Джессіка вважала, що "Sandstorm" - найкраща пісня, яка коли-небудь була написана, але Патриція ненавиділа її. _ купила квиток на джазовий концерт. До кого відноситься пропуск _?\nВаріанти:\na. Варіант A: Джессіка\nb. Варіант B: Патриція",
-  "label": "b"
+    "text": "Джесика смяташе, че "Sandstorm" е най-великата песен, писана някога, но Патриция я мразеше. _ купи билет за джаз концерта. На какво се отнася празното място _?\nВъзможности:\na. Джесика\nb. Патриция",
+    "label": "b"
 }
 ```
 
 ```json
 {
-  "text": "Впоратися з надзвичайними ситуаціями Кевіну ніколи не було дуже важко, але Нельсону було важко, тому що _ не міг залишатися спокійним під тиском. До кого відноситься пропуск _?\nВаріанти:\na. Варіант A: Кевін\nb. Варіант B: Нельсон",
-  "label": "b"
+    "text": "Термостатът показа, че долу е двадесет градуса по-хладно, отколкото горе, затова Байрон остана в _ защото му беше студено. На какво се отнася празното място _?\nВъзможности:\na. долу\nb. горе",
+    "label": "b"
 }
 ```
 
@@ -421,34 +423,34 @@ When evaluating generative models, we use the following setup (see the
 - Prefix prompt:
 
   ```text
-  Нижче наведено питання з кількома варіантами відповідей (з відповідями).
+  Следват въпроси с множествен избор (с отговори).
   ```
 
 - Base prompt template:
 
   ```text
-  Питання: {text}
-  Варіанти:
+  Въпрос: {text}
+  Възможности:
   a. {option_a}
   b. {option_b}
-  Відповідь: {label}
+  Отговор: {label}
   ```
 
 - Instruction-tuned prompt template:
 
   ```text
-  Питання: {text}
-  Варіанти:
+  Въпрос: {text}
+  Възможности:
   a. {option_a}
   b. {option_b}
 
-  Дайте відповідь на наведене вище питання, використовуючи 'a' або 'b', і нічого іншого.
+  Отговорете на горния въпрос като отговорите с 'a' или 'b', и нищо друго.
   ```
 
 You can evaluate this dataset directly as follows:
 
 ```bash
-euroeval --model <model-id> --dataset winogrande-uk
+euroeval --model <model-id> --dataset winogrande-bg
 ```
 
 ## Summarisation
