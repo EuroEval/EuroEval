@@ -157,11 +157,11 @@ euroeval --model <model-id> --dataset ner-uk
 
 ## Linguistic Acceptability
 
-### ScaLA-uk
+### ScaLA-bg
 
 This dataset was published in [this paper](https://aclanthology.org/2023.nodalida-1.20/)
-and was automatically created from the [Ukrainian Universal Dependencies
-treebank](https://github.com/UniversalDependencies/UD_Ukrainian-ParlaMint) by assuming that
+and was automatically created from the [Bulgarian Universal Dependencies
+treebank](https://github.com/UniversalDependencies/UD_Bulgarian-BTB) by assuming that
 the documents in the treebank are correct, and corrupting the samples to create
 grammatically incorrect samples. The corruptions were done by either removing a word
 from a sentence, or by swapping two neighbouring words in a sentence. To ensure that
@@ -176,22 +176,22 @@ Here are a few examples from the training split:
 
 ```json
 {
-  "text": "Під патронатом Президента України в цьому році проведено ІІ Всеукраїнські літні спортивні ігри, які стали важливим етапом у підготовці до кваліфікаційних змагань по відбору до Літньої олімпіади в Афінах, сприяли зміцненню фізкультурно-спортивного руху, охопивши всі верстви населення.",
-  "label": "correct"
+    "text": "Затова съвсем неслучайно в интервю по БиТиВи Първанов не забрави да се похвали, че столетницата има 240 хиляди души членска маса.",
+    "label": "correct"
 }
 ```
 
 ```json
 {
-  "text": "І прошу, давайте подякуємо за допомогу нашим білоруським сусідам.",
-  "label": "correct"
+    "text": "Формулата на нашето време рязко и ясно се очертава с лаконичното противоречие: прогрес технологията, регрес в морала.",
+    "label": "incorrect"
 }
 ```
 
 ```json
 {
-  "text": "Шановні колеги, тепер переходимо до наступного.",
-  "label": "incorrect"
+    "text": "Част от фойерверките са купени от сергиите, където часове преди полунощ (по време на официалната забрана) те се продаваха свободно.",
+    "label": "correct"
 }
 ```
 
@@ -202,32 +202,32 @@ When evaluating generative models, we use the following setup (see the
 - Prefix prompt:
 
   ```text
-  Нижче наведені речення і їхня граматична правильність.
+  Следват изречения и дали са граматически правилни.
   ```
 
 - Base prompt template:
 
   ```text
-  Речення: {text}
-  Граматично правильно: {label}
+  Изречение: {text}
+  Граматически правилно: {label}
   ```
 
 - Instruction-tuned prompt template:
 
   ```text
-  Речення: {text}
+  Изречение: {text}
 
-  Визначте, чи речення граматично правильне чи ні. Відповідайте 'так', якщо речення правильне, і 'ні', якщо ні. Відповідайте лише цим словом, і нічим більше.
+  Определете дали изречението е граматически правилно или не. Отговорете с 'да', ако е правилно, и 'не', ако не е. Отговорете само с тази дума, и нищо друго.
   ```
 
 - Label mapping:
-  - `correct` ➡️ `так`
-  - `incorrect` ➡️ `ні`
+  - `correct` ➡️ `да`
+  - `incorrect` ➡️ `не`
 
 You can evaluate this dataset directly as follows:
 
 ```bash
-euroeval --model <model-id> --dataset scala-uk
+euroeval --model <model-id> --dataset scala-bg
 ```
 
 ## Reading Comprehension
