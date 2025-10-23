@@ -22,7 +22,7 @@ body:
       - label: Finnic languages (Estonian, Finnish)
       - label: Romance languages (French, Italian, Portuguese, Spanish)
       - label: Scandinavian languages (Danish, Faroese, Icelandic, Norwegian, Swedish)
-      - label: Slavic languages (Czech, Polish, Slovak)
+      - label: Slavic languages (Czech, Polish, Slovak, Ukrainian)
       - label: West Germanic languages (Dutch, English, German)
   validations:
     required: true

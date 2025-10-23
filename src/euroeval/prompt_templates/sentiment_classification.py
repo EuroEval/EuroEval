@@ -25,6 +25,7 @@ from ..languages import (
     PT,
     SK,
     SV,
+    UK,
 )
 
 if t.TYPE_CHECKING:
@@ -245,5 +246,19 @@ SENT_TEMPLATES: dict["Language", PromptConfig] = {
         default_prompt_template="Dokument: {text}\nSentiment: {label}",
         default_instruction_prompt="Dokument: {text}\n\nKlassificera känslan i "
         "dokumentet. Svara med {labels_str}, och inget annat.",
+    ),
+    UK: PromptConfig(
+        default_prompt_label_mapping=dict(
+            positive="позитивний", neutral="нейтральний", negative="негативний"
+        ),
+        default_prompt_prefix=(
+            "Нижче наведені документи і їх настрій, який може бути {labels_str}."
+        ),
+        default_prompt_template="Документ: {text}\nНастрій: {label}",
+        default_instruction_prompt=(
+            "Документ: {text}\n\n"
+            "Класифікуйте настрій у документі. "
+            "Відповідайте {labels_str}, і нічого більше."
+        ),
     ),
 }
