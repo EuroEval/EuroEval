@@ -22,6 +22,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Fixed
 
+- Fixed the "double option" problem in Winogrande datasets across all languages. Previously,
+  option labels were duplicated for multiple languages
+  (e.g., "Svarmuligheder:\na. Valgmulighed A: Natalie\nb. Valgmulighed B: Betty"
+  instead of just "Svarmuligheder:\na. Natalie\nb. Betty").
 - The previous fix to close arrow writers in metrics did not work as intended, as the
   "too many open files" error still occurred. We now ensure that the writers are closed
   properly after each metric computation to avoid this issue.
