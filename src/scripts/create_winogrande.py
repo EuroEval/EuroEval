@@ -31,6 +31,7 @@ logger = logging.getLogger("create_winogrande")
 LANGUAGE_TO_OPTION: dict[str, str] = {
     "da": "Valgmulighed",
     "de": "Option",
+    "el": "Επιλογή",
     "en": "Option",
     "es": "Opción",
     "fi": "Vaihtoehto",
