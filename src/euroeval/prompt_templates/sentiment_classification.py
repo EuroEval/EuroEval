@@ -8,6 +8,7 @@ from ..languages import (
     DA,
     DE,
     EL,
+    EN,
     ES,
     ET,
     FI,
@@ -71,6 +72,16 @@ SENT_TEMPLATES: dict["Language", PromptConfig] = {
         default_prompt_template="Έγγραφο: {text}\nΣυναίσθημα: {label}",
         default_instruction_prompt="Έγγραφο: {text}\n\nΤαξινομήστε το συναίσθημα "
         "στο έγγραφο. Απαντήστε με {labels_str}, και τίποτα άλλο.",
+    ),
+    EN: PromptConfig(
+        default_prompt_label_mapping=dict(
+            positive="positive", neutral="neutral", negative="negative"
+        ),
+        default_prompt_prefix="The following are documents and their sentiment, which "
+        "can be {labels_str}.",
+        default_prompt_template="Document: {text}\nSentiment: {label}",
+        default_instruction_prompt="Document: {text}\n\nClassify the sentiment in the "
+        "document. Answer with {labels_str}, and nothing else.",
     ),
     ES: PromptConfig(
         default_prompt_label_mapping=dict(
