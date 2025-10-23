@@ -15,6 +15,7 @@ from collections import Counter
 
 import pandas as pd
 from constants import (
+    CHOICES_MAPPING,
     MAX_NUM_CHARS_IN_INSTRUCTION,
     MAX_NUM_CHARS_IN_OPTION,
     MAX_REPETITIONS,
@@ -34,6 +35,7 @@ def main() -> None:
     languages = ["uk", "el"]
 
     for language in languages:
+        language = "el"
         # Load the dataset
         dataset = load_dataset(path=repo_id, name=language)
         assert isinstance(dataset, DatasetDict)
@@ -45,8 +47,8 @@ def main() -> None:
         assert isinstance(test_df, pd.DataFrame)
 
         # Process the dataframes
-        val_df = process_split(df=val_df)
-        test_df = process_split(df=test_df)
+        val_df = process_split(df=val_df, language=language)
+        test_df = process_split(df=test_df, language=language)
 
         # Create validation split from dev
         val_size = 256
@@ -88,7 +90,7 @@ def main() -> None:
         dataset.push_to_hub(dataset_id, private=True)
 
 
-def process_split(df: pd.DataFrame) -> pd.DataFrame:
+def process_split(df: pd.DataFrame, language: str) -> pd.DataFrame:
     """Process a split of the dataset.
 
     Args:
@@ -101,7 +103,7 @@ def process_split(df: pd.DataFrame) -> pd.DataFrame:
     df["category"] = df["subject_category"]
     df = filter_by_length(df=df)
     df = filter_repetitive(df=df)
-    df = add_text_column(df=df)
+    df = add_text_column(df=df, language=language)
     df = df[["text", "label", "category"]]
     df = df.drop_duplicates(inplace=False)
     df = df.reset_index(drop=True)
@@ -162,7 +164,7 @@ def filter_repetitive(df: pd.DataFrame) -> pd.DataFrame:
     ]
 
 
-def add_text_column(df: pd.DataFrame) -> pd.DataFrame:
+def add_text_column(df: pd.DataFrame, language: str) -> pd.DataFrame:
     """Make a `text` column with all the options.
 
     Args:
@@ -173,7 +175,7 @@ def add_text_column(df: pd.DataFrame) -> pd.DataFrame:
     """
     df["text"] = [
         row.question.replace("\n", " ").strip() + "\n"
-        "Варіанти:\n"
+        f"{CHOICES_MAPPING[language]}:\n"
         "a. " + row.option_a.replace("\n", " ").strip() + "\n"
         "b. " + row.option_b.replace("\n", " ").strip() + "\n"
         "c. " + row.option_c.replace("\n", " ").strip() + "\n"
