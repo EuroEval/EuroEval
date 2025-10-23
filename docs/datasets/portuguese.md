@@ -596,21 +596,21 @@ Here are a few examples from the training split:
 
 ```json
 {
-  "text": "Megan tem muito mais dinheiro do que Jessica porque _ acabou de comprar o bilhete de loteria vencedor. A que se refere o espaço em branco _?\nOpções:\na. Opção A: Megan\nb. Opção B: Jessica",
+  "text": "Megan tem muito mais dinheiro do que Jessica porque _ acabou de comprar o bilhete de loteria vencedor. A que se refere o espaço em branco _?\nOpções:\na. Megan\nb. Jessica",
   "label": "a"
 }
 ```
 
 ```json
 {
-  "text": "Elena pegaria o inventário na parte de trás da loja para Megan vender cada vez porque _ era uma empresária. A que se refere o espaço em branco _?\nOpções:\na. Opção A: Elena\nb. Opção B: Megan",
+  "text": "Elena pegaria o inventário na parte de trás da loja para Megan vender cada vez porque _ era uma empresária. A que se refere o espaço em branco _?\nOpções:\na. Elena\nb. Megan",
   "label": "a"
 }
 ```
 
 ```json
 {
-  "text": "Joseph tinha que ter unhas bem cuidadas para o trabalho, mas não Kevin, porque _ trabalhava em uma fazenda. A que se refere o espaço em branco _?\nOpções:\na. Opção A: Joseph\nb. Opção B: Kevin",
+  "text": "Joseph tinha que ter unhas bem cuidadas para o trabalho, mas não Kevin, porque _ trabalhava em uma fazenda. A que se refere o espaço em branco _?\nOpções:\na. Joseph\nb. Kevin",
   "label": "b"
 }
 ```

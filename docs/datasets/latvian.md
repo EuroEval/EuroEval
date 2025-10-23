@@ -558,21 +558,21 @@ Here are a few examples from the training split:
 
 ```json
 {
-  "text": "Pērkot māju, Patrīcijai nav tik daudz naudas, ko tērēt kā Tanjai, tāpēc _ nopērk vienas guļamistabas māju. Ko norāda tukšums _?\nIzvēles:\na. Opcija A: Patrīcija\nb. Opcija B: Tanja",
+  "text": "Pērkot māju, Patrīcijai nav tik daudz naudas, ko tērēt kā Tanjai, tāpēc _ nopērk vienas guļamistabas māju. Ko norāda tukšums _?\nIzvēles:\na. Patrīcija\nb. Tanja",
   "label": "a"
 }
 ```
 
 ```json
 {
-  "text": "Es nevarēju kontrolēt mitrumu, kā es kontrolēju lietu, jo _ nāca no visām pusēm. Ko norāda tukšums _?\nIzvēles:\na. Opcija A: mitrums\nb. Opcija B: lietus",
+  "text": "Es nevarēju kontrolēt mitrumu, kā es kontrolēju lietu, jo _ nāca no visām pusēm. Ko norāda tukšums _?\nIzvēles:\na. mitrums\nb. lietus",
   "label": "a"
 }
 ```
 
 ```json
 {
-  "text": "Derriks nespēja koncentrēties darbā, atšķirībā no Džastina, jo _ bija jautrs darbs. Ko norāda tukšums _?\nIzvēles:\na. Opcija A: Derriks\nb. Opcija B: Džastins",
+  "text": "Derriks nespēja koncentrēties darbā, atšķirībā no Džastina, jo _ bija jautrs darbs. Ko norāda tukšums _?\nIzvēles:\na. Derriks\nb. Džastins",
   "label": "b"
 }
 ```
