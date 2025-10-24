@@ -2,7 +2,7 @@
 
 from ..data_models import DatasetConfig
 from ..languages import SR
-from ..tasks import LA, NER, RC, SENT
+from ..tasks import LA, NER, RC, SENT, SUMM
 
 ### Official datasets ###
 
@@ -38,5 +38,14 @@ MULTI_WIKI_QA_SR_CONFIG = DatasetConfig(
     "comprehension dataset MultiWikiQA",
     huggingface_id="EuroEval/multi-wiki-qa-sr-mini",
     task=RC,
+    languages=[SR],
+)
+
+LR_SUM_SR_CONFIG = DatasetConfig(
+    name="lr-sum-sr",
+    pretty_name="the truncated version of the Serbian part of the "
+    "summarisation dataset LR-Sum",
+    huggingface_id="EuroEval/lr-sum-sr-mini",
+    task=SUMM,
     languages=[SR],
 )

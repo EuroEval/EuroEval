@@ -23,6 +23,7 @@ from ..languages import (
     NO,
     PL,
     PT,
+    SR,
     SV,
     UK,
 )
@@ -175,6 +176,13 @@ SUMM_TEMPLATES: dict["Language", PromptConfig] = {
         default_prompt_template="Artykuł: {text}\nStreszczenie: {target_text}",
         default_instruction_prompt="Artykuł: {text}\n\nNapisz streszczenie "
         "powyższego artykułu.",
+        default_prompt_label_mapping=dict(),
+    ),
+    SR: PromptConfig(
+        default_prompt_prefix="Slede dokumenti sa odgovarajućim sažecima.",
+        default_prompt_template="Dokument: {text}\nSažetak: {target_text}",
+        default_instruction_prompt="Dokument: {text}\n\nNapišite sažetak "
+        "gorenavedenog dokumenta.",
         default_prompt_label_mapping=dict(),
     ),
     SV: PromptConfig(

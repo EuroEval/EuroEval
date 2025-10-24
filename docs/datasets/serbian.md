@@ -451,3 +451,71 @@ You can evaluate this dataset directly as follows:
 ```bash
 euroeval --model <model-id> --dataset winogrande-sk
 ```
+
+## Summarisation
+
+### LR-Sum-uk
+
+This dataset was published in [this paper](https://aclanthology.org/2023.findings-acl.427/).
+The source data is public domain newswire collected from Voice of America websites,
+and the summaries are human-written.
+
+The original dataset contains 5,784 / 722 / 723 samples for the training, validation, and
+and test splits, respectively. We use 1,024 / 256 / 2,048 samples for our training,
+validation and test splits, respectively. The train and validation splits are subsets
+of the original splits. For the test split, we use all available test samples and
+supplement with additional samples from the training set to reach 2,048 samples in
+total.
+
+Here are a few examples from the training split:
+
+```json
+{
+    "text": "Desnica pobedila na izborima za EP\n\nPrema raspoloživim, još uvijek neslužbenim podacima, ključna većina zastupnika novog saziva Evropskog parlamenta ostaje iz partija desnog centra. Grupa evropskih narodnjačkih partija će od 735 mjesta držati 267, gubeći dvadesetak mjesta, dok su najveći gubitnici izbora, socijalisti, ostali bez čak 58 mjesta u Parlamentu i sada će ga popunjavati sa 159 zastupnika. Izgubili su i liberali 19 mjesta od sadašnjih stotinu, dok su evropski zeleni blago porasli sa sadašnjih 43 na 51 mjesto zastupnika u EP. "", kazao je predsjednik Evropskog parlamenta, . A ultra desne, anti-imigrantske, anti-islamske i anti-evropske partije su zabilježile porast glasača u Holandiji, Grčkoj, Finskoj, Italiji, Mađarskoj, Rumuniji i Velikoj Britaniji, dok im je popularnost opala u Belgiji, Francuskoj i Poljskoj. Neki od analitičara tvrde kako je krajnja desnica iskoristila činjenicu da su glasači u rekordno malom broju izašli na glasanje. Od direktnih izbora za EP 1979. nije zabilježen tako slab odziv glasača. Razlog za to se traži i u činjenici da je predizborna kampanja u brojnim evropskim državama u prvom planu imala nacionalnu, prije evropske agende. "", nagasila je potpredsjednica Evropske komisije, . Evropski parlament i ostatak evropskih institucija će se od danas morati pomiriti i sa činjenicom da ultra desni, anti-evropski, anti-imigrantski raspoloženi novi stanari parlamenta već pakuju kofere za Brisel gdje će \"kvariti posao\" pro-evropskim snagama. "", kazao je potpredsjednik Evropske komisije,. Već su, inače, počele najave prvih poteza pobjedničkih političkih grupacija. Tako su evropski narodnjaci najavili kako će od lidera Unije, što se krajem naredne sedmice okupljaju u Briselu, tražiti da dozvole njihovom kandidatu, sadašnjem predsjedniku Evropske komisije, , da ostane na toj funkciji i naredni mandat. Socijalisti i još više zeleni su oštro protiv, kritikujući Baroza da je premalo uradio na pitanju socijalne zaštite Evropljana od efekata aktuelne krize. Liberalna grupa u parlamentu ne bi imala ništa protiv da podrži Baroza, ukoliko bi ušla u koaliciju sa narodnjacima i ako bi tada njihovi koalicioni partneri odustali od postavljanja svoga čovjeka i na mjesto predsjednika parlamenta.",
+    "target_text": "Rezultati tek održanih evropskih izbora su pokazali da su Evropljani ozbiljno zabrinuti za život, posao, ličnu egzistenciju. Povjerili "
+}
+```
+
+```json
+{
+    "text": "SAD razvijaju \"značajan režim sankcija\" za Iran\n\nIranski funkcioneri saopštili su da je obogaćivanje uranijuma nastavljeno u utorak, u postrojenju Natanz, u prisustvu inspektora međunarodne agencije za atomsku energiju. Iran insistira da je svrha toga miroljubiva, ali zapadne zemlje podozrevaju da se program koristi za izgradnju nuklearnog oružja. Juče, u Beloj kući, predsednik Obama je rekao da su vrata još otvorena za Teheran da ponovo stekne poverenje međunarodne zajednice, ili da se suoči sa novim sankcijama. \"Tokom narednih nekoliko nedelja razvićemo značajan režim sankcija koji će im ukazati na to koliko su izolovani od međunarodne zajednice u celini,\" rekao je Obama. Savet bezbednosti Ujedinjenih nacija zaveo je već tri kruga sankcija prema Iranu zbog toga što nije obustavio obogaćivanje uranijuma. Francuska podržava američku inicijativu za uvođenje novih sankcija. \"Sada smo uvereni da je međunarodna zajednica ujedinjena u vezi sa ovakvim ponašanjem Irana,\" rekao je američki predsednik. Grupa svetskih sila i Ujedinjene nacije predložili su Teheranu da pošalje uranijum na obogaćivanje u inostranstvo, kako bi ga dobio natrag u obliku goriva za reaktor. U odgovor na to Iran je poslao mešane signale, što je Obama kritikovao. \"To nam pokazuje da, uprkos tvrdnjama da je svrha njihovog nuklearnog programa miroljubiva, oni nastavljaju kursem koji vodi ka izgradnji oružja, što je neprihvatljivo,\" rekao je Barak Obama. Sekretar ruskog Saveta bezbednosti, , rekao je da odluka Irana o daljem obogaćivanju uranijuma izaziva sumnju u miroljubivost tog programa. \"Iran insistira da ne želi nuklearno oružje već da razvija mirnodopski nuklearni program. Ali akcije koje preduzima, kao što je obogaćivanje uranijuma do 20 odsto, sa razlogom pokreću sumnje u drugim zemljama,\" rekao je Patrušev. Kina, koja se protivi dodatnim sankcijama Iranu, juče se založila za rešavanje tog spora putem dijaloga.",
+    "target_text": "Predsednik Barak Obama kaže da Sjedinjene Države razvijaju, \"značajan režim mogućih sankcija,\" kao odgovor na iranski nuklearni program"
+}
+```
+
+```json
+{
+    "text": "Rusija o situaciji vezanoj za Irak - 2002-09-13\n\nNa kraju trodnevnih razgovora Džon Bolton je rekao novinarima da æe Vašington u roku od nekoliko nedelja uputiti izaslanika u Moskvu radi razgovora o situaciji u Iraku. On je naglasio da æe Vašington -- pre nego što preduzme bilo kakvu akciju -- saslušati sve što Moskva ima da kaže na tu temu. ”Kao što je to bio sluèaj i sa zalivskom krizom pre 12 godina, oèevidno je da na ruskoj strani postoji zabrinutost koju æe SAD obiljno uzeti u obzir.“ Džon Bolton je dodao da su o tom pitanju ruski i amerièki predsednik veæ vodili intenzivne ragovore i da oni nisu završeni. Rusija se protivi unilateralnoj akciji protiv Iraka i zalaže se za povratak inspektora U-N-a u Irak. U juèerašnjem govoru u svetskoj organizaicji amerièki predsednik Buš je pozvao U-N da prozovu Irak zbog oružja masovnog uništenja. Amerièki državni podsekretar Bolton izjavio je da Vašinton neæe praviti sa Moskvom nikakve nagodbe u vezi sa Irakom. Prema njegovim reèima, Amerika ne planira da ignoriše moguæe ruske napade na èeèenska uporišta u Gruziji ukoliko Rusija za uzvrat odobri evenutalni amerièki napad na Irak: ”Mislim da je ignorisanje autoritera Saveta bezbednosti preozbiljno da bi se oko tog pitanja pravile nagodbe. Mislim da to ruska strana i ne oèekuje od amerièke.“ Džon Bolton je dodao da su amerièki argumenti protiv Iraka veæ sami po sebi dovoljno èvrsti.", "target_text": "Amerièki državi podsekretar Džon Bolton izrazio je uverenje da æe Rusija i SAD biti u stanju da postignu saglasnost u vezi sa Irakom. "
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 1
+- Prefix prompt:
+
+  ```text
+  Slede dokumenti sa odgovarajućim sažecima.
+  ```
+
+- Base prompt template:
+
+  ```text
+  Dokument: {text}
+  Sažetak: {target_text}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Dokument: {text}
+
+  Napišite sažetak gorenavedenog dokumenta.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset lr-sum-sr
+```
