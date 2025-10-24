@@ -25,6 +25,7 @@ from ..languages import (
     PL,
     PT,
     SK,
+    SR,
     SV,
     UK,
 )
@@ -436,6 +437,25 @@ NER_TEMPLATES: dict["Language", PromptConfig] = {
         "entity vo vete. Výstup by mal byť vo forme JSON-objektu s kľúčmi "
         "{labels_str}. Hodnoty by mali byť zoznamy pomenovaných entít danej "
         "kategórie, presne tak, ako sa vyskytujú vo vete.",
+    ),
+    SR: PromptConfig(
+        default_prompt_label_mapping={
+            "b-per": "osoba",
+            "i-per": "osoba",
+            "b-loc": "mesto",
+            "i-loc": "mesto",
+            "b-org": "organizacija",
+            "i-org": "organizacija",
+            "b-misc": "razno",
+            "i-misc": "razno",
+        },
+        default_prompt_prefix="Sledeće su rečenice i JSON rečnici sa imenovanim "
+        "entitetima koji se pojavljuju u datoj rečenici.",
+        default_prompt_template="Rečenica: {text}\nImenovani entiteti: {label}",
+        default_instruction_prompt="Rečenica: {text}\n\nIdentifikujte imenovane "
+        "entitete u rečenici. Trebalo bi da ovo ispišete kao JSON rečnik sa ključevima "
+        "{labels_str}. Vrednosti treba da budu liste imenovanih entiteta te "
+        "kategorije, tačno onako kako se pojavljuju u rečenici.",
     ),
     SV: PromptConfig(
         default_prompt_label_mapping={

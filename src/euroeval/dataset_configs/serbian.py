@@ -2,7 +2,7 @@
 
 from ..data_models import DatasetConfig
 from ..languages import SR
-from ..tasks import LA, SENT
+from ..tasks import LA, NER, SENT
 
 ### Official datasets ###
 
@@ -20,5 +20,14 @@ SCALA_SR_CONFIG = DatasetConfig(
     pretty_name="the Serbian part of the linguistic acceptability dataset ScaLA",
     huggingface_id="EuroEval/scala-sr",
     task=LA,
+    languages=[SR],
+)
+
+UNER_SR_CONFIG = DatasetConfig(
+    name="uner-sr",
+    pretty_name="the truncated version of the Serbian named entity recognition dataset "
+    "UNER-sr",
+    huggingface_id="EuroEval/uner-sr-mini",
+    task=NER,
     languages=[SR],
 )
