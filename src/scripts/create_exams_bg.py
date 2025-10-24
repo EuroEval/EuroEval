@@ -76,7 +76,7 @@ def download_dataset(url: str, temp_path: Path) -> Path:
 
     train_file = list(temp_path.glob("**/train.jsonl"))
     if not train_file:
-        raise Exception("Could not find train.jsonl in extracted files")
+        raise FileNotFoundError("Could not find train.jsonl in extracted files")
 
     data_dir = train_file[0].parent
     return data_dir
