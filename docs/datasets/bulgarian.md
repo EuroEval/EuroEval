@@ -18,6 +18,13 @@ validation and test splits, respectively. The train and validation splits are su
 the original splits, while the test split is created using additional samples from the
 train split.
 
+The original dataset uses a 0-5 rating scale (with 0.5 increments)
+which is converted to three sentiment categories:
+
+- [0, 1.5] ➡️ `negative`
+- [1.5, 3.5] ➡️ `neutral`
+- [4.0, 5.0] ➡️ `positive`
+
 Here are a few examples from the training split:
 
 ```json

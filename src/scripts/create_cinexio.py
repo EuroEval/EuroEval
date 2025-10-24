@@ -200,8 +200,8 @@ def _map_ratings_to_labels(df: pd.DataFrame) -> pd.DataFrame:
     """Map User_Rating to sentiment labels.
 
     Rating scale: 0-5 (with 0.5 increments)
-    - Negative: 0, 0.5, 1.0
-    - Neutral: 1.5, 2.0, 2.5, 3.0, 3.5
+    - Negative: 0, 0.5, 1.0, 1.5
+    - Neutral: 2.0, 2.5, 3.0, 3.5
     - Positive: 4.0, 4.5, 5.0
 
     Args:
