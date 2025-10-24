@@ -2,7 +2,7 @@
 
 from ..data_models import DatasetConfig
 from ..languages import SR
-from ..tasks import LA, NER, RC, SENT, SUMM
+from ..tasks import KNOW, LA, NER, RC, SENT, SUMM
 
 ### Official datasets ###
 
@@ -47,5 +47,14 @@ LR_SUM_SR_CONFIG = DatasetConfig(
     "summarisation dataset LR-Sum",
     huggingface_id="EuroEval/lr-sum-sr-mini",
     task=SUMM,
+    languages=[SR],
+)
+
+MMLU_SR_CONFIG = DatasetConfig(
+    name="mmlu-sr",
+    pretty_name="the truncated version of the Serbian knowledge dataset MMLU-sr, "
+    "translated from the English MMLU dataset",
+    huggingface_id="EuroEval/mmlu-sr-mini",
+    task=KNOW,
     languages=[SR],
 )

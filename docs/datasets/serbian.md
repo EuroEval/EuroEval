@@ -307,7 +307,7 @@ euroeval --model <model-id> --dataset multi-wiki-qa-sr
 
 ## Knowledge
 
-### MMLU-sk
+### MMLU-sr
 
 This dataset is a machine translated version of the English [MMLU
 dataset](https://openreview.net/forum?id=d7KBjmI3GmQ) and features questions within 57
@@ -315,7 +315,7 @@ different topics, such as elementary mathematics, US history and law. The transl
 Slovak was done by the University of Oregon as part of [this
 paper](https://aclanthology.org/2023.emnlp-demo.28/), using GPT-3.5-turbo.
 
-The original full dataset consists of 269 / 1,410 / 13,200 samples for training,
+The original full dataset consists of 276 / 1,439 / 13,173 samples for training,
 validation and testing, respectively. We use a 1,024 / 256 / 2,048 split for training,
 validation and testing, respectively (so 3,328 samples used in total). These splits are
 new and there can thus be some overlap between the original validation and test sets and
@@ -325,22 +325,22 @@ Here are a few examples from the training split:
 
 ```json
 {
-  "text": "V akých smeroch je prípad pre humanitárnu intervenciu, ako je uvedené v tejto kapitol... mocnými štátmi.\nd. Všetky tieto možnosti.",
-  "label": "d",
+    "text": "Kruti, čvrsti kontejner konstantne zapremine sadrži idealni gas zapremine v1, pritiska P1 i temperature T1. Temperatura se povećava u izohornom procesu. Koja od sledećih tvrdnji NIJE tačna?\nOpcije:\na. Prosečna brzina molekula se povećava.\nb. Pritisak se povećava.\nc. Kinetička energija sistema se povećava.\nd. Zapremina se povećava.",
+    "label": "d"
 }
 ```
 
 ```json
 {
-  "text": "FAKTORIÁLOVÝ ANOVA sa používa v prípade, že štúdia zahŕňa viac ako 1 VI. Aký je INTER...činok VI na rovnakej úrovni ako ostatné VI",
-  "label": "a"
+    "text": "Kakav tip kovalentnih veza veže amino kiseline u proteinu?\nOpcije:\na. Peptidne veze\nb. Vodonične veze\nc. Jonske veze\nd. Glikozidne veze",
+    "label": "a",
 }
 ```
 
 ```json
 {
-  "text": "Pre ktorú z týchto dvoch situácií urobí hlavná postava (ktorá používa ja/mňa/môj) nie...ie zlé\nc. Nie zlé, zlé\nd. Nie zlé, nie zlé",
-  "label": "d",
+    "text": "Teorija __________ predviđa postojanje tri nivoa moralnog rasuđivanja u kojima pojedinac može razmatrati etičke probleme, zavisno od svog kognitivnog kapaciteta.\nOpcije:\na. Egoizam\nb. Kognitivni moralni razvoj\nc. Razlika u moći\nd. Izbjegavanje neizvjesnosti",
+    "label": "b",
 }
 ```
 
@@ -351,33 +351,33 @@ When evaluating generative models, we use the following setup (see the
 - Prefix prompt:
 
   ```text
-  Nasledujú otázky s viacerými možnosťami (s odpoveďami).
+  Slede pitanja višestrukog izbora (sa odgovorima).
   ```
 
 - Base prompt template:
 
   ```text
-  Otázka: {text}
-  Možnosti:
+  Pitanje: {text}
+  Opcije:
   a. {option_a}
   b. {option_b}
   c. {option_c}
   d. {option_d}
-  Odpoveď: {label}
+  Odgovor: {label}
   ```
 
 - Instruction-tuned prompt template:
 
   ```text
-  Otázka: {text}
+  Pitanje: {text}
 
-  Odpovedzte na nasledujúcu otázku použitím 'a', 'b', 'c' alebo 'd', a nič iné.
+  Odgovorite na navedeno pitanje koristeći 'a', 'b', 'c' ili 'd', i ništa drugo.
   ```
 
 You can evaluate this dataset directly as follows:
 
 ```bash
-euroeval --model <model-id> --dataset mmlu-sk
+euroeval --model <model-id> --dataset mmlu-sr
 ```
 
 ## Common-sense Reasoning

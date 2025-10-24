@@ -24,6 +24,7 @@ from ..languages import (
     PL,
     PT,
     SK,
+    SR,
     SV,
     UK,
 )
@@ -189,6 +190,15 @@ MULTIPLE_CHOICE_TEMPLATES: dict["Language", PromptConfig] = {
         default_instruction_prompt=(
             "Otázka: {text}\n\n"
             "Odpovedzte na nasledujúcu otázku použitím {labels_str}, a nič iné."
+        ),
+        default_prompt_label_mapping="auto",
+    ),
+    SR: PromptConfig(
+        default_prompt_prefix=("Slede pitanja višestrukog izbora (sa odgovorima)."),
+        default_prompt_template="Pitanje: {text}\nOdgovor: {label}",
+        default_instruction_prompt=(
+            "Pitanje: {text}\n\n"
+            "Odgovorite na navedeno pitanje koristeći {labels_str}, i ništa drugo."
         ),
         default_prompt_label_mapping="auto",
     ),
