@@ -10,7 +10,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Added
 
 - Added support for Serbian 🇷🇸! This includes the sentiment classification dataset
-  MMS-sr.
+  MMS-sr, the linguistic acceptability dataset ScaLA-sr.
 - Added support for Greek 🇬🇷! This includes the binary sentiment classification dataset
   Greek-SA, the linguistic acceptability dataset ScaLA-el, the named entity recognition
   dataset elNER, the reading comprehension dataset MultiWikiQA-el, the summarisation

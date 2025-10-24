@@ -1,6 +1,6 @@
-# 🇸🇰 Slovak
+# 🇷🇸 Serbian
 
-This is an overview of all the datasets used in the Slovak part of EuroEval. The
+This is an overview of all the datasets used in the Serbian part of EuroEval. The
 datasets are grouped by their task - see the [task overview](/tasks) for more
 information about what these constitute.
 
@@ -153,11 +153,11 @@ euroeval --model <model-id> --dataset uner-sk
 
 ## Linguistic Acceptability
 
-### ScaLA-sk
+### ScaLA-sr
 
 This dataset was published in [this paper](https://aclanthology.org/2023.nodalida-1.20/)
-and was automatically created from the [Slovak Universal Dependencies
-treebank](https://github.com/UniversalDependencies/UD_Slovak-SNK) by assuming that the
+and was automatically created from the [Serbian Universal Dependencies
+treebank](https://github.com/UniversalDependencies/UD_Serbian-SET) by assuming that the
 documents in the treebank are correct, and corrupting the samples to create
 grammatically incorrect samples. The corruptions were done by either removing a word
 from a sentence, or by swapping two neighbouring words in a sentence. To ensure that
@@ -172,22 +172,22 @@ Here are a few examples from the training split:
 
 ```json
 {
-    "text": "Niektorí pozorovatelia považujú ropné záujmy USA za jednu z hlavných motivácií vstupu do vojny v Iraku.",
+    "text": "Hrvatski ministar odbrane Branko Vukelić i njegov srpski kolega Dragan Šutanovac potpisaće u utorak (8. juna) u Zagrebu bilateralni sporazum o saradnji na polju odbrane.",
     "label": "correct"
 }
 ```
 
 ```json
 {
-    "text": "Popáliť sa na jedinom písmene je klasický prípad, ktorý sa môže vyskytnúť v rôznych podobách.",
-    "label": "correct"
-}
-```
-
-```json
-{
-    "text": "Zo strachu o seba, pre svoju povýšenú zbabelosť zaprel svojho Majstra Pána.",
+    "text": "Žene vlasnici i rukovodioci pokazale su veliku upornost u očuvanju svojih, posebno tokom ekonomske krize.",
     "label": "incorrect"
+}
+```
+
+```json
+{
+    "text": "Očekuje se da snimanje bude završeno do kraja leta, a montaža bi trebalo da bude gotova do aprila sledeće godine.",
+    "label": "correct"
 }
 ```
 
@@ -198,32 +198,32 @@ When evaluating generative models, we use the following setup (see the
 - Prefix prompt:
 
   ```text
-  Nasledujú vety a či sú gramaticky správne.
+  U nastavku su rečenice i da li su gramatički ispravne.
   ```
 
 - Base prompt template:
 
   ```text
-  Veta: {text}
-  Gramaticky správna: {label}
+  Rečenica: {text}
+  Gramatički ispravna: {label}
   ```
 
 - Instruction-tuned prompt template:
 
   ```text
-  Veta: {text}
+  Rečenica: {text}
 
-  Určite, či je veta gramaticky správna alebo nie. Odpovedzte so 'áno', ak je veta správna, a 'nie', ak nie je. Odpovedzte iba týmto slovom, a nič iné.
+  Odredite da li je rečenica gramatički ispravna ili ne. Odgovorite sa {labels_str}, i ništa drugo.
   ```
 
 - Label mapping:
-  - `correct` ➡️ `áno`
-  - `incorrect` ➡️ `nie`
+  - `correct` ➡️ `da`
+  - `incorrect` ➡️ `ne`
 
 You can evaluate this dataset directly as follows:
 
 ```bash
-euroeval --model <model-id> --dataset scala-sk
+euroeval --model <model-id> --dataset scala-sr
 ```
 
 ## Reading Comprehension

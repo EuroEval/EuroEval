@@ -2,7 +2,7 @@
 
 from ..data_models import DatasetConfig
 from ..languages import SR
-from ..tasks import SENT
+from ..tasks import LA, SENT
 
 ### Official datasets ###
 
@@ -12,5 +12,13 @@ MMS_SR_CONFIG = DatasetConfig(
     "dataset MMS-sr",
     huggingface_id="EuroEval/mms-sr-mini",
     task=SENT,
+    languages=[SR],
+)
+
+SCALA_SR_CONFIG = DatasetConfig(
+    name="scala-sr",
+    pretty_name="the Serbian part of the linguistic acceptability dataset ScaLA",
+    huggingface_id="EuroEval/scala-sr",
+    task=LA,
     languages=[SR],
 )
