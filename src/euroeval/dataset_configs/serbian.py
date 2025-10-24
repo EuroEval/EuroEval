@@ -2,7 +2,7 @@
 
 from ..data_models import DatasetConfig
 from ..languages import SR
-from ..tasks import LA, NER, SENT
+from ..tasks import LA, NER, RC, SENT
 
 ### Official datasets ###
 
@@ -29,5 +29,14 @@ UNER_SR_CONFIG = DatasetConfig(
     "UNER-sr",
     huggingface_id="EuroEval/uner-sr-mini",
     task=NER,
+    languages=[SR],
+)
+
+MULTI_WIKI_QA_SR_CONFIG = DatasetConfig(
+    name="multi-wiki-qa-sr",
+    pretty_name="the truncated version of the Serbian part of the reading "
+    "comprehension dataset MultiWikiQA",
+    huggingface_id="EuroEval/multi-wiki-qa-sr-mini",
+    task=RC,
     languages=[SR],
 )

@@ -228,7 +228,7 @@ euroeval --model <model-id> --dataset scala-sr
 
 ## Reading Comprehension
 
-### MultiWikiQA-sk
+### MultiWikiQA-sr
 
 This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2509.04111)
 and contains Wikipedia articles with LLM-generated questions and answers in 300+
@@ -241,26 +241,33 @@ Here are a few examples from the training split:
 
 ```json
 {
-  "context": "Register toxických účinkov chemických látok (anglicky Registry of Toxic Effects of Chemical Substances, RTECS) je databáza toxikologických informácií zostavených z voľne dostupnej vedeckej literatúry bez odkazu na platnosť alebo užitočnosť publikovaných štúdií. Do roku 2001 bola databáza spravovaná americkou organizáciou NIOSH (National Institute for Occupational Safety and Health, slov. Národný ústav pre bezpečnosť a ochranu zdravia pri práci) ako verejne dostupná publikácia. Teraz ju spravuje súkromná spoločnosť Symyx Technologies a je dostupná len za poplatok.\n\nObsah \nDatabáza obsahuje šesť typov toxikologických informácií:\n primárne podráždenie\n mutagénne účinky\n reprodukčné účinky\n karcinogénne účinky\n akútna toxicita\n toxicita viacnásobných dávok\nV databáze sa spomínajú ako špecifické číselné hodnoty, ako napríklad LD50, LC50, TDLo alebo TCLo, tak aj študované organizmy a spôsob podávania látky. Pre všetky dáta sú uvedené bibliografické zdroje. Štúdie pritom nie sú nijako hodnotené.\n\nHistória \nDatabáza RTECS bola aktivitou schválenou americkým Kongresom, zakotvenou v Sekcii 20(a)(6) zákona Occupational Safety and Health Act z roku 1970 (PL 91-596). Pôvodné vydanie, známe ako Zoznam toxických látok (Toxic Substances List), bolo publikované 28. júna 1971 a obsahovalo toxikologické dáta o približne 5 000 chemikáliách. Názov bol neskôr zmenený na dnešný Register toxických účinkov chemických látok (Registry of Toxic Effects of Chemical Substances). V januári 2001 databáza obsahovala 152 970 chemikálií. V decembri 2001 bola správa RTECS prevedená z NIOSH do súkromnej firmy Elsevier MDL. Túto firmu kúpila v roku 2007 spoločnosť Symyx, súčasťou akvizície bola aj databáza RTECS. Tá je teraz dostupná len za poplatok vo forme ročného predplatného.\n\nRTECS je k dispozícii v angličtine, francúzštine a španielčine, a to prostredníctvom Kanadského centra pre bezpečnosť a ochranu zdravia pri práci. Predplatitelia majú prístup cez web, na CD-ROM a vo formáte pre intranet. Databáza je dostupná na webe aj cez NISC (National Information Services Corporation) a ExPub (Expert Publishing, LLC).\n\nExterné odkazy \n\n RTECS overview \n Symyx website \n Expert Publishing, LLC Website\n\nZdroj \n\nChemické názvy a kódy\nToxikológia",
-  "question": "Aké sú tri možnosti prístupu k databáze RTECS, ak som predplatiteľ?",
-  "answers": {"answer_start": [1949], "text": ["cez web, na CD-ROM a vo formáte pre intranet"]}}
+    "context": "Клеопатра Карађорђевић (Крајова, 14/26. новембар 1835 — Глајхенберг, 1/13. јул 1855) је била ћерка кнеза Александра Карађорђевића и кнегиње Персиде.\n\nБиографија \nРођена је у Влашкој од оца Александра Карађорђевића (1806—1885) и мајке Персиде, рођене Ненадовић. Породица Карађорђевић је од 1817. до 1831. живела у Хотину, а затим у Влашкој до 1839. У Србију су дошли октобра 1839. и Александар је априла 1840. ступио у војну службу као ађутант кнеза Михаила Обреновића.\n\nАлександар је изабран за кнеза Србије 1842. године, а после две године је прешао у двор, кућу купљену од Стојана Симића. Клеопатра је одрастала са две године старијом сестром Полексијом (1833—1914), и када су напуниле 10 и 12 година поставило се питање њиховог образовања. На препоруку Илије Гарашанина и Јована Хаџића за приватног учитеља је изабран Матија Бан, Дубровчанин који је из Цариграда дошао у Србију 1844. године. На дужност приватног учитеља кнежевих ћерки Полексије и Клеопатре ступио је 13. јула 1845.\n\nЧешки композитор и пијаниста Алојз Калауз који је у Србију дошао 1843. године и у Београду давао приватне часове клавира, компоновао је песму „Што се боре мисли моје“ за Клеопатрин 15. рођендан. Средином педесетих година 19. века поново је компоновао Корнелије Станковић и та песма је за време друге владе кнеза Михаила редовно певана на баловима у Београду.\n\nСестра Полексија се удала 1849. за Константина Николајевића. Клеопатра је са њима 1852. путовала у Цариград, у пасошу је именована као „принцеза србска“. До удаје је живела у двору. Удата је 9. фебруара 1855. за Милана Петронијевића, сина Аврама Петронијевића који је био председник Владе 1844—1852. Венчање је било у Саборној цркви, кум је био Стефан Стефановић Тенка, стари сват аустријски конзул Теодор Радосављевић, а венчао их је митрополит београдски Петар.\n\nУмрла је 1/13. јула 1855. године у бањи Глајхенберг у Штајерској и сахрањена у породичној гробници у Тополи, касније у цркви Светог Ђорђа на Опленцу.\n\nУ Неменикућама постоји Клеопатрина чесма.\n\nПородично стабло\n\nПородица\n\nСупружник\n\nВиди још \n Карађорђевићи\n Петронијевићи\n\nРеференце\n\nЛитература \n Радомир Ј. Поповић: Принцеза Клеопатра Карађорђевић-Петронијевић, Даница за 2012. годину, Вукова задужбина, Београд (2011). стр. 352-363.\n\nСпољашње везе \n Музичка честитка за Клеопатру Карађорђевић („Политика”, 5. август 2017)\n\nРођени 1835.\nУмрли 1855.\nКлеопатра', 'question': 'Који је датум рођења Клеопатре Карађорђевић?",
+    "answers": {
+        "answer_start": [33],
+        "text": ["14/26. новембар 1835"]
+    }
+}
 ```
 
 ```json
 {
-  "context": "Herta Naglová-Docekalová (* 29. máj 1944, Wels, Rakúsko) je rakúska filozofka a profesorka, členka vedenia Medzinárodnej asociácie filozofiek (IAPf), Österreichische Akademie der Wissenschaften, Institut International de Philosophie (Paríž), viceprezidentka Fédération Internationale des Sociétés de Philosophie (FISP), zakladajúca členka interdisciplinárnych pracovných skupín Frauengeschichte a Philosophische Frauenforschung na Viedenskej univerzite, členka redakčných rád popredných vedeckých časopisov, napr. Philosophin, L´Homme, Deutsche Zeitschrift für Philosophie.\n\nŽivotopis \nVyštudovala históriu, filozofiu a germanistiku na Viedenskej univerzite. V roku 1967 získala na svojej alma mater doktorát z histórie prácou o filozofovi dejín Ernstovi von Lasaulx). V rokoch 1968 - 1985 bola asistentkou na Inštitúte filozofie Viedenskej univerzity. V lete 1980 prednášala na Millersville University of Pennsylvania v USA.\n\nV roku 1981 sa habilitovala z filozofie na Viedenskej univerzite dielom Die Objektivität der Geschichtswissenschaft. V rokoch 1985 až 2009 bola profesorkou Inštitútu filozofie Viedenskej univerzity. Od roku 2009 je univerzitnou profesorkou na dôchodku (Universitätsprofessorin i. R.)\n\nBola hosťujúcou profesorkou v roku 1990 na Universiteit Utrecht v holandskom Utrechte; v Nemecku 1991/1992 na Goethe-Universität Frankfurt vo Frankfurte nad Mohanom; 1993 na Universität Konstanz v Konstanzi; 1994/1995 na Freie Universität Berlin v Berlíne. V rokoch 1995/1996 prednášala na Universität Innsbruck a 2011 na univerzite v Petrohrade v Rusku.\n\nDielo (výber) \n Jenseits der Säkularisierung. Religionsphilosophische Studien. - Berlin 2008 (Hg., gem.m. Friedrich Wolfram).\n Viele Religionen - eine Vernunft? Ein Disput zu Hegel. - Wien/Berlin 2008 (Hg., gem.m. Wolfgang Kaltenbacher und Ludwig Nagl).\n Glauben und Wissen. Ein Symposium mit Jürgen Habermas. - Wien/Berlin 2007 (Hg., gem.m. Rudolf Langthaler).\n Geschichtsphilosophie und Kulturkritik. - Darmstadt 2003 (Hrsg., gem.m. Johannes Rohbeck).\n Feministische Philosophie. Ergebnisse, Probleme, Perspektiven. - Frankfurt a.M. 2000 a 2004 \n Continental Philosophy in Feminist Perspective. - Pennsylviania State University Press 2000 (Hg. gem.m. Cornelia Klingler).\n Der Sinn des Historischen. - Frankfurt a.M. 1996 (Hrsg.).\n Politische Theorie. Differenz und Lebensqualität. - Frankfurt a.M. 1996 (Hrsg. gem.m. Herlinde Pauer-Studer).\n Postkoloniales Philosophieren: Afrika. - Wien/München 1992 (Hrsg., gem.m. Franz Wimmer).\n Tod des Subjekts? - Wien/München 1987 (Hrsg., gem.m. Helmuth Vetter).\n Die Objektivität der Geschichtswissenschaft. Systematische Untersuchungen zum wissenschaftlichen Status der Historie. - Wien/München 1982\n spoluvydavateľka: Wiener Reihe. Themen der Philosophie (od 1986). \n spoluvydavateľka: Deutsche Zeitschrift für Philosophie (1993-2004). \n spoluvydavateľka: L'Homme. Europäische Zeitschrift für feministische Geschichtswissenschaft (1990 - 2003).\n\nOcenenia \n Förderpreis mesta Viedeň, 1983\n Käthe Leichter Preis (rakúska štátna cena), 1997 \n Preis für Geistes- und Sozialwissenschaften der Stadt Wien, 2009\n\nReferencie\n\nExterné odkazy \n Oficiálna stránka, Universität Wien \n Austria Forum, Wissenssammlungen/Biographien: Herta Nagl-Docekal\n\nZdroj \n\nRakúski filozofi",
-  "question": "Kedy prišla na svet Herta Naglová-Docekalová?",
-  "answers": {"answer_start": [28], "text": ["29. máj 1944"]}}
+    "context": "Доња Гуштерица је насеље у општини Липљан на Косову и Метохији. По законима самопроглашене Републике Косово насеље се налази у саставу општине Грачаница. Атар насеља се налази на територији катастарске општине Доња Гуштерица површине 1133 -{ha}-.\n\nИсторија \nДоња Гуштерица је почетком 20. века сматрана за највеће село на Косову Пољу. Ту је 1904. године завршена градња српског православног храма. Градњу су помогли ктитори и побожни народ из места.\n\nПорекло становништва по родовима \nСрпски родови подаци из 1932. године)\n\n Доганџићи (32 k., Св. Јован). Имали су две славе, јер су, поред старе славе Св. Јована, завели доцније и славу Св. Николе. Стари су досељеници и оснивачи села. Доселили се од Тетова да избегну освету, „јер су поубијали арамије у својој кући“. Досељење им је старије од оних помена соколарства у овом селу средином XVIII века.\n\n Шкуртови (3 k., Св. Никола) и Сталићи (1 k., Ђурђиц), досељеници непознатог порекла.\n\n Аладанци (5 k., Св. Никола). Досељени крајем XVIII века из Гњиланске Мораве.\n\n Терзићи (6 k., Св. Никола). Досељени крајем XVIII века из околине Гњилана из села Понеша.\n\n Живанчићи (7 k., Св. Никола). Доселили се из Ибарског Колашина почетком XIX века.\n\n Бакшићани (6 k., Св. Јанићије Девички). Пресељени из Бакшије почетком XIX века.\n\n Сојевићи (12 k., Ђурђиц). Досељени око 1820. године из Сојева. Исти су род са Сојевићима у Топличану.\n\n Шубарићи (10 k., Митровдан). Пресељени из Плешине после Сојевића.\n\n Подримци (4 k., Св. Никола). Избегли око 1830. године из Мовљана у Метохији да избегну крвну освету, јер су убили неког Арбанаса што је хтео да им отме Волове.\n\n Грбићовци (6 k., Св. Никола). Пресељени из Гребна око 1830. године.\n\n Кукурегџићи (5 k., Св. Никола). Пресељени из Гувног Села око 1830. године.\n\n Јерци или Јерцићи (1 k., Св. Арханђео). Пресељени средином XIX века из истоименог рода у Горњој Гуштерици, старином из Ибарског Колашина.\n\n Декићи (2 k., Св. Арханђео). Пресељени из Горње Брњице око 1870. године.\n\n Сиринићани (1 k., Ваведење). Досељени 1916. године из Сушића у Сиринићкој Жупи.\n\nДемографија \n\nНасеље има српску етничку већину.\nБрој становника на пописима:\n\n попис становништва 1948. године: 974\n попис становништва 1953. године: 1097\n попис становништва 1961. године: 1187\n попис становништва 1971. године: 1158\n попис становништва 1981. године: 1210\n попис становништва 1991. године: 1269\n\nРеференце \n\nВикипројект географија/Насеља у Србији\n\nНасељена места у Липљану\nНасељена места на Косову и Метохији",
+    "question": "Одакле су Подримци побегли отприлике 1830. године?",
+    "answers": {
+        "answer_start": [1506],
+        "text": ["Мовљана у Метохији"]
+    }
+}
 ```
 
 ```json
 {
-  "context": "Martin Bareš (* 25. november 1968, Brno) je český profesor neurológie, od septembra 2019 rektor Masarykovej univerzity, predtým od februára 2018 do septembra 2019 dekan Lekárskej fakulty Masarykovej univerzity.\n\nRiadiace funkcie \nVo februári 2018 sa stal dekanom Lekárskej fakulty Masarykovej univerzity. Funkciu prevzal po Jiřím Mayerovi, ktorý zastával pozíciu dekana v období 20102018. S nástupom na post dekana ukončil svoje pôsobenie ako prorektor univerzity, ako i zástupca prednostu I. neurologickej kliniky pre vedu a výskum.\n\nDo funkcie rektora univerzity bol zvolený 1. apríla 2019 Akademickým senátom Masarykovej univerzity. V prvom kole tajnej voľby získal Bareš 36 hlasov z 50 prítomných senátorov. Protikandidáta, prodekana Prírodovedeckej fakulty Jaromíra Leichmana, volilo 11 senátorov. 3 odovzdané hlasy boli neplatné.\n\nSkúsenosti s pôsobením vo vedení školy zbieral Bareš v rokoch 20112018, kedy pôsobil najskôr ako jej prorektor pre rozvoj a potom ako prorektor pre akademické záležitosti. Za svoje priority označil Bareš v dobe voľby posilňovanie role univerzity ako piliera slobody v súčasnej spoločnosti a zvýšenie kvality vzdelávania, vedy a výskumu na medzinárodnej úrovni.\n\nDo funkcie rektora ho vymenoval 11. júna 2019 prezident Miloš Zeman s účinnosťou od 1. septembra 2019. Vo funkcii tak nahradil Mikuláša Beka, ktorému sa skončilo druhé volebné obdobie a o zvolenie sa teda už opäť uchádzať nemohol. Bareš k 1. septembru 2019 rezignoval na post dekana Lekárskej fakulty.\n\nVedecká činnosť \nJe prednášajúcim v odboroch všeobecné lekárstvo, zubné lekárstvo, optometria, fyzioterapia, neurofyziológia pre študentov prírodných vied Lekárskej fakulty Masarykovej univerzity a školiteľ doktorandov odborovej rady neurológia a neurovedy.\n\nPôsobí v týchto vedeckých radách: Masarykova univerzita, Lekárska fakulta Masarykovej univerzity a CEITEC MU. Ďalej tiež Univerzita Palackého v Olomouci, Lekárska fakulta UPOL, Fakulta veterinárního lékařství VFU, ďalej je tiež členom Českej lekárskej komory, Českej neurologickej spoločnosti, Českej spoločnosti klinickej neurofyziológie, Českej lekárskej spoločnosti Jana Evangelisty Purkyně, Movement Disorders Society, Society for the Research on the Cerebellum a Society for Neuroscience. Takisto je členom redakčnej rady časopisov Clinical Neurophysiology, Behavioural Neurology, Tremor and Other Hyperkinetic Movements a Biomedical Papers.\n\nOsobný život \nJe ženatý, má dvoch synov a dcéru.\n\nReferencie\n\nExterné odkazy \n Martin Bareš\n\nZdroj \n\nČeskí lekári\nNeurológovia\nRektori Masarykovej univerzity\nČeskí univerzitní profesori\nDekani Lekárskej fakulty Masarykovej univerzity\nAbsolventi Lekárskej fakulty Masarykovej univerzity\nOsobnosti z Brna",
-  "question": "Akú pozíciu mal Martin Bareš na Masarykovej univerzite počnúc septembrom 2019?",
-  "answers": {
-    "answer_start": [89],
-    "text": ["rektor"]
-  }
+    "context": "Тржић Примишљански је насељено мјесто града Слуња, на Кордуну, Карловачка жупанија, Република Хрватска.\n\nГеографија \nТржић Примишљански се налази око 18 км сјеверозападно од Слуња.\n\nИсторија \nПоп Никола Гаћеша је ту у свом родном месту (рођ. 1785) хтео да преведе православне парохијане у унију. Али када је примио унију, убио га је 18. јуна 1820. године у његовој кући хајдук из Збега, Благоје Бараћ. Тако је спречена унија у Тржићу код Примишља.\n\nТо село је током ратова са Турцима у 16. и 17. веку било скоро потпуно опустошено. Остала је само католичка црква Св. Миховила и неколико околних кућа. Граничарски пуковник Оршић је 1686. године ту населио православне Србе из Цазина. На два километра од католичког храма подигли су православци себи богомољу посвећену Св. апостолу Петру.\n\nТржић Примишљански се од распада Југославије до августа 1995. године налазио у Републици Српској Крајини.\n\nСтановништво \nПрема попису становништва из 2011. године, насеље Тржић Примишљански је имало 20 становника.\n\nИзвори\n\nСпољашње везе \n\nСлуњ\nКордун\nНасељена места у Хрватској\nНасељена места у Карловачкој жупанији\nВикипројект географија/Насеља у Хрватској",
+    "question": "Ко је одговоран за смрт попа Николе Гаћеше?",
+    "answers": {
+        "answer_start": [370],
+        "text": ["хајдук из Збега, Благоје Бараћ"]
+    }
 }
 ```
 
@@ -271,31 +278,31 @@ When evaluating generative models, we use the following setup (see the
 - Prefix prompt:
 
   ```text
-  Nasledujú texty s pridruženými otázkami a odpoveďami.
+  Следе текстови са одговарајућим питањима и одговорима.
   ```
 
 - Base prompt template:
 
   ```text
-  Text: {text}
-  Otázka: {question}
-  Odpoveď na maximálne 3 slová:
+  Текст: {text}
+  Питање: {question}
+  Одговор у максимум 3 речи:
   ```
 
 - Instruction-tuned prompt template:
 
   ```text
-  Text: {text}
+  Текст: {text}
 
-  Odpovedzte na nasledujúcu otázku týkajúcu sa textu uvedeného vyššie maximálne 3 slovami.
+  Одговорите на следеће питање о горњем тексту у максимум 3 речи.
 
-  Otázka: {question}
+  Питање: {question}
   ```
 
 You can evaluate this dataset directly as follows:
 
 ```bash
-euroeval --model <model-id> --dataset multi-wiki-qa-sk
+euroeval --model <model-id> --dataset multi-wiki-qa-sr
 ```
 
 ## Knowledge
