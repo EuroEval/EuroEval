@@ -2,7 +2,7 @@
 
 from ..data_models import DatasetConfig
 from ..languages import SR
-from ..tasks import KNOW, LA, NER, RC, SENT, SUMM
+from ..tasks import COMMON_SENSE, KNOW, LA, NER, RC, SENT, SUMM
 
 ### Official datasets ###
 
@@ -57,4 +57,14 @@ MMLU_SR_CONFIG = DatasetConfig(
     huggingface_id="EuroEval/mmlu-sr-mini",
     task=KNOW,
     languages=[SR],
+)
+
+WINOGRANDE_SR_CONFIG = DatasetConfig(
+    name="winogrande-sr",
+    pretty_name="the Serbian common-sense reasoning dataset Winogrande-sr, translated "
+    "from the English Winogrande dataset",
+    huggingface_id="EuroEval/winogrande-sr",
+    task=COMMON_SENSE,
+    languages=[SR],
+    _labels=["a", "b"],
 )

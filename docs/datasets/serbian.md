@@ -382,7 +382,7 @@ euroeval --model <model-id> --dataset mmlu-sr
 
 ## Common-sense Reasoning
 
-### Winogrande-sk
+### Winogrande-sr
 
 This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2506.19468)
 and is a translated and filtered version of the English [Winogrande
@@ -396,22 +396,22 @@ Here are a few examples from the training split:
 
 ```json
 {
-  "text": "Nedokázal som ovládať vlhkosť ako som ovládal dážď, pretože _ prichádzalo odvšadiaľ. Na koho sa vzťahuje prázdne miesto _?\nMožnosti:\na. vlhkosť\nb. dážď",
-  "label": "a"
+    "text": "Nisam mogao kontrolisati vlagu kao što sam kontrolisao kišu, jer je _ dolazilo sa svih strana. Na šta se odnosi prazno _?\nOpcije:\na. vlaga\nb. kiša",
+    "label": "a"
 }
 ```
 
 ```json
 {
-  "text": "Jessica si myslela, že Sandstorm je najlepšia pieseň, aká bola kedy napísaná, ale Patricia ju nenávidela. _ si kúpila lístok na jazzový koncert. Na koho sa vzťahuje prázdne miesto _?\nMožnosti:\na. Jessica\nb. Patricia",
-  "label": "b"
+    "text": "Jessica je mislila da je Sandstorm najbolja pesma ikada napisana, ali Patricia ju je mrzela. _ je kupila kartu za džez koncert. Na šta se odnosi prazno _?\nOpcije:\na. Jessica\nb. Patricia",
+    "label": "b"
 }
 ```
 
 ```json
 {
-  "text": "Termostat ukazoval, že dole bolo o dvadsať stupňov chladnejšie ako hore, takže Byron zostal v _ pretože mu bola zima. Na koho sa vzťahuje prázdne miesto _?\nMožnosti:\na. dole\nb. hore",
-  "label": "b"
+    "text": "Rukovanje hitnim slučajevima nikada nije bilo veoma teško za Kevina, ali jeste za Nelsona jer _ nije mogao da ostane smiren pod pritiskom. Na šta se odnosi prazno _?\nOpcije:\na. Kevin\nb. Nelson",
+    "label": "b"
 }
 ```
 
@@ -422,39 +422,39 @@ When evaluating generative models, we use the following setup (see the
 - Prefix prompt:
 
   ```text
-  Nasledujú otázky s viacerými možnosťami (s odpoveďami).
+  Slede pitanja višestrukog izbora (sa odgovorima).
   ```
 
 - Base prompt template:
 
   ```text
-  Otázka: {text}
-  Možnosti:
+  Pitanje: {text}
+  Opcije:
   a. {option_a}
   b. {option_b}
-  Odpoveď: {label}
+  Odgovor: {label}
   ```
 
 - Instruction-tuned prompt template:
 
   ```text
-  Otázka: {text}
-  Možnosti:
+  Pitanje: {text}
+  Opcije:
   a. {option_a}
   b. {option_b}
 
-  Odpovedzte na nasledujúcu otázku použitím 'a' alebo 'b', a nič iné.
+  Odgovorite na navedeno pitanje koristeći 'a' ili 'b', i ništa drugo.
   ```
 
 You can evaluate this dataset directly as follows:
 
 ```bash
-euroeval --model <model-id> --dataset winogrande-sk
+euroeval --model <model-id> --dataset winogrande-sr
 ```
 
 ## Summarisation
 
-### LR-Sum-uk
+### LR-Sum-sr
 
 This dataset was published in [this paper](https://aclanthology.org/2023.findings-acl.427/).
 The source data is public domain newswire collected from Voice of America websites,
