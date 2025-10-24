@@ -53,7 +53,7 @@ def main() -> None:
     train_df = train_df.drop(val_df.index)
 
     # Create test split
-    test_size = 2024
+    test_size = 2048
     test_df = test_df.sample(n=test_size, random_state=4242)
 
     # Create train split
