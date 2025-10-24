@@ -41,8 +41,8 @@ def main() -> None:
     test_size = 2048
 
     final_val_df = val_df.sample(n=val_size, random_state=4242).reset_index(drop=True)
-    remaining_val_sampels = val_df[~val_df.index.isin(final_val_df.index)]
-    test_df = pd.concat([test_df, remaining_val_sampels], ignore_index=True)
+    remaining_val_samples = val_df[~val_df.index.isin(final_val_df.index)]
+    test_df = pd.concat([test_df, remaining_val_samples], ignore_index=True)
 
     final_train_df = train_df.sample(n=train_size, random_state=4242).reset_index(
         drop=True
