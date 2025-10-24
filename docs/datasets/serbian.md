@@ -309,11 +309,9 @@ euroeval --model <model-id> --dataset multi-wiki-qa-sr
 
 ### MMLU-sr
 
-This dataset is a machine translated version of the English [MMLU
-dataset](https://openreview.net/forum?id=d7KBjmI3GmQ) and features questions within 57
-different topics, such as elementary mathematics, US history and law. The translation to
-Slovak was done by the University of Oregon as part of [this
-paper](https://aclanthology.org/2023.emnlp-demo.28/), using GPT-3.5-turbo.
+This dataset was published [in this paper](https://doi.org/10.48550/arXiv.2009.03300)
+and features questions within 57 different topics, such as elementary mathematics, US
+history and law.
 
 The original full dataset consists of 276 / 1,439 / 13,173 samples for training,
 validation and testing, respectively. We use a 1,024 / 256 / 2,048 split for training,
