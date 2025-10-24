@@ -67,11 +67,9 @@ def download_dataset(url: str, temp_path: Path) -> Path:
     """
     tar_path = temp_path / "exams.tar.gz"
     response = requests.get(url)
-    if response.status_code == 200:
-        with open(tar_path, "wb") as f:
-            f.write(response.content)
-    else:
-        raise Exception(f"Failed to download. Status code: {response.status_code}")
+    response.raise_for_status()
+    with open(tar_path, "wb") as f:
+        f.write(response.content)
 
     with tarfile.open(tar_path, "r:gz") as tar:
         tar.extractall(temp_path)
