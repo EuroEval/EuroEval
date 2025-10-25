@@ -32,7 +32,7 @@ def main() -> None:
     # Filter for Serbian language only
     df = df[df["language"] == "sr"].reset_index(drop=True)
 
-    # Create a uniform label distribution
+    # Create a uniform distribution based on the original dataset and label columns
     df = create_uniform_distribution(df=df, column="original_dataset")
     df = create_uniform_distribution(df=df, column="label")
 
