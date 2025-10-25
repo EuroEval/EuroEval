@@ -8,7 +8,7 @@ information about what these constitute.
 
 ### MMS-sr
 
-Information about the dataset can be found [here](https://brand24-ai.github.io/mms_benchmark/).
+This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2306.07902).
 The corpus consists of 79 manually selected datasets from over 350 datasets reported in the
 scientific literature based on strict quality criteria.
 
