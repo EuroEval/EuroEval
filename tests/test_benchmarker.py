@@ -6,6 +6,7 @@ import time
 from collections.abc import Generator
 from dataclasses import replace
 from pathlib import Path
+from shutil import rmtree
 
 import pytest
 import torch
@@ -371,6 +372,7 @@ class TestClearCacheFn:
     def test_clear_non_existing_cache(self) -> None:
         """Test that no errors are thrown when clearing a non-existing cache."""
         clear_model_cache_fn(cache_dir="does-not-exist")
+        rmtree(path="does-not-exist", ignore_errors=True)
 
     def test_clear_existing_cache(self) -> None:
         """Test that a cache can be cleared."""
@@ -385,6 +387,8 @@ class TestClearCacheFn:
         clear_model_cache_fn(cache_dir=cache_dir.as_posix())
         assert not dir_to_be_deleted.exists()
         assert example_model_dir.exists()
+
+        rmtree(path=cache_dir, ignore_errors=True)
 
 
 @pytest.mark.parametrize(
