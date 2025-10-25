@@ -8,7 +8,7 @@ from ..tasks import COMMON_SENSE, KNOW, LA, NER, RC, SENT, SUMM
 
 MMS_SR_CONFIG = DatasetConfig(
     name="mms-sr",
-    pretty_name="the truncated version of the Serbian part of the MMS sentiment "
+    pretty_name="the truncated version of the Serbian part of the MMS sentiment classification "
     "dataset MMS-sr",
     huggingface_id="EuroEval/mms-sr-mini",
     task=SENT,
