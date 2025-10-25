@@ -226,8 +226,8 @@ from .languages import get_all_languages
 )
 @click.option(
     "--custom-datasets-file",
-    type=click.Path(exists=True, dir_okay=False, path_type=Path),
-    default=None,
+    type=click.Path(exists=False, dir_okay=False, path_type=Path),
+    default="custom_datasets.py",
     show_default=True,
     help="A path to a Python file containing DatasetConfig definitions for custom "
     "datasets.",
@@ -260,7 +260,7 @@ def benchmark(
     requires_safetensors: bool,
     generative_type: str | None,
     download_only: bool,
-    custom_datasets_file: Path | None,
+    custom_datasets_file: Path,
 ) -> None:
     """Benchmark pretrained language models on language tasks."""
     models = list(model)
@@ -278,7 +278,7 @@ def benchmark(
     )
 
     # Load all defined DatasetConfig objects from the custom datasets file
-    if custom_datasets_file is not None:
+    if custom_datasets_file.exists():
         spec = importlib.util.spec_from_file_location(
             name="custom_datasets_module", location=str(custom_datasets_file.resolve())
         )
