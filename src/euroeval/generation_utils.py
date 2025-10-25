@@ -89,7 +89,7 @@ def extract_few_shot_examples(
             shuffled_train = train_with_short_examples.shuffle(seed=random_seed)
             labels = it.cycle(dataset_config.labels)
             labels_with_no_samples: set[str] = set()
-            while len(few_shot_examples) < num_few_shots and len(shuffled_train) > 0:
+            while len(few_shot_examples) <= num_few_shots and len(shuffled_train) > 0:
                 if len(labels_with_no_samples) == len(dataset_config.labels):
                     raise InvalidBenchmark(
                         "Could not find enough examples for few-shot learning. "
@@ -109,7 +109,7 @@ def extract_few_shot_examples(
                 )
 
         case TaskGroup.TEXT_TO_TEXT:
-            while len(few_shot_examples) < num_few_shots and len(shuffled_train) > 0:
+            while len(few_shot_examples) <= num_few_shots and len(shuffled_train) > 0:
                 example = shuffled_train.select(range(1))[0]
                 few_shot_examples.append(example)
                 shuffled_train = shuffled_train.filter(
@@ -124,7 +124,7 @@ def extract_few_shot_examples(
                     if label.lower().startswith("b-")
                 ]
             )
-            while len(few_shot_examples) < num_few_shots and len(shuffled_train) > 0:
+            while len(few_shot_examples) <= num_few_shots and len(shuffled_train) > 0:
                 label = next(labels)
                 possible_examples = shuffled_train.filter(
                     lambda x: label in [tag.lower() for tag in x["labels"]]
@@ -152,7 +152,7 @@ def extract_few_shot_examples(
                 )
 
             shuffled_train = train_with_short_examples.shuffle(seed=random_seed)
-            while len(few_shot_examples) < num_few_shots and len(shuffled_train) > 0:
+            while len(few_shot_examples) <= num_few_shots and len(shuffled_train) > 0:
                 example = shuffled_train.select(range(1))[0]
                 few_shot_examples.append(example)
                 shuffled_train = shuffled_train.filter(
