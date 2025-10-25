@@ -1,5 +1,6 @@
 """Data models used in EuroEval."""
 
+import collections.abc as c
 import json
 import pathlib
 import re
@@ -10,12 +11,12 @@ import pydantic
 import torch
 
 from .enums import Device, GenerativeType, ModelType, TaskGroup
+from .metrics.base import Metric
 from .types import ScoreDict
 from .utils import get_package_version
 
 if t.TYPE_CHECKING:
     from .enums import InferenceBackend
-    from .metrics import Metric
 
 
 @dataclass
@@ -86,6 +87,34 @@ class Language:
 
 
 @dataclass
+class PromptConfig:
+    """Configuration for task-specific prompting across languages.
+
+    Defines the prompt templates needed for evaluating a specific task in a given
+    language.
+
+    Attributes:
+        default_prompt_prefix:
+            The default prefix to use in the few-shot prompt.
+        default_prompt_template:
+            The default template for the prompt to use when benchmarking the dataset
+            using few-shot evaluation.
+        default_instruction_prompt:
+            The default prompt to use when benchmarking the dataset using
+            instruction-based evaluation.
+        default_prompt_label_mapping:
+            The default mapping from the labels to another phrase which is used as a
+            substitute for the label in few-shot evaluation. If set to "auto", the
+            mapping will be set to a 1:1 mapping between the labels and themselves.
+    """
+
+    default_prompt_prefix: str
+    default_prompt_template: str
+    default_instruction_prompt: str
+    default_prompt_label_mapping: dict[str, str] | t.Literal["auto"]
+
+
+@dataclass
 class Task:
     """A dataset task.
 
@@ -133,21 +162,25 @@ class Task:
             considered incorrect and the evaluation will be aborted. Defaults to True.
     """
 
+    model_config = pydantic.ConfigDict(
+        protected_namespaces=(), arbitrary_types_allowed=True
+    )
+
     name: str
     task_group: TaskGroup
-    template_dict: dict["Language", "PromptConfig"]
-    metrics: list["Metric"]
+    template_dict: dict[Language, PromptConfig]
+    metrics: c.Sequence[Metric]
     default_num_few_shot_examples: int
     default_max_generated_tokens: int
-    default_labels: list[str]
+    default_labels: c.Sequence[str]
     requires_zero_shot: bool = False
     uses_structured_output: bool = False
     uses_logprobs: bool = False
     requires_logprobs: bool = False
-    default_allowed_model_types: list[ModelType] = field(
+    default_allowed_model_types: c.Sequence[ModelType] = field(
         default_factory=lambda: [ModelType.ENCODER, ModelType.GENERATIVE]
     )
-    default_allowed_generative_types: list[GenerativeType] = field(
+    default_allowed_generative_types: c.Sequence[GenerativeType] = field(
         default_factory=lambda: [
             GenerativeType.BASE,
             GenerativeType.INSTRUCTION_TUNED,
@@ -163,205 +196,6 @@ class Task:
     def __hash__(self) -> int:
         """Return a hash of the task."""
         return hash(self.name)
-
-
-@dataclass
-class BenchmarkConfig:
-    """General benchmarking configuration, across datasets and models.
-
-    Attributes:
-        tasks:
-            The tasks benchmark the model(s) on.
-        datasets:
-            The datasets to benchmark on.
-        model_languages:
-            The languages of the models to benchmark.
-        dataset_languages:
-            The languages of the datasets in the benchmark.
-        device:
-            The device to use for benchmarking.
-        batch_size:
-            The batch size to use.
-        raise_errors:
-            Whether to raise errors instead of skipping them.
-        cache_dir:
-            Directory to store cached models and datasets.
-        api_key:
-            The API key to use for a given inference API.
-        api_base:
-            The base URL for a given inference API. Only relevant if `model` refers to a
-            model on an inference API.
-        api_version:
-            The version of the API to use. Only relevant if `model` refers to a model on
-            an inference API.
-        progress_bar:
-            Whether to show a progress bar.
-        save_results:
-            Whether to save the benchmark results to 'euroeval_benchmark_results.json'.
-        trust_remote_code:
-            Whether to trust remote code when loading models from the Hugging Face Hub.
-        clear_model_cache:
-            Whether to clear the model cache after benchmarking each model.
-        evaluate_test_split:
-            Whether to evaluate on the test split.
-        few_shot:
-            Whether to only evaluate the model using few-shot evaluation. Only relevant
-            if the model is generative.
-        num_iterations:
-            The number of iterations each model should be evaluated for.
-        gpu_memory_utilization:
-            The GPU memory utilization to use for vLLM. A larger value will result in
-            faster evaluation, but at the risk of running out of GPU memory. Only reduce
-            this if you are running out of GPU memory. Only relevant if the model is
-            generative.
-        requires_safetensors:
-            Whether to only allow models that use the safetensors format.
-        generative_type:
-            The type of generative model to benchmark. Only relevant if the model is
-            generative.
-        download_only:
-            Whether to only download the models, metrics and datasets without
-            evaluating.
-        force:
-            Whether to force the benchmark to run even if the results are already
-            cached.
-        verbose:
-            Whether to print verbose output.
-        debug:
-            Whether to run the benchmark in debug mode.
-        run_with_cli:
-            Whether the benchmark is being run with the CLI.
-    """
-
-    model_languages: list[Language]
-    dataset_languages: list[Language]
-    tasks: list[Task]
-    datasets: list[str]
-    batch_size: int
-    raise_errors: bool
-    cache_dir: str
-    api_key: str | None
-    api_base: str | None
-    api_version: str | None
-    progress_bar: bool
-    save_results: bool
-    device: torch.device
-    trust_remote_code: bool
-    clear_model_cache: bool
-    evaluate_test_split: bool
-    few_shot: bool
-    num_iterations: int
-    gpu_memory_utilization: float
-    requires_safetensors: bool
-    generative_type: GenerativeType | None
-    download_only: bool
-    force: bool
-    verbose: bool
-    debug: bool
-    run_with_cli: bool
-
-
-class BenchmarkConfigParams(pydantic.BaseModel):
-    """The parameters for the benchmark configuration."""
-
-    model_config = pydantic.ConfigDict(protected_namespaces=())
-
-    task: str | list[str] | None
-    dataset: str | list[str] | None
-    progress_bar: bool
-    save_results: bool
-    language: str | list[str]
-    model_language: str | list[str] | None
-    dataset_language: str | list[str] | None
-    device: Device | None
-    batch_size: int
-    raise_errors: bool
-    cache_dir: str
-    api_key: str | None
-    api_base: str | None
-    api_version: str | None
-    trust_remote_code: bool
-    clear_model_cache: bool
-    evaluate_test_split: bool
-    few_shot: bool
-    num_iterations: int
-    requires_safetensors: bool
-    download_only: bool
-    gpu_memory_utilization: float
-    generative_type: GenerativeType | None
-    force: bool
-    verbose: bool
-    debug: bool
-    run_with_cli: bool
-
-
-class BenchmarkResult(pydantic.BaseModel):
-    """A benchmark result."""
-
-    dataset: str
-    task: str
-    dataset_languages: list[str]
-    model: str
-    results: ScoreDict
-    num_model_parameters: int
-    max_sequence_length: int
-    vocabulary_size: int
-    merge: bool
-    generative: bool
-    generative_type: str | None
-    few_shot: bool
-    validation_split: bool
-    euroeval_version: str | None = get_package_version("euroeval")
-    transformers_version: str | None = get_package_version("transformers")
-    torch_version: str | None = get_package_version("torch")
-    vllm_version: str | None = get_package_version("vllm")
-    xgrammar_version: str | None = get_package_version("xgrammar")
-
-    @classmethod
-    def from_dict(cls, config: dict) -> "BenchmarkResult":
-        """Create a benchmark result from a dictionary.
-
-        Args:
-            config:
-                The configuration dictionary.
-
-        Returns:
-            The benchmark result.
-        """
-        # To be backwards compatible, we accept old results which changed the model
-        # name with parameters rather than adding them as explicit parameters
-        val_matches = re.search(r"\(.*val.*\)$", config["model"])
-        few_shot_matches = re.search(r"\(.*few-shot.*\)$", config["model"])
-        zero_shot_matches = re.search(r"\(.*zero-shot.*\)$", config["model"])
-        config["model"] = re.sub(
-            r"\(.*(few-shot|val).*\)$", "", config["model"]
-        ).strip()
-
-        if "merge" not in config:
-            config["merge"] = False
-        if "generative" not in config:
-            config["generative"] = (
-                few_shot_matches is not None or zero_shot_matches is not None
-            )
-        if "generative_type" not in config:
-            config["generative_type"] = None
-        if "few_shot" not in config:
-            config["few_shot"] = zero_shot_matches is None
-        if "validation_split" not in config:
-            config["validation_split"] = val_matches is not None
-
-        return cls(**config)
-
-    def append_to_results(self, results_path: pathlib.Path) -> None:
-        """Append the benchmark result to the results file.
-
-        Args:
-            results_path:
-                The path to the results file.
-        """
-        json_str = json.dumps(self.model_dump())
-        with results_path.open("a") as f:
-            f.write("\n" + json_str)
 
 
 @dataclass
@@ -440,18 +274,18 @@ class DatasetConfig:
     pretty_name: str
     huggingface_id: str
     task: Task
-    languages: list[Language]
+    languages: c.Sequence[Language]
     _prompt_prefix: str | None = None
     _prompt_template: str | None = None
     _instruction_prompt: str | None = None
     _num_few_shot_examples: int | None = None
     _max_generated_tokens: int | None = None
-    _labels: list[str] | None = None
+    _labels: c.Sequence[str] | None = None
     _prompt_label_mapping: dict[str, str] | t.Literal["auto"] | None = None
-    _allowed_model_types: list[ModelType] | None = None
-    _allowed_generative_types: list[GenerativeType] | None = None
+    _allowed_model_types: c.Sequence[ModelType] | None = None
+    _allowed_generative_types: c.Sequence[GenerativeType] | None = None
     _allow_invalid_model_outputs: bool | None = None
-    splits: list[str] = field(default_factory=lambda: ["train", "val", "test"])
+    splits: c.Sequence[str] = field(default_factory=lambda: ["train", "val", "test"])
     bootstrap_samples: bool = True
     unofficial: bool = False
 
@@ -510,7 +344,7 @@ class DatasetConfig:
         )
 
     @property
-    def labels(self) -> list[str]:
+    def labels(self) -> c.Sequence[str]:
         """The labels in the dataset."""
         return self._labels if self._labels is not None else self.task.default_labels
 
@@ -531,7 +365,7 @@ class DatasetConfig:
             return prompt_config.default_prompt_label_mapping
 
     @property
-    def allowed_model_types(self) -> list[ModelType]:
+    def allowed_model_types(self) -> c.Sequence[ModelType]:
         """A list of model types that are allowed to be evaluated on this dataset."""
         return (
             self._allowed_model_types
@@ -540,7 +374,7 @@ class DatasetConfig:
         )
 
     @property
-    def allowed_generative_types(self) -> list[GenerativeType]:
+    def allowed_generative_types(self) -> c.Sequence[GenerativeType]:
         """A list of generative model types that are allowed on this dataset."""
         return (
             self._allowed_generative_types
@@ -576,7 +410,7 @@ class DatasetConfig:
         """Return a hash of the dataset configuration."""
         return hash(self.name)
 
-    def get_labels_str(self, labels: list[str] | None = None) -> str:
+    def get_labels_str(self, labels: c.Sequence[str] | None = None) -> str:
         """Converts a set of labels to a natural string, in the specified language.
 
         If the task is NER, we separate using 'and' and use the mapped labels instead of
@@ -620,6 +454,209 @@ class DatasetConfig:
 
 
 @dataclass
+class BenchmarkConfig:
+    """General benchmarking configuration, across datasets and models.
+
+    Attributes:
+        datasets:
+            The datasets to benchmark on.
+        model_languages:
+            The languages of the models to benchmark.
+        dataset_languages:
+            The languages of the datasets in the benchmark.
+        batch_size:
+            The batch size to use.
+        raise_errors:
+            Whether to raise errors instead of skipping them.
+        cache_dir:
+            Directory to store cached models and datasets.
+        api_key:
+            The API key to use for a given inference API.
+        api_base:
+            The base URL for a given inference API. Only relevant if `model` refers to a
+            model on an inference API.
+        api_version:
+            The version of the API to use. Only relevant if `model` refers to a model on
+            an inference API.
+        progress_bar:
+            Whether to show a progress bar.
+        save_results:
+            Whether to save the benchmark results to 'euroeval_benchmark_results.json'.
+        device:
+            The device to use for benchmarking.
+        trust_remote_code:
+            Whether to trust remote code when loading models from the Hugging Face Hub.
+        clear_model_cache:
+            Whether to clear the model cache after benchmarking each model.
+        evaluate_test_split:
+            Whether to evaluate on the test split.
+        few_shot:
+            Whether to only evaluate the model using few-shot evaluation. Only relevant
+            if the model is generative.
+        num_iterations:
+            The number of iterations each model should be evaluated for.
+        gpu_memory_utilization:
+            The GPU memory utilization to use for vLLM. A larger value will result in
+            faster evaluation, but at the risk of running out of GPU memory. Only reduce
+            this if you are running out of GPU memory. Only relevant if the model is
+            generative.
+        requires_safetensors:
+            Whether to only allow models that use the safetensors format.
+        generative_type:
+            The type of generative model to benchmark. Only relevant if the model is
+            generative.
+        download_only:
+            Whether to only download the models, metrics and datasets without
+            evaluating.
+        force:
+            Whether to force the benchmark to run even if the results are already
+            cached.
+        verbose:
+            Whether to print verbose output.
+        debug:
+            Whether to run the benchmark in debug mode.
+        run_with_cli:
+            Whether the benchmark is being run with the CLI.
+    """
+
+    datasets: c.Sequence[DatasetConfig]
+    model_languages: c.Sequence[Language]
+    dataset_languages: c.Sequence[Language]
+    batch_size: int
+    raise_errors: bool
+    cache_dir: str
+    api_key: str | None
+    api_base: str | None
+    api_version: str | None
+    progress_bar: bool
+    save_results: bool
+    device: torch.device
+    trust_remote_code: bool
+    clear_model_cache: bool
+    evaluate_test_split: bool
+    few_shot: bool
+    num_iterations: int
+    gpu_memory_utilization: float
+    requires_safetensors: bool
+    generative_type: GenerativeType | None
+    download_only: bool
+    force: bool
+    verbose: bool
+    debug: bool
+    run_with_cli: bool
+
+    @property
+    def tasks(self) -> c.Sequence[Task]:
+        """Get the tasks in the benchmark configuration."""
+        return list({dataset_config.task for dataset_config in self.datasets})
+
+
+class BenchmarkConfigParams(pydantic.BaseModel):
+    """The parameters for the benchmark configuration."""
+
+    model_config = pydantic.ConfigDict(
+        protected_namespaces=(), arbitrary_types_allowed=True
+    )
+
+    task: str | Task | c.Sequence[str | Task] | None
+    dataset: str | DatasetConfig | c.Sequence[str | DatasetConfig] | None
+    progress_bar: bool
+    save_results: bool
+    language: str | c.Sequence[str]
+    model_language: str | c.Sequence[str] | None
+    dataset_language: str | c.Sequence[str] | None
+    device: Device | None
+    batch_size: int
+    raise_errors: bool
+    cache_dir: str
+    api_key: str | None
+    api_base: str | None
+    api_version: str | None
+    trust_remote_code: bool
+    clear_model_cache: bool
+    evaluate_test_split: bool
+    few_shot: bool
+    num_iterations: int
+    requires_safetensors: bool
+    download_only: bool
+    gpu_memory_utilization: float
+    generative_type: GenerativeType | None
+    force: bool
+    verbose: bool
+    debug: bool
+    run_with_cli: bool
+
+
+class BenchmarkResult(pydantic.BaseModel):
+    """A benchmark result."""
+
+    dataset: str
+    task: str
+    dataset_languages: c.Sequence[str]
+    model: str
+    results: ScoreDict
+    num_model_parameters: int
+    max_sequence_length: int
+    vocabulary_size: int
+    merge: bool
+    generative: bool
+    generative_type: str | None
+    few_shot: bool
+    validation_split: bool
+    euroeval_version: str | None = get_package_version("euroeval")
+    transformers_version: str | None = get_package_version("transformers")
+    torch_version: str | None = get_package_version("torch")
+    vllm_version: str | None = get_package_version("vllm")
+    xgrammar_version: str | None = get_package_version("xgrammar")
+
+    @classmethod
+    def from_dict(cls, config: dict) -> "BenchmarkResult":
+        """Create a benchmark result from a dictionary.
+
+        Args:
+            config:
+                The configuration dictionary.
+
+        Returns:
+            The benchmark result.
+        """
+        # To be backwards compatible, we accept old results which changed the model
+        # name with parameters rather than adding them as explicit parameters
+        val_matches = re.search(r"\(.*val.*\)$", config["model"])
+        few_shot_matches = re.search(r"\(.*few-shot.*\)$", config["model"])
+        zero_shot_matches = re.search(r"\(.*zero-shot.*\)$", config["model"])
+        config["model"] = re.sub(
+            r"\(.*(few-shot|val).*\)$", "", config["model"]
+        ).strip()
+
+        if "merge" not in config:
+            config["merge"] = False
+        if "generative" not in config:
+            config["generative"] = (
+                few_shot_matches is not None or zero_shot_matches is not None
+            )
+        if "generative_type" not in config:
+            config["generative_type"] = None
+        if "few_shot" not in config:
+            config["few_shot"] = zero_shot_matches is None
+        if "validation_split" not in config:
+            config["validation_split"] = val_matches is not None
+
+        return cls(**config)
+
+    def append_to_results(self, results_path: pathlib.Path) -> None:
+        """Append the benchmark result to the results file.
+
+        Args:
+            results_path:
+                The path to the results file.
+        """
+        json_str = json.dumps(self.model_dump())
+        with results_path.open("a") as f:
+            f.write("\n" + json_str)
+
+
+@dataclass
 class ModelConfig:
     """Configuration for a model.
 
@@ -653,7 +690,7 @@ class ModelConfig:
     revision: str
     param: str | None
     task: str
-    languages: list[Language]
+    languages: c.Sequence[Language]
     inference_backend: "InferenceBackend"
     merge: bool
     model_type: ModelType
@@ -681,7 +718,7 @@ class PreparedModelInputs:
             instead.
     """
 
-    texts: list[str] | None = None
+    texts: c.Sequence[str] | None = None
     input_ids: torch.Tensor | None = None
     attention_mask: torch.Tensor | None = None
 
@@ -699,8 +736,8 @@ class GenerativeModelOutput:
             token and its logprob. Can be None if the scores are not available.
     """
 
-    sequences: list[str]
-    scores: list[list[list[tuple[str, float]]]] | None = None
+    sequences: c.Sequence[str]
+    scores: c.Sequence[c.Sequence[c.Sequence[tuple[str, float]]]] | None = None
 
 
 @dataclass
@@ -717,7 +754,7 @@ class SingleGenerativeModelOutput:
     """
 
     sequence: str
-    scores: list[list[tuple[str, float]]] | None = None
+    scores: c.Sequence[c.Sequence[tuple[str, float]]] | None = None
 
 
 @dataclass
@@ -735,36 +772,8 @@ class HFModelInfo:
     """
 
     pipeline_tag: str
-    tags: list[str]
+    tags: c.Sequence[str]
     adapter_base_model_id: str | None
-
-
-@dataclass
-class PromptConfig:
-    """Configuration for task-specific prompting across languages.
-
-    Defines the prompt templates needed for evaluating a specific task in a given
-    language.
-
-    Attributes:
-        default_prompt_prefix:
-            The default prefix to use in the few-shot prompt.
-        default_prompt_template:
-            The default template for the prompt to use when benchmarking the dataset
-            using few-shot evaluation.
-        default_instruction_prompt:
-            The default prompt to use when benchmarking the dataset using
-            instruction-based evaluation.
-        default_prompt_label_mapping:
-            The default mapping from the labels to another phrase which is used as a
-            substitute for the label in few-shot evaluation. If set to "auto", the
-            mapping will be set to a 1:1 mapping between the labels and themselves.
-    """
-
-    default_prompt_prefix: str
-    default_prompt_template: str
-    default_instruction_prompt: str
-    default_prompt_label_mapping: dict[str, str] | t.Literal["auto"]
 
 
 @dataclass

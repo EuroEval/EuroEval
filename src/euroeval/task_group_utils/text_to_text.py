@@ -1,5 +1,6 @@
 """Utility functions related to the text-to-text task group."""
 
+import collections.abc as c
 import logging
 import typing as t
 
@@ -131,7 +132,7 @@ def compute_metrics(
 
 def extract_labels_from_generation(
     input_batch: dict[str, list], model_output: "GenerativeModelOutput"
-) -> list[t.Any]:
+) -> c.Sequence[t.Any]:
     """Extract the predicted labels from the generated output.
 
     Args:

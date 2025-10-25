@@ -1,5 +1,6 @@
 """Functions related to the loading of the data."""
 
+import collections.abc as c
 import logging
 import sys
 import time
@@ -64,7 +65,7 @@ def load_data(
 
     # Bootstrap the splits, if applicable
     if dataset_config.bootstrap_samples:
-        bootstrapped_splits: dict[str, list["Dataset"]] = dict()
+        bootstrapped_splits: dict[str, c.Sequence["Dataset"]] = dict()
         for split in dataset_config.splits:
             bootstrap_indices = rng.integers(
                 0,

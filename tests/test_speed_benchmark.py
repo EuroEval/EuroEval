@@ -1,5 +1,6 @@
 """Tests for the `speed_benchmark` module."""
 
+import collections.abc as c
 from typing import Generator
 
 import pytest
@@ -39,7 +40,7 @@ class TestBenchmarkSpeed:
     @pytest.fixture(scope="class")
     def scores(
         self, model: BenchmarkModule, benchmark_config: BenchmarkConfig
-    ) -> Generator[list[dict[str, float]], None, None]:
+    ) -> Generator[c.Sequence[dict[str, float]], None, None]:
         """Yields the benchmark speed scores."""
         yield benchmark_speed(model=model, benchmark_config=benchmark_config)
 

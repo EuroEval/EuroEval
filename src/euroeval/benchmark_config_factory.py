@@ -1,11 +1,12 @@
 """Factory class for creating dataset configurations."""
 
+import collections.abc as c
 import sys
 import typing as t
 
 import torch
 
-from .data_models import BenchmarkConfig, BenchmarkConfigParams
+from .data_models import BenchmarkConfig, BenchmarkConfigParams, DatasetConfig, Task
 from .dataset_configs import get_all_dataset_configs
 from .enums import Device
 from .exceptions import InvalidBenchmark
@@ -13,7 +14,7 @@ from .languages import get_all_languages
 from .tasks import SPEED, get_all_tasks
 
 if t.TYPE_CHECKING:
-    from .data_models import Language, Task
+    from .data_models import Language
 
 
 def build_benchmark_config(
@@ -40,7 +41,7 @@ def build_benchmark_config(
         default_language_codes=language_codes,
     )
 
-    tasks, datasets = prepare_tasks_and_datasets(
+    dataset_configs = prepare_dataset_configs(
         task=benchmark_config_params.task,
         dataset=benchmark_config_params.dataset,
         dataset_languages=dataset_languages,
@@ -49,8 +50,7 @@ def build_benchmark_config(
     return BenchmarkConfig(
         model_languages=model_languages,
         dataset_languages=dataset_languages,
-        tasks=tasks,
-        datasets=datasets,
+        datasets=dataset_configs,
         batch_size=benchmark_config_params.batch_size,
         raise_errors=benchmark_config_params.raise_errors,
         cache_dir=benchmark_config_params.cache_dir,
@@ -80,7 +80,9 @@ def build_benchmark_config(
     )
 
 
-def get_correct_language_codes(language_codes: str | list[str]) -> list[str]:
+def get_correct_language_codes(
+    language_codes: str | c.Sequence[str],
+) -> c.Sequence[str]:
     """Get correct language code(s).
 
     Args:
@@ -101,7 +103,7 @@ def get_correct_language_codes(language_codes: str | list[str]) -> list[str]:
     elif isinstance(language_codes, str):
         languages = [language_codes]
     else:
-        languages = language_codes
+        languages = list(language_codes)
 
     # If `languages` contains 'no' then also include 'nb' and 'nn'. Conversely, if
     # either 'nb' or 'nn' are specified then also include 'no'.
@@ -114,8 +116,9 @@ def get_correct_language_codes(language_codes: str | list[str]) -> list[str]:
 
 
 def prepare_languages(
-    language_codes: str | list[str] | None, default_language_codes: list[str]
-) -> list["Language"]:
+    language_codes: str | c.Sequence[str] | None,
+    default_language_codes: c.Sequence[str],
+) -> c.Sequence["Language"]:
     """Prepare language(s) for benchmarking.
 
     Args:
@@ -133,7 +136,7 @@ def prepare_languages(
     language_mapping = get_all_languages()
 
     # Create the list `languages_str` of language codes to use for models or datasets
-    languages_str: list[str]
+    languages_str: c.Sequence[str]
     if language_codes is None:
         languages_str = default_language_codes
     elif isinstance(language_codes, str):
@@ -150,12 +153,12 @@ def prepare_languages(
     return prepared_languages
 
 
-def prepare_tasks_and_datasets(
-    task: str | list[str] | None,
-    dataset_languages: list["Language"],
-    dataset: str | list[str] | None,
-) -> tuple[list["Task"], list[str]]:
-    """Prepare task(s) and dataset(s) for benchmarking.
+def prepare_dataset_configs(
+    task: "str | Task | c.Sequence[str | Task] | None",
+    dataset_languages: c.Sequence["Language"],
+    dataset: "str | DatasetConfig | c.Sequence[str | DatasetConfig] | None",
+) -> c.Sequence["DatasetConfig"]:
+    """Prepare dataset config(s) for benchmarking.
 
     Args:
         task:
@@ -168,56 +171,57 @@ def prepare_tasks_and_datasets(
             included, limited by the `task` and `dataset_languages` parameters.
 
     Returns:
-        The prepared tasks and datasets.
+        The prepared dataset configs.
 
     Raises:
         InvalidBenchmark:
             If the task or dataset is not found in the benchmark tasks or datasets.
     """
-    # Create a dictionary that maps benchmark tasks to their associated benchmark
-    # task objects, and a dictionary that maps dataset names to their associated
-    # dataset configuration objects
-    task_mapping = get_all_tasks()
-    all_dataset_configs = get_all_dataset_configs()
-
     # Create the list of dataset tasks
+    task_mapping = get_all_tasks()
     try:
         if task is None:
             tasks = [t for t in task_mapping.values() if t != SPEED]
         elif isinstance(task, str):
             tasks = [task_mapping[task]]
+        elif isinstance(task, Task):
+            tasks = [task]
         else:
-            tasks = [task_mapping[t] for t in task]
+            tasks = [task_mapping[t] if isinstance(t, str) else t for t in task]
     except KeyError as e:
         raise InvalidBenchmark(f"Task {e} not found in the benchmark tasks.") from e
 
-    all_official_datasets = [
-        dataset_name
-        for dataset_name, dataset_config in all_dataset_configs.items()
+    # Create the list of dataset configs
+    all_dataset_configs = get_all_dataset_configs()
+    all_official_dataset_configs: c.Sequence[DatasetConfig] = [
+        dataset_config
+        for dataset_config in all_dataset_configs.values()
         if not dataset_config.unofficial
     ]
-    if dataset is None:
-        dataset = all_official_datasets
-    elif isinstance(dataset, str):
-        dataset = [dataset]
-
-    all_datasets = list(all_dataset_configs.keys())
-    invalid_datasets = set(dataset) - set(all_datasets)
-    if invalid_datasets:
+    try:
+        if dataset is None:
+            datasets = all_official_dataset_configs
+        elif isinstance(dataset, str):
+            datasets = [all_dataset_configs[dataset]]
+        elif isinstance(dataset, DatasetConfig):
+            datasets = [dataset]
+        else:
+            datasets = [
+                all_dataset_configs[d] if isinstance(d, str) else d for d in dataset
+            ]
+    except KeyError as e:
         raise InvalidBenchmark(
-            f"Dataset(s) {', '.join(invalid_datasets)} not found in the benchmark "
-            "datasets."
-        )
+            f"Dataset {e} not found in the benchmark datasets."
+        ) from e
 
+    # Filter the dataset configs based on the specified tasks and languages
     datasets = [
-        dataset_name
-        for dataset_name, dataset_config in all_dataset_configs.items()
-        if dataset_name in dataset
-        and dataset_config.task in tasks
-        and set(dataset_config.languages).intersection(dataset_languages)
+        ds
+        for ds in datasets
+        if ds.task in tasks and any(lang in dataset_languages for lang in ds.languages)
     ]
 
-    return tasks, datasets
+    return datasets
 
 
 def prepare_device(device: Device | None) -> torch.device:

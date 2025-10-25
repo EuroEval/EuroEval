@@ -1,5 +1,6 @@
 """Functions related to the finetuning of models."""
 
+import collections.abc as c
 import logging
 import sys
 import typing as t
@@ -30,11 +31,11 @@ if t.TYPE_CHECKING:
 
 def finetune(
     model: "BenchmarkModule",
-    datasets: list["DatasetDict"],
+    datasets: c.Sequence["DatasetDict"],
     model_config: "ModelConfig",
     dataset_config: "DatasetConfig",
     benchmark_config: "BenchmarkConfig",
-) -> list[dict[str, float]]:
+) -> c.Sequence[dict[str, float]]:
     """Evaluate a model on a dataset through finetuning.
 
     Args:

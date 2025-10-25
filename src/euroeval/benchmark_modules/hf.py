@@ -267,7 +267,7 @@ class HuggingFaceEncoderModel(BenchmarkModule):
         return model_max_length
 
     @property
-    def data_collator(self) -> c.Callable[[list[t.Any]], dict[str, t.Any]]:
+    def data_collator(self) -> c.Callable[[c.Sequence[t.Any]], dict[str, t.Any]]:
         """The data collator used to prepare samples during finetuning.
 
         Returns:

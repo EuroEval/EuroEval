@@ -9,7 +9,6 @@ from pydantic import BaseModel, Field
 
 from ..exceptions import InvalidBenchmark
 from ..logging_utils import log
-from ..model_cache import ModelCache
 from ..utils import extract_json_dict_from_string
 from .base import Metric
 
@@ -111,6 +110,7 @@ class LLMAsAJudgeMetric(Metric):
         """
         # Importing here to avoid circular imports
         from ..benchmark_modules import LiteLLMModel
+        from ..model_cache import ModelCache
 
         if not predictions or not references:
             return None

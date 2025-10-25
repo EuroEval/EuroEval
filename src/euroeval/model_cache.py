@@ -1,5 +1,6 @@
 """ModelCache class for caching model outputs."""
 
+import collections.abc as c
 import hashlib
 import json
 import logging
@@ -94,7 +95,7 @@ class ModelCache:
             with self.cache_path.open("w") as f:
                 json.dump(dict(), f)
 
-    def _hash_key(self, key: str | list[dict[str, str]]) -> str:
+    def _hash_key(self, key: str | c.Sequence[dict[str, str]]) -> str:
         """Hash the key to use as an index in the cache.
 
         Args:
@@ -107,7 +108,7 @@ class ModelCache:
         return hashlib.md5(string=str(key).encode()).hexdigest()
 
     def __getitem__(
-        self, key: str | list[dict[str, str]]
+        self, key: str | c.Sequence[dict[str, str]]
     ) -> SingleGenerativeModelOutput:
         """Get an item from the cache.
 
@@ -122,7 +123,7 @@ class ModelCache:
         return self.cache[hashed_key]
 
     def __setitem__(
-        self, key: str | list[dict[str, str]], value: SingleGenerativeModelOutput
+        self, key: str | c.Sequence[dict[str, str]], value: SingleGenerativeModelOutput
     ) -> None:
         """Set an item in the cache.
 
@@ -140,7 +141,7 @@ class ModelCache:
         self.cache_path.unlink()
         del self.cache
 
-    def __contains__(self, key: str | list[dict[str, str]]) -> bool:
+    def __contains__(self, key: str | c.Sequence[dict[str, str]]) -> bool:
         """Check if a key is in the cache.
 
         Args:
@@ -258,7 +259,7 @@ def load_cached_model_outputs(
         The model output containing the cached sequences.
     """
     input_column = "messages" if "messages" in cached_dataset.column_names else "text"
-    cached_model_outputs: list[SingleGenerativeModelOutput] = [
+    cached_model_outputs: c.Sequence[SingleGenerativeModelOutput] = [
         cache[prompt] for prompt in cached_dataset[input_column]
     ]
 

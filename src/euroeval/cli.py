@@ -268,8 +268,8 @@ def benchmark(
         language=languages,
         model_language=model_languages,
         dataset_language=dataset_languages,
-        task=tasks,
-        dataset=datasets,
+        task=tasks,  # type: ignore[arg-type]
+        dataset=datasets,  # type: ignore[arg-type]
         batch_size=batch_size_int,
         progress_bar=progress_bar,
         save_results=save_results,

@@ -1,5 +1,6 @@
 """Functions related to text generation of models."""
 
+import collections.abc as c
 import logging
 import sys
 import typing as t
@@ -33,11 +34,11 @@ if t.TYPE_CHECKING:
 
 def generate(
     model: "BenchmarkModule",
-    datasets: list["DatasetDict"],
+    datasets: c.Sequence["DatasetDict"],
     model_config: "ModelConfig",
     dataset_config: "DatasetConfig",
     benchmark_config: "BenchmarkConfig",
-) -> list[dict[str, float]]:
+) -> c.Sequence[dict[str, float]]:
     """Evaluate a model on a dataset through generation.
 
     Args:
@@ -253,7 +254,7 @@ def generate_single_iteration(
 def debug_log(
     batch: dict[str, t.Any],
     model_output: "GenerativeModelOutput",
-    extracted_labels: list[dict | str | list[str]],
+    extracted_labels: c.Sequence[dict | str | c.Sequence[str]],
     dataset_config: "DatasetConfig",
 ) -> None:
     """Log inputs and outputs for debugging purposes.
@@ -331,7 +332,7 @@ def debug_log(
     else:
         input_texts = batch["text"]
 
-    metadata_keys: list[str] = [
+    metadata_keys: c.Sequence[str] = [
         key
         for key in batch.keys()
         if key not in ["text", "messages", "label", "labels", "target_text"]

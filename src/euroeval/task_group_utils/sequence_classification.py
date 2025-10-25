@@ -1,5 +1,6 @@
 """Utility functions related to the sequence-classification task group."""
 
+import collections.abc as c
 import logging
 import re
 import typing as t
@@ -110,7 +111,7 @@ def extract_labels_from_generation(
     dataset_config: "DatasetConfig",
     model_config: "ModelConfig",
     first_label_token_mapping: dict[str, str] | bool,
-) -> list[str]:
+) -> c.Sequence[str]:
     """Extract the predicted labels from the generated output.
 
     Args:
@@ -243,10 +244,10 @@ def extract_labels_from_generation(
 
 
 def get_closest_logprobs_labels(
-    generation_logprobs: list[list[list[tuple[str, float]]]],
+    generation_logprobs: c.Sequence[c.Sequence[c.Sequence[tuple[str, float]]]],
     first_label_token_mapping: dict[str, str] | t.Literal[True],
-    candidate_labels: list[list[str]],
-) -> list[str] | None:
+    candidate_labels: c.Sequence[c.Sequence[str]],
+) -> c.Sequence[str] | None:
     """Get the labels with the highest predicted logprob value.
 
     In case a candidate label is split into multiple tokens, we only use the first

@@ -85,8 +85,7 @@ def benchmark_config(
     yield BenchmarkConfig(
         model_languages=[DA],
         dataset_languages=[DA],
-        tasks=[SENT],
-        datasets=list(get_all_dataset_configs().keys()),
+        datasets=list(get_all_dataset_configs().values()),
         batch_size=1,
         raise_errors=False,
         cache_dir=".euroeval_cache",

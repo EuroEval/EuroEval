@@ -452,7 +452,7 @@ class VLLMModel(HuggingFaceEncoderModel):
 
         # If any of the prompts are empty then we need to replace them with a BOS token
         # so that the vLLM model can generate from them
-        prompts: list[str] = inputs["text"]
+        prompts: c.Sequence[str] = inputs["text"]
         if any(len(prompt) == 0 for prompt in prompts):
             log("Found empty prompts, replacing with BOS token.", level=logging.DEBUG)
             prompts = [
@@ -556,7 +556,7 @@ class VLLMModel(HuggingFaceEncoderModel):
                 )
 
         # Parse the raw model outputs
-        completion_ids: list[list[int]] = [
+        completion_ids: c.Sequence[c.Sequence[int]] = [
             list(output.outputs[0].token_ids) for output in raw_outputs
         ]
         completions = self._tokeniser.batch_decode(
@@ -608,7 +608,7 @@ class VLLMModel(HuggingFaceEncoderModel):
 
         # Add logprobs scores to the output
         if self.buffer["first_label_token_mapping"]:
-            scores: list[list[list[tuple[str, float]]]] = [
+            scores: c.Sequence[c.Sequence[c.Sequence[tuple[str, float]]]] = [
                 [
                     [
                         (obj.decoded_token or "", obj.logprob)
@@ -719,7 +719,7 @@ class VLLMModel(HuggingFaceEncoderModel):
         return model_config
 
     @property
-    def data_collator(self) -> c.Callable[[list[t.Any]], dict[str, t.Any]]:
+    def data_collator(self) -> c.Callable[[c.Sequence[t.Any]], dict[str, t.Any]]:
         """The data collator used to prepare samples during finetuning.
 
         Returns:

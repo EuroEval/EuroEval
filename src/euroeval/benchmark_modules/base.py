@@ -52,7 +52,7 @@ class BenchmarkModule(ABC):
     fresh_model: bool
     batching_preference: "BatchingPreference"
     high_priority: bool
-    allowed_params: dict[re.Pattern, list[str]] = {re.compile(r".*"): []}
+    allowed_params: dict[re.Pattern, c.Sequence[str]] = {re.compile(r".*"): []}
 
     def __init__(
         self,
@@ -166,7 +166,7 @@ class BenchmarkModule(ABC):
 
     @property
     @abstractmethod
-    def data_collator(self) -> c.Callable[[list[t.Any]], dict[str, t.Any]]:
+    def data_collator(self) -> c.Callable[[c.Sequence[t.Any]], dict[str, t.Any]]:
         """The data collator used to prepare samples during finetuning.
 
         Returns:
@@ -240,7 +240,7 @@ class BenchmarkModule(ABC):
 
     def prepare_datasets(
         self, datasets: list[DatasetDict], task: "Task"
-    ) -> list[DatasetDict]:
+    ) -> c.Sequence[DatasetDict]:
         """Prepare the datasets for the model.
 
         This includes things like tokenisation.

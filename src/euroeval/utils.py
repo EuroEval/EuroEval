@@ -1,6 +1,7 @@
 """Utility functions to be used in other scripts."""
 
 import asyncio
+import collections.abc as c
 import gc
 import importlib
 import importlib.metadata
@@ -142,7 +143,9 @@ def enforce_reproducibility(seed: int = 4242) -> np.random.Generator:
     return rng
 
 
-def get_class_by_name(class_name: str | list[str], module_name: str) -> t.Type | None:
+def get_class_by_name(
+    class_name: str | c.Sequence[str], module_name: str
+) -> t.Type | None:
     """Get a class by its name.
 
     Args:
@@ -421,8 +424,8 @@ def get_hf_token(api_key: str | None) -> str | bool:
 
 
 def extract_multiple_choice_labels(
-    prompt: str, candidate_labels: list[str]
-) -> list[str]:
+    prompt: str, candidate_labels: c.Sequence[str]
+) -> c.Sequence[str]:
     """Extract multiple choice labels from a prompt.
 
     Args:

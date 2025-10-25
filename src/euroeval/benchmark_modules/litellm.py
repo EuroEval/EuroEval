@@ -310,7 +310,7 @@ class LiteLLMModel(BenchmarkModule):
             InvalidBenchmark:
                 If the inputs do not contain either 'messages' or 'text' keys.
         """
-        model_inputs: list[list[litellm.AllMessageValues] | str]
+        model_inputs: c.Sequence[c.Sequence[litellm.AllMessageValues] | str]
         if "messages" in inputs:
             model_inputs = inputs["messages"]
         elif "text" in inputs:
@@ -331,9 +331,9 @@ class LiteLLMModel(BenchmarkModule):
         )
 
         all_responses: dict[int, "ModelResponse"] = {}
-        inputs_to_run: list[tuple[int, list[litellm.AllMessageValues] | str]] = list(
-            enumerate(model_inputs)
-        )
+        inputs_to_run: c.Sequence[
+            tuple[int, c.Sequence[litellm.AllMessageValues] | str]
+        ] = list(enumerate(model_inputs))
         for attempt in range(num_attempts := 10):
             if not inputs_to_run:
                 break
@@ -540,7 +540,7 @@ class LiteLLMModel(BenchmarkModule):
             )
             ner_tag_names = list(self.dataset_config.prompt_label_mapping.values())
             keys_and_their_types = {
-                tag_name: (list[str], ...) for tag_name in ner_tag_names
+                tag_name: (c.Sequence[str], ...) for tag_name in ner_tag_names
             }
             pydantic_class = create_model("AnswerFormat", **keys_and_their_types)
             generation_kwargs["response_format"] = pydantic_class
@@ -686,9 +686,11 @@ class LiteLLMModel(BenchmarkModule):
     async def _generate_async(
         self,
         model_id: str,
-        inputs: list[list[litellm.AllMessageValues] | str],
+        inputs: c.Sequence[c.Sequence[litellm.AllMessageValues] | str],
         **generation_kwargs,
-    ) -> tuple[list[tuple[int, "ModelResponse"]], list[tuple[int, Exception]]]:
+    ) -> tuple[
+        c.Sequence[tuple[int, "ModelResponse"]], c.Sequence[tuple[int, Exception]]
+    ]:
         """Generate outputs from the model asynchronously.
 
         Args:
@@ -789,7 +791,7 @@ class LiteLLMModel(BenchmarkModule):
 
     @staticmethod
     def _create_model_output(
-        model_responses: list["ModelResponse"], model_id: str
+        model_responses: c.Sequence["ModelResponse"], model_id: str
     ) -> GenerativeModelOutput:
         """Create a GenerativeModelOutput object from a list of ModelResponse objects.
 
@@ -863,7 +865,7 @@ class LiteLLMModel(BenchmarkModule):
                     )
                     continue
 
-                logprobs_list: list[list[tuple[str, float]]]
+                logprobs_list: c.Sequence[c.Sequence[tuple[str, float]]]
                 if isinstance(logprobs_obj, ChoiceLogprobs):
                     logprobs_list = [
                         [
@@ -1159,7 +1161,7 @@ class LiteLLMModel(BenchmarkModule):
         return -1
 
     @property
-    def data_collator(self) -> c.Callable[[list[t.Any]], dict[str, t.Any]]:
+    def data_collator(self) -> c.Callable[[c.Sequence[t.Any]], dict[str, t.Any]]:
         """The data collator used to prepare samples during finetuning.
 
         Returns:
@@ -1545,7 +1547,7 @@ class LiteLLMModel(BenchmarkModule):
         # First attempt is a test run with a single conversation to handle errors
         # quickly. We repeat this multiple times to deal with different types of
         # errors, and stop if we get a successful response.
-        test_input: list[litellm.AllMessageValues] | str
+        test_input: c.Sequence[litellm.AllMessageValues] | str
         if self.generative_type == GenerativeType.BASE:
             test_input = "Test message"
         else:
@@ -1604,7 +1606,7 @@ def try_download_ollama_model(model_id: str) -> bool:
         )
 
     try:
-        downloaded_ollama_models: list[str] = [
+        downloaded_ollama_models: c.Sequence[str] = [
             model_obj.model
             for model_obj in ollama.list().models
             if model_obj.model is not None

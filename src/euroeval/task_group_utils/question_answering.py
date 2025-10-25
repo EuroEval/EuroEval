@@ -37,7 +37,7 @@ class QuestionAnsweringTrainer(Trainer):
         train_dataset: "Dataset",
         eval_dataset: "Dataset",
         compute_metrics: "c.Callable[[EvalPrediction], dict[str, float]]",
-        callbacks: "list[TrainerCallback]",
+        callbacks: "c.Sequence[TrainerCallback]",
         data_collator: "c.Callable",
         **kwargs,
     ) -> None:
@@ -67,7 +67,7 @@ class QuestionAnsweringTrainer(Trainer):
         self,
         eval_dataset: "Dataset | None" = None,
         orig_eval_dataset: "Dataset | None" = None,
-        ignore_keys: list[str] | None = None,
+        ignore_keys: c.Sequence[str] | None = None,
         metric_key_prefix: str = "eval",
     ) -> dict[str, float]:
         """Evaluate the model on the given dataset.
@@ -203,7 +203,7 @@ def compute_metrics(
 
 def extract_labels_from_generation(
     input_batch: dict[str, list], model_output: "GenerativeModelOutput"
-) -> list[t.Any]:
+) -> c.Sequence[t.Any]:
     """Extract the predicted labels from the generated output.
 
     Args:
@@ -480,7 +480,7 @@ def postprocess_predictions_and_labels(
     dataset: "Dataset",
     prepared_dataset: "Dataset",
     cls_token_index: int,
-) -> tuple[list[dict], list[dict]]:
+) -> tuple[c.Sequence[dict], c.Sequence[dict]]:
     """Postprocess the predictions and labels, to allow easier metric computation.
 
     Args:
@@ -561,7 +561,7 @@ def find_best_answer(
     all_start_logits: np.ndarray,
     all_end_logits: np.ndarray,
     prepared_dataset: "Dataset",
-    feature_indices: list[int],
+    feature_indices: c.Sequence[int],
     context: str,
     max_answer_length: int,
     num_best_logits: int,
@@ -594,7 +594,7 @@ def find_best_answer(
         The best answer for the example.
     """
     # Loop through all the features associated to the current example
-    valid_answers = list()
+    valid_answers: list[dict] = list()
     for feature_index in feature_indices:
         # Get the features associated with the current example
         features = prepared_dataset[feature_index]
@@ -635,12 +635,12 @@ def find_best_answer(
 def find_valid_answers(
     start_logits: np.ndarray,
     end_logits: np.ndarray,
-    offset_mapping: list[tuple[int, int]],
+    offset_mapping: c.Sequence[tuple[int, int]],
     context: str,
     max_answer_length: int,
     num_best_logits: int,
     min_null_score: float,
-) -> list[dict]:
+) -> c.Sequence[dict]:
     """Find the valid answers from the start and end indexes.
 
     Args:

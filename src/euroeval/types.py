@@ -1,5 +1,6 @@
 """Types used throughout the project."""
 
+import collections.abc as c
 import typing as t
 
 from transformers.trainer_utils import EvalPrediction
@@ -10,9 +11,9 @@ if t.TYPE_CHECKING:
 
     from .data_models import BenchmarkConfig, GenerativeModelOutput
 
-ScoreDict: t.TypeAlias = dict[str, dict[str, float] | list[dict[str, float]]]
-Predictions: t.TypeAlias = "NDArray | list[str] | list[list[str]]"
-Labels: t.TypeAlias = "NDArray | list[str] | list[list[str]]"
+ScoreDict: t.TypeAlias = dict[str, dict[str, float] | c.Sequence[dict[str, float]]]
+Predictions: t.TypeAlias = "NDArray | c.Sequence[str] | c.Sequence[c.Sequence[str]]"
+Labels: t.TypeAlias = "NDArray | c.Sequence[str] | c.Sequence[c.Sequence[str]]"
 
 
 class ComputeMetricsFunction(t.Protocol):
@@ -22,8 +23,8 @@ class ComputeMetricsFunction(t.Protocol):
         self,
         model_outputs_and_labels: EvalPrediction
         | tuple[
-            "NDArray | list[str] | list[list[str]]",
-            "NDArray | list[str] | list[list[str]]",
+            "NDArray | c.Sequence[str] | c.Sequence[c.Sequence[str]]",
+            "NDArray | c.Sequence[str] | c.Sequence[c.Sequence[str]]",
         ],
         dataset: "Dataset",
         benchmark_config: "BenchmarkConfig",
@@ -48,7 +49,7 @@ class ExtractLabelsFunction(t.Protocol):
 
     def __call__(
         self, input_batch: dict[str, list], model_output: "GenerativeModelOutput"
-    ) -> list[str]:
+    ) -> c.Sequence[str]:
         """Extract the labels from the generated output.
 
         Args:
@@ -63,7 +64,7 @@ class ExtractLabelsFunction(t.Protocol):
         ...
 
 
-def is_list_of_int(x: object) -> t.TypeGuard[list[int]]:
+def is_list_of_int(x: object) -> t.TypeGuard[c.Sequence[int]]:
     """Check if an object is a list of integers.
 
     Args:
@@ -76,7 +77,7 @@ def is_list_of_int(x: object) -> t.TypeGuard[list[int]]:
     return isinstance(x, list) and all(isinstance(i, int) for i in x)
 
 
-def is_list_of_list_of_int(x: object) -> t.TypeGuard[list[list[int]]]:
+def is_list_of_list_of_int(x: object) -> t.TypeGuard[c.Sequence[c.Sequence[int]]]:
     """Check if an object is a list of list of integers.
 
     Args:
@@ -93,7 +94,7 @@ def is_list_of_list_of_int(x: object) -> t.TypeGuard[list[list[int]]]:
     )
 
 
-def is_list_of_str(x: object) -> t.TypeGuard[list[str]]:
+def is_list_of_str(x: object) -> t.TypeGuard[c.Sequence[str]]:
     """Check if an object is a list of integers.
 
     Args:

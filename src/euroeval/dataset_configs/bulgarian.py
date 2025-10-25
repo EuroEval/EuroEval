@@ -43,8 +43,7 @@ MULTI_WIKI_QA_BG_CONFIG = DatasetConfig(
 
 EXAMS_BG_CONFIG = DatasetConfig(
     name="exams-bg",
-    pretty_name="the truncated version of the Bulgarian knowledge "
-    "dataset Exams-bg",
+    pretty_name="the truncated version of the Bulgarian knowledge dataset Exams-bg",
     huggingface_id="EuroEval/exams-bg-mini",
     task=KNOW,
     languages=[BG],

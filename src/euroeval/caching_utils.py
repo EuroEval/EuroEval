@@ -54,7 +54,7 @@ def cache_arguments(
                 key = args + tuple(kwargs[k] for k in sorted(kwargs.keys()))
             else:
                 func_params = func.__code__.co_varnames
-                key_items: list[t.Any] = []
+                key_items: list[t.Any] = list()
                 for arg_name in arguments:
                     if arg_name in kwargs:
                         key_items.append(kwargs[arg_name])

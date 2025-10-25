@@ -1,5 +1,6 @@
 """Aggregation of raw scores into the mean and a confidence interval."""
 
+import collections.abc as c
 import logging
 import typing as t
 import warnings
@@ -15,8 +16,8 @@ if t.TYPE_CHECKING:
 
 def log_scores(
     dataset_name: str,
-    metrics: list["Metric"],
-    scores: list[dict[str, float]],
+    metrics: c.Sequence["Metric"],
+    scores: c.Sequence[dict[str, float]],
     model_id: str,
     model_revision: str,
     model_param: str | None,
@@ -68,7 +69,7 @@ def log_scores(
 
 
 def aggregate_scores(
-    scores: list[dict[str, float]], metric: "Metric"
+    scores: c.Sequence[dict[str, float]], metric: "Metric"
 ) -> tuple[float, float]:
     """Helper function to compute the mean with confidence intervals.
 

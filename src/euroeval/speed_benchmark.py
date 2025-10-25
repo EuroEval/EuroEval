@@ -1,5 +1,6 @@
 """Benchmarking model inference speed."""
 
+import collections.abc as c
 import logging
 import typing as t
 
@@ -18,7 +19,7 @@ if t.TYPE_CHECKING:
 
 def benchmark_speed(
     model: "BenchmarkModule", benchmark_config: "BenchmarkConfig"
-) -> list[dict[str, float]]:
+) -> c.Sequence[dict[str, float]]:
     """Benchmark model inference speed.
 
     Args:

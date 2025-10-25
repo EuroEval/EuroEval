@@ -1,5 +1,6 @@
 """Utility functions related to tokenisation."""
 
+import collections.abc as c
 import logging
 import re
 import typing as t
@@ -71,7 +72,7 @@ def get_special_token_metadata(tokeniser: "PreTrainedTokenizerBase") -> dict:
 
 
 def should_prompts_be_stripped(
-    labels_to_be_generated: list[str], tokeniser: "PreTrainedTokenizer"
+    labels_to_be_generated: c.Sequence[str], tokeniser: "PreTrainedTokenizer"
 ) -> bool:
     """Determine if we should strip the prompts for few-shot evaluation.
 
@@ -110,7 +111,7 @@ def should_prompts_be_stripped(
 
 
 def should_prefix_space_be_added_to_labels(
-    labels_to_be_generated: list[str], tokeniser: "PreTrainedTokenizer"
+    labels_to_be_generated: c.Sequence[str], tokeniser: "PreTrainedTokenizer"
 ) -> bool:
     """Determine if we should add a prefix space to the labels.
 
@@ -317,7 +318,7 @@ def get_pad_token(
 
 def get_end_of_chat_token_ids(
     tokeniser: "PreTrainedTokenizer", generative_type: GenerativeType | None
-) -> list[int] | None:
+) -> c.Sequence[int] | None:
     """Get the end token ID for chat models.
 
     This is only relevant for tokenisers with a chat template.
@@ -433,7 +434,7 @@ def get_first_label_token_mapping(
 
     # Tokenise some text containing each label, which we will use to extract the
     # first token of each label
-    all_tokens: list[list[str]]
+    all_tokens: c.Sequence[c.Sequence[str]]
     if not has_chat_template(tokeniser=tokeniser):
         add_prefix_space = should_prefix_space_be_added_to_labels(
             labels_to_be_generated=local_labels, tokeniser=tokeniser
@@ -549,12 +550,12 @@ def has_chat_template(tokeniser: "PreTrainedTokenizer") -> bool:
 
 
 def apply_chat_template(
-    conversation: list[dict[str, str]],
+    conversation: c.Sequence[dict[str, str]],
     tokeniser: "PreTrainedTokenizer",
     tokenise: bool,
     add_generation_prompt: bool,
     **extra_kwargs,
-) -> str | list[int]:
+) -> str | c.Sequence[int]:
     """Apply the chat template to a prompt.
 
     Args:

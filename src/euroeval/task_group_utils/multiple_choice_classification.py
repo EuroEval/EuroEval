@@ -1,5 +1,6 @@
 """Utility functions related to the multiple-choice classification task group."""
 
+import collections.abc as c
 import hashlib
 import re
 import typing as t
@@ -24,7 +25,7 @@ class MultipleChoiceClassificationTrainer(Trainer):
     def evaluate(  # type: ignore[override]
         self,
         eval_dataset: "Dataset | None" = None,
-        ignore_keys: list[str] | None = None,
+        ignore_keys: c.Sequence[str] | None = None,
         metric_key_prefix: str = "eval",
     ) -> dict[str, float]:
         """Evaluate the model on the given dataset.

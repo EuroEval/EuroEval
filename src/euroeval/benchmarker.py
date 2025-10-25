@@ -1,5 +1,6 @@
 """Class that benchmarks language models."""
 
+import collections.abc as c
 import contextlib
 import datetime as dt
 import json
@@ -38,7 +39,7 @@ from .utils import (
 
 if t.TYPE_CHECKING:
     from .benchmark_modules import BenchmarkModule
-    from .data_models import BenchmarkConfig, DatasetConfig, ModelConfig
+    from .data_models import BenchmarkConfig, DatasetConfig, ModelConfig, Task
 
 
 class Benchmarker:
@@ -62,11 +63,11 @@ class Benchmarker:
         self,
         progress_bar: bool = True,
         save_results: bool = True,
-        task: str | list[str] | None = None,
-        dataset: list[str] | str | None = None,
-        language: str | list[str] = "all",
-        model_language: str | list[str] | None = None,
-        dataset_language: str | list[str] | None = None,
+        task: "str | Task | c.Sequence[str | Task] | None" = None,
+        dataset: "str | DatasetConfig | c.Sequence[str | DatasetConfig] | None" = None,
+        language: str | c.Sequence[str] = "all",
+        model_language: str | c.Sequence[str] | None = None,
+        dataset_language: str | c.Sequence[str] | None = None,
         device: Device | None = None,
         batch_size: int = 32,
         raise_errors: bool = False,
@@ -176,6 +177,8 @@ class Benchmarker:
             ValueError:
                 If both `task` and `dataset` are specified, or if `download_only`
                 is True and we have no internet connection.
+            ImportError:
+                If `hf_transfer` is enabled but not installed.
         """
         if task is not None and dataset is not None:
             raise ValueError("Only one of `task` and `dataset` can be specified.")
@@ -236,13 +239,13 @@ class Benchmarker:
         )
 
         # Initialise variable storing model lists, so we only have to fetch it once
-        self._model_lists: dict[str, list[str]] | None = None
+        self._model_lists: dict[str, c.Sequence[str]] | None = None
 
         self.results_path = Path.cwd() / "euroeval_benchmark_results.jsonl"
         adjust_logging_level(verbose=self.benchmark_config.verbose)
 
     @property
-    def benchmark_results(self) -> list[BenchmarkResult]:
+    def benchmark_results(self) -> c.Sequence[BenchmarkResult]:
         """The benchmark results.
 
         Returns:
@@ -320,14 +323,14 @@ class Benchmarker:
 
     def benchmark(
         self,
-        model: list[str] | str,
-        task: str | list[str] | None = None,
-        dataset: list[str] | str | None = None,
+        model: c.Sequence[str] | str,
+        task: "str | Task | c.Sequence[str | Task] | None" = None,
+        dataset: "str | DatasetConfig | c.Sequence[str | DatasetConfig] | None" = None,
         progress_bar: bool | None = None,
         save_results: bool | None = None,
-        language: str | list[str] | None = None,
-        model_language: str | list[str] | None = None,
-        dataset_language: str | list[str] | None = None,
+        language: str | c.Sequence[str] | None = None,
+        model_language: str | c.Sequence[str] | None = None,
+        dataset_language: str | c.Sequence[str] | None = None,
         device: Device | None = None,
         batch_size: int | None = None,
         raise_errors: bool | None = None,
@@ -347,7 +350,7 @@ class Benchmarker:
         force: bool | None = None,
         verbose: bool | None = None,
         debug: bool | None = None,
-    ) -> list[BenchmarkResult]:
+    ) -> c.Sequence[BenchmarkResult]:
         """Benchmarks models on datasets.
 
         Args:
@@ -605,9 +608,7 @@ class Benchmarker:
             clear_model_cache_fn(cache_dir=benchmark_config.cache_dir)
 
         model_ids = self._prepare_model_ids(model_id=model)
-        dataset_configs = prepare_dataset_configs(
-            dataset_names=benchmark_config.datasets
-        )
+        dataset_configs = benchmark_config.datasets
 
         # Get all the model configs
         model_configs: list[ModelConfig] = list()
@@ -628,7 +629,9 @@ class Benchmarker:
         # we need to benchmark the model on. Here we remove the datasets that the model
         # has already been benchmarked on, or datasets that the model cannot be
         # benchmarked on.
-        model_config_to_dataset_configs: dict[ModelConfig, list[DatasetConfig]] = {
+        model_config_to_dataset_configs: dict[
+            ModelConfig, c.Sequence[DatasetConfig]
+        ] = {
             model_config: [
                 dataset_config
                 for dataset_config in dataset_configs
@@ -823,7 +826,7 @@ class Benchmarker:
             destroy_process_group()
         return current_benchmark_results
 
-    def _prepare_model_ids(self, model_id: list[str] | str) -> list[str]:
+    def _prepare_model_ids(self, model_id: c.Sequence[str] | str) -> c.Sequence[str]:
         """Prepare the model ID(s) to be benchmarked.
 
         Args:
@@ -1024,7 +1027,7 @@ def model_has_been_benchmarked(
     model_config: "ModelConfig",
     dataset_config: "DatasetConfig",
     benchmark_config: "BenchmarkConfig",
-    benchmark_results: list[BenchmarkResult],
+    benchmark_results: c.Sequence[BenchmarkResult],
 ) -> bool:
     """Checks whether a model has already been benchmarked on a dataset.
 
@@ -1086,7 +1089,9 @@ def clear_model_cache_fn(cache_dir: str) -> None:
                     rmtree(sub_model_dir)
 
 
-def prepare_dataset_configs(dataset_names: list[str]) -> list["DatasetConfig"]:
+def prepare_dataset_configs(
+    dataset_names: c.Sequence[str],
+) -> c.Sequence["DatasetConfig"]:
     """Prepare the dataset configuration(s) to be benchmarked.
 
     Args:
