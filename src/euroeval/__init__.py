@@ -51,7 +51,13 @@ import importlib.metadata  # noqa: E402
 from dotenv import load_dotenv  # noqa: E402
 
 from .benchmarker import Benchmarker  # noqa: E402
+from .data_models import DatasetConfig  # noqa: E402
 from .logging_utils import block_terminal_output  # noqa: E402
+from .tasks import (  # noqa: E402
+    MULTIPLE_CHOICE,
+    TEXT_CLASSIFICATION,
+    WORD_CLASSIFICATION,
+)
 
 # Block unwanted terminal outputs. This blocks way more than the above, but since it
 # relies on importing from the `utils` module, external modules are already imported

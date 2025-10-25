@@ -90,3 +90,6 @@ JSON_STRIP_CHARACTERS = ' {}\n\r":'
 # tasks. We also use this to determine whether we should store logprobs in the model
 # outputs (and cache).
 NUM_GENERATION_TOKENS_FOR_CLASSIFICATION = 10
+
+# We only allow loading local datasets in these file formats
+SUPPORTED_FILE_FORMATS_FOR_LOCAL_DATASETS = ["csv"]

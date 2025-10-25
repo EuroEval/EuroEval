@@ -1,12 +1,16 @@
 """Command-line interface for benchmarking."""
 
+import collections.abc as c
+import importlib.util
+from pathlib import Path
+
 import click
 
+from euroeval.data_models import DatasetConfig
+
 from .benchmarker import Benchmarker
-from .dataset_configs import get_all_dataset_configs
 from .enums import Device, GenerativeType
 from .languages import get_all_languages
-from .tasks import get_all_tasks
 
 
 @click.command()
@@ -23,7 +27,6 @@ from .tasks import get_all_tasks
     default=None,
     show_default=True,
     multiple=True,
-    type=click.Choice(list(get_all_tasks().keys())),
     help="The dataset tasks to benchmark the model(s) on.",
 )
 @click.option(
@@ -65,7 +68,6 @@ from .tasks import get_all_tasks
     default=None,
     show_default=True,
     multiple=True,
-    type=click.Choice(list(get_all_dataset_configs().keys())),
     help="""The name of the benchmark dataset. We recommend to use the `task` and
     `language` options instead of this option.""",
 )
@@ -222,9 +224,17 @@ from .tasks import get_all_tasks
     help="Only download the requested model weights and datasets, and exit.",
     default=False,
 )
+@click.option(
+    "--custom-datasets-file",
+    type=click.Path(exists=True, dir_okay=False, path_type=Path),
+    default=None,
+    show_default=True,
+    help="A path to a Python file containing DatasetConfig definitions for custom "
+    "datasets.",
+)
 def benchmark(
     model: tuple[str],
-    dataset: tuple[str],
+    dataset: tuple[str | DatasetConfig],
     language: tuple[str],
     model_language: tuple[str],
     dataset_language: tuple[str],
@@ -250,10 +260,13 @@ def benchmark(
     requires_safetensors: bool,
     generative_type: str | None,
     download_only: bool,
+    custom_datasets_file: Path | None,
 ) -> None:
     """Benchmark pretrained language models on language tasks."""
     models = list(model)
-    datasets = None if len(dataset) == 0 else list(dataset)
+    datasets: c.Sequence[str | DatasetConfig] | None = (
+        None if len(dataset) == 0 else list(dataset)
+    )
     languages: list[str] = list(language)
     model_languages = None if len(model_language) == 0 else list(model_language)
     dataset_languages = None if len(dataset_language) == 0 else list(dataset_language)
@@ -263,6 +276,39 @@ def benchmark(
     generative_type_obj = (
         GenerativeType[generative_type.upper()] if generative_type else None
     )
+
+    # Load all defined DatasetConfig objects from the custom datasets file
+    if custom_datasets_file is not None:
+        spec = importlib.util.spec_from_file_location(
+            name="custom_datasets_module", location=str(custom_datasets_file.resolve())
+        )
+        if spec is None:
+            raise RuntimeError(
+                "Could not load the spec for the custom datasets file from "
+                f"{custom_datasets_file.resolve()}."
+            )
+        module = importlib.util.module_from_spec(spec=spec)
+        if spec.loader is None:
+            raise RuntimeError(
+                "Could not load the module for the custom datasets file from "
+                f"{custom_datasets_file.resolve()}."
+            )
+        spec.loader.exec_module(module)
+        custom_dataset_configs: list[DatasetConfig] = [
+            obj for obj in vars(module).values() if isinstance(obj, DatasetConfig)
+        ]
+        if datasets is None:
+            datasets = custom_dataset_configs
+        else:
+            # Replace the string names of datasets which have a custom DatasetConfig
+            # with the corresponding DatasetConfig object
+            dataset_name_to_config = {
+                config.name: config for config in custom_dataset_configs
+            }
+            datasets = [
+                dataset_name_to_config.get(ds, ds) if isinstance(ds, str) else ds
+                for ds in datasets
+            ]
 
     benchmarker = Benchmarker(
         language=languages,

@@ -1,78 +1,53 @@
 """All Italian dataset configurations used in EuroEval."""
 
 from ..data_models import DatasetConfig
-from ..languages import IT
+from ..languages import ITALIAN
 from ..tasks import COMMON_SENSE, EUROPEAN_VALUES, KNOW, LA, MCRC, NER, RC, SENT, SUMM
 
 ### Official datasets ###
 
 SENTIPOLC_CONFIG = DatasetConfig(
     name="sentipolc16",
-    pretty_name="the truncated version of the Italian sentiment classification "
-    "dataset Sentipolc-16",
-    huggingface_id="EuroEval/sentipolc16-mini",
+    source="EuroEval/sentipolc16-mini",
     task=SENT,
-    languages=[IT],
+    languages=[ITALIAN],
 )
 
 SCALA_IT_CONFIG = DatasetConfig(
-    name="scala-it",
-    pretty_name="the Italian part of the linguistic acceptability dataset ScaLA",
-    huggingface_id="EuroEval/scala-it",
-    task=LA,
-    languages=[IT],
+    name="scala-it", source="EuroEval/scala-it", task=LA, languages=[ITALIAN]
 )
 
 MULTINERD_IT_CONFIG = DatasetConfig(
     name="multinerd-it",
-    pretty_name="the truncated version of the Italian part of the named "
-    "entity recognition dataset MultiNERD",
-    huggingface_id="EuroEval/multinerd-mini-it",
+    source="EuroEval/multinerd-mini-it",
     task=NER,
-    languages=[IT],
+    languages=[ITALIAN],
 )
 
 SQUAD_IT_CONFIG = DatasetConfig(
-    name="squad-it",
-    pretty_name="the truncated version of the Italian reading comprehension dataset "
-    "SQuAD-it, translated from the English SQuAD dataset",
-    huggingface_id="EuroEval/squad-it-mini",
-    task=RC,
-    languages=[IT],
+    name="squad-it", source="EuroEval/squad-it-mini", task=RC, languages=[ITALIAN]
 )
 
 ILPOST_SUM_CONFIG = DatasetConfig(
-    name="ilpost-sum",
-    pretty_name="the truncated version of the Italian summarisation dataset IlPost-Sum",
-    huggingface_id="EuroEval/ilpost-sum",
-    task=SUMM,
-    languages=[IT],
+    name="ilpost-sum", source="EuroEval/ilpost-sum", task=SUMM, languages=[ITALIAN]
 )
 
 MMLU_IT_CONFIG = DatasetConfig(
-    name="mmlu-it",
-    pretty_name="the truncated version of the Italian knowledge dataset MMLU-it, "
-    "translated from the English MMLU dataset",
-    huggingface_id="EuroEval/mmlu-it-mini",
-    task=KNOW,
-    languages=[IT],
+    name="mmlu-it", source="EuroEval/mmlu-it-mini", task=KNOW, languages=[ITALIAN]
 )
 
 HELLASWAG_IT_CONFIG = DatasetConfig(
     name="hellaswag-it",
-    pretty_name="the truncated version of the Italian common-sense reasoning dataset "
-    "HellaSwag-it, translated from the English HellaSwag dataset",
-    huggingface_id="EuroEval/hellaswag-it-mini",
+    source="EuroEval/hellaswag-it-mini",
     task=COMMON_SENSE,
-    languages=[IT],
+    languages=[ITALIAN],
 )
 
 EUROPEAN_VALUES_IT_CONFIG = DatasetConfig(
     name="european-values-it",
-    pretty_name="the Italian version of the European values evaluation dataset",
-    huggingface_id="EuroEval/european-values-it",
+    source="EuroEval/european-values-it",
     task=EUROPEAN_VALUES,
-    languages=[IT],
+    languages=[ITALIAN],
     splits=["test"],
     bootstrap_samples=False,
     _instruction_prompt="{text}",
@@ -83,62 +58,50 @@ EUROPEAN_VALUES_IT_CONFIG = DatasetConfig(
 
 WIKINEURAL_IT_CONFIG = DatasetConfig(
     name="wikineural-it",
-    pretty_name="the truncated version of the Italian named "
-    "entity recognition dataset WikiNEuRal IT",
-    huggingface_id="EuroEval/wikineural-mini-it",
+    source="EuroEval/wikineural-mini-it",
     task=NER,
-    languages=[IT],
+    languages=[ITALIAN],
     unofficial=True,
 )
 
 BELEBELE_IT_CONFIG = DatasetConfig(
     name="belebele-it",
-    pretty_name="the Italian multiple choice reading comprehension dataset "
-    "BeleBele-it, translated from the English BeleBele dataset",
-    huggingface_id="EuroEval/belebele-it-mini",
+    source="EuroEval/belebele-it-mini",
     task=MCRC,
-    languages=[IT],
+    languages=[ITALIAN],
     unofficial=True,
 )
 
 MULTI_WIKI_QA_IT_CONFIG = DatasetConfig(
     name="multi-wiki-qa-it",
-    pretty_name="the truncated version of the Italian part of the reading "
-    "comprehension dataset MultiWikiQA",
-    huggingface_id="EuroEval/multi-wiki-qa-it-mini",
+    source="EuroEval/multi-wiki-qa-it-mini",
     task=RC,
-    languages=[IT],
+    languages=[ITALIAN],
     unofficial=True,
 )
 
 GOLDENSWAG_IT_CONFIG = DatasetConfig(
     name="goldenswag-it",
-    pretty_name="the truncated version of the Italian common-sense reasoning "
-    "dataset GoldenSwag-it, translated from the English GoldenSwag dataset",
-    huggingface_id="EuroEval/goldenswag-it-mini",
+    source="EuroEval/goldenswag-it-mini",
     task=COMMON_SENSE,
-    languages=[IT],
+    languages=[ITALIAN],
     unofficial=True,
 )
 
 WINOGRANDE_IT_CONFIG = DatasetConfig(
     name="winogrande-it",
-    pretty_name="the Italian common-sense reasoning dataset Winogrande-it, translated "
-    "from the English Winogrande dataset",
-    huggingface_id="EuroEval/winogrande-it",
+    source="EuroEval/winogrande-it",
     task=COMMON_SENSE,
-    languages=[IT],
+    languages=[ITALIAN],
     _labels=["a", "b"],
     unofficial=True,
 )
 
 EUROPEAN_VALUES_SITUATIONAL_IT_CONFIG = DatasetConfig(
     name="european-values-situational-it",
-    pretty_name="the Italian version of the European values evaluation dataset, "
-    "where the questions are phrased in a situational way",
-    huggingface_id="EuroEval/european-values-situational-it",
+    source="EuroEval/european-values-situational-it",
     task=EUROPEAN_VALUES,
-    languages=[IT],
+    languages=[ITALIAN],
     splits=["test"],
     bootstrap_samples=False,
     _instruction_prompt="{text}",
@@ -147,11 +110,9 @@ EUROPEAN_VALUES_SITUATIONAL_IT_CONFIG = DatasetConfig(
 
 EUROPEAN_VALUES_COMPLETIONS_IT_CONFIG = DatasetConfig(
     name="european-values-completions-it",
-    pretty_name="the Italian version of the European values evaluation dataset, where "
-    "the questions are phrased as sentence completions",
-    huggingface_id="EuroEval/european-values-completions-it",
+    source="EuroEval/european-values-completions-it",
     task=EUROPEAN_VALUES,
-    languages=[IT],
+    languages=[ITALIAN],
     splits=["test"],
     bootstrap_samples=False,
     _instruction_prompt="{text}",

@@ -1,68 +1,48 @@
 """All Lithuanian dataset configurations used in EuroEval."""
 
 from ..data_models import DatasetConfig
-from ..languages import LT
+from ..languages import LITHUANIAN
 from ..tasks import COMMON_SENSE, KNOW, LA, NER, RC, SENT, SUMM
 
 ### Official datasets ###
 
 LITHUANIAN_EMOTIONS_CONFIG = DatasetConfig(
     name="lithuanian-emotions",
-    pretty_name="the truncated version of the Lithuanian sentiment "
-    "classification dataset Lithuanian Emotions",
-    huggingface_id="EuroEval/lithuanian-emotions-mini",
+    source="EuroEval/lithuanian-emotions-mini",
     task=SENT,
-    languages=[LT],
+    languages=[LITHUANIAN],
 )
 
 SCALA_LT_CONFIG = DatasetConfig(
-    name="scala-lt",
-    pretty_name="the Lithuanian part of the linguistic acceptability dataset ScaLA",
-    huggingface_id="EuroEval/scala-lt",
-    task=LA,
-    languages=[LT],
+    name="scala-lt", source="EuroEval/scala-lt", task=LA, languages=[LITHUANIAN]
 )
 
 WIKIANN_LT_CONFIG = DatasetConfig(
     name="wikiann-lt",
-    pretty_name="the truncated version of the Lithuanian part of the named entity "
-    "recognition dataset WikiANN",
-    huggingface_id="EuroEval/wikiann-lt-mini",
+    source="EuroEval/wikiann-lt-mini",
     task=NER,
-    languages=[LT],
+    languages=[LITHUANIAN],
 )
 
 MULTI_WIKI_QA_LT_CONFIG = DatasetConfig(
     name="multi-wiki-qa-lt",
-    pretty_name="the truncated version of the Lithuanian part of the reading "
-    "comprehension dataset MultiWikiQA",
-    huggingface_id="EuroEval/multi-wiki-qa-lt-mini",
+    source="EuroEval/multi-wiki-qa-lt-mini",
     task=RC,
-    languages=[LT],
+    languages=[LITHUANIAN],
 )
 
 LRYTAS_CONFIG = DatasetConfig(
-    name="lrytas",
-    pretty_name="the truncated version of the Lithuanian summarisation dataset Lrytas",
-    huggingface_id="EuroEval/lrytas-mini",
-    task=SUMM,
-    languages=[LT],
+    name="lrytas", source="EuroEval/lrytas-mini", task=SUMM, languages=[LITHUANIAN]
 )
 
 LT_HISTORY_CONFIG = DatasetConfig(
-    name="lt-history",
-    pretty_name="the Lithuanian knowledge dataset LT-History",
-    huggingface_id="EuroEval/lt-history",
-    task=KNOW,
-    languages=[LT],
+    name="lt-history", source="EuroEval/lt-history", task=KNOW, languages=[LITHUANIAN]
 )
 
 WINOGRANDE_LT_CONFIG = DatasetConfig(
     name="winogrande-lt",
-    pretty_name="the Lithuanian common-sense reasoning dataset Winogrande-lt, "
-    "translated from the English Winogrande dataset",
-    huggingface_id="EuroEval/winogrande-lt",
+    source="EuroEval/winogrande-lt",
     task=COMMON_SENSE,
-    languages=[LT],
+    languages=[LITHUANIAN],
     _labels=["a", "b"],
 )

@@ -1,70 +1,50 @@
 """All Latvian dataset configurations used in EuroEval."""
 
 from ..data_models import DatasetConfig
-from ..languages import LV
+from ..languages import LATVIAN
 from ..tasks import COMMON_SENSE, KNOW, LA, NER, RC, SENT, SUMM
 
 ### Official datasets ###
 
 LATVIAN_TWITTER_SENTIMENT_CONFIG = DatasetConfig(
     name="latvian-twitter-sentiment",
-    pretty_name="the truncated version of the Latvian sentiment classification dataset",
-    huggingface_id="EuroEval/latvian-twitter-sentiment-mini",
+    source="EuroEval/latvian-twitter-sentiment-mini",
     task=SENT,
-    languages=[LV],
+    languages=[LATVIAN],
 )
 
 SCALA_LV_CONFIG = DatasetConfig(
-    name="scala-lv",
-    pretty_name="the Latvian part of the linguistic acceptability dataset ScaLA",
-    huggingface_id="EuroEval/scala-lv",
-    task=LA,
-    languages=[LV],
+    name="scala-lv", source="EuroEval/scala-lv", task=LA, languages=[LATVIAN]
 )
 
 FULLSTACK_NER_LV_CONFIG = DatasetConfig(
     name="fullstack-ner-lv",
-    pretty_name="the truncated version of the Latvian named entity recognition "
-    "dataset FullStack-NER-lv",
-    huggingface_id="EuroEval/fullstack-ner-lv-mini",
+    source="EuroEval/fullstack-ner-lv-mini",
     task=NER,
-    languages=[LV],
+    languages=[LATVIAN],
 )
 
 MULTI_WIKI_QA_LV_CONFIG = DatasetConfig(
     name="multi-wiki-qa-lv",
-    pretty_name="the truncated version of the Latvian part of the reading "
-    "comprehension dataset MultiWikiQA",
-    huggingface_id="EuroEval/multi-wiki-qa-lv-mini",
+    source="EuroEval/multi-wiki-qa-lv-mini",
     task=RC,
-    languages=[LV],
+    languages=[LATVIAN],
 )
 
 LSM_CONFIG = DatasetConfig(
-    name="lsm",
-    pretty_name="the truncated version of the Latvian summarisation dataset LSM",
-    huggingface_id="EuroEval/lsm-mini",
-    task=SUMM,
-    languages=[LV],
+    name="lsm", source="EuroEval/lsm-mini", task=SUMM, languages=[LATVIAN]
 )
 
 
 MMLU_LV_CONFIG = DatasetConfig(
-    name="mmlu-lv",
-    pretty_name="the truncated version of the Latvian knowledge dataset MMLU-lv, "
-    "translated from the English MMLU dataset",
-    huggingface_id="EuroEval/mmlu-lv-mini",
-    task=KNOW,
-    languages=[LV],
+    name="mmlu-lv", source="EuroEval/mmlu-lv-mini", task=KNOW, languages=[LATVIAN]
 )
 
 COPA_LV_CONFIG = DatasetConfig(
     name="copa-lv",
-    pretty_name="the Latvian common-sense reasoning dataset COPA-lv, translated from "
-    "the English COPA dataset",
-    huggingface_id="EuroEval/copa-lv",
+    source="EuroEval/copa-lv",
     task=COMMON_SENSE,
-    languages=[LV],
+    languages=[LATVIAN],
     _labels=["a", "b"],
 )
 
@@ -73,21 +53,17 @@ COPA_LV_CONFIG = DatasetConfig(
 
 WIKIANN_LV_CONFIG = DatasetConfig(
     name="wikiann-lv",
-    pretty_name="the truncated version of the Latvian part of the named entity "
-    "recognition dataset WikiANN",
-    huggingface_id="EuroEval/wikiann-lv-mini",
+    source="EuroEval/wikiann-lv-mini",
     task=NER,
-    languages=[LV],
+    languages=[LATVIAN],
     unofficial=True,
 )
 
 WINOGRANDE_LV_CONFIG = DatasetConfig(
     name="winogrande-lv",
-    pretty_name="the Latvian common-sense reasoning dataset Winogrande-lv, translated "
-    "from the English Winogrande dataset",
-    huggingface_id="EuroEval/winogrande-lv",
+    source="EuroEval/winogrande-lv",
     task=COMMON_SENSE,
-    languages=[LV],
+    languages=[LATVIAN],
     _labels=["a", "b"],
     unofficial=True,
 )

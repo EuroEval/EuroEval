@@ -1,78 +1,66 @@
 """All Portuguese dataset configurations used in EuroEval."""
 
 from ..data_models import DatasetConfig
-from ..languages import PT
+from ..languages import EUROPEAN_PORTUGUESE, PORTUGUESE
 from ..tasks import COMMON_SENSE, EUROPEAN_VALUES, KNOW, LA, MCRC, NER, RC, SENT, SUMM
 
 ### Official datasets ###
 
 SST2_PT_CONFIG = DatasetConfig(
     name="sst2-pt",
-    pretty_name="the truncated version of the Portuguese sentiment classification "
-    "dataset SST2-pt, translated from the English SST2 dataset",
-    huggingface_id="EuroEval/sst2-pt-mini",
+    source="EuroEval/sst2-pt-mini",
     task=SENT,
-    languages=[PT],
+    languages=[PORTUGUESE, EUROPEAN_PORTUGUESE],
     _labels=["positive", "negative"],
 )
 
 SCALA_PT = DatasetConfig(
     name="scala-pt",
-    pretty_name="the Portuguese part of the linguistic acceptability dataset ScaLA",
-    huggingface_id="EuroEval/scala-pt",
+    source="EuroEval/scala-pt",
     task=LA,
-    languages=[PT],
+    languages=[PORTUGUESE, EUROPEAN_PORTUGUESE],
 )
 
 HAREM_CONFIG = DatasetConfig(
     name="harem",
-    pretty_name="the Portuguese named entity recognition dataset HAREM",
-    huggingface_id="EuroEval/harem",
+    source="EuroEval/harem",
     task=NER,
-    languages=[PT],
+    languages=[PORTUGUESE, EUROPEAN_PORTUGUESE],
 )
 
 MULTI_WIKI_QA_PT_CONFIG = DatasetConfig(
     name="multi-wiki-qa-pt",
-    pretty_name="the truncated version of the Portuguese part of the reading "
-    "comprehension dataset MultiWikiQA",
-    huggingface_id="EuroEval/multi-wiki-qa-pt-pt-mini",
+    source="EuroEval/multi-wiki-qa-pt-pt-mini",
     task=RC,
-    languages=[PT],
+    languages=[PORTUGUESE, EUROPEAN_PORTUGUESE],
 )
 
 PUBLICO_CONFIG = DatasetConfig(
     name="publico",
-    pretty_name="the truncated version of the Portuguese summarisation dataset Público",
-    huggingface_id="EuroEval/publico-mini",
+    source="EuroEval/publico-mini",
     task=SUMM,
-    languages=[PT],
+    languages=[PORTUGUESE, EUROPEAN_PORTUGUESE],
 )
 
 MMLU_PT_CONFIG = DatasetConfig(
     name="mmlu-pt",
-    pretty_name="the truncated version of the Portuguese knowledge dataset MMLU-pt, "
-    "translated from the English MMLU dataset",
-    huggingface_id="EuroEval/mmlu-pt-mini",
+    source="EuroEval/mmlu-pt-mini",
     task=KNOW,
-    languages=[PT],
+    languages=[PORTUGUESE, EUROPEAN_PORTUGUESE],
 )
 
 GOLDENSWAG_PT_CONFIG = DatasetConfig(
     name="goldenswag-pt",
-    pretty_name="the truncated version of the Portuguese common-sense reasoning "
-    "dataset GoldenSwag-pt, translated from the English GoldenSwag dataset",
-    huggingface_id="EuroEval/goldenswag-pt-mini",
+    source="EuroEval/goldenswag-pt-mini",
     task=COMMON_SENSE,
-    languages=[PT],
+    languages=[PORTUGUESE, EUROPEAN_PORTUGUESE],
 )
 
 EUROPEAN_VALUES_PT_CONFIG = DatasetConfig(
     name="european-values-pt",
-    pretty_name="the Portuguese version of the European values evaluation dataset",
-    huggingface_id="EuroEval/european-values-pt",
+    source="EuroEval/european-values-pt",
     task=EUROPEAN_VALUES,
-    languages=[PT],
+    languages=[PORTUGUESE, EUROPEAN_PORTUGUESE],
     splits=["test"],
     bootstrap_samples=False,
     _instruction_prompt="{text}",
@@ -83,32 +71,26 @@ EUROPEAN_VALUES_PT_CONFIG = DatasetConfig(
 
 BOOLQ_PT_CONFIG = DatasetConfig(
     name="boolq-pt",
-    pretty_name="the Portuguese multiple choice reading comprehension dataset "
-    "BoolQ-pt, translated from the English BoolQ dataset",
-    huggingface_id="EuroEval/boolq-pt",
+    source="EuroEval/boolq-pt",
     task=MCRC,
-    languages=[PT],
+    languages=[PORTUGUESE, EUROPEAN_PORTUGUESE],
     unofficial=True,
 )
 
 WINOGRANDE_PT_CONFIG = DatasetConfig(
     name="winogrande-pt",
-    pretty_name="the Portuguese common-sense reasoning dataset Winogrande-pt, "
-    "translated from the English Winogrande dataset",
-    huggingface_id="EuroEval/winogrande-pt",
+    source="EuroEval/winogrande-pt",
     task=COMMON_SENSE,
-    languages=[PT],
+    languages=[PORTUGUESE, EUROPEAN_PORTUGUESE],
     _labels=["a", "b"],
     unofficial=True,
 )
 
 EUROPEAN_VALUES_SITUATIONAL_PT_CONFIG = DatasetConfig(
     name="european-values-situational-pt",
-    pretty_name="the Portuguese version of the European values evaluation dataset, "
-    "where the questions are phrased in a situational way",
-    huggingface_id="EuroEval/european-values-situational-pt",
+    source="EuroEval/european-values-situational-pt",
     task=EUROPEAN_VALUES,
-    languages=[PT],
+    languages=[PORTUGUESE, EUROPEAN_PORTUGUESE],
     splits=["test"],
     bootstrap_samples=False,
     _instruction_prompt="{text}",
@@ -117,11 +99,9 @@ EUROPEAN_VALUES_SITUATIONAL_PT_CONFIG = DatasetConfig(
 
 EUROPEAN_VALUES_COMPLETIONS_PT_CONFIG = DatasetConfig(
     name="european-values-completions-pt",
-    pretty_name="the Portuguese version of the European values evaluation dataset, "
-    "where the questions are phrased as sentence completions",
-    huggingface_id="EuroEval/european-values-completions-pt",
+    source="EuroEval/european-values-completions-pt",
     task=EUROPEAN_VALUES,
-    languages=[PT],
+    languages=[PORTUGUESE, EUROPEAN_PORTUGUESE],
     splits=["test"],
     bootstrap_samples=False,
     _instruction_prompt="{text}",

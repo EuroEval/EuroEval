@@ -11,7 +11,7 @@ from .dataset_configs import get_all_dataset_configs
 from .enums import Device
 from .exceptions import InvalidBenchmark
 from .languages import get_all_languages
-from .tasks import SPEED, get_all_tasks
+from .tasks import get_all_tasks
 
 if t.TYPE_CHECKING:
     from .data_models import Language
@@ -181,7 +181,7 @@ def prepare_dataset_configs(
     task_mapping = get_all_tasks()
     try:
         if task is None:
-            tasks = [t for t in task_mapping.values() if t != SPEED]
+            tasks = None
         elif isinstance(task, str):
             tasks = [task_mapping[task]]
         elif isinstance(task, Task):
@@ -218,7 +218,8 @@ def prepare_dataset_configs(
     datasets = [
         ds
         for ds in datasets
-        if ds.task in tasks and any(lang in dataset_languages for lang in ds.languages)
+        if (tasks is None or ds.task in tasks)
+        and any(lang in dataset_languages for lang in ds.languages)
     ]
 
     return datasets

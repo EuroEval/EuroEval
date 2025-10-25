@@ -1,66 +1,46 @@
 """All Estonian dataset configurations used in EuroEval."""
 
 from ..data_models import DatasetConfig
-from ..languages import ET
+from ..languages import ESTONIAN
 from ..tasks import COMMON_SENSE, EUROPEAN_VALUES, KNOW, LA, NER, RC, SENT, SUMM
 
 ### Official datasets ###
 
 ESTONIAN_VALENCE_CONFIG = DatasetConfig(
     name="estonian-valence",
-    pretty_name="the Estonian sentiment classification dataset Estonian Valence",
-    huggingface_id="EuroEval/estonian-valence",
+    source="EuroEval/estonian-valence",
     task=SENT,
-    languages=[ET],
+    languages=[ESTONIAN],
 )
 
 GRAMMAR_ET_CONFIG = DatasetConfig(
-    name="grammar-et",
-    pretty_name="the Estonian linguistic acceptability dataset Grammar-et",
-    huggingface_id="EuroEval/grammar-et",
-    task=LA,
-    languages=[ET],
+    name="grammar-et", source="EuroEval/grammar-et", task=LA, languages=[ESTONIAN]
 )
 
 ESTNER_CONFIG = DatasetConfig(
-    name="estner",
-    pretty_name="the Estonian named entity recognition dataset EstNER",
-    huggingface_id="EuroEval/estner-mini",
-    task=NER,
-    languages=[ET],
+    name="estner", source="EuroEval/estner-mini", task=NER, languages=[ESTONIAN]
 )
 
 MULTI_WIKI_QA_ET_CONFIG = DatasetConfig(
     name="multi-wiki-qa-et",
-    pretty_name="the truncated version of the Estonian part of the reading "
-    "comprehension dataset MultiWikiQA",
-    huggingface_id="EuroEval/multi-wiki-qa-et-mini",
+    source="EuroEval/multi-wiki-qa-et-mini",
     task=RC,
-    languages=[ET],
+    languages=[ESTONIAN],
 )
 
 ERR_NEWS_CONFIG = DatasetConfig(
-    name="err-news",
-    pretty_name="the Estonian summarisation dataset ErrNews",
-    huggingface_id="EuroEval/err-news-mini",
-    task=SUMM,
-    languages=[ET],
+    name="err-news", source="EuroEval/err-news-mini", task=SUMM, languages=[ESTONIAN]
 )
 
 TRIVIA_ET_CONFIG = DatasetConfig(
-    name="trivia-et",
-    pretty_name="the Estonian knowledge dataset Trivia-et",
-    huggingface_id="EuroEval/trivia-et",
-    task=KNOW,
-    languages=[ET],
+    name="trivia-et", source="EuroEval/trivia-et", task=KNOW, languages=[ESTONIAN]
 )
 
 WINOGRANDE_ET_CONFIG = DatasetConfig(
     name="winogrande-et",
-    pretty_name="the Estonian common-sense reasoning dataset Winogrande-et",
-    huggingface_id="EuroEval/winogrande-et",
+    source="EuroEval/winogrande-et",
     task=COMMON_SENSE,
-    languages=[ET],
+    languages=[ESTONIAN],
     _prompt_prefix="Sulle esitatakse lüngaga (_) tekstülesanded, "
     "igal ülesandel on kaks vastusevarianti (a ja b).",
     _prompt_template="Tekstülesanne: {text}\nVastus: {label}",
@@ -72,10 +52,9 @@ WINOGRANDE_ET_CONFIG = DatasetConfig(
 
 EUROPEAN_VALUES_ET_CONFIG = DatasetConfig(
     name="european-values-et",
-    pretty_name="the Estonian version of the European values evaluation dataset",
-    huggingface_id="EuroEval/european-values-et",
+    source="EuroEval/european-values-et",
     task=EUROPEAN_VALUES,
-    languages=[ET],
+    languages=[ESTONIAN],
     splits=["test"],
     bootstrap_samples=False,
     _instruction_prompt="{text}",
@@ -85,29 +64,25 @@ EUROPEAN_VALUES_ET_CONFIG = DatasetConfig(
 
 SCALA_ET_CONFIG = DatasetConfig(
     name="scala-et",
-    pretty_name="the Estonian part of the linguistic acceptability dataset ScaLA",
-    huggingface_id="EuroEval/scala-et",
+    source="EuroEval/scala-et",
     task=LA,
-    languages=[ET],
+    languages=[ESTONIAN],
     unofficial=True,
 )
 
 EXAM_ET_CONFIG = DatasetConfig(
     name="exam-et",
-    pretty_name="the Estonian knowledge dataset Exam-et",
-    huggingface_id="EuroEval/exam-et",
+    source="EuroEval/exam-et",
     task=KNOW,
-    languages=[ET],
+    languages=[ESTONIAN],
     _labels=["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o"],
     unofficial=True,
 )
 
 MMLU_ET_CONFIG = DatasetConfig(
     name="mmlu-et",
-    pretty_name="the truncated version of the Estonian knowledge dataset MMLU-et, "
-    "translated from the English MMLU dataset",
-    huggingface_id="EuroEval/mmlu-et-mini",
+    source="EuroEval/mmlu-et-mini",
     task=KNOW,
-    languages=[ET],
+    languages=[ESTONIAN],
     unofficial=True,
 )

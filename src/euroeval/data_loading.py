@@ -12,6 +12,7 @@ from datasets.exceptions import DatasetsError
 from huggingface_hub.errors import HfHubHTTPError
 from numpy.random import Generator
 
+from .constants import SUPPORTED_FILE_FORMATS_FOR_LOCAL_DATASETS
 from .exceptions import HuggingFaceHubDown, InvalidBenchmark
 from .logging_utils import log, no_terminal_output
 from .tasks import EUROPEAN_VALUES
@@ -103,38 +104,84 @@ def load_raw_data(dataset_config: "DatasetConfig", cache_dir: str) -> "DatasetDi
     Returns:
         The dataset.
     """
-    num_attempts = 5
-    for _ in range(num_attempts):
-        try:
-            with no_terminal_output():
-                dataset = load_dataset(
-                    path=dataset_config.huggingface_id,
-                    cache_dir=cache_dir,
-                    token=unscramble("XbjeOLhwebEaSaDUMqqaPaPIhgOcyOfDpGnX_"),
+    # Case where the dataset source is a Hugging Face ID
+    if isinstance(dataset_config.source, str):
+        num_attempts = 5
+        for _ in range(num_attempts):
+            try:
+                with no_terminal_output():
+                    dataset = load_dataset(
+                        path=dataset_config.source.split("::")[0],
+                        name=(
+                            dataset_config.source.split("::")[1]
+                            if "::" in dataset_config.source
+                            else None
+                        ),
+                        cache_dir=cache_dir,
+                        token=unscramble("XbjeOLhwebEaSaDUMqqaPaPIhgOcyOfDpGnX_"),
+                    )
+                break
+            except (
+                FileNotFoundError,
+                ConnectionError,
+                DatasetsError,
+                requests.ConnectionError,
+                requests.ReadTimeout,
+            ) as e:
+                log(
+                    f"Failed to load dataset {dataset_config.source!r}, due to "
+                    f"the following error: {e}. Retrying...",
+                    level=logging.DEBUG,
                 )
-            break
-        except (
-            FileNotFoundError,
-            ConnectionError,
-            DatasetsError,
-            requests.ConnectionError,
-            requests.ReadTimeout,
-        ) as e:
-            log(
-                f"Failed to load dataset {dataset_config.huggingface_id!r}, due to "
-                f"the following error: {e}. Retrying...",
-                level=logging.DEBUG,
+                time.sleep(1)
+                continue
+            except HfHubHTTPError:
+                raise HuggingFaceHubDown()
+        else:
+            raise InvalidBenchmark(
+                f"Failed to load dataset {dataset_config.source!r} after "
+                f"{num_attempts} attempts. Run with verbose mode to see the individual "
+                "errors."
             )
-            time.sleep(1)
-            continue
-        except HfHubHTTPError:
-            raise HuggingFaceHubDown()
+
+    # Case where the dataset source is a dictionary with keys "train", "val" and "test",
+    # with the values pointing to local CSV files
     else:
-        raise InvalidBenchmark(
-            f"Failed to load dataset {dataset_config.huggingface_id!r} after "
-            f"{num_attempts} attempts. Run with verbose mode to see the individual "
-            "errors."
-        )
+        data_files = {
+            split: dataset_config.source[split]
+            for split in dataset_config.splits
+            if split in dataset_config.source
+        }
+
+        # Get the file extension and ensure that all files have the same extension
+        file_extensions = {
+            split: dataset_config.source[split].split(".")[-1]
+            for split in dataset_config.splits
+            if split in dataset_config.source
+        }
+        if len(set(file_extensions.values())) != 1:
+            raise InvalidBenchmark(
+                "All data files in a custom dataset must have the same file extension. "
+                f"Got the extensions {', '.join(file_extensions.values())} for the "
+                f"dataset {dataset_config.name!r}."
+            )
+        file_extension = list(file_extensions.values())[0]
+
+        # Check that the file extension is supported
+        if file_extension not in SUPPORTED_FILE_FORMATS_FOR_LOCAL_DATASETS:
+            raise InvalidBenchmark(
+                "Unsupported file extension for custom dataset. Supported file "
+                "extensions are "
+                f"{', '.join(SUPPORTED_FILE_FORMATS_FOR_LOCAL_DATASETS)}, but got "
+                f"{file_extension!r}."
+            )
+
+        # Load the dataset
+        with no_terminal_output():
+            dataset = load_dataset(
+                path=file_extension, data_files=data_files, cache_dir=cache_dir
+            )
+
     assert isinstance(dataset, DatasetDict)  # type: ignore[used-before-def]
     missing_keys = [key for key in dataset_config.splits if key not in dataset]
     if missing_keys:

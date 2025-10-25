@@ -16,951 +16,956 @@ def get_all_languages() -> dict[str, Language]:
     return {cfg.code: cfg for cfg in globals().values() if isinstance(cfg, Language)}
 
 
-AB: Language = Language(
+ABKHAZIAN: Language = Language(
     code="ab", name="Abkhazian", _and_separator="и", _or_separator="ма"
 )
-AA: Language = Language(
+AFAR: Language = Language(
     code="aa", name="Afar", _and_separator="kee", _or_separator="maleey"
 )
-AF: Language = Language(
+AFRIKAANS: Language = Language(
     code="af", name="Afrikaans", _and_separator="en", _or_separator="of"
 )
-SQ: Language = Language(
+ALBANIAN: Language = Language(
     code="sq", name="Albanian", _and_separator="dhe", _or_separator="ose"
 )
-AM: Language = Language(
+AMHARIC: Language = Language(
     code="am", name="Amharic", _and_separator="እና", _or_separator="ወይም"
 )
-AR: Language = Language(
+ARABIC: Language = Language(
     code="ar", name="Arabic", _and_separator="و", _or_separator="أو"
 )
-AN: Language = Language(
+ARAGONESE: Language = Language(
     code="an", name="Aragonese", _and_separator="y", _or_separator="u"
 )
-HY: Language = Language(
+ARMENIAN: Language = Language(
     code="hy", name="Armenian", _and_separator="և", _or_separator="կամ"
 )
-AS: Language = Language(
+ASSAMESE: Language = Language(
     code="as", name="Assamese", _and_separator="আৰু", _or_separator="বা"
 )
-AV: Language = Language(
+AVARIC: Language = Language(
     code="av", name="Avaric", _and_separator="ги", _or_separator="яги"
 )
-AE: Language = Language(
+AVESTAN: Language = Language(
     code="ae", name="Avestan", _and_separator="utā", _or_separator="vā"
 )
-AY: Language = Language(
+AYMARA: Language = Language(
     code="ay", name="Aymara", _and_separator="-mpi", _or_separator="jan ukax"
 )
-AZ: Language = Language(
+AZERBAIJANI: Language = Language(
     code="az", name="Azerbaijani", _and_separator="və", _or_separator="və ya"
 )
-BM: Language = Language(
+BAMBARA: Language = Language(
     code="bm", name="Bambara", _and_separator="ani", _or_separator="walima"
 )
-BA: Language = Language(
+BASHKIR: Language = Language(
     code="ba", name="Bashkir", _and_separator="һәм", _or_separator="йәки"
 )
-EU: Language = Language(
+BASQUE: Language = Language(
     code="eu", name="Basque", _and_separator="eta", _or_separator="edo"
 )
-BE: Language = Language(
+BELARUSIAN: Language = Language(
     code="be", name="Belarusian", _and_separator="і", _or_separator="або"
 )
-BN: Language = Language(
+BENGALI: Language = Language(
     code="bn", name="Bengali", _and_separator="এবং", _or_separator="অথবা"
 )
-BI: Language = Language(
+BISLAMA: Language = Language(
     code="bi", name="Bislama", _and_separator="mo", _or_separator="o"
 )
-BS: Language = Language(
+BOSNIAN: Language = Language(
     code="bs", name="Bosnian", _and_separator="i", _or_separator="ili"
 )
-BR: Language = Language(
+BRETON: Language = Language(
     code="br", name="Breton", _and_separator="ha", _or_separator="pe"
 )
-BG: Language = Language(
+BULGARIAN: Language = Language(
     code="bg", name="Bulgarian", _and_separator="и", _or_separator="или"
 )
-MY: Language = Language(
+BURMESE: Language = Language(
     code="my", name="Burmese", _and_separator="နှင့်", _or_separator="သို့မဟုတ်"
 )
-CA: Language = Language(
+CATALAN: Language = Language(
     code="ca", name="Catalan", _and_separator="i", _or_separator="o"
 )
-CH: Language = Language(
+CHAMORRO: Language = Language(
     code="ch", name="Chamorro", _and_separator="yan", _or_separator="pat"
 )
-CE: Language = Language(
+CHECHEN: Language = Language(
     code="ce", name="Chechen", _and_separator="а", _or_separator="я"
 )
-NY: Language = Language(
+CHICHEWA: Language = Language(
     code="ny", name="Chichewa", _and_separator="ndi", _or_separator="kapena"
 )
-ZH: Language = Language(
-    code="zh", name="Simplified Chinese", _and_separator="和", _or_separator="或"
-)
-ZH_CN: Language = Language(
+SIMPLIFIED_CHINESE: Language = Language(
     code="zh-cn", name="Simplified Chinese", _and_separator="和", _or_separator="或"
 )
-ZH_TW: Language = Language(
+TRADITIONAL_CHINESE: Language = Language(
     code="zh-tw", name="Traditional Chinese", _and_separator="與", _or_separator="或"
 )
-CU: Language = Language(
+CHURCH_SLAVIC: Language = Language(
     code="cu", name="Church Slavic", _and_separator="и", _or_separator="или"
 )
-CV: Language = Language(
+CHUVASH: Language = Language(
     code="cv", name="Chuvash", _and_separator="тата", _or_separator="е"
 )
-KW: Language = Language(
+CORNISH: Language = Language(
     code="kw", name="Cornish", _and_separator="ha", _or_separator="po"
 )
-CO: Language = Language(
+CORSICAN: Language = Language(
     code="co", name="Corsican", _and_separator="e", _or_separator="o"
 )
-CR: Language = Language(
+CREE: Language = Language(
     code="cr", name="Cree", _and_separator="ēkwa", _or_separator="kamāc"
 )
-HR: Language = Language(
+CROATIAN: Language = Language(
     code="hr", name="Croatian", _and_separator="i", _or_separator="ili"
 )
-CS: Language = Language(
+CZECH: Language = Language(
     code="cs", name="Czech", _and_separator="a", _or_separator="nebo"
 )
-DA: Language = Language(
+DANISH: Language = Language(
     code="da", name="Danish", _and_separator="og", _or_separator="eller"
 )
-NL: Language = Language(
+DUTCH: Language = Language(
     code="nl", name="Dutch", _and_separator="en", _or_separator="of"
 )
-DV: Language = Language(
+DIVEHI: Language = Language(
     code="dv", name="Divehi", _and_separator="އަދި", _or_separator="ނުވަތަ"
 )
-DZ: Language = Language(
+DZONGKHA: Language = Language(
     code="dz", name="Dzongkha", _and_separator="དང་", _or_separator="ཡང་མེན"
 )
-EN: Language = Language(
+ENGLISH: Language = Language(
     code="en", name="English", _and_separator="and", _or_separator="or"
 )
-EO: Language = Language(
+ESPERANTO: Language = Language(
     code="eo", name="Esperanto", _and_separator="kaj", _or_separator="aŭ"
 )
-ET: Language = Language(
+ESTONIAN: Language = Language(
     code="et", name="Estonian", _and_separator="ja", _or_separator="või"
 )
-EE: Language = Language(
+EWE: Language = Language(
     code="ee", name="Ewe", _and_separator="kple", _or_separator="alo"
 )
-FO: Language = Language(
+FAROESE: Language = Language(
     code="fo", name="Faroese", _and_separator="og", _or_separator="ella"
 )
-FJ: Language = Language(
+FIJIAN: Language = Language(
     code="fj", name="Fijian", _and_separator="kei", _or_separator="se"
 )
-FI: Language = Language(
+FINNISH: Language = Language(
     code="fi", name="Finnish", _and_separator="ja", _or_separator="tai"
 )
-FR: Language = Language(
+FRENCH: Language = Language(
     code="fr", name="French", _and_separator="et", _or_separator="ou"
 )
-FY: Language = Language(
+WESTERN_FRISIAN: Language = Language(
     code="fy", name="Western Frisian", _and_separator="en", _or_separator="of"
 )
-FF: Language = Language(code="ff", name="Fulah", _and_separator="e", _or_separator="ma")
-GD: Language = Language(
+FULAH: Language = Language(
+    code="ff", name="Fulah", _and_separator="e", _or_separator="ma"
+)
+GAELIC: Language = Language(
     code="gd", name="Gaelic", _and_separator="agus", _or_separator="no"
 )
-GL: Language = Language(
+GALICIAN: Language = Language(
     code="gl", name="Galician", _and_separator="e", _or_separator="ou"
 )
-LG: Language = Language(
+GANDA: Language = Language(
     code="lg", name="Ganda", _and_separator="ne", _or_separator="oba"
 )
-KA: Language = Language(
+GEORGIAN: Language = Language(
     code="ka", name="Georgian", _and_separator="და", _or_separator="ან"
 )
-DE: Language = Language(
+GERMAN: Language = Language(
     code="de", name="German", _and_separator="und", _or_separator="oder"
 )
-EL: Language = Language(
+GREEK: Language = Language(
     code="el", name="Greek", _and_separator="και", _or_separator="ή"
 )
-KL: Language = Language(
+GREENLANDIC: Language = Language(
     code="kl", name="Greenlandic", _and_separator="aamma", _or_separator="imaluunniit"
 )
-GN: Language = Language(
+GUARANI: Language = Language(
     code="gn", name="Guarani", _and_separator="ha", _or_separator="térã"
 )
-GU: Language = Language(
+GUJARATI: Language = Language(
     code="gu", name="Gujarati", _and_separator="અને", _or_separator="અથવા"
 )
-HT: Language = Language(
+HAITIAN: Language = Language(
     code="ht", name="Haitian", _and_separator="ak", _or_separator="oswa"
 )
-HA: Language = Language(
+HAUSA: Language = Language(
     code="ha", name="Hausa", _and_separator="da", _or_separator="ko"
 )
-HE: Language = Language(
+HEBREW: Language = Language(
     code="he", name="Hebrew", _and_separator="ו", _or_separator="או"
 )
-HZ: Language = Language(
+HERERO: Language = Language(
     code="hz", name="Herero", _and_separator="na", _or_separator="po"
 )
-HI: Language = Language(
+HINDI: Language = Language(
     code="hi", name="Hindi", _and_separator="और", _or_separator="या"
 )
-HU: Language = Language(
+HUNGARIAN: Language = Language(
     code="hu", name="Hungarian", _and_separator="és", _or_separator="vagy"
 )
-IS: Language = Language(
+ICELANDIC: Language = Language(
     code="is", name="Icelandic", _and_separator="og", _or_separator="eða"
 )
-IO: Language = Language(code="io", name="Ido", _and_separator="e", _or_separator="o")
-IG: Language = Language(
+IDO: Language = Language(code="io", name="Ido", _and_separator="e", _or_separator="o")
+IGBO: Language = Language(
     code="ig", name="Igbo", _and_separator="na", _or_separator="ma ọ bụ"
 )
-ID: Language = Language(
+INDONESIAN: Language = Language(
     code="id", name="Indonesian", _and_separator="dan", _or_separator="atau"
 )
-IA: Language = Language(
+INTERLINGUA: Language = Language(
     code="ia", name="Interlingua", _and_separator="e", _or_separator="o"
 )
-IE: Language = Language(
+INTERLINGUE: Language = Language(
     code="ie", name="Interlingue", _and_separator="e", _or_separator="o"
 )
-IU: Language = Language(
+INUKTITUT: Language = Language(
     code="iu", name="Inuktitut", _and_separator="alu", _or_separator="immaqaa"
 )
-IK: Language = Language(
+INUPIAQ: Language = Language(
     code="ik", name="Inupiaq", _and_separator="ġu", _or_separator="luunniit"
 )
-GA: Language = Language(
+IRISH: Language = Language(
     code="ga", name="Irish", _and_separator="agus", _or_separator="nó"
 )
-IT: Language = Language(
+ITALIAN: Language = Language(
     code="it", name="Italian", _and_separator="e", _or_separator="o"
 )
-JA: Language = Language(
+JAPANESE: Language = Language(
     code="ja", name="Japanese", _and_separator="と", _or_separator="または"
 )
-KN: Language = Language(
+KANNADA: Language = Language(
     code="kn", name="Kannada", _and_separator="ಮತ್ತು", _or_separator="ಅಥವಾ"
 )
-KR: Language = Language(
+KANURI: Language = Language(
     code="kr", name="Kanuri", _and_separator="-a", _or_separator="yáá"
 )
-KS: Language = Language(
+KASHMIRI: Language = Language(
     code="ks", name="Kashmiri", _and_separator="تہٕ", _or_separator="یا"
 )
-KK: Language = Language(
+KAZAKH: Language = Language(
     code="kk", name="Kazakh", _and_separator="және", _or_separator="немесе"
 )
-KM: Language = Language(
+CENTRAL_KHMER: Language = Language(
     code="km", name="Central Khmer", _and_separator="និង", _or_separator="ឬ"
 )
-KI: Language = Language(
+KIKUYU: Language = Language(
     code="ki", name="Kikuyu", _and_separator="na", _or_separator="kana"
 )
-RW: Language = Language(
+KINYARWANDA: Language = Language(
     code="rw", name="Kinyarwanda", _and_separator="na", _or_separator="cyangwa"
 )
-KY: Language = Language(
+KIRGHIZ: Language = Language(
     code="ky", name="Kirghiz", _and_separator="жана", _or_separator="же"
 )
-KV: Language = Language(
+KOMI: Language = Language(
     code="kv", name="Komi", _and_separator="да", _or_separator="либӧ"
 )
-KG: Language = Language(
+KONGO: Language = Language(
     code="kg", name="Kongo", _and_separator="ye", _or_separator="kana"
 )
-KO: Language = Language(
+KOREAN: Language = Language(
     code="ko", name="Korean", _and_separator="그리고", _or_separator="또는"
 )
-KJ: Language = Language(
+KUANYAMA: Language = Language(
     code="kj", name="Kuanyama", _and_separator="na", _or_separator="nenge"
 )
-KU: Language = Language(
+KURDISH: Language = Language(
     code="ku", name="Kurdish", _and_separator="û", _or_separator="an"
 )
-LO: Language = Language(code="lo", name="Lao", _and_separator="และ", _or_separator="ຫຼື")
-LA: Language = Language(
+LAO: Language = Language(code="lo", name="Lao", _and_separator="และ", _or_separator="ຫຼື")
+LATIN: Language = Language(
     code="la", name="Latin", _and_separator="et", _or_separator="aut"
 )
-LV: Language = Language(
+LATVIAN: Language = Language(
     code="lv", name="Latvian", _and_separator="un", _or_separator="vai"
 )
-LI: Language = Language(
+LIMBURGAN: Language = Language(
     code="li", name="Limburgan", _and_separator="en", _or_separator="of"
 )
-LN: Language = Language(
+LINGALA: Language = Language(
     code="ln", name="Lingala", _and_separator="na", _or_separator="to"
 )
-LT: Language = Language(
+LITHUANIAN: Language = Language(
     code="lt", name="Lithuanian", _and_separator="ir", _or_separator="arba"
 )
-LU: Language = Language(
+LUBA_KATANGA: Language = Language(
     code="lu", name="Luba-Katanga", _and_separator="ne", _or_separator="nansha"
 )
-LB: Language = Language(
+LUXEMBOURGISH: Language = Language(
     code="lb", name="Luxembourgish", _and_separator="an", _or_separator="oder"
 )
-MK: Language = Language(
+MACEDONIAN: Language = Language(
     code="mk", name="Macedonian", _and_separator="и", _or_separator="или"
 )
-MG: Language = Language(
+MALAGASY: Language = Language(
     code="mg", name="Malagasy", _and_separator="sy", _or_separator="na"
 )
-MS: Language = Language(
+MALAY: Language = Language(
     code="ms", name="Malay", _and_separator="dan", _or_separator="atau"
 )
-ML: Language = Language(
+MALAYALAM: Language = Language(
     code="ml", name="Malayalam", _and_separator="ഉം", _or_separator="അല്ലെങ്കിൽ"
 )
-MT: Language = Language(
+MALTESE: Language = Language(
     code="mt", name="Maltese", _and_separator="u", _or_separator="jew"
 )
-GV: Language = Language(code="gv", name="Manx", _and_separator="as", _or_separator="ny")
-MI: Language = Language(
+MANX: Language = Language(
+    code="gv", name="Manx", _and_separator="as", _or_separator="ny"
+)
+MAORI: Language = Language(
     code="mi", name="Maori", _and_separator="me", _or_separator="rānei"
 )
-MR: Language = Language(
+MARATHI: Language = Language(
     code="mr", name="Marathi", _and_separator="आणि", _or_separator="किंवा"
 )
-MH: Language = Language(
+MARSHALLESE: Language = Language(
     code="mh", name="Marshallese", _and_separator="im", _or_separator="ak"
 )
-MN: Language = Language(
+MONGOLIAN: Language = Language(
     code="mn", name="Mongolian", _and_separator="ба", _or_separator="эсвэл"
 )
-NA: Language = Language(
+NAURU: Language = Language(
     code="na", name="Nauru", _and_separator="ma", _or_separator="me"
 )
-NV: Language = Language(
+NAVAJO: Language = Language(
     code="nv", name="Navajo", _and_separator="áádóó", _or_separator="doodaiiʼ"
 )
-ND: Language = Language(
+NORTHERN_NDEBELE: Language = Language(
     code="nd", name="Northern Ndebele", _and_separator="lo", _or_separator="kumbe"
 )
-NR: Language = Language(
+SOUTH_NDEBELE: Language = Language(
     code="nr", name="South Ndebele", _and_separator="na", _or_separator="namkha"
 )
-NG: Language = Language(
+NDONGA: Language = Language(
     code="ng", name="Ndonga", _and_separator="na", _or_separator="nenge"
 )
-NE: Language = Language(
+NEPALI: Language = Language(
     code="ne", name="Nepali", _and_separator="र", _or_separator="वा"
 )
-NO: Language = Language(
+NORWEGIAN: Language = Language(
     code="no", name="Norwegian", _and_separator="og", _or_separator="eller"
 )
-NB: Language = Language(
+NORWEGIAN_BOKMÅL: Language = Language(
     code="nb", name="Norwegian Bokmål", _and_separator="og", _or_separator="eller"
 )
-NN: Language = Language(
+NORWEGIAN_NYNORSK: Language = Language(
     code="nn", name="Norwegian Nynorsk", _and_separator="og", _or_separator="eller"
 )
-OC: Language = Language(
+OCCITAN: Language = Language(
     code="oc", name="Occitan", _and_separator="e", _or_separator="o"
 )
-OJ: Language = Language(
+OJIBWA: Language = Language(
     code="oj", name="Ojibwa", _and_separator="miinawaa", _or_separator="jiishin"
 )
-OR: Language = Language(
+ORIYA: Language = Language(
     code="or", name="Oriya", _and_separator="ଏବଂ", _or_separator="କିମ୍ବା"
 )
-OM: Language = Language(
+OROMO: Language = Language(
     code="om", name="Oromo", _and_separator="fi", _or_separator="yookan"
 )
-OS: Language = Language(
+OSSETIAN: Language = Language(
     code="os", name="Ossetian", _and_separator="æмæ", _or_separator="кæнæ"
 )
-PI: Language = Language(code="pi", name="Pali", _and_separator="ca", _or_separator="vā")
-PS: Language = Language(
+PALI: Language = Language(
+    code="pi", name="Pali", _and_separator="ca", _or_separator="vā"
+)
+PASHTO: Language = Language(
     code="ps", name="Pashto", _and_separator="او", _or_separator="يا"
 )
-FA: Language = Language(
+PERSIAN: Language = Language(
     code="fa", name="Persian", _and_separator="و", _or_separator="یا"
 )
-PL: Language = Language(
+POLISH: Language = Language(
     code="pl", name="Polish", _and_separator="i", _or_separator="lub"
 )
-PT: Language = Language(
-    code="pt", name="European Portuguese", _and_separator="e", _or_separator="ou"
+PORTUGUESE: Language = Language(
+    code="pt", name="Portuguese", _and_separator="e", _or_separator="ou"
 )
-PT_PT: Language = Language(
+EUROPEAN_PORTUGUESE: Language = Language(
     code="pt-pt", name="European Portuguese", _and_separator="e", _or_separator="ou"
 )
-PT_BR: Language = Language(
+BRAZILIAN_PORTUGUESE: Language = Language(
     code="pt-br", name="Brazilian Portuguese", _and_separator="e", _or_separator="ou"
 )
-PA: Language = Language(
+PUNJABI: Language = Language(
     code="pa", name="Punjabi", _and_separator="ਅਤੇ", _or_separator="ਜਾਂ"
 )
-QU: Language = Language(
+QUECHUA: Language = Language(
     code="qu", name="Quechua", _and_separator="-pas", _or_separator="ichataq"
 )
-RO: Language = Language(
+ROMANIAN: Language = Language(
     code="ro", name="Romanian", _and_separator="și", _or_separator="sau"
 )
-RM: Language = Language(
+ROMANSH: Language = Language(
     code="rm", name="Romansh", _and_separator="e", _or_separator="u"
 )
-RN: Language = Language(
+RUNDI: Language = Language(
     code="rn", name="Rundi", _and_separator="na", _or_separator="canke"
 )
-RU: Language = Language(
+RUSSIAN: Language = Language(
     code="ru", name="Russian", _and_separator="и", _or_separator="или"
 )
-SE: Language = Language(
+NORTHERN_SAMI: Language = Language(
     code="se", name="Northern Sami", _and_separator="ja", _or_separator="dahje"
 )
-SM: Language = Language(
+SAMOAN: Language = Language(
     code="sm", name="Samoan", _and_separator="ma", _or_separator="poʻo"
 )
-SG: Language = Language(
+SANGO: Language = Language(
     code="sg", name="Sango", _and_separator="na", _or_separator="wala"
 )
-SA: Language = Language(
+SANSKRIT: Language = Language(
     code="sa", name="Sanskrit", _and_separator="च", _or_separator="वा"
 )
-SC: Language = Language(
+SARDINIAN: Language = Language(
     code="sc", name="Sardinian", _and_separator="e", _or_separator="o"
 )
-SR: Language = Language(
+SERBIAN: Language = Language(
     code="sr", name="Serbian", _and_separator="и", _or_separator="или"
 )
-SN: Language = Language(
+SHONA: Language = Language(
     code="sn", name="Shona", _and_separator="uye", _or_separator="kana"
 )
-SD: Language = Language(
+SINDHI: Language = Language(
     code="sd", name="Sindhi", _and_separator="۽", _or_separator="يا"
 )
-SI: Language = Language(
+SINHALA: Language = Language(
     code="si", name="Sinhala", _and_separator="සහ", _or_separator="හෝ"
 )
-SK: Language = Language(
+SLOVAK: Language = Language(
     code="sk", name="Slovak", _and_separator="a", _or_separator="alebo"
 )
-SL: Language = Language(
+SLOVENIAN: Language = Language(
     code="sl", name="Slovenian", _and_separator="in", _or_separator="ali"
 )
-SO: Language = Language(
+SOMALI: Language = Language(
     code="so", name="Somali", _and_separator="iyo", _or_separator="ama"
 )
-ST: Language = Language(
+SOTHO: Language = Language(
     code="st", name="Sotho", _and_separator="le", _or_separator="kapa"
 )
-ES: Language = Language(
+SPANISH: Language = Language(
     code="es", name="Spanish", _and_separator="y", _or_separator="o"
 )
-SU: Language = Language(
+SUNDANESE: Language = Language(
     code="su", name="Sundanese", _and_separator="jeung", _or_separator="atawa"
 )
-SW: Language = Language(
+SWAHILI: Language = Language(
     code="sw", name="Swahili", _and_separator="na", _or_separator="au"
 )
-SS: Language = Language(
+SWATI: Language = Language(
     code="ss", name="Swati", _and_separator="na", _or_separator="noma"
 )
-SV: Language = Language(
+SWEDISH: Language = Language(
     code="sv", name="Swedish", _and_separator="och", _or_separator="eller"
 )
-TL: Language = Language(
+TAGALOG: Language = Language(
     code="tl", name="Tagalog", _and_separator="at", _or_separator="o"
 )
-TY: Language = Language(
+TAHITIAN: Language = Language(
     code="ty", name="Tahitian", _and_separator="e", _or_separator="aore ra"
 )
-TG: Language = Language(code="tg", name="Tajik", _and_separator="ва", _or_separator="ё")
-TA: Language = Language(
+TAJIK: Language = Language(
+    code="tg", name="Tajik", _and_separator="ва", _or_separator="ё"
+)
+TAMIL: Language = Language(
     code="ta", name="Tamil", _and_separator="மற்றும்", _or_separator="அல்லது"
 )
-TT: Language = Language(
+TATAR: Language = Language(
     code="tt", name="Tatar", _and_separator="һәм", _or_separator="яки"
 )
-TE: Language = Language(
+TELUGU: Language = Language(
     code="te", name="Telugu", _and_separator="మరియు", _or_separator="లేదా"
 )
-TH: Language = Language(
+THAI: Language = Language(
     code="th", name="Thai", _and_separator="และ", _or_separator="หรือ"
 )
-BO: Language = Language(
+TIBETAN: Language = Language(
     code="bo", name="Tibetan", _and_separator="དང་", _or_separator="ཡང་ན"
 )
-TI: Language = Language(
+TIGRINYA: Language = Language(
     code="ti", name="Tigrinya", _and_separator="ን", _or_separator="ወይ"
 )
-TO: Language = Language(
+TONGA: Language = Language(
     code="to", name="Tonga", _and_separator="mo", _or_separator="pe"
 )
-TS: Language = Language(
+TSONGA: Language = Language(
     code="ts", name="Tsonga", _and_separator="na", _or_separator="kumbe"
 )
-TN: Language = Language(
+TSWANA: Language = Language(
     code="tn", name="Tswana", _and_separator="le", _or_separator="kgotsa"
 )
-TR: Language = Language(
+TURKISH: Language = Language(
     code="tr", name="Turkish", _and_separator="ve", _or_separator="veya"
 )
-TK: Language = Language(
+TURKMEN: Language = Language(
     code="tk", name="Turkmen", _and_separator="we", _or_separator="ýa-da"
 )
-TW: Language = Language(
+TWI: Language = Language(
     code="tw", name="Twi", _and_separator="ne", _or_separator="anaa"
 )
-UG: Language = Language(
+UIGHUR: Language = Language(
     code="ug", name="Uighur", _and_separator="ۋە", _or_separator="ياكى"
 )
-UK: Language = Language(
+UKRAINIAN: Language = Language(
     code="uk", name="Ukrainian", _and_separator="і", _or_separator="або"
 )
-UR: Language = Language(
+URDU: Language = Language(
     code="ur", name="Urdu", _and_separator="اور", _or_separator="یا"
 )
-UZ: Language = Language(
+UZBEK: Language = Language(
     code="uz", name="Uzbek", _and_separator="va", _or_separator="yoki"
 )
-VE: Language = Language(
+VENDA: Language = Language(
     code="ve", name="Venda", _and_separator="na", _or_separator="kana"
 )
-VI: Language = Language(
+VIETNAMESE: Language = Language(
     code="vi", name="Vietnamese", _and_separator="và", _or_separator="hoặc"
 )
-VO: Language = Language(
+VOLAPÜK: Language = Language(
     code="vo", name="Volapük", _and_separator="e", _or_separator="u"
 )
-WA: Language = Language(
+WALLOON: Language = Language(
     code="wa", name="Walloon", _and_separator="et", _or_separator="ou"
 )
-CY: Language = Language(
+WELSH: Language = Language(
     code="cy", name="Welsh", _and_separator="a", _or_separator="neu"
 )
-WO: Language = Language(
+WOLOF: Language = Language(
     code="wo", name="Wolof", _and_separator="ak", _or_separator="walla"
 )
-XH: Language = Language(
+XHOSA: Language = Language(
     code="xh", name="Xhosa", _and_separator="kwaye", _or_separator="okanye"
 )
-YI: Language = Language(
+YIDDISH: Language = Language(
     code="yi", name="Yiddish", _and_separator="און", _or_separator="אָדער"
 )
-YO: Language = Language(
+YORUBA: Language = Language(
     code="yo", name="Yoruba", _and_separator="àti", _or_separator="tàbí"
 )
-ZA: Language = Language(
+ZHUANG: Language = Language(
     code="za", name="Zhuang", _and_separator="kae", _or_separator="aevih"
 )
-ZU: Language = Language(
+ZULU: Language = Language(
     code="zu", name="Zulu", _and_separator="futhi", _or_separator="noma"
 )
-ACE: Language = Language(
+ACEHNESE: Language = Language(
     code="ace", name="Acehnese", _and_separator="ngon", _or_separator="atɔ"
 )
-ADY: Language = Language(
+ADYGHE: Language = Language(
     code="ady", name="Adyghe", _and_separator="рэ", _or_separator="е"
 )
-ALT: Language = Language(
+SOUTHERN_ALTAI: Language = Language(
     code="alt", name="Southern Altai", _and_separator="ла", _or_separator="эмезе"
 )
-AMI: Language = Language(
+AMIS: Language = Language(
     code="ami", name="Amis", _and_separator="ato", _or_separator="o"
 )
-ANG: Language = Language(
+OLD_ENGLISH: Language = Language(
     code="ang", name="Old English", _and_separator="and", _or_separator="oþþe"
 )
-ANP: Language = Language(
+ANGIKA: Language = Language(
     code="anp", name="Angika", _and_separator="आर", _or_separator="या"
 )
-ARC: Language = Language(
+ARAMAIC: Language = Language(
     code="arc", name="Aramaic", _and_separator="ܘ", _or_separator="ܐܘ"
 )
-ARY: Language = Language(
+MOROCCAN_ARABIC: Language = Language(
     code="ary", name="Moroccan Arabic", _and_separator="w", _or_separator="wella"
 )
-ARZ: Language = Language(
+EGYPTIAN_ARABIC: Language = Language(
     code="arz", name="Egyptian Arabic", _and_separator="و", _or_separator="أو"
 )
-AST: Language = Language(
+ASTURIAN: Language = Language(
     code="ast", name="Asturian", _and_separator="y", _or_separator="o"
 )
-ATJ: Language = Language(
+ATIKAMEKW: Language = Language(
     code="atj", name="Atikamekw", _and_separator="et", _or_separator="ou"
 )
-AVK: Language = Language(
+KOTAVA: Language = Language(
     code="avk", name="Kotava", _and_separator="is", _or_separator="en"
 )
-AWA: Language = Language(
+AWADHI: Language = Language(
     code="awa", name="Awadhi", _and_separator="अउ", _or_separator="या"
 )
-AZB: Language = Language(
+SOUTH_AZERBAIJANI: Language = Language(
     code="azb", name="South Azerbaijani", _and_separator="و", _or_separator="یوخسا"
 )
-BAN: Language = Language(
+BALINESE: Language = Language(
     code="ban", name="Balinese", _and_separator="lan", _or_separator="utawi"
 )
-BAR: Language = Language(
+BAVARIAN: Language = Language(
     code="bar", name="Bavarian", _and_separator="und", _or_separator="oda"
 )
-BCL: Language = Language(
+CENTRAL_BIKOL: Language = Language(
     code="bcl", name="Central Bikol", _and_separator="asin", _or_separator="o"
 )
-BJN: Language = Language(
+BANJAR: Language = Language(
     code="bjn", name="Banjar", _and_separator="wan", _or_separator="atawa"
 )
-BLK: Language = Language(
+PAO: Language = Language(
     code="blk", name="Pa'O", _and_separator="နန်", _or_separator="မု"
 )
-BPY: Language = Language(
+BISHNUPRIYA: Language = Language(
     code="bpy", name="Bishnupriya", _and_separator="आ", _or_separator="বা"
 )
-BUG: Language = Language(
+BUGINESE: Language = Language(
     code="bug", name="Buginese", _and_separator="na", _or_separator="iyarega"
 )
-BXR: Language = Language(
+BURIAT: Language = Language(
     code="bxr", name="Buriat", _and_separator="ба", _or_separator="али"
 )
-CDO: Language = Language(
+MINDONG_CHINESE: Language = Language(
     code="cdo", name="Mindong Chinese", _and_separator="共", _or_separator="或者"
 )
-CEB: Language = Language(
+CEBUANO: Language = Language(
     code="ceb", name="Cebuano", _and_separator="ug", _or_separator="o"
 )
-CHR: Language = Language(
+CHEROKEE: Language = Language(
     code="chr", name="Cherokee", _and_separator="ᎠᎴ", _or_separator="ᎠᎴ"
 )
-CHY: Language = Language(
+CHEYENNE: Language = Language(
     code="chy", name="Cheyenne", _and_separator="na", _or_separator="hēme"
 )
-CKB: Language = Language(
+CENTRAL_KURDISH: Language = Language(
     code="ckb", name="Central Kurdish", _and_separator="و", _or_separator="یان"
 )
-CRH: Language = Language(
+CRIMEAN_TATAR: Language = Language(
     code="crh", name="Crimean Tatar", _and_separator="ve", _or_separator="ya da"
 )
-CSB: Language = Language(
+KASHUBIAN: Language = Language(
     code="csb", name="Kashubian", _and_separator="ë", _or_separator="abò"
 )
-DAG: Language = Language(
+DAGBANI: Language = Language(
     code="dag", name="Dagbani", _and_separator="n-ti", _or_separator="bee"
 )
-DIN: Language = Language(
+DINKA: Language = Language(
     code="din", name="Dinka", _and_separator="ka", _or_separator="ke"
 )
-DIQ: Language = Language(
+DIMLI: Language = Language(
     code="diq", name="Dimli", _and_separator="û", _or_separator="ya"
 )
-DSB: Language = Language(
+LOWER_SORBIAN: Language = Language(
     code="dsb", name="Lower Sorbian", _and_separator="a", _or_separator="abo"
 )
-DTY: Language = Language(
+DOTELI: Language = Language(
     code="dty", name="Doteli", _and_separator="र", _or_separator="या"
 )
-EXT: Language = Language(
+EXTREMADURAN: Language = Language(
     code="ext", name="Extremaduran", _and_separator="y", _or_separator="u"
 )
-FAT: Language = Language(
+FANTI: Language = Language(
     code="fat", name="Fanti", _and_separator="na", _or_separator="anaa"
 )
 FON: Language = Language(
     code="fon", name="Fon", _and_separator="kpóɖó", _or_separator="kabi"
 )
-FRP: Language = Language(
+ARPITAN: Language = Language(
     code="frp", name="Arpitan", _and_separator="et", _or_separator="ou"
 )
-FRR: Language = Language(
+NORTHERN_FRISIAN: Language = Language(
     code="frr", name="Northern Frisian", _and_separator="an", _or_separator="of"
 )
-FUR: Language = Language(
+FRIULIAN: Language = Language(
     code="fur", name="Friulian", _and_separator="e", _or_separator="o"
 )
-GAG: Language = Language(
+GAGAUZ: Language = Language(
     code="gag", name="Gagauz", _and_separator="hem", _or_separator="ya"
 )
-GAN: Language = Language(
+GAN_CHINESE: Language = Language(
     code="gan", name="Gan Chinese", _and_separator="同", _or_separator="或"
 )
-GCR: Language = Language(
+GUIANAN_CREOLE: Language = Language(
     code="gcr", name="Guianan Creole", _and_separator="ké", _or_separator="ou"
 )
-GLK: Language = Language(
+GILAKI: Language = Language(
     code="glk", name="Gilaki", _and_separator="و", _or_separator="یا"
 )
-GOM: Language = Language(
+GOAN_KONKANI: Language = Language(
     code="gom", name="Goan Konkani", _and_separator="आनी", _or_separator="वा"
 )
-GOR: Language = Language(
+GORONTALO: Language = Language(
     code="gor", name="Gorontalo", _and_separator="wawu", _or_separator="meyalo"
 )
-GOT: Language = Language(
+GOTHIC: Language = Language(
     code="got", name="Gothic", _and_separator="jah", _or_separator="aiþþau"
 )
-GPE: Language = Language(
+GHANAIAN_PIDGIN: Language = Language(
     code="gpe", name="Ghanaian Pidgin", _and_separator="and", _or_separator="anaa"
 )
-GUC: Language = Language(
+WAYUU: Language = Language(
     code="guc", name="Wayuu", _and_separator="je", _or_separator="yaa"
 )
-GUR: Language = Language(
+FRAFRA: Language = Language(
     code="gur", name="Frafra", _and_separator="la", _or_separator="bee"
 )
-GUW: Language = Language(
+GUN: Language = Language(
     code="guw", name="Gun", _and_separator="pódó", _or_separator="yèkì"
 )
-HAK: Language = Language(
+HAKKA_CHINESE: Language = Language(
     code="hak", name="Hakka Chinese", _and_separator="同", _or_separator="或者"
 )
-HAW: Language = Language(
+HAWAIIAN: Language = Language(
     code="haw", name="Hawaiian", _and_separator="a", _or_separator="a i ʻole"
 )
-HIF: Language = Language(
+FIJI_HINDI: Language = Language(
     code="hif", name="Fiji Hindi", _and_separator="aur", _or_separator="ki"
 )
-HSB: Language = Language(
+UPPER_SORBIAN: Language = Language(
     code="hsb", name="Upper Sorbian", _and_separator="a", _or_separator="abo"
 )
-HYW: Language = Language(
+WESTERN_ARMENIAN: Language = Language(
     code="hyw", name="Western Armenian", _and_separator="եւ", _or_separator="կամ"
 )
-ILO: Language = Language(
+ILOKO: Language = Language(
     code="ilo", name="Iloko", _and_separator="ken", _or_separator="wenno"
 )
-INH: Language = Language(
+INGUSH: Language = Language(
     code="inh", name="Ingush", _and_separator="и", _or_separator="е"
 )
-JAM: Language = Language(
+JAMAICAN_CREOLE: Language = Language(
     code="jam", name="Jamaican Creole", _and_separator="an", _or_separator="ar"
 )
-JBO: Language = Language(
+LOJBAN: Language = Language(
     code="jbo", name="Lojban", _and_separator="e", _or_separator="a"
 )
-KAA: Language = Language(
+KARA_KALPAK: Language = Language(
     code="kaa", name="Kara-Kalpak", _and_separator="ha'm", _or_separator="yamasa"
 )
-KAB: Language = Language(
+KABYLE: Language = Language(
     code="kab", name="Kabyle", _and_separator="d", _or_separator="neɣ"
 )
-KBD: Language = Language(
+KABARDIAN: Language = Language(
     code="kbd", name="Kabardian", _and_separator="рэ", _or_separator="хэтӀэ"
 )
-KBP: Language = Language(
+KABIYÈ: Language = Language(
     code="kbp", name="Kabiyè", _and_separator="nɛ", _or_separator="yaa"
 )
-KCG: Language = Language(
+TYAP: Language = Language(
     code="kcg", name="Tyap", _and_separator="ma", _or_separator="a̠ni"
 )
-KOI: Language = Language(
+KOMI_PERMYAK: Language = Language(
     code="koi", name="Komi-Permyak", _and_separator="да", _or_separator="либӧ"
 )
-KRC: Language = Language(
+KARACHAY_BALKAR: Language = Language(
     code="krc", name="Karachay-Balkar", _and_separator="бла", _or_separator="не да"
 )
-LAD: Language = Language(
+LADINO: Language = Language(
     code="lad", name="Ladino", _and_separator="i", _or_separator="o"
 )
-LBE: Language = Language(
+LAK: Language = Language(
     code="lbe", name="Lak", _and_separator="ва", _or_separator="ягу"
 )
-LEZ: Language = Language(
+LEZGHIAN: Language = Language(
     code="lez", name="Lezghian", _and_separator="ва", _or_separator="я"
 )
-LFN: Language = Language(
+LINGUA_FRANCA_NOVA: Language = Language(
     code="lfn", name="Lingua Franca Nova", _and_separator="e", _or_separator="o"
 )
-LIJ: Language = Language(
+LIGURIAN: Language = Language(
     code="lij", name="Ligurian", _and_separator="e", _or_separator="ò"
 )
-LLD: Language = Language(
+LADIN: Language = Language(
     code="lld", name="Ladin", _and_separator="y", _or_separator="o"
 )
-LMO: Language = Language(
+LOMBARD: Language = Language(
     code="lmo", name="Lombard", _and_separator="e", _or_separator="o"
 )
-LTG: Language = Language(
+LATGALIAN: Language = Language(
     code="ltg", name="Latgalian", _and_separator="i", _or_separator="voi"
 )
-MAD: Language = Language(
+MADURESE: Language = Language(
     code="mad", name="Madurese", _and_separator="ban", _or_separator="o"
 )
-MAI: Language = Language(
+MAITHILI: Language = Language(
     code="mai", name="Maithili", _and_separator="आ", _or_separator="वा"
 )
-MDF: Language = Language(
+MOKSHA: Language = Language(
     code="mdf", name="Moksha", _and_separator="ди", _or_separator="или"
 )
-MHR: Language = Language(
+EASTERN_MARI: Language = Language(
     code="mhr", name="Eastern Mari", _and_separator="да", _or_separator="o"
 )
-MIN: Language = Language(
+MINANGKABAU: Language = Language(
     code="min", name="Minangkabau", _and_separator="jo", _or_separator="atau"
 )
-MNI: Language = Language(
+MANIPURI: Language = Language(
     code="mni", name="Manipuri", _and_separator="ꯑꯃꯁꯨꯡ", _or_separator="ꯅꯠꯇ꯭ꯔꯒꯥ"
 )
-MNW: Language = Language(
+MON: Language = Language(
     code="mnw", name="Mon", _and_separator="ကဵု", _or_separator="ဟွံသေင်မ္ဂး"
 )
-MRJ: Language = Language(
+WESTERN_MARI: Language = Language(
     code="mrj", name="Western Mari", _and_separator="да", _or_separator="o"
 )
-MWL: Language = Language(
+MIRANDESE: Language = Language(
     code="mwl", name="Mirandese", _and_separator="i", _or_separator="ó"
 )
-MYV: Language = Language(
+ERZYA: Language = Language(
     code="myv", name="Erzya", _and_separator="ды", _or_separator="эли"
 )
-MZN: Language = Language(
+MAZANDERANI: Language = Language(
     code="mzn", name="Mazanderani", _and_separator="و", _or_separator="یا"
 )
-NAP: Language = Language(
+NEAPOLITAN: Language = Language(
     code="nap", name="Neapolitan", _and_separator="e", _or_separator="o"
 )
-NDS: Language = Language(
+LOW_GERMAN: Language = Language(
     code="nds", name="Low German", _and_separator="un", _or_separator="oder"
 )
-NEW: Language = Language(
+NEWARI: Language = Language(
     code="new", name="Newari", _and_separator="व", _or_separator="या"
 )
-NIA: Language = Language(
+NIAS: Language = Language(
     code="nia", name="Nias", _and_separator="ba", _or_separator="mazi"
 )
-NOV: Language = Language(
+NOVIAL: Language = Language(
     code="nov", name="Novial", _and_separator="e", _or_separator="o"
 )
-NQO: Language = Language(
+NKO: Language = Language(
     code="nqo", name="N'Ko", _and_separator="ߣߌ߫", _or_separator="ߥߟߊ߫"
 )
-NSO: Language = Language(
+NORTHERN_SOTHO: Language = Language(
     code="nso", name="Northern Sotho", _and_separator="le", _or_separator="goba"
 )
-OLO: Language = Language(
+LIVVI_KARELIAN: Language = Language(
     code="olo", name="Livvi-Karelian", _and_separator="da", _or_separator="libo"
 )
-PAG: Language = Language(
+PANGASINAN: Language = Language(
     code="pag", name="Pangasinan", _and_separator="tan", _or_separator="odino"
 )
-PAM: Language = Language(
+PAMPANGA: Language = Language(
     code="pam", name="Pampanga", _and_separator="at", _or_separator="o"
 )
-PAP: Language = Language(
+PAPIAMENTO: Language = Language(
     code="pap", name="Papiamento", _and_separator="y", _or_separator="o"
 )
-PCD: Language = Language(
+PICARD: Language = Language(
     code="pcd", name="Picard", _and_separator="pi", _or_separator="ou"
 )
-PCM: Language = Language(
+NIGERIAN_PIDGIN: Language = Language(
     code="pcm", name="Nigerian Pidgin", _and_separator="and", _or_separator="abi"
 )
-PDC: Language = Language(
+PENNSYLVANIA_GERMAN: Language = Language(
     code="pdc", name="Pennsylvania German", _and_separator="un", _or_separator="odder"
 )
-PFL: Language = Language(
+PALATINE_GERMAN: Language = Language(
     code="pfl", name="Palatine German", _and_separator="un", _or_separator="odda"
 )
-PMS: Language = Language(
+PIEMONTESE: Language = Language(
     code="pms", name="Piemontese", _and_separator="e", _or_separator="o"
 )
-PNB: Language = Language(
+WESTERN_PUNJABI: Language = Language(
     code="pnb", name="Western Punjabi", _and_separator="تے", _or_separator="یا"
 )
-PNT: Language = Language(
+PONTIC: Language = Language(
     code="pnt", name="Pontic", _and_separator="και", _or_separator="ή"
 )
-PWN: Language = Language(
+PAIWAN: Language = Language(
     code="pwn", name="Paiwan", _and_separator="dja", _or_separator="uri"
 )
-RMY: Language = Language(
+VLAX_ROMANI: Language = Language(
     code="rmy", name="Vlax Romani", _and_separator="thaj", _or_separator="vaj"
 )
-RUE: Language = Language(
+RUSYN: Language = Language(
     code="rue", name="Rusyn", _and_separator="і", _or_separator="або"
 )
-SAH: Language = Language(
+YAKUT: Language = Language(
     code="sah", name="Yakut", _and_separator="уонна", _or_separator="эбэтэр"
 )
-SAT: Language = Language(
+SANTALI: Language = Language(
     code="sat", name="Santali", _and_separator="ᱟᱨ", _or_separator="ᱥᱮ"
 )
-SCN: Language = Language(
+SICILIAN: Language = Language(
     code="scn", name="Sicilian", _and_separator="e", _or_separator="o"
 )
-SCO: Language = Language(
+SCOTS: Language = Language(
     code="sco", name="Scots", _and_separator="an", _or_separator="or"
 )
-SHI: Language = Language(
+TACHELHIT: Language = Language(
     code="shi", name="Tachelhit", _and_separator="d", _or_separator="neɣ"
 )
-SHN: Language = Language(
+SHAN: Language = Language(
     code="shn", name="Shan", _and_separator="လႄႈ", _or_separator="หรือ"
 )
-SKR: Language = Language(
+SARAIKI: Language = Language(
     code="skr", name="Saraiki", _and_separator="تے", _or_separator="یا"
 )
-SMN: Language = Language(
+INARI_SAMI: Language = Language(
     code="smn", name="Inari Sami", _and_separator="ja", _or_separator="teikkâ"
 )
-SRN: Language = Language(
+SRANAN: Language = Language(
     code="srn", name="Sranan", _and_separator="nanga", _or_separator="efu"
 )
-STQ: Language = Language(
+SATERLAND_FRISIAN: Language = Language(
     code="stq", name="Saterland Frisian", _and_separator="un", _or_separator="of"
 )
-SZL: Language = Language(
+SILESIAN: Language = Language(
     code="szl", name="Silesian", _and_separator="a", _or_separator="abo"
 )
-SZY: Language = Language(
+SAKIZAYA: Language = Language(
     code="szy", name="Sakizaya", _and_separator="ata", _or_separator="uduli"
 )
-TAY: Language = Language(
+ATAYAL: Language = Language(
     code="tay", name="Atayal", _and_separator="daha", _or_separator="ima"
 )
-TCY: Language = Language(
+TULU: Language = Language(
     code="tcy", name="Tulu", _and_separator="ಬೊಕ್ಕ", _or_separator="ಅತ್ತಂಡ"
 )
-TET: Language = Language(
+TETUM: Language = Language(
     code="tet", name="Tetum", _and_separator="no", _or_separator="ka"
 )
-TLY: Language = Language(
+TALYSH: Language = Language(
     code="tly", name="Talysh", _and_separator="u", _or_separator="jo"
 )
-TPI: Language = Language(
+TOK_PISIN: Language = Language(
     code="tpi", name="Tok Pisin", _and_separator="na", _or_separator="o"
 )
-TRV: Language = Language(
+TAROKO: Language = Language(
     code="trv", name="Taroko", _and_separator="daha", _or_separator="ima"
 )
-TUM: Language = Language(
+TUMBUKA: Language = Language(
     code="tum", name="Tumbuka", _and_separator="na", _or_separator="panji"
 )
-TYV: Language = Language(
+TUVINIAN: Language = Language(
     code="tyv", name="Tuvinian", _and_separator=" болгаш", _or_separator="азы"
 )
-UDM: Language = Language(
+UDMURT: Language = Language(
     code="udm", name="Udmurt", _and_separator="но", _or_separator="яке"
 )
-VEC: Language = Language(
+VENETIAN: Language = Language(
     code="vec", name="Venetian", _and_separator="e", _or_separator="o"
 )
-VEP: Language = Language(
+VEPS: Language = Language(
     code="vep", name="Veps", _and_separator="da", _or_separator="vai"
 )
-VLS: Language = Language(
+WEST_FLEMISH: Language = Language(
     code="vls", name="West Flemish", _and_separator="en", _or_separator="of"
 )
-WAR: Language = Language(
+WARAY: Language = Language(
     code="war", name="Waray", _and_separator="ug", _or_separator="o"
 )
-WUU: Language = Language(
+WU_CHINESE: Language = Language(
     code="wuu", name="Wu Chinese", _and_separator="搭", _or_separator="或者"
 )
-XAL: Language = Language(
+KALMYK: Language = Language(
     code="xal", name="Kalmyk", _and_separator="болн", _or_separator="эсвл"
 )
-XMF: Language = Language(
+MINGRELIAN: Language = Language(
     code="xmf", name="Mingrelian", _and_separator="დო", _or_separator="ვარდა"
 )
-ZEA: Language = Language(
+ZEELANDIC: Language = Language(
     code="zea", name="Zeelandic", _and_separator="en", _or_separator="of"
 )
-YUE: Language = Language(
+CANTONESE: Language = Language(
     code="yue", name="Cantonese", _and_separator="同", _or_separator="或者"
 )

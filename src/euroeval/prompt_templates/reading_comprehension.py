@@ -4,37 +4,37 @@ import typing as t
 
 from ..data_models import PromptConfig
 from ..languages import (
-    BG,
-    CS,
-    DA,
-    DE,
-    EL,
-    EN,
-    ES,
-    ET,
-    FI,
-    FO,
-    FR,
-    IS,
-    IT,
-    LT,
-    LV,
-    NB,
-    NL,
-    NN,
-    NO,
-    PL,
-    PT,
-    SK,
-    SV,
-    UK,
+    BULGARIAN,
+    CZECH,
+    DANISH,
+    DUTCH,
+    ENGLISH,
+    ESTONIAN,
+    FAROESE,
+    FINNISH,
+    FRENCH,
+    GERMAN,
+    GREEK,
+    ICELANDIC,
+    ITALIAN,
+    LATVIAN,
+    LITHUANIAN,
+    NORWEGIAN,
+    NORWEGIAN_BOKMÅL,
+    NORWEGIAN_NYNORSK,
+    POLISH,
+    PORTUGUESE,
+    SLOVAK,
+    SPANISH,
+    SWEDISH,
+    UKRAINIAN,
 )
 
 if t.TYPE_CHECKING:
     from ..data_models import Language
 
 RC_TEMPLATES: dict["Language", PromptConfig] = {
-    BG: PromptConfig(
+    BULGARIAN: PromptConfig(
         default_prompt_prefix="Следват текстове със съответни въпроси и отговори.",
         default_prompt_template="Текст: {text}\nВъпрос: {question}\nОтговор с максимум "
         "3 думи: {label}",
@@ -42,7 +42,7 @@ RC_TEMPLATES: dict["Language", PromptConfig] = {
         "относно текста по-горе с максимум 3 думи.\n\nВъпрос: {question}",
         default_prompt_label_mapping=dict(),
     ),
-    CS: PromptConfig(
+    CZECH: PromptConfig(
         default_prompt_prefix="Následující texty obsahují otázky a odpovědi.",
         default_prompt_template=(
             "Text: {text}\nOtázka: {question}\nOdpověď maximálně 3 slovy: {label}"
@@ -55,7 +55,7 @@ RC_TEMPLATES: dict["Language", PromptConfig] = {
         ),
         default_prompt_label_mapping=dict(),
     ),
-    DA: PromptConfig(
+    DANISH: PromptConfig(
         default_prompt_prefix="Følgende er tekster med tilhørende spørgsmål og svar.",
         default_prompt_template="Tekst: {text}\nSpørgsmål: {question}\nSvar med maks. "
         "3 ord: {label}",
@@ -63,7 +63,7 @@ RC_TEMPLATES: dict["Language", PromptConfig] = {
         "teksten ovenfor med maks. 3 ord.\n\nSpørgsmål: {question}",
         default_prompt_label_mapping=dict(),
     ),
-    DE: PromptConfig(
+    GERMAN: PromptConfig(
         default_prompt_prefix="Im Folgenden finden Sie Texte mit den dazugehörigen "
         "Fragen und Antworten.",
         default_prompt_template="Text: {text}\nFragen: {question}\nFragen Antwort in "
@@ -72,7 +72,7 @@ RC_TEMPLATES: dict["Language", PromptConfig] = {
         "zum obigen Text in höchstens 3 Wörtern.\n\nFrage: {question}",
         default_prompt_label_mapping=dict(),
     ),
-    EL: PromptConfig(
+    GREEK: PromptConfig(
         default_prompt_prefix="Ακολουθούν κείμενα με τις αντίστοιχες ερωτήσεις και "
         "απαντήσεις.",
         default_prompt_template="Κείμενο: {text}\nΕρώτηση: {question}\nΑπάντηση σε το "
@@ -81,7 +81,7 @@ RC_TEMPLATES: dict["Language", PromptConfig] = {
         "σχετικά με το παραπάνω κείμενο σε το πολύ 3 λέξεις.\n\nΕρώτηση: {question}",
         default_prompt_label_mapping=dict(),
     ),
-    EN: PromptConfig(
+    ENGLISH: PromptConfig(
         default_prompt_prefix="The following are texts with accompanying questions and "
         "answers.",
         default_prompt_template="Text: {text}\nQuestion: {question}\nAnswer in max "
@@ -90,7 +90,7 @@ RC_TEMPLATES: dict["Language", PromptConfig] = {
         "about the above text in at most 3 words.\n\nQuestion: {question}",
         default_prompt_label_mapping=dict(),
     ),
-    ES: PromptConfig(
+    SPANISH: PromptConfig(
         default_prompt_prefix="A continuación se presentan textos con sus preguntas y "
         "respuestas correspondientes.",
         default_prompt_template="Texto: {text}\nPregunta: {question}\nRespuesta en "
@@ -99,7 +99,7 @@ RC_TEMPLATES: dict["Language", PromptConfig] = {
         "sobre el texto anterior en máximo 3 palabras.\n\nPregunta: {question}",
         default_prompt_label_mapping=dict(),
     ),
-    ET: PromptConfig(
+    ESTONIAN: PromptConfig(
         default_prompt_prefix="Järgnevad on tekstid koos küsimuste ja vastustega.",
         default_prompt_template="Tekst: {text}\nKüsimus: {question}\nVasta "
         "maksimaalselt 3 sõnaga: {label}",
@@ -107,7 +107,7 @@ RC_TEMPLATES: dict["Language", PromptConfig] = {
         "ülevaltoodud teksti kohta maksimaalselt 3 sõnaga.\n\nKüsimus: {question}",
         default_prompt_label_mapping=dict(),
     ),
-    FI: PromptConfig(
+    FINNISH: PromptConfig(
         default_prompt_prefix="Seuraavassa on tekstejä ja niihin liittyviä kysymyksiä "
         "ja vastauksia.",
         default_prompt_template="Teksti: {text}\nKysymys: {question} "
@@ -117,7 +117,7 @@ RC_TEMPLATES: dict["Language", PromptConfig] = {
         "Kysymys: {question}",
         default_prompt_label_mapping=dict(),
     ),
-    FO: PromptConfig(
+    FAROESE: PromptConfig(
         default_prompt_prefix="Hetta eru tekstir saman við spurningum og svar.",
         default_prompt_template="Tekstur: {text}\nSpurningur: {question}\nSvara við í "
         "mesta lagi trimum orðum: {label}",
@@ -125,7 +125,7 @@ RC_TEMPLATES: dict["Language", PromptConfig] = {
         "tekstin uppiyvir við í mesta lagi trimum orðum.\n\nSpurningur: {question}",
         default_prompt_label_mapping=dict(),
     ),
-    FR: PromptConfig(
+    FRENCH: PromptConfig(
         default_prompt_prefix="Les textes suivants sont accompagnés de questions et de "
         "réponses.",
         default_prompt_template="Texte: {text}\nQuestion: {question}\nRéponse en 3 "
@@ -134,7 +134,7 @@ RC_TEMPLATES: dict["Language", PromptConfig] = {
         "sur le texte ci-dessus en 3 mots maximum.\n\nQuestion: {question}",
         default_prompt_label_mapping=dict(),
     ),
-    IS: PromptConfig(
+    ICELANDIC: PromptConfig(
         default_prompt_prefix="Eftirfarandi eru textar með tilheyrandi spurningum og "
         "svörum.",
         default_prompt_template="Texti: {text}\nSpurning: {question}\nSvaraðu með að "
@@ -143,7 +143,7 @@ RC_TEMPLATES: dict["Language", PromptConfig] = {
         "textann að hámarki í 3 orðum.\n\nSpurning: {question}",
         default_prompt_label_mapping=dict(),
     ),
-    IT: PromptConfig(
+    ITALIAN: PromptConfig(
         default_prompt_prefix="I testi che seguono sono accompagnati da domande e "
         "risposte.",
         default_prompt_template="Testo: {text}\nDomanda: {question}\nRispondere in "
@@ -152,7 +152,7 @@ RC_TEMPLATES: dict["Language", PromptConfig] = {
         "sul in un massimo di 3 parole.\n\nDomanda: {question}",
         default_prompt_label_mapping=dict(),
     ),
-    LT: PromptConfig(
+    LITHUANIAN: PromptConfig(
         default_prompt_prefix="Toliau pateikti tekstai su atitinkamais klausimais ir "
         "atsakymais.",
         default_prompt_template="Tekstas: {text}\nKlausimas: {question}\nAtsakykite ne "
@@ -161,7 +161,7 @@ RC_TEMPLATES: dict["Language", PromptConfig] = {
         "aukščiau pateiktą tekstą ne daugiau kaip 3 žodžiais.\n\nKlausimas: {question}",
         default_prompt_label_mapping=dict(),
     ),
-    LV: PromptConfig(
+    LATVIAN: PromptConfig(
         default_prompt_prefix="Turpmāk seko teksti ar atbilstošiem jautājumiem un "
         "atbildēm.",
         default_prompt_template="Teksts: {text}\nJautājums: {question}\nAtbildēt ar "
@@ -170,7 +170,7 @@ RC_TEMPLATES: dict["Language", PromptConfig] = {
         "iepriekš minēto tekstu ar maksimāli 3 vārdiem.\n\nJautājums: {question}",
         default_prompt_label_mapping=dict(),
     ),
-    NB: PromptConfig(
+    NORWEGIAN_BOKMÅL: PromptConfig(
         default_prompt_prefix="Her følger tekster med tilhørende spørsmål og svar.",
         default_prompt_template="Tekst: {text}\nSpørsmål: {question}\nSvar på maks 3 "
         "ord: {label}",
@@ -178,7 +178,7 @@ RC_TEMPLATES: dict["Language", PromptConfig] = {
         "teksten ovenfor med maks 3 ord.\n\nSpørsmål: {question}",
         default_prompt_label_mapping=dict(),
     ),
-    NL: PromptConfig(
+    DUTCH: PromptConfig(
         default_prompt_prefix="Hieronder volgen teksten met bijbehorende vragen en "
         "antwoorden.",
         default_prompt_template="Tekst: {text}\nVraag: {question}\nAntwoord in max "
@@ -187,7 +187,7 @@ RC_TEMPLATES: dict["Language", PromptConfig] = {
         "over de bovenstaande tekst in maximaal 3 woorden.\n\nVraag: {question}",
         default_prompt_label_mapping=dict(),
     ),
-    NN: PromptConfig(
+    NORWEGIAN_NYNORSK: PromptConfig(
         default_prompt_prefix="Her følger tekster med tilhørende spørsmål og svar.",
         default_prompt_template="Tekst: {text}\nSpørsmål: {question}\nSvar på maks 3 "
         "ord: {label}",
@@ -195,7 +195,7 @@ RC_TEMPLATES: dict["Language", PromptConfig] = {
         "teksten ovenfor med maks 3 ord.\n\nSpørsmål: {question}",
         default_prompt_label_mapping=dict(),
     ),
-    NO: PromptConfig(
+    NORWEGIAN: PromptConfig(
         default_prompt_prefix="Her følger tekster med tilhørende spørsmål og svar.",
         default_prompt_template="Tekst: {text}\nSpørsmål: {question}\nSvar på maks 3 "
         "ord: {label}",
@@ -203,7 +203,7 @@ RC_TEMPLATES: dict["Language", PromptConfig] = {
         "teksten ovenfor med maks 3 ord.\n\nSpørsmål: {question}",
         default_prompt_label_mapping=dict(),
     ),
-    PL: PromptConfig(
+    POLISH: PromptConfig(
         default_prompt_prefix=(
             "Poniżej znajdują się teksty z towarzyszącymi pytaniami i odpowiedziami."
         ),
@@ -214,7 +214,7 @@ RC_TEMPLATES: dict["Language", PromptConfig] = {
         "{question}",
         default_prompt_label_mapping=dict(),
     ),
-    PT: PromptConfig(
+    PORTUGUESE: PromptConfig(
         default_prompt_prefix="Os textos que se seguem são acompanhados de perguntas "
         "e respostas.",
         default_prompt_template="Texto: {text}\nPergunta: {question}\nResposta com "
@@ -223,7 +223,7 @@ RC_TEMPLATES: dict["Language", PromptConfig] = {
         "sobre o texto acima num máximo de 3 palavras.\n\nPergunta: {question}",
         default_prompt_label_mapping=dict(),
     ),
-    SK: PromptConfig(
+    SLOVAK: PromptConfig(
         default_prompt_prefix=("Nasledujú texty s pridruženými otázkami a odpoveďami."),
         default_prompt_template=(
             "Text: {text}\nOtázka: {question}\nOdpoveď na maximálne 3 slová: {label}"
@@ -235,7 +235,7 @@ RC_TEMPLATES: dict["Language", PromptConfig] = {
         ),
         default_prompt_label_mapping=dict(),
     ),
-    SV: PromptConfig(
+    SWEDISH: PromptConfig(
         default_prompt_prefix="Nedan följer texter med tillhörande frågor och svar.",
         default_prompt_template="Text: {text}\nFråga: {question}\nSvar på max 3 ord: "
         "{label}",
@@ -243,7 +243,7 @@ RC_TEMPLATES: dict["Language", PromptConfig] = {
         "ovan med högst 3 ord.\n\nFråga: {question}",
         default_prompt_label_mapping=dict(),
     ),
-    UK: PromptConfig(
+    UKRAINIAN: PromptConfig(
         default_prompt_prefix=(
             "Нижче наведені тексти з відповідними питаннями та відповідями."
         ),

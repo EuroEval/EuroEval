@@ -1,87 +1,66 @@
 """All Danish dataset configurations used in EuroEval."""
 
 from ..data_models import DatasetConfig
-from ..languages import DA
+from ..languages import DANISH
 from ..tasks import COMMON_SENSE, EUROPEAN_VALUES, KNOW, LA, MCRC, NER, RC, SENT, SUMM
 
 ### Official datasets ###
 
 ANGRY_TWEETS_CONFIG = DatasetConfig(
     name="angry-tweets",
-    pretty_name="the truncated version of the Danish sentiment classification "
-    "dataset AngryTweets",
-    huggingface_id="EuroEval/angry-tweets-mini",
+    source="EuroEval/angry-tweets-mini",
     task=SENT,
-    languages=[DA],
+    languages=[DANISH],
 )
 
 SCALA_DA_CONFIG = DatasetConfig(
-    name="scala-da",
-    pretty_name="the Danish part of the linguistic acceptability dataset ScaLA",
-    huggingface_id="EuroEval/scala-da",
-    task=LA,
-    languages=[DA],
+    name="scala-da", source="EuroEval/scala-da", task=LA, languages=[DANISH]
 )
 
 DANSK_CONFIG = DatasetConfig(
-    name="dansk",
-    pretty_name="the truncated version of the Danish named entity recognition "
-    "dataset DANSK",
-    huggingface_id="EuroEval/dansk-mini",
-    task=NER,
-    languages=[DA],
+    name="dansk", source="EuroEval/dansk-mini", task=NER, languages=[DANISH]
 )
 
 MULTI_WIKI_QA_DA_CONFIG = DatasetConfig(
     name="multi-wiki-qa-da",
-    pretty_name="the truncated version of the Danish part of the reading "
-    "comprehension dataset MultiWikiQA",
-    huggingface_id="EuroEval/multi-wiki-qa-da-mini",
+    source="EuroEval/multi-wiki-qa-da-mini",
     task=RC,
-    languages=[DA],
+    languages=[DANISH],
 )
 
 NORDJYLLAND_NEWS_CONFIG = DatasetConfig(
     name="nordjylland-news",
-    pretty_name="the truncated version of the Danish summarisation dataset "
-    "Nordjylland News",
-    huggingface_id="EuroEval/nordjylland-news-mini",
+    source="EuroEval/nordjylland-news-mini",
     task=SUMM,
-    languages=[DA],
+    languages=[DANISH],
 )
 
 DANSKE_TALEMAADER_CONFIG = DatasetConfig(
     name="danske-talemaader",
-    pretty_name="the truncated version of the Danish knowledge dataset Danske "
-    "Talemåder",
-    huggingface_id="EuroEval/danske-talemaader",
+    source="EuroEval/danske-talemaader",
     task=KNOW,
-    languages=[DA],
+    languages=[DANISH],
 )
 
 DANISH_CITIZEN_TESTS_CONFIG = DatasetConfig(
     name="danish-citizen-tests",
-    pretty_name="the Danish knowledge dataset Danish Citizen Tests",
-    huggingface_id="EuroEval/danish-citizen-tests-updated",
+    source="EuroEval/danish-citizen-tests-updated",
     task=KNOW,
-    languages=[DA],
+    languages=[DANISH],
 )
 
 HELLASWAG_DA_CONFIG = DatasetConfig(
     name="hellaswag-da",
-    pretty_name="the truncated version of the Danish common-sense reasoning dataset "
-    "HellaSwag-da, translated from the English HellaSwag dataset",
-    huggingface_id="EuroEval/hellaswag-da-mini",
+    source="EuroEval/hellaswag-da-mini",
     task=COMMON_SENSE,
-    languages=[DA],
+    languages=[DANISH],
 )
 
 EUROPEAN_VALUES_DA_CONFIG = DatasetConfig(
     name="european-values-da",
-    pretty_name="the Danish version of the European values evaluation dataset",
-    huggingface_id="EuroEval/european-values-da",
+    source="EuroEval/european-values-da",
     task=EUROPEAN_VALUES,
-    languages=[DA],
+    languages=[DANISH],
     splits=["test"],
     bootstrap_samples=False,
 )
@@ -91,82 +70,66 @@ EUROPEAN_VALUES_DA_CONFIG = DatasetConfig(
 
 DANE_CONFIG = DatasetConfig(
     name="dane",
-    pretty_name="the truncated version of the Danish named entity recognition "
-    "dataset DaNE",
-    huggingface_id="EuroEval/dane-mini",
+    source="EuroEval/dane-mini",
     task=NER,
-    languages=[DA],
+    languages=[DANISH],
     unofficial=True,
 )
 
 MMLU_DA_CONFIG = DatasetConfig(
     name="mmlu-da",
-    pretty_name="the truncated version of the Danish knowledge dataset MMLU-da, "
-    "translated from the English MMLU dataset",
-    huggingface_id="EuroEval/mmlu-da-mini",
+    source="EuroEval/mmlu-da-mini",
     task=KNOW,
-    languages=[DA],
+    languages=[DANISH],
     unofficial=True,
 )
 
 ARC_DA_CONFIG = DatasetConfig(
     name="arc-da",
-    pretty_name="the truncated version of the Danish knowledge dataset ARC-da, "
-    "translated from the English ARC dataset",
-    huggingface_id="EuroEval/arc-da-mini",
+    source="EuroEval/arc-da-mini",
     task=KNOW,
-    languages=[DA],
+    languages=[DANISH],
     unofficial=True,
 )
 
 BELEBELE_DA_CONFIG = DatasetConfig(
     name="belebele-da",
-    pretty_name="the Danish multiple choice reading comprehension dataset BeleBele-da, "
-    "translated from the English BeleBele dataset",
-    huggingface_id="EuroEval/belebele-da-mini",
+    source="EuroEval/belebele-da-mini",
     task=MCRC,
-    languages=[DA],
+    languages=[DANISH],
     unofficial=True,
 )
 
 SCANDIQA_DA_CONFIG = DatasetConfig(
     name="scandiqa-da",
-    pretty_name="the Danish part of the truncated version of the question answering "
-    "dataset ScandiQA",
-    huggingface_id="EuroEval/scandiqa-da-mini",
+    source="EuroEval/scandiqa-da-mini",
     task=RC,
-    languages=[DA],
+    languages=[DANISH],
     unofficial=True,
 )
 
 GOLDENSWAG_DA_CONFIG = DatasetConfig(
     name="goldenswag-da",
-    pretty_name="the truncated version of the Danish common-sense reasoning "
-    "dataset GoldenSwag-da, translated from the English GoldenSwag dataset",
-    huggingface_id="EuroEval/goldenswag-da-mini",
+    source="EuroEval/goldenswag-da-mini",
     task=COMMON_SENSE,
-    languages=[DA],
+    languages=[DANISH],
     unofficial=True,
 )
 
 WINOGRANDE_DA_CONFIG = DatasetConfig(
     name="winogrande-da",
-    pretty_name="the Danish common-sense reasoning dataset Winogrande-da, translated "
-    "from the English Winogrande dataset",
-    huggingface_id="EuroEval/winogrande-da",
+    source="EuroEval/winogrande-da",
     task=COMMON_SENSE,
-    languages=[DA],
+    languages=[DANISH],
     _labels=["a", "b"],
     unofficial=True,
 )
 
 EUROPEAN_VALUES_SITUATIONAL_DA_CONFIG = DatasetConfig(
     name="european-values-situational-da",
-    pretty_name="the Danish version of the European values evaluation dataset, where "
-    "the questions are phrased in a situational way",
-    huggingface_id="EuroEval/european-values-situational-da",
+    source="EuroEval/european-values-situational-da",
     task=EUROPEAN_VALUES,
-    languages=[DA],
+    languages=[DANISH],
     splits=["test"],
     bootstrap_samples=False,
     unofficial=True,
@@ -174,11 +137,9 @@ EUROPEAN_VALUES_SITUATIONAL_DA_CONFIG = DatasetConfig(
 
 EUROPEAN_VALUES_COMPLETIONS_DA_CONFIG = DatasetConfig(
     name="european-values-completions-da",
-    pretty_name="the Danish version of the European values evaluation dataset, where "
-    "the questions are phrased as sentence completions",
-    huggingface_id="EuroEval/european-values-completions-da",
+    source="EuroEval/european-values-completions-da",
     task=EUROPEAN_VALUES,
-    languages=[DA],
+    languages=[DANISH],
     splits=["test"],
     bootstrap_samples=False,
     unofficial=True,

@@ -205,11 +205,9 @@ class DatasetConfig:
     Attributes:
         name:
             The name of the dataset. Must be lower case with no spaces.
-        pretty_name:
-            A longer prettier name for the dataset, which allows cases and spaces. Used
-            for logging.
-        huggingface_id:
-            The Hugging Face ID of the dataset.
+        source:
+            The source of the dataset, which can be a Hugging Face ID or a dictionary
+            with keys "train", "val" and "test" mapping to local CSV file paths.
         task:
             The task of the dataset.
         languages:
@@ -220,6 +218,9 @@ class DatasetConfig:
             The mapping from label to ID.
         num_labels:
             The number of labels in the dataset.
+        pretty_name (optional):
+            A longer prettier name for the dataset, which allows cases and spaces. Used
+            for logging.
         _prompt_prefix (optional):
             The prefix to use in the few-shot prompt. Defaults to the template for the
             task and language.
@@ -271,10 +272,10 @@ class DatasetConfig:
     """
 
     name: str
-    pretty_name: str
-    huggingface_id: str
+    source: str | dict[str, str]
     task: Task
     languages: c.Sequence[Language]
+    _pretty_name: str | None = None
     _prompt_prefix: str | None = None
     _prompt_template: str | None = None
     _instruction_prompt: str | None = None
@@ -288,6 +289,29 @@ class DatasetConfig:
     splits: c.Sequence[str] = field(default_factory=lambda: ["train", "val", "test"])
     bootstrap_samples: bool = True
     unofficial: bool = False
+
+    @property
+    def pretty_name(self) -> str:
+        """Post-initialisation checks."""
+        if self._pretty_name is not None:
+            return self.pretty_name
+        if len(self.languages) > 1:
+            languages_str = (
+                ", ".join([lang.name for lang in self.languages[:-1]])
+                + f" and {self.languages[-1].name}"
+            )
+        else:
+            languages_str = self.languages[0].name
+        task_str = self.task.name.replace("-", " ")
+        dataset_name_str = self.name.replace("-", " ").replace("_", " ").title()
+        truncated_str = (
+            "truncated version of the "
+            if isinstance(self.source, str) and self.source.endswith("-mini")
+            else ""
+        )
+        return (
+            f"the {truncated_str}{languages_str} {task_str} dataset {dataset_name_str}"
+        )
 
     @property
     def prompt_prefix(self) -> str:
