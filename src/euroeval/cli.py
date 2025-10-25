@@ -2,15 +2,16 @@
 
 import collections.abc as c
 import importlib.util
+import logging
 from pathlib import Path
 
 import click
 
-from euroeval.data_models import DatasetConfig
-
 from .benchmarker import Benchmarker
+from .data_models import DatasetConfig
 from .enums import Device, GenerativeType
 from .languages import get_all_languages
+from .logging_utils import log
 
 
 @click.command()
@@ -309,6 +310,16 @@ def benchmark(
                 dataset_name_to_config.get(ds, ds) if isinstance(ds, str) else ds
                 for ds in datasets
             ]
+
+        dataset_str = (
+            "the custom dataset"
+            if len(custom_dataset_configs) == 1
+            else f"{len(custom_dataset_configs):,} custom datasets"
+        )
+        log(
+            f"Loaded {dataset_str} from {custom_datasets_file.as_posix()!r}.\n",
+            level=logging.INFO,
+        )
 
     benchmarker = Benchmarker(
         language=languages,
