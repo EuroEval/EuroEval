@@ -14,6 +14,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   dataset UNER-sr, the reading comprehension dataset MultiWikiQA-sr, the summarisation
   dataset LR-Sum-sr, the knowledge dataset MMLU-sr, and the common-sense reasoning dataset
   Winogrande-sr. This was contributed by @oliverkinch ✨
+- Added support for Bulgarian 🇧🇬! This includes the sentiment classification dataset
+  Cinexio, the linguistic acceptability dataset ScaLA-bg, the named entity recognition
+  dataset BG-NER-BSNLP, the reading comprehension dataset MultiWikiQA-bg, the knowledge
+  dataset Exams-bg, and the common-sense reasoning dataset Winogrande-bg.
 - Added support for Greek 🇬🇷! This includes the binary sentiment classification dataset
   Greek-SA, the linguistic acceptability dataset ScaLA-el, the named entity recognition
   dataset elNER, the reading comprehension dataset MultiWikiQA-el, the summarisation

@@ -22,6 +22,7 @@ from datasets.arrow_dataset import Dataset
 from datasets.dataset_dict import DatasetDict
 from huggingface_hub.hf_api import HfApi
 from load_ud_pos import (
+    load_bgdt_pos,
     load_csdt_pos,
     load_dadt_pos,
     load_dedt_pos,
@@ -76,6 +77,7 @@ def main() -> None:
         "sk": load_skdt_pos,
         "uk": load_ukdt_pos,
         "el": load_eldt_pos,
+        "bg": load_bgdt_pos,
         "sr": load_srdt_pos,
     }
 

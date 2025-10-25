@@ -4,6 +4,7 @@ import typing as t
 
 from ..data_models import PromptConfig
 from ..languages import (
+    BG,
     CS,
     DA,
     DE,
@@ -34,6 +35,13 @@ if t.TYPE_CHECKING:
     from ..data_models import Language
 
 LA_TEMPLATES: dict["Language", PromptConfig] = {
+    BG: PromptConfig(
+        default_prompt_label_mapping=dict(correct="да", incorrect="не"),
+        default_prompt_prefix="Следват изречения и дали са граматически правилни.",
+        default_prompt_template="Изречение: {text}\nГраматически правилно: {label}",
+        default_instruction_prompt="Изречение: {text}\n\nОпределете дали изречението е "
+        "граматически правилно или не. Отговорете с {labels_str}, и нищо друго.",
+    ),
     CS: PromptConfig(
         default_prompt_label_mapping=dict(correct="ano", incorrect="ne"),
         default_prompt_prefix="Následující jsou věty a zda jsou gramaticky správné.",

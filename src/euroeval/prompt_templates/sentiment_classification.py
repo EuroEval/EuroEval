@@ -4,6 +4,7 @@ import typing as t
 
 from ..data_models import PromptConfig
 from ..languages import (
+    BG,
     CS,
     DA,
     DE,
@@ -34,6 +35,16 @@ if t.TYPE_CHECKING:
     from ..data_models import Language
 
 SENT_TEMPLATES: dict["Language", PromptConfig] = {
+    BG: PromptConfig(
+        default_prompt_label_mapping=dict(
+            positive="позитивен", neutral="неутрален", negative="негативен"
+        ),
+        default_prompt_prefix="Следват документи и техният сентимент, който може да "
+        "бъде{labels_str}.",
+        default_prompt_template="Документ: {text}\nСентимент: {label}",
+        default_instruction_prompt="Документ: {text}\n\nКласифицирайте сентимента в "
+        "документа. Отговорете с {labels_str}, и нищо друго.",
+    ),
     DA: PromptConfig(
         default_prompt_label_mapping=dict(
             positive="positiv", neutral="neutral", negative="negativ"
