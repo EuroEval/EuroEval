@@ -33,7 +33,8 @@ def main() -> None:
     df = df[df["language"] == "sr"].reset_index(drop=True)
 
     # Create a uniform label distribution
-    df = create_uniform_label_distribution(df=df)
+    df = create_uniform_distribution(df=df, column="original_dataset")
+    df = create_uniform_distribution(df=df, column="label")
 
     # Map numeric labels to string labels
     # 0: negative, 1: neutral, 2: positive
@@ -73,21 +74,22 @@ def main() -> None:
     dataset.push_to_hub(dataset_id, private=True)
 
 
-def create_uniform_label_distribution(
-    df: pd.DataFrame, random_state: int = 4242
+def create_uniform_distribution(
+    df: pd.DataFrame, column: str = "label", random_state: int = 4242
 ) -> pd.DataFrame:
-    """Create a sampled dataset with a uniform label distribution.
+    """Create a sampled dataset with a uniform distribution for the given column.
 
     Args:
-        df: The input dataframe with a 'label' column.
+        df: The input dataframe.
+        column: The name of the column to create a uniform label distribution for
         random_state: The random state for reproducibility.
 
     Returns:
         A dataframe with a uniform label distribution.
     """
     # Separate each class
-    classes = df["label"].unique()
-    class_dfs = [df[df["label"] == label] for label in classes]
+    classes = df[column].unique()
+    class_dfs = [df[df[column] == label] for label in classes]
 
     # Find the size of the smallest class
     min_size = min(len(class_df) for class_df in class_dfs)
