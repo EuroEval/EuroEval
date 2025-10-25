@@ -172,7 +172,7 @@ class Task:
     metrics: c.Sequence[Metric]
     default_num_few_shot_examples: int
     default_max_generated_tokens: int
-    default_labels: c.Sequence[str]
+    default_labels: c.Sequence[str] | None
     requires_zero_shot: bool = False
     uses_structured_output: bool = False
     uses_logprobs: bool = False
@@ -370,7 +370,16 @@ class DatasetConfig:
     @property
     def labels(self) -> c.Sequence[str]:
         """The labels in the dataset."""
-        return self._labels if self._labels is not None else self.task.default_labels
+        if self._labels is not None:
+            return self._labels
+        elif self.task.default_labels is not None:
+            return self.task.default_labels
+        else:
+            raise ValueError(
+                f"Labels must be specified for dataset {self.name!r} with the "
+                f"attribute `_labels`, as the task {self.task.name!r} does not have "
+                "default labels."
+            )
 
     @property
     def prompt_label_mapping(self) -> dict[str, str]:
