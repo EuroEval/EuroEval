@@ -24,6 +24,7 @@ from ..languages import (
     NORWEGIAN_NYNORSK,
     POLISH,
     PORTUGUESE,
+    SERBIAN,
     SLOVAK,
     SPANISH,
     SWEDISH,
@@ -258,6 +259,16 @@ SENT_TEMPLATES: dict["Language", PromptConfig] = {
         default_prompt_template="Dokument: {text}\nSentiment: {label}",
         default_instruction_prompt="Dokument: {text}\n\nKlasifikujte pocit v "
         "dokumente. Odpovedzte so {labels_str}, a nič iné.",
+    ),
+    SERBIAN: PromptConfig(
+        default_prompt_label_mapping=dict(
+            positive="pozitivan", neutral="neutralan", negative="negativan"
+        ),
+        default_prompt_prefix="U nastavku su dokumenti i njihov sentiment, koji može "
+        "biti {labels_str}.",
+        default_prompt_template="Dokument: {text}\nSentiment: {label}",
+        default_instruction_prompt="Dokument: {text}\n\nKlasifikujte sentiment u "
+        "dokumentu. Odgovorite sa {labels_str}, i ništa drugo.",
     ),
     SWEDISH: PromptConfig(
         default_prompt_label_mapping=dict(

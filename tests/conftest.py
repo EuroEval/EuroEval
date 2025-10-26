@@ -13,7 +13,7 @@ from euroeval.cli import benchmark
 from euroeval.data_models import BenchmarkConfig, DatasetConfig, ModelConfig, Task
 from euroeval.dataset_configs import get_all_dataset_configs
 from euroeval.enums import InferenceBackend, ModelType
-from euroeval.languages import DA, get_all_languages
+from euroeval.languages import DANISH, get_all_languages
 from euroeval.metrics import HuggingFaceMetric
 from euroeval.tasks import SENT, SPEED, get_all_tasks
 
@@ -49,7 +49,7 @@ if os.environ.get("CHECK_DATASET") is not None:
         if any(language in cfg.languages for cfg in dataset_configs)
     }
 else:
-    ACTIVE_LANGUAGES = dict(da=DA)
+    ACTIVE_LANGUAGES = dict(da=DANISH)
 
 
 @pytest.fixture(scope="session")
@@ -83,8 +83,8 @@ def benchmark_config(
 ) -> Generator[BenchmarkConfig, None, None]:
     """Yields a benchmark configuration used in tests."""
     yield BenchmarkConfig(
-        model_languages=[DA],
-        dataset_languages=[DA],
+        model_languages=[DANISH],
+        dataset_languages=[DANISH],
         datasets=list(get_all_dataset_configs().values()),
         batch_size=1,
         raise_errors=False,
@@ -180,7 +180,7 @@ def model_config() -> Generator[ModelConfig, None, None]:
         revision="revision",
         param=None,
         task="task",
-        languages=[DA],
+        languages=[DANISH],
         merge=False,
         inference_backend=InferenceBackend.TRANSFORMERS,
         model_type=ModelType.ENCODER,
@@ -201,9 +201,5 @@ def cli_params() -> Generator[dict[str | None, ParamType], None, None]:
 def dataset_config() -> c.Generator[DatasetConfig, None, None]:
     """Yields a dataset configuration used in tests."""
     yield DatasetConfig(
-        name="dataset",
-        pretty_name="Dataset",
-        huggingface_id="dataset_id",
-        task=SENT,
-        languages=[DA],
+        name="dataset", source="dataset_id", task=SENT, languages=[DANISH]
     )

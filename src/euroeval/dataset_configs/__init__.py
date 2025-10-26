@@ -21,6 +21,7 @@ from .lithuanian import *  # noqa: F403
 from .norwegian import *  # noqa: F403
 from .polish import *  # noqa: F403
 from .portuguese import *  # noqa: F403
+from .serbian import *  # noqa: F403
 from .slovak import *  # noqa: F403
 from .spanish import *  # noqa: F403
 from .swedish import *  # noqa: F403

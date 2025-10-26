@@ -47,6 +47,7 @@ LANGUAGES = [
     "uk",
     "el",
     "bg",
+    "sr",
 ]
 
 

@@ -24,6 +24,7 @@ from ..languages import (
     NORWEGIAN_NYNORSK,
     POLISH,
     PORTUGUESE,
+    SERBIAN,
     SLOVAK,
     SPANISH,
     SWEDISH,
@@ -232,6 +233,20 @@ RC_TEMPLATES: dict["Language", PromptConfig] = {
             "Text: {text}\n\n"
             "Odpovedzte na nasledujúcu otázku týkajúcu sa textu uvedeného vyššie "
             "maximálne 3 slovami.\n\nOtázka: {question}"
+        ),
+        default_prompt_label_mapping=dict(),
+    ),
+    SERBIAN: PromptConfig(
+        default_prompt_prefix=(
+            "Следе текстови са одговарајућим питањима и одговорима."
+        ),
+        default_prompt_template=(
+            "Текст: {text}\nПитање: {question}\nОдговор у максимум 3 речи: {label}"
+        ),
+        default_instruction_prompt=(
+            "Текст: {text}\n\n"
+            "Одговорите на следеће питање о горњем тексту у максимум 3 речи.\n\n"
+            "Питање: {question}"
         ),
         default_prompt_label_mapping=dict(),
     ),
