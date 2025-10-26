@@ -16,18 +16,21 @@ from euroeval.dataset_configs import get_all_dataset_configs
 from euroeval.dataset_configs.danish import ANGRY_TWEETS_CONFIG, SCALA_DA_CONFIG
 from euroeval.enums import Device
 from euroeval.exceptions import InvalidBenchmark
-from euroeval.languages import DA, EN, NB, NN, NO, get_all_languages
-from euroeval.tasks import LA, SPEED
+from euroeval.languages import (
+    DANISH,
+    ENGLISH,
+    NORWEGIAN,
+    NORWEGIAN_BOKMÅL,
+    NORWEGIAN_NYNORSK,
+    get_all_languages,
+)
+from euroeval.tasks import LA
 
 
 @pytest.fixture(scope="module")
 def all_official_dataset_configs() -> Generator[list[DatasetConfig], None, None]:
     """Fixture for all official dataset configurations."""
-    yield [
-        cfg
-        for cfg in get_all_dataset_configs().values()
-        if not cfg.unofficial and cfg.task != SPEED
-    ]
+    yield [cfg for cfg in get_all_dataset_configs().values() if not cfg.unofficial]
 
 
 @pytest.fixture(scope="module")
@@ -70,12 +73,12 @@ def test_get_correct_language_codes(
 @pytest.mark.parametrize(
     argnames=["input_language_codes", "input_language", "expected_language"],
     argvalues=[
-        ("da", None, [DA]),
-        (["da"], None, [DA]),
-        (["da", "no"], ["da"], [DA]),
-        (["da", "en"], None, [DA, EN]),
-        ("no", None, [NO, NB, NN]),
-        (["nb"], None, [NB, NO]),
+        ("da", None, [DANISH]),
+        (["da"], None, [DANISH]),
+        (["da", "no"], ["da"], [DANISH]),
+        (["da", "en"], None, [DANISH, ENGLISH]),
+        ("no", None, [NORWEGIAN, NORWEGIAN_BOKMÅL, NORWEGIAN_NYNORSK]),
+        (["nb"], None, [NORWEGIAN_BOKMÅL, NORWEGIAN]),
         ("all", None, list(get_all_languages().values())),
     ],
     ids=[
@@ -147,25 +150,24 @@ def test_prepare_languages(
         (
             ["linguistic-acceptability", "sentiment-classification"],
             ["scala-da", "angry-tweets", "scandiqa-sv"],
-            [DA],
+            [DANISH],
             [SCALA_DA_CONFIG, ANGRY_TWEETS_CONFIG],
         ),
         (
             ["linguistic-acceptability", "sentiment-classification"],
             None,
-            [DA],
+            [DANISH],
             [SCALA_DA_CONFIG, ANGRY_TWEETS_CONFIG],
         ),
         (
             None,
             new_config := DatasetConfig(
                 name="new-dataset",
-                pretty_name="New Dataset",
-                huggingface_id="some/hf-dataset",
+                source="some/hf-dataset",
                 task=LA,
-                languages=[DA, EN],
+                languages=[DANISH, ENGLISH],
             ),
-            [DA],
+            [DANISH],
             [new_config],
         ),
     ],
@@ -203,7 +205,7 @@ def test_prepare_dataset_configs_invalid_task() -> None:
     """Test that an invalid task raises an error."""
     with pytest.raises(InvalidBenchmark):
         prepare_dataset_configs(
-            task="invalid-task", dataset=None, dataset_languages=[DA]
+            task="invalid-task", dataset=None, dataset_languages=[DANISH]
         )
 
 
@@ -211,7 +213,7 @@ def test_prepare_dataset_configs_invalid_dataset() -> None:
     """Test that an invalid dataset raises an error."""
     with pytest.raises(InvalidBenchmark):
         prepare_dataset_configs(
-            task=None, dataset="invalid-dataset", dataset_languages=[DA]
+            task=None, dataset="invalid-dataset", dataset_languages=[DANISH]
         )
 
 

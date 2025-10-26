@@ -1,5 +1,6 @@
 """Tests for the `cli` module."""
 
+import click
 from click.types import BOOL, FLOAT, INT, STRING, Choice, ParamType
 
 
@@ -34,17 +35,18 @@ def test_cli_param_names(cli_params: dict[str, ParamType]) -> None:
         "requires_safetensors",
         "generative_type",
         "download_only",
+        "custom_datasets_file",
     }
 
 
 def test_cli_param_types(cli_params: dict[str, ParamType]) -> None:
     """Test that the CLI parameters have the correct types."""
     assert cli_params["model"] == STRING
-    assert isinstance(cli_params["dataset"], Choice)
+    assert cli_params["dataset"] == STRING
     assert isinstance(cli_params["language"], Choice)
     assert isinstance(cli_params["model_language"], Choice)
     assert isinstance(cli_params["dataset_language"], Choice)
-    assert isinstance(cli_params["task"], Choice)
+    assert cli_params["task"] == STRING
     assert isinstance(cli_params["batch_size"], Choice)
     assert cli_params["progress_bar"] == BOOL
     assert cli_params["raise_errors"] == BOOL
@@ -67,3 +69,4 @@ def test_cli_param_types(cli_params: dict[str, ParamType]) -> None:
     assert cli_params["requires_safetensors"] == BOOL
     assert isinstance(cli_params["generative_type"], Choice)
     assert cli_params["download_only"] == BOOL
+    assert isinstance(cli_params["custom_datasets_file"], click.Path)

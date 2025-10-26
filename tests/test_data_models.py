@@ -315,7 +315,11 @@ class TestBenchmarkParametersAreConsistent:
         benchmark_config_params = set(
             inspect.signature(BenchmarkConfigParams).parameters.keys()
         ) - {"run_with_cli"}
-        cli_benchmark_params = set(cli_params.keys()) - {"model", "help"}
+        cli_benchmark_params = set(cli_params.keys()) - {
+            "model",
+            "custom_datasets_file",
+            "help",
+        }
         assert benchmark_config_params == cli_benchmark_params
 
     def test_config_params_is_the_same_as_benchmark_config(self) -> None:
