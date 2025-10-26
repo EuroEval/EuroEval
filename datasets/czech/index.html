@@ -858,15 +858,6 @@
   
 </li>
         
-          <li class="md-nav__item">
-  <a href="#cs-gec_1" class="md-nav__link">
-    <span class="md-ellipsis">
-      CS-GEC
-    </span>
-  </a>
-  
-</li>
-        
       </ul>
     </nav>
   
@@ -1693,15 +1684,6 @@
   
 </li>
         
-          <li class="md-nav__item">
-  <a href="#cs-gec_1" class="md-nav__link">
-    <span class="md-ellipsis">
-      CS-GEC
-    </span>
-  </a>
-  
-</li>
-        
       </ul>
     </nav>
   
@@ -2055,61 +2037,6 @@ Určete, zda je věta gramaticky správná nebo ne. Odpovězte &#39;ano&#39;, po
 </ul>
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>scala-cs
-</code></pre></div>
-<h3 id="cs-gec_1">CS-GEC</h3>
-<p>This dataset is extracted by postprocessing data from
-<a href="https://doi.org/10.18653/v1/D19-5545">this paper</a>. Specifically,
-grammatically incorrect sentences and their corresponding corrections
-were extracted.</p>
-<p>The original full dataset consists of 59,493 training and 4,668 test
-samples, respectively. We use a 1,024 / 256 / 2,048 split for training,
-validation, and testing, respectively. The train and test splits are
-subsets of the original splits, and the validation split is created
-using examples from the train split.</p>
-<p>Here are a few examples from the training split:</p>
-<div class="highlight"><pre><span></span><code><span class="p">{</span>
-<span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Musíme ochutnát pivo a knedlíky .&quot;</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;incorrect&quot;</span>
-<span class="p">}</span>
-</code></pre></div>
-<div class="highlight"><pre><span></span><code><span class="p">{</span>
-<span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;V budoucnosti bych chtěla mít velkou rodinu a dům mých snů .&quot;</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;correct&quot;</span>
-<span class="p">}</span>
-</code></pre></div>
-<div class="highlight"><pre><span></span><code><span class="p">{</span>
-<span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Dědeček i babička po druhé světové válce několik let žili v ČR a pak se zase vratili do Lužice .&quot;</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;incorrect&quot;</span>
-<span class="p">}</span>
-</code></pre></div>
-<p>When evaluating generative models, we use the following setup (see the
-<a href="/methodology">methodology</a> for more information on how these are used):</p>
-<ul>
-<li>Number of few-shot examples: 12</li>
-<li>Prefix prompt:</li>
-</ul>
-<div class="highlight"><pre><span></span><code>Následující jsou věty a zda jsou gramaticky správné.
-</code></pre></div>
-<ul>
-<li>Base prompt template:</li>
-</ul>
-<div class="highlight"><pre><span></span><code>Věta: {text}
-Gramaticky správná: {label}
-</code></pre></div>
-<ul>
-<li>Instruction-tuned prompt template:</li>
-</ul>
-<div class="highlight"><pre><span></span><code>Věta: {text}
-
-Určete, zda je věta gramaticky správná nebo ne. Odpovězte &#39;ano&#39;, pokud je věta správná, a &#39;ne&#39;, pokud není. Odpovězte pouze tímto slovem, a ničím jiným.
-</code></pre></div>
-<ul>
-<li>Label mapping:</li>
-<li><code>correct</code> ➡️ <code>ano</code></li>
-<li><code>incorrect</code> ➡️ <code>ne</code></li>
-</ul>
-<p>You can evaluate this dataset directly as follows:</p>
-<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>cs-gec
 </code></pre></div>
 <h2 id="reading-comprehension">Reading Comprehension</h2>
 <h3 id="sqad">SQAD</h3>
