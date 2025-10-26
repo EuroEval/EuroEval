@@ -637,6 +637,14 @@
       
         
       
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -941,11 +949,16 @@
 <span class="normal">66</span>
 <span class="normal">67</span>
 <span class="normal">68</span>
-<span class="normal">69</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;All dataset configurations used in EuroEval.&quot;&quot;&quot;</span>
+<span class="normal">69</span>
+<span class="normal">70</span>
+<span class="normal">71</span>
+<span class="normal">72</span>
+<span class="normal">73</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;All dataset configurations used in EuroEval.&quot;&quot;&quot;</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">..data_models</span><span class="w"> </span><span class="kn">import</span> <span class="n">DatasetConfig</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..languages</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_all_languages</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..tasks</span><span class="w"> </span><span class="kn">import</span> <span class="n">SPEED</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.bulgarian</span><span class="w"> </span><span class="kn">import</span> <span class="o">*</span>  <span class="c1"># noqa: F403</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.czech</span><span class="w"> </span><span class="kn">import</span> <span class="o">*</span>  <span class="c1"># noqa: F403</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.danish</span><span class="w"> </span><span class="kn">import</span> <span class="o">*</span>  <span class="c1"># noqa: F403</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.dutch</span><span class="w"> </span><span class="kn">import</span> <span class="o">*</span>  <span class="c1"># noqa: F403</span>
@@ -955,6 +968,7 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">.finnish</span><span class="w"> </span><span class="kn">import</span> <span class="o">*</span>  <span class="c1"># noqa: F403</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.french</span><span class="w"> </span><span class="kn">import</span> <span class="o">*</span>  <span class="c1"># noqa: F403</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.german</span><span class="w"> </span><span class="kn">import</span> <span class="o">*</span>  <span class="c1"># noqa: F403</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.greek</span><span class="w"> </span><span class="kn">import</span> <span class="o">*</span>  <span class="c1"># noqa: F403</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.icelandic</span><span class="w"> </span><span class="kn">import</span> <span class="o">*</span>  <span class="c1"># noqa: F403</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.italian</span><span class="w"> </span><span class="kn">import</span> <span class="o">*</span>  <span class="c1"># noqa: F403</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.latvian</span><span class="w"> </span><span class="kn">import</span> <span class="o">*</span>  <span class="c1"># noqa: F403</span>
@@ -962,9 +976,11 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">.norwegian</span><span class="w"> </span><span class="kn">import</span> <span class="o">*</span>  <span class="c1"># noqa: F403</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.polish</span><span class="w"> </span><span class="kn">import</span> <span class="o">*</span>  <span class="c1"># noqa: F403</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.portuguese</span><span class="w"> </span><span class="kn">import</span> <span class="o">*</span>  <span class="c1"># noqa: F403</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.serbian</span><span class="w"> </span><span class="kn">import</span> <span class="o">*</span>  <span class="c1"># noqa: F403</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.slovak</span><span class="w"> </span><span class="kn">import</span> <span class="o">*</span>  <span class="c1"># noqa: F403</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.spanish</span><span class="w"> </span><span class="kn">import</span> <span class="o">*</span>  <span class="c1"># noqa: F403</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.swedish</span><span class="w"> </span><span class="kn">import</span> <span class="o">*</span>  <span class="c1"># noqa: F403</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.ukrainian</span><span class="w"> </span><span class="kn">import</span> <span class="o">*</span>  <span class="c1"># noqa: F403</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">get_all_dataset_configs</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">DatasetConfig</span><span class="p">]:</span><div class="mkapi-source-link" id="euroeval.dataset_configs.get_all_dataset_configs"><a href="../../../api/euroeval/dataset_configs/#euroeval.dataset_configs.get_all_dataset_configs" title="Go to docs">[docs]</a></div>
@@ -1005,10 +1021,10 @@
 
 <span class="n">SPEED_CONFIG</span> <span class="o">=</span> <span class="n">DatasetConfig</span><span class="p">(</span>
     <span class="n">name</span><span class="o">=</span><span class="s2">&quot;speed&quot;</span><span class="p">,</span>
-    <span class="n">pretty_name</span><span class="o">=</span><span class="s2">&quot;the speed estimation benchmark&quot;</span><span class="p">,</span>
-    <span class="n">huggingface_id</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+    <span class="n">source</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
     <span class="n">task</span><span class="o">=</span><span class="n">SPEED</span><span class="p">,</span>
     <span class="n">languages</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="n">get_all_languages</span><span class="p">()</span><span class="o">.</span><span class="n">values</span><span class="p">()),</span>
+    <span class="n">_pretty_name</span><span class="o">=</span><span class="s2">&quot;the speed estimation benchmark&quot;</span><span class="p">,</span>
 <span class="p">)</span>
 </code></pre></div></td></tr></table></div>
 

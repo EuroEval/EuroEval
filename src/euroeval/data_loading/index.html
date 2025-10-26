@@ -637,6 +637,14 @@
       
         
       
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -1016,8 +1024,57 @@
 <span class="normal">141</span>
 <span class="normal">142</span>
 <span class="normal">143</span>
-<span class="normal">144</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Functions related to the loading of the data.&quot;&quot;&quot;</span>
+<span class="normal">144</span>
+<span class="normal">145</span>
+<span class="normal">146</span>
+<span class="normal">147</span>
+<span class="normal">148</span>
+<span class="normal">149</span>
+<span class="normal">150</span>
+<span class="normal">151</span>
+<span class="normal">152</span>
+<span class="normal">153</span>
+<span class="normal">154</span>
+<span class="normal">155</span>
+<span class="normal">156</span>
+<span class="normal">157</span>
+<span class="normal">158</span>
+<span class="normal">159</span>
+<span class="normal">160</span>
+<span class="normal">161</span>
+<span class="normal">162</span>
+<span class="normal">163</span>
+<span class="normal">164</span>
+<span class="normal">165</span>
+<span class="normal">166</span>
+<span class="normal">167</span>
+<span class="normal">168</span>
+<span class="normal">169</span>
+<span class="normal">170</span>
+<span class="normal">171</span>
+<span class="normal">172</span>
+<span class="normal">173</span>
+<span class="normal">174</span>
+<span class="normal">175</span>
+<span class="normal">176</span>
+<span class="normal">177</span>
+<span class="normal">178</span>
+<span class="normal">179</span>
+<span class="normal">180</span>
+<span class="normal">181</span>
+<span class="normal">182</span>
+<span class="normal">183</span>
+<span class="normal">184</span>
+<span class="normal">185</span>
+<span class="normal">186</span>
+<span class="normal">187</span>
+<span class="normal">188</span>
+<span class="normal">189</span>
+<span class="normal">190</span>
+<span class="normal">191</span>
+<span class="normal">192</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Functions related to the loading of the data.&quot;&quot;&quot;</span>
 
+<span class="kn">import</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">c</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
@@ -1029,6 +1086,7 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">huggingface_hub.errors</span><span class="w"> </span><span class="kn">import</span> <span class="n">HfHubHTTPError</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">numpy.random</span><span class="w"> </span><span class="kn">import</span> <span class="n">Generator</span>
 
+<span class="kn">from</span><span class="w"> </span><span class="nn">.constants</span><span class="w"> </span><span class="kn">import</span> <span class="n">SUPPORTED_FILE_FORMATS_FOR_LOCAL_DATASETS</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.exceptions</span><span class="w"> </span><span class="kn">import</span> <span class="n">HuggingFaceHubDown</span><span class="p">,</span> <span class="n">InvalidBenchmark</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.logging_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">log</span><span class="p">,</span> <span class="n">no_terminal_output</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.tasks</span><span class="w"> </span><span class="kn">import</span> <span class="n">EUROPEAN_VALUES</span>
@@ -1082,7 +1140,7 @@
 
     <span class="c1"># Bootstrap the splits, if applicable</span>
     <span class="k">if</span> <span class="n">dataset_config</span><span class="o">.</span><span class="n">bootstrap_samples</span><span class="p">:</span>
-        <span class="n">bootstrapped_splits</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="s2">&quot;Dataset&quot;</span><span class="p">]]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+        <span class="n">bootstrapped_splits</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">c</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="s2">&quot;Dataset&quot;</span><span class="p">]]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
         <span class="k">for</span> <span class="n">split</span> <span class="ow">in</span> <span class="n">dataset_config</span><span class="o">.</span><span class="n">splits</span><span class="p">:</span>
             <span class="n">bootstrap_indices</span> <span class="o">=</span> <span class="n">rng</span><span class="o">.</span><span class="n">integers</span><span class="p">(</span>
                 <span class="mi">0</span><span class="p">,</span>
@@ -1120,38 +1178,84 @@
 <span class="sd">    Returns:</span>
 <span class="sd">        The dataset.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">num_attempts</span> <span class="o">=</span> <span class="mi">5</span>
-    <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_attempts</span><span class="p">):</span>
-        <span class="k">try</span><span class="p">:</span>
-            <span class="k">with</span> <span class="n">no_terminal_output</span><span class="p">():</span>
-                <span class="n">dataset</span> <span class="o">=</span> <span class="n">load_dataset</span><span class="p">(</span>
-                    <span class="n">path</span><span class="o">=</span><span class="n">dataset_config</span><span class="o">.</span><span class="n">huggingface_id</span><span class="p">,</span>
-                    <span class="n">cache_dir</span><span class="o">=</span><span class="n">cache_dir</span><span class="p">,</span>
-                    <span class="n">token</span><span class="o">=</span><span class="n">unscramble</span><span class="p">(</span><span class="s2">&quot;XbjeOLhwebEaSaDUMqqaPaPIhgOcyOfDpGnX_&quot;</span><span class="p">),</span>
+    <span class="c1"># Case where the dataset source is a Hugging Face ID</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">dataset_config</span><span class="o">.</span><span class="n">source</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="n">num_attempts</span> <span class="o">=</span> <span class="mi">5</span>
+        <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_attempts</span><span class="p">):</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">with</span> <span class="n">no_terminal_output</span><span class="p">():</span>
+                    <span class="n">dataset</span> <span class="o">=</span> <span class="n">load_dataset</span><span class="p">(</span>
+                        <span class="n">path</span><span class="o">=</span><span class="n">dataset_config</span><span class="o">.</span><span class="n">source</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;::&quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">],</span>
+                        <span class="n">name</span><span class="o">=</span><span class="p">(</span>
+                            <span class="n">dataset_config</span><span class="o">.</span><span class="n">source</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;::&quot;</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>
+                            <span class="k">if</span> <span class="s2">&quot;::&quot;</span> <span class="ow">in</span> <span class="n">dataset_config</span><span class="o">.</span><span class="n">source</span>
+                            <span class="k">else</span> <span class="kc">None</span>
+                        <span class="p">),</span>
+                        <span class="n">cache_dir</span><span class="o">=</span><span class="n">cache_dir</span><span class="p">,</span>
+                        <span class="n">token</span><span class="o">=</span><span class="n">unscramble</span><span class="p">(</span><span class="s2">&quot;XbjeOLhwebEaSaDUMqqaPaPIhgOcyOfDpGnX_&quot;</span><span class="p">),</span>
+                    <span class="p">)</span>
+                <span class="k">break</span>
+            <span class="k">except</span> <span class="p">(</span>
+                <span class="ne">FileNotFoundError</span><span class="p">,</span>
+                <span class="ne">ConnectionError</span><span class="p">,</span>
+                <span class="n">DatasetsError</span><span class="p">,</span>
+                <span class="n">requests</span><span class="o">.</span><span class="n">ConnectionError</span><span class="p">,</span>
+                <span class="n">requests</span><span class="o">.</span><span class="n">ReadTimeout</span><span class="p">,</span>
+            <span class="p">)</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="n">log</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;Failed to load dataset </span><span class="si">{</span><span class="n">dataset_config</span><span class="o">.</span><span class="n">source</span><span class="si">!r}</span><span class="s2">, due to &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;the following error: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">. Retrying...&quot;</span><span class="p">,</span>
+                    <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
                 <span class="p">)</span>
-            <span class="k">break</span>
-        <span class="k">except</span> <span class="p">(</span>
-            <span class="ne">FileNotFoundError</span><span class="p">,</span>
-            <span class="ne">ConnectionError</span><span class="p">,</span>
-            <span class="n">DatasetsError</span><span class="p">,</span>
-            <span class="n">requests</span><span class="o">.</span><span class="n">ConnectionError</span><span class="p">,</span>
-            <span class="n">requests</span><span class="o">.</span><span class="n">ReadTimeout</span><span class="p">,</span>
-        <span class="p">)</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-            <span class="n">log</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;Failed to load dataset </span><span class="si">{</span><span class="n">dataset_config</span><span class="o">.</span><span class="n">huggingface_id</span><span class="si">!r}</span><span class="s2">, due to &quot;</span>
-                <span class="sa">f</span><span class="s2">&quot;the following error: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">. Retrying...&quot;</span><span class="p">,</span>
-                <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
+                <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+                <span class="k">continue</span>
+            <span class="k">except</span> <span class="n">HfHubHTTPError</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">HuggingFaceHubDown</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">InvalidBenchmark</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Failed to load dataset </span><span class="si">{</span><span class="n">dataset_config</span><span class="o">.</span><span class="n">source</span><span class="si">!r}</span><span class="s2"> after &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">num_attempts</span><span class="si">}</span><span class="s2"> attempts. Run with verbose mode to see the individual &quot;</span>
+                <span class="s2">&quot;errors.&quot;</span>
             <span class="p">)</span>
-            <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
-            <span class="k">continue</span>
-        <span class="k">except</span> <span class="n">HfHubHTTPError</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="n">HuggingFaceHubDown</span><span class="p">()</span>
+
+    <span class="c1"># Case where the dataset source is a dictionary with keys &quot;train&quot;, &quot;val&quot; and &quot;test&quot;,</span>
+    <span class="c1"># with the values pointing to local CSV files</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="n">InvalidBenchmark</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;Failed to load dataset </span><span class="si">{</span><span class="n">dataset_config</span><span class="o">.</span><span class="n">huggingface_id</span><span class="si">!r}</span><span class="s2"> after &quot;</span>
-            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">num_attempts</span><span class="si">}</span><span class="s2"> attempts. Run with verbose mode to see the individual &quot;</span>
-            <span class="s2">&quot;errors.&quot;</span>
-        <span class="p">)</span>
+        <span class="n">data_files</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">split</span><span class="p">:</span> <span class="n">dataset_config</span><span class="o">.</span><span class="n">source</span><span class="p">[</span><span class="n">split</span><span class="p">]</span>
+            <span class="k">for</span> <span class="n">split</span> <span class="ow">in</span> <span class="n">dataset_config</span><span class="o">.</span><span class="n">splits</span>
+            <span class="k">if</span> <span class="n">split</span> <span class="ow">in</span> <span class="n">dataset_config</span><span class="o">.</span><span class="n">source</span>
+        <span class="p">}</span>
+
+        <span class="c1"># Get the file extension and ensure that all files have the same extension</span>
+        <span class="n">file_extensions</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">split</span><span class="p">:</span> <span class="n">dataset_config</span><span class="o">.</span><span class="n">source</span><span class="p">[</span><span class="n">split</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+            <span class="k">for</span> <span class="n">split</span> <span class="ow">in</span> <span class="n">dataset_config</span><span class="o">.</span><span class="n">splits</span>
+            <span class="k">if</span> <span class="n">split</span> <span class="ow">in</span> <span class="n">dataset_config</span><span class="o">.</span><span class="n">source</span>
+        <span class="p">}</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">file_extensions</span><span class="o">.</span><span class="n">values</span><span class="p">()))</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">InvalidBenchmark</span><span class="p">(</span>
+                <span class="s2">&quot;All data files in a custom dataset must have the same file extension. &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;Got the extensions </span><span class="si">{</span><span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">file_extensions</span><span class="o">.</span><span class="n">values</span><span class="p">())</span><span class="si">}</span><span class="s2"> for the &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;dataset </span><span class="si">{</span><span class="n">dataset_config</span><span class="o">.</span><span class="n">name</span><span class="si">!r}</span><span class="s2">.&quot;</span>
+            <span class="p">)</span>
+        <span class="n">file_extension</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">file_extensions</span><span class="o">.</span><span class="n">values</span><span class="p">())[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="c1"># Check that the file extension is supported</span>
+        <span class="k">if</span> <span class="n">file_extension</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">SUPPORTED_FILE_FORMATS_FOR_LOCAL_DATASETS</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">InvalidBenchmark</span><span class="p">(</span>
+                <span class="s2">&quot;Unsupported file extension for custom dataset. Supported file &quot;</span>
+                <span class="s2">&quot;extensions are &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">SUPPORTED_FILE_FORMATS_FOR_LOCAL_DATASETS</span><span class="p">)</span><span class="si">}</span><span class="s2">, but got &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">file_extension</span><span class="si">!r}</span><span class="s2">.&quot;</span>
+            <span class="p">)</span>
+
+        <span class="c1"># Load the dataset</span>
+        <span class="k">with</span> <span class="n">no_terminal_output</span><span class="p">():</span>
+            <span class="n">dataset</span> <span class="o">=</span> <span class="n">load_dataset</span><span class="p">(</span>
+                <span class="n">path</span><span class="o">=</span><span class="n">file_extension</span><span class="p">,</span> <span class="n">data_files</span><span class="o">=</span><span class="n">data_files</span><span class="p">,</span> <span class="n">cache_dir</span><span class="o">=</span><span class="n">cache_dir</span>
+            <span class="p">)</span>
+
     <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="n">DatasetDict</span><span class="p">)</span>  <span class="c1"># type: ignore[used-before-def]</span>
     <span class="n">missing_keys</span> <span class="o">=</span> <span class="p">[</span><span class="n">key</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">dataset_config</span><span class="o">.</span><span class="n">splits</span> <span class="k">if</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">dataset</span><span class="p">]</span>
     <span class="k">if</span> <span class="n">missing_keys</span><span class="p">:</span>

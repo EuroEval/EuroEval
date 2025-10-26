@@ -637,6 +637,14 @@
       
         
       
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -915,97 +923,53 @@
 <span class="normal">66</span>
 <span class="normal">67</span>
 <span class="normal">68</span>
-<span class="normal">69</span>
-<span class="normal">70</span>
-<span class="normal">71</span>
-<span class="normal">72</span>
-<span class="normal">73</span>
-<span class="normal">74</span>
-<span class="normal">75</span>
-<span class="normal">76</span>
-<span class="normal">77</span>
-<span class="normal">78</span>
-<span class="normal">79</span>
-<span class="normal">80</span>
-<span class="normal">81</span>
-<span class="normal">82</span>
-<span class="normal">83</span>
-<span class="normal">84</span>
-<span class="normal">85</span>
-<span class="normal">86</span>
-<span class="normal">87</span>
-<span class="normal">88</span>
-<span class="normal">89</span>
-<span class="normal">90</span>
-<span class="normal">91</span>
-<span class="normal">92</span>
-<span class="normal">93</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;All Latvian dataset configurations used in EuroEval.&quot;&quot;&quot;</span>
+<span class="normal">69</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;All Latvian dataset configurations used in EuroEval.&quot;&quot;&quot;</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">..data_models</span><span class="w"> </span><span class="kn">import</span> <span class="n">DatasetConfig</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">..languages</span><span class="w"> </span><span class="kn">import</span> <span class="n">LV</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..languages</span><span class="w"> </span><span class="kn">import</span> <span class="n">LATVIAN</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..tasks</span><span class="w"> </span><span class="kn">import</span> <span class="n">COMMON_SENSE</span><span class="p">,</span> <span class="n">KNOW</span><span class="p">,</span> <span class="n">LA</span><span class="p">,</span> <span class="n">NER</span><span class="p">,</span> <span class="n">RC</span><span class="p">,</span> <span class="n">SENT</span><span class="p">,</span> <span class="n">SUMM</span>
 
 <span class="c1">### Official datasets ###</span>
 
 <span class="n">LATVIAN_TWITTER_SENTIMENT_CONFIG</span> <span class="o">=</span> <span class="n">DatasetConfig</span><span class="p">(</span>
     <span class="n">name</span><span class="o">=</span><span class="s2">&quot;latvian-twitter-sentiment&quot;</span><span class="p">,</span>
-    <span class="n">pretty_name</span><span class="o">=</span><span class="s2">&quot;the truncated version of the Latvian sentiment classification dataset&quot;</span><span class="p">,</span>
-    <span class="n">huggingface_id</span><span class="o">=</span><span class="s2">&quot;EuroEval/latvian-twitter-sentiment-mini&quot;</span><span class="p">,</span>
+    <span class="n">source</span><span class="o">=</span><span class="s2">&quot;EuroEval/latvian-twitter-sentiment-mini&quot;</span><span class="p">,</span>
     <span class="n">task</span><span class="o">=</span><span class="n">SENT</span><span class="p">,</span>
-    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">LV</span><span class="p">],</span>
+    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">LATVIAN</span><span class="p">],</span>
 <span class="p">)</span>
 
 <span class="n">SCALA_LV_CONFIG</span> <span class="o">=</span> <span class="n">DatasetConfig</span><span class="p">(</span>
-    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;scala-lv&quot;</span><span class="p">,</span>
-    <span class="n">pretty_name</span><span class="o">=</span><span class="s2">&quot;the Latvian part of the linguistic acceptability dataset ScaLA&quot;</span><span class="p">,</span>
-    <span class="n">huggingface_id</span><span class="o">=</span><span class="s2">&quot;EuroEval/scala-lv&quot;</span><span class="p">,</span>
-    <span class="n">task</span><span class="o">=</span><span class="n">LA</span><span class="p">,</span>
-    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">LV</span><span class="p">],</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;scala-lv&quot;</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="s2">&quot;EuroEval/scala-lv&quot;</span><span class="p">,</span> <span class="n">task</span><span class="o">=</span><span class="n">LA</span><span class="p">,</span> <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">LATVIAN</span><span class="p">]</span>
 <span class="p">)</span>
 
 <span class="n">FULLSTACK_NER_LV_CONFIG</span> <span class="o">=</span> <span class="n">DatasetConfig</span><span class="p">(</span>
     <span class="n">name</span><span class="o">=</span><span class="s2">&quot;fullstack-ner-lv&quot;</span><span class="p">,</span>
-    <span class="n">pretty_name</span><span class="o">=</span><span class="s2">&quot;the truncated version of the Latvian named entity recognition &quot;</span>
-    <span class="s2">&quot;dataset FullStack-NER-lv&quot;</span><span class="p">,</span>
-    <span class="n">huggingface_id</span><span class="o">=</span><span class="s2">&quot;EuroEval/fullstack-ner-lv-mini&quot;</span><span class="p">,</span>
+    <span class="n">source</span><span class="o">=</span><span class="s2">&quot;EuroEval/fullstack-ner-lv-mini&quot;</span><span class="p">,</span>
     <span class="n">task</span><span class="o">=</span><span class="n">NER</span><span class="p">,</span>
-    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">LV</span><span class="p">],</span>
+    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">LATVIAN</span><span class="p">],</span>
 <span class="p">)</span>
 
 <span class="n">MULTI_WIKI_QA_LV_CONFIG</span> <span class="o">=</span> <span class="n">DatasetConfig</span><span class="p">(</span>
     <span class="n">name</span><span class="o">=</span><span class="s2">&quot;multi-wiki-qa-lv&quot;</span><span class="p">,</span>
-    <span class="n">pretty_name</span><span class="o">=</span><span class="s2">&quot;the truncated version of the Latvian part of the reading &quot;</span>
-    <span class="s2">&quot;comprehension dataset MultiWikiQA&quot;</span><span class="p">,</span>
-    <span class="n">huggingface_id</span><span class="o">=</span><span class="s2">&quot;EuroEval/multi-wiki-qa-lv-mini&quot;</span><span class="p">,</span>
+    <span class="n">source</span><span class="o">=</span><span class="s2">&quot;EuroEval/multi-wiki-qa-lv-mini&quot;</span><span class="p">,</span>
     <span class="n">task</span><span class="o">=</span><span class="n">RC</span><span class="p">,</span>
-    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">LV</span><span class="p">],</span>
+    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">LATVIAN</span><span class="p">],</span>
 <span class="p">)</span>
 
 <span class="n">LSM_CONFIG</span> <span class="o">=</span> <span class="n">DatasetConfig</span><span class="p">(</span>
-    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;lsm&quot;</span><span class="p">,</span>
-    <span class="n">pretty_name</span><span class="o">=</span><span class="s2">&quot;the truncated version of the Latvian summarisation dataset LSM&quot;</span><span class="p">,</span>
-    <span class="n">huggingface_id</span><span class="o">=</span><span class="s2">&quot;EuroEval/lsm-mini&quot;</span><span class="p">,</span>
-    <span class="n">task</span><span class="o">=</span><span class="n">SUMM</span><span class="p">,</span>
-    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">LV</span><span class="p">],</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;lsm&quot;</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="s2">&quot;EuroEval/lsm-mini&quot;</span><span class="p">,</span> <span class="n">task</span><span class="o">=</span><span class="n">SUMM</span><span class="p">,</span> <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">LATVIAN</span><span class="p">]</span>
 <span class="p">)</span>
 
 
 <span class="n">MMLU_LV_CONFIG</span> <span class="o">=</span> <span class="n">DatasetConfig</span><span class="p">(</span>
-    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;mmlu-lv&quot;</span><span class="p">,</span>
-    <span class="n">pretty_name</span><span class="o">=</span><span class="s2">&quot;the truncated version of the Latvian knowledge dataset MMLU-lv, &quot;</span>
-    <span class="s2">&quot;translated from the English MMLU dataset&quot;</span><span class="p">,</span>
-    <span class="n">huggingface_id</span><span class="o">=</span><span class="s2">&quot;EuroEval/mmlu-lv-mini&quot;</span><span class="p">,</span>
-    <span class="n">task</span><span class="o">=</span><span class="n">KNOW</span><span class="p">,</span>
-    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">LV</span><span class="p">],</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;mmlu-lv&quot;</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="s2">&quot;EuroEval/mmlu-lv-mini&quot;</span><span class="p">,</span> <span class="n">task</span><span class="o">=</span><span class="n">KNOW</span><span class="p">,</span> <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">LATVIAN</span><span class="p">]</span>
 <span class="p">)</span>
 
 <span class="n">COPA_LV_CONFIG</span> <span class="o">=</span> <span class="n">DatasetConfig</span><span class="p">(</span>
     <span class="n">name</span><span class="o">=</span><span class="s2">&quot;copa-lv&quot;</span><span class="p">,</span>
-    <span class="n">pretty_name</span><span class="o">=</span><span class="s2">&quot;the Latvian common-sense reasoning dataset COPA-lv, translated from &quot;</span>
-    <span class="s2">&quot;the English COPA dataset&quot;</span><span class="p">,</span>
-    <span class="n">huggingface_id</span><span class="o">=</span><span class="s2">&quot;EuroEval/copa-lv&quot;</span><span class="p">,</span>
+    <span class="n">source</span><span class="o">=</span><span class="s2">&quot;EuroEval/copa-lv&quot;</span><span class="p">,</span>
     <span class="n">task</span><span class="o">=</span><span class="n">COMMON_SENSE</span><span class="p">,</span>
-    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">LV</span><span class="p">],</span>
+    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">LATVIAN</span><span class="p">],</span>
     <span class="n">_labels</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;a&quot;</span><span class="p">,</span> <span class="s2">&quot;b&quot;</span><span class="p">],</span>
 <span class="p">)</span>
 
@@ -1014,21 +978,17 @@
 
 <span class="n">WIKIANN_LV_CONFIG</span> <span class="o">=</span> <span class="n">DatasetConfig</span><span class="p">(</span>
     <span class="n">name</span><span class="o">=</span><span class="s2">&quot;wikiann-lv&quot;</span><span class="p">,</span>
-    <span class="n">pretty_name</span><span class="o">=</span><span class="s2">&quot;the truncated version of the Latvian part of the named entity &quot;</span>
-    <span class="s2">&quot;recognition dataset WikiANN&quot;</span><span class="p">,</span>
-    <span class="n">huggingface_id</span><span class="o">=</span><span class="s2">&quot;EuroEval/wikiann-lv-mini&quot;</span><span class="p">,</span>
+    <span class="n">source</span><span class="o">=</span><span class="s2">&quot;EuroEval/wikiann-lv-mini&quot;</span><span class="p">,</span>
     <span class="n">task</span><span class="o">=</span><span class="n">NER</span><span class="p">,</span>
-    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">LV</span><span class="p">],</span>
+    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">LATVIAN</span><span class="p">],</span>
     <span class="n">unofficial</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
 <span class="p">)</span>
 
 <span class="n">WINOGRANDE_LV_CONFIG</span> <span class="o">=</span> <span class="n">DatasetConfig</span><span class="p">(</span>
     <span class="n">name</span><span class="o">=</span><span class="s2">&quot;winogrande-lv&quot;</span><span class="p">,</span>
-    <span class="n">pretty_name</span><span class="o">=</span><span class="s2">&quot;the Latvian common-sense reasoning dataset Winogrande-lv, translated &quot;</span>
-    <span class="s2">&quot;from the English Winogrande dataset&quot;</span><span class="p">,</span>
-    <span class="n">huggingface_id</span><span class="o">=</span><span class="s2">&quot;EuroEval/winogrande-lv&quot;</span><span class="p">,</span>
+    <span class="n">source</span><span class="o">=</span><span class="s2">&quot;EuroEval/winogrande-lv&quot;</span><span class="p">,</span>
     <span class="n">task</span><span class="o">=</span><span class="n">COMMON_SENSE</span><span class="p">,</span>
-    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">LV</span><span class="p">],</span>
+    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">LATVIAN</span><span class="p">],</span>
     <span class="n">_labels</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;a&quot;</span><span class="p">,</span> <span class="s2">&quot;b&quot;</span><span class="p">],</span>
     <span class="n">unofficial</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
 <span class="p">)</span>

@@ -637,6 +637,14 @@
       
         
       
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -2713,7 +2721,7 @@
 
         <span class="c1"># If any of the prompts are empty then we need to replace them with a BOS token</span>
         <span class="c1"># so that the vLLM model can generate from them</span>
-        <span class="n">prompts</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">inputs</span><span class="p">[</span><span class="s2">&quot;text&quot;</span><span class="p">]</span>
+        <span class="n">prompts</span><span class="p">:</span> <span class="n">c</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">inputs</span><span class="p">[</span><span class="s2">&quot;text&quot;</span><span class="p">]</span>
         <span class="k">if</span> <span class="nb">any</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">prompt</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span> <span class="k">for</span> <span class="n">prompt</span> <span class="ow">in</span> <span class="n">prompts</span><span class="p">):</span>
             <span class="n">log</span><span class="p">(</span><span class="s2">&quot;Found empty prompts, replacing with BOS token.&quot;</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">)</span>
             <span class="n">prompts</span> <span class="o">=</span> <span class="p">[</span>
@@ -2817,7 +2825,7 @@
                 <span class="p">)</span>
 
         <span class="c1"># Parse the raw model outputs</span>
-        <span class="n">completion_ids</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="n">completion_ids</span><span class="p">:</span> <span class="n">c</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="n">c</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[</span>
             <span class="nb">list</span><span class="p">(</span><span class="n">output</span><span class="o">.</span><span class="n">outputs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">token_ids</span><span class="p">)</span> <span class="k">for</span> <span class="n">output</span> <span class="ow">in</span> <span class="n">raw_outputs</span>
         <span class="p">]</span>
         <span class="n">completions</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tokeniser</span><span class="o">.</span><span class="n">batch_decode</span><span class="p">(</span>
@@ -2869,7 +2877,7 @@
 
         <span class="c1"># Add logprobs scores to the output</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">buffer</span><span class="p">[</span><span class="s2">&quot;first_label_token_mapping&quot;</span><span class="p">]:</span>
-            <span class="n">scores</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]]]]</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">scores</span><span class="p">:</span> <span class="n">c</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="n">c</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="n">c</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]]]]</span> <span class="o">=</span> <span class="p">[</span>
                 <span class="p">[</span>
                     <span class="p">[</span>
                         <span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">decoded_token</span> <span class="ow">or</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">obj</span><span class="o">.</span><span class="n">logprob</span><span class="p">)</span>
@@ -2980,7 +2988,7 @@
         <span class="k">return</span> <span class="n">model_config</span>
 
     <span class="nd">@property</span><div class="mkapi-source-link" id="euroeval.benchmark_modules.vllm.VLLMModel.data_collator"><a href="../../../../api/euroeval/benchmark_modules/vllm/#euroeval.benchmark_modules.vllm.VLLMModel.data_collator" title="Go to docs">[docs]</a></div>
-    <span class="k">def</span><span class="w"> </span><span class="nf">data_collator</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">c</span><span class="o">.</span><span class="n">Callable</span><span class="p">[[</span><span class="nb">list</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">Any</span><span class="p">]],</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">t</span><span class="o">.</span><span class="n">Any</span><span class="p">]]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">data_collator</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">c</span><span class="o">.</span><span class="n">Callable</span><span class="p">[[</span><span class="n">c</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">Any</span><span class="p">]],</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">t</span><span class="o">.</span><span class="n">Any</span><span class="p">]]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;The data collator used to prepare samples during finetuning.</span>
 
 <span class="sd">        Returns:</span>

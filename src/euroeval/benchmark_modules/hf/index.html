@@ -637,6 +637,14 @@
       
         
       
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -2595,7 +2603,7 @@
         <span class="k">return</span> <span class="n">model_max_length</span>
 
     <span class="nd">@property</span><div class="mkapi-source-link" id="euroeval.benchmark_modules.hf.HuggingFaceEncoderModel.data_collator"><a href="../../../../api/euroeval/benchmark_modules/hf/#euroeval.benchmark_modules.hf.HuggingFaceEncoderModel.data_collator" title="Go to docs">[docs]</a></div>
-    <span class="k">def</span><span class="w"> </span><span class="nf">data_collator</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">c</span><span class="o">.</span><span class="n">Callable</span><span class="p">[[</span><span class="nb">list</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">Any</span><span class="p">]],</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">t</span><span class="o">.</span><span class="n">Any</span><span class="p">]]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">data_collator</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">c</span><span class="o">.</span><span class="n">Callable</span><span class="p">[[</span><span class="n">c</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">Any</span><span class="p">]],</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">t</span><span class="o">.</span><span class="n">Any</span><span class="p">]]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;The data collator used to prepare samples during finetuning.</span>
 
 <span class="sd">        Returns:</span>

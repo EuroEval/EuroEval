@@ -637,6 +637,14 @@
       
         
       
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -979,125 +987,53 @@
 <span class="normal">130</span>
 <span class="normal">131</span>
 <span class="normal">132</span>
-<span class="normal">133</span>
-<span class="normal">134</span>
-<span class="normal">135</span>
-<span class="normal">136</span>
-<span class="normal">137</span>
-<span class="normal">138</span>
-<span class="normal">139</span>
-<span class="normal">140</span>
-<span class="normal">141</span>
-<span class="normal">142</span>
-<span class="normal">143</span>
-<span class="normal">144</span>
-<span class="normal">145</span>
-<span class="normal">146</span>
-<span class="normal">147</span>
-<span class="normal">148</span>
-<span class="normal">149</span>
-<span class="normal">150</span>
-<span class="normal">151</span>
-<span class="normal">152</span>
-<span class="normal">153</span>
-<span class="normal">154</span>
-<span class="normal">155</span>
-<span class="normal">156</span>
-<span class="normal">157</span>
-<span class="normal">158</span>
-<span class="normal">159</span>
-<span class="normal">160</span>
-<span class="normal">161</span>
-<span class="normal">162</span>
-<span class="normal">163</span>
-<span class="normal">164</span>
-<span class="normal">165</span>
-<span class="normal">166</span>
-<span class="normal">167</span>
-<span class="normal">168</span>
-<span class="normal">169</span>
-<span class="normal">170</span>
-<span class="normal">171</span>
-<span class="normal">172</span>
-<span class="normal">173</span>
-<span class="normal">174</span>
-<span class="normal">175</span>
-<span class="normal">176</span>
-<span class="normal">177</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;All Swedish dataset configurations used in EuroEval.&quot;&quot;&quot;</span>
+<span class="normal">133</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;All Swedish dataset configurations used in EuroEval.&quot;&quot;&quot;</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">..data_models</span><span class="w"> </span><span class="kn">import</span> <span class="n">DatasetConfig</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">..languages</span><span class="w"> </span><span class="kn">import</span> <span class="n">SV</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..languages</span><span class="w"> </span><span class="kn">import</span> <span class="n">SWEDISH</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..tasks</span><span class="w"> </span><span class="kn">import</span> <span class="n">COMMON_SENSE</span><span class="p">,</span> <span class="n">EUROPEAN_VALUES</span><span class="p">,</span> <span class="n">KNOW</span><span class="p">,</span> <span class="n">LA</span><span class="p">,</span> <span class="n">MCRC</span><span class="p">,</span> <span class="n">NER</span><span class="p">,</span> <span class="n">RC</span><span class="p">,</span> <span class="n">SENT</span><span class="p">,</span> <span class="n">SUMM</span>
 
 <span class="c1">### Official datasets ###</span>
 
 <span class="n">SWEREC_CONFIG</span> <span class="o">=</span> <span class="n">DatasetConfig</span><span class="p">(</span>
-    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;swerec&quot;</span><span class="p">,</span>
-    <span class="n">pretty_name</span><span class="o">=</span><span class="s2">&quot;the truncated version of the Swedish sentiment classification &quot;</span>
-    <span class="s2">&quot;dataset SweReC&quot;</span><span class="p">,</span>
-    <span class="n">huggingface_id</span><span class="o">=</span><span class="s2">&quot;EuroEval/swerec-mini&quot;</span><span class="p">,</span>
-    <span class="n">task</span><span class="o">=</span><span class="n">SENT</span><span class="p">,</span>
-    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">SV</span><span class="p">],</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;swerec&quot;</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="s2">&quot;EuroEval/swerec-mini&quot;</span><span class="p">,</span> <span class="n">task</span><span class="o">=</span><span class="n">SENT</span><span class="p">,</span> <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">SWEDISH</span><span class="p">]</span>
 <span class="p">)</span>
 
 <span class="n">SCALA_SV_CONFIG</span> <span class="o">=</span> <span class="n">DatasetConfig</span><span class="p">(</span>
-    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;scala-sv&quot;</span><span class="p">,</span>
-    <span class="n">pretty_name</span><span class="o">=</span><span class="s2">&quot;The Swedish part of the linguistic acceptability dataset ScaLA&quot;</span><span class="p">,</span>
-    <span class="n">huggingface_id</span><span class="o">=</span><span class="s2">&quot;EuroEval/scala-sv&quot;</span><span class="p">,</span>
-    <span class="n">task</span><span class="o">=</span><span class="n">LA</span><span class="p">,</span>
-    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">SV</span><span class="p">],</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;scala-sv&quot;</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="s2">&quot;EuroEval/scala-sv&quot;</span><span class="p">,</span> <span class="n">task</span><span class="o">=</span><span class="n">LA</span><span class="p">,</span> <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">SWEDISH</span><span class="p">]</span>
 <span class="p">)</span>
 
 <span class="n">SUC3_CONFIG</span> <span class="o">=</span> <span class="n">DatasetConfig</span><span class="p">(</span>
-    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;suc3&quot;</span><span class="p">,</span>
-    <span class="n">pretty_name</span><span class="o">=</span><span class="s2">&quot;the truncated version of the Swedish named entity recognition &quot;</span>
-    <span class="s2">&quot;dataset SUC 3.0&quot;</span><span class="p">,</span>
-    <span class="n">huggingface_id</span><span class="o">=</span><span class="s2">&quot;EuroEval/suc3-mini&quot;</span><span class="p">,</span>
-    <span class="n">task</span><span class="o">=</span><span class="n">NER</span><span class="p">,</span>
-    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">SV</span><span class="p">],</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;suc3&quot;</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="s2">&quot;EuroEval/suc3-mini&quot;</span><span class="p">,</span> <span class="n">task</span><span class="o">=</span><span class="n">NER</span><span class="p">,</span> <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">SWEDISH</span><span class="p">]</span>
 <span class="p">)</span>
 
 <span class="n">MULTI_WIKI_QA_SV_CONFIG</span> <span class="o">=</span> <span class="n">DatasetConfig</span><span class="p">(</span>
     <span class="n">name</span><span class="o">=</span><span class="s2">&quot;multi-wiki-qa-sv&quot;</span><span class="p">,</span>
-    <span class="n">pretty_name</span><span class="o">=</span><span class="s2">&quot;the truncated version of the Swedish part of the reading &quot;</span>
-    <span class="s2">&quot;comprehension dataset MultiWikiQA&quot;</span><span class="p">,</span>
-    <span class="n">huggingface_id</span><span class="o">=</span><span class="s2">&quot;EuroEval/multi-wiki-qa-sv-mini&quot;</span><span class="p">,</span>
+    <span class="n">source</span><span class="o">=</span><span class="s2">&quot;EuroEval/multi-wiki-qa-sv-mini&quot;</span><span class="p">,</span>
     <span class="n">task</span><span class="o">=</span><span class="n">RC</span><span class="p">,</span>
-    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">SV</span><span class="p">],</span>
+    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">SWEDISH</span><span class="p">],</span>
 <span class="p">)</span>
 
 <span class="n">SWEDN_CONFIG</span> <span class="o">=</span> <span class="n">DatasetConfig</span><span class="p">(</span>
-    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;swedn&quot;</span><span class="p">,</span>
-    <span class="n">pretty_name</span><span class="o">=</span><span class="s2">&quot;the truncated version of the Swedish summarisation dataset SweDN&quot;</span><span class="p">,</span>
-    <span class="n">huggingface_id</span><span class="o">=</span><span class="s2">&quot;EuroEval/swedn-mini&quot;</span><span class="p">,</span>
-    <span class="n">task</span><span class="o">=</span><span class="n">SUMM</span><span class="p">,</span>
-    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">SV</span><span class="p">],</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;swedn&quot;</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="s2">&quot;EuroEval/swedn-mini&quot;</span><span class="p">,</span> <span class="n">task</span><span class="o">=</span><span class="n">SUMM</span><span class="p">,</span> <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">SWEDISH</span><span class="p">]</span>
 <span class="p">)</span>
 
 <span class="n">MMLU_SV_CONFIG</span> <span class="o">=</span> <span class="n">DatasetConfig</span><span class="p">(</span>
-    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;mmlu-sv&quot;</span><span class="p">,</span>
-    <span class="n">pretty_name</span><span class="o">=</span><span class="s2">&quot;the truncated version of the Swedish knowledge dataset MMLU-sv, &quot;</span>
-    <span class="s2">&quot;translated from the English MMLU dataset&quot;</span><span class="p">,</span>
-    <span class="n">huggingface_id</span><span class="o">=</span><span class="s2">&quot;EuroEval/mmlu-sv-mini&quot;</span><span class="p">,</span>
-    <span class="n">task</span><span class="o">=</span><span class="n">KNOW</span><span class="p">,</span>
-    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">SV</span><span class="p">],</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;mmlu-sv&quot;</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="s2">&quot;EuroEval/mmlu-sv-mini&quot;</span><span class="p">,</span> <span class="n">task</span><span class="o">=</span><span class="n">KNOW</span><span class="p">,</span> <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">SWEDISH</span><span class="p">]</span>
 <span class="p">)</span>
 
 <span class="n">HELLASWAG_SV_CONFIG</span> <span class="o">=</span> <span class="n">DatasetConfig</span><span class="p">(</span>
     <span class="n">name</span><span class="o">=</span><span class="s2">&quot;hellaswag-sv&quot;</span><span class="p">,</span>
-    <span class="n">pretty_name</span><span class="o">=</span><span class="s2">&quot;the truncated version of the Swedish common-sense reasoning dataset &quot;</span>
-    <span class="s2">&quot;HellaSwag-sv, translated from the English HellaSwag dataset&quot;</span><span class="p">,</span>
-    <span class="n">huggingface_id</span><span class="o">=</span><span class="s2">&quot;EuroEval/hellaswag-sv-mini&quot;</span><span class="p">,</span>
+    <span class="n">source</span><span class="o">=</span><span class="s2">&quot;EuroEval/hellaswag-sv-mini&quot;</span><span class="p">,</span>
     <span class="n">task</span><span class="o">=</span><span class="n">COMMON_SENSE</span><span class="p">,</span>
-    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">SV</span><span class="p">],</span>
+    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">SWEDISH</span><span class="p">],</span>
 <span class="p">)</span>
 
 <span class="n">EUROPEAN_VALUES_SV_CONFIG</span> <span class="o">=</span> <span class="n">DatasetConfig</span><span class="p">(</span>
     <span class="n">name</span><span class="o">=</span><span class="s2">&quot;european-values-sv&quot;</span><span class="p">,</span>
-    <span class="n">pretty_name</span><span class="o">=</span><span class="s2">&quot;the Swedish version of the European values evaluation dataset&quot;</span><span class="p">,</span>
-    <span class="n">huggingface_id</span><span class="o">=</span><span class="s2">&quot;EuroEval/european-values-sv&quot;</span><span class="p">,</span>
+    <span class="n">source</span><span class="o">=</span><span class="s2">&quot;EuroEval/european-values-sv&quot;</span><span class="p">,</span>
     <span class="n">task</span><span class="o">=</span><span class="n">EUROPEAN_VALUES</span><span class="p">,</span>
-    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">SV</span><span class="p">],</span>
+    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">SWEDISH</span><span class="p">],</span>
     <span class="n">splits</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;test&quot;</span><span class="p">],</span>
     <span class="n">bootstrap_samples</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
     <span class="n">_instruction_prompt</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">{text}</span><span class="s2">&quot;</span><span class="p">,</span>
@@ -1108,71 +1044,58 @@
 
 <span class="n">SCHIBSTED_SV_CONFIG</span> <span class="o">=</span> <span class="n">DatasetConfig</span><span class="p">(</span>
     <span class="n">name</span><span class="o">=</span><span class="s2">&quot;schibsted-sv&quot;</span><span class="p">,</span>
-    <span class="n">pretty_name</span><span class="o">=</span><span class="s2">&quot;the Swedish summarisation dataset Schibsted-sv&quot;</span><span class="p">,</span>
-    <span class="n">huggingface_id</span><span class="o">=</span><span class="s2">&quot;EuroEval/schibsted-article-summaries-sv&quot;</span><span class="p">,</span>
+    <span class="n">source</span><span class="o">=</span><span class="s2">&quot;EuroEval/schibsted-article-summaries-sv&quot;</span><span class="p">,</span>
     <span class="n">task</span><span class="o">=</span><span class="n">SUMM</span><span class="p">,</span>
-    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">SV</span><span class="p">],</span>
+    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">SWEDISH</span><span class="p">],</span>
     <span class="n">unofficial</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
 <span class="p">)</span>
 
 <span class="n">ARC_SV_CONFIG</span> <span class="o">=</span> <span class="n">DatasetConfig</span><span class="p">(</span>
     <span class="n">name</span><span class="o">=</span><span class="s2">&quot;arc-sv&quot;</span><span class="p">,</span>
-    <span class="n">pretty_name</span><span class="o">=</span><span class="s2">&quot;the truncated version of the Swedish knowledge dataset ARC-sv, &quot;</span>
-    <span class="s2">&quot;translated from the English ARC dataset&quot;</span><span class="p">,</span>
-    <span class="n">huggingface_id</span><span class="o">=</span><span class="s2">&quot;EuroEval/arc-sv-mini&quot;</span><span class="p">,</span>
+    <span class="n">source</span><span class="o">=</span><span class="s2">&quot;EuroEval/arc-sv-mini&quot;</span><span class="p">,</span>
     <span class="n">task</span><span class="o">=</span><span class="n">KNOW</span><span class="p">,</span>
-    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">SV</span><span class="p">],</span>
+    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">SWEDISH</span><span class="p">],</span>
     <span class="n">unofficial</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
 <span class="p">)</span>
 
 <span class="n">BELEBELE_SV_CONFIG</span> <span class="o">=</span> <span class="n">DatasetConfig</span><span class="p">(</span>
     <span class="n">name</span><span class="o">=</span><span class="s2">&quot;belebele-sv&quot;</span><span class="p">,</span>
-    <span class="n">pretty_name</span><span class="o">=</span><span class="s2">&quot;the Swedish multiple choice reading comprehension dataset &quot;</span>
-    <span class="s2">&quot;BeleBele-sv, translated from the English BeleBele dataset&quot;</span><span class="p">,</span>
-    <span class="n">huggingface_id</span><span class="o">=</span><span class="s2">&quot;EuroEval/belebele-sv-mini&quot;</span><span class="p">,</span>
+    <span class="n">source</span><span class="o">=</span><span class="s2">&quot;EuroEval/belebele-sv-mini&quot;</span><span class="p">,</span>
     <span class="n">task</span><span class="o">=</span><span class="n">MCRC</span><span class="p">,</span>
-    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">SV</span><span class="p">],</span>
+    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">SWEDISH</span><span class="p">],</span>
     <span class="n">unofficial</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
 <span class="p">)</span>
 
 <span class="n">SCANDIQA_SV_CONFIG</span> <span class="o">=</span> <span class="n">DatasetConfig</span><span class="p">(</span>
     <span class="n">name</span><span class="o">=</span><span class="s2">&quot;scandiqa-sv&quot;</span><span class="p">,</span>
-    <span class="n">pretty_name</span><span class="o">=</span><span class="s2">&quot;the Swedish part of the truncated version of the question answering &quot;</span>
-    <span class="s2">&quot;dataset ScandiQA&quot;</span><span class="p">,</span>
-    <span class="n">huggingface_id</span><span class="o">=</span><span class="s2">&quot;EuroEval/scandiqa-sv-mini&quot;</span><span class="p">,</span>
+    <span class="n">source</span><span class="o">=</span><span class="s2">&quot;EuroEval/scandiqa-sv-mini&quot;</span><span class="p">,</span>
     <span class="n">task</span><span class="o">=</span><span class="n">RC</span><span class="p">,</span>
-    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">SV</span><span class="p">],</span>
+    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">SWEDISH</span><span class="p">],</span>
     <span class="n">unofficial</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
 <span class="p">)</span>
 
 <span class="n">GOLDENSWAG_SV_CONFIG</span> <span class="o">=</span> <span class="n">DatasetConfig</span><span class="p">(</span>
     <span class="n">name</span><span class="o">=</span><span class="s2">&quot;goldenswag-sv&quot;</span><span class="p">,</span>
-    <span class="n">pretty_name</span><span class="o">=</span><span class="s2">&quot;the truncated version of the Swedish common-sense reasoning &quot;</span>
-    <span class="s2">&quot;dataset GoldenSwag-sv, translated from the English GoldenSwag dataset&quot;</span><span class="p">,</span>
-    <span class="n">huggingface_id</span><span class="o">=</span><span class="s2">&quot;EuroEval/goldenswag-sv-mini&quot;</span><span class="p">,</span>
+    <span class="n">source</span><span class="o">=</span><span class="s2">&quot;EuroEval/goldenswag-sv-mini&quot;</span><span class="p">,</span>
     <span class="n">task</span><span class="o">=</span><span class="n">COMMON_SENSE</span><span class="p">,</span>
-    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">SV</span><span class="p">],</span>
+    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">SWEDISH</span><span class="p">],</span>
     <span class="n">unofficial</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
 <span class="p">)</span>
 
 <span class="n">WINOGRANDE_SV_CONFIG</span> <span class="o">=</span> <span class="n">DatasetConfig</span><span class="p">(</span>
     <span class="n">name</span><span class="o">=</span><span class="s2">&quot;winogrande-sv&quot;</span><span class="p">,</span>
-    <span class="n">pretty_name</span><span class="o">=</span><span class="s2">&quot;the Swedish common-sense reasoning dataset Winogrande-sv, translated &quot;</span>
-    <span class="s2">&quot;from the English Winogrande dataset&quot;</span><span class="p">,</span>
-    <span class="n">huggingface_id</span><span class="o">=</span><span class="s2">&quot;EuroEval/winogrande-sv&quot;</span><span class="p">,</span>
+    <span class="n">source</span><span class="o">=</span><span class="s2">&quot;EuroEval/winogrande-sv&quot;</span><span class="p">,</span>
     <span class="n">task</span><span class="o">=</span><span class="n">COMMON_SENSE</span><span class="p">,</span>
-    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">SV</span><span class="p">],</span>
+    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">SWEDISH</span><span class="p">],</span>
     <span class="n">_labels</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;a&quot;</span><span class="p">,</span> <span class="s2">&quot;b&quot;</span><span class="p">],</span>
     <span class="n">unofficial</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
 <span class="p">)</span>
 
 <span class="n">EUROPEAN_VALUES_SITUATIONAL_SV_CONFIG</span> <span class="o">=</span> <span class="n">DatasetConfig</span><span class="p">(</span>
     <span class="n">name</span><span class="o">=</span><span class="s2">&quot;european-values-situational-sv&quot;</span><span class="p">,</span>
-    <span class="n">pretty_name</span><span class="o">=</span><span class="s2">&quot;the Swedish version of the European values evaluation dataset, where &quot;</span>
-    <span class="s2">&quot;the questions are phrased in a situational way&quot;</span><span class="p">,</span>
-    <span class="n">huggingface_id</span><span class="o">=</span><span class="s2">&quot;EuroEval/european-values-situational-sv&quot;</span><span class="p">,</span>
+    <span class="n">source</span><span class="o">=</span><span class="s2">&quot;EuroEval/european-values-situational-sv&quot;</span><span class="p">,</span>
     <span class="n">task</span><span class="o">=</span><span class="n">EUROPEAN_VALUES</span><span class="p">,</span>
-    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">SV</span><span class="p">],</span>
+    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">SWEDISH</span><span class="p">],</span>
     <span class="n">splits</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;test&quot;</span><span class="p">],</span>
     <span class="n">bootstrap_samples</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
     <span class="n">_instruction_prompt</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">{text}</span><span class="s2">&quot;</span><span class="p">,</span>
@@ -1181,11 +1104,9 @@
 
 <span class="n">EUROPEAN_VALUES_COMPLETIONS_SV_CONFIG</span> <span class="o">=</span> <span class="n">DatasetConfig</span><span class="p">(</span>
     <span class="n">name</span><span class="o">=</span><span class="s2">&quot;european-values-completions-sv&quot;</span><span class="p">,</span>
-    <span class="n">pretty_name</span><span class="o">=</span><span class="s2">&quot;the Swedish version of the European values evaluation dataset, where &quot;</span>
-    <span class="s2">&quot;the questions are phrased as sentence completions&quot;</span><span class="p">,</span>
-    <span class="n">huggingface_id</span><span class="o">=</span><span class="s2">&quot;EuroEval/european-values-completions-sv&quot;</span><span class="p">,</span>
+    <span class="n">source</span><span class="o">=</span><span class="s2">&quot;EuroEval/european-values-completions-sv&quot;</span><span class="p">,</span>
     <span class="n">task</span><span class="o">=</span><span class="n">EUROPEAN_VALUES</span><span class="p">,</span>
-    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">SV</span><span class="p">],</span>
+    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">SWEDISH</span><span class="p">],</span>
     <span class="n">splits</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;test&quot;</span><span class="p">],</span>
     <span class="n">bootstrap_samples</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
     <span class="n">_instruction_prompt</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">{text}</span><span class="s2">&quot;</span><span class="p">,</span>
@@ -1194,10 +1115,9 @@
 
 <span class="n">SKOLPROV_CONFIG</span> <span class="o">=</span> <span class="n">DatasetConfig</span><span class="p">(</span>
     <span class="n">name</span><span class="o">=</span><span class="s2">&quot;skolprov&quot;</span><span class="p">,</span>
-    <span class="n">pretty_name</span><span class="o">=</span><span class="s2">&quot;the Swedish knowledge dataset Skolprov&quot;</span><span class="p">,</span>
-    <span class="n">huggingface_id</span><span class="o">=</span><span class="s2">&quot;EuroEval/skolprov&quot;</span><span class="p">,</span>
+    <span class="n">source</span><span class="o">=</span><span class="s2">&quot;EuroEval/skolprov&quot;</span><span class="p">,</span>
     <span class="n">task</span><span class="o">=</span><span class="n">KNOW</span><span class="p">,</span>
-    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">SV</span><span class="p">],</span>
+    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">SWEDISH</span><span class="p">],</span>
     <span class="n">unofficial</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
 <span class="p">)</span>
 </code></pre></div></td></tr></table></div>

@@ -645,6 +645,14 @@
       
         
       
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -1045,6 +1053,14 @@
       
         
       
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -1163,6 +1179,10 @@
       
         
           
+        
+      
+        
+      
         
       
         
@@ -2039,7 +2059,7 @@ Raise an error if the model configuration has invalid parameters.</p>
 <i class="fa-regular fa-square-minus"></i>
 </span>
 </span>
-<span class="mkapi-object-name"><a href="./#euroeval.generation_utils.extract_few_shot_examples" title="euroeval.generation_utils.extract_few_shot_examples">extract_few_shot_examples</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">dataset</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="datasets.dataset_dict.DatasetDict">DatasetDict</span></span><span class="mkapi-comma">, </span><span class="mkapi-arg">dataset_config</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><a href="../data_models/#euroeval.data_models.DatasetConfig" title="euroeval.data_models.DatasetConfig">DatasetConfig</a></span><span class="mkapi-comma">, </span><span class="mkapi-arg">benchmark_config</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><a href="../data_models/#euroeval.data_models.BenchmarkConfig" title="euroeval.data_models.BenchmarkConfig">BenchmarkConfig</a></span><span class="mkapi-comma">, </span><span class="mkapi-arg">itr_idx</span><span class="mkapi-colon">: </span><span class="mkapi-ann">int</span><span class="mkapi-paren">)</span><span class="mkapi-arrow"> → </span><span class="mkapi-return">list[dict[str, <span class="mkapi-tooltip" title="typing">t</span>.<span class="mkapi-tooltip" title="typing.Any">Any</span>]]</span></span>
+<span class="mkapi-object-name"><a href="./#euroeval.generation_utils.extract_few_shot_examples" title="euroeval.generation_utils.extract_few_shot_examples">extract_few_shot_examples</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">dataset</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="datasets.dataset_dict.DatasetDict">DatasetDict</span></span><span class="mkapi-comma">, </span><span class="mkapi-arg">dataset_config</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><a href="../data_models/#euroeval.data_models.DatasetConfig" title="euroeval.data_models.DatasetConfig">DatasetConfig</a></span><span class="mkapi-comma">, </span><span class="mkapi-arg">benchmark_config</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><a href="../data_models/#euroeval.data_models.BenchmarkConfig" title="euroeval.data_models.BenchmarkConfig">BenchmarkConfig</a></span><span class="mkapi-comma">, </span><span class="mkapi-arg">itr_idx</span><span class="mkapi-colon">: </span><span class="mkapi-ann">int</span><span class="mkapi-paren">)</span><span class="mkapi-arrow"> → </span><span class="mkapi-return"><span class="mkapi-tooltip" title="collections.abc">c</span>.<span class="mkapi-tooltip" title="collections.abc.Sequence">Sequence</span>[dict[str, <span class="mkapi-tooltip" title="typing">t</span>.<span class="mkapi-tooltip" title="typing.Any">Any</span>]]</span></span>
 </p>
 <div class="mkapi-document">
 <p>Extract few-shot examples from a dataset.</p>
@@ -2088,7 +2108,7 @@ The index of the dataset in the iterator.</p>
 <div class="mkapi-section-content">
 <ul class="mkapi-item-list">
 <li>
-<p><span class="mkapi-item-type">list[dict[str, <span class="mkapi-tooltip" title="typing">t</span>.<span class="mkapi-tooltip" title="typing.Any">Any</span>]]</span> <span class="mkapi-dash">&mdash;</span>
+<p><span class="mkapi-item-type"><span class="mkapi-tooltip" title="collections.abc">c</span>.<span class="mkapi-tooltip" title="collections.abc.Sequence">Sequence</span>[dict[str, <span class="mkapi-tooltip" title="typing">t</span>.<span class="mkapi-tooltip" title="typing.Any">Any</span>]]</span> <span class="mkapi-dash">&mdash;</span>
 The few-shot examples.</p>
 </li>
 </ul>
@@ -2123,7 +2143,7 @@ If there are not enough short examples for few-shot learning.</p>
 <i class="fa-regular fa-square-minus"></i>
 </span>
 </span>
-<span class="mkapi-object-name"><a href="./#euroeval.generation_utils.apply_prompt" title="euroeval.generation_utils.apply_prompt">apply_prompt</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">examples</span><span class="mkapi-colon">: </span><span class="mkapi-ann">dict[str, <span class="mkapi-tooltip" title="typing">t</span>.<span class="mkapi-tooltip" title="typing.Any">Any</span>]</span><span class="mkapi-comma">, </span><span class="mkapi-arg">few_shot_examples</span><span class="mkapi-colon">: </span><span class="mkapi-ann">list[dict[str, <span class="mkapi-tooltip" title="typing">t</span>.<span class="mkapi-tooltip" title="typing.Any">Any</span>]]</span><span class="mkapi-comma">, </span><span class="mkapi-arg">model_config</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><a href="../data_models/#euroeval.data_models.ModelConfig" title="euroeval.data_models.ModelConfig">ModelConfig</a></span><span class="mkapi-comma">, </span><span class="mkapi-arg">dataset_config</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><a href="../data_models/#euroeval.data_models.DatasetConfig" title="euroeval.data_models.DatasetConfig">DatasetConfig</a></span><span class="mkapi-comma">, </span><span class="mkapi-arg">generative_type</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><a href="../enums/#euroeval.enums.GenerativeType" title="euroeval.enums.GenerativeType">GenerativeType</a> | None</span><span class="mkapi-comma">, </span><span class="mkapi-arg">always_populate_text_field</span><span class="mkapi-colon">: </span><span class="mkapi-ann">bool</span><span class="mkapi-comma">, </span><span class="mkapi-arg">tokeniser</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="transformers.tokenization_utils.PreTrainedTokenizer">PreTrainedTokenizer</span> | None</span><span class="mkapi-paren">)</span><span class="mkapi-arrow"> → </span><span class="mkapi-return">dict[str, <span class="mkapi-tooltip" title="typing">t</span>.<span class="mkapi-tooltip" title="typing.Any">Any</span>]</span></span>
+<span class="mkapi-object-name"><a href="./#euroeval.generation_utils.apply_prompt" title="euroeval.generation_utils.apply_prompt">apply_prompt</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">examples</span><span class="mkapi-colon">: </span><span class="mkapi-ann">dict[str, <span class="mkapi-tooltip" title="typing">t</span>.<span class="mkapi-tooltip" title="typing.Any">Any</span>]</span><span class="mkapi-comma">, </span><span class="mkapi-arg">few_shot_examples</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="collections.abc">c</span>.<span class="mkapi-tooltip" title="collections.abc.Sequence">Sequence</span>[dict[str, <span class="mkapi-tooltip" title="typing">t</span>.<span class="mkapi-tooltip" title="typing.Any">Any</span>]]</span><span class="mkapi-comma">, </span><span class="mkapi-arg">model_config</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><a href="../data_models/#euroeval.data_models.ModelConfig" title="euroeval.data_models.ModelConfig">ModelConfig</a></span><span class="mkapi-comma">, </span><span class="mkapi-arg">dataset_config</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><a href="../data_models/#euroeval.data_models.DatasetConfig" title="euroeval.data_models.DatasetConfig">DatasetConfig</a></span><span class="mkapi-comma">, </span><span class="mkapi-arg">generative_type</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><a href="../enums/#euroeval.enums.GenerativeType" title="euroeval.enums.GenerativeType">GenerativeType</a> | None</span><span class="mkapi-comma">, </span><span class="mkapi-arg">always_populate_text_field</span><span class="mkapi-colon">: </span><span class="mkapi-ann">bool</span><span class="mkapi-comma">, </span><span class="mkapi-arg">tokeniser</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="transformers.tokenization_utils.PreTrainedTokenizer">PreTrainedTokenizer</span> | None</span><span class="mkapi-paren">)</span><span class="mkapi-arrow"> → </span><span class="mkapi-return">dict[str, <span class="mkapi-tooltip" title="typing">t</span>.<span class="mkapi-tooltip" title="typing.Any">Any</span>]</span></span>
 </p>
 <div class="mkapi-document">
 <p>Apply prompt template to an example, potentially with few-shot examples.</p>
@@ -2144,7 +2164,7 @@ The examples to apply the few-shot examples to.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">few_shot_examples</span> : 
-<span class="mkapi-item-type">list[dict[str, <span class="mkapi-tooltip" title="typing">t</span>.<span class="mkapi-tooltip" title="typing.Any">Any</span>]]</span> <span class="mkapi-dash">&mdash;</span>
+<span class="mkapi-item-type"><span class="mkapi-tooltip" title="collections.abc">c</span>.<span class="mkapi-tooltip" title="collections.abc.Sequence">Sequence</span>[dict[str, <span class="mkapi-tooltip" title="typing">t</span>.<span class="mkapi-tooltip" title="typing.Any">Any</span>]]</span> <span class="mkapi-dash">&mdash;</span>
 The few-shot examples to apply.</p>
 </li>
 <li>
@@ -2219,7 +2239,7 @@ The example with the few-shot examples applied.</p>
 <i class="fa-regular fa-square-minus"></i>
 </span>
 </span>
-<span class="mkapi-object-name"><a href="./#euroeval.generation_utils.raise_if_wrong_params" title="euroeval.generation_utils.raise_if_wrong_params">raise_if_wrong_params</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">model_config</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><a href="../data_models/#euroeval.data_models.ModelConfig" title="euroeval.data_models.ModelConfig">ModelConfig</a></span><span class="mkapi-comma">, </span><span class="mkapi-arg">allowed_params</span><span class="mkapi-colon">: </span><span class="mkapi-ann">dict[<span class="mkapi-tooltip" title="re">re</span>.<span class="mkapi-tooltip" title="re.Pattern">Pattern</span>, list[str]]</span><span class="mkapi-paren">)</span><span class="mkapi-arrow"> → </span><span class="mkapi-return">None</span></span>
+<span class="mkapi-object-name"><a href="./#euroeval.generation_utils.raise_if_wrong_params" title="euroeval.generation_utils.raise_if_wrong_params">raise_if_wrong_params</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">model_config</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><a href="../data_models/#euroeval.data_models.ModelConfig" title="euroeval.data_models.ModelConfig">ModelConfig</a></span><span class="mkapi-comma">, </span><span class="mkapi-arg">allowed_params</span><span class="mkapi-colon">: </span><span class="mkapi-ann">dict[<span class="mkapi-tooltip" title="re">re</span>.<span class="mkapi-tooltip" title="re.Pattern">Pattern</span>, <span class="mkapi-tooltip" title="collections.abc">c</span>.<span class="mkapi-tooltip" title="collections.abc.Sequence">Sequence</span>[str]]</span><span class="mkapi-paren">)</span><span class="mkapi-arrow"> → </span><span class="mkapi-return">None</span></span>
 </p>
 <div class="mkapi-document">
 <p>Raise an error if the model configuration has invalid parameters.</p>
@@ -2240,7 +2260,7 @@ The model configuration.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">allowed_params</span> : 
-<span class="mkapi-item-type">dict[<span class="mkapi-tooltip" title="re">re</span>.<span class="mkapi-tooltip" title="re.Pattern">Pattern</span>, list[str]]</span> <span class="mkapi-dash">&mdash;</span>
+<span class="mkapi-item-type">dict[<span class="mkapi-tooltip" title="re">re</span>.<span class="mkapi-tooltip" title="re.Pattern">Pattern</span>, <span class="mkapi-tooltip" title="collections.abc">c</span>.<span class="mkapi-tooltip" title="collections.abc.Sequence">Sequence</span>[str]]</span> <span class="mkapi-dash">&mdash;</span>
 The allowed parameters for the model, being a dictionary mapping a regex
 pattern matching the model ID to a list of allowed parameters for those
 models.</p>

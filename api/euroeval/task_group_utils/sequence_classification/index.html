@@ -645,6 +645,14 @@
       
         
       
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -1045,6 +1053,14 @@
       
         
       
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -1163,6 +1179,10 @@
       
         
           
+        
+      
+        
+      
         
       
         
@@ -2234,7 +2254,7 @@ values.</p>
 <i class="fa-regular fa-square-minus"></i>
 </span>
 </span>
-<span class="mkapi-object-name"><a href="./#euroeval.task_group_utils.sequence_classification.extract_labels_from_generation" title="euroeval.task_group_utils.sequence_classification.extract_labels_from_generation">extract_labels_from_generation</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">input_batch</span><span class="mkapi-colon">: </span><span class="mkapi-ann">dict[str, list]</span><span class="mkapi-comma">, </span><span class="mkapi-arg">model_output</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><a href="../../data_models/#euroeval.data_models.GenerativeModelOutput" title="euroeval.data_models.GenerativeModelOutput">GenerativeModelOutput</a></span><span class="mkapi-comma">, </span><span class="mkapi-arg">dataset_config</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><a href="../../data_models/#euroeval.data_models.DatasetConfig" title="euroeval.data_models.DatasetConfig">DatasetConfig</a></span><span class="mkapi-comma">, </span><span class="mkapi-arg">model_config</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><a href="../../data_models/#euroeval.data_models.ModelConfig" title="euroeval.data_models.ModelConfig">ModelConfig</a></span><span class="mkapi-comma">, </span><span class="mkapi-arg">first_label_token_mapping</span><span class="mkapi-colon">: </span><span class="mkapi-ann">dict[str, str] | bool</span><span class="mkapi-paren">)</span><span class="mkapi-arrow"> → </span><span class="mkapi-return">list[str]</span></span>
+<span class="mkapi-object-name"><a href="./#euroeval.task_group_utils.sequence_classification.extract_labels_from_generation" title="euroeval.task_group_utils.sequence_classification.extract_labels_from_generation">extract_labels_from_generation</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">input_batch</span><span class="mkapi-colon">: </span><span class="mkapi-ann">dict[str, list]</span><span class="mkapi-comma">, </span><span class="mkapi-arg">model_output</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><a href="../../data_models/#euroeval.data_models.GenerativeModelOutput" title="euroeval.data_models.GenerativeModelOutput">GenerativeModelOutput</a></span><span class="mkapi-comma">, </span><span class="mkapi-arg">dataset_config</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><a href="../../data_models/#euroeval.data_models.DatasetConfig" title="euroeval.data_models.DatasetConfig">DatasetConfig</a></span><span class="mkapi-comma">, </span><span class="mkapi-arg">model_config</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><a href="../../data_models/#euroeval.data_models.ModelConfig" title="euroeval.data_models.ModelConfig">ModelConfig</a></span><span class="mkapi-comma">, </span><span class="mkapi-arg">first_label_token_mapping</span><span class="mkapi-colon">: </span><span class="mkapi-ann">dict[str, str] | bool</span><span class="mkapi-paren">)</span><span class="mkapi-arrow"> → </span><span class="mkapi-return"><span class="mkapi-tooltip" title="collections.abc">c</span>.<span class="mkapi-tooltip" title="collections.abc.Sequence">Sequence</span>[str]</span></span>
 </p>
 <div class="mkapi-document">
 <p>Extract the predicted labels from the generated output.</p>
@@ -2289,7 +2309,7 @@ mapping is outputted then the model will always output scores).</p>
 <div class="mkapi-section-content">
 <ul class="mkapi-item-list">
 <li>
-<p><span class="mkapi-item-type">list[str]</span> <span class="mkapi-dash">&mdash;</span>
+<p><span class="mkapi-item-type"><span class="mkapi-tooltip" title="collections.abc">c</span>.<span class="mkapi-tooltip" title="collections.abc.Sequence">Sequence</span>[str]</span> <span class="mkapi-dash">&mdash;</span>
 The predicted labels.</p>
 </li>
 </ul>
@@ -2323,7 +2343,7 @@ mapping is not provided.</p>
 <i class="fa-regular fa-square-minus"></i>
 </span>
 </span>
-<span class="mkapi-object-name"><a href="./#euroeval.task_group_utils.sequence_classification.get_closest_logprobs_labels" title="euroeval.task_group_utils.sequence_classification.get_closest_logprobs_labels">get_closest_logprobs_labels</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">generation_logprobs</span><span class="mkapi-colon">: </span><span class="mkapi-ann">list[list[list[tuple[str, float]]]]</span><span class="mkapi-comma">, </span><span class="mkapi-arg">first_label_token_mapping</span><span class="mkapi-colon">: </span><span class="mkapi-ann">dict[str, str] | <span class="mkapi-tooltip" title="typing">t</span>.<span class="mkapi-tooltip" title="typing.Literal">Literal</span>[True]</span><span class="mkapi-comma">, </span><span class="mkapi-arg">candidate_labels</span><span class="mkapi-colon">: </span><span class="mkapi-ann">list[list[str]]</span><span class="mkapi-paren">)</span><span class="mkapi-arrow"> → </span><span class="mkapi-return">list[str] | None</span></span>
+<span class="mkapi-object-name"><a href="./#euroeval.task_group_utils.sequence_classification.get_closest_logprobs_labels" title="euroeval.task_group_utils.sequence_classification.get_closest_logprobs_labels">get_closest_logprobs_labels</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">generation_logprobs</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="collections.abc">c</span>.<span class="mkapi-tooltip" title="collections.abc.Sequence">Sequence</span>[<span class="mkapi-tooltip" title="collections.abc">c</span>.<span class="mkapi-tooltip" title="collections.abc.Sequence">Sequence</span>[<span class="mkapi-tooltip" title="collections.abc">c</span>.<span class="mkapi-tooltip" title="collections.abc.Sequence">Sequence</span>[tuple[str, float]]]]</span><span class="mkapi-comma">, </span><span class="mkapi-arg">first_label_token_mapping</span><span class="mkapi-colon">: </span><span class="mkapi-ann">dict[str, str] | <span class="mkapi-tooltip" title="typing">t</span>.<span class="mkapi-tooltip" title="typing.Literal">Literal</span>[True]</span><span class="mkapi-comma">, </span><span class="mkapi-arg">candidate_labels</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="collections.abc">c</span>.<span class="mkapi-tooltip" title="collections.abc.Sequence">Sequence</span>[<span class="mkapi-tooltip" title="collections.abc">c</span>.<span class="mkapi-tooltip" title="collections.abc.Sequence">Sequence</span>[str]]</span><span class="mkapi-paren">)</span><span class="mkapi-arrow"> → </span><span class="mkapi-return"><span class="mkapi-tooltip" title="collections.abc">c</span>.<span class="mkapi-tooltip" title="collections.abc.Sequence">Sequence</span>[str] | None</span></span>
 </p>
 <div class="mkapi-document">
 <p>Get the labels with the highest predicted logprob value.</p>
@@ -2343,7 +2363,7 @@ represent the logprob value of the entire label.</p>
 <ul class="mkapi-item-list">
 <li>
 <p><span class="mkapi-item-name">generation_logprobs</span> : 
-<span class="mkapi-item-type">list[list[list[tuple[str, float]]]]</span> <span class="mkapi-dash">&mdash;</span>
+<span class="mkapi-item-type"><span class="mkapi-tooltip" title="collections.abc">c</span>.<span class="mkapi-tooltip" title="collections.abc.Sequence">Sequence</span>[<span class="mkapi-tooltip" title="collections.abc">c</span>.<span class="mkapi-tooltip" title="collections.abc.Sequence">Sequence</span>[<span class="mkapi-tooltip" title="collections.abc">c</span>.<span class="mkapi-tooltip" title="collections.abc.Sequence">Sequence</span>[tuple[str, float]]]]</span> <span class="mkapi-dash">&mdash;</span>
 The logprobs of the generated tokens, for all samples in the batch. Of shape
 (batch_size, num_tokens, num_logprobs).</p>
 </li>
@@ -2355,7 +2375,7 @@ A mapping from labels to the first token in each label, or alternatively a
 </li>
 <li>
 <p><span class="mkapi-item-name">candidate_labels</span> : 
-<span class="mkapi-item-type">list[list[str]]</span> <span class="mkapi-dash">&mdash;</span>
+<span class="mkapi-item-type"><span class="mkapi-tooltip" title="collections.abc">c</span>.<span class="mkapi-tooltip" title="collections.abc.Sequence">Sequence</span>[<span class="mkapi-tooltip" title="collections.abc">c</span>.<span class="mkapi-tooltip" title="collections.abc.Sequence">Sequence</span>[str]]</span> <span class="mkapi-dash">&mdash;</span>
 The candidate labels for each sample in the batch.</p>
 </li>
 </ul>
@@ -2371,7 +2391,7 @@ The candidate labels for each sample in the batch.</p>
 <div class="mkapi-section-content">
 <ul class="mkapi-item-list">
 <li>
-<p><span class="mkapi-item-type">list[str] | None</span> <span class="mkapi-dash">&mdash;</span>
+<p><span class="mkapi-item-type"><span class="mkapi-tooltip" title="collections.abc">c</span>.<span class="mkapi-tooltip" title="collections.abc.Sequence">Sequence</span>[str] | None</span> <span class="mkapi-dash">&mdash;</span>
 The predicted labels, or None if labels could not be extracted.</p>
 </li>
 </ul>

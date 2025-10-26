@@ -637,6 +637,14 @@
       
         
       
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -955,101 +963,69 @@
 <span class="normal">106</span>
 <span class="normal">107</span>
 <span class="normal">108</span>
-<span class="normal">109</span>
-<span class="normal">110</span>
-<span class="normal">111</span>
-<span class="normal">112</span>
-<span class="normal">113</span>
-<span class="normal">114</span>
-<span class="normal">115</span>
-<span class="normal">116</span>
-<span class="normal">117</span>
-<span class="normal">118</span>
-<span class="normal">119</span>
-<span class="normal">120</span>
-<span class="normal">121</span>
-<span class="normal">122</span>
-<span class="normal">123</span>
-<span class="normal">124</span>
-<span class="normal">125</span>
-<span class="normal">126</span>
-<span class="normal">127</span>
-<span class="normal">128</span>
-<span class="normal">129</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;All Portuguese dataset configurations used in EuroEval.&quot;&quot;&quot;</span>
+<span class="normal">109</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;All Portuguese dataset configurations used in EuroEval.&quot;&quot;&quot;</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">..data_models</span><span class="w"> </span><span class="kn">import</span> <span class="n">DatasetConfig</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">..languages</span><span class="w"> </span><span class="kn">import</span> <span class="n">PT</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..languages</span><span class="w"> </span><span class="kn">import</span> <span class="n">EUROPEAN_PORTUGUESE</span><span class="p">,</span> <span class="n">PORTUGUESE</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..tasks</span><span class="w"> </span><span class="kn">import</span> <span class="n">COMMON_SENSE</span><span class="p">,</span> <span class="n">EUROPEAN_VALUES</span><span class="p">,</span> <span class="n">KNOW</span><span class="p">,</span> <span class="n">LA</span><span class="p">,</span> <span class="n">MCRC</span><span class="p">,</span> <span class="n">NER</span><span class="p">,</span> <span class="n">RC</span><span class="p">,</span> <span class="n">SENT</span><span class="p">,</span> <span class="n">SUMM</span>
 
 <span class="c1">### Official datasets ###</span>
 
 <span class="n">SST2_PT_CONFIG</span> <span class="o">=</span> <span class="n">DatasetConfig</span><span class="p">(</span>
     <span class="n">name</span><span class="o">=</span><span class="s2">&quot;sst2-pt&quot;</span><span class="p">,</span>
-    <span class="n">pretty_name</span><span class="o">=</span><span class="s2">&quot;the truncated version of the Portuguese sentiment classification &quot;</span>
-    <span class="s2">&quot;dataset SST2-pt, translated from the English SST2 dataset&quot;</span><span class="p">,</span>
-    <span class="n">huggingface_id</span><span class="o">=</span><span class="s2">&quot;EuroEval/sst2-pt-mini&quot;</span><span class="p">,</span>
+    <span class="n">source</span><span class="o">=</span><span class="s2">&quot;EuroEval/sst2-pt-mini&quot;</span><span class="p">,</span>
     <span class="n">task</span><span class="o">=</span><span class="n">SENT</span><span class="p">,</span>
-    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">PT</span><span class="p">],</span>
+    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">PORTUGUESE</span><span class="p">,</span> <span class="n">EUROPEAN_PORTUGUESE</span><span class="p">],</span>
     <span class="n">_labels</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;positive&quot;</span><span class="p">,</span> <span class="s2">&quot;negative&quot;</span><span class="p">],</span>
 <span class="p">)</span>
 
 <span class="n">SCALA_PT</span> <span class="o">=</span> <span class="n">DatasetConfig</span><span class="p">(</span>
     <span class="n">name</span><span class="o">=</span><span class="s2">&quot;scala-pt&quot;</span><span class="p">,</span>
-    <span class="n">pretty_name</span><span class="o">=</span><span class="s2">&quot;the Portuguese part of the linguistic acceptability dataset ScaLA&quot;</span><span class="p">,</span>
-    <span class="n">huggingface_id</span><span class="o">=</span><span class="s2">&quot;EuroEval/scala-pt&quot;</span><span class="p">,</span>
+    <span class="n">source</span><span class="o">=</span><span class="s2">&quot;EuroEval/scala-pt&quot;</span><span class="p">,</span>
     <span class="n">task</span><span class="o">=</span><span class="n">LA</span><span class="p">,</span>
-    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">PT</span><span class="p">],</span>
+    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">PORTUGUESE</span><span class="p">,</span> <span class="n">EUROPEAN_PORTUGUESE</span><span class="p">],</span>
 <span class="p">)</span>
 
 <span class="n">HAREM_CONFIG</span> <span class="o">=</span> <span class="n">DatasetConfig</span><span class="p">(</span>
     <span class="n">name</span><span class="o">=</span><span class="s2">&quot;harem&quot;</span><span class="p">,</span>
-    <span class="n">pretty_name</span><span class="o">=</span><span class="s2">&quot;the Portuguese named entity recognition dataset HAREM&quot;</span><span class="p">,</span>
-    <span class="n">huggingface_id</span><span class="o">=</span><span class="s2">&quot;EuroEval/harem&quot;</span><span class="p">,</span>
+    <span class="n">source</span><span class="o">=</span><span class="s2">&quot;EuroEval/harem&quot;</span><span class="p">,</span>
     <span class="n">task</span><span class="o">=</span><span class="n">NER</span><span class="p">,</span>
-    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">PT</span><span class="p">],</span>
+    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">PORTUGUESE</span><span class="p">,</span> <span class="n">EUROPEAN_PORTUGUESE</span><span class="p">],</span>
 <span class="p">)</span>
 
 <span class="n">MULTI_WIKI_QA_PT_CONFIG</span> <span class="o">=</span> <span class="n">DatasetConfig</span><span class="p">(</span>
     <span class="n">name</span><span class="o">=</span><span class="s2">&quot;multi-wiki-qa-pt&quot;</span><span class="p">,</span>
-    <span class="n">pretty_name</span><span class="o">=</span><span class="s2">&quot;the truncated version of the Portuguese part of the reading &quot;</span>
-    <span class="s2">&quot;comprehension dataset MultiWikiQA&quot;</span><span class="p">,</span>
-    <span class="n">huggingface_id</span><span class="o">=</span><span class="s2">&quot;EuroEval/multi-wiki-qa-pt-pt-mini&quot;</span><span class="p">,</span>
+    <span class="n">source</span><span class="o">=</span><span class="s2">&quot;EuroEval/multi-wiki-qa-pt-pt-mini&quot;</span><span class="p">,</span>
     <span class="n">task</span><span class="o">=</span><span class="n">RC</span><span class="p">,</span>
-    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">PT</span><span class="p">],</span>
+    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">PORTUGUESE</span><span class="p">,</span> <span class="n">EUROPEAN_PORTUGUESE</span><span class="p">],</span>
 <span class="p">)</span>
 
 <span class="n">PUBLICO_CONFIG</span> <span class="o">=</span> <span class="n">DatasetConfig</span><span class="p">(</span>
     <span class="n">name</span><span class="o">=</span><span class="s2">&quot;publico&quot;</span><span class="p">,</span>
-    <span class="n">pretty_name</span><span class="o">=</span><span class="s2">&quot;the truncated version of the Portuguese summarisation dataset Público&quot;</span><span class="p">,</span>
-    <span class="n">huggingface_id</span><span class="o">=</span><span class="s2">&quot;EuroEval/publico-mini&quot;</span><span class="p">,</span>
+    <span class="n">source</span><span class="o">=</span><span class="s2">&quot;EuroEval/publico-mini&quot;</span><span class="p">,</span>
     <span class="n">task</span><span class="o">=</span><span class="n">SUMM</span><span class="p">,</span>
-    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">PT</span><span class="p">],</span>
+    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">PORTUGUESE</span><span class="p">,</span> <span class="n">EUROPEAN_PORTUGUESE</span><span class="p">],</span>
 <span class="p">)</span>
 
 <span class="n">MMLU_PT_CONFIG</span> <span class="o">=</span> <span class="n">DatasetConfig</span><span class="p">(</span>
     <span class="n">name</span><span class="o">=</span><span class="s2">&quot;mmlu-pt&quot;</span><span class="p">,</span>
-    <span class="n">pretty_name</span><span class="o">=</span><span class="s2">&quot;the truncated version of the Portuguese knowledge dataset MMLU-pt, &quot;</span>
-    <span class="s2">&quot;translated from the English MMLU dataset&quot;</span><span class="p">,</span>
-    <span class="n">huggingface_id</span><span class="o">=</span><span class="s2">&quot;EuroEval/mmlu-pt-mini&quot;</span><span class="p">,</span>
+    <span class="n">source</span><span class="o">=</span><span class="s2">&quot;EuroEval/mmlu-pt-mini&quot;</span><span class="p">,</span>
     <span class="n">task</span><span class="o">=</span><span class="n">KNOW</span><span class="p">,</span>
-    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">PT</span><span class="p">],</span>
+    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">PORTUGUESE</span><span class="p">,</span> <span class="n">EUROPEAN_PORTUGUESE</span><span class="p">],</span>
 <span class="p">)</span>
 
 <span class="n">GOLDENSWAG_PT_CONFIG</span> <span class="o">=</span> <span class="n">DatasetConfig</span><span class="p">(</span>
     <span class="n">name</span><span class="o">=</span><span class="s2">&quot;goldenswag-pt&quot;</span><span class="p">,</span>
-    <span class="n">pretty_name</span><span class="o">=</span><span class="s2">&quot;the truncated version of the Portuguese common-sense reasoning &quot;</span>
-    <span class="s2">&quot;dataset GoldenSwag-pt, translated from the English GoldenSwag dataset&quot;</span><span class="p">,</span>
-    <span class="n">huggingface_id</span><span class="o">=</span><span class="s2">&quot;EuroEval/goldenswag-pt-mini&quot;</span><span class="p">,</span>
+    <span class="n">source</span><span class="o">=</span><span class="s2">&quot;EuroEval/goldenswag-pt-mini&quot;</span><span class="p">,</span>
     <span class="n">task</span><span class="o">=</span><span class="n">COMMON_SENSE</span><span class="p">,</span>
-    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">PT</span><span class="p">],</span>
+    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">PORTUGUESE</span><span class="p">,</span> <span class="n">EUROPEAN_PORTUGUESE</span><span class="p">],</span>
 <span class="p">)</span>
 
 <span class="n">EUROPEAN_VALUES_PT_CONFIG</span> <span class="o">=</span> <span class="n">DatasetConfig</span><span class="p">(</span>
     <span class="n">name</span><span class="o">=</span><span class="s2">&quot;european-values-pt&quot;</span><span class="p">,</span>
-    <span class="n">pretty_name</span><span class="o">=</span><span class="s2">&quot;the Portuguese version of the European values evaluation dataset&quot;</span><span class="p">,</span>
-    <span class="n">huggingface_id</span><span class="o">=</span><span class="s2">&quot;EuroEval/european-values-pt&quot;</span><span class="p">,</span>
+    <span class="n">source</span><span class="o">=</span><span class="s2">&quot;EuroEval/european-values-pt&quot;</span><span class="p">,</span>
     <span class="n">task</span><span class="o">=</span><span class="n">EUROPEAN_VALUES</span><span class="p">,</span>
-    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">PT</span><span class="p">],</span>
+    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">PORTUGUESE</span><span class="p">,</span> <span class="n">EUROPEAN_PORTUGUESE</span><span class="p">],</span>
     <span class="n">splits</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;test&quot;</span><span class="p">],</span>
     <span class="n">bootstrap_samples</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
     <span class="n">_instruction_prompt</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">{text}</span><span class="s2">&quot;</span><span class="p">,</span>
@@ -1060,32 +1036,26 @@
 
 <span class="n">BOOLQ_PT_CONFIG</span> <span class="o">=</span> <span class="n">DatasetConfig</span><span class="p">(</span>
     <span class="n">name</span><span class="o">=</span><span class="s2">&quot;boolq-pt&quot;</span><span class="p">,</span>
-    <span class="n">pretty_name</span><span class="o">=</span><span class="s2">&quot;the Portuguese multiple choice reading comprehension dataset &quot;</span>
-    <span class="s2">&quot;BoolQ-pt, translated from the English BoolQ dataset&quot;</span><span class="p">,</span>
-    <span class="n">huggingface_id</span><span class="o">=</span><span class="s2">&quot;EuroEval/boolq-pt&quot;</span><span class="p">,</span>
+    <span class="n">source</span><span class="o">=</span><span class="s2">&quot;EuroEval/boolq-pt&quot;</span><span class="p">,</span>
     <span class="n">task</span><span class="o">=</span><span class="n">MCRC</span><span class="p">,</span>
-    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">PT</span><span class="p">],</span>
+    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">PORTUGUESE</span><span class="p">,</span> <span class="n">EUROPEAN_PORTUGUESE</span><span class="p">],</span>
     <span class="n">unofficial</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
 <span class="p">)</span>
 
 <span class="n">WINOGRANDE_PT_CONFIG</span> <span class="o">=</span> <span class="n">DatasetConfig</span><span class="p">(</span>
     <span class="n">name</span><span class="o">=</span><span class="s2">&quot;winogrande-pt&quot;</span><span class="p">,</span>
-    <span class="n">pretty_name</span><span class="o">=</span><span class="s2">&quot;the Portuguese common-sense reasoning dataset Winogrande-pt, &quot;</span>
-    <span class="s2">&quot;translated from the English Winogrande dataset&quot;</span><span class="p">,</span>
-    <span class="n">huggingface_id</span><span class="o">=</span><span class="s2">&quot;EuroEval/winogrande-pt&quot;</span><span class="p">,</span>
+    <span class="n">source</span><span class="o">=</span><span class="s2">&quot;EuroEval/winogrande-pt&quot;</span><span class="p">,</span>
     <span class="n">task</span><span class="o">=</span><span class="n">COMMON_SENSE</span><span class="p">,</span>
-    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">PT</span><span class="p">],</span>
+    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">PORTUGUESE</span><span class="p">,</span> <span class="n">EUROPEAN_PORTUGUESE</span><span class="p">],</span>
     <span class="n">_labels</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;a&quot;</span><span class="p">,</span> <span class="s2">&quot;b&quot;</span><span class="p">],</span>
     <span class="n">unofficial</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
 <span class="p">)</span>
 
 <span class="n">EUROPEAN_VALUES_SITUATIONAL_PT_CONFIG</span> <span class="o">=</span> <span class="n">DatasetConfig</span><span class="p">(</span>
     <span class="n">name</span><span class="o">=</span><span class="s2">&quot;european-values-situational-pt&quot;</span><span class="p">,</span>
-    <span class="n">pretty_name</span><span class="o">=</span><span class="s2">&quot;the Portuguese version of the European values evaluation dataset, &quot;</span>
-    <span class="s2">&quot;where the questions are phrased in a situational way&quot;</span><span class="p">,</span>
-    <span class="n">huggingface_id</span><span class="o">=</span><span class="s2">&quot;EuroEval/european-values-situational-pt&quot;</span><span class="p">,</span>
+    <span class="n">source</span><span class="o">=</span><span class="s2">&quot;EuroEval/european-values-situational-pt&quot;</span><span class="p">,</span>
     <span class="n">task</span><span class="o">=</span><span class="n">EUROPEAN_VALUES</span><span class="p">,</span>
-    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">PT</span><span class="p">],</span>
+    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">PORTUGUESE</span><span class="p">,</span> <span class="n">EUROPEAN_PORTUGUESE</span><span class="p">],</span>
     <span class="n">splits</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;test&quot;</span><span class="p">],</span>
     <span class="n">bootstrap_samples</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
     <span class="n">_instruction_prompt</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">{text}</span><span class="s2">&quot;</span><span class="p">,</span>
@@ -1094,11 +1064,9 @@
 
 <span class="n">EUROPEAN_VALUES_COMPLETIONS_PT_CONFIG</span> <span class="o">=</span> <span class="n">DatasetConfig</span><span class="p">(</span>
     <span class="n">name</span><span class="o">=</span><span class="s2">&quot;european-values-completions-pt&quot;</span><span class="p">,</span>
-    <span class="n">pretty_name</span><span class="o">=</span><span class="s2">&quot;the Portuguese version of the European values evaluation dataset, &quot;</span>
-    <span class="s2">&quot;where the questions are phrased as sentence completions&quot;</span><span class="p">,</span>
-    <span class="n">huggingface_id</span><span class="o">=</span><span class="s2">&quot;EuroEval/european-values-completions-pt&quot;</span><span class="p">,</span>
+    <span class="n">source</span><span class="o">=</span><span class="s2">&quot;EuroEval/european-values-completions-pt&quot;</span><span class="p">,</span>
     <span class="n">task</span><span class="o">=</span><span class="n">EUROPEAN_VALUES</span><span class="p">,</span>
-    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">PT</span><span class="p">],</span>
+    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">PORTUGUESE</span><span class="p">,</span> <span class="n">EUROPEAN_PORTUGUESE</span><span class="p">],</span>
     <span class="n">splits</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;test&quot;</span><span class="p">],</span>
     <span class="n">bootstrap_samples</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
     <span class="n">_instruction_prompt</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">{text}</span><span class="s2">&quot;</span><span class="p">,</span>

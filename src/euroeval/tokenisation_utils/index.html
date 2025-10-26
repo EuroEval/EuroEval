@@ -637,6 +637,14 @@
       
         
       
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -1547,8 +1555,10 @@
 <span class="normal">600</span>
 <span class="normal">601</span>
 <span class="normal">602</span>
-<span class="normal">603</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Utility functions related to tokenisation.&quot;&quot;&quot;</span>
+<span class="normal">603</span>
+<span class="normal">604</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Utility functions related to tokenisation.&quot;&quot;&quot;</span>
 
+<span class="kn">import</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">c</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">t</span>
@@ -1620,7 +1630,7 @@
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">should_prompts_be_stripped</span><span class="p">(</span><div class="mkapi-source-link" id="euroeval.tokenisation_utils.should_prompts_be_stripped"><a href="../../../api/euroeval/tokenisation_utils/#euroeval.tokenisation_utils.should_prompts_be_stripped" title="Go to docs">[docs]</a></div>
-    <span class="n">labels_to_be_generated</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">tokeniser</span><span class="p">:</span> <span class="s2">&quot;PreTrainedTokenizer&quot;</span>
+    <span class="n">labels_to_be_generated</span><span class="p">:</span> <span class="n">c</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">tokeniser</span><span class="p">:</span> <span class="s2">&quot;PreTrainedTokenizer&quot;</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Determine if we should strip the prompts for few-shot evaluation.</span>
 
@@ -1659,7 +1669,7 @@
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">should_prefix_space_be_added_to_labels</span><span class="p">(</span><div class="mkapi-source-link" id="euroeval.tokenisation_utils.should_prefix_space_be_added_to_labels"><a href="../../../api/euroeval/tokenisation_utils/#euroeval.tokenisation_utils.should_prefix_space_be_added_to_labels" title="Go to docs">[docs]</a></div>
-    <span class="n">labels_to_be_generated</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">tokeniser</span><span class="p">:</span> <span class="s2">&quot;PreTrainedTokenizer&quot;</span>
+    <span class="n">labels_to_be_generated</span><span class="p">:</span> <span class="n">c</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">tokeniser</span><span class="p">:</span> <span class="s2">&quot;PreTrainedTokenizer&quot;</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Determine if we should add a prefix space to the labels.</span>
 
@@ -1866,7 +1876,7 @@
 
 <span class="k">def</span><span class="w"> </span><span class="nf">get_end_of_chat_token_ids</span><span class="p">(</span><div class="mkapi-source-link" id="euroeval.tokenisation_utils.get_end_of_chat_token_ids"><a href="../../../api/euroeval/tokenisation_utils/#euroeval.tokenisation_utils.get_end_of_chat_token_ids" title="Go to docs">[docs]</a></div>
     <span class="n">tokeniser</span><span class="p">:</span> <span class="s2">&quot;PreTrainedTokenizer&quot;</span><span class="p">,</span> <span class="n">generative_type</span><span class="p">:</span> <span class="n">GenerativeType</span> <span class="o">|</span> <span class="kc">None</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">c</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the end token ID for chat models.</span>
 
 <span class="sd">    This is only relevant for tokenisers with a chat template.</span>
@@ -1982,7 +1992,7 @@
 
     <span class="c1"># Tokenise some text containing each label, which we will use to extract the</span>
     <span class="c1"># first token of each label</span>
-    <span class="n">all_tokens</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span>
+    <span class="n">all_tokens</span><span class="p">:</span> <span class="n">c</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="n">c</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">has_chat_template</span><span class="p">(</span><span class="n">tokeniser</span><span class="o">=</span><span class="n">tokeniser</span><span class="p">):</span>
         <span class="n">add_prefix_space</span> <span class="o">=</span> <span class="n">should_prefix_space_be_added_to_labels</span><span class="p">(</span>
             <span class="n">labels_to_be_generated</span><span class="o">=</span><span class="n">local_labels</span><span class="p">,</span> <span class="n">tokeniser</span><span class="o">=</span><span class="n">tokeniser</span>
@@ -2098,12 +2108,12 @@
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">apply_chat_template</span><span class="p">(</span><div class="mkapi-source-link" id="euroeval.tokenisation_utils.apply_chat_template"><a href="../../../api/euroeval/tokenisation_utils/#euroeval.tokenisation_utils.apply_chat_template" title="Go to docs">[docs]</a></div>
-    <span class="n">conversation</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]],</span>
+    <span class="n">conversation</span><span class="p">:</span> <span class="n">c</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]],</span>
     <span class="n">tokeniser</span><span class="p">:</span> <span class="s2">&quot;PreTrainedTokenizer&quot;</span><span class="p">,</span>
     <span class="n">tokenise</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
     <span class="n">add_generation_prompt</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
     <span class="o">**</span><span class="n">extra_kwargs</span><span class="p">,</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]:</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">c</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Apply the chat template to a prompt.</span>
 
 <span class="sd">    Args:</span>

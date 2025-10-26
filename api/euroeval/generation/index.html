@@ -645,6 +645,14 @@
       
         
       
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -1045,6 +1053,14 @@
       
         
       
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -1163,6 +1179,10 @@
       
         
           
+        
+      
+        
+      
         
       
         
@@ -2039,7 +2059,7 @@ Log inputs and outputs for debugging purposes.</p>
 <i class="fa-regular fa-square-minus"></i>
 </span>
 </span>
-<span class="mkapi-object-name"><a href="./#euroeval.generation.generate" title="euroeval.generation.generate">generate</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">model</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><a href="../benchmark_modules/base/#euroeval.benchmark_modules.base.BenchmarkModule" title="euroeval.benchmark_modules.base.BenchmarkModule">BenchmarkModule</a></span><span class="mkapi-comma">, </span><span class="mkapi-arg">datasets</span><span class="mkapi-colon">: </span><span class="mkapi-ann">list['DatasetDict']</span><span class="mkapi-comma">, </span><span class="mkapi-arg">model_config</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><a href="../data_models/#euroeval.data_models.ModelConfig" title="euroeval.data_models.ModelConfig">ModelConfig</a></span><span class="mkapi-comma">, </span><span class="mkapi-arg">dataset_config</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><a href="../data_models/#euroeval.data_models.DatasetConfig" title="euroeval.data_models.DatasetConfig">DatasetConfig</a></span><span class="mkapi-comma">, </span><span class="mkapi-arg">benchmark_config</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><a href="../data_models/#euroeval.data_models.BenchmarkConfig" title="euroeval.data_models.BenchmarkConfig">BenchmarkConfig</a></span><span class="mkapi-paren">)</span><span class="mkapi-arrow"> → </span><span class="mkapi-return">list[dict[str, float]]</span></span>
+<span class="mkapi-object-name"><a href="./#euroeval.generation.generate" title="euroeval.generation.generate">generate</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">model</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><a href="../benchmark_modules/base/#euroeval.benchmark_modules.base.BenchmarkModule" title="euroeval.benchmark_modules.base.BenchmarkModule">BenchmarkModule</a></span><span class="mkapi-comma">, </span><span class="mkapi-arg">datasets</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="collections.abc">c</span>.<span class="mkapi-tooltip" title="collections.abc.Sequence">Sequence</span>['DatasetDict']</span><span class="mkapi-comma">, </span><span class="mkapi-arg">model_config</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><a href="../data_models/#euroeval.data_models.ModelConfig" title="euroeval.data_models.ModelConfig">ModelConfig</a></span><span class="mkapi-comma">, </span><span class="mkapi-arg">dataset_config</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><a href="../data_models/#euroeval.data_models.DatasetConfig" title="euroeval.data_models.DatasetConfig">DatasetConfig</a></span><span class="mkapi-comma">, </span><span class="mkapi-arg">benchmark_config</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><a href="../data_models/#euroeval.data_models.BenchmarkConfig" title="euroeval.data_models.BenchmarkConfig">BenchmarkConfig</a></span><span class="mkapi-paren">)</span><span class="mkapi-arrow"> → </span><span class="mkapi-return"><span class="mkapi-tooltip" title="collections.abc">c</span>.<span class="mkapi-tooltip" title="collections.abc.Sequence">Sequence</span>[dict[str, float]]</span></span>
 </p>
 <div class="mkapi-document">
 <p>Evaluate a model on a dataset through generation.</p>
@@ -2060,7 +2080,7 @@ The model to evaluate.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">datasets</span> : 
-<span class="mkapi-item-type">list['DatasetDict']</span> <span class="mkapi-dash">&mdash;</span>
+<span class="mkapi-item-type"><span class="mkapi-tooltip" title="collections.abc">c</span>.<span class="mkapi-tooltip" title="collections.abc.Sequence">Sequence</span>['DatasetDict']</span> <span class="mkapi-dash">&mdash;</span>
 The datasets to evaluate on.</p>
 </li>
 <li>
@@ -2091,7 +2111,7 @@ The configuration of the dataset.</p>
 <div class="mkapi-section-content">
 <ul class="mkapi-item-list">
 <li>
-<p><span class="mkapi-item-type">list[dict[str, float]]</span> <span class="mkapi-dash">&mdash;</span>
+<p><span class="mkapi-item-type"><span class="mkapi-tooltip" title="collections.abc">c</span>.<span class="mkapi-tooltip" title="collections.abc.Sequence">Sequence</span>[dict[str, float]]</span> <span class="mkapi-dash">&mdash;</span>
 A list of dictionaries containing the test scores.</p>
 </li>
 </ul>
@@ -2173,7 +2193,7 @@ A list of dictionaries containing the scores for each metric.</p>
 <i class="fa-regular fa-square-minus"></i>
 </span>
 </span>
-<span class="mkapi-object-name"><a href="./#euroeval.generation.debug_log" title="euroeval.generation.debug_log">debug_log</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">batch</span><span class="mkapi-colon">: </span><span class="mkapi-ann">dict[str, <span class="mkapi-tooltip" title="typing">t</span>.<span class="mkapi-tooltip" title="typing.Any">Any</span>]</span><span class="mkapi-comma">, </span><span class="mkapi-arg">model_output</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><a href="../data_models/#euroeval.data_models.GenerativeModelOutput" title="euroeval.data_models.GenerativeModelOutput">GenerativeModelOutput</a></span><span class="mkapi-comma">, </span><span class="mkapi-arg">extracted_labels</span><span class="mkapi-colon">: </span><span class="mkapi-ann">list[dict | str | list[str]]</span><span class="mkapi-comma">, </span><span class="mkapi-arg">dataset_config</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><a href="../data_models/#euroeval.data_models.DatasetConfig" title="euroeval.data_models.DatasetConfig">DatasetConfig</a></span><span class="mkapi-paren">)</span><span class="mkapi-arrow"> → </span><span class="mkapi-return">None</span></span>
+<span class="mkapi-object-name"><a href="./#euroeval.generation.debug_log" title="euroeval.generation.debug_log">debug_log</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">batch</span><span class="mkapi-colon">: </span><span class="mkapi-ann">dict[str, <span class="mkapi-tooltip" title="typing">t</span>.<span class="mkapi-tooltip" title="typing.Any">Any</span>]</span><span class="mkapi-comma">, </span><span class="mkapi-arg">model_output</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><a href="../data_models/#euroeval.data_models.GenerativeModelOutput" title="euroeval.data_models.GenerativeModelOutput">GenerativeModelOutput</a></span><span class="mkapi-comma">, </span><span class="mkapi-arg">extracted_labels</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="collections.abc">c</span>.<span class="mkapi-tooltip" title="collections.abc.Sequence">Sequence</span>[dict | str | <span class="mkapi-tooltip" title="collections.abc">c</span>.<span class="mkapi-tooltip" title="collections.abc.Sequence">Sequence</span>[str]]</span><span class="mkapi-comma">, </span><span class="mkapi-arg">dataset_config</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><a href="../data_models/#euroeval.data_models.DatasetConfig" title="euroeval.data_models.DatasetConfig">DatasetConfig</a></span><span class="mkapi-paren">)</span><span class="mkapi-arrow"> → </span><span class="mkapi-return">None</span></span>
 </p>
 <div class="mkapi-document">
 <p>Log inputs and outputs for debugging purposes.</p>
@@ -2199,7 +2219,7 @@ The output of the model.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">extracted_labels</span> : 
-<span class="mkapi-item-type">list[dict | str | list[str]]</span> <span class="mkapi-dash">&mdash;</span>
+<span class="mkapi-item-type"><span class="mkapi-tooltip" title="collections.abc">c</span>.<span class="mkapi-tooltip" title="collections.abc.Sequence">Sequence</span>[dict | str | <span class="mkapi-tooltip" title="collections.abc">c</span>.<span class="mkapi-tooltip" title="collections.abc.Sequence">Sequence</span>[str]]</span> <span class="mkapi-dash">&mdash;</span>
 The extracted labels from the model output.</p>
 </li>
 <li>

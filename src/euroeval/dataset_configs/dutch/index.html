@@ -637,6 +637,14 @@
       
         
       
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -983,126 +991,57 @@
 <span class="normal">134</span>
 <span class="normal">135</span>
 <span class="normal">136</span>
-<span class="normal">137</span>
-<span class="normal">138</span>
-<span class="normal">139</span>
-<span class="normal">140</span>
-<span class="normal">141</span>
-<span class="normal">142</span>
-<span class="normal">143</span>
-<span class="normal">144</span>
-<span class="normal">145</span>
-<span class="normal">146</span>
-<span class="normal">147</span>
-<span class="normal">148</span>
-<span class="normal">149</span>
-<span class="normal">150</span>
-<span class="normal">151</span>
-<span class="normal">152</span>
-<span class="normal">153</span>
-<span class="normal">154</span>
-<span class="normal">155</span>
-<span class="normal">156</span>
-<span class="normal">157</span>
-<span class="normal">158</span>
-<span class="normal">159</span>
-<span class="normal">160</span>
-<span class="normal">161</span>
-<span class="normal">162</span>
-<span class="normal">163</span>
-<span class="normal">164</span>
-<span class="normal">165</span>
-<span class="normal">166</span>
-<span class="normal">167</span>
-<span class="normal">168</span>
-<span class="normal">169</span>
-<span class="normal">170</span>
-<span class="normal">171</span>
-<span class="normal">172</span>
-<span class="normal">173</span>
-<span class="normal">174</span>
-<span class="normal">175</span>
-<span class="normal">176</span>
-<span class="normal">177</span>
-<span class="normal">178</span>
-<span class="normal">179</span>
-<span class="normal">180</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;All Dutch dataset configurations used in EuroEval.&quot;&quot;&quot;</span>
+<span class="normal">137</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;All Dutch dataset configurations used in EuroEval.&quot;&quot;&quot;</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">..data_models</span><span class="w"> </span><span class="kn">import</span> <span class="n">DatasetConfig</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">..languages</span><span class="w"> </span><span class="kn">import</span> <span class="n">NL</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..languages</span><span class="w"> </span><span class="kn">import</span> <span class="n">DUTCH</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..tasks</span><span class="w"> </span><span class="kn">import</span> <span class="n">COMMON_SENSE</span><span class="p">,</span> <span class="n">EUROPEAN_VALUES</span><span class="p">,</span> <span class="n">KNOW</span><span class="p">,</span> <span class="n">LA</span><span class="p">,</span> <span class="n">MCRC</span><span class="p">,</span> <span class="n">NER</span><span class="p">,</span> <span class="n">RC</span><span class="p">,</span> <span class="n">SENT</span><span class="p">,</span> <span class="n">SUMM</span>
 
 <span class="c1">### Official datasets ###</span>
 
 <span class="n">DBRD_CONFIG</span> <span class="o">=</span> <span class="n">DatasetConfig</span><span class="p">(</span>
     <span class="n">name</span><span class="o">=</span><span class="s2">&quot;dbrd&quot;</span><span class="p">,</span>
-    <span class="n">pretty_name</span><span class="o">=</span><span class="s2">&quot;the truncated version of the Dutch sentiment classification &quot;</span>
-    <span class="s2">&quot;dataset DBRD&quot;</span><span class="p">,</span>
-    <span class="n">huggingface_id</span><span class="o">=</span><span class="s2">&quot;EuroEval/dbrd-mini&quot;</span><span class="p">,</span>
+    <span class="n">source</span><span class="o">=</span><span class="s2">&quot;EuroEval/dbrd-mini&quot;</span><span class="p">,</span>
     <span class="n">task</span><span class="o">=</span><span class="n">SENT</span><span class="p">,</span>
-    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">NL</span><span class="p">],</span>
+    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">DUTCH</span><span class="p">],</span>
     <span class="n">_labels</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;negative&quot;</span><span class="p">,</span> <span class="s2">&quot;positive&quot;</span><span class="p">],</span>
 <span class="p">)</span>
 
 <span class="n">SCALA_NL_CONFIG</span> <span class="o">=</span> <span class="n">DatasetConfig</span><span class="p">(</span>
-    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;scala-nl&quot;</span><span class="p">,</span>
-    <span class="n">pretty_name</span><span class="o">=</span><span class="s2">&quot;the Dutch part of the linguistic acceptability dataset ScaLA&quot;</span><span class="p">,</span>
-    <span class="n">huggingface_id</span><span class="o">=</span><span class="s2">&quot;EuroEval/scala-nl&quot;</span><span class="p">,</span>
-    <span class="n">task</span><span class="o">=</span><span class="n">LA</span><span class="p">,</span>
-    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">NL</span><span class="p">],</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;scala-nl&quot;</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="s2">&quot;EuroEval/scala-nl&quot;</span><span class="p">,</span> <span class="n">task</span><span class="o">=</span><span class="n">LA</span><span class="p">,</span> <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">DUTCH</span><span class="p">]</span>
 <span class="p">)</span>
 
 <span class="n">CONLL_NL_CONFIG</span> <span class="o">=</span> <span class="n">DatasetConfig</span><span class="p">(</span>
-    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;conll-nl&quot;</span><span class="p">,</span>
-    <span class="n">pretty_name</span><span class="o">=</span><span class="s2">&quot;the Dutch part of the truncated version of the named entity &quot;</span>
-    <span class="s2">&quot;recognition dataset CoNLL 2002&quot;</span><span class="p">,</span>
-    <span class="n">huggingface_id</span><span class="o">=</span><span class="s2">&quot;EuroEval/conll-nl-mini&quot;</span><span class="p">,</span>
-    <span class="n">task</span><span class="o">=</span><span class="n">NER</span><span class="p">,</span>
-    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">NL</span><span class="p">],</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;conll-nl&quot;</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="s2">&quot;EuroEval/conll-nl-mini&quot;</span><span class="p">,</span> <span class="n">task</span><span class="o">=</span><span class="n">NER</span><span class="p">,</span> <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">DUTCH</span><span class="p">]</span>
 <span class="p">)</span>
 
 <span class="n">SQUAD_NL_CONFIG</span> <span class="o">=</span> <span class="n">DatasetConfig</span><span class="p">(</span>
-    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;squad-nl&quot;</span><span class="p">,</span>
-    <span class="n">pretty_name</span><span class="o">=</span><span class="s2">&quot;the truncated version of the Dutch reading comprehension dataset &quot;</span>
-    <span class="s2">&quot;SQuAD-nl, translated from the English SQuAD dataset&quot;</span><span class="p">,</span>
-    <span class="n">huggingface_id</span><span class="o">=</span><span class="s2">&quot;EuroEval/squad-nl-v2-mini&quot;</span><span class="p">,</span>
-    <span class="n">task</span><span class="o">=</span><span class="n">RC</span><span class="p">,</span>
-    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">NL</span><span class="p">],</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;squad-nl&quot;</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="s2">&quot;EuroEval/squad-nl-v2-mini&quot;</span><span class="p">,</span> <span class="n">task</span><span class="o">=</span><span class="n">RC</span><span class="p">,</span> <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">DUTCH</span><span class="p">]</span>
 <span class="p">)</span>
 
 <span class="n">WIKI_LINGUA_NL_CONFIG</span> <span class="o">=</span> <span class="n">DatasetConfig</span><span class="p">(</span>
     <span class="n">name</span><span class="o">=</span><span class="s2">&quot;wiki-lingua-nl&quot;</span><span class="p">,</span>
-    <span class="n">pretty_name</span><span class="o">=</span><span class="s2">&quot;the Dutch part of the truncated version of the summarisation dataset &quot;</span>
-    <span class="s2">&quot;WikiLingua&quot;</span><span class="p">,</span>
-    <span class="n">huggingface_id</span><span class="o">=</span><span class="s2">&quot;EuroEval/wiki-lingua-nl-mini&quot;</span><span class="p">,</span>
+    <span class="n">source</span><span class="o">=</span><span class="s2">&quot;EuroEval/wiki-lingua-nl-mini&quot;</span><span class="p">,</span>
     <span class="n">task</span><span class="o">=</span><span class="n">SUMM</span><span class="p">,</span>
-    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">NL</span><span class="p">],</span>
+    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">DUTCH</span><span class="p">],</span>
 <span class="p">)</span>
 
 <span class="n">MMLU_NL_CONFIG</span> <span class="o">=</span> <span class="n">DatasetConfig</span><span class="p">(</span>
-    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;mmlu-nl&quot;</span><span class="p">,</span>
-    <span class="n">pretty_name</span><span class="o">=</span><span class="s2">&quot;the truncated version of the Dutch knowledge dataset MMLU-nl, &quot;</span>
-    <span class="s2">&quot;translated from the English MMLU dataset&quot;</span><span class="p">,</span>
-    <span class="n">huggingface_id</span><span class="o">=</span><span class="s2">&quot;EuroEval/mmlu-nl-mini&quot;</span><span class="p">,</span>
-    <span class="n">task</span><span class="o">=</span><span class="n">KNOW</span><span class="p">,</span>
-    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">NL</span><span class="p">],</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;mmlu-nl&quot;</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="s2">&quot;EuroEval/mmlu-nl-mini&quot;</span><span class="p">,</span> <span class="n">task</span><span class="o">=</span><span class="n">KNOW</span><span class="p">,</span> <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">DUTCH</span><span class="p">]</span>
 <span class="p">)</span>
 
 <span class="n">HELLASWAG_NL_CONFIG</span> <span class="o">=</span> <span class="n">DatasetConfig</span><span class="p">(</span>
     <span class="n">name</span><span class="o">=</span><span class="s2">&quot;hellaswag-nl&quot;</span><span class="p">,</span>
-    <span class="n">pretty_name</span><span class="o">=</span><span class="s2">&quot;the truncated version of the Dutch common-sense reasoning dataset &quot;</span>
-    <span class="s2">&quot;HellaSwag-nl, translated from the English HellaSwag dataset&quot;</span><span class="p">,</span>
-    <span class="n">huggingface_id</span><span class="o">=</span><span class="s2">&quot;EuroEval/hellaswag-nl-mini&quot;</span><span class="p">,</span>
+    <span class="n">source</span><span class="o">=</span><span class="s2">&quot;EuroEval/hellaswag-nl-mini&quot;</span><span class="p">,</span>
     <span class="n">task</span><span class="o">=</span><span class="n">COMMON_SENSE</span><span class="p">,</span>
-    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">NL</span><span class="p">],</span>
+    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">DUTCH</span><span class="p">],</span>
 <span class="p">)</span>
 
 <span class="n">EUROPEAN_VALUES_NL_CONFIG</span> <span class="o">=</span> <span class="n">DatasetConfig</span><span class="p">(</span>
     <span class="n">name</span><span class="o">=</span><span class="s2">&quot;european-values-nl&quot;</span><span class="p">,</span>
-    <span class="n">pretty_name</span><span class="o">=</span><span class="s2">&quot;the Dutch version of the European values evaluation dataset&quot;</span><span class="p">,</span>
-    <span class="n">huggingface_id</span><span class="o">=</span><span class="s2">&quot;EuroEval/european-values-nl&quot;</span><span class="p">,</span>
+    <span class="n">source</span><span class="o">=</span><span class="s2">&quot;EuroEval/european-values-nl&quot;</span><span class="p">,</span>
     <span class="n">task</span><span class="o">=</span><span class="n">EUROPEAN_VALUES</span><span class="p">,</span>
-    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">NL</span><span class="p">],</span>
+    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">DUTCH</span><span class="p">],</span>
     <span class="n">splits</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;test&quot;</span><span class="p">],</span>
     <span class="n">bootstrap_samples</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
     <span class="n">_instruction_prompt</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">{text}</span><span class="s2">&quot;</span><span class="p">,</span>
@@ -1113,81 +1052,66 @@
 
 <span class="n">DUTCH_COLA_CONFIG</span> <span class="o">=</span> <span class="n">DatasetConfig</span><span class="p">(</span>
     <span class="n">name</span><span class="o">=</span><span class="s2">&quot;dutch-cola&quot;</span><span class="p">,</span>
-    <span class="n">pretty_name</span><span class="o">=</span><span class="s2">&quot;the truncated version of the Dutch linguistic acceptability dataset &quot;</span>
-    <span class="s2">&quot;Dutch CoLA&quot;</span><span class="p">,</span>
-    <span class="n">huggingface_id</span><span class="o">=</span><span class="s2">&quot;EuroEval/dutch-cola&quot;</span><span class="p">,</span>
+    <span class="n">source</span><span class="o">=</span><span class="s2">&quot;EuroEval/dutch-cola&quot;</span><span class="p">,</span>
     <span class="n">task</span><span class="o">=</span><span class="n">LA</span><span class="p">,</span>
-    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">NL</span><span class="p">],</span>
+    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">DUTCH</span><span class="p">],</span>
     <span class="n">unofficial</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
 <span class="p">)</span>
 
 <span class="n">DUTCH_COLA_FULL_CONFIG</span> <span class="o">=</span> <span class="n">DatasetConfig</span><span class="p">(</span>
     <span class="n">name</span><span class="o">=</span><span class="s2">&quot;dutch-cola-full&quot;</span><span class="p">,</span>
-    <span class="n">pretty_name</span><span class="o">=</span><span class="s2">&quot;the Dutch linguistic acceptability dataset Dutch CoLA&quot;</span><span class="p">,</span>
-    <span class="n">huggingface_id</span><span class="o">=</span><span class="s2">&quot;EuroEval/dutch-cola-full&quot;</span><span class="p">,</span>
+    <span class="n">source</span><span class="o">=</span><span class="s2">&quot;EuroEval/dutch-cola-full&quot;</span><span class="p">,</span>
     <span class="n">task</span><span class="o">=</span><span class="n">LA</span><span class="p">,</span>
-    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">NL</span><span class="p">],</span>
+    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">DUTCH</span><span class="p">],</span>
     <span class="n">unofficial</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
 <span class="p">)</span>
 
 <span class="n">ARC_NL_CONFIG</span> <span class="o">=</span> <span class="n">DatasetConfig</span><span class="p">(</span>
     <span class="n">name</span><span class="o">=</span><span class="s2">&quot;arc-nl&quot;</span><span class="p">,</span>
-    <span class="n">pretty_name</span><span class="o">=</span><span class="s2">&quot;the truncated version of the Dutch knowledge dataset ARC-nl, &quot;</span>
-    <span class="s2">&quot;translated from the English ARC dataset&quot;</span><span class="p">,</span>
-    <span class="n">huggingface_id</span><span class="o">=</span><span class="s2">&quot;EuroEval/arc-nl-mini&quot;</span><span class="p">,</span>
+    <span class="n">source</span><span class="o">=</span><span class="s2">&quot;EuroEval/arc-nl-mini&quot;</span><span class="p">,</span>
     <span class="n">task</span><span class="o">=</span><span class="n">KNOW</span><span class="p">,</span>
-    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">NL</span><span class="p">],</span>
+    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">DUTCH</span><span class="p">],</span>
     <span class="n">unofficial</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
 <span class="p">)</span>
 
 <span class="n">BELEBELE_NL_CONFIG</span> <span class="o">=</span> <span class="n">DatasetConfig</span><span class="p">(</span>
     <span class="n">name</span><span class="o">=</span><span class="s2">&quot;belebele-nl&quot;</span><span class="p">,</span>
-    <span class="n">pretty_name</span><span class="o">=</span><span class="s2">&quot;the Dutch multiple choice reading comprehension dataset BeleBele-nl, &quot;</span>
-    <span class="s2">&quot;translated from the English BeleBele dataset&quot;</span><span class="p">,</span>
-    <span class="n">huggingface_id</span><span class="o">=</span><span class="s2">&quot;EuroEval/belebele-nl-mini&quot;</span><span class="p">,</span>
+    <span class="n">source</span><span class="o">=</span><span class="s2">&quot;EuroEval/belebele-nl-mini&quot;</span><span class="p">,</span>
     <span class="n">task</span><span class="o">=</span><span class="n">MCRC</span><span class="p">,</span>
-    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">NL</span><span class="p">],</span>
+    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">DUTCH</span><span class="p">],</span>
     <span class="n">unofficial</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
 <span class="p">)</span>
 
 <span class="n">MULTI_WIKI_QA_NL_CONFIG</span> <span class="o">=</span> <span class="n">DatasetConfig</span><span class="p">(</span>
     <span class="n">name</span><span class="o">=</span><span class="s2">&quot;multi-wiki-qa-nl&quot;</span><span class="p">,</span>
-    <span class="n">pretty_name</span><span class="o">=</span><span class="s2">&quot;the truncated version of the Dutch part of the reading &quot;</span>
-    <span class="s2">&quot;comprehension dataset MultiWikiQA&quot;</span><span class="p">,</span>
-    <span class="n">huggingface_id</span><span class="o">=</span><span class="s2">&quot;EuroEval/multi-wiki-qa-nl-mini&quot;</span><span class="p">,</span>
+    <span class="n">source</span><span class="o">=</span><span class="s2">&quot;EuroEval/multi-wiki-qa-nl-mini&quot;</span><span class="p">,</span>
     <span class="n">task</span><span class="o">=</span><span class="n">RC</span><span class="p">,</span>
-    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">NL</span><span class="p">],</span>
+    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">DUTCH</span><span class="p">],</span>
     <span class="n">unofficial</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
 <span class="p">)</span>
 
 <span class="n">GOLDENSWAG_NL_CONFIG</span> <span class="o">=</span> <span class="n">DatasetConfig</span><span class="p">(</span>
     <span class="n">name</span><span class="o">=</span><span class="s2">&quot;goldenswag-nl&quot;</span><span class="p">,</span>
-    <span class="n">pretty_name</span><span class="o">=</span><span class="s2">&quot;the truncated version of the Dutch common-sense reasoning &quot;</span>
-    <span class="s2">&quot;dataset GoldenSwag-nl, translated from the English GoldenSwag dataset&quot;</span><span class="p">,</span>
-    <span class="n">huggingface_id</span><span class="o">=</span><span class="s2">&quot;EuroEval/goldenswag-nl-mini&quot;</span><span class="p">,</span>
+    <span class="n">source</span><span class="o">=</span><span class="s2">&quot;EuroEval/goldenswag-nl-mini&quot;</span><span class="p">,</span>
     <span class="n">task</span><span class="o">=</span><span class="n">COMMON_SENSE</span><span class="p">,</span>
-    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">NL</span><span class="p">],</span>
+    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">DUTCH</span><span class="p">],</span>
     <span class="n">unofficial</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
 <span class="p">)</span>
 
 <span class="n">WINOGRANDE_NL_CONFIG</span> <span class="o">=</span> <span class="n">DatasetConfig</span><span class="p">(</span>
     <span class="n">name</span><span class="o">=</span><span class="s2">&quot;winogrande-nl&quot;</span><span class="p">,</span>
-    <span class="n">pretty_name</span><span class="o">=</span><span class="s2">&quot;the Dutch common-sense reasoning dataset Winogrande-nl, translated &quot;</span>
-    <span class="s2">&quot;from the English Winogrande dataset&quot;</span><span class="p">,</span>
-    <span class="n">huggingface_id</span><span class="o">=</span><span class="s2">&quot;EuroEval/winogrande-nl&quot;</span><span class="p">,</span>
+    <span class="n">source</span><span class="o">=</span><span class="s2">&quot;EuroEval/winogrande-nl&quot;</span><span class="p">,</span>
     <span class="n">task</span><span class="o">=</span><span class="n">COMMON_SENSE</span><span class="p">,</span>
-    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">NL</span><span class="p">],</span>
+    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">DUTCH</span><span class="p">],</span>
     <span class="n">_labels</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;a&quot;</span><span class="p">,</span> <span class="s2">&quot;b&quot;</span><span class="p">],</span>
     <span class="n">unofficial</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
 <span class="p">)</span>
 
 <span class="n">EUROPEAN_VALUES_SITUATIONAL_NL_CONFIG</span> <span class="o">=</span> <span class="n">DatasetConfig</span><span class="p">(</span>
     <span class="n">name</span><span class="o">=</span><span class="s2">&quot;european-values-situational-nl&quot;</span><span class="p">,</span>
-    <span class="n">pretty_name</span><span class="o">=</span><span class="s2">&quot;the Dutch version of the European values evaluation dataset, where &quot;</span>
-    <span class="s2">&quot;the questions are phrased in a situational way&quot;</span><span class="p">,</span>
-    <span class="n">huggingface_id</span><span class="o">=</span><span class="s2">&quot;EuroEval/european-values-situational-nl&quot;</span><span class="p">,</span>
+    <span class="n">source</span><span class="o">=</span><span class="s2">&quot;EuroEval/european-values-situational-nl&quot;</span><span class="p">,</span>
     <span class="n">task</span><span class="o">=</span><span class="n">EUROPEAN_VALUES</span><span class="p">,</span>
-    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">NL</span><span class="p">],</span>
+    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">DUTCH</span><span class="p">],</span>
     <span class="n">splits</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;test&quot;</span><span class="p">],</span>
     <span class="n">bootstrap_samples</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
     <span class="n">_instruction_prompt</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">{text}</span><span class="s2">&quot;</span><span class="p">,</span>
@@ -1196,11 +1120,9 @@
 
 <span class="n">EUROPEAN_VALUES_COMPLETIONS_NL_CONFIG</span> <span class="o">=</span> <span class="n">DatasetConfig</span><span class="p">(</span>
     <span class="n">name</span><span class="o">=</span><span class="s2">&quot;european-values-completions-nl&quot;</span><span class="p">,</span>
-    <span class="n">pretty_name</span><span class="o">=</span><span class="s2">&quot;the Dutch version of the European values evaluation dataset, where &quot;</span>
-    <span class="s2">&quot;the questions are phrased as sentence completions&quot;</span><span class="p">,</span>
-    <span class="n">huggingface_id</span><span class="o">=</span><span class="s2">&quot;EuroEval/european-values-completions-nl&quot;</span><span class="p">,</span>
+    <span class="n">source</span><span class="o">=</span><span class="s2">&quot;EuroEval/european-values-completions-nl&quot;</span><span class="p">,</span>
     <span class="n">task</span><span class="o">=</span><span class="n">EUROPEAN_VALUES</span><span class="p">,</span>
-    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">NL</span><span class="p">],</span>
+    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">DUTCH</span><span class="p">],</span>
     <span class="n">splits</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;test&quot;</span><span class="p">],</span>
     <span class="n">bootstrap_samples</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
     <span class="n">_instruction_prompt</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">{text}</span><span class="s2">&quot;</span><span class="p">,</span>

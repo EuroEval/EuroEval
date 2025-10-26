@@ -637,6 +637,14 @@
       
         
       
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -1049,54 +1057,104 @@
 <span class="normal">200</span>
 <span class="normal">201</span>
 <span class="normal">202</span>
-<span class="normal">203</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Templates for the Linguistic Acceptability task.&quot;&quot;&quot;</span>
+<span class="normal">203</span>
+<span class="normal">204</span>
+<span class="normal">205</span>
+<span class="normal">206</span>
+<span class="normal">207</span>
+<span class="normal">208</span>
+<span class="normal">209</span>
+<span class="normal">210</span>
+<span class="normal">211</span>
+<span class="normal">212</span>
+<span class="normal">213</span>
+<span class="normal">214</span>
+<span class="normal">215</span>
+<span class="normal">216</span>
+<span class="normal">217</span>
+<span class="normal">218</span>
+<span class="normal">219</span>
+<span class="normal">220</span>
+<span class="normal">221</span>
+<span class="normal">222</span>
+<span class="normal">223</span>
+<span class="normal">224</span>
+<span class="normal">225</span>
+<span class="normal">226</span>
+<span class="normal">227</span>
+<span class="normal">228</span>
+<span class="normal">229</span>
+<span class="normal">230</span>
+<span class="normal">231</span>
+<span class="normal">232</span>
+<span class="normal">233</span>
+<span class="normal">234</span>
+<span class="normal">235</span>
+<span class="normal">236</span>
+<span class="normal">237</span>
+<span class="normal">238</span>
+<span class="normal">239</span>
+<span class="normal">240</span>
+<span class="normal">241</span>
+<span class="normal">242</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Templates for the Linguistic Acceptability task.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">t</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">..data_models</span><span class="w"> </span><span class="kn">import</span> <span class="n">PromptConfig</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..languages</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-    <span class="n">CS</span><span class="p">,</span>
-    <span class="n">DA</span><span class="p">,</span>
-    <span class="n">DE</span><span class="p">,</span>
-    <span class="n">EN</span><span class="p">,</span>
-    <span class="n">ES</span><span class="p">,</span>
-    <span class="n">ET</span><span class="p">,</span>
-    <span class="n">FI</span><span class="p">,</span>
-    <span class="n">FO</span><span class="p">,</span>
-    <span class="n">FR</span><span class="p">,</span>
-    <span class="n">IS</span><span class="p">,</span>
-    <span class="n">IT</span><span class="p">,</span>
-    <span class="n">LT</span><span class="p">,</span>
-    <span class="n">LV</span><span class="p">,</span>
-    <span class="n">NB</span><span class="p">,</span>
-    <span class="n">NL</span><span class="p">,</span>
-    <span class="n">NN</span><span class="p">,</span>
-    <span class="n">NO</span><span class="p">,</span>
-    <span class="n">PL</span><span class="p">,</span>
-    <span class="n">PT</span><span class="p">,</span>
-    <span class="n">SK</span><span class="p">,</span>
-    <span class="n">SV</span><span class="p">,</span>
+    <span class="n">BULGARIAN</span><span class="p">,</span>
+    <span class="n">CZECH</span><span class="p">,</span>
+    <span class="n">DANISH</span><span class="p">,</span>
+    <span class="n">DUTCH</span><span class="p">,</span>
+    <span class="n">ENGLISH</span><span class="p">,</span>
+    <span class="n">ESTONIAN</span><span class="p">,</span>
+    <span class="n">FAROESE</span><span class="p">,</span>
+    <span class="n">FINNISH</span><span class="p">,</span>
+    <span class="n">FRENCH</span><span class="p">,</span>
+    <span class="n">GERMAN</span><span class="p">,</span>
+    <span class="n">GREEK</span><span class="p">,</span>
+    <span class="n">ICELANDIC</span><span class="p">,</span>
+    <span class="n">ITALIAN</span><span class="p">,</span>
+    <span class="n">LATVIAN</span><span class="p">,</span>
+    <span class="n">LITHUANIAN</span><span class="p">,</span>
+    <span class="n">NORWEGIAN</span><span class="p">,</span>
+    <span class="n">NORWEGIAN_BOKMÅL</span><span class="p">,</span>
+    <span class="n">NORWEGIAN_NYNORSK</span><span class="p">,</span>
+    <span class="n">POLISH</span><span class="p">,</span>
+    <span class="n">PORTUGUESE</span><span class="p">,</span>
+    <span class="n">SERBIAN</span><span class="p">,</span>
+    <span class="n">SLOVAK</span><span class="p">,</span>
+    <span class="n">SPANISH</span><span class="p">,</span>
+    <span class="n">SWEDISH</span><span class="p">,</span>
+    <span class="n">UKRAINIAN</span><span class="p">,</span>
 <span class="p">)</span>
 
 <span class="k">if</span> <span class="n">t</span><span class="o">.</span><span class="n">TYPE_CHECKING</span><span class="p">:</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">..data_models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Language</span>
 
 <span class="n">LA_TEMPLATES</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="s2">&quot;Language&quot;</span><span class="p">,</span> <span class="n">PromptConfig</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="n">CS</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
+    <span class="n">BULGARIAN</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
+        <span class="n">default_prompt_label_mapping</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">correct</span><span class="o">=</span><span class="s2">&quot;да&quot;</span><span class="p">,</span> <span class="n">incorrect</span><span class="o">=</span><span class="s2">&quot;не&quot;</span><span class="p">),</span>
+        <span class="n">default_prompt_prefix</span><span class="o">=</span><span class="s2">&quot;Следват изречения и дали са граматически правилни.&quot;</span><span class="p">,</span>
+        <span class="n">default_prompt_template</span><span class="o">=</span><span class="s2">&quot;Изречение: </span><span class="si">{text}</span><span class="se">\n</span><span class="s2">Граматически правилно: </span><span class="si">{label}</span><span class="s2">&quot;</span><span class="p">,</span>
+        <span class="n">default_instruction_prompt</span><span class="o">=</span><span class="s2">&quot;Изречение: </span><span class="si">{text}</span><span class="se">\n\n</span><span class="s2">Определете дали изречението е &quot;</span>
+        <span class="s2">&quot;граматически правилно или не. Отговорете с </span><span class="si">{labels_str}</span><span class="s2">, и нищо друго.&quot;</span><span class="p">,</span>
+    <span class="p">),</span>
+    <span class="n">CZECH</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
         <span class="n">default_prompt_label_mapping</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">correct</span><span class="o">=</span><span class="s2">&quot;ano&quot;</span><span class="p">,</span> <span class="n">incorrect</span><span class="o">=</span><span class="s2">&quot;ne&quot;</span><span class="p">),</span>
         <span class="n">default_prompt_prefix</span><span class="o">=</span><span class="s2">&quot;Následující jsou věty a zda jsou gramaticky správné.&quot;</span><span class="p">,</span>
         <span class="n">default_prompt_template</span><span class="o">=</span><span class="s2">&quot;Věta: </span><span class="si">{text}</span><span class="se">\n</span><span class="s2">Gramaticky správná: </span><span class="si">{label}</span><span class="s2">&quot;</span><span class="p">,</span>
         <span class="n">default_instruction_prompt</span><span class="o">=</span><span class="s2">&quot;Věta: </span><span class="si">{text}</span><span class="se">\n\n</span><span class="s2">Určete, zda je věta gramaticky &quot;</span>
         <span class="s2">&quot;správná nebo ne. Odpovězte </span><span class="si">{labels_str}</span><span class="s2">, a nic jiné.&quot;</span><span class="p">,</span>
     <span class="p">),</span>
-    <span class="n">DA</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
+    <span class="n">DANISH</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
         <span class="n">default_prompt_label_mapping</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">correct</span><span class="o">=</span><span class="s2">&quot;ja&quot;</span><span class="p">,</span> <span class="n">incorrect</span><span class="o">=</span><span class="s2">&quot;nej&quot;</span><span class="p">),</span>
         <span class="n">default_prompt_prefix</span><span class="o">=</span><span class="s2">&quot;Følgende er sætninger og om de er grammatisk korrekte.&quot;</span><span class="p">,</span>
         <span class="n">default_prompt_template</span><span class="o">=</span><span class="s2">&quot;Sætning: </span><span class="si">{text}</span><span class="se">\n</span><span class="s2">Grammatisk korrekt: </span><span class="si">{label}</span><span class="s2">&quot;</span><span class="p">,</span>
         <span class="n">default_instruction_prompt</span><span class="o">=</span><span class="s2">&quot;Sætning: </span><span class="si">{text}</span><span class="se">\n\n</span><span class="s2">Bestem om sætningen er &quot;</span>
         <span class="s2">&quot;grammatisk korrekt eller ej. Svar kun med </span><span class="si">{labels_str}</span><span class="s2">, og intet andet.&quot;</span><span class="p">,</span>
     <span class="p">),</span>
-    <span class="n">DE</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
+    <span class="n">GERMAN</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
         <span class="n">default_prompt_label_mapping</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">correct</span><span class="o">=</span><span class="s2">&quot;ja&quot;</span><span class="p">,</span> <span class="n">incorrect</span><span class="o">=</span><span class="s2">&quot;nein&quot;</span><span class="p">),</span>
         <span class="n">default_prompt_prefix</span><span class="o">=</span><span class="s2">&quot;Die folgenden Sätze und ob sie grammatikalisch korrekt &quot;</span>
         <span class="s2">&quot;sind.&quot;</span><span class="p">,</span>
@@ -1105,7 +1163,15 @@
         <span class="s2">&quot;grammatikalisch korrekt ist oder nicht. Antworten Sie mit </span><span class="si">{labels_str}</span><span class="s2">, und &quot;</span>
         <span class="s2">&quot;nichts anderes.&quot;</span><span class="p">,</span>
     <span class="p">),</span>
-    <span class="n">EN</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
+    <span class="n">GREEK</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
+        <span class="n">default_prompt_label_mapping</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">correct</span><span class="o">=</span><span class="s2">&quot;ναι&quot;</span><span class="p">,</span> <span class="n">incorrect</span><span class="o">=</span><span class="s2">&quot;όχι&quot;</span><span class="p">),</span>
+        <span class="n">default_prompt_prefix</span><span class="o">=</span><span class="s2">&quot;Οι ακόλουθες είναι προτάσεις και εάν είναι &quot;</span>
+        <span class="s2">&quot;γραμματικά σωστές.&quot;</span><span class="p">,</span>
+        <span class="n">default_prompt_template</span><span class="o">=</span><span class="s2">&quot;Πρόταση: </span><span class="si">{text}</span><span class="se">\n</span><span class="s2">Γραμματικά σωστή: </span><span class="si">{label}</span><span class="s2">&quot;</span><span class="p">,</span>
+        <span class="n">default_instruction_prompt</span><span class="o">=</span><span class="s2">&quot;Πρόταση: </span><span class="si">{text}</span><span class="se">\n\n</span><span class="s2">Προσδιορίστε εάν η πρόταση &quot;</span>
+        <span class="s2">&quot;είναι γραμματικά σωστή ή όχι. Απαντήστε με </span><span class="si">{labels_str}</span><span class="s2">, και τίποτα άλλο.&quot;</span><span class="p">,</span>
+    <span class="p">),</span>
+    <span class="n">ENGLISH</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
         <span class="n">default_prompt_label_mapping</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">correct</span><span class="o">=</span><span class="s2">&quot;yes&quot;</span><span class="p">,</span> <span class="n">incorrect</span><span class="o">=</span><span class="s2">&quot;no&quot;</span><span class="p">),</span>
         <span class="n">default_prompt_prefix</span><span class="o">=</span><span class="s2">&quot;The following are sentences and whether they are &quot;</span>
         <span class="s2">&quot;grammatically correct.&quot;</span><span class="p">,</span>
@@ -1113,7 +1179,7 @@
         <span class="n">default_instruction_prompt</span><span class="o">=</span><span class="s2">&quot;Sentence: </span><span class="si">{text}</span><span class="se">\n\n</span><span class="s2">Determine whether the sentence &quot;</span>
         <span class="s2">&quot;is grammatically correct or not. Answer with </span><span class="si">{labels_str}</span><span class="s2">, and nothing else.&quot;</span><span class="p">,</span>
     <span class="p">),</span>
-    <span class="n">ES</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
+    <span class="n">SPANISH</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
         <span class="n">default_prompt_label_mapping</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">correct</span><span class="o">=</span><span class="s2">&quot;sí&quot;</span><span class="p">,</span> <span class="n">incorrect</span><span class="o">=</span><span class="s2">&quot;no&quot;</span><span class="p">),</span>
         <span class="n">default_prompt_prefix</span><span class="o">=</span><span class="s2">&quot;Lo siguiente son textos y si son gramaticalmente &quot;</span>
         <span class="s2">&quot;correctos.&quot;</span><span class="p">,</span>
@@ -1121,7 +1187,7 @@
         <span class="n">default_instruction_prompt</span><span class="o">=</span><span class="s2">&quot;Texto: </span><span class="si">{text}</span><span class="se">\n\n</span><span class="s2">Determina si el texto es &quot;</span>
         <span class="s2">&quot;gramaticalmente correcto o no. Responde con </span><span class="si">{labels_str}</span><span class="s2">, y nada más.&quot;</span><span class="p">,</span>
     <span class="p">),</span>
-    <span class="n">ET</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
+    <span class="n">ESTONIAN</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
         <span class="n">default_prompt_label_mapping</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">correct</span><span class="o">=</span><span class="s2">&quot;jah&quot;</span><span class="p">,</span> <span class="n">incorrect</span><span class="o">=</span><span class="s2">&quot;ei&quot;</span><span class="p">),</span>
         <span class="n">default_prompt_prefix</span><span class="o">=</span><span class="s2">&quot;Järgnevad on laused ja kas need on grammatiliselt &quot;</span>
         <span class="s2">&quot;õiged.&quot;</span><span class="p">,</span>
@@ -1129,7 +1195,7 @@
         <span class="n">default_instruction_prompt</span><span class="o">=</span><span class="s2">&quot;Lause: </span><span class="si">{text}</span><span class="se">\n\n</span><span class="s2">Otsusta, kas lause on &quot;</span>
         <span class="s2">&quot;grammatiliselt õige või mitte. Vasta </span><span class="si">{labels_str}</span><span class="s2">, ja mitte midagi muud.&quot;</span><span class="p">,</span>
     <span class="p">),</span>
-    <span class="n">PL</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
+    <span class="n">POLISH</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
         <span class="n">default_prompt_label_mapping</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">correct</span><span class="o">=</span><span class="s2">&quot;tak&quot;</span><span class="p">,</span> <span class="n">incorrect</span><span class="o">=</span><span class="s2">&quot;nie&quot;</span><span class="p">),</span>
         <span class="n">default_prompt_prefix</span><span class="o">=</span><span class="s2">&quot;Poniżej znajdują się teksty i informacja, czy są &quot;</span>
         <span class="s2">&quot;gramatycznie poprawne.&quot;</span><span class="p">,</span>
@@ -1137,7 +1203,7 @@
         <span class="n">default_instruction_prompt</span><span class="o">=</span><span class="s2">&quot;Tekst: </span><span class="si">{text}</span><span class="se">\n\n</span><span class="s2">Określ, czy tekst jest &quot;</span>
         <span class="s2">&quot;gramatycznie poprawny. Odpowiedz używając wyłącznie </span><span class="si">{labels_str}</span><span class="s2">.&quot;</span><span class="p">,</span>
     <span class="p">),</span>
-    <span class="n">PT</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
+    <span class="n">PORTUGUESE</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
         <span class="n">default_prompt_label_mapping</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">correct</span><span class="o">=</span><span class="s2">&quot;sim&quot;</span><span class="p">,</span> <span class="n">incorrect</span><span class="o">=</span><span class="s2">&quot;não&quot;</span><span class="p">),</span>
         <span class="n">default_prompt_prefix</span><span class="o">=</span><span class="s2">&quot;Seguem-se abaixo textos e se são &quot;</span>
         <span class="s2">&quot;gramaticalmente correctos&quot;</span><span class="p">,</span>
@@ -1145,7 +1211,7 @@
         <span class="n">default_instruction_prompt</span><span class="o">=</span><span class="s2">&quot;Texto: </span><span class="si">{text}</span><span class="se">\n\n</span><span class="s2">Determina se o texto é &quot;</span>
         <span class="s2">&quot;gramaticalmente correcto ou não. Responde com </span><span class="si">{labels_str}</span><span class="s2">, e nada mais.&quot;</span><span class="p">,</span>
     <span class="p">),</span>
-    <span class="n">FI</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
+    <span class="n">FINNISH</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
         <span class="n">default_prompt_label_mapping</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">correct</span><span class="o">=</span><span class="s2">&quot;kyllä&quot;</span><span class="p">,</span> <span class="n">incorrect</span><span class="o">=</span><span class="s2">&quot;ei&quot;</span><span class="p">),</span>
         <span class="n">default_prompt_prefix</span><span class="o">=</span><span class="s2">&quot;Seuraavat ovat lauseita ja ovatko ne &quot;</span>
         <span class="s2">&quot;kieliopillisesti oikein.&quot;</span><span class="p">,</span>
@@ -1153,7 +1219,7 @@
         <span class="n">default_instruction_prompt</span><span class="o">=</span><span class="s2">&quot;Lause: </span><span class="si">{text}</span><span class="se">\n\n</span><span class="s2">Määritä onko lause &quot;</span>
         <span class="s2">&quot;oikein vai ei. Vastaa </span><span class="si">{labels_str}</span><span class="s2">, ja ei mitään muuta.&quot;</span><span class="p">,</span>
     <span class="p">),</span>
-    <span class="n">FO</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
+    <span class="n">FAROESE</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
         <span class="n">default_prompt_label_mapping</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">correct</span><span class="o">=</span><span class="s2">&quot;ja&quot;</span><span class="p">,</span> <span class="n">incorrect</span><span class="o">=</span><span class="s2">&quot;nei&quot;</span><span class="p">),</span>
         <span class="n">default_prompt_prefix</span><span class="o">=</span><span class="s2">&quot;Hetta eru nakrir setningar og um teir eru mállæruliga &quot;</span>
         <span class="s2">&quot;rættir.&quot;</span><span class="p">,</span>
@@ -1161,7 +1227,7 @@
         <span class="n">default_instruction_prompt</span><span class="o">=</span><span class="s2">&quot;Setningur: </span><span class="si">{text}</span><span class="se">\n\n</span><span class="s2">Greindu hvort setningurin er &quot;</span>
         <span class="s2">&quot;mállæruliga rættur ella ikki. Svara við </span><span class="si">{labels_str}</span><span class="s2">, og einki annað.&quot;</span><span class="p">,</span>
     <span class="p">),</span>
-    <span class="n">FR</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
+    <span class="n">FRENCH</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
         <span class="n">default_prompt_label_mapping</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">correct</span><span class="o">=</span><span class="s2">&quot;oui&quot;</span><span class="p">,</span> <span class="n">incorrect</span><span class="o">=</span><span class="s2">&quot;non&quot;</span><span class="p">),</span>
         <span class="n">default_prompt_prefix</span><span class="o">=</span><span class="s2">&quot;Les phrases suivantes indiquent si elles sont &quot;</span>
         <span class="s2">&quot;grammaticalement correctes.&quot;</span><span class="p">,</span>
@@ -1170,7 +1236,7 @@
         <span class="n">default_instruction_prompt</span><span class="o">=</span><span class="s2">&quot;Phrase: </span><span class="si">{text}</span><span class="se">\n\n</span><span class="s2">Déterminez si la phrase est &quot;</span>
         <span class="s2">&quot;grammaticalement correcte ou non. Répondez par </span><span class="si">{labels_str}</span><span class="s2">, et rien d&#39;autre.&quot;</span><span class="p">,</span>
     <span class="p">),</span>
-    <span class="n">IS</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
+    <span class="n">ICELANDIC</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
         <span class="n">default_prompt_label_mapping</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">correct</span><span class="o">=</span><span class="s2">&quot;já&quot;</span><span class="p">,</span> <span class="n">incorrect</span><span class="o">=</span><span class="s2">&quot;nei&quot;</span><span class="p">),</span>
         <span class="n">default_prompt_prefix</span><span class="o">=</span><span class="s2">&quot;Hér fyrir neðan eru setningar ásamt mati á því hvort &quot;</span>
         <span class="s2">&quot;þær eru málfræðilega réttar.&quot;</span><span class="p">,</span>
@@ -1179,7 +1245,7 @@
         <span class="s2">&quot;málfræðilega rétt. Svaraðu með &#39;já&#39; ef setningin er rétt og &#39;nei&#39; ef hún &quot;</span>
         <span class="s2">&quot;er það ekki.&quot;</span><span class="p">,</span>
     <span class="p">),</span>
-    <span class="n">IT</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
+    <span class="n">ITALIAN</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
         <span class="n">default_prompt_label_mapping</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">correct</span><span class="o">=</span><span class="s2">&quot;si&quot;</span><span class="p">,</span> <span class="n">incorrect</span><span class="o">=</span><span class="s2">&quot;no&quot;</span><span class="p">),</span>
         <span class="n">default_prompt_prefix</span><span class="o">=</span><span class="s2">&quot;Di seguito sono riportate le frasi e la loro &quot;</span>
         <span class="s2">&quot;correttezza grammaticale.&quot;</span><span class="p">,</span>
@@ -1187,7 +1253,7 @@
         <span class="n">default_instruction_prompt</span><span class="o">=</span><span class="s2">&quot;Frase: </span><span class="si">{text}</span><span class="se">\n\n</span><span class="s2">Stabilite se la frase è &quot;</span>
         <span class="s2">&quot;grammaticalmente corretta o meno. Rispondere con </span><span class="si">{labels_str}</span><span class="s2">, e nient&#39;altro.&quot;</span><span class="p">,</span>
     <span class="p">),</span>
-    <span class="n">LT</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
+    <span class="n">LITHUANIAN</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
         <span class="n">default_prompt_label_mapping</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">correct</span><span class="o">=</span><span class="s2">&quot;taip&quot;</span><span class="p">,</span> <span class="n">incorrect</span><span class="o">=</span><span class="s2">&quot;ne&quot;</span><span class="p">),</span>
         <span class="n">default_prompt_prefix</span><span class="o">=</span><span class="s2">&quot;Toliau pateikti sakiniai ir ar jie yra gramatiškai &quot;</span>
         <span class="s2">&quot;teisingi.&quot;</span><span class="p">,</span>
@@ -1195,14 +1261,14 @@
         <span class="n">default_instruction_prompt</span><span class="o">=</span><span class="s2">&quot;Sakinys: </span><span class="si">{text}</span><span class="se">\n\n</span><span class="s2">Nustatykite, ar sakinys yra &quot;</span>
         <span class="s2">&quot;gramatiškai teisingas, ar ne. Atsakykite su </span><span class="si">{labels_str}</span><span class="s2">, ir nieko kito.&quot;</span><span class="p">,</span>
     <span class="p">),</span>
-    <span class="n">LV</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
+    <span class="n">LATVIAN</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
         <span class="n">default_prompt_label_mapping</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">correct</span><span class="o">=</span><span class="s2">&quot;jā&quot;</span><span class="p">,</span> <span class="n">incorrect</span><span class="o">=</span><span class="s2">&quot;nē&quot;</span><span class="p">),</span>
         <span class="n">default_prompt_prefix</span><span class="o">=</span><span class="s2">&quot;Šie ir teikumi un to gramatiskie pareizumi.&quot;</span><span class="p">,</span>
         <span class="n">default_prompt_template</span><span class="o">=</span><span class="s2">&quot;Teikums: </span><span class="si">{text}</span><span class="se">\n</span><span class="s2">Gramatiski pareizs: </span><span class="si">{label}</span><span class="s2">&quot;</span><span class="p">,</span>
         <span class="n">default_instruction_prompt</span><span class="o">=</span><span class="s2">&quot;Teikums: </span><span class="si">{text}</span><span class="se">\n\n</span><span class="s2">Noteiciet, vai teikums ir &quot;</span>
         <span class="s2">&quot;gramatiski pareizs vai nē. Atbildiet ar </span><span class="si">{labels_str}</span><span class="s2">, un neko citu.&quot;</span><span class="p">,</span>
     <span class="p">),</span>
-    <span class="n">NB</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
+    <span class="n">NORWEGIAN_BOKMÅL</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
         <span class="n">default_prompt_label_mapping</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">correct</span><span class="o">=</span><span class="s2">&quot;ja&quot;</span><span class="p">,</span> <span class="n">incorrect</span><span class="o">=</span><span class="s2">&quot;nei&quot;</span><span class="p">),</span>
         <span class="n">default_prompt_prefix</span><span class="o">=</span><span class="s2">&quot;Følgende er setninger og hvorvidt de er grammatisk &quot;</span>
         <span class="s2">&quot;korrekte.&quot;</span><span class="p">,</span>
@@ -1210,7 +1276,7 @@
         <span class="n">default_instruction_prompt</span><span class="o">=</span><span class="s2">&quot;Setning: </span><span class="si">{text}</span><span class="se">\n\n</span><span class="s2">Bestem om setningen er &quot;</span>
         <span class="s2">&quot;grammatisk korrekt eller ikke. Svar med </span><span class="si">{labels_str}</span><span class="s2">, og ikke noe annet.&quot;</span><span class="p">,</span>
     <span class="p">),</span>
-    <span class="n">NL</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
+    <span class="n">DUTCH</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
         <span class="n">default_prompt_label_mapping</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">correct</span><span class="o">=</span><span class="s2">&quot;ja&quot;</span><span class="p">,</span> <span class="n">incorrect</span><span class="o">=</span><span class="s2">&quot;nee&quot;</span><span class="p">),</span>
         <span class="n">default_prompt_prefix</span><span class="o">=</span><span class="s2">&quot;Hieronder staan zinnen en of ze grammaticaal correct &quot;</span>
         <span class="s2">&quot;zijn.&quot;</span><span class="p">,</span>
@@ -1218,7 +1284,7 @@
         <span class="n">default_instruction_prompt</span><span class="o">=</span><span class="s2">&quot;Zin: </span><span class="si">{text}</span><span class="se">\n\n</span><span class="s2">Bepaal of de zin grammaticaal &quot;</span>
         <span class="s2">&quot;correct is of niet. Antwoord met </span><span class="si">{labels_str}</span><span class="s2">, en verder niets.&quot;</span><span class="p">,</span>
     <span class="p">),</span>
-    <span class="n">NN</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
+    <span class="n">NORWEGIAN_NYNORSK</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
         <span class="n">default_prompt_label_mapping</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">correct</span><span class="o">=</span><span class="s2">&quot;ja&quot;</span><span class="p">,</span> <span class="n">incorrect</span><span class="o">=</span><span class="s2">&quot;nei&quot;</span><span class="p">),</span>
         <span class="n">default_prompt_prefix</span><span class="o">=</span><span class="s2">&quot;Følgende er setninger og hvorvidt de er grammatisk &quot;</span>
         <span class="s2">&quot;korrekte.&quot;</span><span class="p">,</span>
@@ -1226,7 +1292,7 @@
         <span class="n">default_instruction_prompt</span><span class="o">=</span><span class="s2">&quot;Setning: </span><span class="si">{text}</span><span class="se">\n\n</span><span class="s2">Bestem om setningen er &quot;</span>
         <span class="s2">&quot;grammatisk korrekt eller ikke. Svar med </span><span class="si">{labels_str}</span><span class="s2">, og ikke noe annet.&quot;</span><span class="p">,</span>
     <span class="p">),</span>
-    <span class="n">NO</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
+    <span class="n">NORWEGIAN</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
         <span class="n">default_prompt_label_mapping</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">correct</span><span class="o">=</span><span class="s2">&quot;ja&quot;</span><span class="p">,</span> <span class="n">incorrect</span><span class="o">=</span><span class="s2">&quot;nei&quot;</span><span class="p">),</span>
         <span class="n">default_prompt_prefix</span><span class="o">=</span><span class="s2">&quot;Følgende er setninger og hvorvidt de er grammatisk &quot;</span>
         <span class="s2">&quot;korrekte.&quot;</span><span class="p">,</span>
@@ -1234,7 +1300,7 @@
         <span class="n">default_instruction_prompt</span><span class="o">=</span><span class="s2">&quot;Setning: </span><span class="si">{text}</span><span class="se">\n\n</span><span class="s2">Bestem om setningen er &quot;</span>
         <span class="s2">&quot;grammatisk korrekt eller ikke. Svar med </span><span class="si">{labels_str}</span><span class="s2">, og ikke noe annet.&quot;</span><span class="p">,</span>
     <span class="p">),</span>
-    <span class="n">SK</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
+    <span class="n">SLOVAK</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
         <span class="n">default_prompt_label_mapping</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">correct</span><span class="o">=</span><span class="s2">&quot;áno&quot;</span><span class="p">,</span> <span class="n">incorrect</span><span class="o">=</span><span class="s2">&quot;nie&quot;</span><span class="p">),</span>
         <span class="n">default_prompt_prefix</span><span class="o">=</span><span class="s2">&quot;Nasledujú vety a či sú gramaticky správne.&quot;</span><span class="p">,</span>
         <span class="n">default_prompt_template</span><span class="o">=</span><span class="s2">&quot;Veta: </span><span class="si">{text}</span><span class="se">\n</span><span class="s2">Gramaticky správna: </span><span class="si">{label}</span><span class="s2">&quot;</span><span class="p">,</span>
@@ -1243,13 +1309,33 @@
             <span class="s2">&quot;Odpovedzte so </span><span class="si">{labels_str}</span><span class="s2">, a nič iné.&quot;</span>
         <span class="p">),</span>
     <span class="p">),</span>
-    <span class="n">SV</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
+    <span class="n">SERBIAN</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
+        <span class="n">default_prompt_label_mapping</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">correct</span><span class="o">=</span><span class="s2">&quot;da&quot;</span><span class="p">,</span> <span class="n">incorrect</span><span class="o">=</span><span class="s2">&quot;ne&quot;</span><span class="p">),</span>
+        <span class="n">default_prompt_prefix</span><span class="o">=</span><span class="s2">&quot;U nastavku su rečenice i da li su gramatički ispravne.&quot;</span><span class="p">,</span>
+        <span class="n">default_prompt_template</span><span class="o">=</span><span class="s2">&quot;Rečenica: </span><span class="si">{text}</span><span class="se">\n</span><span class="s2">Gramatički ispravna: </span><span class="si">{label}</span><span class="s2">&quot;</span><span class="p">,</span>
+        <span class="n">default_instruction_prompt</span><span class="o">=</span><span class="p">(</span>
+            <span class="s2">&quot;Rečenica: </span><span class="si">{text}</span><span class="se">\n\n</span><span class="s2">Odredite da li je rečenica gramatički ispravna ili &quot;</span>
+            <span class="s2">&quot;ne. Odgovorite sa </span><span class="si">{labels_str}</span><span class="s2">, i ništa drugo.&quot;</span>
+        <span class="p">),</span>
+    <span class="p">),</span>
+    <span class="n">SWEDISH</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
         <span class="n">default_prompt_label_mapping</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">correct</span><span class="o">=</span><span class="s2">&quot;ja&quot;</span><span class="p">,</span> <span class="n">incorrect</span><span class="o">=</span><span class="s2">&quot;nej&quot;</span><span class="p">),</span>
         <span class="n">default_prompt_prefix</span><span class="o">=</span><span class="s2">&quot;Följande är meningar och huruvida de är grammatiskt &quot;</span>
         <span class="s2">&quot;korrekta.&quot;</span><span class="p">,</span>
         <span class="n">default_prompt_template</span><span class="o">=</span><span class="s2">&quot;Mening: </span><span class="si">{text}</span><span class="se">\n</span><span class="s2">Grammatisk korrekt: </span><span class="si">{label}</span><span class="s2">&quot;</span><span class="p">,</span>
         <span class="n">default_instruction_prompt</span><span class="o">=</span><span class="s2">&quot;Mening: </span><span class="si">{text}</span><span class="se">\n\n</span><span class="s2">Bestäm om meningen är &quot;</span>
         <span class="s2">&quot;grammatiskt korrekt eller inte. Svara med </span><span class="si">{labels_str}</span><span class="s2">, och inget annat.&quot;</span><span class="p">,</span>
+    <span class="p">),</span>
+    <span class="n">UKRAINIAN</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
+        <span class="n">default_prompt_label_mapping</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">correct</span><span class="o">=</span><span class="s2">&quot;так&quot;</span><span class="p">,</span> <span class="n">incorrect</span><span class="o">=</span><span class="s2">&quot;ні&quot;</span><span class="p">),</span>
+        <span class="n">default_prompt_prefix</span><span class="o">=</span><span class="p">(</span>
+            <span class="s2">&quot;Нижче наведені речення і їхня граматична правильність.&quot;</span>
+        <span class="p">),</span>
+        <span class="n">default_prompt_template</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;Речення: </span><span class="si">{text}</span><span class="se">\n</span><span class="s2">Граматично правильно: </span><span class="si">{label}</span><span class="s2">&quot;</span><span class="p">),</span>
+        <span class="n">default_instruction_prompt</span><span class="o">=</span><span class="p">(</span>
+            <span class="s2">&quot;Речення: </span><span class="si">{text}</span><span class="se">\n\n</span><span class="s2">Визначте, чи речення граматично правильне чи ні. &quot;</span>
+            <span class="s2">&quot;Відповідайте </span><span class="si">{labels_str}</span><span class="s2">, і нічого більше.&quot;</span>
+        <span class="p">),</span>
     <span class="p">),</span>
 <span class="p">}</span>
 </code></pre></div></td></tr></table></div>

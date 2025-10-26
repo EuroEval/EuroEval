@@ -637,6 +637,14 @@
       
         
       
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -993,8 +1001,10 @@
 <span class="normal">118</span>
 <span class="normal">119</span>
 <span class="normal">120</span>
-<span class="normal">121</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Benchmarking model inference speed.&quot;&quot;&quot;</span>
+<span class="normal">121</span>
+<span class="normal">122</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Benchmarking model inference speed.&quot;&quot;&quot;</span>
 
+<span class="kn">import</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">c</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">t</span>
 
@@ -1013,7 +1023,7 @@
 
 <span class="k">def</span><span class="w"> </span><span class="nf">benchmark_speed</span><span class="p">(</span><div class="mkapi-source-link" id="euroeval.speed_benchmark.benchmark_speed"><a href="../../../api/euroeval/speed_benchmark/#euroeval.speed_benchmark.benchmark_speed" title="Go to docs">[docs]</a></div>
     <span class="n">model</span><span class="p">:</span> <span class="s2">&quot;BenchmarkModule&quot;</span><span class="p">,</span> <span class="n">benchmark_config</span><span class="p">:</span> <span class="s2">&quot;BenchmarkConfig&quot;</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]]:</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">c</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Benchmark model inference speed.</span>
 
 <span class="sd">    Args:</span>

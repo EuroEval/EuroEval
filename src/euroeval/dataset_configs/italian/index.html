@@ -637,6 +637,14 @@
       
         
       
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -966,120 +974,56 @@
 <span class="normal">117</span>
 <span class="normal">118</span>
 <span class="normal">119</span>
-<span class="normal">120</span>
-<span class="normal">121</span>
-<span class="normal">122</span>
-<span class="normal">123</span>
-<span class="normal">124</span>
-<span class="normal">125</span>
-<span class="normal">126</span>
-<span class="normal">127</span>
-<span class="normal">128</span>
-<span class="normal">129</span>
-<span class="normal">130</span>
-<span class="normal">131</span>
-<span class="normal">132</span>
-<span class="normal">133</span>
-<span class="normal">134</span>
-<span class="normal">135</span>
-<span class="normal">136</span>
-<span class="normal">137</span>
-<span class="normal">138</span>
-<span class="normal">139</span>
-<span class="normal">140</span>
-<span class="normal">141</span>
-<span class="normal">142</span>
-<span class="normal">143</span>
-<span class="normal">144</span>
-<span class="normal">145</span>
-<span class="normal">146</span>
-<span class="normal">147</span>
-<span class="normal">148</span>
-<span class="normal">149</span>
-<span class="normal">150</span>
-<span class="normal">151</span>
-<span class="normal">152</span>
-<span class="normal">153</span>
-<span class="normal">154</span>
-<span class="normal">155</span>
-<span class="normal">156</span>
-<span class="normal">157</span>
-<span class="normal">158</span>
-<span class="normal">159</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;All Italian dataset configurations used in EuroEval.&quot;&quot;&quot;</span>
+<span class="normal">120</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;All Italian dataset configurations used in EuroEval.&quot;&quot;&quot;</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">..data_models</span><span class="w"> </span><span class="kn">import</span> <span class="n">DatasetConfig</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">..languages</span><span class="w"> </span><span class="kn">import</span> <span class="n">IT</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..languages</span><span class="w"> </span><span class="kn">import</span> <span class="n">ITALIAN</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..tasks</span><span class="w"> </span><span class="kn">import</span> <span class="n">COMMON_SENSE</span><span class="p">,</span> <span class="n">EUROPEAN_VALUES</span><span class="p">,</span> <span class="n">KNOW</span><span class="p">,</span> <span class="n">LA</span><span class="p">,</span> <span class="n">MCRC</span><span class="p">,</span> <span class="n">NER</span><span class="p">,</span> <span class="n">RC</span><span class="p">,</span> <span class="n">SENT</span><span class="p">,</span> <span class="n">SUMM</span>
 
 <span class="c1">### Official datasets ###</span>
 
 <span class="n">SENTIPOLC_CONFIG</span> <span class="o">=</span> <span class="n">DatasetConfig</span><span class="p">(</span>
     <span class="n">name</span><span class="o">=</span><span class="s2">&quot;sentipolc16&quot;</span><span class="p">,</span>
-    <span class="n">pretty_name</span><span class="o">=</span><span class="s2">&quot;the truncated version of the Italian sentiment classification &quot;</span>
-    <span class="s2">&quot;dataset Sentipolc-16&quot;</span><span class="p">,</span>
-    <span class="n">huggingface_id</span><span class="o">=</span><span class="s2">&quot;EuroEval/sentipolc16-mini&quot;</span><span class="p">,</span>
+    <span class="n">source</span><span class="o">=</span><span class="s2">&quot;EuroEval/sentipolc16-mini&quot;</span><span class="p">,</span>
     <span class="n">task</span><span class="o">=</span><span class="n">SENT</span><span class="p">,</span>
-    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">IT</span><span class="p">],</span>
+    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">ITALIAN</span><span class="p">],</span>
 <span class="p">)</span>
 
 <span class="n">SCALA_IT_CONFIG</span> <span class="o">=</span> <span class="n">DatasetConfig</span><span class="p">(</span>
-    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;scala-it&quot;</span><span class="p">,</span>
-    <span class="n">pretty_name</span><span class="o">=</span><span class="s2">&quot;the Italian part of the linguistic acceptability dataset ScaLA&quot;</span><span class="p">,</span>
-    <span class="n">huggingface_id</span><span class="o">=</span><span class="s2">&quot;EuroEval/scala-it&quot;</span><span class="p">,</span>
-    <span class="n">task</span><span class="o">=</span><span class="n">LA</span><span class="p">,</span>
-    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">IT</span><span class="p">],</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;scala-it&quot;</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="s2">&quot;EuroEval/scala-it&quot;</span><span class="p">,</span> <span class="n">task</span><span class="o">=</span><span class="n">LA</span><span class="p">,</span> <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">ITALIAN</span><span class="p">]</span>
 <span class="p">)</span>
 
 <span class="n">MULTINERD_IT_CONFIG</span> <span class="o">=</span> <span class="n">DatasetConfig</span><span class="p">(</span>
     <span class="n">name</span><span class="o">=</span><span class="s2">&quot;multinerd-it&quot;</span><span class="p">,</span>
-    <span class="n">pretty_name</span><span class="o">=</span><span class="s2">&quot;the truncated version of the Italian part of the named &quot;</span>
-    <span class="s2">&quot;entity recognition dataset MultiNERD&quot;</span><span class="p">,</span>
-    <span class="n">huggingface_id</span><span class="o">=</span><span class="s2">&quot;EuroEval/multinerd-mini-it&quot;</span><span class="p">,</span>
+    <span class="n">source</span><span class="o">=</span><span class="s2">&quot;EuroEval/multinerd-mini-it&quot;</span><span class="p">,</span>
     <span class="n">task</span><span class="o">=</span><span class="n">NER</span><span class="p">,</span>
-    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">IT</span><span class="p">],</span>
+    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">ITALIAN</span><span class="p">],</span>
 <span class="p">)</span>
 
 <span class="n">SQUAD_IT_CONFIG</span> <span class="o">=</span> <span class="n">DatasetConfig</span><span class="p">(</span>
-    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;squad-it&quot;</span><span class="p">,</span>
-    <span class="n">pretty_name</span><span class="o">=</span><span class="s2">&quot;the truncated version of the Italian reading comprehension dataset &quot;</span>
-    <span class="s2">&quot;SQuAD-it, translated from the English SQuAD dataset&quot;</span><span class="p">,</span>
-    <span class="n">huggingface_id</span><span class="o">=</span><span class="s2">&quot;EuroEval/squad-it-mini&quot;</span><span class="p">,</span>
-    <span class="n">task</span><span class="o">=</span><span class="n">RC</span><span class="p">,</span>
-    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">IT</span><span class="p">],</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;squad-it&quot;</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="s2">&quot;EuroEval/squad-it-mini&quot;</span><span class="p">,</span> <span class="n">task</span><span class="o">=</span><span class="n">RC</span><span class="p">,</span> <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">ITALIAN</span><span class="p">]</span>
 <span class="p">)</span>
 
 <span class="n">ILPOST_SUM_CONFIG</span> <span class="o">=</span> <span class="n">DatasetConfig</span><span class="p">(</span>
-    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;ilpost-sum&quot;</span><span class="p">,</span>
-    <span class="n">pretty_name</span><span class="o">=</span><span class="s2">&quot;the truncated version of the Italian summarisation dataset IlPost-Sum&quot;</span><span class="p">,</span>
-    <span class="n">huggingface_id</span><span class="o">=</span><span class="s2">&quot;EuroEval/ilpost-sum&quot;</span><span class="p">,</span>
-    <span class="n">task</span><span class="o">=</span><span class="n">SUMM</span><span class="p">,</span>
-    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">IT</span><span class="p">],</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;ilpost-sum&quot;</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="s2">&quot;EuroEval/ilpost-sum&quot;</span><span class="p">,</span> <span class="n">task</span><span class="o">=</span><span class="n">SUMM</span><span class="p">,</span> <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">ITALIAN</span><span class="p">]</span>
 <span class="p">)</span>
 
 <span class="n">MMLU_IT_CONFIG</span> <span class="o">=</span> <span class="n">DatasetConfig</span><span class="p">(</span>
-    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;mmlu-it&quot;</span><span class="p">,</span>
-    <span class="n">pretty_name</span><span class="o">=</span><span class="s2">&quot;the truncated version of the Italian knowledge dataset MMLU-it, &quot;</span>
-    <span class="s2">&quot;translated from the English MMLU dataset&quot;</span><span class="p">,</span>
-    <span class="n">huggingface_id</span><span class="o">=</span><span class="s2">&quot;EuroEval/mmlu-it-mini&quot;</span><span class="p">,</span>
-    <span class="n">task</span><span class="o">=</span><span class="n">KNOW</span><span class="p">,</span>
-    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">IT</span><span class="p">],</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;mmlu-it&quot;</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="s2">&quot;EuroEval/mmlu-it-mini&quot;</span><span class="p">,</span> <span class="n">task</span><span class="o">=</span><span class="n">KNOW</span><span class="p">,</span> <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">ITALIAN</span><span class="p">]</span>
 <span class="p">)</span>
 
 <span class="n">HELLASWAG_IT_CONFIG</span> <span class="o">=</span> <span class="n">DatasetConfig</span><span class="p">(</span>
     <span class="n">name</span><span class="o">=</span><span class="s2">&quot;hellaswag-it&quot;</span><span class="p">,</span>
-    <span class="n">pretty_name</span><span class="o">=</span><span class="s2">&quot;the truncated version of the Italian common-sense reasoning dataset &quot;</span>
-    <span class="s2">&quot;HellaSwag-it, translated from the English HellaSwag dataset&quot;</span><span class="p">,</span>
-    <span class="n">huggingface_id</span><span class="o">=</span><span class="s2">&quot;EuroEval/hellaswag-it-mini&quot;</span><span class="p">,</span>
+    <span class="n">source</span><span class="o">=</span><span class="s2">&quot;EuroEval/hellaswag-it-mini&quot;</span><span class="p">,</span>
     <span class="n">task</span><span class="o">=</span><span class="n">COMMON_SENSE</span><span class="p">,</span>
-    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">IT</span><span class="p">],</span>
+    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">ITALIAN</span><span class="p">],</span>
 <span class="p">)</span>
 
 <span class="n">EUROPEAN_VALUES_IT_CONFIG</span> <span class="o">=</span> <span class="n">DatasetConfig</span><span class="p">(</span>
     <span class="n">name</span><span class="o">=</span><span class="s2">&quot;european-values-it&quot;</span><span class="p">,</span>
-    <span class="n">pretty_name</span><span class="o">=</span><span class="s2">&quot;the Italian version of the European values evaluation dataset&quot;</span><span class="p">,</span>
-    <span class="n">huggingface_id</span><span class="o">=</span><span class="s2">&quot;EuroEval/european-values-it&quot;</span><span class="p">,</span>
+    <span class="n">source</span><span class="o">=</span><span class="s2">&quot;EuroEval/european-values-it&quot;</span><span class="p">,</span>
     <span class="n">task</span><span class="o">=</span><span class="n">EUROPEAN_VALUES</span><span class="p">,</span>
-    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">IT</span><span class="p">],</span>
+    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">ITALIAN</span><span class="p">],</span>
     <span class="n">splits</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;test&quot;</span><span class="p">],</span>
     <span class="n">bootstrap_samples</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
     <span class="n">_instruction_prompt</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">{text}</span><span class="s2">&quot;</span><span class="p">,</span>
@@ -1090,62 +1034,50 @@
 
 <span class="n">WIKINEURAL_IT_CONFIG</span> <span class="o">=</span> <span class="n">DatasetConfig</span><span class="p">(</span>
     <span class="n">name</span><span class="o">=</span><span class="s2">&quot;wikineural-it&quot;</span><span class="p">,</span>
-    <span class="n">pretty_name</span><span class="o">=</span><span class="s2">&quot;the truncated version of the Italian named &quot;</span>
-    <span class="s2">&quot;entity recognition dataset WikiNEuRal IT&quot;</span><span class="p">,</span>
-    <span class="n">huggingface_id</span><span class="o">=</span><span class="s2">&quot;EuroEval/wikineural-mini-it&quot;</span><span class="p">,</span>
+    <span class="n">source</span><span class="o">=</span><span class="s2">&quot;EuroEval/wikineural-mini-it&quot;</span><span class="p">,</span>
     <span class="n">task</span><span class="o">=</span><span class="n">NER</span><span class="p">,</span>
-    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">IT</span><span class="p">],</span>
+    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">ITALIAN</span><span class="p">],</span>
     <span class="n">unofficial</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
 <span class="p">)</span>
 
 <span class="n">BELEBELE_IT_CONFIG</span> <span class="o">=</span> <span class="n">DatasetConfig</span><span class="p">(</span>
     <span class="n">name</span><span class="o">=</span><span class="s2">&quot;belebele-it&quot;</span><span class="p">,</span>
-    <span class="n">pretty_name</span><span class="o">=</span><span class="s2">&quot;the Italian multiple choice reading comprehension dataset &quot;</span>
-    <span class="s2">&quot;BeleBele-it, translated from the English BeleBele dataset&quot;</span><span class="p">,</span>
-    <span class="n">huggingface_id</span><span class="o">=</span><span class="s2">&quot;EuroEval/belebele-it-mini&quot;</span><span class="p">,</span>
+    <span class="n">source</span><span class="o">=</span><span class="s2">&quot;EuroEval/belebele-it-mini&quot;</span><span class="p">,</span>
     <span class="n">task</span><span class="o">=</span><span class="n">MCRC</span><span class="p">,</span>
-    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">IT</span><span class="p">],</span>
+    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">ITALIAN</span><span class="p">],</span>
     <span class="n">unofficial</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
 <span class="p">)</span>
 
 <span class="n">MULTI_WIKI_QA_IT_CONFIG</span> <span class="o">=</span> <span class="n">DatasetConfig</span><span class="p">(</span>
     <span class="n">name</span><span class="o">=</span><span class="s2">&quot;multi-wiki-qa-it&quot;</span><span class="p">,</span>
-    <span class="n">pretty_name</span><span class="o">=</span><span class="s2">&quot;the truncated version of the Italian part of the reading &quot;</span>
-    <span class="s2">&quot;comprehension dataset MultiWikiQA&quot;</span><span class="p">,</span>
-    <span class="n">huggingface_id</span><span class="o">=</span><span class="s2">&quot;EuroEval/multi-wiki-qa-it-mini&quot;</span><span class="p">,</span>
+    <span class="n">source</span><span class="o">=</span><span class="s2">&quot;EuroEval/multi-wiki-qa-it-mini&quot;</span><span class="p">,</span>
     <span class="n">task</span><span class="o">=</span><span class="n">RC</span><span class="p">,</span>
-    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">IT</span><span class="p">],</span>
+    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">ITALIAN</span><span class="p">],</span>
     <span class="n">unofficial</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
 <span class="p">)</span>
 
 <span class="n">GOLDENSWAG_IT_CONFIG</span> <span class="o">=</span> <span class="n">DatasetConfig</span><span class="p">(</span>
     <span class="n">name</span><span class="o">=</span><span class="s2">&quot;goldenswag-it&quot;</span><span class="p">,</span>
-    <span class="n">pretty_name</span><span class="o">=</span><span class="s2">&quot;the truncated version of the Italian common-sense reasoning &quot;</span>
-    <span class="s2">&quot;dataset GoldenSwag-it, translated from the English GoldenSwag dataset&quot;</span><span class="p">,</span>
-    <span class="n">huggingface_id</span><span class="o">=</span><span class="s2">&quot;EuroEval/goldenswag-it-mini&quot;</span><span class="p">,</span>
+    <span class="n">source</span><span class="o">=</span><span class="s2">&quot;EuroEval/goldenswag-it-mini&quot;</span><span class="p">,</span>
     <span class="n">task</span><span class="o">=</span><span class="n">COMMON_SENSE</span><span class="p">,</span>
-    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">IT</span><span class="p">],</span>
+    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">ITALIAN</span><span class="p">],</span>
     <span class="n">unofficial</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
 <span class="p">)</span>
 
 <span class="n">WINOGRANDE_IT_CONFIG</span> <span class="o">=</span> <span class="n">DatasetConfig</span><span class="p">(</span>
     <span class="n">name</span><span class="o">=</span><span class="s2">&quot;winogrande-it&quot;</span><span class="p">,</span>
-    <span class="n">pretty_name</span><span class="o">=</span><span class="s2">&quot;the Italian common-sense reasoning dataset Winogrande-it, translated &quot;</span>
-    <span class="s2">&quot;from the English Winogrande dataset&quot;</span><span class="p">,</span>
-    <span class="n">huggingface_id</span><span class="o">=</span><span class="s2">&quot;EuroEval/winogrande-it&quot;</span><span class="p">,</span>
+    <span class="n">source</span><span class="o">=</span><span class="s2">&quot;EuroEval/winogrande-it&quot;</span><span class="p">,</span>
     <span class="n">task</span><span class="o">=</span><span class="n">COMMON_SENSE</span><span class="p">,</span>
-    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">IT</span><span class="p">],</span>
+    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">ITALIAN</span><span class="p">],</span>
     <span class="n">_labels</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;a&quot;</span><span class="p">,</span> <span class="s2">&quot;b&quot;</span><span class="p">],</span>
     <span class="n">unofficial</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
 <span class="p">)</span>
 
 <span class="n">EUROPEAN_VALUES_SITUATIONAL_IT_CONFIG</span> <span class="o">=</span> <span class="n">DatasetConfig</span><span class="p">(</span>
     <span class="n">name</span><span class="o">=</span><span class="s2">&quot;european-values-situational-it&quot;</span><span class="p">,</span>
-    <span class="n">pretty_name</span><span class="o">=</span><span class="s2">&quot;the Italian version of the European values evaluation dataset, &quot;</span>
-    <span class="s2">&quot;where the questions are phrased in a situational way&quot;</span><span class="p">,</span>
-    <span class="n">huggingface_id</span><span class="o">=</span><span class="s2">&quot;EuroEval/european-values-situational-it&quot;</span><span class="p">,</span>
+    <span class="n">source</span><span class="o">=</span><span class="s2">&quot;EuroEval/european-values-situational-it&quot;</span><span class="p">,</span>
     <span class="n">task</span><span class="o">=</span><span class="n">EUROPEAN_VALUES</span><span class="p">,</span>
-    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">IT</span><span class="p">],</span>
+    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">ITALIAN</span><span class="p">],</span>
     <span class="n">splits</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;test&quot;</span><span class="p">],</span>
     <span class="n">bootstrap_samples</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
     <span class="n">_instruction_prompt</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">{text}</span><span class="s2">&quot;</span><span class="p">,</span>
@@ -1154,11 +1086,9 @@
 
 <span class="n">EUROPEAN_VALUES_COMPLETIONS_IT_CONFIG</span> <span class="o">=</span> <span class="n">DatasetConfig</span><span class="p">(</span>
     <span class="n">name</span><span class="o">=</span><span class="s2">&quot;european-values-completions-it&quot;</span><span class="p">,</span>
-    <span class="n">pretty_name</span><span class="o">=</span><span class="s2">&quot;the Italian version of the European values evaluation dataset, where &quot;</span>
-    <span class="s2">&quot;the questions are phrased as sentence completions&quot;</span><span class="p">,</span>
-    <span class="n">huggingface_id</span><span class="o">=</span><span class="s2">&quot;EuroEval/european-values-completions-it&quot;</span><span class="p">,</span>
+    <span class="n">source</span><span class="o">=</span><span class="s2">&quot;EuroEval/european-values-completions-it&quot;</span><span class="p">,</span>
     <span class="n">task</span><span class="o">=</span><span class="n">EUROPEAN_VALUES</span><span class="p">,</span>
-    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">IT</span><span class="p">],</span>
+    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">ITALIAN</span><span class="p">],</span>
     <span class="n">splits</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;test&quot;</span><span class="p">],</span>
     <span class="n">bootstrap_samples</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
     <span class="n">_instruction_prompt</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">{text}</span><span class="s2">&quot;</span><span class="p">,</span>

@@ -637,6 +637,14 @@
       
         
       
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -1072,40 +1080,101 @@
 <span class="normal">223</span>
 <span class="normal">224</span>
 <span class="normal">225</span>
-<span class="normal">226</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Templates for the Reading Comprehension task.&quot;&quot;&quot;</span>
+<span class="normal">226</span>
+<span class="normal">227</span>
+<span class="normal">228</span>
+<span class="normal">229</span>
+<span class="normal">230</span>
+<span class="normal">231</span>
+<span class="normal">232</span>
+<span class="normal">233</span>
+<span class="normal">234</span>
+<span class="normal">235</span>
+<span class="normal">236</span>
+<span class="normal">237</span>
+<span class="normal">238</span>
+<span class="normal">239</span>
+<span class="normal">240</span>
+<span class="normal">241</span>
+<span class="normal">242</span>
+<span class="normal">243</span>
+<span class="normal">244</span>
+<span class="normal">245</span>
+<span class="normal">246</span>
+<span class="normal">247</span>
+<span class="normal">248</span>
+<span class="normal">249</span>
+<span class="normal">250</span>
+<span class="normal">251</span>
+<span class="normal">252</span>
+<span class="normal">253</span>
+<span class="normal">254</span>
+<span class="normal">255</span>
+<span class="normal">256</span>
+<span class="normal">257</span>
+<span class="normal">258</span>
+<span class="normal">259</span>
+<span class="normal">260</span>
+<span class="normal">261</span>
+<span class="normal">262</span>
+<span class="normal">263</span>
+<span class="normal">264</span>
+<span class="normal">265</span>
+<span class="normal">266</span>
+<span class="normal">267</span>
+<span class="normal">268</span>
+<span class="normal">269</span>
+<span class="normal">270</span>
+<span class="normal">271</span>
+<span class="normal">272</span>
+<span class="normal">273</span>
+<span class="normal">274</span>
+<span class="normal">275</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Templates for the Reading Comprehension task.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">t</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">..data_models</span><span class="w"> </span><span class="kn">import</span> <span class="n">PromptConfig</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..languages</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-    <span class="n">CS</span><span class="p">,</span>
-    <span class="n">DA</span><span class="p">,</span>
-    <span class="n">DE</span><span class="p">,</span>
-    <span class="n">EN</span><span class="p">,</span>
-    <span class="n">ES</span><span class="p">,</span>
-    <span class="n">ET</span><span class="p">,</span>
-    <span class="n">FI</span><span class="p">,</span>
-    <span class="n">FO</span><span class="p">,</span>
-    <span class="n">FR</span><span class="p">,</span>
-    <span class="n">IS</span><span class="p">,</span>
-    <span class="n">IT</span><span class="p">,</span>
-    <span class="n">LT</span><span class="p">,</span>
-    <span class="n">LV</span><span class="p">,</span>
-    <span class="n">NB</span><span class="p">,</span>
-    <span class="n">NL</span><span class="p">,</span>
-    <span class="n">NN</span><span class="p">,</span>
-    <span class="n">NO</span><span class="p">,</span>
-    <span class="n">PL</span><span class="p">,</span>
-    <span class="n">PT</span><span class="p">,</span>
-    <span class="n">SK</span><span class="p">,</span>
-    <span class="n">SV</span><span class="p">,</span>
+    <span class="n">BULGARIAN</span><span class="p">,</span>
+    <span class="n">CZECH</span><span class="p">,</span>
+    <span class="n">DANISH</span><span class="p">,</span>
+    <span class="n">DUTCH</span><span class="p">,</span>
+    <span class="n">ENGLISH</span><span class="p">,</span>
+    <span class="n">ESTONIAN</span><span class="p">,</span>
+    <span class="n">FAROESE</span><span class="p">,</span>
+    <span class="n">FINNISH</span><span class="p">,</span>
+    <span class="n">FRENCH</span><span class="p">,</span>
+    <span class="n">GERMAN</span><span class="p">,</span>
+    <span class="n">GREEK</span><span class="p">,</span>
+    <span class="n">ICELANDIC</span><span class="p">,</span>
+    <span class="n">ITALIAN</span><span class="p">,</span>
+    <span class="n">LATVIAN</span><span class="p">,</span>
+    <span class="n">LITHUANIAN</span><span class="p">,</span>
+    <span class="n">NORWEGIAN</span><span class="p">,</span>
+    <span class="n">NORWEGIAN_BOKMÅL</span><span class="p">,</span>
+    <span class="n">NORWEGIAN_NYNORSK</span><span class="p">,</span>
+    <span class="n">POLISH</span><span class="p">,</span>
+    <span class="n">PORTUGUESE</span><span class="p">,</span>
+    <span class="n">SERBIAN</span><span class="p">,</span>
+    <span class="n">SLOVAK</span><span class="p">,</span>
+    <span class="n">SPANISH</span><span class="p">,</span>
+    <span class="n">SWEDISH</span><span class="p">,</span>
+    <span class="n">UKRAINIAN</span><span class="p">,</span>
 <span class="p">)</span>
 
 <span class="k">if</span> <span class="n">t</span><span class="o">.</span><span class="n">TYPE_CHECKING</span><span class="p">:</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">..data_models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Language</span>
 
 <span class="n">RC_TEMPLATES</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="s2">&quot;Language&quot;</span><span class="p">,</span> <span class="n">PromptConfig</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="n">CS</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
+    <span class="n">BULGARIAN</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
+        <span class="n">default_prompt_prefix</span><span class="o">=</span><span class="s2">&quot;Следват текстове със съответни въпроси и отговори.&quot;</span><span class="p">,</span>
+        <span class="n">default_prompt_template</span><span class="o">=</span><span class="s2">&quot;Текст: </span><span class="si">{text}</span><span class="se">\n</span><span class="s2">Въпрос: </span><span class="si">{question}</span><span class="se">\n</span><span class="s2">Отговор с максимум &quot;</span>
+        <span class="s2">&quot;3 думи: </span><span class="si">{label}</span><span class="s2">&quot;</span><span class="p">,</span>
+        <span class="n">default_instruction_prompt</span><span class="o">=</span><span class="s2">&quot;Текст: </span><span class="si">{text}</span><span class="se">\n\n</span><span class="s2">Отговорете на следния въпрос &quot;</span>
+        <span class="s2">&quot;относно текста по-горе с максимум 3 думи.</span><span class="se">\n\n</span><span class="s2">Въпрос: </span><span class="si">{question}</span><span class="s2">&quot;</span><span class="p">,</span>
+        <span class="n">default_prompt_label_mapping</span><span class="o">=</span><span class="nb">dict</span><span class="p">(),</span>
+    <span class="p">),</span>
+    <span class="n">CZECH</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
         <span class="n">default_prompt_prefix</span><span class="o">=</span><span class="s2">&quot;Následující texty obsahují otázky a odpovědi.&quot;</span><span class="p">,</span>
         <span class="n">default_prompt_template</span><span class="o">=</span><span class="p">(</span>
             <span class="s2">&quot;Text: </span><span class="si">{text}</span><span class="se">\n</span><span class="s2">Otázka: </span><span class="si">{question}</span><span class="se">\n</span><span class="s2">Odpověď maximálně 3 slovy: </span><span class="si">{label}</span><span class="s2">&quot;</span>
@@ -1118,7 +1187,7 @@
         <span class="p">),</span>
         <span class="n">default_prompt_label_mapping</span><span class="o">=</span><span class="nb">dict</span><span class="p">(),</span>
     <span class="p">),</span>
-    <span class="n">DA</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
+    <span class="n">DANISH</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
         <span class="n">default_prompt_prefix</span><span class="o">=</span><span class="s2">&quot;Følgende er tekster med tilhørende spørgsmål og svar.&quot;</span><span class="p">,</span>
         <span class="n">default_prompt_template</span><span class="o">=</span><span class="s2">&quot;Tekst: </span><span class="si">{text}</span><span class="se">\n</span><span class="s2">Spørgsmål: </span><span class="si">{question}</span><span class="se">\n</span><span class="s2">Svar med maks. &quot;</span>
         <span class="s2">&quot;3 ord: </span><span class="si">{label}</span><span class="s2">&quot;</span><span class="p">,</span>
@@ -1126,7 +1195,7 @@
         <span class="s2">&quot;teksten ovenfor med maks. 3 ord.</span><span class="se">\n\n</span><span class="s2">Spørgsmål: </span><span class="si">{question}</span><span class="s2">&quot;</span><span class="p">,</span>
         <span class="n">default_prompt_label_mapping</span><span class="o">=</span><span class="nb">dict</span><span class="p">(),</span>
     <span class="p">),</span>
-    <span class="n">DE</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
+    <span class="n">GERMAN</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
         <span class="n">default_prompt_prefix</span><span class="o">=</span><span class="s2">&quot;Im Folgenden finden Sie Texte mit den dazugehörigen &quot;</span>
         <span class="s2">&quot;Fragen und Antworten.&quot;</span><span class="p">,</span>
         <span class="n">default_prompt_template</span><span class="o">=</span><span class="s2">&quot;Text: </span><span class="si">{text}</span><span class="se">\n</span><span class="s2">Fragen: </span><span class="si">{question}</span><span class="se">\n</span><span class="s2">Fragen Antwort in &quot;</span>
@@ -1135,7 +1204,16 @@
         <span class="s2">&quot;zum obigen Text in höchstens 3 Wörtern.</span><span class="se">\n\n</span><span class="s2">Frage: </span><span class="si">{question}</span><span class="s2">&quot;</span><span class="p">,</span>
         <span class="n">default_prompt_label_mapping</span><span class="o">=</span><span class="nb">dict</span><span class="p">(),</span>
     <span class="p">),</span>
-    <span class="n">EN</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
+    <span class="n">GREEK</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
+        <span class="n">default_prompt_prefix</span><span class="o">=</span><span class="s2">&quot;Ακολουθούν κείμενα με τις αντίστοιχες ερωτήσεις και &quot;</span>
+        <span class="s2">&quot;απαντήσεις.&quot;</span><span class="p">,</span>
+        <span class="n">default_prompt_template</span><span class="o">=</span><span class="s2">&quot;Κείμενο: </span><span class="si">{text}</span><span class="se">\n</span><span class="s2">Ερώτηση: </span><span class="si">{question}</span><span class="se">\n</span><span class="s2">Απάντηση σε το &quot;</span>
+        <span class="s2">&quot;πολύ 3 λέξεις: </span><span class="si">{label}</span><span class="s2">&quot;</span><span class="p">,</span>
+        <span class="n">default_instruction_prompt</span><span class="o">=</span><span class="s2">&quot;Κείμενο: </span><span class="si">{text}</span><span class="se">\n\n</span><span class="s2">Απαντήστε την παρακάτω ερώτηση &quot;</span>
+        <span class="s2">&quot;σχετικά με το παραπάνω κείμενο σε το πολύ 3 λέξεις.</span><span class="se">\n\n</span><span class="s2">Ερώτηση: </span><span class="si">{question}</span><span class="s2">&quot;</span><span class="p">,</span>
+        <span class="n">default_prompt_label_mapping</span><span class="o">=</span><span class="nb">dict</span><span class="p">(),</span>
+    <span class="p">),</span>
+    <span class="n">ENGLISH</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
         <span class="n">default_prompt_prefix</span><span class="o">=</span><span class="s2">&quot;The following are texts with accompanying questions and &quot;</span>
         <span class="s2">&quot;answers.&quot;</span><span class="p">,</span>
         <span class="n">default_prompt_template</span><span class="o">=</span><span class="s2">&quot;Text: </span><span class="si">{text}</span><span class="se">\n</span><span class="s2">Question: </span><span class="si">{question}</span><span class="se">\n</span><span class="s2">Answer in max &quot;</span>
@@ -1144,7 +1222,7 @@
         <span class="s2">&quot;about the above text in at most 3 words.</span><span class="se">\n\n</span><span class="s2">Question: </span><span class="si">{question}</span><span class="s2">&quot;</span><span class="p">,</span>
         <span class="n">default_prompt_label_mapping</span><span class="o">=</span><span class="nb">dict</span><span class="p">(),</span>
     <span class="p">),</span>
-    <span class="n">ES</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
+    <span class="n">SPANISH</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
         <span class="n">default_prompt_prefix</span><span class="o">=</span><span class="s2">&quot;A continuación se presentan textos con sus preguntas y &quot;</span>
         <span class="s2">&quot;respuestas correspondientes.&quot;</span><span class="p">,</span>
         <span class="n">default_prompt_template</span><span class="o">=</span><span class="s2">&quot;Texto: </span><span class="si">{text}</span><span class="se">\n</span><span class="s2">Pregunta: </span><span class="si">{question}</span><span class="se">\n</span><span class="s2">Respuesta en &quot;</span>
@@ -1153,7 +1231,7 @@
         <span class="s2">&quot;sobre el texto anterior en máximo 3 palabras.</span><span class="se">\n\n</span><span class="s2">Pregunta: </span><span class="si">{question}</span><span class="s2">&quot;</span><span class="p">,</span>
         <span class="n">default_prompt_label_mapping</span><span class="o">=</span><span class="nb">dict</span><span class="p">(),</span>
     <span class="p">),</span>
-    <span class="n">ET</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
+    <span class="n">ESTONIAN</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
         <span class="n">default_prompt_prefix</span><span class="o">=</span><span class="s2">&quot;Järgnevad on tekstid koos küsimuste ja vastustega.&quot;</span><span class="p">,</span>
         <span class="n">default_prompt_template</span><span class="o">=</span><span class="s2">&quot;Tekst: </span><span class="si">{text}</span><span class="se">\n</span><span class="s2">Küsimus: </span><span class="si">{question}</span><span class="se">\n</span><span class="s2">Vasta &quot;</span>
         <span class="s2">&quot;maksimaalselt 3 sõnaga: </span><span class="si">{label}</span><span class="s2">&quot;</span><span class="p">,</span>
@@ -1161,7 +1239,7 @@
         <span class="s2">&quot;ülevaltoodud teksti kohta maksimaalselt 3 sõnaga.</span><span class="se">\n\n</span><span class="s2">Küsimus: </span><span class="si">{question}</span><span class="s2">&quot;</span><span class="p">,</span>
         <span class="n">default_prompt_label_mapping</span><span class="o">=</span><span class="nb">dict</span><span class="p">(),</span>
     <span class="p">),</span>
-    <span class="n">FI</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
+    <span class="n">FINNISH</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
         <span class="n">default_prompt_prefix</span><span class="o">=</span><span class="s2">&quot;Seuraavassa on tekstejä ja niihin liittyviä kysymyksiä &quot;</span>
         <span class="s2">&quot;ja vastauksia.&quot;</span><span class="p">,</span>
         <span class="n">default_prompt_template</span><span class="o">=</span><span class="s2">&quot;Teksti: </span><span class="si">{text}</span><span class="se">\n</span><span class="s2">Kysymys: </span><span class="si">{question}</span><span class="s2"> &quot;</span>
@@ -1171,7 +1249,7 @@
         <span class="s2">&quot;Kysymys: </span><span class="si">{question}</span><span class="s2">&quot;</span><span class="p">,</span>
         <span class="n">default_prompt_label_mapping</span><span class="o">=</span><span class="nb">dict</span><span class="p">(),</span>
     <span class="p">),</span>
-    <span class="n">FO</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
+    <span class="n">FAROESE</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
         <span class="n">default_prompt_prefix</span><span class="o">=</span><span class="s2">&quot;Hetta eru tekstir saman við spurningum og svar.&quot;</span><span class="p">,</span>
         <span class="n">default_prompt_template</span><span class="o">=</span><span class="s2">&quot;Tekstur: </span><span class="si">{text}</span><span class="se">\n</span><span class="s2">Spurningur: </span><span class="si">{question}</span><span class="se">\n</span><span class="s2">Svara við í &quot;</span>
         <span class="s2">&quot;mesta lagi trimum orðum: </span><span class="si">{label}</span><span class="s2">&quot;</span><span class="p">,</span>
@@ -1179,7 +1257,7 @@
         <span class="s2">&quot;tekstin uppiyvir við í mesta lagi trimum orðum.</span><span class="se">\n\n</span><span class="s2">Spurningur: </span><span class="si">{question}</span><span class="s2">&quot;</span><span class="p">,</span>
         <span class="n">default_prompt_label_mapping</span><span class="o">=</span><span class="nb">dict</span><span class="p">(),</span>
     <span class="p">),</span>
-    <span class="n">FR</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
+    <span class="n">FRENCH</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
         <span class="n">default_prompt_prefix</span><span class="o">=</span><span class="s2">&quot;Les textes suivants sont accompagnés de questions et de &quot;</span>
         <span class="s2">&quot;réponses.&quot;</span><span class="p">,</span>
         <span class="n">default_prompt_template</span><span class="o">=</span><span class="s2">&quot;Texte: </span><span class="si">{text}</span><span class="se">\n</span><span class="s2">Question: </span><span class="si">{question}</span><span class="se">\n</span><span class="s2">Réponse en 3 &quot;</span>
@@ -1188,7 +1266,7 @@
         <span class="s2">&quot;sur le texte ci-dessus en 3 mots maximum.</span><span class="se">\n\n</span><span class="s2">Question: </span><span class="si">{question}</span><span class="s2">&quot;</span><span class="p">,</span>
         <span class="n">default_prompt_label_mapping</span><span class="o">=</span><span class="nb">dict</span><span class="p">(),</span>
     <span class="p">),</span>
-    <span class="n">IS</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
+    <span class="n">ICELANDIC</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
         <span class="n">default_prompt_prefix</span><span class="o">=</span><span class="s2">&quot;Eftirfarandi eru textar með tilheyrandi spurningum og &quot;</span>
         <span class="s2">&quot;svörum.&quot;</span><span class="p">,</span>
         <span class="n">default_prompt_template</span><span class="o">=</span><span class="s2">&quot;Texti: </span><span class="si">{text}</span><span class="se">\n</span><span class="s2">Spurning: </span><span class="si">{question}</span><span class="se">\n</span><span class="s2">Svaraðu með að &quot;</span>
@@ -1197,7 +1275,7 @@
         <span class="s2">&quot;textann að hámarki í 3 orðum.</span><span class="se">\n\n</span><span class="s2">Spurning: </span><span class="si">{question}</span><span class="s2">&quot;</span><span class="p">,</span>
         <span class="n">default_prompt_label_mapping</span><span class="o">=</span><span class="nb">dict</span><span class="p">(),</span>
     <span class="p">),</span>
-    <span class="n">IT</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
+    <span class="n">ITALIAN</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
         <span class="n">default_prompt_prefix</span><span class="o">=</span><span class="s2">&quot;I testi che seguono sono accompagnati da domande e &quot;</span>
         <span class="s2">&quot;risposte.&quot;</span><span class="p">,</span>
         <span class="n">default_prompt_template</span><span class="o">=</span><span class="s2">&quot;Testo: </span><span class="si">{text}</span><span class="se">\n</span><span class="s2">Domanda: </span><span class="si">{question}</span><span class="se">\n</span><span class="s2">Rispondere in &quot;</span>
@@ -1206,7 +1284,7 @@
         <span class="s2">&quot;sul in un massimo di 3 parole.</span><span class="se">\n\n</span><span class="s2">Domanda: </span><span class="si">{question}</span><span class="s2">&quot;</span><span class="p">,</span>
         <span class="n">default_prompt_label_mapping</span><span class="o">=</span><span class="nb">dict</span><span class="p">(),</span>
     <span class="p">),</span>
-    <span class="n">LT</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
+    <span class="n">LITHUANIAN</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
         <span class="n">default_prompt_prefix</span><span class="o">=</span><span class="s2">&quot;Toliau pateikti tekstai su atitinkamais klausimais ir &quot;</span>
         <span class="s2">&quot;atsakymais.&quot;</span><span class="p">,</span>
         <span class="n">default_prompt_template</span><span class="o">=</span><span class="s2">&quot;Tekstas: </span><span class="si">{text}</span><span class="se">\n</span><span class="s2">Klausimas: </span><span class="si">{question}</span><span class="se">\n</span><span class="s2">Atsakykite ne &quot;</span>
@@ -1215,7 +1293,7 @@
         <span class="s2">&quot;aukščiau pateiktą tekstą ne daugiau kaip 3 žodžiais.</span><span class="se">\n\n</span><span class="s2">Klausimas: </span><span class="si">{question}</span><span class="s2">&quot;</span><span class="p">,</span>
         <span class="n">default_prompt_label_mapping</span><span class="o">=</span><span class="nb">dict</span><span class="p">(),</span>
     <span class="p">),</span>
-    <span class="n">LV</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
+    <span class="n">LATVIAN</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
         <span class="n">default_prompt_prefix</span><span class="o">=</span><span class="s2">&quot;Turpmāk seko teksti ar atbilstošiem jautājumiem un &quot;</span>
         <span class="s2">&quot;atbildēm.&quot;</span><span class="p">,</span>
         <span class="n">default_prompt_template</span><span class="o">=</span><span class="s2">&quot;Teksts: </span><span class="si">{text}</span><span class="se">\n</span><span class="s2">Jautājums: </span><span class="si">{question}</span><span class="se">\n</span><span class="s2">Atbildēt ar &quot;</span>
@@ -1224,7 +1302,7 @@
         <span class="s2">&quot;iepriekš minēto tekstu ar maksimāli 3 vārdiem.</span><span class="se">\n\n</span><span class="s2">Jautājums: </span><span class="si">{question}</span><span class="s2">&quot;</span><span class="p">,</span>
         <span class="n">default_prompt_label_mapping</span><span class="o">=</span><span class="nb">dict</span><span class="p">(),</span>
     <span class="p">),</span>
-    <span class="n">NB</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
+    <span class="n">NORWEGIAN_BOKMÅL</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
         <span class="n">default_prompt_prefix</span><span class="o">=</span><span class="s2">&quot;Her følger tekster med tilhørende spørsmål og svar.&quot;</span><span class="p">,</span>
         <span class="n">default_prompt_template</span><span class="o">=</span><span class="s2">&quot;Tekst: </span><span class="si">{text}</span><span class="se">\n</span><span class="s2">Spørsmål: </span><span class="si">{question}</span><span class="se">\n</span><span class="s2">Svar på maks 3 &quot;</span>
         <span class="s2">&quot;ord: </span><span class="si">{label}</span><span class="s2">&quot;</span><span class="p">,</span>
@@ -1232,7 +1310,7 @@
         <span class="s2">&quot;teksten ovenfor med maks 3 ord.</span><span class="se">\n\n</span><span class="s2">Spørsmål: </span><span class="si">{question}</span><span class="s2">&quot;</span><span class="p">,</span>
         <span class="n">default_prompt_label_mapping</span><span class="o">=</span><span class="nb">dict</span><span class="p">(),</span>
     <span class="p">),</span>
-    <span class="n">NL</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
+    <span class="n">DUTCH</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
         <span class="n">default_prompt_prefix</span><span class="o">=</span><span class="s2">&quot;Hieronder volgen teksten met bijbehorende vragen en &quot;</span>
         <span class="s2">&quot;antwoorden.&quot;</span><span class="p">,</span>
         <span class="n">default_prompt_template</span><span class="o">=</span><span class="s2">&quot;Tekst: </span><span class="si">{text}</span><span class="se">\n</span><span class="s2">Vraag: </span><span class="si">{question}</span><span class="se">\n</span><span class="s2">Antwoord in max &quot;</span>
@@ -1241,7 +1319,7 @@
         <span class="s2">&quot;over de bovenstaande tekst in maximaal 3 woorden.</span><span class="se">\n\n</span><span class="s2">Vraag: </span><span class="si">{question}</span><span class="s2">&quot;</span><span class="p">,</span>
         <span class="n">default_prompt_label_mapping</span><span class="o">=</span><span class="nb">dict</span><span class="p">(),</span>
     <span class="p">),</span>
-    <span class="n">NN</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
+    <span class="n">NORWEGIAN_NYNORSK</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
         <span class="n">default_prompt_prefix</span><span class="o">=</span><span class="s2">&quot;Her følger tekster med tilhørende spørsmål og svar.&quot;</span><span class="p">,</span>
         <span class="n">default_prompt_template</span><span class="o">=</span><span class="s2">&quot;Tekst: </span><span class="si">{text}</span><span class="se">\n</span><span class="s2">Spørsmål: </span><span class="si">{question}</span><span class="se">\n</span><span class="s2">Svar på maks 3 &quot;</span>
         <span class="s2">&quot;ord: </span><span class="si">{label}</span><span class="s2">&quot;</span><span class="p">,</span>
@@ -1249,7 +1327,7 @@
         <span class="s2">&quot;teksten ovenfor med maks 3 ord.</span><span class="se">\n\n</span><span class="s2">Spørsmål: </span><span class="si">{question}</span><span class="s2">&quot;</span><span class="p">,</span>
         <span class="n">default_prompt_label_mapping</span><span class="o">=</span><span class="nb">dict</span><span class="p">(),</span>
     <span class="p">),</span>
-    <span class="n">NO</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
+    <span class="n">NORWEGIAN</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
         <span class="n">default_prompt_prefix</span><span class="o">=</span><span class="s2">&quot;Her følger tekster med tilhørende spørsmål og svar.&quot;</span><span class="p">,</span>
         <span class="n">default_prompt_template</span><span class="o">=</span><span class="s2">&quot;Tekst: </span><span class="si">{text}</span><span class="se">\n</span><span class="s2">Spørsmål: </span><span class="si">{question}</span><span class="se">\n</span><span class="s2">Svar på maks 3 &quot;</span>
         <span class="s2">&quot;ord: </span><span class="si">{label}</span><span class="s2">&quot;</span><span class="p">,</span>
@@ -1257,7 +1335,7 @@
         <span class="s2">&quot;teksten ovenfor med maks 3 ord.</span><span class="se">\n\n</span><span class="s2">Spørsmål: </span><span class="si">{question}</span><span class="s2">&quot;</span><span class="p">,</span>
         <span class="n">default_prompt_label_mapping</span><span class="o">=</span><span class="nb">dict</span><span class="p">(),</span>
     <span class="p">),</span>
-    <span class="n">PL</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
+    <span class="n">POLISH</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
         <span class="n">default_prompt_prefix</span><span class="o">=</span><span class="p">(</span>
             <span class="s2">&quot;Poniżej znajdują się teksty z towarzyszącymi pytaniami i odpowiedziami.&quot;</span>
         <span class="p">),</span>
@@ -1268,7 +1346,7 @@
         <span class="s2">&quot;</span><span class="si">{question}</span><span class="s2">&quot;</span><span class="p">,</span>
         <span class="n">default_prompt_label_mapping</span><span class="o">=</span><span class="nb">dict</span><span class="p">(),</span>
     <span class="p">),</span>
-    <span class="n">PT</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
+    <span class="n">PORTUGUESE</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
         <span class="n">default_prompt_prefix</span><span class="o">=</span><span class="s2">&quot;Os textos que se seguem são acompanhados de perguntas &quot;</span>
         <span class="s2">&quot;e respostas.&quot;</span><span class="p">,</span>
         <span class="n">default_prompt_template</span><span class="o">=</span><span class="s2">&quot;Texto: </span><span class="si">{text}</span><span class="se">\n</span><span class="s2">Pergunta: </span><span class="si">{question}</span><span class="se">\n</span><span class="s2">Resposta com &quot;</span>
@@ -1277,7 +1355,7 @@
         <span class="s2">&quot;sobre o texto acima num máximo de 3 palavras.</span><span class="se">\n\n</span><span class="s2">Pergunta: </span><span class="si">{question}</span><span class="s2">&quot;</span><span class="p">,</span>
         <span class="n">default_prompt_label_mapping</span><span class="o">=</span><span class="nb">dict</span><span class="p">(),</span>
     <span class="p">),</span>
-    <span class="n">SK</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
+    <span class="n">SLOVAK</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
         <span class="n">default_prompt_prefix</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;Nasledujú texty s pridruženými otázkami a odpoveďami.&quot;</span><span class="p">),</span>
         <span class="n">default_prompt_template</span><span class="o">=</span><span class="p">(</span>
             <span class="s2">&quot;Text: </span><span class="si">{text}</span><span class="se">\n</span><span class="s2">Otázka: </span><span class="si">{question}</span><span class="se">\n</span><span class="s2">Odpoveď na maximálne 3 slová: </span><span class="si">{label}</span><span class="s2">&quot;</span>
@@ -1289,12 +1367,40 @@
         <span class="p">),</span>
         <span class="n">default_prompt_label_mapping</span><span class="o">=</span><span class="nb">dict</span><span class="p">(),</span>
     <span class="p">),</span>
-    <span class="n">SV</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
+    <span class="n">SERBIAN</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
+        <span class="n">default_prompt_prefix</span><span class="o">=</span><span class="p">(</span>
+            <span class="s2">&quot;Следе текстови са одговарајућим питањима и одговорима.&quot;</span>
+        <span class="p">),</span>
+        <span class="n">default_prompt_template</span><span class="o">=</span><span class="p">(</span>
+            <span class="s2">&quot;Текст: </span><span class="si">{text}</span><span class="se">\n</span><span class="s2">Питање: </span><span class="si">{question}</span><span class="se">\n</span><span class="s2">Одговор у максимум 3 речи: </span><span class="si">{label}</span><span class="s2">&quot;</span>
+        <span class="p">),</span>
+        <span class="n">default_instruction_prompt</span><span class="o">=</span><span class="p">(</span>
+            <span class="s2">&quot;Текст: </span><span class="si">{text}</span><span class="se">\n\n</span><span class="s2">&quot;</span>
+            <span class="s2">&quot;Одговорите на следеће питање о горњем тексту у максимум 3 речи.</span><span class="se">\n\n</span><span class="s2">&quot;</span>
+            <span class="s2">&quot;Питање: </span><span class="si">{question}</span><span class="s2">&quot;</span>
+        <span class="p">),</span>
+        <span class="n">default_prompt_label_mapping</span><span class="o">=</span><span class="nb">dict</span><span class="p">(),</span>
+    <span class="p">),</span>
+    <span class="n">SWEDISH</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
         <span class="n">default_prompt_prefix</span><span class="o">=</span><span class="s2">&quot;Nedan följer texter med tillhörande frågor och svar.&quot;</span><span class="p">,</span>
         <span class="n">default_prompt_template</span><span class="o">=</span><span class="s2">&quot;Text: </span><span class="si">{text}</span><span class="se">\n</span><span class="s2">Fråga: </span><span class="si">{question}</span><span class="se">\n</span><span class="s2">Svar på max 3 ord: &quot;</span>
         <span class="s2">&quot;</span><span class="si">{label}</span><span class="s2">&quot;</span><span class="p">,</span>
         <span class="n">default_instruction_prompt</span><span class="o">=</span><span class="s2">&quot;Text: </span><span class="si">{text}</span><span class="se">\n\n</span><span class="s2">Besvara följande fråga om texten &quot;</span>
         <span class="s2">&quot;ovan med högst 3 ord.</span><span class="se">\n\n</span><span class="s2">Fråga: </span><span class="si">{question}</span><span class="s2">&quot;</span><span class="p">,</span>
+        <span class="n">default_prompt_label_mapping</span><span class="o">=</span><span class="nb">dict</span><span class="p">(),</span>
+    <span class="p">),</span>
+    <span class="n">UKRAINIAN</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
+        <span class="n">default_prompt_prefix</span><span class="o">=</span><span class="p">(</span>
+            <span class="s2">&quot;Нижче наведені тексти з відповідними питаннями та відповідями.&quot;</span>
+        <span class="p">),</span>
+        <span class="n">default_prompt_template</span><span class="o">=</span><span class="p">(</span>
+            <span class="s2">&quot;Текст: </span><span class="si">{text}</span><span class="se">\n</span><span class="s2">Питання: </span><span class="si">{question}</span><span class="se">\n</span><span class="s2">Відповідь максимум 3 словами: </span><span class="si">{label}</span><span class="s2">&quot;</span>
+        <span class="p">),</span>
+        <span class="n">default_instruction_prompt</span><span class="o">=</span><span class="p">(</span>
+            <span class="s2">&quot;Текст: </span><span class="si">{text}</span><span class="se">\n\n</span><span class="s2">&quot;</span>
+            <span class="s2">&quot;Відповідь на наступне питання про вищезазначений текст максимум 3 &quot;</span>
+            <span class="s2">&quot;словами.</span><span class="se">\n\n</span><span class="s2">Питання: </span><span class="si">{question}</span><span class="s2">&quot;</span>
+        <span class="p">),</span>
         <span class="n">default_prompt_label_mapping</span><span class="o">=</span><span class="nb">dict</span><span class="p">(),</span>
     <span class="p">),</span>
 <span class="p">}</span>

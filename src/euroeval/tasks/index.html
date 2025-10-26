@@ -637,6 +637,14 @@
       
         
       
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -1024,19 +1032,60 @@
 <span class="normal">158</span>
 <span class="normal">159</span>
 <span class="normal">160</span>
-<span class="normal">161</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;All benchmarks tasks used in EuroEval.&quot;&quot;&quot;</span>
+<span class="normal">161</span>
+<span class="normal">162</span>
+<span class="normal">163</span>
+<span class="normal">164</span>
+<span class="normal">165</span>
+<span class="normal">166</span>
+<span class="normal">167</span>
+<span class="normal">168</span>
+<span class="normal">169</span>
+<span class="normal">170</span>
+<span class="normal">171</span>
+<span class="normal">172</span>
+<span class="normal">173</span>
+<span class="normal">174</span>
+<span class="normal">175</span>
+<span class="normal">176</span>
+<span class="normal">177</span>
+<span class="normal">178</span>
+<span class="normal">179</span>
+<span class="normal">180</span>
+<span class="normal">181</span>
+<span class="normal">182</span>
+<span class="normal">183</span>
+<span class="normal">184</span>
+<span class="normal">185</span>
+<span class="normal">186</span>
+<span class="normal">187</span>
+<span class="normal">188</span>
+<span class="normal">189</span>
+<span class="normal">190</span>
+<span class="normal">191</span>
+<span class="normal">192</span>
+<span class="normal">193</span>
+<span class="normal">194</span>
+<span class="normal">195</span>
+<span class="normal">196</span>
+<span class="normal">197</span>
+<span class="normal">198</span>
+<span class="normal">199</span>
+<span class="normal">200</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;All benchmarks tasks used in EuroEval.&quot;&quot;&quot;</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">.</span><span class="w"> </span><span class="kn">import</span> <span class="n">metrics</span> <span class="k">as</span> <span class="n">m</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.constants</span><span class="w"> </span><span class="kn">import</span> <span class="n">NUM_GENERATION_TOKENS_FOR_CLASSIFICATION</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.data_models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Task</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.enums</span><span class="w"> </span><span class="kn">import</span> <span class="n">GenerativeType</span><span class="p">,</span> <span class="n">ModelType</span><span class="p">,</span> <span class="n">TaskGroup</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.prompt_templates</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">CLASSIFICATION_TEMPLATES</span><span class="p">,</span>
     <span class="n">LA_TEMPLATES</span><span class="p">,</span>
     <span class="n">MULTIPLE_CHOICE_TEMPLATES</span><span class="p">,</span>
     <span class="n">NER_TEMPLATES</span><span class="p">,</span>
     <span class="n">RC_TEMPLATES</span><span class="p">,</span>
     <span class="n">SENT_TEMPLATES</span><span class="p">,</span>
     <span class="n">SUMM_TEMPLATES</span><span class="p">,</span>
+    <span class="n">TOKEN_CLASSIFICATION_TEMPLATES</span><span class="p">,</span>
 <span class="p">)</span>
 
 
@@ -1184,6 +1233,43 @@
     <span class="n">default_num_few_shot_examples</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
     <span class="n">default_max_generated_tokens</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
     <span class="n">default_labels</span><span class="o">=</span><span class="p">[],</span>
+<span class="p">)</span>
+
+
+<span class="c1"># Used for custom datasets</span>
+
+<span class="n">TEXT_CLASSIFICATION</span> <span class="o">=</span> <span class="n">Task</span><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;classification&quot;</span><span class="p">,</span>
+    <span class="n">task_group</span><span class="o">=</span><span class="n">TaskGroup</span><span class="o">.</span><span class="n">SEQUENCE_CLASSIFICATION</span><span class="p">,</span>
+    <span class="n">template_dict</span><span class="o">=</span><span class="n">CLASSIFICATION_TEMPLATES</span><span class="p">,</span>
+    <span class="n">metrics</span><span class="o">=</span><span class="p">[</span><span class="n">m</span><span class="o">.</span><span class="n">mcc_metric</span><span class="p">,</span> <span class="n">m</span><span class="o">.</span><span class="n">macro_f1_metric</span><span class="p">],</span>
+    <span class="n">default_num_few_shot_examples</span><span class="o">=</span><span class="mi">12</span><span class="p">,</span>
+    <span class="n">default_max_generated_tokens</span><span class="o">=</span><span class="n">NUM_GENERATION_TOKENS_FOR_CLASSIFICATION</span><span class="p">,</span>
+    <span class="n">default_labels</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">uses_logprobs</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">TOKEN_CLASSIFICATION</span> <span class="o">=</span> <span class="n">Task</span><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;token-classification&quot;</span><span class="p">,</span>
+    <span class="n">task_group</span><span class="o">=</span><span class="n">TaskGroup</span><span class="o">.</span><span class="n">TOKEN_CLASSIFICATION</span><span class="p">,</span>
+    <span class="n">template_dict</span><span class="o">=</span><span class="n">TOKEN_CLASSIFICATION_TEMPLATES</span><span class="p">,</span>
+    <span class="n">metrics</span><span class="o">=</span><span class="p">[</span><span class="n">m</span><span class="o">.</span><span class="n">micro_f1_metric</span><span class="p">],</span>
+    <span class="n">default_num_few_shot_examples</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span>
+    <span class="n">default_max_generated_tokens</span><span class="o">=</span><span class="mi">128</span><span class="p">,</span>
+    <span class="n">default_labels</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">uses_structured_output</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">MULTIPLE_CHOICE</span> <span class="o">=</span> <span class="n">Task</span><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;multiple-choice&quot;</span><span class="p">,</span>
+    <span class="n">task_group</span><span class="o">=</span><span class="n">TaskGroup</span><span class="o">.</span><span class="n">MULTIPLE_CHOICE_CLASSIFICATION</span><span class="p">,</span>
+    <span class="n">template_dict</span><span class="o">=</span><span class="n">MULTIPLE_CHOICE_TEMPLATES</span><span class="p">,</span>
+    <span class="n">metrics</span><span class="o">=</span><span class="p">[</span><span class="n">m</span><span class="o">.</span><span class="n">mcc_metric</span><span class="p">,</span> <span class="n">m</span><span class="o">.</span><span class="n">accuracy_metric</span><span class="p">],</span>
+    <span class="n">default_num_few_shot_examples</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
+    <span class="n">default_max_generated_tokens</span><span class="o">=</span><span class="n">NUM_GENERATION_TOKENS_FOR_CLASSIFICATION</span><span class="p">,</span>
+    <span class="n">default_labels</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">default_allowed_model_types</span><span class="o">=</span><span class="p">[</span><span class="n">ModelType</span><span class="o">.</span><span class="n">GENERATIVE</span><span class="p">],</span>
+    <span class="n">uses_logprobs</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
 <span class="p">)</span>
 </code></pre></div></td></tr></table></div>
 

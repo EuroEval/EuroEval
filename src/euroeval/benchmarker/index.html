@@ -637,6 +637,14 @@
       
         
       
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -2084,8 +2092,14 @@
 <span class="normal">1158</span>
 <span class="normal">1159</span>
 <span class="normal">1160</span>
-<span class="normal">1161</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Class that benchmarks language models.&quot;&quot;&quot;</span>
+<span class="normal">1161</span>
+<span class="normal">1162</span>
+<span class="normal">1163</span>
+<span class="normal">1164</span>
+<span class="normal">1165</span>
+<span class="normal">1166</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Class that benchmarks language models.&quot;&quot;&quot;</span>
 
+<span class="kn">import</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">c</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">contextlib</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">dt</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
@@ -2124,7 +2138,7 @@
 
 <span class="k">if</span> <span class="n">t</span><span class="o">.</span><span class="n">TYPE_CHECKING</span><span class="p">:</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">.benchmark_modules</span><span class="w"> </span><span class="kn">import</span> <span class="n">BenchmarkModule</span>
-    <span class="kn">from</span><span class="w"> </span><span class="nn">.data_models</span><span class="w"> </span><span class="kn">import</span> <span class="n">BenchmarkConfig</span><span class="p">,</span> <span class="n">DatasetConfig</span><span class="p">,</span> <span class="n">ModelConfig</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">.data_models</span><span class="w"> </span><span class="kn">import</span> <span class="n">BenchmarkConfig</span><span class="p">,</span> <span class="n">DatasetConfig</span><span class="p">,</span> <span class="n">ModelConfig</span><span class="p">,</span> <span class="n">Task</span>
 
 
 <span class="k">class</span><span class="w"> </span><span class="nc">Benchmarker</span><span class="p">:</span><div class="mkapi-source-link" id="euroeval.benchmarker.Benchmarker"><a href="../../../api/euroeval/benchmarker/#euroeval.benchmarker.Benchmarker" title="Go to docs">[docs]</a></div>
@@ -2148,11 +2162,11 @@
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">progress_bar</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
         <span class="n">save_results</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
-        <span class="n">task</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">dataset</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">language</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;all&quot;</span><span class="p">,</span>
-        <span class="n">model_language</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">dataset_language</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">task</span><span class="p">:</span> <span class="s2">&quot;str | Task | c.Sequence[str | Task] | None&quot;</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">dataset</span><span class="p">:</span> <span class="s2">&quot;str | DatasetConfig | c.Sequence[str | DatasetConfig] | None&quot;</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">language</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">c</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;all&quot;</span><span class="p">,</span>
+        <span class="n">model_language</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">c</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">dataset_language</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">c</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">device</span><span class="p">:</span> <span class="n">Device</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">batch_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">32</span><span class="p">,</span>
         <span class="n">raise_errors</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
@@ -2262,6 +2276,8 @@
 <span class="sd">            ValueError:</span>
 <span class="sd">                If both `task` and `dataset` are specified, or if `download_only`</span>
 <span class="sd">                is True and we have no internet connection.</span>
+<span class="sd">            ImportError:</span>
+<span class="sd">                If `hf_transfer` is enabled but not installed.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="n">task</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">dataset</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Only one of `task` and `dataset` can be specified.&quot;</span><span class="p">)</span>
@@ -2322,13 +2338,13 @@
         <span class="p">)</span>
 
         <span class="c1"># Initialise variable storing model lists, so we only have to fetch it once</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_model_lists</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_model_lists</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">c</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">results_path</span> <span class="o">=</span> <span class="n">Path</span><span class="o">.</span><span class="n">cwd</span><span class="p">()</span> <span class="o">/</span> <span class="s2">&quot;euroeval_benchmark_results.jsonl&quot;</span>
         <span class="n">adjust_logging_level</span><span class="p">(</span><span class="n">verbose</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">benchmark_config</span><span class="o">.</span><span class="n">verbose</span><span class="p">)</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">benchmark_results</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">BenchmarkResult</span><span class="p">]:</span><div class="mkapi-source-link" id="euroeval.benchmarker.Benchmarker.benchmark_results"><a href="../../../api/euroeval/benchmarker/#euroeval.benchmarker.Benchmarker.benchmark_results" title="Go to docs">[docs]</a></div>
+    <span class="k">def</span><span class="w"> </span><span class="nf">benchmark_results</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">c</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="n">BenchmarkResult</span><span class="p">]:</span><div class="mkapi-source-link" id="euroeval.benchmarker.Benchmarker.benchmark_results"><a href="../../../api/euroeval/benchmarker/#euroeval.benchmarker.Benchmarker.benchmark_results" title="Go to docs">[docs]</a></div>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;The benchmark results.</span>
 
 <span class="sd">        Returns:</span>
@@ -2406,14 +2422,14 @@
 
     <span class="k">def</span><span class="w"> </span><span class="nf">benchmark</span><span class="p">(</span><div class="mkapi-source-link" id="euroeval.benchmarker.Benchmarker.benchmark"><a href="../../../api/euroeval/benchmarker/#euroeval.benchmarker.Benchmarker.benchmark" title="Go to docs">[docs]</a></div>
         <span class="bp">self</span><span class="p">,</span>
-        <span class="n">model</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="nb">str</span><span class="p">,</span>
-        <span class="n">task</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">dataset</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">model</span><span class="p">:</span> <span class="n">c</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">task</span><span class="p">:</span> <span class="s2">&quot;str | Task | c.Sequence[str | Task] | None&quot;</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">dataset</span><span class="p">:</span> <span class="s2">&quot;str | DatasetConfig | c.Sequence[str | DatasetConfig] | None&quot;</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">progress_bar</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">save_results</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">language</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">model_language</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">dataset_language</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">language</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">c</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">model_language</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">c</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">dataset_language</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">c</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">device</span><span class="p">:</span> <span class="n">Device</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">batch_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">raise_errors</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -2433,7 +2449,7 @@
         <span class="n">force</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">debug</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">BenchmarkResult</span><span class="p">]:</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">c</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="n">BenchmarkResult</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Benchmarks models on datasets.</span>
 
 <span class="sd">        Args:</span>
@@ -2691,9 +2707,7 @@
             <span class="n">clear_model_cache_fn</span><span class="p">(</span><span class="n">cache_dir</span><span class="o">=</span><span class="n">benchmark_config</span><span class="o">.</span><span class="n">cache_dir</span><span class="p">)</span>
 
         <span class="n">model_ids</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_prepare_model_ids</span><span class="p">(</span><span class="n">model_id</span><span class="o">=</span><span class="n">model</span><span class="p">)</span>
-        <span class="n">dataset_configs</span> <span class="o">=</span> <span class="n">prepare_dataset_configs</span><span class="p">(</span>
-            <span class="n">dataset_names</span><span class="o">=</span><span class="n">benchmark_config</span><span class="o">.</span><span class="n">datasets</span>
-        <span class="p">)</span>
+        <span class="n">dataset_configs</span> <span class="o">=</span> <span class="n">benchmark_config</span><span class="o">.</span><span class="n">datasets</span>
 
         <span class="c1"># Get all the model configs</span>
         <span class="n">model_configs</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">ModelConfig</span><span class="p">]</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
@@ -2714,7 +2728,9 @@
         <span class="c1"># we need to benchmark the model on. Here we remove the datasets that the model</span>
         <span class="c1"># has already been benchmarked on, or datasets that the model cannot be</span>
         <span class="c1"># benchmarked on.</span>
-        <span class="n">model_config_to_dataset_configs</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="n">ModelConfig</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="n">DatasetConfig</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="n">model_config_to_dataset_configs</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span>
+            <span class="n">ModelConfig</span><span class="p">,</span> <span class="n">c</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="n">DatasetConfig</span><span class="p">]</span>
+        <span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
             <span class="n">model_config</span><span class="p">:</span> <span class="p">[</span>
                 <span class="n">dataset_config</span>
                 <span class="k">for</span> <span class="n">dataset_config</span> <span class="ow">in</span> <span class="n">dataset_configs</span>
@@ -2909,7 +2925,7 @@
             <span class="n">destroy_process_group</span><span class="p">()</span>
         <span class="k">return</span> <span class="n">current_benchmark_results</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="nf">_prepare_model_ids</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_id</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_prepare_model_ids</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_id</span><span class="p">:</span> <span class="n">c</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">c</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Prepare the model ID(s) to be benchmarked.</span>
 
 <span class="sd">        Args:</span>
@@ -3110,7 +3126,7 @@
     <span class="n">model_config</span><span class="p">:</span> <span class="s2">&quot;ModelConfig&quot;</span><span class="p">,</span>
     <span class="n">dataset_config</span><span class="p">:</span> <span class="s2">&quot;DatasetConfig&quot;</span><span class="p">,</span>
     <span class="n">benchmark_config</span><span class="p">:</span> <span class="s2">&quot;BenchmarkConfig&quot;</span><span class="p">,</span>
-    <span class="n">benchmark_results</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">BenchmarkResult</span><span class="p">],</span>
+    <span class="n">benchmark_results</span><span class="p">:</span> <span class="n">c</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="n">BenchmarkResult</span><span class="p">],</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Checks whether a model has already been benchmarked on a dataset.</span>
 
@@ -3171,8 +3187,10 @@
                 <span class="k">if</span> <span class="n">sub_model_dir</span><span class="o">.</span><span class="n">is_dir</span><span class="p">():</span>
                     <span class="n">rmtree</span><span class="p">(</span><span class="n">sub_model_dir</span><span class="p">)</span>
 
-<div class="mkapi-source-link" id="euroeval.benchmarker.prepare_dataset_configs"><a href="../../../api/euroeval/benchmarker/#euroeval.benchmarker.prepare_dataset_configs" title="Go to docs">[docs]</a></div>
-<span class="k">def</span><span class="w"> </span><span class="nf">prepare_dataset_configs</span><span class="p">(</span><span class="n">dataset_names</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="s2">&quot;DatasetConfig&quot;</span><span class="p">]:</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">prepare_dataset_configs</span><span class="p">(</span><div class="mkapi-source-link" id="euroeval.benchmarker.prepare_dataset_configs"><a href="../../../api/euroeval/benchmarker/#euroeval.benchmarker.prepare_dataset_configs" title="Go to docs">[docs]</a></div>
+    <span class="n">dataset_names</span><span class="p">:</span> <span class="n">c</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">c</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="s2">&quot;DatasetConfig&quot;</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Prepare the dataset configuration(s) to be benchmarked.</span>
 
 <span class="sd">    Args:</span>

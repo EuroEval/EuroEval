@@ -645,6 +645,14 @@
       
         
       
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -1045,6 +1053,14 @@
       
         
       
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -1163,6 +1179,10 @@
       
         
           
+        
+      
+        
+      
         
       
         
@@ -2277,7 +2297,7 @@ values.</p>
 <i class="fa-regular fa-square-minus"></i>
 </span>
 </span>
-<span class="mkapi-object-name"><a href="./#euroeval.task_group_utils.token_classification.extract_labels_from_generation" title="euroeval.task_group_utils.token_classification.extract_labels_from_generation">extract_labels_from_generation</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">input_batch</span><span class="mkapi-colon">: </span><span class="mkapi-ann">dict[str, list]</span><span class="mkapi-comma">, </span><span class="mkapi-arg">model_output</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><a href="../../data_models/#euroeval.data_models.GenerativeModelOutput" title="euroeval.data_models.GenerativeModelOutput">GenerativeModelOutput</a></span><span class="mkapi-comma">, </span><span class="mkapi-arg">dataset_config</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><a href="../../data_models/#euroeval.data_models.DatasetConfig" title="euroeval.data_models.DatasetConfig">DatasetConfig</a></span><span class="mkapi-paren">)</span><span class="mkapi-arrow"> → </span><span class="mkapi-return">list[<span class="mkapi-tooltip" title="typing">t</span>.<span class="mkapi-tooltip" title="typing.Any">Any</span>]</span></span>
+<span class="mkapi-object-name"><a href="./#euroeval.task_group_utils.token_classification.extract_labels_from_generation" title="euroeval.task_group_utils.token_classification.extract_labels_from_generation">extract_labels_from_generation</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">input_batch</span><span class="mkapi-colon">: </span><span class="mkapi-ann">dict[str, list]</span><span class="mkapi-comma">, </span><span class="mkapi-arg">model_output</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><a href="../../data_models/#euroeval.data_models.GenerativeModelOutput" title="euroeval.data_models.GenerativeModelOutput">GenerativeModelOutput</a></span><span class="mkapi-comma">, </span><span class="mkapi-arg">dataset_config</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><a href="../../data_models/#euroeval.data_models.DatasetConfig" title="euroeval.data_models.DatasetConfig">DatasetConfig</a></span><span class="mkapi-paren">)</span><span class="mkapi-arrow"> → </span><span class="mkapi-return"><span class="mkapi-tooltip" title="collections.abc">c</span>.<span class="mkapi-tooltip" title="collections.abc.Sequence">Sequence</span>[<span class="mkapi-tooltip" title="typing">t</span>.<span class="mkapi-tooltip" title="typing.Any">Any</span>]</span></span>
 </p>
 <div class="mkapi-document">
 <p>Extract the predicted labels from the generated output.</p>
@@ -2320,7 +2340,7 @@ The configuration of the dataset.</p>
 <div class="mkapi-section-content">
 <ul class="mkapi-item-list">
 <li>
-<p><span class="mkapi-item-type">list[<span class="mkapi-tooltip" title="typing">t</span>.<span class="mkapi-tooltip" title="typing.Any">Any</span>]</span> <span class="mkapi-dash">&mdash;</span>
+<p><span class="mkapi-item-type"><span class="mkapi-tooltip" title="collections.abc">c</span>.<span class="mkapi-tooltip" title="collections.abc.Sequence">Sequence</span>[<span class="mkapi-tooltip" title="typing">t</span>.<span class="mkapi-tooltip" title="typing.Any">Any</span>]</span> <span class="mkapi-dash">&mdash;</span>
 The predicted labels.</p>
 </li>
 </ul>
@@ -2407,7 +2427,7 @@ A dictionary containing the tokenized data as well as labels.</p>
 <i class="fa-regular fa-square-minus"></i>
 </span>
 </span>
-<span class="mkapi-object-name"><a href="./#euroeval.task_group_utils.token_classification.handle_unk_tokens" title="euroeval.task_group_utils.token_classification.handle_unk_tokens">handle_unk_tokens</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">tokeniser</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="transformers.tokenization_utils.PreTrainedTokenizer">PreTrainedTokenizer</span></span><span class="mkapi-comma">, </span><span class="mkapi-arg">tokens</span><span class="mkapi-colon">: </span><span class="mkapi-ann">list[str]</span><span class="mkapi-comma">, </span><span class="mkapi-arg">words</span><span class="mkapi-colon">: </span><span class="mkapi-ann">list[str]</span><span class="mkapi-paren">)</span><span class="mkapi-arrow"> → </span><span class="mkapi-return">list[str]</span></span>
+<span class="mkapi-object-name"><a href="./#euroeval.task_group_utils.token_classification.handle_unk_tokens" title="euroeval.task_group_utils.token_classification.handle_unk_tokens">handle_unk_tokens</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">tokeniser</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="transformers.tokenization_utils.PreTrainedTokenizer">PreTrainedTokenizer</span></span><span class="mkapi-comma">, </span><span class="mkapi-arg">tokens</span><span class="mkapi-colon">: </span><span class="mkapi-ann">list[str]</span><span class="mkapi-comma">, </span><span class="mkapi-arg">words</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="collections.abc">c</span>.<span class="mkapi-tooltip" title="collections.abc.Sequence">Sequence</span>[str]</span><span class="mkapi-paren">)</span><span class="mkapi-arrow"> → </span><span class="mkapi-return"><span class="mkapi-tooltip" title="collections.abc">c</span>.<span class="mkapi-tooltip" title="collections.abc.Sequence">Sequence</span>[str]</span></span>
 </p>
 <div class="mkapi-document">
 <p>Replace unknown tokens in the tokens with the corresponding word.</p>
@@ -2433,7 +2453,7 @@ The list of tokens.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">words</span> : 
-<span class="mkapi-item-type">list[str]</span> <span class="mkapi-dash">&mdash;</span>
+<span class="mkapi-item-type"><span class="mkapi-tooltip" title="collections.abc">c</span>.<span class="mkapi-tooltip" title="collections.abc.Sequence">Sequence</span>[str]</span> <span class="mkapi-dash">&mdash;</span>
 The list of words.</p>
 </li>
 </ul>
@@ -2449,7 +2469,7 @@ The list of words.</p>
 <div class="mkapi-section-content">
 <ul class="mkapi-item-list">
 <li>
-<p><span class="mkapi-item-type">list[str]</span> <span class="mkapi-dash">&mdash;</span>
+<p><span class="mkapi-item-type"><span class="mkapi-tooltip" title="collections.abc">c</span>.<span class="mkapi-tooltip" title="collections.abc.Sequence">Sequence</span>[str]</span> <span class="mkapi-dash">&mdash;</span>
 The list of tokens with unknown tokens replaced by the corresponding word.</p>
 </li>
 </ul>

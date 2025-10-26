@@ -645,6 +645,14 @@
       
         
       
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -1045,6 +1053,14 @@
       
         
       
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -1163,6 +1179,10 @@
       
         
           
+        
+      
+        
+      
         
       
         
@@ -2247,7 +2267,7 @@ The special token metadata.</p>
 <i class="fa-regular fa-square-minus"></i>
 </span>
 </span>
-<span class="mkapi-object-name"><a href="./#euroeval.tokenisation_utils.should_prompts_be_stripped" title="euroeval.tokenisation_utils.should_prompts_be_stripped">should_prompts_be_stripped</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">labels_to_be_generated</span><span class="mkapi-colon">: </span><span class="mkapi-ann">list[str]</span><span class="mkapi-comma">, </span><span class="mkapi-arg">tokeniser</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="transformers.tokenization_utils.PreTrainedTokenizer">PreTrainedTokenizer</span></span><span class="mkapi-paren">)</span><span class="mkapi-arrow"> → </span><span class="mkapi-return">bool</span></span>
+<span class="mkapi-object-name"><a href="./#euroeval.tokenisation_utils.should_prompts_be_stripped" title="euroeval.tokenisation_utils.should_prompts_be_stripped">should_prompts_be_stripped</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">labels_to_be_generated</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="collections.abc">c</span>.<span class="mkapi-tooltip" title="collections.abc.Sequence">Sequence</span>[str]</span><span class="mkapi-comma">, </span><span class="mkapi-arg">tokeniser</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="transformers.tokenization_utils.PreTrainedTokenizer">PreTrainedTokenizer</span></span><span class="mkapi-paren">)</span><span class="mkapi-arrow"> → </span><span class="mkapi-return">bool</span></span>
 </p>
 <div class="mkapi-document">
 <p>Determine if we should strip the prompts for few-shot evaluation.</p>
@@ -2268,7 +2288,7 @@ tokeniser produces the whitespace token separately.</p>
 <ul class="mkapi-item-list">
 <li>
 <p><span class="mkapi-item-name">labels_to_be_generated</span> : 
-<span class="mkapi-item-type">list[str]</span> <span class="mkapi-dash">&mdash;</span>
+<span class="mkapi-item-type"><span class="mkapi-tooltip" title="collections.abc">c</span>.<span class="mkapi-tooltip" title="collections.abc.Sequence">Sequence</span>[str]</span> <span class="mkapi-dash">&mdash;</span>
 The labels that are to be generated.</p>
 </li>
 <li>
@@ -2304,7 +2324,7 @@ Whether we should strip the prompts.</p>
 <i class="fa-regular fa-square-minus"></i>
 </span>
 </span>
-<span class="mkapi-object-name"><a href="./#euroeval.tokenisation_utils.should_prefix_space_be_added_to_labels" title="euroeval.tokenisation_utils.should_prefix_space_be_added_to_labels">should_prefix_space_be_added_to_labels</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">labels_to_be_generated</span><span class="mkapi-colon">: </span><span class="mkapi-ann">list[str]</span><span class="mkapi-comma">, </span><span class="mkapi-arg">tokeniser</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="transformers.tokenization_utils.PreTrainedTokenizer">PreTrainedTokenizer</span></span><span class="mkapi-paren">)</span><span class="mkapi-arrow"> → </span><span class="mkapi-return">bool</span></span>
+<span class="mkapi-object-name"><a href="./#euroeval.tokenisation_utils.should_prefix_space_be_added_to_labels" title="euroeval.tokenisation_utils.should_prefix_space_be_added_to_labels">should_prefix_space_be_added_to_labels</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">labels_to_be_generated</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="collections.abc">c</span>.<span class="mkapi-tooltip" title="collections.abc.Sequence">Sequence</span>[str]</span><span class="mkapi-comma">, </span><span class="mkapi-arg">tokeniser</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="transformers.tokenization_utils.PreTrainedTokenizer">PreTrainedTokenizer</span></span><span class="mkapi-paren">)</span><span class="mkapi-arrow"> → </span><span class="mkapi-return">bool</span></span>
 </p>
 <div class="mkapi-document">
 <p>Determine if we should add a prefix space to the labels.</p>
@@ -2322,7 +2342,7 @@ automatically add prefix whitespaces to the labels.</p>
 <ul class="mkapi-item-list">
 <li>
 <p><span class="mkapi-item-name">labels_to_be_generated</span> : 
-<span class="mkapi-item-type">list[str]</span> <span class="mkapi-dash">&mdash;</span>
+<span class="mkapi-item-type"><span class="mkapi-tooltip" title="collections.abc">c</span>.<span class="mkapi-tooltip" title="collections.abc.Sequence">Sequence</span>[str]</span> <span class="mkapi-dash">&mdash;</span>
 The labels that are to be generated.</p>
 </li>
 <li>
@@ -2502,7 +2522,7 @@ A pair (token, token_id) representing the padding token and its token ID, or
 <i class="fa-regular fa-square-minus"></i>
 </span>
 </span>
-<span class="mkapi-object-name"><a href="./#euroeval.tokenisation_utils.get_end_of_chat_token_ids" title="euroeval.tokenisation_utils.get_end_of_chat_token_ids">get_end_of_chat_token_ids</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">tokeniser</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="transformers.tokenization_utils.PreTrainedTokenizer">PreTrainedTokenizer</span></span><span class="mkapi-comma">, </span><span class="mkapi-arg">generative_type</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><a href="../enums/#euroeval.enums.GenerativeType" title="euroeval.enums.GenerativeType">GenerativeType</a> | None</span><span class="mkapi-paren">)</span><span class="mkapi-arrow"> → </span><span class="mkapi-return">list[int] | None</span></span>
+<span class="mkapi-object-name"><a href="./#euroeval.tokenisation_utils.get_end_of_chat_token_ids" title="euroeval.tokenisation_utils.get_end_of_chat_token_ids">get_end_of_chat_token_ids</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">tokeniser</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="transformers.tokenization_utils.PreTrainedTokenizer">PreTrainedTokenizer</span></span><span class="mkapi-comma">, </span><span class="mkapi-arg">generative_type</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><a href="../enums/#euroeval.enums.GenerativeType" title="euroeval.enums.GenerativeType">GenerativeType</a> | None</span><span class="mkapi-paren">)</span><span class="mkapi-arrow"> → </span><span class="mkapi-return"><span class="mkapi-tooltip" title="collections.abc">c</span>.<span class="mkapi-tooltip" title="collections.abc.Sequence">Sequence</span>[int] | None</span></span>
 </p>
 <div class="mkapi-document">
 <p>Get the end token ID for chat models.</p>
@@ -2540,7 +2560,7 @@ The generative type, or None if not available.</p>
 <div class="mkapi-section-content">
 <ul class="mkapi-item-list">
 <li>
-<p><span class="mkapi-item-type">list[int] | None</span> <span class="mkapi-dash">&mdash;</span>
+<p><span class="mkapi-item-type"><span class="mkapi-tooltip" title="collections.abc">c</span>.<span class="mkapi-tooltip" title="collections.abc.Sequence">Sequence</span>[int] | None</span> <span class="mkapi-dash">&mdash;</span>
 The token IDs used to end chats, or None if the tokeniser does not have a chat
 template or if no end-of-chat token could be found.</p>
 </li>
@@ -2687,7 +2707,7 @@ Whether the tokeniser has a chat template.</p>
 <i class="fa-regular fa-square-minus"></i>
 </span>
 </span>
-<span class="mkapi-object-name"><a href="./#euroeval.tokenisation_utils.apply_chat_template" title="euroeval.tokenisation_utils.apply_chat_template">apply_chat_template</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">conversation</span><span class="mkapi-colon">: </span><span class="mkapi-ann">list[dict[str, str]]</span><span class="mkapi-comma">, </span><span class="mkapi-arg">tokeniser</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="transformers.tokenization_utils.PreTrainedTokenizer">PreTrainedTokenizer</span></span><span class="mkapi-comma">, </span><span class="mkapi-arg">tokenise</span><span class="mkapi-colon">: </span><span class="mkapi-ann">bool</span><span class="mkapi-comma">, </span><span class="mkapi-arg">add_generation_prompt</span><span class="mkapi-colon">: </span><span class="mkapi-ann">bool</span><span class="mkapi-comma">, </span><span class="mkapi-star">**</span><span class="mkapi-arg">extra_kwargs</span><span class="mkapi-paren">)</span><span class="mkapi-arrow"> → </span><span class="mkapi-return">str | list[int]</span></span>
+<span class="mkapi-object-name"><a href="./#euroeval.tokenisation_utils.apply_chat_template" title="euroeval.tokenisation_utils.apply_chat_template">apply_chat_template</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">conversation</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="collections.abc">c</span>.<span class="mkapi-tooltip" title="collections.abc.Sequence">Sequence</span>[dict[str, str]]</span><span class="mkapi-comma">, </span><span class="mkapi-arg">tokeniser</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="transformers.tokenization_utils.PreTrainedTokenizer">PreTrainedTokenizer</span></span><span class="mkapi-comma">, </span><span class="mkapi-arg">tokenise</span><span class="mkapi-colon">: </span><span class="mkapi-ann">bool</span><span class="mkapi-comma">, </span><span class="mkapi-arg">add_generation_prompt</span><span class="mkapi-colon">: </span><span class="mkapi-ann">bool</span><span class="mkapi-comma">, </span><span class="mkapi-star">**</span><span class="mkapi-arg">extra_kwargs</span><span class="mkapi-paren">)</span><span class="mkapi-arrow"> → </span><span class="mkapi-return">str | <span class="mkapi-tooltip" title="collections.abc">c</span>.<span class="mkapi-tooltip" title="collections.abc.Sequence">Sequence</span>[int]</span></span>
 </p>
 <div class="mkapi-document">
 <p>Apply the chat template to a prompt.</p>
@@ -2703,7 +2723,7 @@ Whether the tokeniser has a chat template.</p>
 <ul class="mkapi-item-list">
 <li>
 <p><span class="mkapi-item-name">conversation</span> : 
-<span class="mkapi-item-type">list[dict[str, str]]</span> <span class="mkapi-dash">&mdash;</span>
+<span class="mkapi-item-type"><span class="mkapi-tooltip" title="collections.abc">c</span>.<span class="mkapi-tooltip" title="collections.abc.Sequence">Sequence</span>[dict[str, str]]</span> <span class="mkapi-dash">&mdash;</span>
 The conversation to apply the chat template to.</p>
 </li>
 <li>
@@ -2743,7 +2763,7 @@ method. Only relevant for regular Hugging Face tokenisers.</p>
 <div class="mkapi-section-content">
 <ul class="mkapi-item-list">
 <li>
-<p><span class="mkapi-item-type">str | list[int]</span> <span class="mkapi-dash">&mdash;</span>
+<p><span class="mkapi-item-type">str | <span class="mkapi-tooltip" title="collections.abc">c</span>.<span class="mkapi-tooltip" title="collections.abc.Sequence">Sequence</span>[int]</span> <span class="mkapi-dash">&mdash;</span>
 The prompt with the chat template applied, either as a string or a list of
 token IDs, depending on the value of <code>tokenise</code>.</p>
 </li>

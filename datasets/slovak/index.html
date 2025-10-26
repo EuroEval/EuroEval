@@ -9,7 +9,7 @@
       
       
       
-        <link rel="prev" href="../portuguese/">
+        <link rel="prev" href="../serbian/">
       
       
         <link rel="next" href="../spanish/">
@@ -645,6 +645,14 @@
       
         
       
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -693,6 +701,29 @@
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../bulgarian/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    🇧🇬 Bulgarian
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
               
             
               
@@ -909,6 +940,29 @@
   
   
     <li class="md-nav__item">
+      <a href="../greek/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    🇬🇷 Greek
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../icelandic/" class="md-nav__link">
         
   
@@ -1053,6 +1107,29 @@
   
   <span class="md-ellipsis">
     🇵🇹 Portuguese
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../serbian/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    🇷🇸 Serbian
     
   </span>
   
@@ -1234,6 +1311,21 @@
   
 </li>
         
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#common-sense-reasoning" class="md-nav__link">
+    <span class="md-ellipsis">
+      Common-sense Reasoning
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Common-sense Reasoning">
+      <ul class="md-nav__list">
+        
           <li class="md-nav__item">
   <a href="#winogrande-sk" class="md-nav__link">
     <span class="md-ellipsis">
@@ -1293,6 +1385,29 @@
   
   <span class="md-ellipsis">
     🇸🇪 Swedish
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ukrainian/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    🇺🇦 Ukrainian
     
   </span>
   
@@ -1574,6 +1689,21 @@
   </a>
   
 </li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#common-sense-reasoning" class="md-nav__link">
+    <span class="md-ellipsis">
+      Common-sense Reasoning
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Common-sense Reasoning">
+      <ul class="md-nav__list">
         
           <li class="md-nav__item">
   <a href="#winogrande-sk" class="md-nav__link">
@@ -1896,6 +2026,7 @@ Odpovedzte na nasledujúcu otázku použitím &#39;a&#39;, &#39;b&#39;, &#39;c&#
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>mmlu-sk
 </code></pre></div>
+<h2 id="common-sense-reasoning">Common-sense Reasoning</h2>
 <h3 id="winogrande-sk">Winogrande-sk</h3>
 <p>This dataset was published in <a href="https://doi.org/10.48550/arXiv.2506.19468">this paper</a>
 and is a translated and filtered version of the English <a href="https://doi.org/10.1145/3474381">Winogrande
@@ -1905,17 +2036,17 @@ we use 128 of the test samples for validation, resulting in a 47 / 128 / 1,085 s
 training, validation and testing, respectively.</p>
 <p>Here are a few examples from the training split:</p>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
-<span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Nedokázal som ovládať vlhkosť ako som ovládal dážď, pretože _ prichádzalo odvšadiaľ. Na koho sa vzťahuje prázdne miesto _?\nMožnosti:\na. Možnosť A: vlhkosť\nb. Možnosť B: dážď&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Nedokázal som ovládať vlhkosť ako som ovládal dážď, pretože _ prichádzalo odvšadiaľ. Na koho sa vzťahuje prázdne miesto _?\nMožnosti:\na. vlhkosť\nb. dážď&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;a&quot;</span>
 <span class="p">}</span>
 </code></pre></div>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
-<span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Jessica si myslela, že Sandstorm je najlepšia pieseň, aká bola kedy napísaná, ale Patricia ju nenávidela. _ si kúpila lístok na jazzový koncert. Na koho sa vzťahuje prázdne miesto _?\nMožnosti:\na. Možnosť A: Jessica\nb. Možnosť B: Patricia&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Jessica si myslela, že Sandstorm je najlepšia pieseň, aká bola kedy napísaná, ale Patricia ju nenávidela. _ si kúpila lístok na jazzový koncert. Na koho sa vzťahuje prázdne miesto _?\nMožnosti:\na. Jessica\nb. Patricia&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;b&quot;</span>
 <span class="p">}</span>
 </code></pre></div>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
-<span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Termostat ukazoval, že dole bolo o dvadsať stupňov chladnejšie ako hore, takže Byron zostal v _ pretože mu bola zima. Na koho sa vzťahuje prázdne miesto _?\nMožnosti:\na. Možnosť A: dole\nb. Možnosť B: hore&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Termostat ukazoval, že dole bolo o dvadsať stupňov chladnejšie ako hore, takže Byron zostal v _ pretože mu bola zima. Na koho sa vzťahuje prázdne miesto _?\nMožnosti:\na. dole\nb. hore&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;b&quot;</span>
 <span class="p">}</span>
 </code></pre></div>

@@ -645,6 +645,14 @@
       
         
       
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -1045,6 +1053,14 @@
       
         
       
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -1163,6 +1179,10 @@
       
         
           
+        
+      
+        
+      
         
       
         
@@ -2016,7 +2036,7 @@ Helper function to compute the mean with confidence intervals.</p>
 <i class="fa-regular fa-square-minus"></i>
 </span>
 </span>
-<span class="mkapi-object-name"><a href="./#euroeval.scores.log_scores" title="euroeval.scores.log_scores">log_scores</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">dataset_name</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str</span><span class="mkapi-comma">, </span><span class="mkapi-arg">metrics</span><span class="mkapi-colon">: </span><span class="mkapi-ann">list['Metric']</span><span class="mkapi-comma">, </span><span class="mkapi-arg">scores</span><span class="mkapi-colon">: </span><span class="mkapi-ann">list[dict[str, float]]</span><span class="mkapi-comma">, </span><span class="mkapi-arg">model_id</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str</span><span class="mkapi-comma">, </span><span class="mkapi-arg">model_revision</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str</span><span class="mkapi-comma">, </span><span class="mkapi-arg">model_param</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str | None</span><span class="mkapi-paren">)</span><span class="mkapi-arrow"> → </span><span class="mkapi-return"><span class="mkapi-tooltip" title="euroeval.types.ScoreDict">ScoreDict</span></span></span>
+<span class="mkapi-object-name"><a href="./#euroeval.scores.log_scores" title="euroeval.scores.log_scores">log_scores</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">dataset_name</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str</span><span class="mkapi-comma">, </span><span class="mkapi-arg">metrics</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="collections.abc">c</span>.<span class="mkapi-tooltip" title="collections.abc.Sequence">Sequence</span>['Metric']</span><span class="mkapi-comma">, </span><span class="mkapi-arg">scores</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="collections.abc">c</span>.<span class="mkapi-tooltip" title="collections.abc.Sequence">Sequence</span>[dict[str, float]]</span><span class="mkapi-comma">, </span><span class="mkapi-arg">model_id</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str</span><span class="mkapi-comma">, </span><span class="mkapi-arg">model_revision</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str</span><span class="mkapi-comma">, </span><span class="mkapi-arg">model_param</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str | None</span><span class="mkapi-paren">)</span><span class="mkapi-arrow"> → </span><span class="mkapi-return"><span class="mkapi-tooltip" title="euroeval.types.ScoreDict">ScoreDict</span></span></span>
 </p>
 <div class="mkapi-document">
 <p>Log the scores.</p>
@@ -2037,12 +2057,12 @@ Name of the dataset.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">metrics</span> : 
-<span class="mkapi-item-type">list['Metric']</span> <span class="mkapi-dash">&mdash;</span>
+<span class="mkapi-item-type"><span class="mkapi-tooltip" title="collections.abc">c</span>.<span class="mkapi-tooltip" title="collections.abc.Sequence">Sequence</span>['Metric']</span> <span class="mkapi-dash">&mdash;</span>
 List of metrics to log.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">scores</span> : 
-<span class="mkapi-item-type">list[dict[str, float]]</span> <span class="mkapi-dash">&mdash;</span>
+<span class="mkapi-item-type"><span class="mkapi-tooltip" title="collections.abc">c</span>.<span class="mkapi-tooltip" title="collections.abc.Sequence">Sequence</span>[dict[str, float]]</span> <span class="mkapi-dash">&mdash;</span>
 The scores that are to be logged. This is a list of dictionaries full of
 scores.</p>
 </li>
@@ -2091,7 +2111,7 @@ identical to <code>scores</code> and 'total' being a dictionary with the aggrega
 <i class="fa-regular fa-square-minus"></i>
 </span>
 </span>
-<span class="mkapi-object-name"><a href="./#euroeval.scores.aggregate_scores" title="euroeval.scores.aggregate_scores">aggregate_scores</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">scores</span><span class="mkapi-colon">: </span><span class="mkapi-ann">list[dict[str, float]]</span><span class="mkapi-comma">, </span><span class="mkapi-arg">metric</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><a href="../metrics/base/#euroeval.metrics.base.Metric" title="euroeval.metrics.base.Metric">Metric</a></span><span class="mkapi-paren">)</span><span class="mkapi-arrow"> → </span><span class="mkapi-return">tuple[float, float]</span></span>
+<span class="mkapi-object-name"><a href="./#euroeval.scores.aggregate_scores" title="euroeval.scores.aggregate_scores">aggregate_scores</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">scores</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="collections.abc">c</span>.<span class="mkapi-tooltip" title="collections.abc.Sequence">Sequence</span>[dict[str, float]]</span><span class="mkapi-comma">, </span><span class="mkapi-arg">metric</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><a href="../metrics/base/#euroeval.metrics.base.Metric" title="euroeval.metrics.base.Metric">Metric</a></span><span class="mkapi-paren">)</span><span class="mkapi-arrow"> → </span><span class="mkapi-return">tuple[float, float]</span></span>
 </p>
 <div class="mkapi-document">
 <p>Helper function to compute the mean with confidence intervals.</p>
@@ -2107,7 +2127,7 @@ identical to <code>scores</code> and 'total' being a dictionary with the aggrega
 <ul class="mkapi-item-list">
 <li>
 <p><span class="mkapi-item-name">scores</span> : 
-<span class="mkapi-item-type">list[dict[str, float]]</span> <span class="mkapi-dash">&mdash;</span>
+<span class="mkapi-item-type"><span class="mkapi-tooltip" title="collections.abc">c</span>.<span class="mkapi-tooltip" title="collections.abc.Sequence">Sequence</span>[dict[str, float]]</span> <span class="mkapi-dash">&mdash;</span>
 Dictionary with the names of the metrics as keys, of the form
 "<split>_<metric_name>", such as "val_f1", and values the metric values.</p>
 </li>

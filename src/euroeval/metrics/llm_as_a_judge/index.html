@@ -637,6 +637,14 @@
       
         
       
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -1142,7 +1150,6 @@
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">..exceptions</span><span class="w"> </span><span class="kn">import</span> <span class="n">InvalidBenchmark</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..logging_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">log</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">..model_cache</span><span class="w"> </span><span class="kn">import</span> <span class="n">ModelCache</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">extract_json_dict_from_string</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">Metric</span>
 
@@ -1244,6 +1251,7 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="c1"># Importing here to avoid circular imports</span>
         <span class="kn">from</span><span class="w"> </span><span class="nn">..benchmark_modules</span><span class="w"> </span><span class="kn">import</span> <span class="n">LiteLLMModel</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">..model_cache</span><span class="w"> </span><span class="kn">import</span> <span class="n">ModelCache</span>
 
         <span class="k">if</span> <span class="ow">not</span> <span class="n">predictions</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">references</span><span class="p">:</span>
             <span class="k">return</span> <span class="kc">None</span>

@@ -645,6 +645,14 @@
       
         
       
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -1045,6 +1053,14 @@
       
         
       
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -1163,6 +1179,10 @@
       
         
           
+        
+      
+        
+      
         
       
         
@@ -2326,7 +2346,7 @@ Find the valid answers from the start and end indexes.</p>
 <i class="fa-regular fa-square-minus"></i>
 </span>
 </span><span class="mkapi-object-kind">class</span>
-<span class="mkapi-object-name"><a href="./#euroeval.task_group_utils.question_answering.QuestionAnsweringTrainer" title="euroeval.task_group_utils.question_answering.QuestionAnsweringTrainer">QuestionAnsweringTrainer</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">model</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="transformers.modeling_utils.PreTrainedModel">PreTrainedModel</span> | <span class="mkapi-tooltip" title="torch.nn">nn</span>.<span class="mkapi-tooltip" title="torch.nn.modules.module.Module">Module</span></span><span class="mkapi-comma">, </span><span class="mkapi-arg">processing_class</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="transformers.tokenization_utils_base.PreTrainedTokenizerBase">PreTrainedTokenizerBase</span></span><span class="mkapi-comma">, </span><span class="mkapi-arg">args</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="transformers.training_args.TrainingArguments">TrainingArguments</span></span><span class="mkapi-comma">, </span><span class="mkapi-arg">train_dataset</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="datasets.arrow_dataset.Dataset">Dataset</span></span><span class="mkapi-comma">, </span><span class="mkapi-arg">eval_dataset</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="datasets.arrow_dataset.Dataset">Dataset</span></span><span class="mkapi-comma">, </span><span class="mkapi-arg">compute_metrics</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="collections.abc">c</span>.<span class="mkapi-tooltip" title="collections.abc.Callable">Callable</span>[[<span class="mkapi-tooltip" title="transformers.trainer_utils.EvalPrediction">EvalPrediction</span>], dict[str, float]]</span><span class="mkapi-comma">, </span><span class="mkapi-arg">callbacks</span><span class="mkapi-colon">: </span><span class="mkapi-ann">list[<span class="mkapi-tooltip" title="transformers.trainer_callback.TrainerCallback">TrainerCallback</span>]</span><span class="mkapi-comma">, </span><span class="mkapi-arg">data_collator</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="collections.abc">c</span>.<span class="mkapi-tooltip" title="collections.abc.Callable">Callable</span></span><span class="mkapi-comma">, </span><span class="mkapi-star">**</span><span class="mkapi-arg">kwargs</span><span class="mkapi-paren">)</span></span>
+<span class="mkapi-object-name"><a href="./#euroeval.task_group_utils.question_answering.QuestionAnsweringTrainer" title="euroeval.task_group_utils.question_answering.QuestionAnsweringTrainer">QuestionAnsweringTrainer</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">model</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="transformers.modeling_utils.PreTrainedModel">PreTrainedModel</span> | <span class="mkapi-tooltip" title="torch.nn">nn</span>.<span class="mkapi-tooltip" title="torch.nn.modules.module.Module">Module</span></span><span class="mkapi-comma">, </span><span class="mkapi-arg">processing_class</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="transformers.tokenization_utils_base.PreTrainedTokenizerBase">PreTrainedTokenizerBase</span></span><span class="mkapi-comma">, </span><span class="mkapi-arg">args</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="transformers.training_args.TrainingArguments">TrainingArguments</span></span><span class="mkapi-comma">, </span><span class="mkapi-arg">train_dataset</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="datasets.arrow_dataset.Dataset">Dataset</span></span><span class="mkapi-comma">, </span><span class="mkapi-arg">eval_dataset</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="datasets.arrow_dataset.Dataset">Dataset</span></span><span class="mkapi-comma">, </span><span class="mkapi-arg">compute_metrics</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="collections.abc">c</span>.<span class="mkapi-tooltip" title="collections.abc.Callable">Callable</span>[[<span class="mkapi-tooltip" title="transformers.trainer_utils.EvalPrediction">EvalPrediction</span>], dict[str, float]]</span><span class="mkapi-comma">, </span><span class="mkapi-arg">callbacks</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="collections.abc">c</span>.<span class="mkapi-tooltip" title="collections.abc.Sequence">Sequence</span>[<span class="mkapi-tooltip" title="transformers.trainer_callback.TrainerCallback">TrainerCallback</span>]</span><span class="mkapi-comma">, </span><span class="mkapi-arg">data_collator</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="collections.abc">c</span>.<span class="mkapi-tooltip" title="collections.abc.Callable">Callable</span></span><span class="mkapi-comma">, </span><span class="mkapi-star">**</span><span class="mkapi-arg">kwargs</span><span class="mkapi-paren">)</span></span>
 </p>
 <div class="mkapi-document">
 <p class="mkapi-bases">Bases :
@@ -2363,7 +2383,7 @@ Evaluate the model on the given dataset.</p>
 </span>
 </span><span class="mkapi-object-kind">method</span>
 <span class="mkapi-object-parent">
-<a href="./#euroeval.task_group_utils.question_answering.QuestionAnsweringTrainer" title="euroeval.task_group_utils.question_answering.QuestionAnsweringTrainer">QuestionAnsweringTrainer</a><span class="mkapi-dot">.</span></span><span class="mkapi-object-name"><a href="./#euroeval.task_group_utils.question_answering.QuestionAnsweringTrainer.evaluate" title="euroeval.task_group_utils.question_answering.QuestionAnsweringTrainer.evaluate">evaluate</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">eval_dataset</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="datasets.arrow_dataset.Dataset">Dataset</span> | None</span><span class="mkapi-equal"> = </span><span class="mkapi-default">None</span><span class="mkapi-comma">, </span><span class="mkapi-arg">orig_eval_dataset</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="datasets.arrow_dataset.Dataset">Dataset</span> | None</span><span class="mkapi-equal"> = </span><span class="mkapi-default">None</span><span class="mkapi-comma">, </span><span class="mkapi-arg">ignore_keys</span><span class="mkapi-colon">: </span><span class="mkapi-ann">list[str] | None</span><span class="mkapi-equal"> = </span><span class="mkapi-default">None</span><span class="mkapi-comma">, </span><span class="mkapi-arg">metric_key_prefix</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str</span><span class="mkapi-equal"> = </span><span class="mkapi-default">'eval'</span><span class="mkapi-paren">)</span><span class="mkapi-arrow"> → </span><span class="mkapi-return">dict[str, float]</span></span>
+<a href="./#euroeval.task_group_utils.question_answering.QuestionAnsweringTrainer" title="euroeval.task_group_utils.question_answering.QuestionAnsweringTrainer">QuestionAnsweringTrainer</a><span class="mkapi-dot">.</span></span><span class="mkapi-object-name"><a href="./#euroeval.task_group_utils.question_answering.QuestionAnsweringTrainer.evaluate" title="euroeval.task_group_utils.question_answering.QuestionAnsweringTrainer.evaluate">evaluate</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">eval_dataset</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="datasets.arrow_dataset.Dataset">Dataset</span> | None</span><span class="mkapi-equal"> = </span><span class="mkapi-default">None</span><span class="mkapi-comma">, </span><span class="mkapi-arg">orig_eval_dataset</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="datasets.arrow_dataset.Dataset">Dataset</span> | None</span><span class="mkapi-equal"> = </span><span class="mkapi-default">None</span><span class="mkapi-comma">, </span><span class="mkapi-arg">ignore_keys</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="collections.abc">c</span>.<span class="mkapi-tooltip" title="collections.abc.Sequence">Sequence</span>[str] | None</span><span class="mkapi-equal"> = </span><span class="mkapi-default">None</span><span class="mkapi-comma">, </span><span class="mkapi-arg">metric_key_prefix</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str</span><span class="mkapi-equal"> = </span><span class="mkapi-default">'eval'</span><span class="mkapi-paren">)</span><span class="mkapi-arrow"> → </span><span class="mkapi-return">dict[str, float]</span></span>
 </p>
 <div class="mkapi-document">
 <p>Evaluate the model on the given dataset.</p>
@@ -2391,7 +2411,7 @@ then use the stored original evaluation dataset.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">ignore_keys</span> : 
-<span class="mkapi-item-type">list[str] | None</span> <span class="mkapi-dash">&mdash;</span>
+<span class="mkapi-item-type"><span class="mkapi-tooltip" title="collections.abc">c</span>.<span class="mkapi-tooltip" title="collections.abc.Sequence">Sequence</span>[str] | None</span> <span class="mkapi-dash">&mdash;</span>
 The keys to ignore when computing the metrics.</p>
 </li>
 <li>
@@ -2492,7 +2512,7 @@ values.</p>
 <i class="fa-regular fa-square-minus"></i>
 </span>
 </span>
-<span class="mkapi-object-name"><a href="./#euroeval.task_group_utils.question_answering.extract_labels_from_generation" title="euroeval.task_group_utils.question_answering.extract_labels_from_generation">extract_labels_from_generation</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">input_batch</span><span class="mkapi-colon">: </span><span class="mkapi-ann">dict[str, list]</span><span class="mkapi-comma">, </span><span class="mkapi-arg">model_output</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><a href="../../data_models/#euroeval.data_models.GenerativeModelOutput" title="euroeval.data_models.GenerativeModelOutput">GenerativeModelOutput</a></span><span class="mkapi-paren">)</span><span class="mkapi-arrow"> → </span><span class="mkapi-return">list[<span class="mkapi-tooltip" title="typing">t</span>.<span class="mkapi-tooltip" title="typing.Any">Any</span>]</span></span>
+<span class="mkapi-object-name"><a href="./#euroeval.task_group_utils.question_answering.extract_labels_from_generation" title="euroeval.task_group_utils.question_answering.extract_labels_from_generation">extract_labels_from_generation</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">input_batch</span><span class="mkapi-colon">: </span><span class="mkapi-ann">dict[str, list]</span><span class="mkapi-comma">, </span><span class="mkapi-arg">model_output</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><a href="../../data_models/#euroeval.data_models.GenerativeModelOutput" title="euroeval.data_models.GenerativeModelOutput">GenerativeModelOutput</a></span><span class="mkapi-paren">)</span><span class="mkapi-arrow"> → </span><span class="mkapi-return"><span class="mkapi-tooltip" title="collections.abc">c</span>.<span class="mkapi-tooltip" title="collections.abc.Sequence">Sequence</span>[<span class="mkapi-tooltip" title="typing">t</span>.<span class="mkapi-tooltip" title="typing.Any">Any</span>]</span></span>
 </p>
 <div class="mkapi-document">
 <p>Extract the predicted labels from the generated output.</p>
@@ -2530,7 +2550,7 @@ The raw generated output of the model.</p>
 <div class="mkapi-section-content">
 <ul class="mkapi-item-list">
 <li>
-<p><span class="mkapi-item-type">list[<span class="mkapi-tooltip" title="typing">t</span>.<span class="mkapi-tooltip" title="typing.Any">Any</span>]</span> <span class="mkapi-dash">&mdash;</span>
+<p><span class="mkapi-item-type"><span class="mkapi-tooltip" title="collections.abc">c</span>.<span class="mkapi-tooltip" title="collections.abc.Sequence">Sequence</span>[<span class="mkapi-tooltip" title="typing">t</span>.<span class="mkapi-tooltip" title="typing.Any">Any</span>]</span> <span class="mkapi-dash">&mdash;</span>
 The predicted labels.</p>
 </li>
 </ul>
@@ -2649,7 +2669,7 @@ The prepared test examples.</p>
 <i class="fa-regular fa-square-minus"></i>
 </span>
 </span>
-<span class="mkapi-object-name"><a href="./#euroeval.task_group_utils.question_answering.postprocess_predictions_and_labels" title="euroeval.task_group_utils.question_answering.postprocess_predictions_and_labels">postprocess_predictions_and_labels</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">predictions</span><span class="mkapi-colon">: </span><span class="mkapi-ann">tuple[<span class="mkapi-tooltip" title="numpy">np</span>.<span class="mkapi-tooltip" title="numpy._core.ndarray">ndarray</span>, ...]</span><span class="mkapi-comma">, </span><span class="mkapi-arg">dataset</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="datasets.arrow_dataset.Dataset">Dataset</span></span><span class="mkapi-comma">, </span><span class="mkapi-arg">prepared_dataset</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="datasets.arrow_dataset.Dataset">Dataset</span></span><span class="mkapi-comma">, </span><span class="mkapi-arg">cls_token_index</span><span class="mkapi-colon">: </span><span class="mkapi-ann">int</span><span class="mkapi-paren">)</span><span class="mkapi-arrow"> → </span><span class="mkapi-return">tuple[list[dict], list[dict]]</span></span>
+<span class="mkapi-object-name"><a href="./#euroeval.task_group_utils.question_answering.postprocess_predictions_and_labels" title="euroeval.task_group_utils.question_answering.postprocess_predictions_and_labels">postprocess_predictions_and_labels</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">predictions</span><span class="mkapi-colon">: </span><span class="mkapi-ann">tuple[<span class="mkapi-tooltip" title="numpy">np</span>.<span class="mkapi-tooltip" title="numpy._core.ndarray">ndarray</span>, ...]</span><span class="mkapi-comma">, </span><span class="mkapi-arg">dataset</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="datasets.arrow_dataset.Dataset">Dataset</span></span><span class="mkapi-comma">, </span><span class="mkapi-arg">prepared_dataset</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="datasets.arrow_dataset.Dataset">Dataset</span></span><span class="mkapi-comma">, </span><span class="mkapi-arg">cls_token_index</span><span class="mkapi-colon">: </span><span class="mkapi-ann">int</span><span class="mkapi-paren">)</span><span class="mkapi-arrow"> → </span><span class="mkapi-return">tuple[<span class="mkapi-tooltip" title="collections.abc">c</span>.<span class="mkapi-tooltip" title="collections.abc.Sequence">Sequence</span>[dict], <span class="mkapi-tooltip" title="collections.abc">c</span>.<span class="mkapi-tooltip" title="collections.abc.Sequence">Sequence</span>[dict]]</span></span>
 </p>
 <div class="mkapi-document">
 <p>Postprocess the predictions and labels, to allow easier metric computation.</p>
@@ -2696,7 +2716,7 @@ The index of the CLS token.</p>
 <div class="mkapi-section-content">
 <ul class="mkapi-item-list">
 <li>
-<p><span class="mkapi-item-type">tuple[list[dict], list[dict]]</span> <span class="mkapi-dash">&mdash;</span>
+<p><span class="mkapi-item-type">tuple[<span class="mkapi-tooltip" title="collections.abc">c</span>.<span class="mkapi-tooltip" title="collections.abc.Sequence">Sequence</span>[dict], <span class="mkapi-tooltip" title="collections.abc">c</span>.<span class="mkapi-tooltip" title="collections.abc.Sequence">Sequence</span>[dict]]</span> <span class="mkapi-dash">&mdash;</span>
 The postprocessed predictions and labels.</p>
 </li>
 </ul>
@@ -2726,7 +2746,7 @@ The postprocessed predictions and labels.</p>
 <i class="fa-regular fa-square-minus"></i>
 </span>
 </span>
-<span class="mkapi-object-name"><a href="./#euroeval.task_group_utils.question_answering.find_best_answer" title="euroeval.task_group_utils.question_answering.find_best_answer">find_best_answer</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">all_start_logits</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="numpy">np</span>.<span class="mkapi-tooltip" title="numpy._core.ndarray">ndarray</span></span><span class="mkapi-comma">, </span><span class="mkapi-arg">all_end_logits</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="numpy">np</span>.<span class="mkapi-tooltip" title="numpy._core.ndarray">ndarray</span></span><span class="mkapi-comma">, </span><span class="mkapi-arg">prepared_dataset</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="datasets.arrow_dataset.Dataset">Dataset</span></span><span class="mkapi-comma">, </span><span class="mkapi-arg">feature_indices</span><span class="mkapi-colon">: </span><span class="mkapi-ann">list[int]</span><span class="mkapi-comma">, </span><span class="mkapi-arg">context</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str</span><span class="mkapi-comma">, </span><span class="mkapi-arg">max_answer_length</span><span class="mkapi-colon">: </span><span class="mkapi-ann">int</span><span class="mkapi-comma">, </span><span class="mkapi-arg">num_best_logits</span><span class="mkapi-colon">: </span><span class="mkapi-ann">int</span><span class="mkapi-comma">, </span><span class="mkapi-arg">min_null_score</span><span class="mkapi-colon">: </span><span class="mkapi-ann">float</span><span class="mkapi-comma">, </span><span class="mkapi-arg">cls_token_index</span><span class="mkapi-colon">: </span><span class="mkapi-ann">int</span><span class="mkapi-paren">)</span><span class="mkapi-arrow"> → </span><span class="mkapi-return">str</span></span>
+<span class="mkapi-object-name"><a href="./#euroeval.task_group_utils.question_answering.find_best_answer" title="euroeval.task_group_utils.question_answering.find_best_answer">find_best_answer</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">all_start_logits</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="numpy">np</span>.<span class="mkapi-tooltip" title="numpy._core.ndarray">ndarray</span></span><span class="mkapi-comma">, </span><span class="mkapi-arg">all_end_logits</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="numpy">np</span>.<span class="mkapi-tooltip" title="numpy._core.ndarray">ndarray</span></span><span class="mkapi-comma">, </span><span class="mkapi-arg">prepared_dataset</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="datasets.arrow_dataset.Dataset">Dataset</span></span><span class="mkapi-comma">, </span><span class="mkapi-arg">feature_indices</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="collections.abc">c</span>.<span class="mkapi-tooltip" title="collections.abc.Sequence">Sequence</span>[int]</span><span class="mkapi-comma">, </span><span class="mkapi-arg">context</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str</span><span class="mkapi-comma">, </span><span class="mkapi-arg">max_answer_length</span><span class="mkapi-colon">: </span><span class="mkapi-ann">int</span><span class="mkapi-comma">, </span><span class="mkapi-arg">num_best_logits</span><span class="mkapi-colon">: </span><span class="mkapi-ann">int</span><span class="mkapi-comma">, </span><span class="mkapi-arg">min_null_score</span><span class="mkapi-colon">: </span><span class="mkapi-ann">float</span><span class="mkapi-comma">, </span><span class="mkapi-arg">cls_token_index</span><span class="mkapi-colon">: </span><span class="mkapi-ann">int</span><span class="mkapi-paren">)</span><span class="mkapi-arrow"> → </span><span class="mkapi-return">str</span></span>
 </p>
 <div class="mkapi-document">
 <p>Find the best answer for a given example.</p>
@@ -2757,7 +2777,7 @@ The dataset containing the prepared examples.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">feature_indices</span> : 
-<span class="mkapi-item-type">list[int]</span> <span class="mkapi-dash">&mdash;</span>
+<span class="mkapi-item-type"><span class="mkapi-tooltip" title="collections.abc">c</span>.<span class="mkapi-tooltip" title="collections.abc.Sequence">Sequence</span>[int]</span> <span class="mkapi-dash">&mdash;</span>
 The indices of the features associated with the current example.</p>
 </li>
 <li>
@@ -2813,7 +2833,7 @@ The best answer for the example.</p>
 <i class="fa-regular fa-square-minus"></i>
 </span>
 </span>
-<span class="mkapi-object-name"><a href="./#euroeval.task_group_utils.question_answering.find_valid_answers" title="euroeval.task_group_utils.question_answering.find_valid_answers">find_valid_answers</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">start_logits</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="numpy">np</span>.<span class="mkapi-tooltip" title="numpy._core.ndarray">ndarray</span></span><span class="mkapi-comma">, </span><span class="mkapi-arg">end_logits</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="numpy">np</span>.<span class="mkapi-tooltip" title="numpy._core.ndarray">ndarray</span></span><span class="mkapi-comma">, </span><span class="mkapi-arg">offset_mapping</span><span class="mkapi-colon">: </span><span class="mkapi-ann">list[tuple[int, int]]</span><span class="mkapi-comma">, </span><span class="mkapi-arg">context</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str</span><span class="mkapi-comma">, </span><span class="mkapi-arg">max_answer_length</span><span class="mkapi-colon">: </span><span class="mkapi-ann">int</span><span class="mkapi-comma">, </span><span class="mkapi-arg">num_best_logits</span><span class="mkapi-colon">: </span><span class="mkapi-ann">int</span><span class="mkapi-comma">, </span><span class="mkapi-arg">min_null_score</span><span class="mkapi-colon">: </span><span class="mkapi-ann">float</span><span class="mkapi-paren">)</span><span class="mkapi-arrow"> → </span><span class="mkapi-return">list[dict]</span></span>
+<span class="mkapi-object-name"><a href="./#euroeval.task_group_utils.question_answering.find_valid_answers" title="euroeval.task_group_utils.question_answering.find_valid_answers">find_valid_answers</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">start_logits</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="numpy">np</span>.<span class="mkapi-tooltip" title="numpy._core.ndarray">ndarray</span></span><span class="mkapi-comma">, </span><span class="mkapi-arg">end_logits</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="numpy">np</span>.<span class="mkapi-tooltip" title="numpy._core.ndarray">ndarray</span></span><span class="mkapi-comma">, </span><span class="mkapi-arg">offset_mapping</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="collections.abc">c</span>.<span class="mkapi-tooltip" title="collections.abc.Sequence">Sequence</span>[tuple[int, int]]</span><span class="mkapi-comma">, </span><span class="mkapi-arg">context</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str</span><span class="mkapi-comma">, </span><span class="mkapi-arg">max_answer_length</span><span class="mkapi-colon">: </span><span class="mkapi-ann">int</span><span class="mkapi-comma">, </span><span class="mkapi-arg">num_best_logits</span><span class="mkapi-colon">: </span><span class="mkapi-ann">int</span><span class="mkapi-comma">, </span><span class="mkapi-arg">min_null_score</span><span class="mkapi-colon">: </span><span class="mkapi-ann">float</span><span class="mkapi-paren">)</span><span class="mkapi-arrow"> → </span><span class="mkapi-return"><span class="mkapi-tooltip" title="collections.abc">c</span>.<span class="mkapi-tooltip" title="collections.abc.Sequence">Sequence</span>[dict]</span></span>
 </p>
 <div class="mkapi-document">
 <p>Find the valid answers from the start and end indexes.</p>
@@ -2839,7 +2859,7 @@ The logits for the end of the answer.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">offset_mapping</span> : 
-<span class="mkapi-item-type">list[tuple[int, int]]</span> <span class="mkapi-dash">&mdash;</span>
+<span class="mkapi-item-type"><span class="mkapi-tooltip" title="collections.abc">c</span>.<span class="mkapi-tooltip" title="collections.abc.Sequence">Sequence</span>[tuple[int, int]]</span> <span class="mkapi-dash">&mdash;</span>
 The offset mapping, being a list of pairs of integers for each token index,
 containing the start and end character index in the original context.</p>
 </li>
@@ -2877,7 +2897,7 @@ The minimum score an answer can have.</p>
 <div class="mkapi-section-content">
 <ul class="mkapi-item-list">
 <li>
-<p><span class="mkapi-item-type">list[dict]</span> <span class="mkapi-dash">&mdash;</span>
+<p><span class="mkapi-item-type"><span class="mkapi-tooltip" title="collections.abc">c</span>.<span class="mkapi-tooltip" title="collections.abc.Sequence">Sequence</span>[dict]</span> <span class="mkapi-dash">&mdash;</span>
 A list of the valid answers, each being a dictionary with keys "text" and
 "score", the score being the sum of the start and end logits.</p>
 </li>

@@ -637,6 +637,14 @@
       
         
       
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -862,6 +870,156 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#euroeval.DatasetConfig" class="md-nav__link">
+    <span class="md-ellipsis">
+      DatasetConfig
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="DatasetConfig">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#euroeval.DatasetConfig.pretty_name" class="md-nav__link">
+    <span class="md-ellipsis">
+      pretty_name
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#euroeval.DatasetConfig.prompt_prefix" class="md-nav__link">
+    <span class="md-ellipsis">
+      prompt_prefix
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#euroeval.DatasetConfig.prompt_template" class="md-nav__link">
+    <span class="md-ellipsis">
+      prompt_template
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#euroeval.DatasetConfig.instruction_prompt" class="md-nav__link">
+    <span class="md-ellipsis">
+      instruction_prompt
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#euroeval.DatasetConfig.num_few_shot_examples" class="md-nav__link">
+    <span class="md-ellipsis">
+      num_few_shot_examples
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#euroeval.DatasetConfig.max_generated_tokens" class="md-nav__link">
+    <span class="md-ellipsis">
+      max_generated_tokens
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#euroeval.DatasetConfig.labels" class="md-nav__link">
+    <span class="md-ellipsis">
+      labels
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#euroeval.DatasetConfig.prompt_label_mapping" class="md-nav__link">
+    <span class="md-ellipsis">
+      prompt_label_mapping
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#euroeval.DatasetConfig.allowed_model_types" class="md-nav__link">
+    <span class="md-ellipsis">
+      allowed_model_types
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#euroeval.DatasetConfig.allowed_generative_types" class="md-nav__link">
+    <span class="md-ellipsis">
+      allowed_generative_types
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#euroeval.DatasetConfig.allow_invalid_model_outputs" class="md-nav__link">
+    <span class="md-ellipsis">
+      allow_invalid_model_outputs
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#euroeval.DatasetConfig.id2label" class="md-nav__link">
+    <span class="md-ellipsis">
+      id2label
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#euroeval.DatasetConfig.label2id" class="md-nav__link">
+    <span class="md-ellipsis">
+      label2id
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#euroeval.DatasetConfig.num_labels" class="md-nav__link">
+    <span class="md-ellipsis">
+      num_labels
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#euroeval.DatasetConfig.get_labels_str" class="md-nav__link">
+    <span class="md-ellipsis">
+      get_labels_str
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#euroeval.block_terminal_output" class="md-nav__link">
     <span class="md-ellipsis">
       block_terminal_output
@@ -1012,7 +1170,13 @@
 <span class="normal">113</span>
 <span class="normal">114</span>
 <span class="normal">115</span>
-<span class="normal">116</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;EuroEval - A benchmarking framework for language models.&quot;&quot;&quot;</span>
+<span class="normal">116</span>
+<span class="normal">117</span>
+<span class="normal">118</span>
+<span class="normal">119</span>
+<span class="normal">120</span>
+<span class="normal">121</span>
+<span class="normal">122</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;EuroEval - A benchmarking framework for language models.&quot;&quot;&quot;</span>
 
 <span class="c1">### STAGE 1 ###</span>
 <span class="c1">### Block unwanted terminal output that happens on importing external modules ###</span>
@@ -1065,7 +1229,13 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">dotenv</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_dotenv</span>  <span class="c1"># noqa: E402</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">.benchmarker</span><span class="w"> </span><span class="kn">import</span> <span class="n">Benchmarker</span>  <span class="c1"># noqa: E402</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.data_models</span><span class="w"> </span><span class="kn">import</span> <span class="n">DatasetConfig</span>  <span class="c1"># noqa: E402</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.logging_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">block_terminal_output</span>  <span class="c1"># noqa: E402</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.tasks</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>  <span class="c1"># noqa: E402</span>
+    <span class="n">MULTIPLE_CHOICE</span><span class="p">,</span>
+    <span class="n">TEXT_CLASSIFICATION</span><span class="p">,</span>
+    <span class="n">TOKEN_CLASSIFICATION</span><span class="p">,</span>
+<span class="p">)</span>
 
 <span class="c1"># Block unwanted terminal outputs. This blocks way more than the above, but since it</span>
 <span class="c1"># relies on importing from the `utils` module, external modules are already imported</span>
