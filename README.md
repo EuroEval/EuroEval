@@ -41,7 +41,7 @@ when an evaluation requires a certain extra dependency, and how you install it.
 
 ## Quickstart
 
-### Benchmarking from the Command Line
+### Benchmarking from the command line
 
 The easiest way to benchmark pretrained models is via the command line interface. After
 having installed the package, you can benchmark your favorite model like so:
@@ -88,7 +88,7 @@ See all the arguments and options available for the `euroeval` command by typing
 euroeval --help
 ```
 
-### Benchmarking from a Script
+### Benchmarking from a script
 
 In a script, the syntax is similar to the command line interface. You simply initialise
 an object of the `Benchmarker` class, and call this benchmark object with your favorite
@@ -96,15 +96,19 @@ model:
 
 ```python
 >>> from euroeval import Benchmarker
->>> benchmark = Benchmarker()
->>> benchmark(model="<model-id>")
+>>> benchmarker = Benchmarker()
+>>> benchmarker.benchmark(model="<model-id>")
 ```
 
 To benchmark on a specific task and/or language, you simply specify the `task` or
 `language` arguments, shown here with same example as above:
 
 ```python
->>> benchmark(model="<model-id>", task="sentiment-classification", language="da")
+>>> benchmarker.benchmark(
+...     model="<model-id>",
+...     task="sentiment-classification",
+...     language="da",
+... )
 ```
 
 If you want to benchmark a subset of all the models on the Hugging Face Hub, you can
@@ -112,35 +116,8 @@ simply leave out the `model` argument. In this example, we're benchmarking all D
 models on the Danish sentiment classification task:
 
 ```python
->>> benchmark(task="sentiment-classification", language="da")
+>>> benchmarker.benchmark(task="sentiment-classification", language="da")
 ```
-
-### Benchmarking in an Offline Environment
-
-If you need to benchmark in an offline environment, you need to download the models,
-datasets and metrics beforehand. This can be done by adding the `--download-only`
-argument, from the command line, or the `download_only` argument, if benchmarking from a
-script. For example to download the model you want and all of the Danish sentiment
-classification datasets:
-
-```bash
-euroeval --model <model-id> --task sentiment-classification --language da --download-only
-```
-
-Or from a script:
-
-```python
->>> benchmark(
-... model="<model-id>",
-... task="sentiment-classification",
-... language="da",
-... download_only=True,
-... )
-```
-
-Please note: Offline benchmarking of adapter models is not currently supported. An
-internet connection will be required during evaluation. If offline support is important
-to you, please consider [opening an issue](https://github.com/EuroEval/EuroEval/issues).
 
 ### Benchmarking from Docker
 
@@ -175,7 +152,180 @@ Here `<euroeval-arguments>` consists of the arguments added to the `euroeval` CL
 argument. This could for instance be `--model <model-id> --task
 sentiment-classification`.
 
-### Reproducing the datasets
+## Benchmarking custom inference APIs
+
+If the model you want to benchmark is hosted by a custom inference provider, such as a
+[vLLM server](https://docs.vllm.ai/en/stable/), then this is also supported in EuroEval.
+When benchmarking, you simply have to set the `--api-base` argument (`api_base` when
+using the `Benchmarker` API) to the URL of the inference API, and optionally the
+`--api-key` argument (`api_key`) to the API key, if authentication is required.
+
+When benchmarking models hosted on a custom inference API, the model ID
+(`--model`/`model`) should be the model name as registered on the inference server,
+potentially with a required prefix, depending on the type of inference server used. For
+instance, if the model is hosted on a vLLM server, the model ID should be prefixed with
+`hosted_vllm/`, and if the model is hosted on an Ollama server, the model ID should be
+prefixed with `ollama_chat/`. See the full list of possible inference providers as well
+as their corresponding prefixes in the [LiteLLM
+documentation](https://docs.litellm.ai/docs/providers/), as EuroEval uses LiteLLM to
+handle evaluation of inference APIs in general.
+
+## Benchmarking in an offline environment
+
+If you need to benchmark in an offline environment, you need to download the models,
+datasets and metrics beforehand. This can be done by adding the `--download-only`
+argument, from the command line, or the `download_only` argument, if benchmarking from a
+script. For example to download the model you want and all of the Danish sentiment
+classification datasets:
+
+```bash
+euroeval --model <model-id> --task sentiment-classification --language da --download-only
+```
+
+Or from a script:
+
+```python
+>>> benchmarker.benchmark(
+... model="<model-id>",
+... task="sentiment-classification",
+... language="da",
+... download_only=True,
+... )
+```
+
+Please note: Offline benchmarking of adapter models is not currently supported, meaning
+that we still require an internet connection during the evaluation of these. If offline
+support of adapters is important to you, please consider [opening an
+issue](https://github.com/EuroEval/EuroEval/issues).
+
+## Benchmarking custom datasets
+
+If you want to benchmark models on your own custom dataset, this is also possible.
+First, you need to set up your dataset to be compatible with EuroEval. This means
+splitting up your dataset in a training, validation and test split, and ensuring that
+the column names are correct. We use `text` as the column name for the input text, and
+the output column name depends on the type of task:
+
+- **Text or multiple-choice classification**: `label`
+- **Token classification**: `labels`
+- **Reading comprehension**: `answers`
+- **Free-form text generation**: `target_text`
+
+Text and multiple-choice classification tasks are by far the most common. Next, you
+store your three dataset splits as three different CSV files with the desired two
+columns. Finally, you create a file called `custom_datasets.py` script in which you
+define the associated `DatasetConfig` objects for your dataset. Here is an example of a
+simple text classification dataset with two classes:
+
+```python
+from euroeval import DatasetConfig
+from euroeval.languages import ENGLISH
+
+MY_CONFIG = DatasetConfig(
+    name="my-dataset",
+    source=dict(train="train.csv", val="val.csv", test="test.csv"),
+    task=TEXT_CLASSIFICATION,
+    languages=[ENGLISH],
+    _labels=["positive", "negative"],
+)
+```
+
+You can then benchmark your custom dataset by simply running
+
+```bash
+euroeval --dataset my-dataset --model <model-id>
+```
+
+You can also run the benchmark from a Python script, by simply providing your custom
+dataset configuration directly into the `benchmark` method:
+
+```python
+from euroeval import Benchmarker
+
+benchmarker = Benchmarker()
+benchmarker.benchmark(model="<model-id>", dataset=MY_CONFIG)
+```
+
+We have included three convenience tasks to make it easier to set up custom datasets:
+
+- `TEXT_CLASSIFICATION`, which is used for text classification tasks. This requires you
+  to set the `_labels` argument in the `DatasetConfig`, and requires the columns `text`
+  and `label` to be present in the dataset.
+- `MULTIPLE_CHOICE`, which is used for multiple-choice classification tasks. This
+  also requires you to set the `_labels` argument in the `DatasetConfig`. Note that for
+  multiple choice tasks, you need to set up your `text` column to also list all the
+  choices, and all the samples should have the same number of choices. This requires the
+  columns `text` and `label` to be present in the dataset.
+- `TOKEN_CLASSIFICATION`, which is used when classifying individual tokens in a text.
+  This also require you to set the `_labels` argument in the `DatasetConfig`. This
+  requires the columns `tokens` and `labels` to be present in the dataset, where
+  `tokens` is a list of tokens/words in the text, and `labels` is a list of the
+  corresponding labels for each token (so the two lists have the same length).
+
+On top of these three convenience tasks, there are of course also the tasks that we use
+in the official benchmark, which you can use if you want to use one of these tasks with
+your own bespoke dataset:
+
+- `LA`, for linguistic acceptability datasets.
+- `NER`, for named entity recognition datasets with the standard BIO tagging scheme.
+- `RC`, for reading comprehension datasets in the SQuAD format.
+- `SENT`, for sentiment classification datasets.
+- `SUMM`, for text summarisation datasets.
+- `KNOW`, for multiple-choice knowledge datasets (e.g., MMLU).
+- `MCRC`, for multiple-choice reading comprehension datasets (e.g., Belebele).
+- `COMMON_SENSE`, for multiple-choice common-sense reasoning datasets (e.g., HellaSwag).
+
+These can all be imported from `euroeval.tasks` module.
+
+### Creating your own custom task
+
+You are of course also free to define your own task from scratch, which allows you to
+customise the prompts used when evaluating generative models, for instance. Here is an
+example of a custom free-form text generation task, where the goal for the model is to
+generate a SQL query based on a natural language input:
+
+```python
+from euroeval import DatasetConfig
+from euroeval.data_models import Task, PromptConfig
+from euroeval.enums import TaskGroup, ModelType
+from euroeval.languages import ENGLISH
+from euroeval.metrics import rouge_l_metric
+
+sql_generation_task = Task(
+    name="sql-generation",
+    task_group=TaskGroup.TEXT_TO_TEXT,
+    template_dict={
+        ENGLISH: PromptConfig(
+            default_prompt_prefix="The following are natural language texts and their "
+            "corresponding SQL queries.",
+            default_prompt_template="Natural language query: {text}\nSQL query: "
+            "{target_text}",
+            default_instruction_prompt="Generate the SQL query for the following "
+            "natural language query:\n{text!r}",
+            default_prompt_label_mapping=dict(),
+        ),
+    },
+    metrics=[rouge_l_metric],
+    default_num_few_shot_examples=3,
+    default_max_generated_tokens=256,
+    default_allowed_model_types=[ModelType.GENERATIVE],
+)
+
+MY_SQL_DATASET = DatasetConfig(
+    name="my-sql-dataset",
+    source=dict(train="train.csv", val="val.csv", test="test.csv"),
+    task=sql_generation_task,
+    languages=[ENGLISH],
+)
+```
+
+Again, with this you can benchmark your custom dataset by simply running
+
+```bash
+euroeval --dataset my-sql-dataset --model <model-id>
+```
+
+## Reproducing the evaluation datasets
 
 All datasets used in this project are generated using the scripts located in the
 [src/scripts](src/scripts) folder. To reproduce a dataset, run the corresponding script
@@ -318,7 +468,7 @@ contributing new datasets, your help makes this project better for everyone.
 - **Adding datasets**: If you're interested in adding a new dataset to EuroEval, we have
   a [dedicated guide](NEW_DATASET_GUIDE.md) with step-by-step instructions.
 
-### Special Thanks
+### Special thanks
 
 - Thanks to [Google](https://google.com/) for sponsoring Gemini credits as part of their
   [Google Cloud for Researchers Program](https://cloud.google.com/edu/researchers).
