@@ -176,8 +176,8 @@ TEXT_CLASSIFICATION = Task(
     uses_logprobs=True,
 )
 
-WORD_CLASSIFICATION = Task(
-    name="word-classification",
+TOKEN_CLASSIFICATION = Task(
+    name="token-classification",
     task_group=TaskGroup.TOKEN_CLASSIFICATION,
     template_dict=TOKEN_CLASSIFICATION_TEMPLATES,
     metrics=[m.micro_f1_metric],

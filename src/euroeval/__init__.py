@@ -56,7 +56,7 @@ from .logging_utils import block_terminal_output  # noqa: E402
 from .tasks import (  # noqa: E402
     MULTIPLE_CHOICE,
     TEXT_CLASSIFICATION,
-    WORD_CLASSIFICATION,
+    TOKEN_CLASSIFICATION,
 )
 
 # Block unwanted terminal outputs. This blocks way more than the above, but since it
