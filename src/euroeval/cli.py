@@ -7,8 +7,10 @@ from pathlib import Path
 
 import click
 
+from euroeval.dataset_configs import get_all_dataset_configs
+
 from .benchmarker import Benchmarker
-from .data_models import DatasetConfig
+from .data_models import DatasetConfig, Task
 from .enums import Device, GenerativeType
 from .languages import get_all_languages
 from .logging_utils import log
@@ -271,15 +273,16 @@ def benchmark(
     languages: list[str] = list(language)
     model_languages = None if len(model_language) == 0 else list(model_language)
     dataset_languages = None if len(dataset_language) == 0 else list(dataset_language)
-    tasks = None if len(task) == 0 else list(task)
+    tasks: c.Sequence[str | Task] | None = None if len(task) == 0 else list(task)
     batch_size_int = int(batch_size)
     device = Device[device.upper()] if device is not None else None
     generative_type_obj = (
         GenerativeType[generative_type.upper()] if generative_type else None
     )
 
-    # Load all defined DatasetConfig objects from the custom datasets file
+    # Load all defined DatasetConfig and Task objects from the custom datasets file
     if custom_datasets_file.exists():
+        # Load the custom module
         spec = importlib.util.spec_from_file_location(
             name="custom_datasets_module", location=str(custom_datasets_file.resolve())
         )
@@ -295,11 +298,13 @@ def benchmark(
                 f"{custom_datasets_file.resolve()}."
             )
         spec.loader.exec_module(module)
+
+        # Load the dataset configs from the module
         custom_dataset_configs: list[DatasetConfig] = [
             obj for obj in vars(module).values() if isinstance(obj, DatasetConfig)
         ]
         if datasets is None:
-            datasets = custom_dataset_configs
+            datasets = custom_dataset_configs + list(get_all_dataset_configs().keys())
         else:
             # Replace the string names of datasets which have a custom DatasetConfig
             # with the corresponding DatasetConfig object
@@ -311,13 +316,39 @@ def benchmark(
                 for ds in datasets
             ]
 
+        # Load the tasks from the module
+        custom_task_objects: list[Task] = [
+            obj for obj in vars(module).values() if isinstance(obj, Task)
+        ]
+        if tasks is None:
+            tasks = custom_task_objects + list(
+                {config.task.name for config in get_all_dataset_configs().values()}
+            )
+        else:
+            # Replace the string names of tasks which have a custom Task object
+            # with the corresponding Task object
+            task_name_to_object = {
+                task_obj.name: task_obj for task_obj in custom_task_objects
+            }
+            tasks = [
+                task_name_to_object.get(t, t) if isinstance(t, str) else t
+                for t in tasks
+            ]
+
+        # Log the loaded custom datasets and tasks
         dataset_str = (
             "the custom dataset"
             if len(custom_dataset_configs) == 1
             else f"{len(custom_dataset_configs):,} custom datasets"
         )
+        task_str = (
+            "the custom task"
+            if len(custom_task_objects) == 1
+            else f"{len(custom_task_objects):,} custom tasks"
+        )
         log(
-            f"Loaded {dataset_str} from {custom_datasets_file.as_posix()!r}.\n",
+            f"Loaded {dataset_str} and {task_str} from "
+            f"{custom_datasets_file.as_posix()!r}.\n",
             level=logging.INFO,
         )
 
