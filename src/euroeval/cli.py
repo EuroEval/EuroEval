@@ -299,15 +299,23 @@ def benchmark(
             )
         spec.loader.exec_module(module)
 
-        # Load the dataset configs from the module
+        # Load all the custom dataset configurations and tasks from the module
         custom_dataset_configs: list[DatasetConfig] = [
             obj for obj in vars(module).values() if isinstance(obj, DatasetConfig)
         ]
-        if datasets is None:
+        custom_task_objects: list[Task] = [
+            obj for obj in vars(module).values() if isinstance(obj, Task)
+        ]
+
+        # If the user has not specified any datasets or tasks, we just use all the usual
+        # datasets as well as all the custom ones that we loaded
+        if datasets is None and tasks is None:
             datasets = custom_dataset_configs + list(get_all_dataset_configs().keys())
-        else:
-            # Replace the string names of datasets which have a custom DatasetConfig
-            # with the corresponding DatasetConfig object
+
+        # If the user has specified only datasets, then we replace the custom dataset
+        # names that the user specified (if any) with the corresponding dataset configs
+        # that we loaded
+        elif datasets is not None and tasks is None:
             dataset_name_to_config = {
                 config.name: config for config in custom_dataset_configs
             }
@@ -316,17 +324,10 @@ def benchmark(
                 for ds in datasets
             ]
 
-        # Load the tasks from the module
-        custom_task_objects: list[Task] = [
-            obj for obj in vars(module).values() if isinstance(obj, Task)
-        ]
-        if tasks is None:
-            tasks = custom_task_objects + list(
-                {config.task.name for config in get_all_dataset_configs().values()}
-            )
-        else:
-            # Replace the string names of tasks which have a custom Task object
-            # with the corresponding Task object
+        # If the user has specified only tasks, then we replace the custom task names
+        # that the user specified (if any) with the corresponding task objects that we
+        # loaded
+        elif datasets is None and tasks is not None:
             task_name_to_object = {
                 task_obj.name: task_obj for task_obj in custom_task_objects
             }
