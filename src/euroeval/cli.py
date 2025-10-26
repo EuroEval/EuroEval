@@ -330,6 +330,7 @@ def benchmark(
             datasets = [
                 ds for ds in datasets if not ds.unofficial and ds.task.name in tasks
             ]
+            tasks = None
 
         # Log the loaded custom datasets and tasks
         dataset_str = (
