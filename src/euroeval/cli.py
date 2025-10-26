@@ -299,18 +299,16 @@ def benchmark(
             )
         spec.loader.exec_module(module)
 
-        # Load all the custom dataset configurations and tasks from the module
+        # Load all the custom dataset configurations from the module
         custom_dataset_configs: list[DatasetConfig] = [
             obj for obj in vars(module).values() if isinstance(obj, DatasetConfig)
-        ]
-        custom_task_objects: list[Task] = [
-            obj for obj in vars(module).values() if isinstance(obj, Task)
         ]
 
         # If the user has not specified any datasets or tasks, we just use all the usual
         # datasets as well as all the custom ones that we loaded
         if datasets is None and tasks is None:
-            datasets = custom_dataset_configs + list(get_all_dataset_configs().keys())
+            datasets = custom_dataset_configs + list(get_all_dataset_configs().values())
+            datasets = [ds for ds in datasets if not ds.unofficial]
 
         # If the user has specified only datasets, then we replace the custom dataset
         # names that the user specified (if any) with the corresponding dataset configs
@@ -324,16 +322,13 @@ def benchmark(
                 for ds in datasets
             ]
 
-        # If the user has specified only tasks, then we replace the custom task names
-        # that the user specified (if any) with the corresponding task objects that we
-        # loaded
+        # If the user has specified only tasks, then we find all the official usual and
+        # custom datasets belonging to that task, and use those. We reset the `tasks`
+        # variable as we're using the `datasets` variable directly instead
         elif datasets is None and tasks is not None:
-            task_name_to_object = {
-                task_obj.name: task_obj for task_obj in custom_task_objects
-            }
-            tasks = [
-                task_name_to_object.get(t, t) if isinstance(t, str) else t
-                for t in tasks
+            datasets = custom_dataset_configs + list(get_all_dataset_configs().values())
+            datasets = [
+                ds for ds in datasets if not ds.unofficial and ds.task.name in tasks
             ]
 
         # Log the loaded custom datasets and tasks
@@ -342,14 +337,8 @@ def benchmark(
             if len(custom_dataset_configs) == 1
             else f"{len(custom_dataset_configs):,} custom datasets"
         )
-        task_str = (
-            "the custom task"
-            if len(custom_task_objects) == 1
-            else f"{len(custom_task_objects):,} custom tasks"
-        )
         log(
-            f"Loaded {dataset_str} and {task_str} from "
-            f"{custom_datasets_file.as_posix()!r}.\n",
+            f"Loaded {dataset_str} from {custom_datasets_file.as_posix()!r}.\n",
             level=logging.INFO,
         )
 
