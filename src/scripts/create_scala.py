@@ -14,7 +14,6 @@
 import random
 import re
 import warnings
-from collections import defaultdict
 from typing import List, Tuple, Union
 
 import pandas as pd
@@ -50,16 +49,6 @@ from load_ud_pos import (
 )
 from pandas.errors import SettingWithCopyWarning
 from tqdm.auto import tqdm
-
-# Language-specific POS tags to exclude from deletion (in addition to base exclusions)
-LANGUAGE_SPECIFIC_DELETE_EXCLUSIONS: dict[str, list[str]] = defaultdict(
-    list,
-    {
-        "pl": [
-            "PART"
-        ]  # Polish: particles can often be deleted without breaking grammar
-    },
-)
 
 
 def main() -> None:
@@ -175,10 +164,10 @@ def main() -> None:
 
             # Add the corrupted data and turn the dataframes into Hugging Face Dataset
             # objects
-            train = prepare_df(new_train_df, split="train", lang=lang)
-            val = prepare_df(new_val_df, split="val", lang=lang)
-            test = prepare_df(new_test_df, split="test", lang=lang)
-            full_train = prepare_df(new_full_train_df, split="train", lang=lang)
+            train = prepare_df(new_train_df, split="train")
+            val = prepare_df(new_val_df, split="val")
+            test = prepare_df(new_test_df, split="test")
+            full_train = prepare_df(new_full_train_df, split="train")
 
             # Collect datasets in a dataset dictionary
             dataset = DatasetDict(
@@ -228,7 +217,7 @@ def join_tokens(tokens: List[str]) -> str:
     return doc
 
 
-def delete(tokens: List[str], pos_tags: List[str], lang: str = "") -> Union[str, None]:
+def delete(tokens: List[str], pos_tags: List[str]) -> Union[str, None]:
     """Delete a random token from a list of tokens.
 
     The POS tags are used to prevent deletion of a token which does not make the
@@ -240,20 +229,12 @@ def delete(tokens: List[str], pos_tags: List[str], lang: str = "") -> Union[str,
             The list of tokens to delete from.
         pos_tags:
             The list of POS tags for the tokens.
-        lang:
-            The language of the tokens.
 
     Returns:
         The deleted token, or None if no token could be deleted.
     """
     # Copy the token list
     new_tokens = tokens.copy()
-
-    # Base exclusions that apply to all languages
-    base_exclusions = ["ADJ", "ADV", "PUNCT", "SYM", "DET", "NUM"]
-
-    # Combine with language-specific exclusions
-    exclusions: list[str] = base_exclusions + LANGUAGE_SPECIFIC_DELETE_EXCLUSIONS[lang]
 
     # Get candidate indices to remove. We do not remove adjectives, adverbs,
     # punctuation, determiners or numbers, as the resulting sentence will probably
@@ -263,7 +244,7 @@ def delete(tokens: List[str], pos_tags: List[str], lang: str = "") -> Union[str,
     indices = [
         idx
         for idx, pos_tag in enumerate(pos_tags)
-        if pos_tag not in exclusions
+        if pos_tag not in ["ADJ", "ADV", "PUNCT", "SYM", "DET", "NUM", "PART"]
         and (
             pos_tag not in ["NOUN", "PROPN"]
             or (
@@ -290,9 +271,7 @@ def delete(tokens: List[str], pos_tags: List[str], lang: str = "") -> Union[str,
     return join_tokens(new_tokens)
 
 
-def flip_neighbours(
-    tokens: List[str], pos_tags: List[str], lang: str = ""
-) -> Union[str, None]:
+def flip_neighbours(tokens: List[str], pos_tags: List[str]) -> Union[str, None]:
     """Flip a pair of neighbouring tokens.
 
     The POS tags are used to prevent flipping of tokens which does not make the
@@ -303,8 +282,6 @@ def flip_neighbours(
             The list of tokens to flip.
         pos_tags:
             The list of POS tags for the tokens.
-        lang:
-            The language of the tokens.
 
     Returns:
         The flipped string, or None if no flip was possible.
@@ -371,7 +348,7 @@ def flip_neighbours(
 
 
 def corrupt(
-    tokens: List[str], pos_tags: List[str], num_corruptions: int = 1, lang: str = ""
+    tokens: List[str], pos_tags: List[str], num_corruptions: int = 1
 ) -> List[Tuple[str, str]]:
     """Corrupt a list of tokens.
 
@@ -384,8 +361,6 @@ def corrupt(
             The list of POS tags for the tokens.
         num_corruptions:
             The number of corruptions to perform. Defaults to 1.
-        lang:
-            The language of the tokens.
 
     Returns:
         The list of (corrupted_string, corruption_type)
@@ -399,7 +374,7 @@ def corrupt(
         corruption_fn = random.choice([flip_neighbours, delete])
 
         # Corrupt the tokens
-        corruption = corruption_fn(tokens, pos_tags, lang)
+        corruption = corruption_fn(tokens, pos_tags)
 
         # If the corruption succeeded, and that we haven't already performed the same
         # corruption, then add the corruption to the list of corruptions
@@ -410,7 +385,7 @@ def corrupt(
     return corruptions
 
 
-def prepare_df(df: pd.DataFrame, split: str, lang: str = "") -> Dataset:
+def prepare_df(df: pd.DataFrame, split: str) -> Dataset:
     """Prepare a dataframe by adding an equal number of corruptions to it.
 
     Args:
@@ -418,8 +393,6 @@ def prepare_df(df: pd.DataFrame, split: str, lang: str = "") -> Dataset:
             The dataframe to prepare.
         split:
             The split to prepare the dataframe for.
-        lang:
-            The language of the dataframe.
 
     Returns:
         The prepared dataset.
@@ -429,7 +402,7 @@ def prepare_df(df: pd.DataFrame, split: str, lang: str = "") -> Dataset:
 
     # Get the corrupted strings
     corrupted_list = [
-        corrupt(tokens=tokens, pos_tags=pos_tags, num_corruptions=1, lang=lang)[0]
+        corrupt(tokens=tokens, pos_tags=pos_tags, num_corruptions=1)[0]
         for tokens, pos_tags in zip(df.tokens, df.pos_tags)
     ]
 
