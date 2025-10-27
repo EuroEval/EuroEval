@@ -240,6 +240,8 @@ def delete(tokens: List[str], pos_tags: List[str], lang: str = "") -> Union[str,
             The list of tokens to delete from.
         pos_tags:
             The list of POS tags for the tokens.
+        lang:
+            The language of the tokens.
 
     Returns:
         The deleted token, or None if no token could be deleted.
@@ -301,6 +303,8 @@ def flip_neighbours(
             The list of tokens to flip.
         pos_tags:
             The list of POS tags for the tokens.
+        lang:
+            The language of the tokens.
 
     Returns:
         The flipped string, or None if no flip was possible.
