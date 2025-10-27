@@ -29,7 +29,7 @@ from ..languages import (
 )
 
 if t.TYPE_CHECKING:
-    from ..data_models import Language
+    from ..languages import Language
 
 # TODO: Missing Faroese
 SUMM_TEMPLATES: dict["Language", PromptConfig] = {

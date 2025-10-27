@@ -775,15 +775,8 @@ def get_model_repo_info(
                         level=logging.DEBUG,
                     )
                     return None
-            except (RepositoryNotFoundError, HFValidationError):
+            except (RepositoryNotFoundError, HFValidationError, HfHubHTTPError):
                 return None
-            except HfHubHTTPError as e:
-                if "unauthorized" in str(e).lower():
-                    raise InvalidModel(
-                        "It seems like your specified Hugging Face API key is invalid. "
-                        "Please double-check your API key."
-                    ) from e
-                raise InvalidModel(str(e)) from e
             except (OSError, RequestException) as e:
                 if internet_connection_available():
                     errors.append(e)

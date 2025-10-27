@@ -20,7 +20,7 @@ ______________________________________________________________________
 [![Second paper](https://img.shields.io/badge/arXiv-2406.13469-b31b1b.svg)](https://arxiv.org/abs/2406.13469)
 [![License](https://img.shields.io/github/license/EuroEval/EuroEval)](https://github.com/EuroEval/EuroEval/blob/main/LICENSE)
 [![LastCommit](https://img.shields.io/github/last-commit/EuroEval/EuroEval)](https://github.com/EuroEval/EuroEval/commits/main)
-[![Code Coverage](https://img.shields.io/badge/Coverage-70%25-yellow.svg)](https://github.com/EuroEval/EuroEval/tree/main/tests)
+[![Code Coverage](https://img.shields.io/badge/Coverage-69%25-yellow.svg)](https://github.com/EuroEval/EuroEval/tree/main/tests)
 [![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.0-4baaaa.svg)](https://github.com/EuroEval/EuroEval/blob/main/CODE_OF_CONDUCT.md)
 
 ## Maintainer
@@ -455,6 +455,13 @@ A huge thank you to all the contributors who have helped make this project a suc
         src="https://avatars.githubusercontent.com/u/44175589"
         width=50
         alt="Contributor avatar for slowwavesleep"
+    />
+</a>
+<a href="https://github.com/mrkowalski">
+    <img
+        src="https://avatars.githubusercontent.com/u/6357044"
+        width=50
+        alt="Contributor avatar for mrkowalski"
     />
 </a>
 

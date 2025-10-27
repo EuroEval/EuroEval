@@ -4,7 +4,74 @@ The language codes contain both all the ISO 639-1 codes, as well as the ISO 639-
 for languages that do not have an ISO 639-1 code.
 """
 
-from .data_models import Language
+from dataclasses import dataclass, field
+
+
+@dataclass
+class Language:
+    """A benchmarkable language.
+
+    Attributes:
+        code:
+            The ISO 639-1 language code of the language.
+        name:
+            The name of the language.
+        and_separator (optional):
+            The word 'and' in the language.
+        or_separator (optional):
+            The word 'or' in the language.
+    """
+
+    code: str
+    name: str
+    _and_separator: str | None = field(repr=False, default=None)
+    _or_separator: str | None = field(repr=False, default=None)
+
+    def __hash__(self) -> int:
+        """Return a hash of the language."""
+        return hash(self.code)
+
+    @property
+    def and_separator(self) -> str:
+        """Get the word 'and' in the language.
+
+        Returns:
+            The word 'and' in the language.
+
+        Raises:
+            NotImplementedError:
+                If `and_separator` is `None`.
+        """
+        if not self._and_separator:
+            raise NotImplementedError(
+                f"Separator for the word 'and' has not been defined for {self.name}."
+            )
+        return self._and_separator
+
+    @and_separator.setter
+    def and_separator(self, value: str | None) -> None:
+        self._and_separator = value
+
+    @property
+    def or_separator(self) -> str:
+        """Get the word 'or' in the language.
+
+        Returns:
+            The word 'or' in the language.
+
+        Raises:
+            NotImplementedError:
+                If `or_separator` is `None`.
+        """
+        if not self._or_separator:
+            raise NotImplementedError(
+                f"Separator for the word 'or' has not been defined for {self.name}."
+            )
+        return self._or_separator
+
+    @or_separator.setter
+    def or_separator(self, value: str | None) -> None:
+        self._or_separator = value
 
 
 def get_all_languages() -> dict[str, Language]:

@@ -32,7 +32,7 @@ from ..languages import (
 )
 
 if t.TYPE_CHECKING:
-    from ..data_models import Language
+    from ..languages import Language
 
 RC_TEMPLATES: dict["Language", PromptConfig] = {
     BULGARIAN: PromptConfig(

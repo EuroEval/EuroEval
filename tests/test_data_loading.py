@@ -16,7 +16,7 @@ from euroeval.data_models import BenchmarkConfig, DatasetConfig
 from euroeval.dataset_configs import get_all_dataset_configs, get_dataset_config
 from euroeval.enums import GenerativeType
 from euroeval.generation_utils import apply_prompt, extract_few_shot_examples
-from euroeval.tasks import RC, SPEED
+from euroeval.tasks import RC
 
 
 @pytest.fixture(scope="module")
@@ -80,7 +80,6 @@ class TestLoadData:
             )
             or "all" in os.environ["CHECK_DATASET"].split(",")
         )
-        and not dataset_config.task == SPEED
     ],
     ids=lambda dc: dc.name,
 )

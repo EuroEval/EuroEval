@@ -22,7 +22,11 @@ def get_all_tasks() -> dict[str, Task]:
     Returns:
         A mapping between names of dataset tasks and their configurations.
     """
-    return {cfg.name: cfg for cfg in globals().values() if isinstance(cfg, Task)}
+    return {
+        cfg.name: cfg
+        for cfg in globals().values()
+        if isinstance(cfg, Task) and cfg != SPEED
+    }
 
 
 LA = Task(

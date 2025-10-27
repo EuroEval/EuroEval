@@ -31,7 +31,7 @@ from ..languages import (
 )
 
 if t.TYPE_CHECKING:
-    from ..data_models import Language
+    from ..languages import Language
 
 
 TOKEN_CLASSIFICATION_TEMPLATES: dict["Language", PromptConfig] = {

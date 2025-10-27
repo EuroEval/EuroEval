@@ -35,7 +35,9 @@ def get_all_dataset_configs() -> dict[str, DatasetConfig]:
         A mapping between names of datasets and their configurations.
     """
     dataset_configs = [
-        cfg for cfg in globals().values() if isinstance(cfg, DatasetConfig)
+        cfg
+        for cfg in globals().values()
+        if isinstance(cfg, DatasetConfig) and cfg.task != SPEED
     ]
     assert len(dataset_configs) == len({cfg.name for cfg in dataset_configs}), (
         "There are duplicate dataset configurations. Please ensure that each dataset "

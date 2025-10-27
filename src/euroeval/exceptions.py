@@ -145,7 +145,7 @@ class NeedsAdditionalArgument(InvalidModel):
         else:
             self.message = (
                 f"The model you are trying to load requires the `{script_argument}` "
-                "argument  to be passed to the `Benchmarker` class. Please pass the "
+                "argument to be passed to the `Benchmarker` class. Please pass the "
                 "argument and try again."
             )
         super().__init__(self.message)

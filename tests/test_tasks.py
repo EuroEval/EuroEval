@@ -36,7 +36,6 @@ class TestGetAllTasks:
             "knowledge",
             "common-sense-reasoning",
             "multiple-choice-reading-comprehension",
-            "speed",
         ],
     )
     def test_get_task(self, tasks: dict[str, Task], task_name: str) -> None:

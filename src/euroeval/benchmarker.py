@@ -626,28 +626,39 @@ class Benchmarker:
                 log(e.message, level=logging.ERROR)
 
         # Create a dictionary that takes each model config to the dataset configs that
-        # we need to benchmark the model on. Here we remove the datasets that the model
-        # has already been benchmarked on, or datasets that the model cannot be
-        # benchmarked on.
+        # we need to benchmark the model on. We initially include all the relevant
+        # datasets for each model.
         model_config_to_dataset_configs: dict[
             ModelConfig, c.Sequence[DatasetConfig]
         ] = {
             model_config: [
                 dataset_config
                 for dataset_config in dataset_configs
-                if (
-                    benchmark_config.force
-                    or not model_has_been_benchmarked(
-                        model_config=model_config,
-                        dataset_config=dataset_config,
-                        benchmark_config=benchmark_config,
-                        benchmark_results=self.benchmark_results,
-                    )
-                )
-                and model_config.model_type in dataset_config.allowed_model_types
+                if model_config.model_type in dataset_config.allowed_model_types
             ]
             for model_config in model_configs
         }
+
+        # Initialise the current benchmark results with all the ones that we have cached
+        # on disk already (can be none), and remove those datasets from the mapping
+        current_benchmark_results: list[BenchmarkResult] = list()
+        for (
+            model_config,
+            model_dataset_configs,
+        ) in model_config_to_dataset_configs.items():
+            new_model_dataset_configs: list[DatasetConfig] = list()
+            for dataset_config in model_dataset_configs:
+                benchmark_record = get_record(
+                    model_config=model_config,
+                    dataset_config=dataset_config,
+                    benchmark_config=benchmark_config,
+                    benchmark_results=self.benchmark_results,
+                )
+                if benchmark_record is not None and not benchmark_config.force:
+                    current_benchmark_results.append(benchmark_record)
+                else:
+                    new_model_dataset_configs.append(dataset_config)
+            model_config_to_dataset_configs[model_config] = new_model_dataset_configs
 
         total_benchmarks = sum(
             len(dataset_configs)
@@ -659,10 +670,9 @@ class Benchmarker:
                 "benchmarked on all the selected datasets.",
                 level=logging.INFO,
             )
-            return list()
+            return current_benchmark_results
 
         num_finished_benchmarks = 0
-        current_benchmark_results: list[BenchmarkResult] = list()
         benchmark_params_to_revert: dict[str, t.Any] = dict()
         for model_config in model_configs:
             if not model_config_to_dataset_configs[model_config]:
@@ -1023,13 +1033,13 @@ class Benchmarker:
         return self.benchmark(*args, **kwds)
 
 
-def model_has_been_benchmarked(
+def get_record(
     model_config: "ModelConfig",
     dataset_config: "DatasetConfig",
     benchmark_config: "BenchmarkConfig",
     benchmark_results: c.Sequence[BenchmarkResult],
-) -> bool:
-    """Checks whether a model has already been benchmarked on a dataset.
+) -> BenchmarkResult | None:
+    """Get the benchmark record for a given model and dataset.
 
     Args:
         model_config:
@@ -1042,7 +1052,7 @@ def model_has_been_benchmarked(
             The benchmark results.
 
     Returns:
-        Whether the model has already been evaluated on the dataset.
+        The benchmark record, or None if no such record exists.
     """
     for record in benchmark_results:
         model_id_components = split_model_id(model_id=record.model)
@@ -1067,8 +1077,8 @@ def model_has_been_benchmarked(
             and same_split
             and same_num_shots
         ):
-            return True
-    return False
+            return record
+    return None
 
 
 def clear_model_cache_fn(cache_dir: str) -> None:

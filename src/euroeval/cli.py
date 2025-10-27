@@ -7,10 +7,9 @@ from pathlib import Path
 
 import click
 
-from euroeval.dataset_configs import get_all_dataset_configs
-
 from .benchmarker import Benchmarker
 from .data_models import DatasetConfig, Task
+from .dataset_configs import get_all_dataset_configs
 from .enums import Device, GenerativeType
 from .languages import get_all_languages
 from .logging_utils import log

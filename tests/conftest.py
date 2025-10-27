@@ -15,7 +15,7 @@ from euroeval.dataset_configs import get_all_dataset_configs
 from euroeval.enums import InferenceBackend, ModelType
 from euroeval.languages import DANISH, get_all_languages
 from euroeval.metrics import HuggingFaceMetric
-from euroeval.tasks import SENT, SPEED, get_all_tasks
+from euroeval.tasks import SENT, get_all_tasks
 
 
 def pytest_configure() -> None:
@@ -33,15 +33,12 @@ if os.environ.get("CHECK_DATASET") is not None:
     dataset_configs = [
         dataset_config
         for dataset_config in get_all_dataset_configs().values()
-        if dataset_config.task != SPEED
-        and (
-            dataset_config.name in os.environ["CHECK_DATASET"].split(",")
-            or any(
-                language.code in os.environ["CHECK_DATASET"].split(",")
-                for language in dataset_config.languages
-            )
-            or "all" in os.environ["CHECK_DATASET"].split(",")
+        if dataset_config.name in os.environ["CHECK_DATASET"].split(",")
+        or any(
+            language.code in os.environ["CHECK_DATASET"].split(",")
+            for language in dataset_config.languages
         )
+        or "all" in os.environ["CHECK_DATASET"].split(",")
     ]
     ACTIVE_LANGUAGES = {
         language_code: language
@@ -124,8 +121,8 @@ def metric() -> Generator[HuggingFaceMetric, None, None]:
 
 @pytest.fixture(
     scope="session",
-    params=[task for task in get_all_tasks().values() if task != SPEED],
-    ids=[name for name, task in get_all_tasks().items() if task != SPEED],
+    params=list(get_all_tasks().values()),
+    ids=list(get_all_tasks().keys()),
 )
 def task(request: pytest.FixtureRequest) -> Generator[Task, None, None]:
     """Yields a dataset task used in tests."""
