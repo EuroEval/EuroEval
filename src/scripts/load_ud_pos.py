@@ -591,8 +591,6 @@ def _load_split(
     for line_idx, line in enumerate(lines):
         # If we are at the first line of an entry then extract the document
         if line.startswith("# text = "):
-            if "Postanowiliśmy iść za tym pomysłem" in line:
-                print(line)
             doc = re.sub("# text = ", "", line)
 
             # Process the document if needed
