@@ -384,6 +384,8 @@ def corrupt(
             The list of POS tags for the tokens.
         num_corruptions:
             The number of corruptions to perform. Defaults to 1.
+        lang:
+            The language of the tokens.
 
     Returns:
         The list of (corrupted_string, corruption_type)
@@ -416,6 +418,8 @@ def prepare_df(df: pd.DataFrame, split: str, lang: str = "") -> Dataset:
             The dataframe to prepare.
         split:
             The split to prepare the dataframe for.
+        lang:
+            The language of the dataframe.
 
     Returns:
         The prepared dataset.
