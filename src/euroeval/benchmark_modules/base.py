@@ -86,7 +86,7 @@ class BenchmarkModule(ABC):
         model_id = self.model_config.model_id
         logging_msg: str = "    ↳ "
         if self.num_params < 0:
-            logging_msg += "The model {model_id} has an unknown number of parameters, "
+            logging_msg += f"The model {model_id} has an unknown number of parameters, "
         else:
             logging_msg += f"The model {model_id} has {self.num_params:,} parameters, "
         if self.vocab_size < 0:
