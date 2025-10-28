@@ -173,7 +173,7 @@ def test_benchmark_generative_adapter_no_internet(
     task: Task, language: Language, generative_adapter_model_id: str
 ) -> None:
     """Test that generative adapter models can be benchmarked without internet."""
-    # need a new benchmarker since we only check for internet once per instance
+    # We need a new benchmarker since we only check for internet once per instance
     benchmarker = Benchmarker(progress_bar=False, save_results=False, num_iterations=1)
     benchmark_result = benchmarker.benchmark(
         model=generative_adapter_model_id, task=task.name, language=language.code
