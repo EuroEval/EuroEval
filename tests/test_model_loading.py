@@ -29,7 +29,6 @@ def test_load_non_generative_model(
 @pytest.mark.skipif(
     condition=not torch.cuda.is_available(), reason="CUDA is not available."
 )
-@pytest.mark.dependency()
 @pytest.mark.flaky(reruns=3, reruns_delay=5)
 def test_load_generative_model(
     generative_model_id: str, benchmark_config: BenchmarkConfig

@@ -42,31 +42,8 @@ def test_benchmark_results_is_a_list(benchmarker: Benchmarker) -> None:
     assert isinstance(benchmarker.benchmark_results, list)
 
 
-@pytest.mark.dependency()
-@pytest.mark.flaky(reruns=3, reruns_delay=5)
-def test_benchmark_encoder(
-    benchmarker: Benchmarker, task: Task, language: Language, encoder_model_id: str
-) -> None:
-    """Test that an encoder model can be benchmarked."""
-    for _ in range(10):
-        try:
-            benchmark_result = benchmarker.benchmark(
-                model=encoder_model_id, task=task.name, language=language.code
-            )
-            break
-        except (HuggingFaceHubDown, RequestException, ConnectionError):
-            time.sleep(5)
-    else:
-        pytest.skip(reason="Hugging Face Hub is down, so we skip this test.")
-    assert isinstance(benchmark_result, list)
-    assert all(isinstance(result, BenchmarkResult) for result in benchmark_result)
-
-
 @pytest.mark.skipif(
     condition=not torch.cuda.is_available(), reason="CUDA is not available."
-)
-@pytest.mark.dependency(
-    depends=["tests/test_model_loading.py::test_load_generative_model"]
 )
 def test_benchmark_generative(
     benchmarker: Benchmarker, task: Task, language: Language, generative_model_id: str
@@ -81,9 +58,6 @@ def test_benchmark_generative(
 
 @pytest.mark.skipif(
     condition=not torch.cuda.is_available(), reason="CUDA is not available."
-)
-@pytest.mark.dependency(
-    depends=["tests/test_model_loading.py::test_load_generative_model"]
 )
 def test_benchmark_generative_adapter(
     benchmarker: Benchmarker,
@@ -417,7 +391,7 @@ def test_prepare_dataset_configs(
 
 
 @pytest.mark.disable_socket
-@pytest.mark.dependency(depends=["test_benchmark_encoder"])
+@pytest.mark.depends(on=["test_benchmark_encoder"])
 @pytest.mark.flaky(reruns=3, reruns_delay=5)
 def test_benchmark_encoder_no_internet(
     task: Task, language: Language, encoder_model_id: str
@@ -432,12 +406,31 @@ def test_benchmark_encoder_no_internet(
     assert all(isinstance(result, BenchmarkResult) for result in benchmark_result)
 
 
+@pytest.mark.flaky(reruns=3, reruns_delay=5)
+def test_benchmark_encoder(
+    benchmarker: Benchmarker, task: Task, language: Language, encoder_model_id: str
+) -> None:
+    """Test that an encoder model can be benchmarked."""
+    for _ in range(10):
+        try:
+            benchmark_result = benchmarker.benchmark(
+                model=encoder_model_id, task=task.name, language=language.code
+            )
+            break
+        except (HuggingFaceHubDown, RequestException, ConnectionError):
+            time.sleep(5)
+    else:
+        pytest.skip(reason="Hugging Face Hub is down, so we skip this test.")
+    assert isinstance(benchmark_result, list)
+    assert all(isinstance(result, BenchmarkResult) for result in benchmark_result)
+
+
 # Allow localhost since vllm uses it for some things
 @pytest.mark.allow_hosts(["127.0.0.1"])
 @pytest.mark.skipif(
     condition=not torch.cuda.is_available(), reason="CUDA is not available."
 )
-@pytest.mark.dependency(depends=["test_benchmark_generative"])
+@pytest.mark.depends(on=["test_benchmark_generative"])
 @pytest.mark.flaky(reruns=3, reruns_delay=5)
 def test_benchmark_generative_no_internet(
     task: Task, language: Language, generative_model_id: str
@@ -457,7 +450,7 @@ def test_benchmark_generative_no_internet(
 @pytest.mark.skip(
     "Benchmarking adapter models without internet access are not implemented yet."
 )
-@pytest.mark.dependency(depends=["test_benchmark_generative_adapter"])
+@pytest.mark.depends(on=["test_benchmark_generative_adapter"])
 @pytest.mark.flaky(reruns=3, reruns_delay=5)
 def test_benchmark_generative_adapter_no_internet(
     task: Task, language: Language, generative_adapter_model_id: str
