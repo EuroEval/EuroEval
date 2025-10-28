@@ -68,8 +68,9 @@ def get_dataset_config(dataset_name: str) -> DatasetConfig:
 
 SPEED_CONFIG = DatasetConfig(
     name="speed",
+    pretty_name="",
     source="",
     task=SPEED,
     languages=list(get_all_languages().values()),
-    _pretty_name="the speed estimation benchmark",
+    _logging_string="the speed estimation benchmark",
 )

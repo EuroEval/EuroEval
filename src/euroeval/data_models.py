@@ -140,6 +140,9 @@ class DatasetConfig:
     Attributes:
         name:
             The name of the dataset. Must be lower case with no spaces.
+        pretty_name:
+            A longer prettier name for the dataset, which allows cases and spaces. Used
+            for logging.
         source:
             The source of the dataset, which can be a Hugging Face ID or a dictionary
             with keys "train", "val" and "test" mapping to local CSV file paths.
@@ -153,9 +156,6 @@ class DatasetConfig:
             The mapping from label to ID.
         num_labels:
             The number of labels in the dataset.
-        pretty_name (optional):
-            A longer prettier name for the dataset, which allows cases and spaces. Used
-            for logging.
         _prompt_prefix (optional):
             The prefix to use in the few-shot prompt. Defaults to the template for the
             task and language.
@@ -197,6 +197,10 @@ class DatasetConfig:
             will be mapped to the closest valid label. If False, the model output will
             be considered incorrect and the evaluation will be aborted. Defaults to
             the one for the task.
+        _logging_string (optional):
+            The string used to describe evaluation on the dataset in logging. If not
+            provided, a default string will be generated, based on the pretty name. Only
+            use this if the default string is not suitable.
         splits (optional):
             The names of the splits in the dataset. If not provided, defaults to
             ["train", "val", "test"].
@@ -207,10 +211,10 @@ class DatasetConfig:
     """
 
     name: str
+    pretty_name: str
     source: str | dict[str, str]
     task: Task
     languages: c.Sequence[Language]
-    _pretty_name: str | None = None
     _prompt_prefix: str | None = None
     _prompt_template: str | None = None
     _instruction_prompt: str | None = None
@@ -221,6 +225,7 @@ class DatasetConfig:
     _allowed_model_types: c.Sequence[ModelType] | None = None
     _allowed_generative_types: c.Sequence[GenerativeType] | None = None
     _allow_invalid_model_outputs: bool | None = None
+    _logging_string: str | None = None
     splits: c.Sequence[str] = field(default_factory=lambda: ["train", "val", "test"])
     bootstrap_samples: bool = True
     unofficial: bool = False
@@ -250,10 +255,15 @@ class DatasetConfig:
                     return self.languages[0]
 
     @property
-    def pretty_name(self) -> str:
-        """Post-initialisation checks."""
-        if self._pretty_name is not None:
-            return self._pretty_name
+    def logging_string(self) -> str:
+        """The string used to describe evaluation on the dataset in logging."""
+        if self._logging_string is not None:
+            return self._logging_string
+        truncated_str = (
+            "truncated version of the "
+            if isinstance(self.source, str) and self.source.endswith("-mini")
+            else ""
+        )
         if len(self.languages) > 1:
             languages_str = (
                 ", ".join([lang.name for lang in self.languages[:-1]])
@@ -262,11 +272,8 @@ class DatasetConfig:
         else:
             languages_str = self.languages[0].name
         task_str = self.task.name.replace("-", " ")
-        dataset_name_str = self.name.replace("-", " ").replace("_", " ").title()
-        truncated_str = (
-            "truncated version of the "
-            if isinstance(self.source, str) and self.source.endswith("-mini")
-            else ""
+        dataset_name_str = (
+            self.pretty_name or self.name.replace("-", " ").replace("_", " ").title()
         )
         return (
             f"the {truncated_str}{languages_str} {task_str} dataset {dataset_name_str}"

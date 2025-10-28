@@ -8,36 +8,55 @@ from ..tasks import COMMON_SENSE, EUROPEAN_VALUES, KNOW, LA, NER, RC, SENT, SUMM
 
 ESTONIAN_VALENCE_CONFIG = DatasetConfig(
     name="estonian-valence",
+    pretty_name="Estonian Valence",
     source="EuroEval/estonian-valence",
     task=SENT,
     languages=[ESTONIAN],
 )
 
 GRAMMAR_ET_CONFIG = DatasetConfig(
-    name="grammar-et", source="EuroEval/grammar-et", task=LA, languages=[ESTONIAN]
+    name="grammar-et",
+    pretty_name="Grammar-et",
+    source="EuroEval/grammar-et",
+    task=LA,
+    languages=[ESTONIAN],
 )
 
 ESTNER_CONFIG = DatasetConfig(
-    name="estner", source="EuroEval/estner-mini", task=NER, languages=[ESTONIAN]
+    name="estner",
+    pretty_name="EstNER",
+    source="EuroEval/estner-mini",
+    task=NER,
+    languages=[ESTONIAN],
 )
 
 MULTI_WIKI_QA_ET_CONFIG = DatasetConfig(
     name="multi-wiki-qa-et",
+    pretty_name="MultiWikiQA-et",
     source="EuroEval/multi-wiki-qa-et-mini",
     task=RC,
     languages=[ESTONIAN],
 )
 
 ERR_NEWS_CONFIG = DatasetConfig(
-    name="err-news", source="EuroEval/err-news-mini", task=SUMM, languages=[ESTONIAN]
+    name="err-news",
+    pretty_name="ERR News",
+    source="EuroEval/err-news-mini",
+    task=SUMM,
+    languages=[ESTONIAN],
 )
 
 TRIVIA_ET_CONFIG = DatasetConfig(
-    name="trivia-et", source="EuroEval/trivia-et", task=KNOW, languages=[ESTONIAN]
+    name="trivia-et",
+    pretty_name="Trivia-et",
+    source="EuroEval/trivia-et",
+    task=KNOW,
+    languages=[ESTONIAN],
 )
 
 WINOGRANDE_ET_CONFIG = DatasetConfig(
     name="winogrande-et",
+    pretty_name="Winogrande-et",
     source="EuroEval/winogrande-et",
     task=COMMON_SENSE,
     languages=[ESTONIAN],
@@ -50,8 +69,9 @@ WINOGRANDE_ET_CONFIG = DatasetConfig(
     _labels=["a", "b"],
 )
 
-EUROPEAN_VALUES_ET_CONFIG = DatasetConfig(
-    name="european-values-et",
+VALEU_ET_CONFIG = DatasetConfig(
+    name="valeu-et",
+    pretty_name="VaLEU-et",
     source="EuroEval/european-values-et",
     task=EUROPEAN_VALUES,
     languages=[ESTONIAN],
@@ -64,6 +84,7 @@ EUROPEAN_VALUES_ET_CONFIG = DatasetConfig(
 
 SCALA_ET_CONFIG = DatasetConfig(
     name="scala-et",
+    pretty_name="ScaLA-et",
     source="EuroEval/scala-et",
     task=LA,
     languages=[ESTONIAN],
@@ -72,6 +93,7 @@ SCALA_ET_CONFIG = DatasetConfig(
 
 EXAM_ET_CONFIG = DatasetConfig(
     name="exam-et",
+    pretty_name="Exam-et",
     source="EuroEval/exam-et",
     task=KNOW,
     languages=[ESTONIAN],
@@ -81,6 +103,7 @@ EXAM_ET_CONFIG = DatasetConfig(
 
 MMLU_ET_CONFIG = DatasetConfig(
     name="mmlu-et",
+    pretty_name="MMLU-et",
     source="EuroEval/mmlu-et-mini",
     task=KNOW,
     languages=[ESTONIAN],

@@ -8,40 +8,63 @@ from ..tasks import COMMON_SENSE, EUROPEAN_VALUES, KNOW, LA, MCRC, NER, RC, SENT
 
 SENTIMENT_HEADLINES_CONFIG = DatasetConfig(
     name="sentiment-headlines-es",
+    pretty_name="Sentiment Headlines ES",
     source="EuroEval/sentiment-headlines-es",
     task=SENT,
     languages=[SPANISH],
 )
 
 SCALA_ES_CONFIG = DatasetConfig(
-    name="scala-es", source="EuroEval/scala-es", task=LA, languages=[SPANISH]
+    name="scala-es",
+    pretty_name="ScaLA-es",
+    source="EuroEval/scala-es",
+    task=LA,
+    languages=[SPANISH],
 )
 
 CONLL_ES_CONFIG = DatasetConfig(
-    name="conll-es", source="EuroEval/conll-es-mini", task=NER, languages=[SPANISH]
+    name="conll-es",
+    pretty_name="CoNLL-es",
+    source="EuroEval/conll-es-mini",
+    task=NER,
+    languages=[SPANISH],
 )
 
 MLQA_ES_CONFIG = DatasetConfig(
-    name="mlqa-es", source="EuroEval/mlqa-es", task=RC, languages=[SPANISH]
+    name="mlqa-es",
+    pretty_name="MLQA-es",
+    source="EuroEval/mlqa-es",
+    task=RC,
+    languages=[SPANISH],
 )
 
 MLSUM_ES_CONFIG = DatasetConfig(
-    name="mlsum-es", source="EuroEval/mlsum-es-mini", task=SUMM, languages=[SPANISH]
+    name="mlsum-es",
+    pretty_name="MLSUM-es",
+    source="EuroEval/mlsum-es-mini",
+    task=SUMM,
+    languages=[SPANISH],
 )
 
 MMLU_ES_CONFIG = DatasetConfig(
-    name="mmlu-es", source="EuroEval/mmlu-es-mini", task=KNOW, languages=[SPANISH]
+    name="mmlu-es",
+    pretty_name="MMLU-es",
+    source="EuroEval/mmlu-es-mini",
+    task=KNOW,
+    languages=[SPANISH],
 )
 
 HELLASWAG_ES_CONFIG = DatasetConfig(
     name="hellaswag-es",
+    pretty_name="HellaSwag-es",
     source="EuroEval/hellaswag-es-mini",
     task=COMMON_SENSE,
     languages=[SPANISH],
 )
 
-EUROPEAN_VALUES_ES_CONFIG = DatasetConfig(
-    name="european-values-es",
+VALEU_ES_CONFIG = DatasetConfig(
+    name="valeu-es",
+    pretty_name="VaLEU-es",
     source="EuroEval/european-values-es",
     task=EUROPEAN_VALUES,
     languages=[SPANISH],
@@ -55,6 +78,7 @@ EUROPEAN_VALUES_ES_CONFIG = DatasetConfig(
 
 XQUAD_ES_CONFIG = DatasetConfig(
     name="xquad-es",
+    pretty_name="XQuAD-es",
     source="EuroEval/xquad-es",
     task=RC,
     languages=[SPANISH],
@@ -63,6 +87,7 @@ XQUAD_ES_CONFIG = DatasetConfig(
 
 BELEBELE_ES_CONFIG = DatasetConfig(
     name="belebele-es",
+    pretty_name="Belebele-es",
     source="EuroEval/belebele-es-mini",
     task=MCRC,
     languages=[SPANISH],
@@ -71,6 +96,7 @@ BELEBELE_ES_CONFIG = DatasetConfig(
 
 MULTI_WIKI_QA_ES_CONFIG = DatasetConfig(
     name="multi-wiki-qa-es",
+    pretty_name="MultiWikiQA-es",
     source="EuroEval/multi-wiki-qa-es-mini",
     task=RC,
     languages=[SPANISH],
@@ -79,6 +105,7 @@ MULTI_WIKI_QA_ES_CONFIG = DatasetConfig(
 
 GOLDENSWAG_ES_CONFIG = DatasetConfig(
     name="goldenswag-es",
+    pretty_name="GoldenSwag-es",
     source="EuroEval/goldenswag-es-mini",
     task=COMMON_SENSE,
     languages=[SPANISH],
@@ -87,31 +114,10 @@ GOLDENSWAG_ES_CONFIG = DatasetConfig(
 
 WINOGRANDE_ES_CONFIG = DatasetConfig(
     name="winogrande-es",
+    pretty_name="Winogrande-es",
     source="EuroEval/winogrande-es",
     task=COMMON_SENSE,
     languages=[SPANISH],
     _labels=["a", "b"],
-    unofficial=True,
-)
-
-EUROPEAN_VALUES_SITUATIONAL_ES_CONFIG = DatasetConfig(
-    name="european-values-situational-es",
-    source="EuroEval/european-values-situational-es",
-    task=EUROPEAN_VALUES,
-    languages=[SPANISH],
-    splits=["test"],
-    bootstrap_samples=False,
-    _instruction_prompt="{text}",
-    unofficial=True,
-)
-
-EUROPEAN_VALUES_COMPLETIONS_ES_CONFIG = DatasetConfig(
-    name="european-values-completions-es",
-    source="EuroEval/european-values-completions-es",
-    task=EUROPEAN_VALUES,
-    languages=[SPANISH],
-    splits=["test"],
-    bootstrap_samples=False,
-    _instruction_prompt="{text}",
     unofficial=True,
 )

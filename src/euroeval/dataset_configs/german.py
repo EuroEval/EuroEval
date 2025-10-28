@@ -7,38 +7,64 @@ from ..tasks import COMMON_SENSE, EUROPEAN_VALUES, KNOW, LA, MCRC, NER, RC, SENT
 ### Official datasets ###
 
 SB10K_CONFIG = DatasetConfig(
-    name="sb10k", source="EuroEval/sb10k-mini", task=SENT, languages=[GERMAN]
+    name="sb10k",
+    pretty_name="SB10K",
+    source="EuroEval/sb10k-mini",
+    task=SENT,
+    languages=[GERMAN],
 )
 
 SCALA_DE_CONFIG = DatasetConfig(
-    name="scala-de", source="EuroEval/scala-de", task=LA, languages=[GERMAN]
+    name="scala-de",
+    pretty_name="ScaLA-de",
+    source="EuroEval/scala-de",
+    task=LA,
+    languages=[GERMAN],
 )
 
 GERMEVAL_CONFIG = DatasetConfig(
-    name="germeval", source="EuroEval/germeval-mini", task=NER, languages=[GERMAN]
+    name="germeval",
+    pretty_name="GermEval",
+    source="EuroEval/germeval-mini",
+    task=NER,
+    languages=[GERMAN],
 )
 
 GERMANQUAD_CONFIG = DatasetConfig(
-    name="germanquad", source="EuroEval/germanquad-mini", task=RC, languages=[GERMAN]
+    name="germanquad",
+    pretty_name="GermanQuAD",
+    source="EuroEval/germanquad-mini",
+    task=RC,
+    languages=[GERMAN],
 )
 
 MLSUM_DE_CONFIG = DatasetConfig(
-    name="mlsum-de", source="EuroEval/mlsum-mini", task=SUMM, languages=[GERMAN]
+    name="mlsum-de",
+    pretty_name="MLSUM-de",
+    source="EuroEval/mlsum-mini",
+    task=SUMM,
+    languages=[GERMAN],
 )
 
 MMLU_DE_CONFIG = DatasetConfig(
-    name="mmlu-de", source="EuroEval/mmlu-de-mini", task=KNOW, languages=[GERMAN]
+    name="mmlu-de",
+    pretty_name="MMLU-de",
+    source="EuroEval/mmlu-de-mini",
+    task=KNOW,
+    languages=[GERMAN],
 )
 
 HELLASWAG_DE_CONFIG = DatasetConfig(
     name="hellaswag-de",
+    pretty_name="HellaSwag-de",
     source="EuroEval/hellaswag-de-mini",
     task=COMMON_SENSE,
     languages=[GERMAN],
 )
 
-EUROPEAN_VALUES_DE_CONFIG = DatasetConfig(
-    name="european-values-de",
+VALEU_DE_CONFIG = DatasetConfig(
+    name="valeu-de",
+    pretty_name="VaLEU-de",
     source="EuroEval/european-values-de",
     task=EUROPEAN_VALUES,
     languages=[GERMAN],
@@ -52,6 +78,7 @@ EUROPEAN_VALUES_DE_CONFIG = DatasetConfig(
 
 XQUAD_DE_CONFIG = DatasetConfig(
     name="xquad-de",
+    pretty_name="XQuAD-de",
     source="EuroEval/xquad-de",
     task=RC,
     languages=[GERMAN],
@@ -60,6 +87,7 @@ XQUAD_DE_CONFIG = DatasetConfig(
 
 ARC_DE_CONFIG = DatasetConfig(
     name="arc-de",
+    pretty_name="ARC-de",
     source="EuroEval/arc-de-mini",
     task=KNOW,
     languages=[GERMAN],
@@ -68,6 +96,7 @@ ARC_DE_CONFIG = DatasetConfig(
 
 BELEBELE_DE_CONFIG = DatasetConfig(
     name="belebele-de",
+    pretty_name="Belebele-de",
     source="EuroEval/belebele-de-mini",
     task=MCRC,
     languages=[GERMAN],
@@ -76,6 +105,7 @@ BELEBELE_DE_CONFIG = DatasetConfig(
 
 MULTI_WIKI_QA_DE_CONFIG = DatasetConfig(
     name="multi-wiki-qa-de",
+    pretty_name="MultiWikiQA-de",
     source="EuroEval/multi-wiki-qa-de-mini",
     task=RC,
     languages=[GERMAN],
@@ -84,6 +114,7 @@ MULTI_WIKI_QA_DE_CONFIG = DatasetConfig(
 
 GOLDENSWAG_DE_CONFIG = DatasetConfig(
     name="goldenswag-de",
+    pretty_name="GoldenSwag-de",
     source="EuroEval/goldenswag-de-mini",
     task=COMMON_SENSE,
     languages=[GERMAN],
@@ -92,31 +123,10 @@ GOLDENSWAG_DE_CONFIG = DatasetConfig(
 
 WINOGRANDE_DE_CONFIG = DatasetConfig(
     name="winogrande-de",
+    pretty_name="Winogrande-de",
     source="EuroEval/winogrande-de",
     task=COMMON_SENSE,
     languages=[GERMAN],
     _labels=["a", "b"],
-    unofficial=True,
-)
-
-EUROPEAN_VALUES_SITUATIONAL_DE_CONFIG = DatasetConfig(
-    name="european-values-situational-de",
-    source="EuroEval/european-values-situational-de",
-    task=EUROPEAN_VALUES,
-    languages=[GERMAN],
-    splits=["test"],
-    bootstrap_samples=False,
-    _instruction_prompt="{text}",
-    unofficial=True,
-)
-
-EUROPEAN_VALUES_COMPLETIONS_DE_CONFIG = DatasetConfig(
-    name="european-values-completions-de",
-    source="EuroEval/european-values-completions-de",
-    task=EUROPEAN_VALUES,
-    languages=[GERMAN],
-    splits=["test"],
-    bootstrap_samples=False,
-    _instruction_prompt="{text}",
     unofficial=True,
 )
