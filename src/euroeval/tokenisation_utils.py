@@ -443,11 +443,10 @@ def get_first_label_token_mapping(
             [
                 tokeniser.decode(token_id)
                 for token_id in tokeniser.encode(
-                    text=f" {label}", add_special_tokens=False
+                    text=f" {label}" if add_prefix_space else label,
+                    add_special_tokens=False,
                 )
             ]
-            if add_prefix_space
-            else label
             for label in local_labels
         ]
     else:
