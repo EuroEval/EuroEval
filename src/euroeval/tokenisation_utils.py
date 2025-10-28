@@ -440,7 +440,14 @@ def get_first_label_token_mapping(
             labels_to_be_generated=local_labels, tokeniser=tokeniser
         )
         all_tokens = [
-            tokeniser.tokenize(text=f" {label}" if add_prefix_space else label)
+            [
+                tokeniser.decode(token_id)
+                for token_id in tokeniser.encode(
+                    text=f" {label}", add_special_tokens=False
+                )
+            ]
+            if add_prefix_space
+            else label
             for label in local_labels
         ]
     else:
@@ -467,7 +474,7 @@ def get_first_label_token_mapping(
     all_tokens = [
         [
             re.sub(
-                pattern=r"^[^a-zæøåüöä0-9]+|[^a-zæøåüöä0-9]+$",
+                pattern=r"^[^a-zæøåüöä0-9 ]+|[^a-zæøåüöä0-9 ]+$",
                 repl="",
                 string=token.lower(),
             )
@@ -479,11 +486,13 @@ def get_first_label_token_mapping(
     # Extract the first token of each label
     first_tokens: list[str] = list()
     for token_list, label in zip(all_tokens, local_labels):
-        matching_tokens = [tok for tok in token_list if tok and label.startswith(tok)]
+        matching_tokens = [
+            tok for tok in token_list if tok and label.startswith(tok.strip())
+        ]
         if not matching_tokens:
             if log_metadata:
                 log_once(
-                    f"No matching token found in token_list for label '{label}', so "
+                    f"No matching token found in token_list for label {label!r}, so "
                     "we will not use logprobs with the model.",
                     level=logging.DEBUG,
                 )

@@ -416,12 +416,18 @@ class VLLMModel(HuggingFaceEncoderModel):
                 json=structured_generation_schema
             )
         elif self.dataset_config.task.uses_logprobs and self.dataset_config.labels:
-            structured_outputs = StructuredOutputsParams(
-                choice=[
-                    self.dataset_config.prompt_label_mapping[label]
-                    for label in self.dataset_config.labels
+            choice_labels = [
+                self.dataset_config.prompt_label_mapping[label]
+                for label in self.dataset_config.labels
+            ]
+            if "first_label_token_mapping" in self.buffer and isinstance(
+                self.buffer["first_label_token_mapping"], dict
+            ):
+                choice_labels = [
+                    self.buffer["first_label_token_mapping"][label]
+                    for label in choice_labels
                 ]
-            )
+            structured_outputs = StructuredOutputsParams(choice=choice_labels)
             log_once(
                 "Using structured generation with the choices: "
                 f"{structured_outputs.choice!r}.",
@@ -562,7 +568,8 @@ class VLLMModel(HuggingFaceEncoderModel):
         completions = self._tokeniser.batch_decode(
             sequences=[
                 torch.LongTensor(completion_id) for completion_id in completion_ids
-            ]
+            ],
+            skip_special_tokens=True,
         )
         if (
             self.end_of_reasoning_token is not None

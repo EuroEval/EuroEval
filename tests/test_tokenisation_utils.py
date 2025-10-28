@@ -44,7 +44,12 @@ def test_should_prompts_be_stripped(model_id: str, expected: bool, auth: str) ->
 
 @pytest.mark.parametrize(
     argnames=["model_id", "expected"],
-    argvalues=[("AI-Sweden-Models/gpt-sw3-6.7b-v2", False), ("01-ai/Yi-6B", True)],
+    argvalues=[
+        ("AI-Sweden-Models/gpt-sw3-6.7b-v2", False),
+        ("01-ai/Yi-6B", True),
+        ("meta-llama/Llama-3.1-8B", True),
+        ("common-pile/comma-v0.1-2t", True),
+    ],
 )
 @pytest.mark.flaky(reruns=3, reruns_delay=5)
 def test_should_prefix_space_be_added_to_labels(
