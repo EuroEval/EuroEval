@@ -55,6 +55,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   properly after each metric computation to avoid this issue.
 - Now correctly allows specifying inference provider API keys with the `--api-key`
   argument. Previously, this conflicted with the Hugging Face API key.
+- Fixed an issue where some pretrained generative models required prefix spaces in the
+  labels for classification tasks, which resulted in faulty structured choice
+  generation. We now correctly take this into account, which significantly increases
+  the classification performance of these models.
 
 ## [v16.4.0] - 2025-10-21
 
