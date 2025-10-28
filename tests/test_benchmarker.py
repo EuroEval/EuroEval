@@ -43,6 +43,7 @@ def test_benchmark_results_is_a_list(benchmarker: Benchmarker) -> None:
 
 
 @pytest.mark.flaky(reruns=3, reruns_delay=5)
+@pytest.mark.depends(on=["tests/test_model_loading.py::test_load_non_generative_model"])
 def test_benchmark_encoder(
     benchmarker: Benchmarker, task: Task, language: Language, encoder_model_id: str
 ) -> None:
@@ -64,6 +65,7 @@ def test_benchmark_encoder(
 @pytest.mark.skipif(
     condition=not torch.cuda.is_available(), reason="CUDA is not available."
 )
+@pytest.mark.depends(on=["tests/test_model_loading.py::test_load_generative_model"])
 def test_benchmark_generative(
     benchmarker: Benchmarker, task: Task, language: Language, generative_model_id: str
 ) -> None:
@@ -78,6 +80,7 @@ def test_benchmark_generative(
 @pytest.mark.skipif(
     condition=not torch.cuda.is_available(), reason="CUDA is not available."
 )
+@pytest.mark.depends(on=["tests/test_model_loading.py::test_load_generative_model"])
 def test_benchmark_generative_adapter(
     benchmarker: Benchmarker,
     task: Task,
