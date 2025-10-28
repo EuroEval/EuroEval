@@ -2327,14 +2327,7 @@
 <span class="normal">1276</span>
 <span class="normal">1277</span>
 <span class="normal">1278</span>
-<span class="normal">1279</span>
-<span class="normal">1280</span>
-<span class="normal">1281</span>
-<span class="normal">1282</span>
-<span class="normal">1283</span>
-<span class="normal">1284</span>
-<span class="normal">1285</span>
-<span class="normal">1286</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Encoder models from the Hugging Face Hub.&quot;&quot;&quot;</span>
+<span class="normal">1279</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Encoder models from the Hugging Face Hub.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">c</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
@@ -3111,15 +3104,8 @@
                         <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
                     <span class="p">)</span>
                     <span class="k">return</span> <span class="kc">None</span>
-            <span class="k">except</span> <span class="p">(</span><span class="n">RepositoryNotFoundError</span><span class="p">,</span> <span class="n">HFValidationError</span><span class="p">):</span>
+            <span class="k">except</span> <span class="p">(</span><span class="n">RepositoryNotFoundError</span><span class="p">,</span> <span class="n">HFValidationError</span><span class="p">,</span> <span class="n">HfHubHTTPError</span><span class="p">):</span>
                 <span class="k">return</span> <span class="kc">None</span>
-            <span class="k">except</span> <span class="n">HfHubHTTPError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-                <span class="k">if</span> <span class="s2">&quot;unauthorized&quot;</span> <span class="ow">in</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">():</span>
-                    <span class="k">raise</span> <span class="n">InvalidModel</span><span class="p">(</span>
-                        <span class="s2">&quot;It seems like your specified Hugging Face API key is invalid. &quot;</span>
-                        <span class="s2">&quot;Please double-check your API key.&quot;</span>
-                    <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
-                <span class="k">raise</span> <span class="n">InvalidModel</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">))</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
             <span class="k">except</span> <span class="p">(</span><span class="ne">OSError</span><span class="p">,</span> <span class="n">RequestException</span><span class="p">)</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
                 <span class="k">if</span> <span class="n">internet_connection_available</span><span class="p">():</span>
                     <span class="n">errors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>

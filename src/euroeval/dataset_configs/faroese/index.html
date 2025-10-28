@@ -915,25 +915,7 @@
 <span class="normal">58</span>
 <span class="normal">59</span>
 <span class="normal">60</span>
-<span class="normal">61</span>
-<span class="normal">62</span>
-<span class="normal">63</span>
-<span class="normal">64</span>
-<span class="normal">65</span>
-<span class="normal">66</span>
-<span class="normal">67</span>
-<span class="normal">68</span>
-<span class="normal">69</span>
-<span class="normal">70</span>
-<span class="normal">71</span>
-<span class="normal">72</span>
-<span class="normal">73</span>
-<span class="normal">74</span>
-<span class="normal">75</span>
-<span class="normal">76</span>
-<span class="normal">77</span>
-<span class="normal">78</span>
-<span class="normal">79</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;All Faroese dataset configurations used in EuroEval.&quot;&quot;&quot;</span>
+<span class="normal">61</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;All Faroese dataset configurations used in EuroEval.&quot;&quot;&quot;</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">..data_models</span><span class="w"> </span><span class="kn">import</span> <span class="n">DatasetConfig</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..languages</span><span class="w"> </span><span class="kn">import</span> <span class="n">FAROESE</span>
@@ -943,6 +925,7 @@
 
 <span class="n">FOSENT_CONFIG</span> <span class="o">=</span> <span class="n">DatasetConfig</span><span class="p">(</span>
     <span class="n">name</span><span class="o">=</span><span class="s2">&quot;fosent&quot;</span><span class="p">,</span>
+    <span class="n">pretty_name</span><span class="o">=</span><span class="s2">&quot;FoSent&quot;</span><span class="p">,</span>
     <span class="n">source</span><span class="o">=</span><span class="s2">&quot;EuroEval/fosent&quot;</span><span class="p">,</span>
     <span class="n">task</span><span class="o">=</span><span class="n">SENT</span><span class="p">,</span>
     <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">FAROESE</span><span class="p">],</span>
@@ -950,55 +933,35 @@
 <span class="p">)</span>
 
 <span class="n">SCALA_FO_CONFIG</span> <span class="o">=</span> <span class="n">DatasetConfig</span><span class="p">(</span>
-    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;scala-fo&quot;</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="s2">&quot;EuroEval/scala-fo&quot;</span><span class="p">,</span> <span class="n">task</span><span class="o">=</span><span class="n">LA</span><span class="p">,</span> <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">FAROESE</span><span class="p">]</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;scala-fo&quot;</span><span class="p">,</span>
+    <span class="n">pretty_name</span><span class="o">=</span><span class="s2">&quot;ScaLA-fo&quot;</span><span class="p">,</span>
+    <span class="n">source</span><span class="o">=</span><span class="s2">&quot;EuroEval/scala-fo&quot;</span><span class="p">,</span>
+    <span class="n">task</span><span class="o">=</span><span class="n">LA</span><span class="p">,</span>
+    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">FAROESE</span><span class="p">],</span>
 <span class="p">)</span>
 
 <span class="n">FONE_CONFIG</span> <span class="o">=</span> <span class="n">DatasetConfig</span><span class="p">(</span>
-    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;fone&quot;</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="s2">&quot;EuroEval/fone-mini&quot;</span><span class="p">,</span> <span class="n">task</span><span class="o">=</span><span class="n">NER</span><span class="p">,</span> <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">FAROESE</span><span class="p">]</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;fone&quot;</span><span class="p">,</span>
+    <span class="n">pretty_name</span><span class="o">=</span><span class="s2">&quot;FoNE&quot;</span><span class="p">,</span>
+    <span class="n">source</span><span class="o">=</span><span class="s2">&quot;EuroEval/fone-mini&quot;</span><span class="p">,</span>
+    <span class="n">task</span><span class="o">=</span><span class="n">NER</span><span class="p">,</span>
+    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">FAROESE</span><span class="p">],</span>
 <span class="p">)</span>
 
 <span class="n">FOQA_CONFIG</span> <span class="o">=</span> <span class="n">DatasetConfig</span><span class="p">(</span>
-    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;foqa&quot;</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="s2">&quot;EuroEval/foqa&quot;</span><span class="p">,</span> <span class="n">task</span><span class="o">=</span><span class="n">RC</span><span class="p">,</span> <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">FAROESE</span><span class="p">]</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;foqa&quot;</span><span class="p">,</span>
+    <span class="n">pretty_name</span><span class="o">=</span><span class="s2">&quot;FoQA&quot;</span><span class="p">,</span>
+    <span class="n">source</span><span class="o">=</span><span class="s2">&quot;EuroEval/foqa&quot;</span><span class="p">,</span>
+    <span class="n">task</span><span class="o">=</span><span class="n">RC</span><span class="p">,</span>
+    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">FAROESE</span><span class="p">],</span>
 <span class="p">)</span>
-
-<span class="c1"># TODO: No Faroese version of the European values dataset exists yet</span>
-<span class="c1"># EUROPEAN_VALUES_FO_CONFIG = DatasetConfig(</span>
-<span class="c1">#     name=&quot;european-values-fo&quot;,</span>
-<span class="c1">#     source=&quot;EuroEval/european-values-fo&quot;,</span>
-<span class="c1">#     task=EUROPEAN_VALUES,</span>
-<span class="c1">#     languages=[FAROESE],</span>
-<span class="c1">#     splits=[&quot;test&quot;],</span>
-<span class="c1">#     bootstrap_samples=False,</span>
-<span class="c1">#     _instruction_prompt=&quot;{text}&quot;,</span>
-<span class="c1"># )</span>
-<span class="c1">#</span>
-<span class="c1"># EUROPEAN_VALUES_SITUATIONAL_FO_CONFIG = DatasetConfig(</span>
-<span class="c1">#     name=&quot;european-values-situational-fo&quot;,</span>
-<span class="c1">#     source=&quot;EuroEval/european-values-situational-fo&quot;,</span>
-<span class="c1">#     task=EUROPEAN_VALUES,</span>
-<span class="c1">#     languages=[FAROESE],</span>
-<span class="c1">#     splits=[&quot;test&quot;],</span>
-<span class="c1">#     bootstrap_samples=False,</span>
-<span class="c1">#     _instruction_prompt=&quot;{text}&quot;,</span>
-<span class="c1">#     unofficial=True,</span>
-<span class="c1"># )</span>
-<span class="c1">#</span>
-<span class="c1"># EUROPEAN_VALUES_COMPLETIONS_FO_CONFIG = DatasetConfig(</span>
-<span class="c1">#     name=&quot;european-values-completions-fo&quot;,</span>
-<span class="c1">#     source=&quot;EuroEval/european-values-completions-fo&quot;,</span>
-<span class="c1">#     task=EUROPEAN_VALUES,</span>
-<span class="c1">#     languages=[FAROESE],</span>
-<span class="c1">#     splits=[&quot;test&quot;],</span>
-<span class="c1">#     bootstrap_samples=False,</span>
-<span class="c1">#     _instruction_prompt=&quot;{text}&quot;,</span>
-<span class="c1">#     unofficial=True,</span>
-<span class="c1"># )</span>
 
 
 <span class="c1">### Unofficial datasets ###</span>
 
 <span class="n">WIKIANN_FO_CONFIG</span> <span class="o">=</span> <span class="n">DatasetConfig</span><span class="p">(</span>
     <span class="n">name</span><span class="o">=</span><span class="s2">&quot;wikiann-fo&quot;</span><span class="p">,</span>
+    <span class="n">pretty_name</span><span class="o">=</span><span class="s2">&quot;WikiANN-fo&quot;</span><span class="p">,</span>
     <span class="n">source</span><span class="o">=</span><span class="s2">&quot;EuroEval/wikiann-fo-mini&quot;</span><span class="p">,</span>
     <span class="n">task</span><span class="o">=</span><span class="n">NER</span><span class="p">,</span>
     <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">FAROESE</span><span class="p">],</span>
@@ -1007,6 +970,7 @@
 
 <span class="n">MULTI_WIKI_QA_FO_CONFIG</span> <span class="o">=</span> <span class="n">DatasetConfig</span><span class="p">(</span>
     <span class="n">name</span><span class="o">=</span><span class="s2">&quot;multi-wiki-qa-fo&quot;</span><span class="p">,</span>
+    <span class="n">pretty_name</span><span class="o">=</span><span class="s2">&quot;MultiWikiQA-fo&quot;</span><span class="p">,</span>
     <span class="n">source</span><span class="o">=</span><span class="s2">&quot;EuroEval/multi-wiki-qa-fo-mini&quot;</span><span class="p">,</span>
     <span class="n">task</span><span class="o">=</span><span class="n">RC</span><span class="p">,</span>
     <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">FAROESE</span><span class="p">],</span>

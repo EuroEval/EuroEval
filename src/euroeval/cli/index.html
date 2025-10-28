@@ -1251,8 +1251,7 @@
 <span class="normal">377</span>
 <span class="normal">378</span>
 <span class="normal">379</span>
-<span class="normal">380</span>
-<span class="normal">381</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Command-line interface for benchmarking.&quot;&quot;&quot;</span>
+<span class="normal">380</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Command-line interface for benchmarking.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">c</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">importlib.util</span>
@@ -1261,10 +1260,9 @@
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">click</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">euroeval.dataset_configs</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_all_dataset_configs</span>
-
 <span class="kn">from</span><span class="w"> </span><span class="nn">.benchmarker</span><span class="w"> </span><span class="kn">import</span> <span class="n">Benchmarker</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.data_models</span><span class="w"> </span><span class="kn">import</span> <span class="n">DatasetConfig</span><span class="p">,</span> <span class="n">Task</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.dataset_configs</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_all_dataset_configs</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.enums</span><span class="w"> </span><span class="kn">import</span> <span class="n">Device</span><span class="p">,</span> <span class="n">GenerativeType</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.languages</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_all_languages</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.logging_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">log</span>

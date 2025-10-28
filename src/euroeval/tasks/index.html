@@ -1071,7 +1071,11 @@
 <span class="normal">197</span>
 <span class="normal">198</span>
 <span class="normal">199</span>
-<span class="normal">200</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;All benchmarks tasks used in EuroEval.&quot;&quot;&quot;</span>
+<span class="normal">200</span>
+<span class="normal">201</span>
+<span class="normal">202</span>
+<span class="normal">203</span>
+<span class="normal">204</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;All benchmarks tasks used in EuroEval.&quot;&quot;&quot;</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">.</span><span class="w"> </span><span class="kn">import</span> <span class="n">metrics</span> <span class="k">as</span> <span class="n">m</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.constants</span><span class="w"> </span><span class="kn">import</span> <span class="n">NUM_GENERATION_TOKENS_FOR_CLASSIFICATION</span>
@@ -1095,7 +1099,11 @@
 <span class="sd">    Returns:</span>
 <span class="sd">        A mapping between names of dataset tasks and their configurations.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">return</span> <span class="p">{</span><span class="n">cfg</span><span class="o">.</span><span class="n">name</span><span class="p">:</span> <span class="n">cfg</span> <span class="k">for</span> <span class="n">cfg</span> <span class="ow">in</span> <span class="nb">globals</span><span class="p">()</span><span class="o">.</span><span class="n">values</span><span class="p">()</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">cfg</span><span class="p">,</span> <span class="n">Task</span><span class="p">)}</span>
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="n">cfg</span><span class="o">.</span><span class="n">name</span><span class="p">:</span> <span class="n">cfg</span>
+        <span class="k">for</span> <span class="n">cfg</span> <span class="ow">in</span> <span class="nb">globals</span><span class="p">()</span><span class="o">.</span><span class="n">values</span><span class="p">()</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">cfg</span><span class="p">,</span> <span class="n">Task</span><span class="p">)</span> <span class="ow">and</span> <span class="n">cfg</span> <span class="o">!=</span> <span class="n">SPEED</span>
+    <span class="p">}</span>
 
 
 <span class="n">LA</span> <span class="o">=</span> <span class="n">Task</span><span class="p">(</span>

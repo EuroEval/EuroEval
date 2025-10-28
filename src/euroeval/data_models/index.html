@@ -837,39 +837,6 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#euroeval.data_models.Language" class="md-nav__link">
-    <span class="md-ellipsis">
-      Language
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Language">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#euroeval.data_models.Language.and_separator" class="md-nav__link">
-    <span class="md-ellipsis">
-      and_separator
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#euroeval.data_models.Language.or_separator" class="md-nav__link">
-    <span class="md-ellipsis">
-      or_separator
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
   <a href="#euroeval.data_models.PromptConfig" class="md-nav__link">
     <span class="md-ellipsis">
       PromptConfig
@@ -898,9 +865,18 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#euroeval.data_models.DatasetConfig.pretty_name" class="md-nav__link">
+  <a href="#euroeval.data_models.DatasetConfig.main_language" class="md-nav__link">
     <span class="md-ellipsis">
-      pretty_name
+      main_language
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#euroeval.data_models.DatasetConfig.logging_string" class="md-nav__link">
+    <span class="md-ellipsis">
+      logging_string
     </span>
   </a>
   
@@ -1985,49 +1961,7 @@
 <span class="normal">790</span>
 <span class="normal">791</span>
 <span class="normal">792</span>
-<span class="normal">793</span>
-<span class="normal">794</span>
-<span class="normal">795</span>
-<span class="normal">796</span>
-<span class="normal">797</span>
-<span class="normal">798</span>
-<span class="normal">799</span>
-<span class="normal">800</span>
-<span class="normal">801</span>
-<span class="normal">802</span>
-<span class="normal">803</span>
-<span class="normal">804</span>
-<span class="normal">805</span>
-<span class="normal">806</span>
-<span class="normal">807</span>
-<span class="normal">808</span>
-<span class="normal">809</span>
-<span class="normal">810</span>
-<span class="normal">811</span>
-<span class="normal">812</span>
-<span class="normal">813</span>
-<span class="normal">814</span>
-<span class="normal">815</span>
-<span class="normal">816</span>
-<span class="normal">817</span>
-<span class="normal">818</span>
-<span class="normal">819</span>
-<span class="normal">820</span>
-<span class="normal">821</span>
-<span class="normal">822</span>
-<span class="normal">823</span>
-<span class="normal">824</span>
-<span class="normal">825</span>
-<span class="normal">826</span>
-<span class="normal">827</span>
-<span class="normal">828</span>
-<span class="normal">829</span>
-<span class="normal">830</span>
-<span class="normal">831</span>
-<span class="normal">832</span>
-<span class="normal">833</span>
-<span class="normal">834</span>
-<span class="normal">835</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Data models used in EuroEval.&quot;&quot;&quot;</span>
+<span class="normal">793</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Data models used in EuroEval.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">c</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
@@ -2040,79 +1974,14 @@
 <span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">.enums</span><span class="w"> </span><span class="kn">import</span> <span class="n">Device</span><span class="p">,</span> <span class="n">GenerativeType</span><span class="p">,</span> <span class="n">ModelType</span><span class="p">,</span> <span class="n">TaskGroup</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.exceptions</span><span class="w"> </span><span class="kn">import</span> <span class="n">InvalidBenchmark</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.languages</span><span class="w"> </span><span class="kn">import</span> <span class="n">ENGLISH</span><span class="p">,</span> <span class="n">NORWEGIAN</span><span class="p">,</span> <span class="n">PORTUGUESE</span><span class="p">,</span> <span class="n">Language</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.metrics.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">Metric</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">ScoreDict</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_package_version</span>
 
 <span class="k">if</span> <span class="n">t</span><span class="o">.</span><span class="n">TYPE_CHECKING</span><span class="p">:</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">.enums</span><span class="w"> </span><span class="kn">import</span> <span class="n">InferenceBackend</span>
-
-
-<span class="nd">@dataclass</span>
-<span class="k">class</span><span class="w"> </span><span class="nc">Language</span><span class="p">:</span><div class="mkapi-source-link" id="euroeval.data_models.Language"><a href="../../../api/euroeval/data_models/#euroeval.data_models.Language" title="Go to docs">[docs]</a></div>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;A benchmarkable language.</span>
-
-<span class="sd">    Attributes:</span>
-<span class="sd">        code:</span>
-<span class="sd">            The ISO 639-1 language code of the language.</span>
-<span class="sd">        name:</span>
-<span class="sd">            The name of the language.</span>
-<span class="sd">        and_separator (optional):</span>
-<span class="sd">            The word &#39;and&#39; in the language.</span>
-<span class="sd">        or_separator (optional):</span>
-<span class="sd">            The word &#39;or&#39; in the language.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-
-    <span class="n">code</span><span class="p">:</span> <span class="nb">str</span>
-    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
-    <span class="n">_and_separator</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="nb">repr</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
-    <span class="n">_or_separator</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="nb">repr</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
-
-    <span class="k">def</span><span class="w"> </span><span class="fm">__hash__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return a hash of the language.&quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="nb">hash</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">code</span><span class="p">)</span>
-
-    <span class="nd">@property</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">and_separator</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span><div class="mkapi-source-link" id="euroeval.data_models.Language.and_separator"><a href="../../../api/euroeval/data_models/#euroeval.data_models.Language.and_separator" title="Go to docs">[docs]</a></div>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the word &#39;and&#39; in the language.</span>
-
-<span class="sd">        Returns:</span>
-<span class="sd">            The word &#39;and&#39; in the language.</span>
-
-<span class="sd">        Raises:</span>
-<span class="sd">            NotImplementedError:</span>
-<span class="sd">                If `and_separator` is `None`.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_and_separator</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;Separator for the word &#39;and&#39; has not been defined for </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">.&quot;</span>
-            <span class="p">)</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_and_separator</span>
-
-    <span class="nd">@and_separator</span><span class="o">.</span><span class="n">setter</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">and_separator</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_and_separator</span> <span class="o">=</span> <span class="n">value</span>
-
-    <span class="nd">@property</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">or_separator</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span><div class="mkapi-source-link" id="euroeval.data_models.Language.or_separator"><a href="../../../api/euroeval/data_models/#euroeval.data_models.Language.or_separator" title="Go to docs">[docs]</a></div>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the word &#39;or&#39; in the language.</span>
-
-<span class="sd">        Returns:</span>
-<span class="sd">            The word &#39;or&#39; in the language.</span>
-
-<span class="sd">        Raises:</span>
-<span class="sd">            NotImplementedError:</span>
-<span class="sd">                If `or_separator` is `None`.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_or_separator</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;Separator for the word &#39;or&#39; has not been defined for </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">.&quot;</span>
-            <span class="p">)</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_or_separator</span>
-
-    <span class="nd">@or_separator</span><span class="o">.</span><span class="n">setter</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">or_separator</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_or_separator</span> <span class="o">=</span> <span class="n">value</span>
 
 
 <span class="nd">@dataclass</span>
@@ -2234,6 +2103,9 @@
 <span class="sd">    Attributes:</span>
 <span class="sd">        name:</span>
 <span class="sd">            The name of the dataset. Must be lower case with no spaces.</span>
+<span class="sd">        pretty_name:</span>
+<span class="sd">            A longer prettier name for the dataset, which allows cases and spaces. Used</span>
+<span class="sd">            for logging.</span>
 <span class="sd">        source:</span>
 <span class="sd">            The source of the dataset, which can be a Hugging Face ID or a dictionary</span>
 <span class="sd">            with keys &quot;train&quot;, &quot;val&quot; and &quot;test&quot; mapping to local CSV file paths.</span>
@@ -2247,9 +2119,6 @@
 <span class="sd">            The mapping from label to ID.</span>
 <span class="sd">        num_labels:</span>
 <span class="sd">            The number of labels in the dataset.</span>
-<span class="sd">        pretty_name (optional):</span>
-<span class="sd">            A longer prettier name for the dataset, which allows cases and spaces. Used</span>
-<span class="sd">            for logging.</span>
 <span class="sd">        _prompt_prefix (optional):</span>
 <span class="sd">            The prefix to use in the few-shot prompt. Defaults to the template for the</span>
 <span class="sd">            task and language.</span>
@@ -2291,6 +2160,10 @@
 <span class="sd">            will be mapped to the closest valid label. If False, the model output will</span>
 <span class="sd">            be considered incorrect and the evaluation will be aborted. Defaults to</span>
 <span class="sd">            the one for the task.</span>
+<span class="sd">        _logging_string (optional):</span>
+<span class="sd">            The string used to describe evaluation on the dataset in logging. If not</span>
+<span class="sd">            provided, a default string will be generated, based on the pretty name. Only</span>
+<span class="sd">            use this if the default string is not suitable.</span>
 <span class="sd">        splits (optional):</span>
 <span class="sd">            The names of the splits in the dataset. If not provided, defaults to</span>
 <span class="sd">            [&quot;train&quot;, &quot;val&quot;, &quot;test&quot;].</span>
@@ -2301,10 +2174,10 @@
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">pretty_name</span><span class="p">:</span> <span class="nb">str</span>
     <span class="n">source</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span>
     <span class="n">task</span><span class="p">:</span> <span class="n">Task</span>
     <span class="n">languages</span><span class="p">:</span> <span class="n">c</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="n">Language</span><span class="p">]</span>
-    <span class="n">_pretty_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">_prompt_prefix</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">_prompt_template</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">_instruction_prompt</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
@@ -2315,15 +2188,45 @@
     <span class="n">_allowed_model_types</span><span class="p">:</span> <span class="n">c</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="n">ModelType</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">_allowed_generative_types</span><span class="p">:</span> <span class="n">c</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="n">GenerativeType</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">_allow_invalid_model_outputs</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">_logging_string</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">splits</span><span class="p">:</span> <span class="n">c</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;train&quot;</span><span class="p">,</span> <span class="s2">&quot;val&quot;</span><span class="p">,</span> <span class="s2">&quot;test&quot;</span><span class="p">])</span>
     <span class="n">bootstrap_samples</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
     <span class="n">unofficial</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">pretty_name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span><div class="mkapi-source-link" id="euroeval.data_models.DatasetConfig.pretty_name"><a href="../../../api/euroeval/data_models/#euroeval.data_models.DatasetConfig.pretty_name" title="Go to docs">[docs]</a></div>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Post-initialisation checks.&quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pretty_name</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">pretty_name</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">main_language</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Language</span><span class="p">:</span><div class="mkapi-source-link" id="euroeval.data_models.DatasetConfig.main_language"><a href="../../../api/euroeval/data_models/#euroeval.data_models.DatasetConfig.main_language" title="Go to docs">[docs]</a></div>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the main language of the dataset.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            The main language.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">match</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">languages</span><span class="p">):</span>
+            <span class="k">case</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">InvalidBenchmark</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;Dataset </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">!r}</span><span class="s2"> must have at least one language.&quot;</span>
+                <span class="p">)</span>
+            <span class="k">case</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">languages</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="k">case</span><span class="w"> </span><span class="k">_</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">ENGLISH</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">languages</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="n">ENGLISH</span>
+                <span class="k">elif</span> <span class="n">NORWEGIAN</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">languages</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="n">NORWEGIAN</span>
+                <span class="k">elif</span> <span class="n">PORTUGUESE</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">languages</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="n">PORTUGUESE</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">languages</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">logging_string</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span><div class="mkapi-source-link" id="euroeval.data_models.DatasetConfig.logging_string"><a href="../../../api/euroeval/data_models/#euroeval.data_models.DatasetConfig.logging_string" title="Go to docs">[docs]</a></div>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;The string used to describe evaluation on the dataset in logging.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_logging_string</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_logging_string</span>
+        <span class="n">truncated_str</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="s2">&quot;truncated version of the &quot;</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">source</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">source</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;-mini&quot;</span><span class="p">)</span>
+            <span class="k">else</span> <span class="s2">&quot;&quot;</span>
+        <span class="p">)</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">languages</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
             <span class="n">languages_str</span> <span class="o">=</span> <span class="p">(</span>
                 <span class="s2">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">lang</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">lang</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">languages</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]])</span>
@@ -2332,11 +2235,8 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="n">languages_str</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">languages</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">name</span>
         <span class="n">task_str</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;-&quot;</span><span class="p">,</span> <span class="s2">&quot; &quot;</span><span class="p">)</span>
-        <span class="n">dataset_name_str</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;-&quot;</span><span class="p">,</span> <span class="s2">&quot; &quot;</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;_&quot;</span><span class="p">,</span> <span class="s2">&quot; &quot;</span><span class="p">)</span><span class="o">.</span><span class="n">title</span><span class="p">()</span>
-        <span class="n">truncated_str</span> <span class="o">=</span> <span class="p">(</span>
-            <span class="s2">&quot;truncated version of the &quot;</span>
-            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">source</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">source</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;-mini&quot;</span><span class="p">)</span>
-            <span class="k">else</span> <span class="s2">&quot;&quot;</span>
+        <span class="n">dataset_name_str</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">pretty_name</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;-&quot;</span><span class="p">,</span> <span class="s2">&quot; &quot;</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;_&quot;</span><span class="p">,</span> <span class="s2">&quot; &quot;</span><span class="p">)</span><span class="o">.</span><span class="n">title</span><span class="p">()</span>
         <span class="p">)</span>
         <span class="k">return</span> <span class="p">(</span>
             <span class="sa">f</span><span class="s2">&quot;the </span><span class="si">{</span><span class="n">truncated_str</span><span class="si">}{</span><span class="n">languages_str</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">task_str</span><span class="si">}</span><span class="s2"> dataset </span><span class="si">{</span><span class="n">dataset_name_str</span><span class="si">}</span><span class="s2">&quot;</span>
@@ -2345,8 +2245,7 @@
     <span class="nd">@property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">prompt_prefix</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span><div class="mkapi-source-link" id="euroeval.data_models.DatasetConfig.prompt_prefix"><a href="../../../api/euroeval/data_models/#euroeval.data_models.DatasetConfig.prompt_prefix" title="Go to docs">[docs]</a></div>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;The prefix to use in the few-shot prompt.&quot;&quot;&quot;</span>
-        <span class="n">main_language</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">languages</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-        <span class="n">prompt_config</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">template_dict</span><span class="p">[</span><span class="n">main_language</span><span class="p">]</span>
+        <span class="n">prompt_config</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">template_dict</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">main_language</span><span class="p">]</span>
         <span class="n">prompt_prefix</span> <span class="o">=</span> <span class="p">(</span>
             <span class="n">prompt_config</span><span class="o">.</span><span class="n">default_prompt_prefix</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_prompt_prefix</span> <span class="ow">is</span> <span class="kc">None</span>
@@ -2357,8 +2256,7 @@
     <span class="nd">@property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">prompt_template</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span><div class="mkapi-source-link" id="euroeval.data_models.DatasetConfig.prompt_template"><a href="../../../api/euroeval/data_models/#euroeval.data_models.DatasetConfig.prompt_template" title="Go to docs">[docs]</a></div>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;The template used during few-shot evaluation.&quot;&quot;&quot;</span>
-        <span class="n">main_language</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">languages</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-        <span class="n">prompt_config</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">template_dict</span><span class="p">[</span><span class="n">main_language</span><span class="p">]</span>
+        <span class="n">prompt_config</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">template_dict</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">main_language</span><span class="p">]</span>
         <span class="n">prompt_template</span> <span class="o">=</span> <span class="p">(</span>
             <span class="n">prompt_config</span><span class="o">.</span><span class="n">default_prompt_template</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_prompt_template</span> <span class="ow">is</span> <span class="kc">None</span>
@@ -2369,8 +2267,7 @@
     <span class="nd">@property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">instruction_prompt</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span><div class="mkapi-source-link" id="euroeval.data_models.DatasetConfig.instruction_prompt"><a href="../../../api/euroeval/data_models/#euroeval.data_models.DatasetConfig.instruction_prompt" title="Go to docs">[docs]</a></div>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;The prompt to use when evaluating instruction-tuned models.&quot;&quot;&quot;</span>
-        <span class="n">main_language</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">languages</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-        <span class="n">prompt_config</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">template_dict</span><span class="p">[</span><span class="n">main_language</span><span class="p">]</span>
+        <span class="n">prompt_config</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">template_dict</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">main_language</span><span class="p">]</span>
         <span class="n">instruction_prompt</span> <span class="o">=</span> <span class="p">(</span>
             <span class="n">prompt_config</span><span class="o">.</span><span class="n">default_instruction_prompt</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_instruction_prompt</span> <span class="ow">is</span> <span class="kc">None</span>
@@ -2417,10 +2314,7 @@
             <span class="k">return</span> <span class="p">{</span><span class="n">label</span><span class="p">:</span> <span class="n">label</span> <span class="k">for</span> <span class="n">label</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">labels</span><span class="p">}</span>
         <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">_prompt_label_mapping</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_prompt_label_mapping</span>
-
-        <span class="n">main_language</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">languages</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-        <span class="n">prompt_config</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">template_dict</span><span class="p">[</span><span class="n">main_language</span><span class="p">]</span>
-
+        <span class="n">prompt_config</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">template_dict</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">main_language</span><span class="p">]</span>
         <span class="k">if</span> <span class="n">prompt_config</span><span class="o">.</span><span class="n">default_prompt_label_mapping</span> <span class="o">==</span> <span class="s2">&quot;auto&quot;</span><span class="p">:</span>
             <span class="k">return</span> <span class="p">{</span><span class="n">label</span><span class="p">:</span> <span class="n">label</span> <span class="k">for</span> <span class="n">label</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">labels</span><span class="p">}</span>
         <span class="k">else</span><span class="p">:</span>
@@ -2486,12 +2380,10 @@
 <span class="sd">        Returns:</span>
 <span class="sd">            The natural string representation of the labels in specified language.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">main_language</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">languages</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">task_group</span> <span class="o">==</span> <span class="n">TaskGroup</span><span class="o">.</span><span class="n">TOKEN_CLASSIFICATION</span><span class="p">:</span>
-            <span class="n">sep_word</span> <span class="o">=</span> <span class="n">main_language</span><span class="o">.</span><span class="n">and_separator</span>
+            <span class="n">sep_word</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">main_language</span><span class="o">.</span><span class="n">and_separator</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="n">sep_word</span> <span class="o">=</span> <span class="n">main_language</span><span class="o">.</span><span class="n">or_separator</span>
+            <span class="n">sep_word</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">main_language</span><span class="o">.</span><span class="n">or_separator</span>
 
         <span class="k">if</span> <span class="n">labels</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">labels</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>

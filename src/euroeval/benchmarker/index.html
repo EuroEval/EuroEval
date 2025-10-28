@@ -870,9 +870,9 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#euroeval.benchmarker.model_has_been_benchmarked" class="md-nav__link">
+  <a href="#euroeval.benchmarker.get_record" class="md-nav__link">
     <span class="md-ellipsis">
-      model_has_been_benchmarked
+      get_record
     </span>
   </a>
   
@@ -2097,7 +2097,19 @@
 <span class="normal">1163</span>
 <span class="normal">1164</span>
 <span class="normal">1165</span>
-<span class="normal">1166</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Class that benchmarks language models.&quot;&quot;&quot;</span>
+<span class="normal">1166</span>
+<span class="normal">1167</span>
+<span class="normal">1168</span>
+<span class="normal">1169</span>
+<span class="normal">1170</span>
+<span class="normal">1171</span>
+<span class="normal">1172</span>
+<span class="normal">1173</span>
+<span class="normal">1174</span>
+<span class="normal">1175</span>
+<span class="normal">1176</span>
+<span class="normal">1177</span>
+<span class="normal">1178</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Class that benchmarks language models.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">c</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">contextlib</span>
@@ -2725,28 +2737,39 @@
                 <span class="n">log</span><span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">message</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">ERROR</span><span class="p">)</span>
 
         <span class="c1"># Create a dictionary that takes each model config to the dataset configs that</span>
-        <span class="c1"># we need to benchmark the model on. Here we remove the datasets that the model</span>
-        <span class="c1"># has already been benchmarked on, or datasets that the model cannot be</span>
-        <span class="c1"># benchmarked on.</span>
+        <span class="c1"># we need to benchmark the model on. We initially include all the relevant</span>
+        <span class="c1"># datasets for each model.</span>
         <span class="n">model_config_to_dataset_configs</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span>
             <span class="n">ModelConfig</span><span class="p">,</span> <span class="n">c</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="n">DatasetConfig</span><span class="p">]</span>
         <span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
             <span class="n">model_config</span><span class="p">:</span> <span class="p">[</span>
                 <span class="n">dataset_config</span>
                 <span class="k">for</span> <span class="n">dataset_config</span> <span class="ow">in</span> <span class="n">dataset_configs</span>
-                <span class="k">if</span> <span class="p">(</span>
-                    <span class="n">benchmark_config</span><span class="o">.</span><span class="n">force</span>
-                    <span class="ow">or</span> <span class="ow">not</span> <span class="n">model_has_been_benchmarked</span><span class="p">(</span>
-                        <span class="n">model_config</span><span class="o">=</span><span class="n">model_config</span><span class="p">,</span>
-                        <span class="n">dataset_config</span><span class="o">=</span><span class="n">dataset_config</span><span class="p">,</span>
-                        <span class="n">benchmark_config</span><span class="o">=</span><span class="n">benchmark_config</span><span class="p">,</span>
-                        <span class="n">benchmark_results</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">benchmark_results</span><span class="p">,</span>
-                    <span class="p">)</span>
-                <span class="p">)</span>
-                <span class="ow">and</span> <span class="n">model_config</span><span class="o">.</span><span class="n">model_type</span> <span class="ow">in</span> <span class="n">dataset_config</span><span class="o">.</span><span class="n">allowed_model_types</span>
+                <span class="k">if</span> <span class="n">model_config</span><span class="o">.</span><span class="n">model_type</span> <span class="ow">in</span> <span class="n">dataset_config</span><span class="o">.</span><span class="n">allowed_model_types</span>
             <span class="p">]</span>
             <span class="k">for</span> <span class="n">model_config</span> <span class="ow">in</span> <span class="n">model_configs</span>
         <span class="p">}</span>
+
+        <span class="c1"># Initialise the current benchmark results with all the ones that we have cached</span>
+        <span class="c1"># on disk already (can be none), and remove those datasets from the mapping</span>
+        <span class="n">current_benchmark_results</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">BenchmarkResult</span><span class="p">]</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
+        <span class="k">for</span> <span class="p">(</span>
+            <span class="n">model_config</span><span class="p">,</span>
+            <span class="n">model_dataset_configs</span><span class="p">,</span>
+        <span class="p">)</span> <span class="ow">in</span> <span class="n">model_config_to_dataset_configs</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">new_model_dataset_configs</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">DatasetConfig</span><span class="p">]</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
+            <span class="k">for</span> <span class="n">dataset_config</span> <span class="ow">in</span> <span class="n">model_dataset_configs</span><span class="p">:</span>
+                <span class="n">benchmark_record</span> <span class="o">=</span> <span class="n">get_record</span><span class="p">(</span>
+                    <span class="n">model_config</span><span class="o">=</span><span class="n">model_config</span><span class="p">,</span>
+                    <span class="n">dataset_config</span><span class="o">=</span><span class="n">dataset_config</span><span class="p">,</span>
+                    <span class="n">benchmark_config</span><span class="o">=</span><span class="n">benchmark_config</span><span class="p">,</span>
+                    <span class="n">benchmark_results</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">benchmark_results</span><span class="p">,</span>
+                <span class="p">)</span>
+                <span class="k">if</span> <span class="n">benchmark_record</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">benchmark_config</span><span class="o">.</span><span class="n">force</span><span class="p">:</span>
+                    <span class="n">current_benchmark_results</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">benchmark_record</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">new_model_dataset_configs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">dataset_config</span><span class="p">)</span>
+            <span class="n">model_config_to_dataset_configs</span><span class="p">[</span><span class="n">model_config</span><span class="p">]</span> <span class="o">=</span> <span class="n">new_model_dataset_configs</span>
 
         <span class="n">total_benchmarks</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span>
             <span class="nb">len</span><span class="p">(</span><span class="n">dataset_configs</span><span class="p">)</span>
@@ -2758,10 +2781,9 @@
                 <span class="s2">&quot;benchmarked on all the selected datasets.&quot;</span><span class="p">,</span>
                 <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">,</span>
             <span class="p">)</span>
-            <span class="k">return</span> <span class="nb">list</span><span class="p">()</span>
+            <span class="k">return</span> <span class="n">current_benchmark_results</span>
 
         <span class="n">num_finished_benchmarks</span> <span class="o">=</span> <span class="mi">0</span>
-        <span class="n">current_benchmark_results</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">BenchmarkResult</span><span class="p">]</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
         <span class="n">benchmark_params_to_revert</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">t</span><span class="o">.</span><span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
         <span class="k">for</span> <span class="n">model_config</span> <span class="ow">in</span> <span class="n">model_configs</span><span class="p">:</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="n">model_config_to_dataset_configs</span><span class="p">[</span><span class="n">model_config</span><span class="p">]:</span>
@@ -2911,7 +2933,9 @@
             <span class="k">if</span> <span class="n">benchmark_config</span><span class="o">.</span><span class="n">clear_model_cache</span><span class="p">:</span>
                 <span class="n">clear_model_cache_fn</span><span class="p">(</span><span class="n">cache_dir</span><span class="o">=</span><span class="n">benchmark_config</span><span class="o">.</span><span class="n">cache_dir</span><span class="p">)</span>
 
-        <span class="n">log</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Completed </span><span class="si">{</span><span class="n">num_finished_benchmarks</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2"> benchmarks.</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">)</span>
+        <span class="n">log</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Completed </span><span class="si">{</span><span class="n">num_finished_benchmarks</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2"> benchmarks.</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">INFO</span>
+        <span class="p">)</span>
 
         <span class="c1"># This avoids the following warning at the end of the benchmarking:</span>
         <span class="c1">#   Warning: WARNING: process group has NOT been destroyed before we destruct</span>
@@ -3122,13 +3146,13 @@
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">benchmark</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwds</span><span class="p">)</span>
 
 
-<span class="k">def</span><span class="w"> </span><span class="nf">model_has_been_benchmarked</span><span class="p">(</span><div class="mkapi-source-link" id="euroeval.benchmarker.model_has_been_benchmarked"><a href="../../../api/euroeval/benchmarker/#euroeval.benchmarker.model_has_been_benchmarked" title="Go to docs">[docs]</a></div>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_record</span><span class="p">(</span><div class="mkapi-source-link" id="euroeval.benchmarker.get_record"><a href="../../../api/euroeval/benchmarker/#euroeval.benchmarker.get_record" title="Go to docs">[docs]</a></div>
     <span class="n">model_config</span><span class="p">:</span> <span class="s2">&quot;ModelConfig&quot;</span><span class="p">,</span>
     <span class="n">dataset_config</span><span class="p">:</span> <span class="s2">&quot;DatasetConfig&quot;</span><span class="p">,</span>
     <span class="n">benchmark_config</span><span class="p">:</span> <span class="s2">&quot;BenchmarkConfig&quot;</span><span class="p">,</span>
     <span class="n">benchmark_results</span><span class="p">:</span> <span class="n">c</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="n">BenchmarkResult</span><span class="p">],</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Checks whether a model has already been benchmarked on a dataset.</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BenchmarkResult</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the benchmark record for a given model and dataset.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        model_config:</span>
@@ -3141,7 +3165,7 @@
 <span class="sd">            The benchmark results.</span>
 
 <span class="sd">    Returns:</span>
-<span class="sd">        Whether the model has already been evaluated on the dataset.</span>
+<span class="sd">        The benchmark record, or None if no such record exists.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">for</span> <span class="n">record</span> <span class="ow">in</span> <span class="n">benchmark_results</span><span class="p">:</span>
         <span class="n">model_id_components</span> <span class="o">=</span> <span class="n">split_model_id</span><span class="p">(</span><span class="n">model_id</span><span class="o">=</span><span class="n">record</span><span class="o">.</span><span class="n">model</span><span class="p">)</span>
@@ -3166,8 +3190,8 @@
             <span class="ow">and</span> <span class="n">same_split</span>
             <span class="ow">and</span> <span class="n">same_num_shots</span>
         <span class="p">):</span>
-            <span class="k">return</span> <span class="kc">True</span>
-    <span class="k">return</span> <span class="kc">False</span>
+            <span class="k">return</span> <span class="n">record</span>
+    <span class="k">return</span> <span class="kc">None</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">clear_model_cache_fn</span><span class="p">(</span><span class="n">cache_dir</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span><div class="mkapi-source-link" id="euroeval.benchmarker.clear_model_cache_fn"><a href="../../../api/euroeval/benchmarker/#euroeval.benchmarker.clear_model_cache_fn" title="Go to docs">[docs]</a></div>
