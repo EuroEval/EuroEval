@@ -2,7 +2,7 @@
 
 from . import metrics as m
 from .constants import NUM_GENERATION_TOKENS_FOR_CLASSIFICATION
-from .data_models import DatasetConfig, Task
+from .data_models import Task
 from .enums import GenerativeType, ModelType, TaskGroup
 from .prompt_templates import (
     CLASSIFICATION_TEMPLATES,
@@ -14,23 +14,6 @@ from .prompt_templates import (
     SUMM_TEMPLATES,
     TOKEN_CLASSIFICATION_TEMPLATES,
 )
-from .utils import load_custom_datasets_module
-
-
-def get_all_tasks() -> dict[str, Task]:
-    """Get a list of all the dataset tasks.
-
-    Returns:
-        A mapping between names of dataset tasks and their configurations.
-    """
-    load_custom_datasets_module()
-    tasks = [
-        cfg.task
-        for cfg in globals().values()
-        if isinstance(cfg, DatasetConfig) and cfg.task != SPEED
-    ]
-    return {cfg.name: cfg for cfg in tasks}
-
 
 LA = Task(
     name="linguistic-acceptability",

@@ -38,17 +38,21 @@ def get_all_dataset_configs() -> dict[str, DatasetConfig]:
     Returns:
         A mapping between names of datasets and their configurations.
     """
-    load_custom_datasets_module()
+    globals_dict = globals()
+    module = load_custom_datasets_module()
+    if module is not None:
+        globals_dict |= vars(module)
     dataset_configs = [
         cfg
-        for cfg in globals().values()
+        for cfg in globals_dict.values()
         if isinstance(cfg, DatasetConfig) and cfg.task != SPEED
     ]
     assert len(dataset_configs) == len({cfg.name for cfg in dataset_configs}), (
         "There are duplicate dataset configurations. Please ensure that each dataset "
         "has a unique name."
     )
-    return {cfg.name: cfg for cfg in dataset_configs}
+    mapping = {cfg.name: cfg for cfg in dataset_configs}
+    return mapping
 
 
 def get_dataset_config(dataset_name: str) -> DatasetConfig:

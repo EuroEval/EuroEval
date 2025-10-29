@@ -14,6 +14,7 @@ import socket
 import sys
 import typing as t
 from pathlib import Path
+from types import ModuleType
 
 import demjson3
 import huggingface_hub as hf_hub
@@ -487,7 +488,7 @@ def split_model_id(model_id: str) -> "ModelIdComponents":
     return ModelIdComponents(model_id=model_id, revision=revision, param=param)
 
 
-def load_custom_datasets_module() -> None:
+def load_custom_datasets_module() -> ModuleType | None:
     """Load the custom datasets module if it exists.
 
     Raises:
@@ -505,7 +506,7 @@ def load_custom_datasets_module() -> None:
                 f"{custom_datasets_file.resolve()}.",
                 level=logging.ERROR,
             )
-            return
+            return None
         module = importlib.util.module_from_spec(spec=spec)
         if spec.loader is None:
             log_once(
@@ -513,5 +514,7 @@ def load_custom_datasets_module() -> None:
                 f"{custom_datasets_file.resolve()}.",
                 level=logging.ERROR,
             )
-            return
+            return None
         spec.loader.exec_module(module)
+        return module
+    return None
