@@ -2,7 +2,7 @@
 
 from . import metrics as m
 from .constants import NUM_GENERATION_TOKENS_FOR_CLASSIFICATION
-from .data_models import Task
+from .data_models import DatasetConfig, Task
 from .enums import GenerativeType, ModelType, TaskGroup
 from .prompt_templates import (
     CLASSIFICATION_TEMPLATES,
@@ -25,7 +25,9 @@ def get_all_tasks() -> dict[str, Task]:
     """
     load_custom_datasets_module()
     tasks = [
-        cfg for cfg in globals().values() if isinstance(cfg, Task) and cfg != SPEED
+        cfg.task
+        for cfg in globals().values()
+        if isinstance(cfg, DatasetConfig) and cfg.task != SPEED
     ]
     return {cfg.name: cfg for cfg in tasks}
 
