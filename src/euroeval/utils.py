@@ -5,6 +5,7 @@ import collections.abc as c
 import gc
 import importlib
 import importlib.metadata
+import importlib.util
 import logging
 import os
 import random
@@ -13,6 +14,7 @@ import socket
 import sys
 import typing as t
 from pathlib import Path
+from types import ModuleType
 
 import demjson3
 import huggingface_hub as hf_hub
@@ -484,3 +486,35 @@ def split_model_id(model_id: str) -> "ModelIdComponents":
     revision = revision_match.group(1) if revision_match is not None else "main"
     param = param_match.group(1) if param_match is not None else None
     return ModelIdComponents(model_id=model_id, revision=revision, param=param)
+
+
+def load_custom_datasets_module() -> ModuleType | None:
+    """Load the custom datasets module if it exists.
+
+    Raises:
+        RuntimeError:
+            If the custom datasets module cannot be loaded.
+    """
+    custom_datasets_file = Path("custom_datasets.py")
+    if custom_datasets_file.exists():
+        spec = importlib.util.spec_from_file_location(
+            name="custom_datasets_module", location=str(custom_datasets_file.resolve())
+        )
+        if spec is None:
+            log_once(
+                "Could not load the spec for the custom datasets file from "
+                f"{custom_datasets_file.resolve()}.",
+                level=logging.ERROR,
+            )
+            return None
+        module = importlib.util.module_from_spec(spec=spec)
+        if spec.loader is None:
+            log_once(
+                "Could not load the module for the custom datasets file from "
+                f"{custom_datasets_file.resolve()}.",
+                level=logging.ERROR,
+            )
+            return None
+        spec.loader.exec_module(module)
+        return module
+    return None
