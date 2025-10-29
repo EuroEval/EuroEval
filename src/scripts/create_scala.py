@@ -43,6 +43,7 @@ from load_ud_pos import (
     load_pldt_pos,
     load_ptdt_pos,
     load_skdt_pos,
+    load_sldt_pos,
     load_srdt_pos,
     load_svdt_pos,
     load_ukdt_pos,
@@ -79,6 +80,7 @@ def main() -> None:
         "el": load_eldt_pos,
         "bg": load_bgdt_pos,
         "sr": load_srdt_pos,
+        "sl": load_sldt_pos,
     }
 
     # Set up the progress bar and iterate over the languages

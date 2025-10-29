@@ -14,10 +14,10 @@ CSFD_SENTIMENT_SK_CONFIG = DatasetConfig(
     languages=[SLOVENIAN],
 )
 
-SCALA_SK_CONFIG = DatasetConfig(
-    name="scala-sk",
-    pretty_name="ScaLA-sk",
-    source="EuroEval/scala-sk",
+SCALA_SL_CONFIG = DatasetConfig(
+    name="scala-sl",
+    pretty_name="ScaLA-sl",
+    source="EuroEval/scala-sl",
     task=LA,
     languages=[SLOVENIAN],
 )
