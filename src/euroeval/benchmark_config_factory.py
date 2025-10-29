@@ -179,6 +179,7 @@ def prepare_dataset_configs(
     """
     # Create the list of dataset tasks
     task_mapping = get_all_tasks()
+    breakpoint()
     try:
         if task is None:
             tasks = None
