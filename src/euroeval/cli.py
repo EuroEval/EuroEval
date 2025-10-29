@@ -1,18 +1,13 @@
 """Command-line interface for benchmarking."""
 
 import collections.abc as c
-import importlib.util
-import logging
-from pathlib import Path
 
 import click
 
 from .benchmarker import Benchmarker
 from .data_models import DatasetConfig, Task
-from .dataset_configs import get_all_dataset_configs
 from .enums import Device, GenerativeType
 from .languages import get_all_languages
-from .logging_utils import log
 
 
 @click.command()
@@ -226,14 +221,6 @@ from .logging_utils import log
     help="Only download the requested model weights and datasets, and exit.",
     default=False,
 )
-@click.option(
-    "--custom-datasets-file",
-    type=click.Path(exists=False, dir_okay=False, path_type=Path),
-    default="custom_datasets.py",
-    show_default=True,
-    help="A path to a Python file containing DatasetConfig definitions for custom "
-    "datasets.",
-)
 def benchmark(
     model: tuple[str],
     dataset: tuple[str | DatasetConfig],
@@ -262,7 +249,6 @@ def benchmark(
     requires_safetensors: bool,
     generative_type: str | None,
     download_only: bool,
-    custom_datasets_file: Path,
 ) -> None:
     """Benchmark pretrained language models on language tasks."""
     models = list(model)
@@ -278,69 +264,6 @@ def benchmark(
     generative_type_obj = (
         GenerativeType[generative_type.upper()] if generative_type else None
     )
-
-    # Load all defined DatasetConfig and Task objects from the custom datasets file
-    if custom_datasets_file.exists():
-        # Load the custom module
-        spec = importlib.util.spec_from_file_location(
-            name="custom_datasets_module", location=str(custom_datasets_file.resolve())
-        )
-        if spec is None:
-            raise RuntimeError(
-                "Could not load the spec for the custom datasets file from "
-                f"{custom_datasets_file.resolve()}."
-            )
-        module = importlib.util.module_from_spec(spec=spec)
-        if spec.loader is None:
-            raise RuntimeError(
-                "Could not load the module for the custom datasets file from "
-                f"{custom_datasets_file.resolve()}."
-            )
-        spec.loader.exec_module(module)
-
-        # Load all the custom dataset configurations from the module
-        custom_dataset_configs: list[DatasetConfig] = [
-            obj for obj in vars(module).values() if isinstance(obj, DatasetConfig)
-        ]
-
-        # If the user has not specified any datasets or tasks, we just use all the usual
-        # datasets as well as all the custom ones that we loaded
-        if datasets is None and tasks is None:
-            datasets = custom_dataset_configs + list(get_all_dataset_configs().values())
-            datasets = [ds for ds in datasets if not ds.unofficial]
-
-        # If the user has specified only datasets, then we replace the custom dataset
-        # names that the user specified (if any) with the corresponding dataset configs
-        # that we loaded
-        elif datasets is not None and tasks is None:
-            dataset_name_to_config = {
-                config.name: config for config in custom_dataset_configs
-            }
-            datasets = [
-                dataset_name_to_config.get(ds, ds) if isinstance(ds, str) else ds
-                for ds in datasets
-            ]
-
-        # If the user has specified only tasks, then we find all the official usual and
-        # custom datasets belonging to that task, and use those. We reset the `tasks`
-        # variable as we're using the `datasets` variable directly instead
-        elif datasets is None and tasks is not None:
-            datasets = custom_dataset_configs + list(get_all_dataset_configs().values())
-            datasets = [
-                ds for ds in datasets if not ds.unofficial and ds.task.name in tasks
-            ]
-            tasks = None
-
-        # Log the loaded custom datasets and tasks
-        dataset_str = (
-            "the custom dataset"
-            if len(custom_dataset_configs) == 1
-            else f"{len(custom_dataset_configs):,} custom datasets"
-        )
-        log(
-            f"Loaded {dataset_str} from {custom_datasets_file.as_posix()!r}.\n",
-            level=logging.INFO,
-        )
 
     benchmarker = Benchmarker(
         language=languages,
