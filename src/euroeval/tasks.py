@@ -14,6 +14,7 @@ from .prompt_templates import (
     SUMM_TEMPLATES,
     TOKEN_CLASSIFICATION_TEMPLATES,
 )
+from .utils import load_custom_datasets_module
 
 
 def get_all_tasks() -> dict[str, Task]:
@@ -22,11 +23,11 @@ def get_all_tasks() -> dict[str, Task]:
     Returns:
         A mapping between names of dataset tasks and their configurations.
     """
-    return {
-        cfg.name: cfg
-        for cfg in globals().values()
-        if isinstance(cfg, Task) and cfg != SPEED
-    }
+    load_custom_datasets_module()
+    tasks = [
+        cfg for cfg in globals().values() if isinstance(cfg, Task) and cfg != SPEED
+    ]
+    return {cfg.name: cfg for cfg in tasks}
 
 
 LA = Task(

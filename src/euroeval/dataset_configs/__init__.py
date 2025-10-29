@@ -1,8 +1,12 @@
 """All dataset configurations used in EuroEval."""
 
+import importlib.util
+from pathlib import Path
+
 from ..data_models import DatasetConfig
 from ..languages import get_all_languages
 from ..tasks import SPEED
+from ..utils import load_custom_datasets_module
 from .bulgarian import *  # noqa: F403
 from .czech import *  # noqa: F403
 from .danish import *  # noqa: F403
@@ -34,6 +38,7 @@ def get_all_dataset_configs() -> dict[str, DatasetConfig]:
     Returns:
         A mapping between names of datasets and their configurations.
     """
+    load_custom_datasets_module()
     dataset_configs = [
         cfg
         for cfg in globals().values()
