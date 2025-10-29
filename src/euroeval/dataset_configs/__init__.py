@@ -1,8 +1,5 @@
 """All dataset configurations used in EuroEval."""
 
-import importlib.util
-from pathlib import Path
-
 from ..data_models import DatasetConfig
 from ..languages import get_all_languages
 from ..tasks import SPEED
