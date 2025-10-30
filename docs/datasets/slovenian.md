@@ -198,22 +198,22 @@ When evaluating generative models, we use the following setup (see the
 - Prefix prompt:
 
   ```text
-  Spodaj so povedi in ali so slovnično pravilne.
+  Sledeče so stavki in ali so slovnično pravilni.
   ```
 
 - Base prompt template:
 
   ```text
-  Poved: {text}
-  Slovnično pravilna: {label}
+  Stavek: {text}
+  Slovnično pravilno: {label}
   ```
 
 - Instruction-tuned prompt template:
 
   ```text
-  Poved: {text}
+  Stavek: {text}
 
-  Ugotovite, ali je poved slovnično pravilna ali ne. Odgovorite z 'da', če je poved pravilna, in 'ne', če ni pravilna. Odgovorite samo s to besedo, in nič drugega.
+  Ugotovite, ali je stavek slovnično pravilen ali ne. Odgovorite z 'da', če je stavek pravilen, in 'ne', če ni. Odgovorite le s to besedo in nič drugega.
   ```
 
 - Label mapping:

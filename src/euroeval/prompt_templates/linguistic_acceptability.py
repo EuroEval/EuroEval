@@ -213,16 +213,11 @@ LA_TEMPLATES: dict["Language", PromptConfig] = {
         ),
     ),
     SLOVENIAN: PromptConfig(
-        default_prompt_label_mapping=dict(
-            positive="pozitivno", neutral="nevtralno", negative="negativno"
-        ),
-        default_prompt_prefix=(
-            "Spodaj so dokumenti in njihov sentiment, ki je lahko {labels_str}."
-        ),
-        default_prompt_template="Dokument: {text}\nSentiment: {label}",
+        default_prompt_label_mapping=dict(correct="da", incorrect="ne"),
+        default_prompt_prefix="Sledeče so stavki in ali so slovnično pravilni.",
+        default_prompt_template="Stavek: {text}\nSlovnično pravilno: {label}",
         default_instruction_prompt=(
-            "Dokument: {text}\n\n"
-            "Klasificirajte sentiment v dokumentu. "
+            "Stavek: {text}\n\nUgotovite, ali je stavek slovnično pravilen ali ne. "
             "Odgovorite z {labels_str}, in nič drugega."
         ),
     ),
