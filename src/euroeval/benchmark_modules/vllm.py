@@ -6,6 +6,7 @@ import importlib.util
 import json
 import logging
 import re
+import shutil
 import typing as t
 from functools import partial
 from pathlib import Path
@@ -42,6 +43,7 @@ from ..exceptions import (
     InvalidModel,
     NeedsEnvironmentVariable,
     NeedsExtraInstalled,
+    NeedsSystemDependency,
 )
 from ..generation_utils import (
     apply_prompt,
@@ -124,6 +126,16 @@ class VLLMModel(HuggingFaceEncoderModel):
         """
         if importlib.util.find_spec("vllm") is None:
             raise NeedsExtraInstalled(extra="generative")
+
+        if shutil.which("nvcc") is None:
+            raise NeedsSystemDependency(
+                dependency="nvcc",
+                instructions=(
+                    "Please install the CUDA Toolkit from "
+                    "https://developer.nvidia.com/cuda-downloads or ensure that NVCC is "
+                    "available in your PATH."
+                ),
+            )
 
         raise_if_wrong_params(
             model_config=model_config, allowed_params=self.allowed_params

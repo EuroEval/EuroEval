@@ -118,6 +118,26 @@ class NeedsManualDependency(InvalidModel):
         super().__init__(self.message)
 
 
+class NeedsSystemDependency(InvalidModel):
+    """The evaluation requires a system-level dependency to be installed."""
+
+    def __init__(self, dependency: str, instructions: str) -> None:
+        """Initialise the exception.
+
+        Args:
+            dependency:
+                The system dependency that needs to be installed.
+            instructions:
+                Instructions on how to install the dependency.
+        """
+        self.dependency = dependency
+        self.message = (
+            f"The model you are trying to load requires `{dependency}` to be "
+            f"installed. {instructions}"
+        )
+        super().__init__(self.message)
+
+
 class NeedsAdditionalArgument(InvalidModel):
     """The evaluation requires additional arguments to the `euroeval` command."""
 
