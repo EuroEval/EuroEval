@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Changed
+
+- Removed the `--custom-datasets-file` argument, which is now always
+  `custom_datasets.py` in the current working directory. This enables us to auto-read
+  this file, making it possible to evaluate custom datasets by name only when using the
+  `Benchmarker` API.
+
 ## [v16.5.0] - 2025-10-28
 
 ### Added

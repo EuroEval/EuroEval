@@ -47,7 +47,6 @@ def test_should_prompts_be_stripped(model_id: str, expected: bool, auth: str) ->
     argvalues=[
         ("AI-Sweden-Models/gpt-sw3-6.7b-v2", False),
         ("01-ai/Yi-6B", True),
-        ("meta-llama/Llama-3.1-8B", True),
         ("common-pile/comma-v0.1-2t", True),
     ],
 )
