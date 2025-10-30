@@ -931,7 +931,9 @@ def load_model_and_tokeniser(
                 "If you trust the suppliers of this model, then you can enable "
                 "this by setting the `--trust-remote-code` flag."
             ) from e
-        elif "See stack trace for root cause." in str(e):
+        elif "See stack trace for root cause." in str(
+            e
+        ) or "See root cause above." in str(e):
             raise InvalidModel(
                 f"The model {model_id!r} could not be loaded, but vLLM did not mention "
                 "exactly what happened. Try re-running the benchmark with the "
