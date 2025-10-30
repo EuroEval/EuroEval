@@ -203,7 +203,7 @@ MULTIPLE_CHOICE_TEMPLATES: dict["Language", PromptConfig] = {
         default_prompt_label_mapping="auto",
     ),
     SLOVENIAN: PromptConfig(
-        default_prompt_prefix="Naslednja so vprašanja z več programi (z odgovori).",
+        default_prompt_prefix="Naslednja so vprašanja z več možnostmi (z odgovori).",
         default_prompt_template="Vprašanje: {text}\nOdgovor: {label}",
         default_instruction_prompt=(
             "Vprašanje: {text}\n\n"

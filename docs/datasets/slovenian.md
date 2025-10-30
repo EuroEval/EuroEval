@@ -351,7 +351,7 @@ When evaluating generative models, we use the following setup (see the
 - Prefix prompt:
 
   ```text
-  Naslednja so vprašanja z več programi (z odgovori).
+  Naslednja so vprašanja z več možnostmi (z odgovori).
   ```
 
 - Base prompt template:
@@ -422,7 +422,7 @@ When evaluating generative models, we use the following setup (see the
 - Prefix prompt:
 
   ```text
-  Naslednja so vprašanja z več programi (z odgovori).
+  Naslednja so vprašanja z več možnostmi (z odgovori).
   ```
 
 - Base prompt template:
