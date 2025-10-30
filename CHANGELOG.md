@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Added
+
+- Added a system dependency check for `nvcc` in the `VLLMModel.__init__` method to
+  ensure the CUDA Toolkit is installed. Raises an error with installation instructions
+  if NVCC is not available in the system PATH.
+
 ### Changed
 
 - Removed the `--custom-datasets-file` argument, which is now always

@@ -6,6 +6,7 @@ import importlib.util
 import json
 import logging
 import re
+import shutil
 import typing as t
 from functools import partial
 from pathlib import Path
@@ -42,6 +43,7 @@ from ..exceptions import (
     InvalidModel,
     NeedsEnvironmentVariable,
     NeedsExtraInstalled,
+    NeedsSystemDependency,
 )
 from ..generation_utils import (
     apply_prompt,
@@ -124,6 +126,16 @@ class VLLMModel(HuggingFaceEncoderModel):
         """
         if importlib.util.find_spec("vllm") is None:
             raise NeedsExtraInstalled(extra="generative")
+
+        if shutil.which("nvcc") is None:
+            raise NeedsSystemDependency(
+                dependency="nvcc",
+                instructions=(
+                    "Please install the CUDA Toolkit from "
+                    "https://developer.nvidia.com/cuda-downloads or ensure that NVCC is "
+                    "available in your PATH."
+                ),
+            )
 
         raise_if_wrong_params(
             model_config=model_config, allowed_params=self.allowed_params
@@ -931,6 +943,27 @@ def load_model_and_tokeniser(
                 "If you trust the suppliers of this model, then you can enable "
                 "this by setting the `--trust-remote-code` flag."
             ) from e
+        elif "See stack trace for root cause." in str(
+            e
+        ) or "See root cause above." in str(e):
+            msg = (
+                f"The model {model_id!r} could not be loaded, but vLLM did not "
+                "mention exactly what happened. "
+            )
+            msg += (
+                (
+                    "Since you're running in verbose mode, you might see a descriptive "
+                    "error above already, but if not, then you can try "
+                )
+                if benchmark_config.verbose
+                else "Try "
+            )
+            msg += (
+                "re-running the benchmark with the environment variable `FULL_LOG` "
+                "set to `1` to see the full stack trace. E.g., "
+                f"`FULL_LOG=1 euroeval --model {model_id}`."
+            )
+            raise InvalidModel(msg) from e
         raise InvalidModel(
             f"The model {model_id!r} could not be loaded. The error was {e!r}."
         ) from e
