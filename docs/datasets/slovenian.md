@@ -91,22 +91,22 @@ Here are a few examples from the training split:
 
 ```json
 {
-    "tokens": ['Prireditev', 'Po', 'domače', 'pri', 'Repanšku', 'bo', 'povezoval', 'igralec', 'in', 'humorist', 'Kondi', 'Pižorn', ',', 'za', 'zabavo', 'in', 'ples', 'pa', 'bo', 'letos', 'igral', 'ansambel', 'Razpotniki', '.'],
-    "labels": ['O', 'B-MISC', 'I-MISC', 'I-MISC', 'I-MISC', 'O', 'O', 'O', 'O', 'O', 'B-PER', 'I-PER', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'B-ORG', 'I-ORG', 'O']
+    "tokens": ["Prireditev", "Po", "domače", "pri", "Repanšku", "bo", "povezoval", "igralec", "in", "humorist", "Kondi", "Pižorn", ",", "za", "zabavo", "in", "ples", "pa", "bo", "letos", "igral", "ansambel", "Razpotniki", "."],
+    "labels": ["O", "B-MISC", "I-MISC", "I-MISC", "I-MISC", "O", "O", "O", "O", "O", "B-PER", "I-PER", "O", "O", "O", "O", "O", "O", "O", "O", "O", "B-ORG", "I-ORG", "O"]
 }
 ```
 
 ```json
 {
-    "tokens": ['Upoštevano', 'je', ',', 'da', 'nekaj', 'ljudi', 'iz', 'te', 'bolnišnice', 'odide', 'drugam', ',', 'nekaj', 'pa', 'jih', 'pride', 'iz', 'drugih', '.'],
-    "labels": ['O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O']
+    "tokens": ["Upoštevano", "je", ",", "da", "nekaj", "ljudi", "iz", "te", "bolnišnice", "odide", "drugam", ",", "nekaj", "pa", "jih", "pride", "iz", "drugih", "."],
+    "labels": ["O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O"]
 }
 ```
 
 ```json
 {
-    "tokens": ['Ta', 'ukazna', 'vrstica', 'obdela', 'ali', 'pošlje', 'dokument', 'v', 'datoteko', ',', 'ki', 'se', 'nahaja', 'v', 'imeniku', '/', 'var', '/', 'spool', '.'],
-    "labels": ['O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O']
+    "tokens": ["Ta", "ukazna", "vrstica", "obdela", "ali", "pošlje", "dokument", "v", "datoteko", ",", "ki", "se", "nahaja", "v", "imeniku", "/", "var", "/", "spool", "."],
+    "labels": ["O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O"]
 }
 ```
 
