@@ -382,7 +382,7 @@ euroeval --model <model-id> --dataset mmlu-sl
 
 ## Common-sense Reasoning
 
-### Winogrande-sk
+### Winogrande-sl
 
 This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2506.19468)
 and is a translated and filtered version of the English [Winogrande
@@ -396,22 +396,22 @@ Here are a few examples from the training split:
 
 ```json
 {
-  "text": "Nedokázal som ovládať vlhkosť ako som ovládal dážď, pretože _ prichádzalo odvšadiaľ. Na koho sa vzťahuje prázdne miesto _?\nMožnosti:\na. vlhkosť\nb. dážď",
-  "label": "a"
+    "text": "Nisem mogel nadzorovati vlage, kot sem nadzoroval dež, ker je _ prihajal od vsepovsod. Na kaj se nanaša prazno mesto _?\nMožnosti:\na. vlaga\nb. dež",
+    "label": "a"
 }
 ```
 
 ```json
 {
-  "text": "Jessica si myslela, že Sandstorm je najlepšia pieseň, aká bola kedy napísaná, ale Patricia ju nenávidela. _ si kúpila lístok na jazzový koncert. Na koho sa vzťahuje prázdne miesto _?\nMožnosti:\na. Jessica\nb. Patricia",
-  "label": "b"
+    "text": "Jessica je mislila, da je Sandstorm najboljša pesem, kar jih je bilo kdaj napisanih, vendar jo je Patricia sovražila. _ je kupila vstopnico za jazz koncert. Na kaj se nanaša prazno mesto _?\nMožnosti:\na. Jessica\nb. Patricia",
+    "label": "b"
 }
 ```
 
 ```json
 {
-  "text": "Termostat ukazoval, že dole bolo o dvadsať stupňov chladnejšie ako hore, takže Byron zostal v _ pretože mu bola zima. Na koho sa vzťahuje prázdne miesto _?\nMožnosti:\na. dole\nb. hore",
-  "label": "b"
+    "text": "Termostat je pokazal, da je bilo spodaj dvajset stopinj hladneje kot zgoraj, zato je Byron ostal v _, ker mu je bilo hladno. Na kaj se nanaša prazno mesto _?\nMožnosti:\na. spodaj\nb. zgoraj",
+    "label": "b"
 }
 ```
 
@@ -422,32 +422,32 @@ When evaluating generative models, we use the following setup (see the
 - Prefix prompt:
 
   ```text
-  Nasledujú otázky s viacerými možnosťami (s odpoveďami).
+  Naslednja so vprašanja z več programi (z odgovori).
   ```
 
 - Base prompt template:
 
   ```text
-  Otázka: {text}
+  Vprašanje: {text}
   Možnosti:
   a. {option_a}
   b. {option_b}
-  Odpoveď: {label}
+  Odgovor: {label}
   ```
 
 - Instruction-tuned prompt template:
 
   ```text
-  Otázka: {text}
+  Vprašanje: {text}
   Možnosti:
   a. {option_a}
   b. {option_b}
 
-  Odpovedzte na nasledujúcu otázku použitím 'a' alebo 'b', a nič iné.
+  Odgovorite na navedeno vprašanje z uporabo 'a' ali 'b', in nič drugega.
   ```
 
 You can evaluate this dataset directly as follows:
 
 ```bash
-euroeval --model <model-id> --dataset winogrande-sk
+euroeval --model <model-id> --dataset winogrande-sl
 ```

@@ -47,6 +47,7 @@ LANGUAGES = [
     "pl",
     "pt",
     "sk",
+    "sl",
     "sr",
     "sv",
     "uk",

@@ -38,10 +38,10 @@ MMLU_SL_CONFIG = DatasetConfig(
     languages=[SLOVENIAN],
 )
 
-WINOGRANDE_SK_CONFIG = DatasetConfig(
-    name="winogrande-sk",
-    pretty_name="Winogrande-sk",
-    source="EuroEval/winogrande-sk",
+WINOGRANDE_SL_CONFIG = DatasetConfig(
+    name="winogrande-sl",
+    pretty_name="Winogrande-sl",
+    source="EuroEval/winogrande-sl",
     task=COMMON_SENSE,
     languages=[SLOVENIAN],
 )
