@@ -938,7 +938,7 @@ def load_model_and_tokeniser(
                 f"The model {model_id!r} could not be loaded, but vLLM did not mention "
                 "exactly what happened. Try re-running the benchmark with the "
                 "environment variable `FULL_LOG` set to `1` to see the full "
-                "stack trace. E.g., `FULL_LOG=1 euroeval --model {model_id}`."
+                f"stack trace. E.g., `FULL_LOG=1 euroeval --model {model_id}`."
             )
         raise InvalidModel(
             f"The model {model_id!r} could not be loaded. The error was {e!r}."
