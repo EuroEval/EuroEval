@@ -59,7 +59,7 @@ def main() -> None:
     )
 
     # Set dataset ID for the Hugging Face Hub
-    dataset_id = "EuroEval/slovenian-ssj500k-ner-mini"
+    dataset_id = "EuroEval/ssj500k-ner-mini"
 
     # Delete existing repo if needed
     HfApi().delete_repo(dataset_id, repo_type="dataset", missing_ok=True)
