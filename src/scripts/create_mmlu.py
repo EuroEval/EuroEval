@@ -40,9 +40,13 @@ LANGUAGES = [
     "no",
     "pt",
     "sk",
+    "sl",
     "sr",
     "sv",
 ]
+
+
+MMLUX_SUBSET_IDS = {"pt": "PT-PT", "sl": "SL"}
 
 
 def main() -> None:
@@ -57,8 +61,9 @@ def main() -> None:
         except ValueError as e:
             if language == "no":
                 dataset = load_dataset(path=repo_id, name="nb", token=True)
-            elif language == "pt":
-                dataset = load_pt_dataset()
+            elif language in MMLUX_SUBSET_IDS:
+                subset_id = MMLUX_SUBSET_IDS[language]
+                dataset = load_mmlux_dataset(subset_id=subset_id)
             else:
                 raise e
         assert isinstance(dataset, DatasetDict)
@@ -177,8 +182,8 @@ def main() -> None:
         dataset.push_to_hub(dataset_id, private=True)
 
 
-def load_pt_dataset() -> DatasetDict:
-    """Load and process PT-PT split from LumiOpen/opengpt-x_mmlux.
+def load_mmlux_dataset(subset_id: str = "PT-PT") -> DatasetDict:
+    """Load and process a subset split from LumiOpen/opengpt-x_mmlux.
 
     Returns:
         DatasetDict: Hugging Face DatasetDict with train, val, and test splits.
@@ -195,7 +200,7 @@ def load_pt_dataset() -> DatasetDict:
         """
         return (
             pl.read_ndjson(
-                f"hf://datasets/LumiOpen/opengpt-x_mmlux/*PT-PT*{split}.jsonl"
+                f"hf://datasets/LumiOpen/opengpt-x_mmlux/*{subset_id}*{split}.jsonl"
             )
             .with_columns(
                 pl.col("id").str.split("/").list.get(0).alias("category"),
@@ -220,9 +225,9 @@ def load_pt_dataset() -> DatasetDict:
             .drop("category")
         )
 
-    train_df = _process_split("dev")
-    val_df = _process_split("validation")
-    test_df = _process_split("test")
+    train_df = _process_split("dev").to_pandas()
+    val_df = _process_split("validation").to_pandas()
+    test_df = _process_split("test").to_pandas()
 
     return DatasetDict(
         train=Dataset.from_pandas(train_df, split=Split.TRAIN),

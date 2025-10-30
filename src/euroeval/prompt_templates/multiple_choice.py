@@ -25,6 +25,7 @@ from ..languages import (
     PORTUGUESE,
     SERBIAN,
     SLOVAK,
+    SLOVENIAN,
     SPANISH,
     SWEDISH,
     UKRAINIAN,
@@ -198,6 +199,15 @@ MULTIPLE_CHOICE_TEMPLATES: dict["Language", PromptConfig] = {
         default_instruction_prompt=(
             "Otázka: {text}\n\n"
             "Odpovedzte na nasledujúcu otázku použitím {labels_str}, a nič iné."
+        ),
+        default_prompt_label_mapping="auto",
+    ),
+    SLOVENIAN: PromptConfig(
+        default_prompt_prefix="Naslednja so vprašanja z več programi (z odgovori).",
+        default_prompt_template="Vprašanje: {text}\nOdgovor: {label}",
+        default_instruction_prompt=(
+            "Vprašanje: {text}\n\n"
+            "Odgovorite na navedeno vprašanje z uporabo {labels_str}, in nič drugega."
         ),
         default_prompt_label_mapping="auto",
     ),

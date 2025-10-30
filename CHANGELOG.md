@@ -20,7 +20,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 - Added support for Slovenian 🇸🇮! This includes the sentiment classification dataset
   Sentinews, the linguistic acceptability dataset ScaLA-sl, the reading comprehension
-  dataset MultiWikiQA-sl.
+  dataset MultiWikiQA-sl, the knowledge dataset MMLU-sl.
 - Added better support for evaluating on custom datasets, by allowing `DatasetConfig`
   objects directly in the `Benchmarker.benchmark` method. We also support custom
   datasets with the CLI, by simply defining the desired `DatasetConfig`s in a

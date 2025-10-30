@@ -30,10 +30,10 @@ MULTI_WIKI_QA_SL_CONFIG = DatasetConfig(
     languages=[SLOVENIAN],
 )
 
-MMLU_SK_CONFIG = DatasetConfig(
-    name="mmlu-sk",
-    pretty_name="MMLU-sk",
-    source="EuroEval/mmlu-sk-mini",
+MMLU_SL_CONFIG = DatasetConfig(
+    name="mmlu-sl",
+    pretty_name="MMLU-sl",
+    source="EuroEval/mmlu-sl-mini",
     task=KNOW,
     languages=[SLOVENIAN],
 )

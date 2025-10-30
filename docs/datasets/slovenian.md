@@ -308,40 +308,39 @@ euroeval --model <model-id> --dataset multi-wiki-qa-sl
 
 ## Knowledge
 
-### MMLU-sk
+### MMLU-sl
 
-This dataset is a machine translated version of the English [MMLU
+This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2410.08928)
+and is a machine translated version of the English [MMLU
 dataset](https://openreview.net/forum?id=d7KBjmI3GmQ) and features questions within 57
 different topics, such as elementary mathematics, US history and law. The translation to
-Slovak was done by the University of Oregon as part of [this
-paper](https://aclanthology.org/2023.emnlp-demo.28/), using GPT-3.5-turbo.
+Slovenian was done using DeepL.
 
-The original full dataset consists of 269 / 1,410 / 13,200 samples for training,
-validation and testing, respectively. We use a 1,024 / 256 / 2,048 split for training,
-validation and testing, respectively (so 3,328 samples used in total). These splits are
-new and there can thus be some overlap between the original validation and test sets and
-our validation and test sets.
+The original full dataset consists of 285 / 1,531 / 14,042 samples for training,
+validation, and testing, respectively. These splits were merged, duplicates removed, and
+new splits were created with 1,024 / 256 / 2048 samples for training, validation, and
+testing, respectively.
 
 Here are a few examples from the training split:
 
 ```json
 {
-  "text": "V akých smeroch je prípad pre humanitárnu intervenciu, ako je uvedené v tejto kapitol... mocnými štátmi.\nd. Všetky tieto možnosti.",
-  "label": "d",
+    "text": "Kaj je deklarativna teorija priznanja?\nMožnosti:\na. Priznanje je odločilno za obstoj državnosti\nb. Priznanje je zgolj deklarativno za državnost, ni pa odločilno\nc. Priznanje je zgolj izjava o interesu\nd. Priznanje zahteva izjavo novoustanovljene državnosti",
+    "label": "b",
 }
 ```
 
 ```json
 {
-  "text": "FAKTORIÁLOVÝ ANOVA sa používa v prípade, že štúdia zahŕňa viac ako 1 VI. Aký je INTER...činok VI na rovnakej úrovni ako ostatné VI",
-  "label": "a"
+    "text": "Katera od naslednjih možnosti bi bila verjeten odziv na ugotovljeno nenormalnost ostanka?\nMožnosti:\na. Uporabite logaritemsko funkcionalno obliko namesto linearne\nb. Dodajte zamike spremenljivk na desni strani regresijskega modela\nc. Ocenite model v prvi diferencirani obliki\nd. Iz podatkov odstranite vsa velika odstopanja.",
+    "label": "d",
 }
 ```
 
 ```json
 {
-  "text": "Pre ktorú z týchto dvoch situácií urobí hlavná postava (ktorá používa ja/mňa/môj) nie...ie zlé\nc. Nie zlé, zlé\nd. Nie zlé, nie zlé",
-  "label": "d",
+    "text": "To vprašanje se nanaša na naslednje informacije. Stopnje pismenosti med rusko govorečim prebivalstvom pozne carske Rusije in Sovjetske zveze, 1897-1955 Stopnja pismenosti 1897 24% 1917 45% 1926 56% 1937 75% 1939 81.10% 1955 99.90% Vir: Podatki iz popisa prebivalstva in sovjetskega ministrstva za šolstvo Informacije, predstavljene v zgornji tabeli, je najbolje razumeti v katerem od naslednjih zgodovinskih kontekstov?\nMožnosti:\na. Izobraževalna reforma v moderni dobi\nb. Centralizirane in od države usmerjene kampanje modernizacije\nc. Eksperimentiranje s sindikalističnimi oblikami družbenoekonomske organizacije\nd. Druga faza industrializacije v nezahodnem svetu",
+    "label": "b",
 }
 ```
 
@@ -352,33 +351,33 @@ When evaluating generative models, we use the following setup (see the
 - Prefix prompt:
 
   ```text
-  Nasledujú otázky s viacerými možnosťami (s odpoveďami).
+  Naslednja so vprašanja z več programi (z odgovori).
   ```
 
 - Base prompt template:
 
   ```text
-  Otázka: {text}
+  Vprašanje: {text}
   Možnosti:
   a. {option_a}
   b. {option_b}
   c. {option_c}
   d. {option_d}
-  Odpoveď: {label}
+  Odgovor: {label}
   ```
 
 - Instruction-tuned prompt template:
 
   ```text
-  Otázka: {text}
+  Vprašanje: {text}
 
-  Odpovedzte na nasledujúcu otázku použitím 'a', 'b', 'c' alebo 'd', a nič iné.
+  Odgovorite na navedeno vprašanje z uporabo 'a', 'b', 'c' ali 'd', in nič drugega.
   ```
 
 You can evaluate this dataset directly as follows:
 
 ```bash
-euroeval --model <model-id> --dataset mmlu-sk
+euroeval --model <model-id> --dataset mmlu-sl
 ```
 
 ## Common-sense Reasoning
