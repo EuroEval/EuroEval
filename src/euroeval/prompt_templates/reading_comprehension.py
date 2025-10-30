@@ -26,6 +26,7 @@ from ..languages import (
     PORTUGUESE,
     SERBIAN,
     SLOVAK,
+    SLOVENIAN,
     SPANISH,
     SWEDISH,
     UKRAINIAN,
@@ -222,6 +223,23 @@ RC_TEMPLATES: dict["Language", PromptConfig] = {
         "um máximo de 3 palavras: {label}",
         default_instruction_prompt="Texto: {text}\n\nResponde à seguinte pergunta "
         "sobre o texto acima num máximo de 3 palavras.\n\nPergunta: {question}",
+        default_prompt_label_mapping=dict(),
+    ),
+    SLOVENIAN: PromptConfig(
+        default_prompt_prefix=(
+            "Spodaj so besedila z ustreznimi vprašanji in odgovori."
+        ),
+        default_prompt_template=(
+            "Besedilo: {text}\n"
+            "Vprašanje: {question}\n"
+            "Odgovor v največ 3 besedah: {label}"
+        ),
+        default_instruction_prompt=(
+            "Besedilo: {text}\n\n"
+            "Odgovorite na naslednje vprašanje o zgornjem besedilu "
+            "v največ 3 besedah.\n\n"
+            "Vprašanje: {question}"
+        ),
         default_prompt_label_mapping=dict(),
     ),
     SLOVAK: PromptConfig(

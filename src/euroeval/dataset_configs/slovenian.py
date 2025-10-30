@@ -22,10 +22,10 @@ SCALA_SL_CONFIG = DatasetConfig(
     languages=[SLOVENIAN],
 )
 
-MULTI_WIKI_QA_SK_CONFIG = DatasetConfig(
-    name="multi-wiki-qa-sk",
-    pretty_name="MultiWikiQA-sk",
-    source="EuroEval/multi-wiki-qa-sk-mini",
+MULTI_WIKI_QA_SL_CONFIG = DatasetConfig(
+    name="multi-wiki-qa-sl",
+    pretty_name="MultiWikiQA-sl",
+    source="EuroEval/multi-wiki-qa-sl-mini",
     task=RC,
     languages=[SLOVENIAN],
 )
