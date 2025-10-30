@@ -2,7 +2,7 @@
 
 from ..data_models import DatasetConfig
 from ..languages import SLOVENIAN
-from ..tasks import COMMON_SENSE, KNOW, LA, RC, SENT
+from ..tasks import COMMON_SENSE, KNOW, LA, NER, RC, SENT
 
 ### Official datasets ###
 
@@ -19,6 +19,14 @@ SCALA_SL_CONFIG = DatasetConfig(
     pretty_name="ScaLA-sl",
     source="EuroEval/scala-sl",
     task=LA,
+    languages=[SLOVENIAN],
+)
+
+SSJ500K_NER_CONFIG = DatasetConfig(
+    name="ssj500k-ner",
+    pretty_name="ssj500k-NER",
+    source="EuroEval/ssj500k-ner-mini",
+    task=NER,
     languages=[SLOVENIAN],
 )
 

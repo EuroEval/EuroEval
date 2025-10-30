@@ -76,37 +76,37 @@ euroeval --model <model-id> --dataset sentinews
 
 ## Named Entity Recognition
 
-### UNER-sk
+### ssj500k-NER
 
 This dataset was published in
-[this paper](https://aclanthology.org/2024.naacl-long.243/).
+[this paper](https://nl.ijs.si/jtdh20/pdf/JT-DH_2020_Krek-et-al_The-ssj500k-Training-Corpus-for-Slovene-Language-Processing.pdf),
+and consists of a collection of text samples from the
+[FidaPLUS](https://www.sketchengine.eu/fida-plus-corpus/) corpus of written
+modern Slovenian.
 
-The original dataset consists of 8,482 / 1,059 / 1,060 samples for the
-training, validation, and test splits, respectively. We use 1,024 / 256 / 2,048
-samples for our training, validation and test splits, respectively. The train and
-validation splits are subsets of the original splits, while the test split is
-created using additional samples from the train split.
+The original dataset consists of 9,489 samples. We use 1,024 / 256 / 2,048
+samples for our training, validation and test splits, respectively.
 
 Here are a few examples from the training split:
 
 ```json
 {
-  "tokens": ["Bude", "mať", "názov", "Shanghai", "Noon", "a", "režisérom", "bude", "debutujúci", "Tom", "Dey", "."],
-  "labels": ["O", "O", "O", "O", "O", "O", "O", "O", "O", "B-PER", "I-PER", "O"]
+    "tokens": ['Prireditev', 'Po', 'domače', 'pri', 'Repanšku', 'bo', 'povezoval', 'igralec', 'in', 'humorist', 'Kondi', 'Pižorn', ',', 'za', 'zabavo', 'in', 'ples', 'pa', 'bo', 'letos', 'igral', 'ansambel', 'Razpotniki', '.'],
+    "labels": ['O', 'B-MISC', 'I-MISC', 'I-MISC', 'I-MISC', 'O', 'O', 'O', 'O', 'O', 'B-PER', 'I-PER', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'B-ORG', 'I-ORG', 'O']
 }
 ```
 
 ```json
 {
-  "tokens": ["Ako", "šesťročného", "(", "o", "rok", "skôr", ",", "než", "bolo", "zvykom", ")", "ho", "na", "základe", "zvláštnej", "výnimky", "prijali", "medzi", "Zvedov", "a", "ako", "deväťročný", "sa", "stal", "vedúcim", "skupiny", "."],
-  "labels": ["O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "B-ORG", "O", "O", "O", "O", "O", "O", "O", "O"]
+    "tokens": ['Upoštevano', 'je', ',', 'da', 'nekaj', 'ljudi', 'iz', 'te', 'bolnišnice', 'odide', 'drugam', ',', 'nekaj', 'pa', 'jih', 'pride', 'iz', 'drugih', '.'],
+    "labels": ['O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O']
 }
 ```
 
 ```json
 {
-  "tokens": ["To", "predsa", "stojí", "za", "pokus", "!"],
-  "labels": ["O", "O", "O", "O", "O", "O"]
+    "tokens": ['Ta', 'ukazna', 'vrstica', 'obdela', 'ali', 'pošlje', 'dokument', 'v', 'datoteko', ',', 'ki', 'se', 'nahaja', 'v', 'imeniku', '/', 'var', '/', 'spool', '.'],
+    "labels": ['O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O']
 }
 ```
 
@@ -117,38 +117,38 @@ When evaluating generative models, we use the following setup (see the
 - Prefix prompt:
 
   ```text
-  Nasledujúce sú vety a JSON-objekty s pomenovanými entitami, ktoré sa nachádzajú v danej vete.
+  Naslednje so povedi in JSON slovarji z poimenovanimi entitetami, ki se pojavijo v dani povedi.
   ```
 
 - Base prompt template:
 
   ```text
-  Veta: {text}
-  Pomenované entity: {label}
+  Poved: {text}
+  Poimenovane entitete: {label}
   ```
 
 - Instruction-tuned prompt template:
 
   ```text
-  Veta: {text}
+  Poved: {text}
 
-  Identifikujte pomenované entity vo vete. Výstup by mal byť vo forme JSON-objektu s kľúčmi 'osoba', 'miesto', 'organizácia' a 'rôzne'. Hodnoty by mali byť zoznamy pomenovaných entít danej kategórie, presne tak, ako sa vyskytujú vo vete.
+  Identificirajte poimenovane entitete v povedi. To morate izpisati kot JSON slovar s ključi 'oseba', 'kraj', 'organizacija' in 'razno'. Vrednosti morajo biti seznami poimenovanih entitet te kategorije, tako kot se pojavijo v povedi.
   ```
 
 - Label mapping:
-  - `B-PER` ➡️ `osoba`
-  - `I-PER` ➡️ `osoba`
-  - `B-LOC` ➡️ `miesto`
-  - `I-LOC` ➡️ `miesto`
-  - `B-ORG` ➡️ `organizácia`
-  - `I-ORG` ➡️ `organizácia`
-  - `B-MISC` ➡️ `rôzne`
-  - `I-MISC` ➡️ `rôzne`
+  - `B-PER` ➡️ `oseba`
+  - `I-PER` ➡️ `oseba`
+  - `B-LOC` ➡️ `kraj`
+  - `I-LOC` ➡️ `kraj`
+  - `B-ORG` ➡️ `organizacija`
+  - `I-ORG` ➡️ `organizacija`
+  - `B-MISC` ➡️ `razno`
+  - `I-MISC` ➡️ `razno`
 
 You can evaluate this dataset directly as follows:
 
 ```bash
-euroeval --model <model-id> --dataset uner-sk
+euroeval --model <model-id> --dataset ssj500k-ner
 ```
 
 ## Linguistic Acceptability

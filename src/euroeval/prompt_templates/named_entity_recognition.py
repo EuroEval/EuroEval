@@ -26,6 +26,7 @@ from ..languages import (
     PORTUGUESE,
     SERBIAN,
     SLOVAK,
+    SLOVENIAN,
     SPANISH,
     SWEDISH,
     UKRAINIAN,
@@ -457,6 +458,29 @@ NER_TEMPLATES: dict["Language", PromptConfig] = {
         "entity vo vete. Výstup by mal byť vo forme JSON-objektu s kľúčmi "
         "{labels_str}. Hodnoty by mali byť zoznamy pomenovaných entít danej "
         "kategórie, presne tak, ako sa vyskytujú vo vete.",
+    ),
+    SLOVENIAN: PromptConfig(
+        default_prompt_label_mapping={
+            "b-per": "oseba",
+            "i-per": "oseba",
+            "b-loc": "kraj",
+            "i-loc": "kraj",
+            "b-org": "organizacija",
+            "i-org": "organizacija",
+            "b-misc": "razno",
+            "i-misc": "razno",
+        },
+        default_prompt_prefix=(
+            "Naslednje so povedi in JSON slovarji z poimenovanimi "
+            "entitetami, ki se pojavijo v dani povedi."
+        ),
+        default_prompt_template=("Poved: {text}\nPoimenovane entitete: {label}"),
+        default_instruction_prompt=(
+            "Poved: {text}\n\nIdentificirajte poimenovane entitete v povedi. "
+            "To morate izpisati kot JSON slovar s ključi {labels_str}. "
+            "Vrednosti morajo biti seznami poimenovanih entitet te kategorije, "
+            "tako kot se pojavijo v povedi."
+        ),
     ),
     SERBIAN: PromptConfig(
         default_prompt_label_mapping={
