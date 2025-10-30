@@ -132,8 +132,8 @@ class VLLMModel(HuggingFaceEncoderModel):
                 dependency="nvcc",
                 instructions=(
                     "Please install the CUDA Toolkit from "
-                    "https://developer.nvidia.com/cuda-downloads or ensure that NVCC is "
-                    "available in your PATH."
+                    "https://developer.nvidia.com/cuda-downloads or ensure that NVCC "
+                    "is available in your PATH."
                 ),
             )
 
@@ -427,14 +427,16 @@ class VLLMModel(HuggingFaceEncoderModel):
             structured_outputs = StructuredOutputsParams(
                 json=structured_generation_schema
             )
-        elif self.dataset_config.task.uses_logprobs and self.dataset_config.labels:
+        elif (
+            self.dataset_config.task.uses_logprobs
+            and self.dataset_config.labels
+            and self.buffer.get("first_label_token_mapping", False)
+        ):
             choice_labels = [
                 self.dataset_config.prompt_label_mapping[label]
                 for label in self.dataset_config.labels
             ]
-            if "first_label_token_mapping" in self.buffer and isinstance(
-                self.buffer["first_label_token_mapping"], dict
-            ):
+            if isinstance(self.buffer["first_label_token_mapping"], dict):
                 choice_labels = [
                     self.buffer["first_label_token_mapping"][label]
                     for label in choice_labels

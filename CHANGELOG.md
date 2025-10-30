@@ -20,6 +20,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   this file, making it possible to evaluate custom datasets by name only when using the
   `Benchmarker` API.
 
+### Fixed
+
+- Now disabled structured generation for classification tasks if we're disabling
+  logprobs, to force evaluation using raw outputs and word edit distance instead.
+
 ## [v16.5.0] - 2025-10-28
 
 ### Added
