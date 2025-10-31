@@ -153,11 +153,11 @@ euroeval --model <model-id> --dataset ssj500k-ner
 
 ## Linguistic Acceptability
 
-### ScaLA-sl
+### ScaLA-hr
 
 This dataset was published in [this paper](https://aclanthology.org/2023.nodalida-1.20/)
-and was automatically created from the [Slovenian Universal Dependencies
-treebank](https://github.com/UniversalDependencies/UD_Slovenian-SSJ) by assuming that the
+and was automatically created from the [Croatian Universal Dependencies
+treebank](https://github.com/UniversalDependencies/UD_Croatian-SET) by assuming that the
 documents in the treebank are correct, and corrupting the samples to create
 grammatically incorrect samples. The corruptions were done by either removing a word
 from a sentence, or by swapping two neighbouring words in a sentence. To ensure that
@@ -172,22 +172,22 @@ Here are a few examples from the training split:
 
 ```json
 {
-    "text": "Potem je nekdo planil na sejo in povedal, da je v Trade Centru prišlo do eksplozije.",
+    "text": "Nakon kratke intervencije, tijekom koje sam saznala kada se taj osjećaj prvog puta pojavio i zbog čega, sve je nestalo i već mjesecima živim bez opterećenja koji me pratilo cijelog života.",
     "label": "correct"
 }
 ```
 
 ```json
 {
-    "text": "Miroslav Klun: S primerno zakonodajo lahko slovenska obrt ponudi 60.000 novih delovnih mest.",
-    "label": "correct"
-}
-```
-
-```json
-{
-    "text": "Priročno za vse, ki veliko kupujete drugih v državah.",
+    "text": "Svaki od tih sklopova, i dijelova mora biti homologiran i sukladan s ostalima.",
     "label": "incorrect"
+}
+```
+
+```json
+{
+    "text": "Prvi među njima je Laurent Blanc, koji drži Romu na čekanju, a s Parkom prinčeva povezivan je i Fabio Capello.",
+    "label": "correct"
 }
 ```
 
@@ -198,22 +198,22 @@ When evaluating generative models, we use the following setup (see the
 - Prefix prompt:
 
   ```text
-  Sledeče so stavki in ali so slovnično pravilni.
+  Sljedeće su rečenice i jesu li gramatički ispravne.
   ```
 
 - Base prompt template:
 
   ```text
-  Stavek: {text}
-  Slovnično pravilno: {label}
+  Rečenica: {text}
+  Gramatički ispravna: {label}
   ```
 
 - Instruction-tuned prompt template:
 
   ```text
-  Stavek: {text}
+  Rečenica: {text}
 
-  Ugotovite, ali je stavek slovnično pravilen ali ne. Odgovorite z 'da', če je stavek pravilen, in 'ne', če ni. Odgovorite le s to besedo in nič drugega.
+  Odredite je li rečenica gramatički ispravna ili ne. Odgovorite s 'da' ako je ispravna, i s 'ne' ako nije. Odgovorite samo tom riječju i ničim drugim.
   ```
 
 - Label mapping:
@@ -223,7 +223,7 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-euroeval --model <model-id> --dataset scala-sl
+euroeval --model <model-id> --dataset scala-hr
 ```
 
 ## Reading Comprehension

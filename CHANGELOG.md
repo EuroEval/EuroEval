@@ -10,7 +10,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Added
 
 - Added support for Croatian 🇭🇷! This includes the sentiment classification dataset
-  MMS-hr.
+  MMS-hr, the linguistic acceptability dataset ScaLA-hr.
 - Added a system dependency check for `nvcc` in the `VLLMModel.__init__` method to
   ensure the CUDA Toolkit is installed. Raises an error with installation instructions
   if NVCC is not available in the system PATH.

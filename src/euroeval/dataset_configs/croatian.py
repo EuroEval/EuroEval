@@ -14,10 +14,10 @@ MMS_HR_CONFIG = DatasetConfig(
     languages=[CROATIAN],
 )
 
-SCALA_SL_CONFIG = DatasetConfig(
-    name="scala-sl",
-    pretty_name="ScaLA-sl",
-    source="EuroEval/scala-sl",
+SCALA_HR_CONFIG = DatasetConfig(
+    name="scala-hr",
+    pretty_name="ScaLA-hr",
+    source="EuroEval/scala-hr",
     task=LA,
     languages=[CROATIAN],
 )
