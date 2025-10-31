@@ -5,6 +5,7 @@ import typing as t
 from ..data_models import PromptConfig
 from ..languages import (
     BULGARIAN,
+    CROATIAN,
     CZECH,
     DANISH,
     DUTCH,
@@ -41,6 +42,17 @@ MULTIPLE_CHOICE_TEMPLATES: dict["Language", PromptConfig] = {
         default_prompt_template="Въпрос: {text}\nОтговор: {label}",
         default_instruction_prompt="Въпрос: {text}\n\nОтговорете на горния въпрос "
         "като отговорите с {labels_str}, и нищо друго.",
+        default_prompt_label_mapping="auto",
+    ),
+    CROATIAN: PromptConfig(
+        default_prompt_prefix=(
+            "Sljedeća su pitanja s višestrukim izborom (s odgovorima)."
+        ),
+        default_prompt_template=("Pitanje: {text}\nOdgovor: {label}"),
+        default_instruction_prompt=(
+            "Pitanje: {text}\n\n"
+            "Odgovorite na gornje pitanje koristeći {labels_str}, i ništa drugo."
+        ),
         default_prompt_label_mapping="auto",
     ),
     CZECH: PromptConfig(

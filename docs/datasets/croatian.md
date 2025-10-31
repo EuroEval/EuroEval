@@ -310,16 +310,15 @@ euroeval --model <model-id> --dataset multi-wiki-qa-hr
 
 ## Knowledge
 
-### MMLU-sl
+### MMLU-hr
 
 This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2410.08928)
 and is a machine translated version of the English [MMLU
 dataset](https://openreview.net/forum?id=d7KBjmI3GmQ) and features questions within 57
-different topics, such as elementary mathematics, US history and law. The translation to
-Slovenian was done using DeepL.
+different topics, such as elementary mathematics, US history and law.
 
-The original full dataset consists of 285 / 1,531 / 14,042 samples for training,
-validation, and testing, respectively. These splits were merged, duplicates removed, and
+The original full dataset consists of 254 / 12,338 samples for
+validation and testing. These splits were merged, duplicates removed, and
 new splits were created with 1,024 / 256 / 2048 samples for training, validation, and
 testing, respectively.
 
@@ -327,22 +326,22 @@ Here are a few examples from the training split:
 
 ```json
 {
-    "text": "Kaj je deklarativna teorija priznanja?\nMožnosti:\na. Priznanje je odločilno za obstoj državnosti\nb. Priznanje je zgolj deklarativno za državnost, ni pa odločilno\nc. Priznanje je zgolj izjava o interesu\nd. Priznanje zahteva izjavo novoustanovljene državnosti",
-    "label": "b",
+    "text": "Kako se odvija lateralna komunikacija u organizaciji?\nIzbori:\na. Informacije se prenose prema gore.\nb. Informacije se prenose prema dolje.\nc. Informacije su dvosmjerni proces.\nd. Informacije se prenose između različitih odjela i funkcija.",
+    "label": "d"
 }
 ```
 
 ```json
 {
-    "text": "Katera od naslednjih možnosti bi bila verjeten odziv na ugotovljeno nenormalnost ostanka?\nMožnosti:\na. Uporabite logaritemsko funkcionalno obliko namesto linearne\nb. Dodajte zamike spremenljivk na desni strani regresijskega modela\nc. Ocenite model v prvi diferencirani obliki\nd. Iz podatkov odstranite vsa velika odstopanja.",
-    "label": "d",
+    "text": "Kako astronomi misle da Jupiter generira svoju unutarnju toplinu?\nIzbori:\na. kroz egzotermne kemijske reakcije koje pretvaraju kemijsku potencijalnu energiju u toplinsku energiju\nb. nuklearna fuzija\nc. kontrakcijom koja mijenja gravitacijsku potencijalnu energiju u toplinsku energiju\nd. unutarnje trenje zbog njegove brze rotacije i diferencijalne rotacije",
+    "label": "c"
 }
 ```
 
 ```json
 {
-    "text": "To vprašanje se nanaša na naslednje informacije. Stopnje pismenosti med rusko govorečim prebivalstvom pozne carske Rusije in Sovjetske zveze, 1897-1955 Stopnja pismenosti 1897 24% 1917 45% 1926 56% 1937 75% 1939 81.10% 1955 99.90% Vir: Podatki iz popisa prebivalstva in sovjetskega ministrstva za šolstvo Informacije, predstavljene v zgornji tabeli, je najbolje razumeti v katerem od naslednjih zgodovinskih kontekstov?\nMožnosti:\na. Izobraževalna reforma v moderni dobi\nb. Centralizirane in od države usmerjene kampanje modernizacije\nc. Eksperimentiranje s sindikalističnimi oblikami družbenoekonomske organizacije\nd. Druga faza industrializacije v nezahodnem svetu",
-    "label": "b",
+    "text": "Ako se parabola $y_1 = x^2 + 2x + 7$ i pravac $y_2 = 6x + b$ sijeku u samo jednoj točki, koja je vrijednost $b$?\nIzbori:\na. 7\nb. 3\nc. 12\nd. 4",
+    "label": "b"
 }
 ```
 
@@ -353,14 +352,14 @@ When evaluating generative models, we use the following setup (see the
 - Prefix prompt:
 
   ```text
-  Naslednja so vprašanja z več možnostmi (z odgovori).
+  Sljedeća su pitanja s višestrukim izborom (s odgovorima).
   ```
 
 - Base prompt template:
 
   ```text
-  Vprašanje: {text}
-  Možnosti:
+  Pitanje: {text}
+  Izbori:
   a. {option_a}
   b. {option_b}
   c. {option_c}
@@ -371,15 +370,15 @@ When evaluating generative models, we use the following setup (see the
 - Instruction-tuned prompt template:
 
   ```text
-  Vprašanje: {text}
+  Pitanje: {text}
 
-  Odgovorite na navedeno vprašanje z uporabo 'a', 'b', 'c' ali 'd', in nič drugega.
+  Odgovorite na gornje pitanje koristeći 'a', 'b', 'c' ili 'd', i ništa drugo.
   ```
 
 You can evaluate this dataset directly as follows:
 
 ```bash
-euroeval --model <model-id> --dataset mmlu-sl
+euroeval --model <model-id> --dataset mmlu-hr
 ```
 
 ## Common-sense Reasoning

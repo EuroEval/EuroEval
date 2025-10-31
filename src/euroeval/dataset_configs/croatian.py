@@ -38,10 +38,10 @@ MULTI_WIKI_QA_HR_CONFIG = DatasetConfig(
     languages=[CROATIAN],
 )
 
-MMLU_SL_CONFIG = DatasetConfig(
-    name="mmlu-sl",
-    pretty_name="MMLU-sl",
-    source="EuroEval/mmlu-sl-mini",
+MMLU_HR_CONFIG = DatasetConfig(
+    name="mmlu-hr",
+    pretty_name="MMLU-hr",
+    source="EuroEval/mmlu-hr-mini",
     task=KNOW,
     languages=[CROATIAN],
 )
