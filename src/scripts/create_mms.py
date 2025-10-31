@@ -32,7 +32,7 @@ def main() -> None:
     assert isinstance(df, pd.DataFrame)
 
     for language in LANGUAGES:
-        # Filter for Serbian language only
+        # Filter based on language
         df = df[df["language"] == language].reset_index(drop=True)
 
         # Map numeric labels to string labels
