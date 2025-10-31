@@ -49,6 +49,7 @@ LANGUAGES = [
     "bg",
     "sr",
     "sl",
+    "hr",
 ]
 
 
