@@ -28,12 +28,14 @@ def main() -> None:
     assert isinstance(dataset, DatasetDict)
 
     # Get the train split (MMS only has train split)
-    df = dataset["train"].to_pandas()
-    assert isinstance(df, pd.DataFrame)
+    df_all_languages = dataset["train"].to_pandas()
+    assert isinstance(df_all_languages, pd.DataFrame)
 
     for language in LANGUAGES:
         # Filter based on language
-        df = df[df["language"] == language].reset_index(drop=True)
+        df = df_all_languages[df_all_languages["language"] == language].reset_index(
+            drop=True
+        )
 
         # Map numeric labels to string labels
         # 0: negative, 1: neutral, 2: positive
