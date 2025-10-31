@@ -76,37 +76,39 @@ euroeval --model <model-id> --dataset mms-hr
 
 ## Named Entity Recognition
 
-### ssj500k-NER
+### WikiANN-hr
 
-This dataset was published in
-[this paper](https://nl.ijs.si/jtdh20/pdf/JT-DH_2020_Krek-et-al_The-ssj500k-Training-Corpus-for-Slovene-Language-Processing.pdf),
-and consists of a collection of text samples from the
-[FidaPLUS](https://www.sketchengine.eu/fida-plus-corpus/) corpus of written
-modern Slovenian.
+This dataset was published in [this paper](https://aclanthology.org/P17-1178/) and is
+part of a cross-lingual named entity recognition framework for 282 languages from
+Wikipedia. It uses silver-standard annotations transferred from English through
+cross-lingual links and performs both name tagging and linking to an english Knowledge
+Base.
 
-The original dataset consists of 9,489 samples. We use 1,024 / 256 / 2,048
-samples for our training, validation and test splits, respectively.
+The original full dataset consists of 10,000 / 10,000 / 10,000 samples for the training,
+validation and test splits, respectively. We use 1,024 / 256 / 2,048 samples for our
+training, validation and test splits, respectively. All the new splits are subsets of
+the original splits.
 
 Here are a few examples from the training split:
 
 ```json
 {
-    "tokens": ["Prireditev", "Po", "domače", "pri", "Repanšku", "bo", "povezoval", "igralec", "in", "humorist", "Kondi", "Pižorn", ",", "za", "zabavo", "in", "ples", "pa", "bo", "letos", "igral", "ansambel", "Razpotniki", "."],
-    "labels": ["O", "B-MISC", "I-MISC", "I-MISC", "I-MISC", "O", "O", "O", "O", "O", "B-PER", "I-PER", "O", "O", "O", "O", "O", "O", "O", "O", "O", "B-ORG", "I-ORG", "O"]
+    "tokens": array(["Ubrzo", "su", "uslijedile", "narudžbe", "iz", "cijele", "Britanske", "zajednice", "naroda", "."], dtype=object),
+    "labels": ["O", "O", "O", "O", "O", "O", "B-ORG", "I-ORG", "I-ORG", "O"]
 }
 ```
 
 ```json
 {
-    "tokens": ["Upoštevano", "je", ",", "da", "nekaj", "ljudi", "iz", "te", "bolnišnice", "odide", "drugam", ",", "nekaj", "pa", "jih", "pride", "iz", "drugih", "."],
-    "labels": ["O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O"]
+    "tokens": array(["``", "(", "Cole", "Porter", ")"], dtype=object),
+    "labels": ["O", "O", "B-PER", "I-PER", "O"]
 }
 ```
 
 ```json
 {
-    "tokens": ["Ta", "ukazna", "vrstica", "obdela", "ali", "pošlje", "dokument", "v", "datoteko", ",", "ki", "se", "nahaja", "v", "imeniku", "/", "var", "/", "spool", "."],
-    "labels": ["O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O"]
+    "tokens": array(["'", "''", "La", "Liga", "2009.", "/", "10", "."], dtype=object),
+    "labels": ["O", "O", "B-ORG", "I-ORG", "O", "O", "O", "O"]
 }
 ```
 
@@ -117,29 +119,29 @@ When evaluating generative models, we use the following setup (see the
 - Prefix prompt:
 
   ```text
-  Naslednje so povedi in JSON slovarji z poimenovanimi entitetami, ki se pojavijo v dani povedi.
+  Sljedeće su rečenice i JSON rječnici s imenicama koje se pojavljuju u rečenicama.
   ```
 
 - Base prompt template:
 
   ```text
-  Poved: {text}
-  Poimenovane entitete: {label}
+  Rečenica: {text}
+  Imenovane entiteti: {label}
   ```
 
 - Instruction-tuned prompt template:
 
   ```text
-  Poved: {text}
+  Rečenica: {text}
 
-  Identificirajte poimenovane entitete v povedi. To morate izpisati kot JSON slovar s ključi 'oseba', 'kraj', 'organizacija' in 'razno'. Vrednosti morajo biti seznami poimenovanih entitet te kategorije, tako kot se pojavijo v povedi.
+  Identificirajte imenovane entitete u rečenici. Prikažite ih kao JSON rječnik s ključevima 'osoba', 'mjesto', 'organizacija' i 'razno'. Vrijednosti trebaju biti popisi imenovanih entiteta navedenog tipa, točno kako se pojavljuju u rečenici.
   ```
 
 - Label mapping:
-  - `B-PER` ➡️ `oseba`
-  - `I-PER` ➡️ `oseba`
-  - `B-LOC` ➡️ `kraj`
-  - `I-LOC` ➡️ `kraj`
+  - `B-PER` ➡️ `osoba`
+  - `I-PER` ➡️ `osoba`
+  - `B-LOC` ➡️ `mjesto`
+  - `I-LOC` ➡️ `mjesto`
   - `B-ORG` ➡️ `organizacija`
   - `I-ORG` ➡️ `organizacija`
   - `B-MISC` ➡️ `razno`
@@ -148,7 +150,7 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-euroeval --model <model-id> --dataset ssj500k-ner
+euroeval --model <model-id> --dataset wikiann-hr
 ```
 
 ## Linguistic Acceptability

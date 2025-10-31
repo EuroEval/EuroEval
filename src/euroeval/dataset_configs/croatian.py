@@ -22,10 +22,10 @@ SCALA_HR_CONFIG = DatasetConfig(
     languages=[CROATIAN],
 )
 
-SSJ500K_NER_CONFIG = DatasetConfig(
-    name="ssj500k-ner",
-    pretty_name="ssj500k-NER",
-    source="EuroEval/ssj500k-ner-mini",
+WIKIANN_HR_CONFIG = DatasetConfig(
+    name="wikiann-hr",
+    pretty_name="WikiANN-hr",
+    source="EuroEval/wikiann-hr-mini",
     task=NER,
     languages=[CROATIAN],
 )
