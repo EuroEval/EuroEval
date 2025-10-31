@@ -30,10 +30,10 @@ WIKIANN_HR_CONFIG = DatasetConfig(
     languages=[CROATIAN],
 )
 
-MULTI_WIKI_QA_SL_CONFIG = DatasetConfig(
-    name="multi-wiki-qa-sl",
-    pretty_name="MultiWikiQA-sl",
-    source="EuroEval/multi-wiki-qa-sl-mini",
+MULTI_WIKI_QA_HR_CONFIG = DatasetConfig(
+    name="multi-wiki-qa-hr",
+    pretty_name="MultiWikiQA-hr",
+    source="EuroEval/multi-wiki-qa-hr-mini",
     task=RC,
     languages=[CROATIAN],
 )

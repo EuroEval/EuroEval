@@ -5,6 +5,7 @@ import typing as t
 from ..data_models import PromptConfig
 from ..languages import (
     BULGARIAN,
+    CROATIAN,
     CZECH,
     DANISH,
     DUTCH,
@@ -42,6 +43,18 @@ RC_TEMPLATES: dict["Language", PromptConfig] = {
         "3 думи: {label}",
         default_instruction_prompt="Текст: {text}\n\nОтговорете на следния въпрос "
         "относно текста по-горе с максимум 3 думи.\n\nВъпрос: {question}",
+        default_prompt_label_mapping=dict(),
+    ),
+    CROATIAN: PromptConfig(
+        default_prompt_prefix=("Sljedeći tekstovi sadrže pitanja i odgovore."),
+        default_prompt_template=(
+            "Tekst: {text}\nPitanje: {question}\nOdgovor s najviše 3 riječi: {label}"
+        ),
+        default_instruction_prompt=(
+            "Tekst: {text}\n\n"
+            "Odgovorite na sljedeće pitanje o gornjem tekstu s najviše 3 riječi.\n\n"
+            "Pitanje: {question}"
+        ),
         default_prompt_label_mapping=dict(),
     ),
     CZECH: PromptConfig(
