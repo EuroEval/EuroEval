@@ -100,7 +100,7 @@ def main() -> None:
     df.drop_duplicates(inplace=True)
     df.reset_index(drop=True, inplace=True)
 
-    # Create validation split
+    # Make splits
     val_size = 256
     train_size = 1024
     test_size = 2048
