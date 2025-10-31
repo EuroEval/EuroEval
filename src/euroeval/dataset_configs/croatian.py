@@ -46,10 +46,10 @@ MMLU_HR_CONFIG = DatasetConfig(
     languages=[CROATIAN],
 )
 
-WINOGRANDE_SL_CONFIG = DatasetConfig(
-    name="winogrande-sl",
-    pretty_name="Winogrande-sl",
-    source="EuroEval/winogrande-sl",
+WINOGRANDE_HR_CONFIG = DatasetConfig(
+    name="winogrande-hr",
+    pretty_name="Winogrande-hr",
+    source="EuroEval/winogrande-hr",
     task=COMMON_SENSE,
     languages=[CROATIAN],
     _labels=["a", "b"],

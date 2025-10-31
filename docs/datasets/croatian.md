@@ -383,7 +383,7 @@ euroeval --model <model-id> --dataset mmlu-hr
 
 ## Common-sense Reasoning
 
-### Winogrande-sl
+### Winogrande-hr
 
 This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2506.19468)
 and is a translated and filtered version of the English [Winogrande
@@ -397,21 +397,21 @@ Here are a few examples from the training split:
 
 ```json
 {
-    "text": "Nisem mogel nadzorovati vlage, kot sem nadzoroval dež, ker je _ prihajal od vsepovsod. Na kaj se nanaša prazno mesto _?\nMožnosti:\na. vlaga\nb. dež",
+    "text": "Nisam mogao kontrolirati vlagu kao što sam kontrolirao kišu, jer je _ dolazila odasvud. Na što se odnosi praznina _?\nIzbori:\na. vlaga\nb. kiša",
     "label": "a"
 }
 ```
 
 ```json
 {
-    "text": "Jessica je mislila, da je Sandstorm najboljša pesem, kar jih je bilo kdaj napisanih, vendar jo je Patricia sovražila. _ je kupila vstopnico za jazz koncert. Na kaj se nanaša prazno mesto _?\nMožnosti:\na. Jessica\nb. Patricia",
+    "text": "Jessica je mislila da je Sandstorm najbolja pjesma ikad napisana, ali Patricia ju je mrzila. _ je kupila kartu za jazz koncert. Na što se odnosi praznina _?\nIzbori:\na. Jessica\nb. Patricia",
     "label": "b"
 }
 ```
 
 ```json
 {
-    "text": "Termostat je pokazal, da je bilo spodaj dvajset stopinj hladneje kot zgoraj, zato je Byron ostal v _, ker mu je bilo hladno. Na kaj se nanaša prazno mesto _?\nMožnosti:\na. spodaj\nb. zgoraj",
+    "text": "Termostat je pokazivao da je dolje dvadeset stupnjeva hladnije nego gore, pa je Byron ostao u _ jer mu je bilo hladno. Na što se odnosi praznina _?\nIzbori:\na. dolje\nb. gore",
     "label": "b"
 }
 ```
@@ -423,14 +423,14 @@ When evaluating generative models, we use the following setup (see the
 - Prefix prompt:
 
   ```text
-  Naslednja so vprašanja z več možnostmi (z odgovori).
+  Sljedeća su pitanja s višestrukim izborom (s odgovorima).
   ```
 
 - Base prompt template:
 
   ```text
-  Vprašanje: {text}
-  Možnosti:
+  Pitanje: {text}
+  Mogućnosti:
   a. {option_a}
   b. {option_b}
   Odgovor: {label}
@@ -439,16 +439,16 @@ When evaluating generative models, we use the following setup (see the
 - Instruction-tuned prompt template:
 
   ```text
-  Vprašanje: {text}
-  Možnosti:
+  Pitanje: {text}
+  Mogućnosti:
   a. {option_a}
   b. {option_b}
 
-  Odgovorite na navedeno vprašanje z uporabo 'a' ali 'b', in nič drugega.
+  Odgovorite na gornje pitanje koristeći 'a' ili 'b', i ništa drugo.
   ```
 
 You can evaluate this dataset directly as follows:
 
 ```bash
-euroeval --model <model-id> --dataset winogrande-sl
+euroeval --model <model-id> --dataset winogrande-hr
 ```
