@@ -315,10 +315,11 @@ euroeval --model <model-id> --dataset multi-wiki-qa-hr
 
 ### MMLU-hr
 
-This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2410.08928)
-and is a machine translated version of the English [MMLU
-dataset](https://openreview.net/forum?id=d7KBjmI3GmQ) and features questions within 57
-different topics, such as elementary mathematics, US history and law.
+This dataset was published in
+[this paper](https://doi.org/10.48550/arXiv.2410.08928) and is a machine
+translated version of the English [MMLU dataset](https://openreview.net/forum?id=d7KBjmI3GmQ).
+It features questions within 57 different topics, such as elementary mathematics, US
+history, and law. DeepL was used to translate the dataset to Croatian.
 
 The original full dataset consists of 254 / 12,338 samples for
 validation and testing. These splits were merged, duplicates removed, and
