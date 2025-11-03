@@ -6,7 +6,7 @@ from ..tasks import COMMON_SENSE, KNOW, LA, NER, RC, SENT
 
 ### Official datasets ###
 
-CSFD_SENTIMENT_SK_CONFIG = DatasetConfig(
+SENTINEWS_CONFIG = DatasetConfig(
     name="sentinews",
     pretty_name="Sentinews-sl",
     source="EuroEval/sentinews-mini",
