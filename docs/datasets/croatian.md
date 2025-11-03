@@ -389,9 +389,11 @@ euroeval --model <model-id> --dataset mmlu-hr
 
 ### Winogrande-hr
 
-This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2506.19468)
-and is a translated and filtered version of the English [Winogrande
-dataset](https://doi.org/10.1145/3474381).
+This dataset was published in
+[this paper](https://doi.org/10.48550/arXiv.2506.19468) and is a translated
+and filtered version of the English
+[Winogrande dataset](https://doi.org/10.1145/3474381). DeepL was used to
+translate the dataset to Croatian.
 
 The original full dataset consists of 47 / 1,210 samples for training and testing, and
 we use 128 of the test samples for validation, resulting in a 47 / 128 / 1,085 split for
