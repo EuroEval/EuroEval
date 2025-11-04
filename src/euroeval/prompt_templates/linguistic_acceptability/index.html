@@ -645,6 +645,10 @@
       
         
       
+        
+      
+        
+      
     
     
     
@@ -1096,13 +1100,35 @@
 <span class="normal">239</span>
 <span class="normal">240</span>
 <span class="normal">241</span>
-<span class="normal">242</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Templates for the Linguistic Acceptability task.&quot;&quot;&quot;</span>
+<span class="normal">242</span>
+<span class="normal">243</span>
+<span class="normal">244</span>
+<span class="normal">245</span>
+<span class="normal">246</span>
+<span class="normal">247</span>
+<span class="normal">248</span>
+<span class="normal">249</span>
+<span class="normal">250</span>
+<span class="normal">251</span>
+<span class="normal">252</span>
+<span class="normal">253</span>
+<span class="normal">254</span>
+<span class="normal">255</span>
+<span class="normal">256</span>
+<span class="normal">257</span>
+<span class="normal">258</span>
+<span class="normal">259</span>
+<span class="normal">260</span>
+<span class="normal">261</span>
+<span class="normal">262</span>
+<span class="normal">263</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Templates for the Linguistic Acceptability task.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">t</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">..data_models</span><span class="w"> </span><span class="kn">import</span> <span class="n">PromptConfig</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..languages</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">BULGARIAN</span><span class="p">,</span>
+    <span class="n">CROATIAN</span><span class="p">,</span>
     <span class="n">CZECH</span><span class="p">,</span>
     <span class="n">DANISH</span><span class="p">,</span>
     <span class="n">DUTCH</span><span class="p">,</span>
@@ -1124,6 +1150,7 @@
     <span class="n">PORTUGUESE</span><span class="p">,</span>
     <span class="n">SERBIAN</span><span class="p">,</span>
     <span class="n">SLOVAK</span><span class="p">,</span>
+    <span class="n">SLOVENIAN</span><span class="p">,</span>
     <span class="n">SPANISH</span><span class="p">,</span>
     <span class="n">SWEDISH</span><span class="p">,</span>
     <span class="n">UKRAINIAN</span><span class="p">,</span>
@@ -1139,6 +1166,16 @@
         <span class="n">default_prompt_template</span><span class="o">=</span><span class="s2">&quot;Изречение: </span><span class="si">{text}</span><span class="se">\n</span><span class="s2">Граматически правилно: </span><span class="si">{label}</span><span class="s2">&quot;</span><span class="p">,</span>
         <span class="n">default_instruction_prompt</span><span class="o">=</span><span class="s2">&quot;Изречение: </span><span class="si">{text}</span><span class="se">\n\n</span><span class="s2">Определете дали изречението е &quot;</span>
         <span class="s2">&quot;граматически правилно или не. Отговорете с </span><span class="si">{labels_str}</span><span class="s2">, и нищо друго.&quot;</span><span class="p">,</span>
+    <span class="p">),</span>
+    <span class="n">CROATIAN</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
+        <span class="n">default_prompt_label_mapping</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">correct</span><span class="o">=</span><span class="s2">&quot;da&quot;</span><span class="p">,</span> <span class="n">incorrect</span><span class="o">=</span><span class="s2">&quot;ne&quot;</span><span class="p">),</span>
+        <span class="n">default_prompt_prefix</span><span class="o">=</span><span class="s2">&quot;Sljedeće su rečenice i jesu li gramatički ispravne.&quot;</span><span class="p">,</span>
+        <span class="n">default_prompt_template</span><span class="o">=</span><span class="s2">&quot;Rečenica: </span><span class="si">{text}</span><span class="se">\n</span><span class="s2">Gramatički ispravna: </span><span class="si">{label}</span><span class="s2">&quot;</span><span class="p">,</span>
+        <span class="n">default_instruction_prompt</span><span class="o">=</span><span class="p">(</span>
+            <span class="s2">&quot;Rečenica: </span><span class="si">{text}</span><span class="se">\n\n</span><span class="s2">&quot;</span>
+            <span class="s2">&quot;Odredite je li rečenica gramatički ispravna ili ne. &quot;</span>
+            <span class="s2">&quot;Odgovorite s </span><span class="si">{labels_str}</span><span class="s2">, i ništa drugo.&quot;</span>
+        <span class="p">),</span>
     <span class="p">),</span>
     <span class="n">CZECH</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
         <span class="n">default_prompt_label_mapping</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">correct</span><span class="o">=</span><span class="s2">&quot;ano&quot;</span><span class="p">,</span> <span class="n">incorrect</span><span class="o">=</span><span class="s2">&quot;ne&quot;</span><span class="p">),</span>
@@ -1307,6 +1344,15 @@
         <span class="n">default_instruction_prompt</span><span class="o">=</span><span class="p">(</span>
             <span class="s2">&quot;Veta: </span><span class="si">{text}</span><span class="se">\n\n</span><span class="s2">Určite, či je veta gramaticky správna alebo nie. &quot;</span>
             <span class="s2">&quot;Odpovedzte so </span><span class="si">{labels_str}</span><span class="s2">, a nič iné.&quot;</span>
+        <span class="p">),</span>
+    <span class="p">),</span>
+    <span class="n">SLOVENIAN</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
+        <span class="n">default_prompt_label_mapping</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">correct</span><span class="o">=</span><span class="s2">&quot;da&quot;</span><span class="p">,</span> <span class="n">incorrect</span><span class="o">=</span><span class="s2">&quot;ne&quot;</span><span class="p">),</span>
+        <span class="n">default_prompt_prefix</span><span class="o">=</span><span class="s2">&quot;Sledeče so stavki in ali so slovnično pravilni.&quot;</span><span class="p">,</span>
+        <span class="n">default_prompt_template</span><span class="o">=</span><span class="s2">&quot;Stavek: </span><span class="si">{text}</span><span class="se">\n</span><span class="s2">Slovnično pravilno: </span><span class="si">{label}</span><span class="s2">&quot;</span><span class="p">,</span>
+        <span class="n">default_instruction_prompt</span><span class="o">=</span><span class="p">(</span>
+            <span class="s2">&quot;Stavek: </span><span class="si">{text}</span><span class="se">\n\n</span><span class="s2">Ugotovite, ali je stavek slovnično pravilen ali ne. &quot;</span>
+            <span class="s2">&quot;Odgovorite z </span><span class="si">{labels_str}</span><span class="s2">, in nič drugega.&quot;</span>
         <span class="p">),</span>
     <span class="p">),</span>
     <span class="n">SERBIAN</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>

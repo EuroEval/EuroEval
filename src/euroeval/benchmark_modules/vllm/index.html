@@ -645,6 +645,10 @@
       
         
       
+        
+      
+        
+      
     
     
     
@@ -2274,7 +2278,47 @@
 <span class="normal">1268</span>
 <span class="normal">1269</span>
 <span class="normal">1270</span>
-<span class="normal">1271</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Generative models using the vLLM inference framework.&quot;&quot;&quot;</span>
+<span class="normal">1271</span>
+<span class="normal">1272</span>
+<span class="normal">1273</span>
+<span class="normal">1274</span>
+<span class="normal">1275</span>
+<span class="normal">1276</span>
+<span class="normal">1277</span>
+<span class="normal">1278</span>
+<span class="normal">1279</span>
+<span class="normal">1280</span>
+<span class="normal">1281</span>
+<span class="normal">1282</span>
+<span class="normal">1283</span>
+<span class="normal">1284</span>
+<span class="normal">1285</span>
+<span class="normal">1286</span>
+<span class="normal">1287</span>
+<span class="normal">1288</span>
+<span class="normal">1289</span>
+<span class="normal">1290</span>
+<span class="normal">1291</span>
+<span class="normal">1292</span>
+<span class="normal">1293</span>
+<span class="normal">1294</span>
+<span class="normal">1295</span>
+<span class="normal">1296</span>
+<span class="normal">1297</span>
+<span class="normal">1298</span>
+<span class="normal">1299</span>
+<span class="normal">1300</span>
+<span class="normal">1301</span>
+<span class="normal">1302</span>
+<span class="normal">1303</span>
+<span class="normal">1304</span>
+<span class="normal">1305</span>
+<span class="normal">1306</span>
+<span class="normal">1307</span>
+<span class="normal">1308</span>
+<span class="normal">1309</span>
+<span class="normal">1310</span>
+<span class="normal">1311</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Generative models using the vLLM inference framework.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">c</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">contextlib</span>
@@ -2282,6 +2326,7 @@
 <span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">shutil</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">t</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">functools</span><span class="w"> </span><span class="kn">import</span> <span class="n">partial</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
@@ -2318,6 +2363,7 @@
     <span class="n">InvalidModel</span><span class="p">,</span>
     <span class="n">NeedsEnvironmentVariable</span><span class="p">,</span>
     <span class="n">NeedsExtraInstalled</span><span class="p">,</span>
+    <span class="n">NeedsSystemDependency</span><span class="p">,</span>
 <span class="p">)</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..generation_utils</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">apply_prompt</span><span class="p">,</span>
@@ -2400,6 +2446,16 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="n">importlib</span><span class="o">.</span><span class="n">util</span><span class="o">.</span><span class="n">find_spec</span><span class="p">(</span><span class="s2">&quot;vllm&quot;</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">raise</span> <span class="n">NeedsExtraInstalled</span><span class="p">(</span><span class="n">extra</span><span class="o">=</span><span class="s2">&quot;generative&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">shutil</span><span class="o">.</span><span class="n">which</span><span class="p">(</span><span class="s2">&quot;nvcc&quot;</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">NeedsSystemDependency</span><span class="p">(</span>
+                <span class="n">dependency</span><span class="o">=</span><span class="s2">&quot;nvcc&quot;</span><span class="p">,</span>
+                <span class="n">instructions</span><span class="o">=</span><span class="p">(</span>
+                    <span class="s2">&quot;Please install the CUDA Toolkit from &quot;</span>
+                    <span class="s2">&quot;https://developer.nvidia.com/cuda-downloads or ensure that NVCC &quot;</span>
+                    <span class="s2">&quot;is available in your PATH.&quot;</span>
+                <span class="p">),</span>
+            <span class="p">)</span>
 
         <span class="n">raise_if_wrong_params</span><span class="p">(</span>
             <span class="n">model_config</span><span class="o">=</span><span class="n">model_config</span><span class="p">,</span> <span class="n">allowed_params</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">allowed_params</span>
@@ -2691,14 +2747,16 @@
             <span class="n">structured_outputs</span> <span class="o">=</span> <span class="n">StructuredOutputsParams</span><span class="p">(</span>
                 <span class="n">json</span><span class="o">=</span><span class="n">structured_generation_schema</span>
             <span class="p">)</span>
-        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">dataset_config</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">uses_logprobs</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">dataset_config</span><span class="o">.</span><span class="n">labels</span><span class="p">:</span>
+        <span class="k">elif</span> <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">dataset_config</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">uses_logprobs</span>
+            <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">dataset_config</span><span class="o">.</span><span class="n">labels</span>
+            <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">buffer</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;first_label_token_mapping&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
+        <span class="p">):</span>
             <span class="n">choice_labels</span> <span class="o">=</span> <span class="p">[</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">dataset_config</span><span class="o">.</span><span class="n">prompt_label_mapping</span><span class="p">[</span><span class="n">label</span><span class="p">]</span>
                 <span class="k">for</span> <span class="n">label</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">dataset_config</span><span class="o">.</span><span class="n">labels</span>
             <span class="p">]</span>
-            <span class="k">if</span> <span class="s2">&quot;first_label_token_mapping&quot;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">buffer</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">buffer</span><span class="p">[</span><span class="s2">&quot;first_label_token_mapping&quot;</span><span class="p">],</span> <span class="nb">dict</span>
-            <span class="p">):</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">buffer</span><span class="p">[</span><span class="s2">&quot;first_label_token_mapping&quot;</span><span class="p">],</span> <span class="nb">dict</span><span class="p">):</span>
                 <span class="n">choice_labels</span> <span class="o">=</span> <span class="p">[</span>
                     <span class="bp">self</span><span class="o">.</span><span class="n">buffer</span><span class="p">[</span><span class="s2">&quot;first_label_token_mapping&quot;</span><span class="p">][</span><span class="n">label</span><span class="p">]</span>
                     <span class="k">for</span> <span class="n">label</span> <span class="ow">in</span> <span class="n">choice_labels</span>
@@ -3207,6 +3265,32 @@
                 <span class="s2">&quot;If you trust the suppliers of this model, then you can enable &quot;</span>
                 <span class="s2">&quot;this by setting the `--trust-remote-code` flag.&quot;</span>
             <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
+        <span class="k">elif</span> <span class="s2">&quot;See stack trace for root cause.&quot;</span> <span class="ow">in</span> <span class="nb">str</span><span class="p">(</span>
+            <span class="n">e</span>
+        <span class="p">)</span> <span class="ow">or</span> <span class="s2">&quot;See root cause above.&quot;</span> <span class="ow">in</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">):</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;The model </span><span class="si">{</span><span class="n">model_id</span><span class="si">!r}</span><span class="s2"> could not be loaded, but vLLM did not &quot;</span>
+                <span class="s2">&quot;mention exactly what happened. &quot;</span>
+            <span class="p">)</span>
+            <span class="n">msg</span> <span class="o">+=</span> <span class="p">(</span>
+                <span class="p">(</span>
+                    <span class="s2">&quot;Since you&#39;re running in verbose mode, you might see a descriptive &quot;</span>
+                    <span class="s2">&quot;error above already. Note however that if the error message urges &quot;</span>
+                    <span class="s2">&quot;you to set the environment variable `VLLM_ATTENTION_BACKEND` to &quot;</span>
+                    <span class="s2">&quot;&#39;FLEX_ATTENTION&#39;, please try setting it to &#39;FLASH_ATTN&#39; first, as &quot;</span>
+                    <span class="s2">&quot;that often solves the issue, whereas &#39;FLEX_ATTENTION&#39; usually &quot;</span>
+                    <span class="s2">&quot;doesn&#39;t. If you don&#39;t see any descriptive error above, then you &quot;</span>
+                    <span class="s2">&quot;can try &quot;</span>
+                <span class="p">)</span>
+                <span class="k">if</span> <span class="n">benchmark_config</span><span class="o">.</span><span class="n">verbose</span>
+                <span class="k">else</span> <span class="s2">&quot;Try &quot;</span>
+            <span class="p">)</span>
+            <span class="n">msg</span> <span class="o">+=</span> <span class="p">(</span>
+                <span class="s2">&quot;re-running the benchmark with the environment variable `FULL_LOG` &quot;</span>
+                <span class="s2">&quot;set to `1` to see the full stack trace. E.g., &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;`FULL_LOG=1 euroeval --model </span><span class="si">{</span><span class="n">model_id</span><span class="si">}</span><span class="s2">`.&quot;</span>
+            <span class="p">)</span>
+            <span class="k">raise</span> <span class="n">InvalidModel</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
         <span class="k">raise</span> <span class="n">InvalidModel</span><span class="p">(</span>
             <span class="sa">f</span><span class="s2">&quot;The model </span><span class="si">{</span><span class="n">model_id</span><span class="si">!r}</span><span class="s2"> could not be loaded. The error was </span><span class="si">{</span><span class="n">e</span><span class="si">!r}</span><span class="s2">.&quot;</span>
         <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>

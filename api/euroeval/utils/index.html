@@ -651,6 +651,10 @@
       
         
       
+        
+      
+        
+      
     
     
     
@@ -1011,6 +1015,10 @@
       
         
           
+        
+      
+        
+      
         
       
         
@@ -2040,6 +2048,15 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#euroeval.utils.load_custom_datasets_module" class="md-nav__link">
+    <span class="md-ellipsis">
+      load_custom_datasets_module
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -2243,6 +2260,15 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#euroeval.utils.load_custom_datasets_module" class="md-nav__link">
+    <span class="md-ellipsis">
+      load_custom_datasets_module
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -2366,6 +2392,11 @@ Extract multiple choice labels from a prompt.</p>
 <p><span class="mkapi-item-name"><a href="./#euroeval.utils.split_model_id" title="euroeval.utils.split_model_id">split_model_id</a></span>
  <span class="mkapi-dash">&mdash;</span>
 Split a model ID into its components.</p>
+</li>
+<li>
+<p><span class="mkapi-item-name"><a href="./#euroeval.utils.load_custom_datasets_module" title="euroeval.utils.load_custom_datasets_module">load_custom_datasets_module</a></span>
+ <span class="mkapi-dash">&mdash;</span>
+Load the custom datasets module if it exists.</p>
 </li>
 </ul>
 </div>
@@ -3174,6 +3205,37 @@ The split model ID.</p>
 </li>
 <li>
 <p><span class="mkapi-item-type"><a href="../exceptions/#euroeval.exceptions.InvalidModel" title="euroeval.exceptions.InvalidModel">InvalidModel</a></span></p>
+</li>
+</ul>
+</div>
+</div>
+<p class="mkapi-object mkapi-page-source" id="euroeval.utils.load_custom_datasets_module">
+<span class="mkapi-object-link">
+
+
+<a href="../../../src/euroeval/utils/#euroeval.utils.load_custom_datasets_module" title="Go to source">source</a>
+<span class="mkapi-document-toggle" title="Toggle all docs">
+<i class="fa-regular fa-square-minus"></i>
+</span>
+</span>
+<span class="mkapi-object-name"><a href="./#euroeval.utils.load_custom_datasets_module" title="euroeval.utils.load_custom_datasets_module">load_custom_datasets_module</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-paren">)</span><span class="mkapi-arrow"> → </span><span class="mkapi-return"><span class="mkapi-tooltip" title="types.ModuleType">ModuleType</span> | None</span></span>
+</p>
+<div class="mkapi-document">
+<p>Load the custom datasets module if it exists.</p>
+<p class="mkapi-section">
+<span class="mkapi-object-link">
+<span class="mkapi-section-toggle" title="Toggle raises">
+<i class="fa-regular fa-square-minus"></i>
+</span>
+</span>
+<span class="mkapi-section-name">Raises</span>
+</p>
+<div class="mkapi-section-content">
+<ul class="mkapi-item-list">
+<li>
+<p><span class="mkapi-item-name">RuntimeError</span>
+ <span class="mkapi-dash">&mdash;</span>
+If the custom datasets module cannot be loaded.</p>
 </li>
 </ul>
 </div>

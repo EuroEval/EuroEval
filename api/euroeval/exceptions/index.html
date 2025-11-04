@@ -653,6 +653,10 @@
       
         
       
+        
+      
+        
+      
     
     
     
@@ -1013,6 +1017,10 @@
       
         
           
+        
+      
+        
+      
         
       
         
@@ -1631,6 +1639,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#euroeval.exceptions.NeedsSystemDependency" class="md-nav__link">
+    <span class="md-ellipsis">
+      NeedsSystemDependency
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#euroeval.exceptions.NeedsAdditionalArgument" class="md-nav__link">
     <span class="md-ellipsis">
       NeedsAdditionalArgument
@@ -2084,6 +2101,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#euroeval.exceptions.NeedsSystemDependency" class="md-nav__link">
+    <span class="md-ellipsis">
+      NeedsSystemDependency
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#euroeval.exceptions.NeedsAdditionalArgument" class="md-nav__link">
     <span class="md-ellipsis">
       NeedsAdditionalArgument
@@ -2174,6 +2200,11 @@ The evaluation requires extra to be installed.</p>
 <p><span class="mkapi-item-name"><a href="./#euroeval.exceptions.NeedsManualDependency" title="euroeval.exceptions.NeedsManualDependency">NeedsManualDependency</a></span>
  <span class="mkapi-dash">&mdash;</span>
 The evaluation requires a dependency to be manually installed.</p>
+</li>
+<li>
+<p><span class="mkapi-item-name"><a href="./#euroeval.exceptions.NeedsSystemDependency" title="euroeval.exceptions.NeedsSystemDependency">NeedsSystemDependency</a></span>
+ <span class="mkapi-dash">&mdash;</span>
+The evaluation requires a system-level dependency to be installed.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name"><a href="./#euroeval.exceptions.NeedsAdditionalArgument" title="euroeval.exceptions.NeedsAdditionalArgument">NeedsAdditionalArgument</a></span>
@@ -2422,6 +2453,45 @@ The extra that needs to be installed.</p>
 <p><span class="mkapi-item-name">package</span> : 
 <span class="mkapi-item-type">str</span> <span class="mkapi-dash">&mdash;</span>
 The package that needs to be manually installed.</p>
+</li>
+</ul>
+</div>
+</div>
+<p class="mkapi-object mkapi-page-source" id="euroeval.exceptions.NeedsSystemDependency">
+<span class="mkapi-object-link">
+
+
+<a href="../../../src/euroeval/exceptions/#euroeval.exceptions.NeedsSystemDependency" title="Go to source">source</a>
+<span class="mkapi-document-toggle" title="Toggle all docs">
+<i class="fa-regular fa-square-minus"></i>
+</span>
+</span><span class="mkapi-object-kind">class</span>
+<span class="mkapi-object-name"><a href="./#euroeval.exceptions.NeedsSystemDependency" title="euroeval.exceptions.NeedsSystemDependency">NeedsSystemDependency</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">dependency</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str</span><span class="mkapi-comma">, </span><span class="mkapi-arg">instructions</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str</span><span class="mkapi-paren">)</span></span>
+</p>
+<div class="mkapi-document">
+<p class="mkapi-bases">Bases :
+<span class="mkapi-base"><a href="./#euroeval.exceptions.InvalidModel" title="euroeval.exceptions.InvalidModel">InvalidModel</a></span></p>
+<p>The evaluation requires a system-level dependency to be installed.</p>
+<p>Initialise the exception.</p>
+<p class="mkapi-section">
+<span class="mkapi-object-link">
+<span class="mkapi-section-toggle" title="Toggle parameters">
+<i class="fa-regular fa-square-minus"></i>
+</span>
+</span>
+<span class="mkapi-section-name">Parameters</span>
+</p>
+<div class="mkapi-section-content">
+<ul class="mkapi-item-list">
+<li>
+<p><span class="mkapi-item-name">dependency</span> : 
+<span class="mkapi-item-type">str</span> <span class="mkapi-dash">&mdash;</span>
+The system dependency that needs to be installed.</p>
+</li>
+<li>
+<p><span class="mkapi-item-name">instructions</span> : 
+<span class="mkapi-item-type">str</span> <span class="mkapi-dash">&mdash;</span>
+Instructions on how to install the dependency.</p>
 </li>
 </ul>
 </div>

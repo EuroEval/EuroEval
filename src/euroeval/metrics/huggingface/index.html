@@ -645,6 +645,10 @@
       
         
       
+        
+      
+        
+      
     
     
     
@@ -1275,7 +1279,7 @@
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Close any resources held by the metric.&quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">metric</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">metric</span><span class="o">.</span><span class="n">filelock</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">metric</span><span class="o">.</span><span class="n">filelock</span><span class="o">.</span><span class="n">release</span><span class="p">(</span><span class="n">force</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">metric</span><span class="o">.</span><span class="n">filelock</span><span class="o">.</span><span class="n">_release</span><span class="p">()</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">metric</span><span class="o">.</span><span class="n">writer</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">metric</span><span class="o">.</span><span class="n">writer</span><span class="o">.</span><span class="n">finalize</span><span class="p">(</span><span class="n">close_stream</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
