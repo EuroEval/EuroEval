@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 
+- Added support for Bosnian 🇧🇦! This includes the sentiment classification dataset MMS-bs.
 - Added support for Croatian 🇭🇷! This includes the sentiment classification dataset
   MMS-hr, the linguistic acceptability dataset ScaLA-hr, the named entity recognition
   dataset WikiANN-hr, the reading comprehension dataset MultiWikiQA-hr, the knowledge
@@ -2820,7 +2821,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Removed support for TensorFlow and Jax models, due to them not working
   properly anyway. They might be included at a later point, properly.
 
-##  [v1.4.0] - 2021-11-25
+## [v1.4.0] - 2021-11-25
 
 ### Changed
 
