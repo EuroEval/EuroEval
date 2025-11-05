@@ -2,7 +2,7 @@
 
 from ..data_models import DatasetConfig
 from ..languages import BOSNIAN
-from ..tasks import COMMON_SENSE, KNOW, NER, RC, SENT
+from ..tasks import NER, RC, SENT, SUMM
 
 ### Official datasets ###
 
@@ -30,19 +30,10 @@ MULTI_WIKI_QA_BS_CONFIG = DatasetConfig(
     languages=[BOSNIAN],
 )
 
-MMLU_HR_CONFIG = DatasetConfig(
-    name="mmlu-hr",
-    pretty_name="MMLU-hr",
-    source="EuroEval/mmlu-hr-mini",
-    task=KNOW,
+LR_SUM_BS_CONFIG = DatasetConfig(
+    name="lr-sum-bs",
+    pretty_name="LRSum-bs",
+    source="EuroEval/lr-sum-bs-mini",
+    task=SUMM,
     languages=[BOSNIAN],
-)
-
-WINOGRANDE_HR_CONFIG = DatasetConfig(
-    name="winogrande-hr",
-    pretty_name="Winogrande-hr",
-    source="EuroEval/winogrande-hr",
-    task=COMMON_SENSE,
-    languages=[BOSNIAN],
-    _labels=["a", "b"],
 )

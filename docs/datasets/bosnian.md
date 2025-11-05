@@ -156,81 +156,6 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset wikiann-bs
 ```
 
-## Linguistic Acceptability
-
-### ScaLA-hr
-
-This dataset was published in [this paper](https://aclanthology.org/2023.nodalida-1.20/)
-and was automatically created from the [Croatian Universal Dependencies
-treebank](https://github.com/UniversalDependencies/UD_Croatian-SET) by assuming that the
-documents in the treebank are correct, and corrupting the samples to create
-grammatically incorrect samples. The corruptions were done by either removing a word
-from a sentence, or by swapping two neighbouring words in a sentence. To ensure that
-this does indeed break the grammaticality of the sentence, a set of rules were used on
-the part-of-speech tags of the words in the sentence.
-
-The original full dataset consists of 1,024 / 256 / 2,048 samples for training,
-validation and testing, respectively (so 3,328 samples used in total). These splits are
-used as-is in the framework.
-
-Here are a few examples from the training split:
-
-```json
-{
-    "text": "Nakon kratke intervencije, tijekom koje sam saznala kada se taj osjećaj prvog puta pojavio i zbog čega, sve je nestalo i već mjesecima živim bez opterećenja koji me pratilo cijelog života.",
-    "label": "correct"
-}
-```
-
-```json
-{
-    "text": "Svaki od tih sklopova, i dijelova mora biti homologiran i sukladan s ostalima.",
-    "label": "incorrect"
-}
-```
-
-```json
-{
-    "text": "Prvi među njima je Laurent Blanc, koji drži Romu na čekanju, a s Parkom prinčeva povezivan je i Fabio Capello.",
-    "label": "correct"
-}
-```
-
-When evaluating generative models, we use the following setup (see the
-[methodology](/methodology) for more information on how these are used):
-
-- Number of few-shot examples: 12
-- Prefix prompt:
-
-  ```text
-  Sljedeće su rečenice i jesu li gramatički ispravne.
-  ```
-
-- Base prompt template:
-
-  ```text
-  Rečenica: {text}
-  Gramatički ispravna: {label}
-  ```
-
-- Instruction-tuned prompt template:
-
-  ```text
-  Rečenica: {text}
-
-  Odredite je li rečenica gramatički ispravna ili ne. Odgovorite s 'da' ako je ispravna, i s 'ne' ako nije. Odgovorite samo tom riječju i ničim drugim.
-  ```
-
-- Label mapping:
-  - `correct` ➡️ `da`
-  - `incorrect` ➡️ `ne`
-
-You can evaluate this dataset directly as follows:
-
-```bash
-euroeval --model <model-id> --dataset scala-hr
-```
-
 ## Reading Comprehension
 
 ### MultiWikiQA-bs
@@ -311,150 +236,71 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset multi-wiki-qa-bs
 ```
 
-## Knowledge
+## Summarisation
 
-### MMLU-hr
+### LR-Sum-bs
 
-This dataset was published in
-[this paper](https://doi.org/10.48550/arXiv.2410.08928) and is a machine
-translated version of the English [MMLU dataset](https://openreview.net/forum?id=d7KBjmI3GmQ).
-It features questions within 57 different topics, such as elementary mathematics, US
-history, and law. DeepL was used to translate the dataset to Croatian.
+This dataset was published in [this paper](https://aclanthology.org/2023.findings-acl.427/).
+The source data is public domain newswire collected from Voice of America websites,
+and the summaries are human-written.
 
-The original full dataset consists of 254 / 12,338 samples for
-validation and testing. These splits were merged, duplicates removed, and
-new splits were created with 1,024 / 256 / 2048 samples for training, validation, and
-testing, respectively.
+The original dataset contains 5,784 / 722 / 723 samples for the training, validation, and
+and test splits, respectively. We use 1,024 / 256 / 2,048 samples for our training,
+validation and test splits, respectively. The train and validation splits are subsets
+of the original splits. For the test split, we use all available test samples and
+supplement with additional samples from the training set to reach 2,048 samples in
+total.
 
 Here are a few examples from the training split:
 
 ```json
 {
-    "text": "Kako se odvija lateralna komunikacija u organizaciji?\nIzbori:\na. Informacije se prenose prema gore.\nb. Informacije se prenose prema dolje.\nc. Informacije su dvosmjerni proces.\nd. Informacije se prenose između različitih odjela i funkcija.",
-    "label": "d"
+    "text": "Komisija 9/11: američki dužnosnici nisu shvaćali razmjere opasnosti od al-Qaide (23/7/04) - 2004-07-23\n\nKomisija koja je istraživala terorističke napade na Sjedinjene Države 2001. godine ocjenjuje da američki dužnosnici nisu shvaćali razmjere opasnosti koju je predstavljala al-Qaidina mreža. Neovisni panel objavio je svoje zaključke na tiskovnoj konferenciji u Washingtonu. Iznoseći osnovne zaključke izvještaja, predsjedatelj komisije Thomas Kean rekao je da američka vlast nije bila dovoljno aktivna u borbi protiv opasnosti koju je predstavljala al-Qaida. Panel je ocijenio da je u svim dijelovima vlasti bilo propusta glede “razumijevanja, određivanja politike, osposobljenosti i rukovođenja”. Vojska je – kako se navodi – ponudila tek ograničene opcije u vezi s napadima na al-Qaidu, a djelovanje obavještajnih službi bilo je otežano krutim budžetom i birokratskim suparništvom. U izvještaju se navodi da nitko ne može znati jesu li postojale neke mjere koje su mogle onemogućiti napade, ali se dodaje da planove al-Qaide nije ni omelo, niti odgodilo ništa što su poduzele vlade predsjednika Clintona i Busha. Komisija je pozvala na formiranje saveznog centra za kontra-terorizam, na čijem bi čelu bio direktor ministarskog ranga s obavezom da nadzire rad svih američkih obavještajnih službi. Predsjedatelj komisije Thomas Kean je ocijenio da su Sjedinjene Države i dalje sučeljene sa – kako je rekao – “jednim od najvećih sigurnosnih izazova u našoj povijesti.” Obrazlažući potrebu stvaranja ministarskog položaja za obavještajni rad, član komisije Lee Hamilton rekao je da su informacije i odgovornost sada razvučeni po brojnim obavještajnim službama. On se također založio za davanje više ovlasti kongresnim tijelima za nadzor obavještajnih službi. Samo nekoliko sati nakon što je komisija objavila svoje nalaze, predsjednik Bush je rekao da je suglasan sa zaključkom da su teroristi 2001. iskoristili duboke institucionalne propuste u obrani zemlje: “Preporuke komisije podudarne su sa strategijom koju moja administracija slijedi u nadilaženju propusta i u borbi do pobjede nad terorizmom.” Predsjednik Bush se još nije službeno obvezao na provedbu bilo koje od komisijinih preporuka, ali je rekao da će one biti pažljivo razmotrene. U izvješću komisije navodi se da nisu pronađeni nikakvi dokazi da je bivši irački predsjednik Saddam Hussein ikada “operativno surađivao” s al-Qaidom. Obavještajni podaci ukazuju na “prijateljske kontakte” Iraka s al-Qaidom prije 11.rujna 2001.godine, ali komisija nije pronašla nikakve dokaze da su Bagdad i al-Qaida surađivali u planiranju i izvršenju napada na Sjedinjene Države. Što se Irana tiče, komisija nije pronašla dokaze da je Teheran bio upoznat s napadima na New York i Washington. No, kako se dodaje, to pitanje treba dalje istraživati. Također se navodi da su iranske vlasti omogućile al-Qaidinim članovima da putuju preko Irana bez da im se u pasoše ubilježi kad su ušli i izašli iz te zemlje.",
+    "target_text": "Izvješće komisije navodi se da nisu pronađeni nikakvi dokazi da je Saddam Hussein ikada “operativno surađivao” s al-Qaidom"
 }
 ```
 
 ```json
 {
-    "text": "Kako astronomi misle da Jupiter generira svoju unutarnju toplinu?\nIzbori:\na. kroz egzotermne kemijske reakcije koje pretvaraju kemijsku potencijalnu energiju u toplinsku energiju\nb. nuklearna fuzija\nc. kontrakcijom koja mijenja gravitacijsku potencijalnu energiju u toplinsku energiju\nd. unutarnje trenje zbog njegove brze rotacije i diferencijalne rotacije",
-    "label": "c"
+    "text": "Vlada prihvaća odluku Žalbenog vijeća Haškog suda u predmetu Bobetko (29/11/02) - 2002-11-29\n\nVijest da je Žalbeno vijeće Haškog suda odbilo oba podneska hrvatske Vlade u vezi s optužniom protiv generala Janka Bobetka u hrvatskoj pravnoj i političkoj javnosti – ako je suditi po prvim reakcijama – nikoga nije posebno iznenadila. Odvjetnik Goran Mikuličić, pravni savjetnik hrvatske Vlade u odnosima s Haškim sudom, ovako je prokomentirao vijest o odbijanju hrvatskih podnesaka u Haagu. “Naša Vlada prihvaća odluku. Vlada ne polemizira s odlukom i ne komentira odluku jer to je odluka nadležnog suda s kojim nema dalje nikakve pravne rasprave”. Mikuličić je objasnio koji su daljnji koraci Vlade nakon ovakvih vijesti iz Haaga. “Daljnji postupak Vlade će biti objaveštavanje tajništva Haškog tribunala o nalazu liječničkih ekperata koje je angažirao Županijski sud u Zagrebu. Oni su utvrdili da general Bobetko nije sposoban aktivno sudjelovati u postupku, zbog svog lošeg zdravstvenog stanja, i Vlada će posegnuti za odredbama pravila 59., i izvjestiti tajništvo o nemogućnosti udovoljenja zahtjevu zbog objektivnih okolnosti. Osim pravne donosimo i političke reakcije na odluku Žalbenog vijeća u slučaju Bobetko. SDP-ovac Mato Arlović, koji je i predsjednik saborskog Odbora za ustav i poslovnik, kaže da je vladajuća koalicija bila spremna i na povoljnu i na nepovoljnu odluku Žalbenog vijeća Haškog suda. “U tom poledu mislim da je najveća vrijetnost da je haški sud, raspravljajući o prigovorima Republike Hrvatske priznao Hrvatskoj da se može koristiti pravom koje ovi dokumenti daju i da raspravljajući o našim navodima i našim argumentima donio odluku. Drugo je pitanje što mi nismo imali dostatne dokaze da svoja stajališta i potvrdimo i da ih Haški sud prihvati.” Iako je Vlada za pravne korake koje je poduzela oko optužnice protiv generala Bobetka imala potporu ne samo stranaka vladajuće koalicije nego i opozicije, oporbene stranke danas izražavaju negodovanje zbog načina na koji je Vlada branila interese haških optuženika, svojih državljana. Predsjednik Hrvatskog bloka, Ivić Pašalić, smatra da je Račanova Vlada od samog početka svog mandata povela pogrešnu politiku prema Haškom sudu. Problem, po njemu, potječe od saborske deklaracije koju je vladajuća koalicija izglasala još u svibnju 2000., a u kojoj je priznala nadležnost haškog suda za akcije “Bljesak” i “Oluja”. “Prema tome riječ je o promašenoj strategiji sadašnje Vlade koja je jednostavno kulminirala dolaskom nekoliko optužnica u kojima se Vlada ponašala različito. U slučaju generala Gotovine nije napravila ništa nego je dala žalbu Carli del Ponte koja ju je ekspresno vratila natrag, a u slučaju optužnice protiv generala Bobetka, pritisnuta reakcijama u parlamentu i javnosti pokušali su nešto napraviti, ali očito pravno i politički loše”. Pašalić, međutim, ne spominje ustavni zakon o suradnji s Haškim sudom koji obvezuje hrvatske vlasti na suradnju sa sudom, a kojeg je 1996. donijela Hrvatska demokratska zajednica, stranka kojoj je i sam tada pripadao.",
+    "target_text": "Odbijanje hrvatskih podnesaka nikoga nije posebno iznenadilo u pravnim i političkim krugovima"
 }
 ```
 
 ```json
 {
-    "text": "Ako se parabola $y_1 = x^2 + 2x + 7$ i pravac $y_2 = 6x + b$ sijeku u samo jednoj točki, koja je vrijednost $b$?\nIzbori:\na. 7\nb. 3\nc. 12\nd. 4",
-    "label": "b"
+    "text": "Lječnici udvostručavaju napore na promoviranju vakcinacije kao najbolje zaštite protiv H1N1\n\nZemlje zapadne hemisfere su odpočeledistribuirati H1N1 vakcine u okviru obimnog programa imunizacije protiv virusnepandemije svinjske gripe. Roditelji i neki profesionalci su zabrinuti okosigirnosti vakcine, dok neki doktori dovode u sumnju sposobnosti bolnica da senose sa težim slučajevima. Veliki broj ljudi u Sjedinjenim Državamadolazi u klinike za vakcinaciju. Michelle Lowrey ima troje djece itrudna je sa četvrtim: \"Ja imam sve razloge da budemovdje.\" Trudne žene su izložene većem rizikukomplikacija ukoliko se zaraze virusom H1N1. I do sada je najmanje 86 američkedjece umrlo od novog virusa. Katherine Blake brine za svog sina: \"On je u visoko rizičnoj grupi.Kao dijete je imao otvorenu operaciju srca, i jako me je strah da se nezarazi.\" Američki centar za kontrolu bolestije izvjestio da se novi virus prehlade raširio kroz veći dio zemlje. I poredtoga, neki Amerikanci kažu da neće primiti vakcinu. Mi živimo u Sacramentu. Ima nekihslučajeva svinjske gripe, ali ne mnogo, tako da nas to, zaista, nije pogodilo,kaže jedan čovjek na ulici Washingtona. Neke brine koliko je vakcinasigurna, jer je tako brzo proizvedena, i zato što sadrži konzervanse za kojeneki roditelji tvrde da mogu uzrokovati autizam. Dr. Anne Schuchat iz AmeričkogCentra za kontrolu bolesti kaže da je vakcina sigurna i može se dobiti i bezkonzervansa: \"Mi nismo zanemarili sigurnostu proizvodnji ovih vakcina, ili testiranju i nadgledanju ovih vakcina. I veomaje važno da se ovaj proces obavi pažljivo i sigurno.\" Zdravstveni zvaničnici i lječniciudvostručavaju napore na promoviranju vakcinacije kao najbolje zaštite protivH1N1 virusa. Dr. Peter Holbrooke iz Medicinskogcentra za zaštitu djece u Washingtonu kaže da ljudi griješe kada misle da jeova groznica slična običnoj prehladi: \"Veoma je važno da se dobro razmislio vakcini i bolesti koju ona spriječava. To nije blaga, nego značajnabolest.\" Dr. Holbrooke kaže da čak i umjerenislučajevi izazivaju ozbiljnu bolest i teži slučajevi mogu ubrzano pogoršatistanje. Doktora Arthura Kellermanna saMedicinskog fakulteta Emory brine gdje smjestiti pacijente koji trebajuintenzivnu njegu: \"Mi trebamo pripremiti našekapacitete za intenzivnu njegu i naš zdravstveni sistem za mogućnost donošenjateških odluka - ko može dobiti intenzivnu njegu, a ko ne može.\" Ukoliko H1N1 se virus nastavirazvijati onim tempom kakvim je krenuo nakon što se pojavio u martu, bolestdostiže vrhunac i počinje da opada za otprilike sedam sedmica. Ako je to tako,moglo bi biti da je ona već na vrhuncu u Sjedinjenim Državama, smatra dr.Holbrooke: \"Ali treba shvatiti da veomalako može usljediti drugi val tokom zime.\" Svi se specijalisti slažu u tome daje izbijanje nove groznice nepredvidljivo. I nema dovoljno vakcine H1N1, čak niu Sjedinjenim Državama. Što se tiče zemalja u razvoju, izSvjetske zdravstvene organizacije kažu da bi za njih medjunarodne donacijevakcine trebale početi stizati za nekoliko sedmica.",
+    "target_text": "Zemlje zapadne hemisfere su odpočele distribuirati H1N1 vakcine u okviru obimnog programa imunizacije protiv virusne pandemije svinjske"
 }
 ```
 
 When evaluating generative models, we use the following setup (see the
 [methodology](/methodology) for more information on how these are used):
 
-- Number of few-shot examples: 5
+- Number of few-shot examples: 1
 - Prefix prompt:
 
   ```text
-  Sljedeća su pitanja s višestrukim izborom (s odgovorima).
+  Slijede dokumenti s priloženim sažecima.
   ```
 
 - Base prompt template:
 
   ```text
-  Pitanje: {text}
-  Izbori:
-  a. {option_a}
-  b. {option_b}
-  c. {option_c}
-  d. {option_d}
-  Odgovor: {label}
+  Dokument: {text}
+  Sažetak: {target_text}
   ```
 
 - Instruction-tuned prompt template:
 
   ```text
-  Pitanje: {text}
+  Dokument: {text}
 
-  Odgovorite na gornje pitanje koristeći 'a', 'b', 'c' ili 'd', i ništa drugo.
+  Napišite sažetak gornjeg dokumenta.
   ```
 
 You can evaluate this dataset directly as follows:
 
 ```bash
-euroeval --model <model-id> --dataset mmlu-hr
-```
-
-## Common-sense Reasoning
-
-### Winogrande-hr
-
-This dataset was published in
-[this paper](https://doi.org/10.48550/arXiv.2506.19468) and is a translated
-and filtered version of the English
-[Winogrande dataset](https://doi.org/10.1145/3474381). DeepL was used to
-translate the dataset to Croatian.
-
-The original full dataset consists of 47 / 1,210 samples for training and testing, and
-we use 128 of the test samples for validation, resulting in a 47 / 128 / 1,085 split for
-training, validation and testing, respectively.
-
-Here are a few examples from the training split:
-
-```json
-{
-    "text": "Nisam mogao kontrolirati vlagu kao što sam kontrolirao kišu, jer je _ dolazila odasvud. Na što se odnosi praznina _?\nIzbori:\na. vlaga\nb. kiša",
-    "label": "a"
-}
-```
-
-```json
-{
-    "text": "Jessica je mislila da je Sandstorm najbolja pjesma ikad napisana, ali Patricia ju je mrzila. _ je kupila kartu za jazz koncert. Na što se odnosi praznina _?\nIzbori:\na. Jessica\nb. Patricia",
-    "label": "b"
-}
-```
-
-```json
-{
-    "text": "Termostat je pokazivao da je dolje dvadeset stupnjeva hladnije nego gore, pa je Byron ostao u _ jer mu je bilo hladno. Na što se odnosi praznina _?\nIzbori:\na. dolje\nb. gore",
-    "label": "b"
-}
-```
-
-When evaluating generative models, we use the following setup (see the
-[methodology](/methodology) for more information on how these are used):
-
-- Number of few-shot examples: 5
-- Prefix prompt:
-
-  ```text
-  Sljedeća su pitanja s višestrukim izborom (s odgovorima).
-  ```
-
-- Base prompt template:
-
-  ```text
-  Pitanje: {text}
-  Mogućnosti:
-  a. {option_a}
-  b. {option_b}
-  Odgovor: {label}
-  ```
-
-- Instruction-tuned prompt template:
-
-  ```text
-  Pitanje: {text}
-  Mogućnosti:
-  a. {option_a}
-  b. {option_b}
-
-  Odgovorite na gornje pitanje koristeći 'a' ili 'b', i ništa drugo.
-  ```
-
-You can evaluate this dataset directly as follows:
-
-```bash
-euroeval --model <model-id> --dataset winogrande-hr
+euroeval --model <model-id> --dataset lr-sum-bs
 ```
