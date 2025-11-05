@@ -79,7 +79,7 @@ euroeval --model <model-id> --dataset mms-bs
 
 ## Named Entity Recognition
 
-### WikiANN-hr
+### WikiANN-bs
 
 This dataset was published in [this paper](https://aclanthology.org/P17-1178/) and is
 part of a cross-lingual named entity recognition framework for 282 languages from
@@ -96,22 +96,22 @@ Here are a few examples from the training split:
 
 ```json
 {
-    "tokens": array(["Ubrzo", "su", "uslijedile", "narudžbe", "iz", "cijele", "Britanske", "zajednice", "naroda", "."], dtype=object),
-    "labels": ["O", "O", "O", "O", "O", "O", "B-ORG", "I-ORG", "I-ORG", "O"]
+    "tokens": ["Čehoslovačka", ",", "Francuska", ",", "Mađarska", ",", "Meksiko", ",", "Švicarska", ",", "Urugvaj"],
+    "labels": ["B-LOC", "O", "B-LOC", "O", "B-LOC", "O", "B-LOC", "O", "B-LOC", "O", "B-LOC"],
 }
 ```
 
 ```json
 {
-    "tokens": array(["``", "(", "Cole", "Porter", ")"], dtype=object),
-    "labels": ["O", "O", "B-PER", "I-PER", "O"]
+    "tokens": ["godine", ",", "naselje", "je", "ukinuto", "i", "pripojeno", "naselju", "Bribir", "."],
+    "labels": ["O", "O", "O", "O", "O", "O", "O", "O", "B-LOC", "O"],
 }
 ```
 
 ```json
 {
-    "tokens": array(["'", "''", "La", "Liga", "2009.", "/", "10", "."], dtype=object),
-    "labels": ["O", "O", "B-ORG", "I-ORG", "O", "O", "O", "O"]
+    "tokens": ["Administrativno", "središte", "oblasti", "je", "Tjumenj", "."],
+    "labels": ["O", "O", "O", "O", "B-LOC", "O"],
 }
 ```
 
@@ -122,14 +122,14 @@ When evaluating generative models, we use the following setup (see the
 - Prefix prompt:
 
   ```text
-  Sljedeće su rečenice i JSON rječnici s imenicama koje se pojavljuju u rečenicama.
+  Slijede rečenice i JSON riječnici s imenovanim entitetima koji se pojavljuju u rečenicama.
   ```
 
 - Base prompt template:
 
   ```text
   Rečenica: {text}
-  Imenovane entiteti: {label}
+  Imenovani entiteti: {label}
   ```
 
 - Instruction-tuned prompt template:
@@ -137,7 +137,7 @@ When evaluating generative models, we use the following setup (see the
   ```text
   Rečenica: {text}
 
-  Identificirajte imenovane entitete u rečenici. Prikažite ih kao JSON rječnik s ključevima 'osoba', 'mjesto', 'organizacija' i 'razno'. Vrijednosti trebaju biti popisi imenovanih entiteta navedenog tipa, točno kako se pojavljuju u rečenici.
+  Identificirajte imenovane entitete u rečenici. Prikažite ih kao JSON riječnik s ključevima 'osoba', 'mjesto', 'organizacija' i 'razno'. Vrijednosti trebaju biti popisi imenovanih entiteta navedenog tipa, točno kako se pojavljuju u rečenici.
   ```
 
 - Label mapping:
@@ -153,7 +153,7 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-euroeval --model <model-id> --dataset wikiann-hr
+euroeval --model <model-id> --dataset wikiann-bs
 ```
 
 ## Linguistic Acceptability

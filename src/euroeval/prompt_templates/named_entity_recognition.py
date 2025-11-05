@@ -4,6 +4,7 @@ import typing as t
 
 from ..data_models import PromptConfig
 from ..languages import (
+    BOSNIAN,
     BULGARIAN,
     CROATIAN,
     CZECH,
@@ -38,6 +39,30 @@ if t.TYPE_CHECKING:
 
 
 NER_TEMPLATES: dict["Language", PromptConfig] = {
+    BOSNIAN: PromptConfig(
+        default_prompt_label_mapping={
+            "b-per": "osoba",
+            "i-per": "osoba",
+            "b-loc": "mjesto",
+            "i-loc": "mjesto",
+            "b-org": "organizacija",
+            "i-org": "organizacija",
+            "b-misc": "razno",
+            "i-misc": "razno",
+        },
+        default_prompt_prefix=(
+            "Slijede rečenice i JSON riječnici s imenovanim entitetima "
+            "koji se pojavljuju u rečenicama."
+        ),
+        default_prompt_template=("Rečenica: {text}\nImenovani entiteti: {label}"),
+        default_instruction_prompt=(
+            "Rečenica: {text}\n\n"
+            "Identificirajte imenovane entitete u rečenici. Prikažite ih kao "
+            "JSON riječnik s ključevima {labels_str}. Vrijednosti trebaju biti "
+            "popisi imenovanih entiteta navedenog tipa, točno kako se pojavljuju "
+            "u rečenici."
+        ),
+    ),
     BULGARIAN: PromptConfig(
         default_prompt_label_mapping={
             "b-per": "лице",

@@ -2,7 +2,7 @@
 
 from ..data_models import DatasetConfig
 from ..languages import BOSNIAN
-from ..tasks import COMMON_SENSE, KNOW, LA, NER, RC, SENT
+from ..tasks import COMMON_SENSE, KNOW, NER, RC, SENT
 
 ### Official datasets ###
 
@@ -14,18 +14,10 @@ MMS_BS_CONFIG = DatasetConfig(
     languages=[BOSNIAN],
 )
 
-SCALA_HR_CONFIG = DatasetConfig(
-    name="scala-hr",
-    pretty_name="ScaLA-hr",
-    source="EuroEval/scala-hr",
-    task=LA,
-    languages=[BOSNIAN],
-)
-
-WIKIANN_HR_CONFIG = DatasetConfig(
-    name="wikiann-hr",
-    pretty_name="WikiANN-hr",
-    source="EuroEval/wikiann-hr-mini",
+WIKIANN_BS_CONFIG = DatasetConfig(
+    name="wikiann-bs",
+    pretty_name="WikiANN-bs",
+    source="EuroEval/wikiann-bs-mini",
     task=NER,
     languages=[BOSNIAN],
 )
