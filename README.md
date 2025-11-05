@@ -156,21 +156,41 @@ sentiment-classification`.
 
 If the model you want to benchmark is hosted by a custom inference provider, such as a
 [vLLM server](https://docs.vllm.ai/en/stable/), then this is also supported in EuroEval.
+
 When benchmarking, you simply have to set the `--api-base` argument (`api_base` when
 using the `Benchmarker` API) to the URL of the inference API, and optionally the
 `--api-key` argument (`api_key`) to the API key, if authentication is required.
 
-Thus, the following is an example of benchmarking a model available through an
-OpenAI-compatible inference API (e.g., via vLLM or Ollama), hosted locally:
+If you're benchmarking an Ollama model, then you're urged to add the prefix
+`ollama_chat/` to the model name, as that will also pull the models from the Ollama
+model repository before evaluating it, e.g.:
+
+```bash
+euroeval --model ollama_chat/mymodel --api-base http://localhost:11434
+```
+
+For all other OpenAI-compatible inference APIs, you simply provide the model name as
+is, e.g.:
 
 ```bash
 euroeval --model my-model --api-base http://localhost:8000
 ```
 
-To add authentication, you simply add the `--api-key` argument:
+Again, if the inference API requires authentication, you simply add the `--api-key`
+argument:
 
 ```bash
 euroeval --model my-model --api-base http://localhost:8000 --api-key my-secret-key
+```
+
+When using the `Benchmarker` API, the same applies. Here is an example of benchmarking
+an Ollama model hosted locally:
+
+```python
+>>> benchmarker.benchmark(
+...     model="ollama_chat/mymodel",
+...     api_base="http://localhost:11434",
+... )
 ```
 
 ## Benchmarking in an offline environment
