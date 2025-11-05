@@ -162,8 +162,8 @@ using the `Benchmarker` API) to the URL of the inference API, and optionally the
 `--api-key` argument (`api_key`) to the API key, if authentication is required.
 
 If you're benchmarking an Ollama model, then you're urged to add the prefix
-`ollama_chat/` to the model name, as that will also pull the models from the Ollama
-model repository before evaluating it, e.g.:
+`ollama_chat/` to the model name, as that will also fetch model metadata as well as pull
+the models from the Ollama model repository before evaluating it, e.g.:
 
 ```bash
 euroeval --model ollama_chat/mymodel --api-base http://localhost:11434
