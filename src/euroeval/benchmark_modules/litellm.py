@@ -320,6 +320,19 @@ class LiteLLMModel(BenchmarkModule):
                 "The inputs must contain either 'messages' or 'text' keys."
             )
 
+        # Add the default `openai/` prefix to the model ID if we're benchmarking a
+        # custom API inference server and no prefix is used, just to make it more
+        # convenient for the user.
+        model_id = self.model_config.model_id
+        if (
+            self.benchmark_config.api_base is not None
+            and not re.search(
+                pattern=r"^[a-zA-Z0-9_-]+\/", string=self.model_config.model_id
+            )
+            is not None
+        ):
+            model_id = f"openai/{self.model_config.model_id}"
+
         # Get the mapping from labels to the first token in the label. We call this each
         # time we generate a new dataset since the dataset config can change
         self.buffer["first_label_token_mapping"] = get_first_label_token_mapping(
@@ -334,6 +347,7 @@ class LiteLLMModel(BenchmarkModule):
         inputs_to_run: c.Sequence[
             tuple[int, c.Sequence[litellm.AllMessageValues] | str]
         ] = list(enumerate(model_inputs))
+        max_concurrent_calls: int = 20
         for attempt in range(num_attempts := 10):
             if not inputs_to_run:
                 break
@@ -345,8 +359,9 @@ class LiteLLMModel(BenchmarkModule):
             batch_indices, batch_inputs = zip(*inputs_to_run)
             successes, failures = safe_run(
                 self._generate_async(
-                    model_id=self.model_config.model_id,
+                    model_id=model_id,
                     inputs=list(batch_inputs),
+                    max_concurrent_calls=max_concurrent_calls,
                     **generation_kwargs,
                 )
             )
@@ -372,6 +387,10 @@ class LiteLLMModel(BenchmarkModule):
                 f"{failures[0][1]}.",
                 level=logging.DEBUG,
             )
+
+            # TODO: Check if any errors are due to HTTP 429 (too many requests), in
+            # which case we reduce the number of concurrent calls
+            pass
 
             # Attempt to handle the exceptions, to improve the chance of getting
             # successful generations next time around
@@ -687,6 +706,7 @@ class LiteLLMModel(BenchmarkModule):
         self,
         model_id: str,
         inputs: c.Sequence[c.Sequence[litellm.AllMessageValues] | str],
+        max_concurrent_calls: int,
         **generation_kwargs,
     ) -> tuple[
         c.Sequence[tuple[int, "ModelResponse"]], c.Sequence[tuple[int, Exception]]
@@ -698,6 +718,8 @@ class LiteLLMModel(BenchmarkModule):
                 The ID of the model to use for generation.
             inputs:
                 The inputs to pass to the model.
+            max_concurrent_calls:
+                The maximum number of concurrent calls to make to the model.
             **generation_kwargs:
                 Additional generation arguments to pass to the model.
 
@@ -718,7 +740,6 @@ class LiteLLMModel(BenchmarkModule):
         )
 
         # Get the LLM generations asynchronously
-        max_concurrent_calls = 20
         semaphore = asyncio.Semaphore(max_concurrent_calls)
         if self.generative_type == GenerativeType.BASE:
             if not all(isinstance(input_, str) for input_ in inputs):
@@ -1559,6 +1580,7 @@ class LiteLLMModel(BenchmarkModule):
                 self._generate_async(
                     model_id=self.model_config.model_id,
                     inputs=[test_input],
+                    max_concurrent_calls=1,
                     **generation_kwargs,
                 )
             )
