@@ -22,10 +22,10 @@ WIKIANN_BS_CONFIG = DatasetConfig(
     languages=[BOSNIAN],
 )
 
-MULTI_WIKI_QA_HR_CONFIG = DatasetConfig(
-    name="multi-wiki-qa-hr",
-    pretty_name="MultiWikiQA-hr",
-    source="EuroEval/multi-wiki-qa-hr-mini",
+MULTI_WIKI_QA_BS_CONFIG = DatasetConfig(
+    name="multi-wiki-qa-bs",
+    pretty_name="MultiWikiQA-bs",
+    source="EuroEval/multi-wiki-qa-bs-mini",
     task=RC,
     languages=[BOSNIAN],
 )

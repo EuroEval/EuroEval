@@ -233,7 +233,7 @@ euroeval --model <model-id> --dataset scala-hr
 
 ## Reading Comprehension
 
-### MultiWikiQA-hr
+### MultiWikiQA-bs
 
 This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2509.04111)
 and contains Wikipedia articles with LLM-generated questions and answers in 300+
@@ -246,33 +246,33 @@ Here are a few examples from the training split:
 
 ```json
 {
-    "context": "Arkadija je pokrajina u središnjem dijelu Peloponeza, Grčka.\n\nOsnovni podaci\nGlavni grad Arkadije je Tripoli; populacija pokrajine je 100 611 (podatci iz 2005.), na 38. mjestu u Grčkoj; Površina joj je 4419 km² što je čini 5. po veličini; Gustoća naseljenosti je 22,8/km²; sastoji se od 4 provincije, 22 općine i 1 županije (okruga); poštanski broj je 22, registracijske pločice s oznakom TP; službena web stranica je www.arcadia.gr.\n\nOpćine\n\nPovijest\n\nGradska naselja u Arkadiji su se razvila razmjerno kasno (Mantineja, Orhomen, Tegeja). Bili su saveznici Sparte do sloma njezine hegemonije (371. pr. Kr.), otada tvore samostalan savez pod vodstvom novoosnovanog polisa Megalopola. Samostalnost saveza dokrajčili su Makedonci. U 3. st. pr. Kr. dio gradova u Arkadiji pristupa Ahajskom, a dio Etolskom savezu. Pod rimskom vlašću od 168. pr. Kr.\n\nSimbolika Arkadije\n\nPrema grčkoj tradiciji Arkadija je postojbina Pana, domovina jednostavnih, priprostih i poštenih ljudi (pastira). Kao simbol nepokvarena i idilična života javlja se tzv. bukolska (pastirska) poezija. Obnovljena u doba renesanse pod utjecajem idiličnog romana "Arkadija" talijanskog pisca J. Sannazzara. \n\nPo Arkadiji je ime dobila i čuvena knjižnica Akademija (Accademia degli Arcadi), osnovana 1690. g. u Rimu, a pod njenim utjecajem osnovana su i mnoga slična društva diljem Italije i hrvatske obale (Zadar, Split, Dubrovnik).\n\nVanjske poveznice\n\nPan-Arkadski Kongres.\nhttp://www.arcadians.gr\nSveučilište u Patrasu, Arkadia-Project.\nArkadija, Grčka.\nNepoznata Arkadija.\nhttp://flyingbrick.freeyellow.com/arcadia.htm \nhttp://www.arcadianet.gr/en/\nhttp://www.tripolis.gr\n\nZemljopis Grčke",
-    "question": "Koji je naziv za pjesništvo pastira koje simbolizira neiskvareni i idiličan život?",
+    "context": "NGC 3803 (također poznat kao PGC 36204) je eliptična galaksija koja je udaljena oko 164 miliona sg od Zemlje i nalazi se u sazviježđu Lav. Najveći prečnik je 0,40 (19 hiljada sg) a najmanji 0,4 uglovnih minuta (19 hiljada sg). Prvo otkriće je napravio R. J. Mitchell 27. marta 1856. godine.\n\nNajbliži NGC/IC objekti \nSljedeći spisak sadrži deset najbližih NGC/IC objekata.\n\nTakođer pogledajte \n Novi opći katalog\n Spisak NGC objekata\n Spisak galaksija\n\nBilješke \n  Prividna magnituda od 15,5 – Apsolutna magnituda: M = m - 5 ((log10 DL) - 1), gdje je m=15,5 i DL=50,4 * 106.\n  0,40 uglovnih minuta – S = A * D * 0,000291 * P, gdje je A=0,40, D=50,4 i P = 3,2616.\n  Bazirano na euklidsku udaljenost.\n\nReference\n\nLiteratura\n\nVanjski linkovi\n\nNGC 3803 \n\n  NGC 3803 na Aladin pregledaču\n\nNGC katalog \n  Interaktivni NGC Online Katalog\n  Astronomska baza podataka SIMBAD\n  NGC katalog na Messier45.com \n  NGC/IC projekt\n  NGC2000 na NASA sajtu\n  NGC na The Night Sky Atlas sajtu\n\nEliptične galaksije\nLav (sazviježđe)\nNGC objekti\nPGC objekti",
+    "question": "Koliki je najmanji kutni promjer NGC 3803 izražen u kutnim minutama?",
     "answers": {
-        "answer_start": [1037],
-        "text": ["bukolska"]
+        "answer_start": [158],
+        "text": ["0,4"]
     }
 }
 ```
 
 ```json
 {
-    "context": "Hans Emil Alexander Gaede (Kolberg, 19. veljače 1852. -  Freiburg im Breisgau, 16. rujna 1916.) je bio njemački general i vojni zapovjednik. Tijekom Prvog svjetskog rata zapovijedao je Armijskim odjelom B na Zapadnom bojištu.\n\nVojna karijera\nHans Gaede rođen je 19. veljače 1852. u Kolbergu (danas Kolobrzeg u Poljskoj). Sin je Alexandera Gaede i Emilie Franke. Gaede je u prusku vojsku stupio 1870. godine, te je sudjelovao u Prusko-francuskom ratu u kojem je i ranjen. Nakon rata pohađa Prusku vojnu akademiju, te nakon završetka iste služi u raznim vojnim jedinicama kao u i pruskom ministarstvu rata. Čin pukovnika dostigao 1897. godine kada postaje zapovjednikom i tvrđave Thorn. General bojnikom je postao 1900. godine, dok je 1904. godine promaknut u čin general poručnika kada dobiva zapovjedništvo nad 33. pješačkom divizijom smještenom u Metzu koji se tada nalazio u okviru Njemačkog Carstva. Godine 1907. Gaede je stavljen na raspolaganje.\n\nPrvi svjetski rat\nNa početku Prvog svjetskog rata Gaede je reaktiviran, te postaje zamjenikom zapovjednika XIV. korpusa koji je bio u sastavu 7. armije koja se nalazila pod zapovjedništvom Josiasa von Heeringena. U rujnu 1914. postaje zapovjednikom Armijskog odjela Gaede koji je kasnije preimenovan u Armijski odjel B koji je držao front u Gornjem Alzasu. Za zapovijedanje u borbama u Alzasu Gaede je 25. rujna 1915. godine odlikovan ordenom Pour le Mérite. U prosincu 1915. Gaedeu je na Sveučilištu u Freiburgu dodijeljen počasni doktorat.\n\nSmrt\nU rujnu 1916. godine Gaede se teško razbolio zbog čega je 3. rujna 1916. morao napustiti zapovjedništvo armijskog odjela. Umro je 16. rujna 1916. godine u 64. godini života u bolnici Freiburgu im Breisgau od posljedica operacije.\n\nVanjske poveznice\n     Hans Gaede na stranici Prussianmachine.com\n     Hans Gaede na stranici Deutschland14-18.de\n\nNjemački vojni zapovjednici u Prvom svjetskom ratu",
-    "question": "Koju nagradu je Gaede primio 25. rujna 1915.?",
+    "context": "Po popisu stanovništva, domaćinstava i stanova 2011. u  Srbiji, koji je proveden od 1. do 15. oktobra 2011, u općini Crna Trava živjelo je ukupno 1663 stanovnika, što predstavlja 0,02% od ukupnog broja stanovnika Srbije, odnosno 0,77% od od ukupnog broja stanovnika Jablaničkog okruga.  Popis stanovništva provoden je na temelju Zakona o popisu stanovništva, domaćinstava i stanova u 2011. Godini ("Službeni glasnik RS", br. 104/09 i 24/11).\n\nRezultati popisa\n\nNacionalna pripadnost\n\nMaternji jezik\n\nVjeroispovijest\n\nStarosna piramida \nOd ukupnog broja stanovnika u općini Crna Trava bilo je 838 (50,39%) muškaraca i 825 (49,61%) žena, što predstavlja omjer muškaraca i žena 1.016:1000. Prosječna starost stanovništva bila je 53,7 godina, muškaraca 51,4 godina, a žena 56,1 godina. Udio osoba starijih od 18 godina je 91,5% (1.521), kod muškaraca 92,0% (771), a kod žena 90,9% (750).\n\nTakođer pogledajte\n\nNapomene\n\nReference\n\nVanjski linkovi \n Republički zavod za statistiku Srbije \n\nCrna Trava\nCrna Trava",
+    "question": "Koliko godina u prosjeku imaju stanovnici općine Crna Trava?",
     "answers": {
-        "answer_start": [1395],
-        "text": ["Pour le Mérite"]
+        "answer_start": [726],
+        "text": ["53,7 godina"]
     }
 }
 ```
 
 ```json
 {
-    "context": "Žiroglavci (Enteropneusta) su u klasičnoj sistematici životinjski razred s manje od 100 poznatih vrsta. Ubraja ih se u kojeno polusvitkovce (Hemichordata) i preko njih u drugousti (Deuterostomia), jer im se tijekom embrionalnog razvoja usta razvijaju a ne proizlaze iz "prausta", prvog otvora ranog embrionalnog životnog stadija, gastrule. Njihovo znanstveno ime znači, što izražava i tradicionalno mišljenje da su oni praoblik svitkovaca, u koje spadaju i kralježnjaci.\n\nNo, mjesto žiroglavaca u sistematici je danas sporno. Tako se razmatra moguća srodnost žiroglavaca ne samo sa svitkovcima, nego i s bodljikašima (Echinodermata) u koje spadaju na primjer zvjezdače (Asteroidea) i ježinci (Echinoidea). Čak se sve više smatra vjerojatnijim da žiroglavci ne čine monofiletsku skupinu, što znači da oni nisu svi potomci istih zajedničkih predaka.\n\nGrađa i izgled\nTijelo žiroglavaca je meko, crvoliko, i osim grube podjele na tri dijela, nesegmentirano. Veličinom su vrlo različiti, neke vrste su duge samo nekoliko milimetara, dok druge mogu biti duge i 2,5 metra. Boja im je različita, od bijele do tamno ljubičaste.\n  \nMeđu beskralješnjacima, žiroglavci su neobični jer imaju neke osobine koje su tipične za kralježnjake: \n Njihov živčani sustav satoji se od živčanih vrpci koje se protežu leđnom i trbušnom stranom životinje. U predjelu "glave" i oko crijeva ove dvije živčane vrpce kružno su međusobno povezane a od njih se odvajaju živčane niti koje završavaju u vanjskoj koži. Leđna živčana vrpca smještena je u posebnom naboru. Zbog njegovog nastanka u embrionalnom razvoju ponekad ga se smatra homolognim leđnoj moždini svitkovaca.\n Žiroglavci imaju i do 100 ždrijelnih pukotina koje imaju isto anatomsko porijeklo kao i škrge kod riba. Voda koja im uđe na usni otvor nakon zadržavanja djelića hrane, izlazi iz tijela kroz te pukotine.\n\nHrana, životni prostor i rasprostranjenost\nŽiroglavci se hrane na dva različita načina: ili kopaju kroz sediment morskog dna, što znači da uzimaju mulj dna i probavljaju u njemu sadržan organski sadržaj (kao kišne gliste), ili filtriraju iz vode sadržane djeliće organske materijekao na primjer alge. Zbog toga žive uglavnom u ili neposredno ispod dijela izloženog plimi i oseci, na ili u morskom dnu (bentos) dijelom i do dubine od 5.000 metara, i tamo često žive u kanalićima u obliku slova U. Samo rijetke vrste žive u otvorenom moru (pelagijal). Žiroglavci žive u svim morskim područjima, od tropa pa sve do u polarna područja.\n\nRazmnožavanje\nŽiroglavci su odvojenih spolova, no izgledom se gotovo ne razlikuju. Iz oplođenog jajašca najčešće se prvo razvijaju trepetljive larve vrlo slične larvama bodljikaša. Dio životnog ciklusa prije metamorfoze provodi kao plankton hraneći se djelićima hrane koji se zadrže na trepetljikama larve i od tamo se prenose do ustiju. Kod nekih vrsta razvoj se odvija direktno, bez larvenog stadija.\n\nDrugi projekti i vanjske poveznice\nTaksonomija žiroglavaca  (engleski)\nFilogeneza žiroglavaca (engleski)\n\nPolusvitkovci",
-    "question": "Koliki je broj poznatih vrsta žiroglavaca?",
+    "context": "IC 910 (također poznat kao IRAS 13387+2331, MCG 4-32-25 i PGC 48424) je spiralna galaksija koja je udaljena oko 374 miliona sg od Zemlje i nalazi se u sazviježđu Volar. Najveći prečnik je 0,50 (54 hiljade sg) a najmanji 0,4 uglovnih minuta (44 hiljade sg). Prvo otkriće je napravio Stephane Javelle 16. juna 1892. godine.\n\nNajbliži NGC/IC objekti \nSljedeći spisak sadrži deset najbližih NGC/IC objekata.\n\nTakođer pogledajte \n Novi opći katalog\n Spisak IC objekata\n Spisak galaksija\n\nBilješke \n  Prividna magnituda od 14,4 – Apsolutna magnituda: M = m - 5 ((log10 DL) - 1), gdje je m=14,4 i DL=114,6 * 106.\n  0,50 uglovnih minuta – S = A * D * 0,000291 * P, gdje je A=0,50, D=114,6 i P = 3,2616.\n  Bazirano na euklidsku udaljenost.\n\nReference\n\nLiteratura\n\nVanjski linkovi\n\nIC 910 \n\n  IC 910 na Aladin pregledaču\n\nIC katalog \n  Interaktivni NGC Online Katalog\n  Astronomska baza podataka SIMBAD\n  IC katalog na Messier45.com \n  NGC/IC projekt\n  NGC2000 na NASA sajtu\n  IC na The Night Sky Atlas sajtu\n\nIC objekti\nIRAS objekti\nMCG objekti\nPGC objekti\nSpiralne galaksije\nVolar (sazviježđe)",
+    "question": "Kolika je distanca između Zemlje i galaksije IC 910?",
     "answers": {
-        "answer_start": [75],
-        "text": ["manje od 100"]
+        "answer_start": [108],
+        "text": ["oko 374 miliona sg"]
     }
 }
 ```
@@ -284,7 +284,7 @@ When evaluating generative models, we use the following setup (see the
 - Prefix prompt:
 
 ```text
-Sljedeći tekstovi sadrže pitanja i odgovore.
+Slijede tekstovi s pitanjima i odgovorima.
 ```
 
 - Base prompt template:
@@ -308,7 +308,7 @@ Pitanje: {question}
 You can evaluate this dataset directly as follows:
 
 ```bash
-euroeval --model <model-id> --dataset multi-wiki-qa-hr
+euroeval --model <model-id> --dataset multi-wiki-qa-bs
 ```
 
 ## Knowledge
