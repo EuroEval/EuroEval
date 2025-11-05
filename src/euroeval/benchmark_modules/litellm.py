@@ -320,19 +320,6 @@ class LiteLLMModel(BenchmarkModule):
                 "The inputs must contain either 'messages' or 'text' keys."
             )
 
-        # Add the default `openai/` prefix to the model ID if we're benchmarking a
-        # custom API inference server and no prefix is used, just to make it more
-        # convenient for the user.
-        model_id = self.model_config.model_id
-        if (
-            self.benchmark_config.api_base is not None
-            and not re.search(
-                pattern=r"^[a-zA-Z0-9_-]+\/", string=self.model_config.model_id
-            )
-            is not None
-        ):
-            model_id = f"openai/{self.model_config.model_id}"
-
         # Get the mapping from labels to the first token in the label. We call this each
         # time we generate a new dataset since the dataset config can change
         self.buffer["first_label_token_mapping"] = get_first_label_token_mapping(
@@ -359,7 +346,10 @@ class LiteLLMModel(BenchmarkModule):
             batch_indices, batch_inputs = zip(*inputs_to_run)
             successes, failures = safe_run(
                 self._generate_async(
-                    model_id=model_id,
+                    model_id=clean_model_id(
+                        model_id=self.model_config.model_id,
+                        benchmark_config=self.benchmark_config,
+                    ),
                     inputs=list(batch_inputs),
                     max_concurrent_calls=max_concurrent_calls,
                     **generation_kwargs,
@@ -749,7 +739,11 @@ class LiteLLMModel(BenchmarkModule):
             requests = [
                 add_semaphore_and_catch_exception(
                     router.atext_completion(
-                        model=model_id, prompt=input_, **generation_kwargs
+                        model=clean_model_id(
+                            model_id=model_id, benchmark_config=self.benchmark_config
+                        ),
+                        prompt=input_,
+                        **generation_kwargs,
                     ),
                     semaphore=semaphore,
                 )
@@ -765,7 +759,11 @@ class LiteLLMModel(BenchmarkModule):
             requests = [
                 add_semaphore_and_catch_exception(
                     router.acompletion(
-                        model=model_id, messages=input_, **generation_kwargs
+                        model=clean_model_id(
+                            model_id=model_id, benchmark_config=self.benchmark_config
+                        ),
+                        messages=input_,
+                        **generation_kwargs,
                     ),
                     semaphore=semaphore,
                 )
@@ -1266,7 +1264,9 @@ class LiteLLMModel(BenchmarkModule):
             try:
                 litellm.completion(
                     messages=[dict(role="user", content="X")],
-                    model=model_id,
+                    model=clean_model_id(
+                        model_id=model_id, benchmark_config=benchmark_config
+                    ),
                     max_tokens=1,
                     api_key=benchmark_config.api_key,
                     api_base=benchmark_config.api_base,
@@ -1299,6 +1299,15 @@ class LiteLLMModel(BenchmarkModule):
                 )
                 sleep(10)
             except (BadRequestError, NotFoundError):
+                # In case we're using `api_base`, try again with the `/v1` suffix
+                if (
+                    benchmark_config.api_base is not None
+                    and not benchmark_config.api_base.endswith("/v1")
+                ):
+                    benchmark_config.api_base += "/v1"
+                    continue
+
+                # Check for misspelled model IDs
                 candidate_models = [
                     candidate_model_id
                     for candidate_model_id in litellm.model_list
@@ -1578,7 +1587,10 @@ class LiteLLMModel(BenchmarkModule):
         for _ in range(num_attempts := 10):
             _, failures = safe_run(
                 self._generate_async(
-                    model_id=self.model_config.model_id,
+                    model_id=clean_model_id(
+                        model_id=self.model_config.model_id,
+                        benchmark_config=self.benchmark_config,
+                    ),
                     inputs=[test_input],
                     max_concurrent_calls=1,
                     **generation_kwargs,
@@ -1693,3 +1705,31 @@ def try_download_ollama_model(model_id: str) -> bool:
             level=logging.DEBUG,
         )
         return True
+
+
+def clean_model_id(model_id: str, benchmark_config: BenchmarkConfig) -> str:
+    """Clean a model ID.
+
+    This adds the default `openai/` prefix to the model ID if we're benchmarking a
+    custom API inference server and no prefix is used, just to make it more
+    convenient for the user.
+
+    Args:
+        model_id:
+            The model ID.
+        benchmark_config:
+            The benchmark configuration.
+
+    Returns:
+        The cleaned model ID.
+    """
+    if (
+        benchmark_config.api_base is not None
+        and not re.search(pattern=r"^[a-zA-Z0-9_-]+\/", string=model_id) is not None
+    ):
+        if benchmark_config.generative_type == GenerativeType.BASE:
+            prefix = "text-completion-openai/"
+        else:
+            prefix = "openai/"
+        model_id = prefix + model_id
+    return model_id
