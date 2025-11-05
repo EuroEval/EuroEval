@@ -160,15 +160,18 @@ When benchmarking, you simply have to set the `--api-base` argument (`api_base` 
 using the `Benchmarker` API) to the URL of the inference API, and optionally the
 `--api-key` argument (`api_key`) to the API key, if authentication is required.
 
-When benchmarking models hosted on a custom inference API, the model ID
-(`--model`/`model`) should be the model name as registered on the inference server,
-potentially with a required prefix, depending on the type of inference server used. For
-instance, if the model is hosted on a vLLM server, the model ID should be prefixed with
-`hosted_vllm/`, and if the model is hosted on an Ollama server, the model ID should be
-prefixed with `ollama_chat/`. See the full list of possible inference providers as well
-as their corresponding prefixes in the [LiteLLM
-documentation](https://docs.litellm.ai/docs/providers/), as EuroEval uses LiteLLM to
-handle evaluation of inference APIs in general.
+Thus, the following is an example of benchmarking a model available through an
+OpenAI-compatible inference API (e.g., via vLLM or Ollama), hosted locally:
+
+```bash
+euroeval --model my-model --api-base http://localhost:8000
+```
+
+To add authentication, you simply add the `--api-key` argument:
+
+```bash
+euroeval --model my-model --api-base http://localhost:8000 --api-key my-secret-key
+```
 
 ## Benchmarking in an offline environment
 
