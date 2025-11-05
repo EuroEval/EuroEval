@@ -541,6 +541,13 @@ class BenchmarkConfig:
         """Get the tasks in the benchmark configuration."""
         return list({dataset_config.task for dataset_config in self.datasets})
 
+    def __post_init__(self) -> None:
+        """Post-initialisation checks."""
+        # Set dummy API key if it has not been set and we're benchmarking a model on an
+        # inference API
+        if self.api_key is None and self.api_base is not None:
+            self.api_key = "dummy"
+
 
 class BenchmarkConfigParams(pydantic.BaseModel):
     """The parameters for the benchmark configuration."""
