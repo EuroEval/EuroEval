@@ -335,7 +335,7 @@ class LiteLLMModel(BenchmarkModule):
         inputs_to_run: c.Sequence[
             tuple[int, c.Sequence[litellm.AllMessageValues] | str]
         ] = list(enumerate(model_inputs))
-        max_concurrent_calls: int = 1000
+        max_concurrent_calls: int = 20
         for attempt in range(num_attempts := 10):
             if not inputs_to_run:
                 break
