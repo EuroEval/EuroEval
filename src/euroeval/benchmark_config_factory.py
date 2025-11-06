@@ -45,7 +45,7 @@ def build_benchmark_config(
     return BenchmarkConfig(
         datasets=dataset_configs,
         languages=languages,
-        batch_size=benchmark_config_params.batch_size,
+        finetuning_batch_size=benchmark_config_params.finetuning_batch_size,
         raise_errors=benchmark_config_params.raise_errors,
         cache_dir=benchmark_config_params.cache_dir,
         api_key=benchmark_config_params.api_key,

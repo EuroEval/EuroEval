@@ -451,8 +451,8 @@ class BenchmarkConfig:
     Attributes:
         datasets:
             The datasets to benchmark on.
-        batch_size:
-            The batch size to use.
+        finetuning_batch_size:
+            The batch size to use for finetuning.
         raise_errors:
             Whether to raise errors instead of skipping them.
         cache_dir:
@@ -508,7 +508,7 @@ class BenchmarkConfig:
 
     datasets: c.Sequence[DatasetConfig]
     languages: c.Sequence[Language]
-    batch_size: int
+    finetuning_batch_size: int
     raise_errors: bool
     cache_dir: str
     api_key: str | None
@@ -557,7 +557,7 @@ class BenchmarkConfigParams(pydantic.BaseModel):
     save_results: bool
     language: str | c.Sequence[str]
     device: Device | None
-    batch_size: int
+    finetuning_batch_size: int
     raise_errors: bool
     cache_dir: str
     api_key: str | None
@@ -632,6 +632,10 @@ class BenchmarkResult(pydantic.BaseModel):
             config["few_shot"] = zero_shot_matches is None
         if "validation_split" not in config:
             config["validation_split"] = val_matches is not None
+
+        # Backwards compatibility
+        if "dataset_languages" in config:
+            config["languages"] = config.pop("dataset_languages")
 
         return cls(**config)
 
