@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Changed
+
+- Improved the support for evaluating models on custom inference API servers. This
+  includes the following:
+  - We now dynamically reduce the number of concurrent connections if we run into
+      issues with too many requests.
+  - When benchmarking models on custom servers, we now automatically add the LiteLLM
+      prefix `openai/` to the model ID if no prefix is given, as LiteLLM requires this.
+  - We don't require the API key to be given if the server does not require it.
+  - We added a more detailed documentation on how to evaluate models on custom
+      inference APIs in the readme.
+
 ## [v16.6.0] - 2025-11-04
 
 ### Added
