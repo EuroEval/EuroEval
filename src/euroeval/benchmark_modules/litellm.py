@@ -254,6 +254,7 @@ class LiteLLMModel(BenchmarkModule):
             generative_type=self.generative_type,
             log_metadata=self.log_metadata,
         )
+        self.buffer["max_concurrent_calls"] = 20
 
     @property
     def generative_type(self) -> GenerativeType | None:
@@ -335,7 +336,6 @@ class LiteLLMModel(BenchmarkModule):
         inputs_to_run: c.Sequence[
             tuple[int, c.Sequence[litellm.AllMessageValues] | str]
         ] = list(enumerate(model_inputs))
-        max_concurrent_calls: int = 20
         for attempt in range(num_attempts := 10):
             if not inputs_to_run:
                 break
@@ -352,7 +352,7 @@ class LiteLLMModel(BenchmarkModule):
                         benchmark_config=self.benchmark_config,
                     ),
                     inputs=list(batch_inputs),
-                    max_concurrent_calls=max_concurrent_calls,
+                    max_concurrent_calls=self.buffer["max_concurrent_calls"],
                     **generation_kwargs,
                 )
             )
@@ -386,18 +386,21 @@ class LiteLLMModel(BenchmarkModule):
                 for idx, (_, error) in enumerate(failures)
                 if isinstance(error, RateLimitError) and "Error code: 429" in str(error)
             ]
-            if http_429_errors and max_concurrent_calls > 1:
+            if http_429_errors and self.buffer["max_concurrent_calls"] > 1:
                 failures = [
                     failures[i]
                     for i in range(len(failures))
                     if i not in http_429_errors
                 ]
-                max_concurrent_calls = max(1, max_concurrent_calls // 2)
+                self.buffer["max_concurrent_calls"] = max(
+                    1, self.buffer["max_concurrent_calls"] // 2
+                )
                 log(
                     f"Reducing the maximum number of concurrent calls to "
-                    f"{max_concurrent_calls:,} due to rate limiting.",
+                    f"{self.buffer['max_concurrent_calls']:,} due to rate limiting.",
                     level=logging.DEBUG,
                 )
+                continue
 
             # Attempt to handle the exceptions, to improve the chance of getting
             # successful generations next time around
