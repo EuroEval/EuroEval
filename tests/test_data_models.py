@@ -295,7 +295,7 @@ class TestBenchmarkParametersAreConsistent:
         )
         benchmarker_init_params = set(
             inspect.signature(Benchmarker.__init__).parameters.keys()
-        ) - {"self"}
+        ) - {"self", "batch_size", "dataset_language", "model_language"}
         assert benchmark_config_params == benchmarker_init_params
 
     def test_config_params_is_the_same_as_benchmark_method(self) -> None:
@@ -305,7 +305,7 @@ class TestBenchmarkParametersAreConsistent:
         ) - {"run_with_cli"}
         benchmark_method_params = set(
             inspect.signature(Benchmarker.benchmark).parameters.keys()
-        ) - {"self", "model"}
+        ) - {"self", "model", "batch_size", "dataset_language", "model_language"}
         assert benchmark_config_params == benchmark_method_params
 
     def test_config_params_is_the_same_as_cli(
@@ -317,7 +317,9 @@ class TestBenchmarkParametersAreConsistent:
         ) - {"run_with_cli"}
         cli_benchmark_params = set(cli_params.keys()) - {
             "model",
-            "custom_datasets_file",
+            "batch_size",
+            "dataset_language",
+            "model_language",
             "help",
         }
         assert benchmark_config_params == cli_benchmark_params
@@ -326,8 +328,8 @@ class TestBenchmarkParametersAreConsistent:
         """Test that `BenchmarkConfigParams` agrees with `BenchmarkConfig`."""
         benchmark_config_params = set(
             inspect.signature(BenchmarkConfigParams).parameters.keys()
-        ) - {"dataset", "task"}
+        ) - {"dataset", "task", "language"}
         benchmark_config_fields = set(
             inspect.signature(BenchmarkConfig).parameters.keys()
-        ) - {"datasets", "tasks"}
+        ) - {"datasets", "tasks", "languages"}
         assert benchmark_config_params == benchmark_config_fields
