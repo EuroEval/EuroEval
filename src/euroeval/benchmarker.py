@@ -374,7 +374,7 @@ class Benchmarker:
         save_results: bool | None = None,
         language: str | c.Sequence[str] | None = None,
         device: Device | None = None,
-        batch_size: int | None = None,
+        finetuning_batch_size: int | None = None,
         raise_errors: bool | None = None,
         cache_dir: str | None = None,
         api_key: str | None = None,
@@ -392,6 +392,9 @@ class Benchmarker:
         force: bool | None = None,
         verbose: bool | None = None,
         debug: bool | None = None,
+        model_language: str | c.Sequence[str] | None = None,
+        dataset_language: str | c.Sequence[str] | None = None,
+        batch_size: int | None = None,
     ) -> c.Sequence[BenchmarkResult]:
         """Benchmarks models on datasets.
 
@@ -424,9 +427,9 @@ class Benchmarker:
             device:
                 The device to use for benchmarking. Defaults to the value specified when
                 initialising the benchmarker.
-            batch_size:
-                The batch size to use. Defaults to the value specified when initialising
-                the benchmarker.
+            finetuning_batch_size:
+                The batch size to use for finetuning. Defaults to the value specified
+                when initialising the benchmarker.
             raise_errors:
                 Whether to raise errors instead of skipping the model evaluation.
             cache_dir:
@@ -487,6 +490,12 @@ class Benchmarker:
             debug:
                 Whether to output debug information. Defaults to the value specified
                 when initialising the benchmarker.
+            model_language:
+                Deprecated argument. Please use `language` instead.
+            dataset_language:
+                Deprecated argument. Please use `language` instead.
+            batch_size:
+                Deprecated argument. Please use `finetuning_batch_size` instead.
 
         Returns:
             A list of benchmark results.
@@ -497,6 +506,31 @@ class Benchmarker:
         """
         if task is not None and dataset is not None:
             raise ValueError("Only one of `task` and `dataset` can be specified.")
+
+        # Deprecation warnings
+        if batch_size is not None:
+            log(
+                "The `batch_size` argument is deprecated and will be removed in a "
+                "future version. Please use `finetuning_batch_size` instead. "
+                "Overwriting `finetuning_batch_size` with the value from "
+                "`batch_size`.",
+                level=logging.WARNING,
+            )
+            finetuning_batch_size = batch_size
+        if model_language is not None:
+            log(
+                "The `model_language` argument is deprecated and will be removed "
+                "in a future version. Please use `language` instead. Ignoring the "
+                "`model_language` value.",
+                level=logging.WARNING,
+            )
+        if dataset_language is not None:
+            log(
+                "The `dataset_language` argument is deprecated and will be removed "
+                "in a future version. Please use `language` instead. Ignoring the "
+                "`dataset_language` value.",
+                level=logging.WARNING,
+            )
 
         # Get a new updated benchmark configuration, based on any changes to the
         # parameters
@@ -529,10 +563,10 @@ class Benchmarker:
                 if device is not None
                 else self.benchmark_config_default_params.device
             ),
-            batch_size=(
-                batch_size
-                if batch_size is not None
-                else self.benchmark_config_default_params.batch_size
+            finetuning_batch_size=(
+                finetuning_batch_size
+                if finetuning_batch_size is not None
+                else self.benchmark_config_default_params.finetuning_batch_size
             ),
             raise_errors=(
                 raise_errors
