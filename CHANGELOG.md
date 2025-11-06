@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Changed
+
+- Now always truncates prompts to fit within the model's maximum context length when
+  evaluating vLLM models. Previously we only did this when catching the associated
+  error, but we cannot do this anymore as vLLM only returns generic errors now.
+
 ## [v16.6.0] - 2025-11-04
 
 ### Added
