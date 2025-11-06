@@ -83,7 +83,7 @@ def benchmark_config(
     yield BenchmarkConfig(
         languages=[DANISH],
         datasets=list(get_all_dataset_configs().values()),
-        batch_size=1,
+        finetuning_batch_size=1,
         raise_errors=False,
         cache_dir=".euroeval_cache",
         api_key=auth,
