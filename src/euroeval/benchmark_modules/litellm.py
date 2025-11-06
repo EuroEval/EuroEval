@@ -266,11 +266,12 @@ class LiteLLMModel(BenchmarkModule):
             type_ = self.benchmark_config.generative_type
         elif self.is_ollama:
             reasoning_model = "thinking" in (self._ollama_show.capabilities or [])
-            type_ = (
-                GenerativeType.REASONING
-                if reasoning_model
-                else GenerativeType.INSTRUCTION_TUNED
-            )
+            if reasoning_model:
+                type_ = GenerativeType.REASONING
+            elif self.model_config.model_id.startswith("ollama_chat/"):
+                type_ = GenerativeType.INSTRUCTION_TUNED
+            else:
+                type_ = GenerativeType.BASE
         elif self.model_config.param in {"thinking"}:
             type_ = GenerativeType.REASONING
         elif self.model_config.param in {"no-thinking"}:
@@ -334,7 +335,7 @@ class LiteLLMModel(BenchmarkModule):
         inputs_to_run: c.Sequence[
             tuple[int, c.Sequence[litellm.AllMessageValues] | str]
         ] = list(enumerate(model_inputs))
-        max_concurrent_calls: int = 20
+        max_concurrent_calls: int = 1000
         for attempt in range(num_attempts := 10):
             if not inputs_to_run:
                 break
@@ -378,9 +379,25 @@ class LiteLLMModel(BenchmarkModule):
                 level=logging.DEBUG,
             )
 
-            # TODO: Check if any errors are due to HTTP 429 (too many requests), in
-            # which case we reduce the number of concurrent calls
-            pass
+            # Check if any errors are due to HTTP 429 (too many requests), in which case
+            # we reduce the number of concurrent calls
+            http_429_errors = [
+                idx
+                for idx, (_, error) in enumerate(failures)
+                if isinstance(error, RateLimitError) and "Error code: 429" in str(error)
+            ]
+            if http_429_errors and max_concurrent_calls > 1:
+                failures = [
+                    failures[i]
+                    for i in range(len(failures))
+                    if i not in http_429_errors
+                ]
+                max_concurrent_calls = max(1, max_concurrent_calls // 2)
+                log(
+                    f"Reducing the maximum number of concurrent calls to "
+                    f"{max_concurrent_calls:,} due to rate limiting.",
+                    level=logging.DEBUG,
+                )
 
             # Attempt to handle the exceptions, to improve the chance of getting
             # successful generations next time around
