@@ -201,7 +201,7 @@ def test_benchmark_generative_adapter_no_internet(
                     max_sequence_length=100,
                     vocabulary_size=100,
                     merge=False,
-                    dataset_languages=["da"],
+                    languages=["da"],
                     task="task",
                     results=dict(),
                 )
@@ -223,7 +223,7 @@ def test_benchmark_generative_adapter_no_internet(
                     max_sequence_length=100,
                     vocabulary_size=100,
                     merge=False,
-                    dataset_languages=["da"],
+                    languages=["da"],
                     task="task",
                     results=dict(),
                 )
@@ -245,7 +245,7 @@ def test_benchmark_generative_adapter_no_internet(
                     max_sequence_length=100,
                     vocabulary_size=100,
                     merge=False,
-                    dataset_languages=["da"],
+                    languages=["da"],
                     task="task",
                     results=dict(),
                 )
@@ -267,7 +267,7 @@ def test_benchmark_generative_adapter_no_internet(
                     max_sequence_length=100,
                     vocabulary_size=100,
                     merge=False,
-                    dataset_languages=["da"],
+                    languages=["da"],
                     task="task",
                     results=dict(),
                 )
@@ -289,7 +289,7 @@ def test_benchmark_generative_adapter_no_internet(
                     max_sequence_length=100,
                     vocabulary_size=100,
                     merge=False,
-                    dataset_languages=["da"],
+                    languages=["da"],
                     task="task",
                     results=dict(),
                 )
@@ -311,7 +311,7 @@ def test_benchmark_generative_adapter_no_internet(
                     max_sequence_length=100,
                     vocabulary_size=100,
                     merge=False,
-                    dataset_languages=["da"],
+                    languages=["da"],
                     task="task",
                     results=dict(),
                 )
@@ -333,7 +333,7 @@ def test_benchmark_generative_adapter_no_internet(
                     max_sequence_length=100,
                     vocabulary_size=100,
                     merge=False,
-                    dataset_languages=["da"],
+                    languages=["da"],
                     task="task",
                     results=dict(),
                 )
@@ -355,7 +355,7 @@ def test_benchmark_generative_adapter_no_internet(
                     max_sequence_length=100,
                     vocabulary_size=100,
                     merge=False,
-                    dataset_languages=["da"],
+                    languages=["da"],
                     task="task",
                     results=dict(),
                 ),
@@ -370,7 +370,7 @@ def test_benchmark_generative_adapter_no_internet(
                     max_sequence_length=100,
                     vocabulary_size=100,
                     merge=False,
-                    dataset_languages=["da"],
+                    languages=["da"],
                     task="task",
                     results=dict(),
                 ),

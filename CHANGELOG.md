@@ -19,6 +19,14 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   - We added a more detailed documentation on how to evaluate models on custom
       inference APIs in the readme.
 
+### Deprecated
+
+- Deprecated the `--model-language`, `--dataset-language`, and `--batch-size` arguments
+  (and the equivalent ones in the `Benchmarker` API). We now only use the `--language`
+  argument for languages, and now use `--finetuning-batch-size` for the batch size. We
+  chose this renaming of the batch size argument as it is only used during finetuning,
+  and this caused confusion when evaluating generative models.
+
 ## [v16.6.0] - 2025-11-04
 
 ### Added

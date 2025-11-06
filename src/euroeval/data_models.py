@@ -451,10 +451,6 @@ class BenchmarkConfig:
     Attributes:
         datasets:
             The datasets to benchmark on.
-        model_languages:
-            The languages of the models to benchmark.
-        dataset_languages:
-            The languages of the datasets in the benchmark.
         batch_size:
             The batch size to use.
         raise_errors:
@@ -511,8 +507,7 @@ class BenchmarkConfig:
     """
 
     datasets: c.Sequence[DatasetConfig]
-    model_languages: c.Sequence[Language]
-    dataset_languages: c.Sequence[Language]
+    languages: c.Sequence[Language]
     batch_size: int
     raise_errors: bool
     cache_dir: str
@@ -561,8 +556,6 @@ class BenchmarkConfigParams(pydantic.BaseModel):
     progress_bar: bool
     save_results: bool
     language: str | c.Sequence[str]
-    model_language: str | c.Sequence[str] | None
-    dataset_language: str | c.Sequence[str] | None
     device: Device | None
     batch_size: int
     raise_errors: bool
@@ -590,7 +583,7 @@ class BenchmarkResult(pydantic.BaseModel):
 
     dataset: str
     task: str
-    dataset_languages: c.Sequence[str]
+    languages: c.Sequence[str]
     model: str
     results: ScoreDict
     num_model_parameters: int

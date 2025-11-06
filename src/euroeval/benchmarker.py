@@ -66,10 +66,8 @@ class Benchmarker:
         task: "str | Task | c.Sequence[str | Task] | None" = None,
         dataset: "str | DatasetConfig | c.Sequence[str | DatasetConfig] | None" = None,
         language: str | c.Sequence[str] = "all",
-        model_language: str | c.Sequence[str] | None = None,
-        dataset_language: str | c.Sequence[str] | None = None,
         device: Device | None = None,
-        batch_size: int = 32,
+        finetuning_batch_size: int = 32,
         raise_errors: bool = False,
         cache_dir: str = ".euroeval_cache",
         api_key: str | None = None,
@@ -88,6 +86,9 @@ class Benchmarker:
         run_with_cli: bool = False,
         requires_safetensors: bool = False,
         download_only: bool = False,
+        model_language: str | c.Sequence[str] | None = None,
+        dataset_language: str | c.Sequence[str] | None = None,
+        batch_size: int | None = None,
     ) -> None:
         """Initialise the benchmarker.
 
@@ -108,18 +109,10 @@ class Benchmarker:
                 The language codes of the languages to include, both for models and
                 datasets. Set this to 'all' if all languages should be considered.
                 Defaults to "all".
-            model_language:
-                The language codes of the languages to include for models. If specified
-                then this overrides the `language` parameter for model languages.
-                Defaults to None.
-            dataset_language:
-                The language codes of the languages to include for datasets. If
-                specified then this overrides the `language` parameter for dataset
-                languages. Defaults to None.
             device:
                 The device to use for benchmarking. Defaults to None.
-            batch_size:
-                The batch size to use. Defaults to 32.
+            finetuning_batch_size:
+                The batch size to use when finetuning. Defaults to 32.
             raise_errors:
                 Whether to raise errors instead of skipping the model evaluation.
                 Defaults to False.
@@ -172,6 +165,12 @@ class Benchmarker:
             download_only:
                 Whether to only download models and datasets without performing any
                 benchmarking. Defaults to False.
+            model_language:
+                Deprecated argument. Please use `language` instead.
+            dataset_language:
+                Deprecated argument. Please use `language` instead.
+            batch_size:
+                Deprecated argument. Please use `finetuning_batch_size` instead.
 
         Raises:
             ValueError:
@@ -200,6 +199,53 @@ class Benchmarker:
                 "Try installing it with `pip install hf_transfer`."
             )
 
+        # Deprecation warnings
+        if batch_size is not None:
+            if run_with_cli:
+                msg = (
+                    "The --batch-size option is deprecated and will be removed in a "
+                    "future version. Please use --finetuning-batch-size instead. "
+                    "Overwriting --finetuning-batch-size with the value from "
+                    "--batch-size."
+                )
+            else:
+                msg = (
+                    "The `batch_size` argument is deprecated and will be removed in a "
+                    "future version. Please use `finetuning_batch_size` instead. "
+                    "Overwriting `finetuning_batch_size` with the value from "
+                    "`batch_size`."
+                )
+            log(msg, level=logging.WARNING)
+            finetuning_batch_size = batch_size
+        if model_language is not None:
+            if run_with_cli:
+                msg = (
+                    "The --model-language option is deprecated and will be removed in "
+                    "a future version. Please use --language instead. Ignoring the "
+                    "--model-language value."
+                )
+            else:
+                msg = (
+                    "The `model_language` argument is deprecated and will be removed "
+                    "in a future version. Please use `language` instead. Ignoring the "
+                    "`model_language` value."
+                )
+            log(msg, level=logging.WARNING)
+        if dataset_language is not None:
+            if run_with_cli:
+                msg = (
+                    "The --dataset-language option is deprecated and will be removed "
+                    "in a future version. Please use --language instead. Ignoring the "
+                    "--dataset-language value."
+                )
+            else:
+                msg = (
+                    "The `dataset_language` argument is deprecated and will be removed "
+                    "in a future version. Please use `language` instead. Ignoring the "
+                    "`dataset_language` value."
+                )
+            log(msg, level=logging.WARNING)
+
         # If FULL_LOG has been set, then force verbose mode
         if os.getenv("FULL_LOG", "0") == "1":
             verbose = True
@@ -210,10 +256,8 @@ class Benchmarker:
             progress_bar=progress_bar,
             save_results=save_results,
             language=language,
-            model_language=model_language,
-            dataset_language=dataset_language,
             device=device,
-            batch_size=batch_size,
+            finetuning_batch_size=finetuning_batch_size,
             raise_errors=raise_errors,
             cache_dir=cache_dir,
             api_key=api_key,
@@ -329,8 +373,6 @@ class Benchmarker:
         progress_bar: bool | None = None,
         save_results: bool | None = None,
         language: str | c.Sequence[str] | None = None,
-        model_language: str | c.Sequence[str] | None = None,
-        dataset_language: str | c.Sequence[str] | None = None,
         device: Device | None = None,
         batch_size: int | None = None,
         raise_errors: bool | None = None,
@@ -379,15 +421,6 @@ class Benchmarker:
                 datasets. Here 'no' means both Bokmål (nb) and Nynorsk (nn). Set this to
                 'all' if all languages should be considered. Defaults to the value
                 specified when initialising the benchmarker.
-            model_language:
-                The language codes of the languages to include for models. If specified
-                then this overrides the `language` parameter for model languages.
-                Defaults to the value specified when initialising the benchmarker.
-            dataset_language:
-                The language codes of the languages to include for datasets. If
-                specified then this overrides the `language` parameter for dataset
-                languages. Defaults to the value specified when initialising the
-                benchmarker.
             device:
                 The device to use for benchmarking. Defaults to the value specified when
                 initialising the benchmarker.
@@ -490,16 +523,6 @@ class Benchmarker:
                 language
                 if language is not None
                 else self.benchmark_config_default_params.language
-            ),
-            model_language=(
-                model_language
-                if model_language is not None
-                else self.benchmark_config_default_params.model_language
-            ),
-            dataset_language=(
-                dataset_language
-                if dataset_language is not None
-                else self.benchmark_config_default_params.dataset_language
             ),
             device=(
                 device
@@ -970,9 +993,7 @@ class Benchmarker:
                 record = BenchmarkResult(
                     dataset=dataset_config.name,
                     task=dataset_config.task.name,
-                    dataset_languages=[
-                        language.code for language in dataset_config.languages
-                    ],
+                    languages=[language.code for language in dataset_config.languages],
                     model=model_id_to_be_stored,
                     results=results,
                     num_model_parameters=model.num_params,
