@@ -1745,7 +1745,7 @@ def clean_model_id(model_id: str, benchmark_config: BenchmarkConfig) -> str:
     """
     if (
         benchmark_config.api_base is not None
-        and not re.search(pattern=r"^[a-zA-Z0-9_-]+\/", string=model_id) is not None
+        and re.search(pattern=r"^[a-zA-Z0-9_-]+\/", string=model_id) is None
     ):
         if benchmark_config.generative_type == GenerativeType.BASE:
             prefix = "text-completion-openai/"
