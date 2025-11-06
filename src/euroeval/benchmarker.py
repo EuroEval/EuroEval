@@ -822,7 +822,9 @@ class Benchmarker:
             if benchmark_config.clear_model_cache:
                 clear_model_cache_fn(cache_dir=benchmark_config.cache_dir)
 
-        log(f"Completed {num_finished_benchmarks:,} benchmarks.\n", level=logging.INFO)
+        log(
+            f"\nCompleted {num_finished_benchmarks:,} benchmarks.\n", level=logging.INFO
+        )
 
         # This avoids the following warning at the end of the benchmarking:
         #   Warning: WARNING: process group has NOT been destroyed before we destruct

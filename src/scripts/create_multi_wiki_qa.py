@@ -48,6 +48,8 @@ LANGUAGES = [
     "el",
     "bg",
     "sr",
+    "sl",
+    "hr",
 ]
 
 

@@ -8,6 +8,7 @@ from ..tasks import COMMON_SENSE, EUROPEAN_VALUES, LA, MCRC, NER, RC, SENT, SUMM
 
 SCANDISENT_FI_CONFIG = DatasetConfig(
     name="scandisent-fi",
+    pretty_name="ScandiSent-fi",
     source="EuroEval/scandisent-fi-mini",
     task=SENT,
     languages=[FINNISH],
@@ -16,32 +17,47 @@ SCANDISENT_FI_CONFIG = DatasetConfig(
 
 TURKU_NER_FI_CONFIG = DatasetConfig(
     name="turku-ner-fi",
+    pretty_name="Turku NER-fi",
     source="EuroEval/turku-ner-fi-mini",
     task=NER,
     languages=[FINNISH],
 )
 
 TYDIQA_FI_CONFIG = DatasetConfig(
-    name="tydiqa-fi", source="EuroEval/tydiqa-fi-mini", task=RC, languages=[FINNISH]
+    name="tydiqa-fi",
+    pretty_name="TyDiQA-fi",
+    source="EuroEval/tydiqa-fi-mini",
+    task=RC,
+    languages=[FINNISH],
 )
 
 XLSUM_FI_CONFIG = DatasetConfig(
-    name="xlsum-fi", source="EuroEval/xlsum-fi-mini", task=SUMM, languages=[FINNISH]
+    name="xlsum-fi",
+    pretty_name="XLSum-fi",
+    source="EuroEval/xlsum-fi-mini",
+    task=SUMM,
+    languages=[FINNISH],
 )
 
 HELLASWAG_FI_CONFIG = DatasetConfig(
     name="hellaswag-fi",
+    pretty_name="HellaSwag-fi",
     source="EuroEval/hellaswag-fi-mini",
     task=COMMON_SENSE,
     languages=[FINNISH],
 )
 
 SCALA_FI_CONFIG = DatasetConfig(
-    name="scala-fi", source="EuroEval/scala-fi", task=LA, languages=[FINNISH]
+    name="scala-fi",
+    pretty_name="ScaLA-fi",
+    source="EuroEval/scala-fi",
+    task=LA,
+    languages=[FINNISH],
 )
 
-EUROPEAN_VALUES_FI_CONFIG = DatasetConfig(
-    name="european-values-fi",
+VALEU_FI_CONFIG = DatasetConfig(
+    name="valeu-fi",
+    pretty_name="VaLEU-fi",
     source="EuroEval/european-values-fi",
     task=EUROPEAN_VALUES,
     languages=[FINNISH],
@@ -55,6 +71,7 @@ EUROPEAN_VALUES_FI_CONFIG = DatasetConfig(
 
 BELEBELE_FI_CONFIG = DatasetConfig(
     name="belebele-fi",
+    pretty_name="Belebele-fi",
     source="EuroEval/belebele-fi-mini",
     task=MCRC,
     languages=[FINNISH],
@@ -63,6 +80,7 @@ BELEBELE_FI_CONFIG = DatasetConfig(
 
 MULTI_WIKI_QA_FI_CONFIG = DatasetConfig(
     name="multi-wiki-qa-fi",
+    pretty_name="MultiWikiQA-fi",
     source="EuroEval/multi-wiki-qa-fi-mini",
     task=RC,
     languages=[FINNISH],
@@ -71,6 +89,7 @@ MULTI_WIKI_QA_FI_CONFIG = DatasetConfig(
 
 GOLDENSWAG_FI_CONFIG = DatasetConfig(
     name="goldenswag-fi",
+    pretty_name="GoldenSwag-fi",
     source="EuroEval/goldenswag-fi-mini",
     task=COMMON_SENSE,
     languages=[FINNISH],
@@ -79,31 +98,10 @@ GOLDENSWAG_FI_CONFIG = DatasetConfig(
 
 WINOGRANDE_FI_CONFIG = DatasetConfig(
     name="winogrande-fi",
+    pretty_name="Winogrande-fi",
     source="EuroEval/winogrande-fi",
     task=COMMON_SENSE,
     languages=[FINNISH],
     _labels=["a", "b"],
-    unofficial=True,
-)
-
-EUROPEAN_VALUES_SITUATIONAL_FI_CONFIG = DatasetConfig(
-    name="european-values-situational-fi",
-    source="EuroEval/european-values-situational-fi",
-    task=EUROPEAN_VALUES,
-    languages=[FINNISH],
-    splits=["test"],
-    bootstrap_samples=False,
-    _instruction_prompt="{text}",
-    unofficial=True,
-)
-
-EUROPEAN_VALUES_COMPLETIONS_FI_CONFIG = DatasetConfig(
-    name="european-values-completions-fi",
-    source="EuroEval/european-values-completions-fi",
-    task=EUROPEAN_VALUES,
-    languages=[FINNISH],
-    splits=["test"],
-    bootstrap_samples=False,
-    _instruction_prompt="{text}",
     unofficial=True,
 )

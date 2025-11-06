@@ -5,6 +5,7 @@ import typing as t
 from ..data_models import PromptConfig
 from ..languages import (
     BULGARIAN,
+    CROATIAN,
     CZECH,
     DANISH,
     DUTCH,
@@ -25,6 +26,7 @@ from ..languages import (
     PORTUGUESE,
     SERBIAN,
     SLOVAK,
+    SLOVENIAN,
     SPANISH,
     SWEDISH,
     UKRAINIAN,
@@ -40,6 +42,17 @@ MULTIPLE_CHOICE_TEMPLATES: dict["Language", PromptConfig] = {
         default_prompt_template="Въпрос: {text}\nОтговор: {label}",
         default_instruction_prompt="Въпрос: {text}\n\nОтговорете на горния въпрос "
         "като отговорите с {labels_str}, и нищо друго.",
+        default_prompt_label_mapping="auto",
+    ),
+    CROATIAN: PromptConfig(
+        default_prompt_prefix=(
+            "Sljedeća su pitanja s višestrukim izborom (s odgovorima)."
+        ),
+        default_prompt_template=("Pitanje: {text}\nOdgovor: {label}"),
+        default_instruction_prompt=(
+            "Pitanje: {text}\n\n"
+            "Odgovorite na gornje pitanje koristeći {labels_str}, i ništa drugo."
+        ),
         default_prompt_label_mapping="auto",
     ),
     CZECH: PromptConfig(
@@ -198,6 +211,15 @@ MULTIPLE_CHOICE_TEMPLATES: dict["Language", PromptConfig] = {
         default_instruction_prompt=(
             "Otázka: {text}\n\n"
             "Odpovedzte na nasledujúcu otázku použitím {labels_str}, a nič iné."
+        ),
+        default_prompt_label_mapping="auto",
+    ),
+    SLOVENIAN: PromptConfig(
+        default_prompt_prefix="Naslednja so vprašanja z več možnostmi (z odgovori).",
+        default_prompt_template="Vprašanje: {text}\nOdgovor: {label}",
+        default_instruction_prompt=(
+            "Vprašanje: {text}\n\n"
+            "Odgovorite na navedeno vprašanje z uporabo {labels_str}, in nič drugega."
         ),
         default_prompt_label_mapping="auto",
     ),

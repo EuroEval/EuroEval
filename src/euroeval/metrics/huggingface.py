@@ -150,7 +150,7 @@ class HuggingFaceMetric(Metric):
         """Close any resources held by the metric."""
         if self.metric is not None:
             if self.metric.filelock is not None:
-                self.metric.filelock.release(force=True)
+                self.metric.filelock._release()
             if self.metric.writer is not None:
                 self.metric.writer.finalize(close_stream=True)
 

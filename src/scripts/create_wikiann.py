@@ -14,7 +14,7 @@ import pandas as pd
 from datasets import Dataset, DatasetDict, Split, load_dataset
 from huggingface_hub import HfApi
 
-LANGUAGE_CODES = ["lt", "lv"]
+LANGUAGE_CODES = ["lt", "lv", "hr"]
 
 
 def main() -> None:

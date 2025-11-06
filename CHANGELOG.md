@@ -7,8 +7,39 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [v16.6.0] - 2025-11-04
+
 ### Added
 
+- Added support for Croatian 🇭🇷! This includes the sentiment classification dataset
+  MMS-hr, the linguistic acceptability dataset ScaLA-hr, the named entity recognition
+  dataset WikiANN-hr, the reading comprehension dataset MultiWikiQA-hr, the knowledge
+  dataset MMLU-hr, and the common-sense reasoning dataset Winogrande-hr.
+- Added a system dependency check for `nvcc` in the `VLLMModel.__init__` method to
+  ensure the CUDA Toolkit is installed. Raises an error with installation instructions
+  if NVCC is not available in the system PATH.
+
+### Changed
+
+- Removed the `--custom-datasets-file` argument, which is now always
+  `custom_datasets.py` in the current working directory. This enables us to auto-read
+  this file, making it possible to evaluate custom datasets by name only when using the
+  `Benchmarker` API.
+
+### Fixed
+
+- Now disabled structured generation for classification tasks if we're disabling
+  logprobs, to force evaluation using raw outputs and word edit distance instead.
+
+## [v16.5.0] - 2025-10-28
+
+### Added
+
+- Added support for Slovenian 🇸🇮! This includes the sentiment classification dataset
+  Sentinews, the linguistic acceptability dataset ScaLA-sl, the named entity recognition
+  dataset ssj500k-NER, the reading comprehension
+  dataset MultiWikiQA-sl, the knowledge dataset MMLU-sl, and the common-sense reasoning
+  dataset Winogrande-sl.
 - Added better support for evaluating on custom datasets, by allowing `DatasetConfig`
   objects directly in the `Benchmarker.benchmark` method. We also support custom
   datasets with the CLI, by simply defining the desired `DatasetConfig`s in a
@@ -20,8 +51,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Added support for Serbian 🇷🇸! This includes the sentiment classification dataset
   MMS-sr, the linguistic acceptability dataset ScaLA-sr, the named entity recognition
   dataset UNER-sr, the reading comprehension dataset MultiWikiQA-sr, the summarisation
-  dataset LR-Sum-sr, the knowledge dataset MMLU-sr, and the common-sense reasoning dataset
-  Winogrande-sr. This was contributed by @oliverkinch ✨
+  dataset LR-Sum-sr, the knowledge dataset MMLU-sr, and the common-sense reasoning
+  dataset Winogrande-sr. This was contributed by @oliverkinch ✨
 - Added support for Bulgarian 🇧🇬! This includes the sentiment classification dataset
   Cinexio, the linguistic acceptability dataset ScaLA-bg, the named entity recognition
   dataset BG-NER-BSNLP, the reading comprehension dataset MultiWikiQA-bg, the knowledge
@@ -46,15 +77,19 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Fixed
 
-- Fixed the "double option" problem in Winogrande datasets across all languages. Previously,
-  option labels were duplicated for multiple languages
-  (e.g., "Svarmuligheder:\na. Valgmulighed A: Natalie\nb. Valgmulighed B: Betty"
-  instead of just "Svarmuligheder:\na. Natalie\nb. Betty").
+- Fixed the "double option" problem in Winogrande datasets across all languages.
+  Previously, option labels were duplicated for multiple languages (e.g.,
+  "Svarmuligheder:\na. Valgmulighed A: Natalie\nb. Valgmulighed B: Betty" instead of
+  just "Svarmuligheder:\na. Natalie\nb. Betty").
 - The previous fix to close arrow writers in metrics did not work as intended, as the
   "too many open files" error still occurred. We now ensure that the writers are closed
   properly after each metric computation to avoid this issue.
 - Now correctly allows specifying inference provider API keys with the `--api-key`
   argument. Previously, this conflicted with the Hugging Face API key.
+- Fixed an issue where some pretrained generative models required prefix spaces in the
+  labels for classification tasks, which resulted in faulty structured choice
+  generation. We now correctly take this into account, which significantly increases
+  the classification performance of these models.
 
 ## [v16.4.0] - 2025-10-21
 

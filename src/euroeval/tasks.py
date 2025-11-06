@@ -15,20 +15,6 @@ from .prompt_templates import (
     TOKEN_CLASSIFICATION_TEMPLATES,
 )
 
-
-def get_all_tasks() -> dict[str, Task]:
-    """Get a list of all the dataset tasks.
-
-    Returns:
-        A mapping between names of dataset tasks and their configurations.
-    """
-    return {
-        cfg.name: cfg
-        for cfg in globals().values()
-        if isinstance(cfg, Task) and cfg != SPEED
-    }
-
-
 LA = Task(
     name="linguistic-acceptability",
     task_group=TaskGroup.SEQUENCE_CLASSIFICATION,

@@ -33,6 +33,7 @@ from load_ud_pos import (
     load_fidt_pos,
     load_fodt_pos,
     load_frdt_pos,
+    load_hrdt_pos,
     load_isdt_pos,
     load_itdt_pos,
     load_ltdt_pos,
@@ -43,6 +44,7 @@ from load_ud_pos import (
     load_pldt_pos,
     load_ptdt_pos,
     load_skdt_pos,
+    load_sldt_pos,
     load_srdt_pos,
     load_svdt_pos,
     load_ukdt_pos,
@@ -79,6 +81,8 @@ def main() -> None:
         "el": load_eldt_pos,
         "bg": load_bgdt_pos,
         "sr": load_srdt_pos,
+        "sl": load_sldt_pos,
+        "hr": load_hrdt_pos,
     }
 
     # Set up the progress bar and iterate over the languages
@@ -244,7 +248,7 @@ def delete(tokens: List[str], pos_tags: List[str]) -> Union[str, None]:
     indices = [
         idx
         for idx, pos_tag in enumerate(pos_tags)
-        if pos_tag not in ["ADJ", "ADV", "PUNCT", "SYM", "DET", "NUM"]
+        if pos_tag not in ["ADJ", "ADV", "PUNCT", "SYM", "DET", "NUM", "PART"]
         and (
             pos_tag not in ["NOUN", "PROPN"]
             or (

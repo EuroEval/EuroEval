@@ -5,6 +5,7 @@ import typing as t
 from ..data_models import PromptConfig
 from ..languages import (
     BULGARIAN,
+    CROATIAN,
     CZECH,
     DANISH,
     DUTCH,
@@ -26,6 +27,7 @@ from ..languages import (
     PORTUGUESE,
     SERBIAN,
     SLOVAK,
+    SLOVENIAN,
     SPANISH,
     SWEDISH,
     UKRAINIAN,
@@ -41,6 +43,18 @@ RC_TEMPLATES: dict["Language", PromptConfig] = {
         "3 думи: {label}",
         default_instruction_prompt="Текст: {text}\n\nОтговорете на следния въпрос "
         "относно текста по-горе с максимум 3 думи.\n\nВъпрос: {question}",
+        default_prompt_label_mapping=dict(),
+    ),
+    CROATIAN: PromptConfig(
+        default_prompt_prefix=("Sljedeći tekstovi sadrže pitanja i odgovore."),
+        default_prompt_template=(
+            "Tekst: {text}\nPitanje: {question}\nOdgovor s najviše 3 riječi: {label}"
+        ),
+        default_instruction_prompt=(
+            "Tekst: {text}\n\n"
+            "Odgovorite na sljedeće pitanje o gornjem tekstu s najviše 3 riječi.\n\n"
+            "Pitanje: {question}"
+        ),
         default_prompt_label_mapping=dict(),
     ),
     CZECH: PromptConfig(
@@ -222,6 +236,23 @@ RC_TEMPLATES: dict["Language", PromptConfig] = {
         "um máximo de 3 palavras: {label}",
         default_instruction_prompt="Texto: {text}\n\nResponde à seguinte pergunta "
         "sobre o texto acima num máximo de 3 palavras.\n\nPergunta: {question}",
+        default_prompt_label_mapping=dict(),
+    ),
+    SLOVENIAN: PromptConfig(
+        default_prompt_prefix=(
+            "Spodaj so besedila z ustreznimi vprašanji in odgovori."
+        ),
+        default_prompt_template=(
+            "Besedilo: {text}\n"
+            "Vprašanje: {question}\n"
+            "Odgovor v največ 3 besedah: {label}"
+        ),
+        default_instruction_prompt=(
+            "Besedilo: {text}\n\n"
+            "Odgovorite na naslednje vprašanje o zgornjem besedilu "
+            "v največ 3 besedah.\n\n"
+            "Vprašanje: {question}"
+        ),
         default_prompt_label_mapping=dict(),
     ),
     SLOVAK: PromptConfig(

@@ -11,7 +11,6 @@ from .dataset_configs import get_all_dataset_configs
 from .enums import Device
 from .exceptions import InvalidBenchmark
 from .languages import get_all_languages
-from .tasks import get_all_tasks
 
 if t.TYPE_CHECKING:
     from .data_models import Language
@@ -177,20 +176,6 @@ def prepare_dataset_configs(
         InvalidBenchmark:
             If the task or dataset is not found in the benchmark tasks or datasets.
     """
-    # Create the list of dataset tasks
-    task_mapping = get_all_tasks()
-    try:
-        if task is None:
-            tasks = None
-        elif isinstance(task, str):
-            tasks = [task_mapping[task]]
-        elif isinstance(task, Task):
-            tasks = [task]
-        else:
-            tasks = [task_mapping[t] if isinstance(t, str) else t for t in task]
-    except KeyError as e:
-        raise InvalidBenchmark(f"Task {e} not found in the benchmark tasks.") from e
-
     # Create the list of dataset configs
     all_dataset_configs = get_all_dataset_configs()
     all_official_dataset_configs: c.Sequence[DatasetConfig] = [
@@ -213,6 +198,20 @@ def prepare_dataset_configs(
         raise InvalidBenchmark(
             f"Dataset {e} not found in the benchmark datasets."
         ) from e
+
+    # Create the list of dataset tasks
+    task_mapping = {cfg.task.name: cfg.task for cfg in all_dataset_configs.values()}
+    try:
+        if task is None:
+            tasks = None
+        elif isinstance(task, str):
+            tasks = [task_mapping[task]]
+        elif isinstance(task, Task):
+            tasks = [task]
+        else:
+            tasks = [task_mapping[t] if isinstance(t, str) else t for t in task]
+    except KeyError as e:
+        raise InvalidBenchmark(f"Task {e} not found in the benchmark tasks.") from e
 
     # Filter the dataset configs based on the specified tasks and languages
     datasets = [

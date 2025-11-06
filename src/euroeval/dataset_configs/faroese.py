@@ -8,6 +8,7 @@ from ..tasks import LA, NER, RC, SENT
 
 FOSENT_CONFIG = DatasetConfig(
     name="fosent",
+    pretty_name="FoSent",
     source="EuroEval/fosent",
     task=SENT,
     languages=[FAROESE],
@@ -15,55 +16,35 @@ FOSENT_CONFIG = DatasetConfig(
 )
 
 SCALA_FO_CONFIG = DatasetConfig(
-    name="scala-fo", source="EuroEval/scala-fo", task=LA, languages=[FAROESE]
+    name="scala-fo",
+    pretty_name="ScaLA-fo",
+    source="EuroEval/scala-fo",
+    task=LA,
+    languages=[FAROESE],
 )
 
 FONE_CONFIG = DatasetConfig(
-    name="fone", source="EuroEval/fone-mini", task=NER, languages=[FAROESE]
+    name="fone",
+    pretty_name="FoNE",
+    source="EuroEval/fone-mini",
+    task=NER,
+    languages=[FAROESE],
 )
 
 FOQA_CONFIG = DatasetConfig(
-    name="foqa", source="EuroEval/foqa", task=RC, languages=[FAROESE]
+    name="foqa",
+    pretty_name="FoQA",
+    source="EuroEval/foqa",
+    task=RC,
+    languages=[FAROESE],
 )
-
-# TODO: No Faroese version of the European values dataset exists yet
-# EUROPEAN_VALUES_FO_CONFIG = DatasetConfig(
-#     name="european-values-fo",
-#     source="EuroEval/european-values-fo",
-#     task=EUROPEAN_VALUES,
-#     languages=[FAROESE],
-#     splits=["test"],
-#     bootstrap_samples=False,
-#     _instruction_prompt="{text}",
-# )
-#
-# EUROPEAN_VALUES_SITUATIONAL_FO_CONFIG = DatasetConfig(
-#     name="european-values-situational-fo",
-#     source="EuroEval/european-values-situational-fo",
-#     task=EUROPEAN_VALUES,
-#     languages=[FAROESE],
-#     splits=["test"],
-#     bootstrap_samples=False,
-#     _instruction_prompt="{text}",
-#     unofficial=True,
-# )
-#
-# EUROPEAN_VALUES_COMPLETIONS_FO_CONFIG = DatasetConfig(
-#     name="european-values-completions-fo",
-#     source="EuroEval/european-values-completions-fo",
-#     task=EUROPEAN_VALUES,
-#     languages=[FAROESE],
-#     splits=["test"],
-#     bootstrap_samples=False,
-#     _instruction_prompt="{text}",
-#     unofficial=True,
-# )
 
 
 ### Unofficial datasets ###
 
 WIKIANN_FO_CONFIG = DatasetConfig(
     name="wikiann-fo",
+    pretty_name="WikiANN-fo",
     source="EuroEval/wikiann-fo-mini",
     task=NER,
     languages=[FAROESE],
@@ -72,6 +53,7 @@ WIKIANN_FO_CONFIG = DatasetConfig(
 
 MULTI_WIKI_QA_FO_CONFIG = DatasetConfig(
     name="multi-wiki-qa-fo",
+    pretty_name="MultiWikiQA-fo",
     source="EuroEval/multi-wiki-qa-fo-mini",
     task=RC,
     languages=[FAROESE],

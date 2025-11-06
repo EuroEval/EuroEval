@@ -6,6 +6,7 @@ import importlib.util
 import json
 import logging
 import re
+import shutil
 import typing as t
 from functools import partial
 from pathlib import Path
@@ -42,6 +43,7 @@ from ..exceptions import (
     InvalidModel,
     NeedsEnvironmentVariable,
     NeedsExtraInstalled,
+    NeedsSystemDependency,
 )
 from ..generation_utils import (
     apply_prompt,
@@ -124,6 +126,16 @@ class VLLMModel(HuggingFaceEncoderModel):
         """
         if importlib.util.find_spec("vllm") is None:
             raise NeedsExtraInstalled(extra="generative")
+
+        if shutil.which("nvcc") is None:
+            raise NeedsSystemDependency(
+                dependency="nvcc",
+                instructions=(
+                    "Please install the CUDA Toolkit from "
+                    "https://developer.nvidia.com/cuda-downloads or ensure that NVCC "
+                    "is available in your PATH."
+                ),
+            )
 
         raise_if_wrong_params(
             model_config=model_config, allowed_params=self.allowed_params
@@ -415,13 +427,21 @@ class VLLMModel(HuggingFaceEncoderModel):
             structured_outputs = StructuredOutputsParams(
                 json=structured_generation_schema
             )
-        elif self.dataset_config.task.uses_logprobs and self.dataset_config.labels:
-            structured_outputs = StructuredOutputsParams(
-                choice=[
-                    self.dataset_config.prompt_label_mapping[label]
-                    for label in self.dataset_config.labels
+        elif (
+            self.dataset_config.task.uses_logprobs
+            and self.dataset_config.labels
+            and self.buffer.get("first_label_token_mapping", False)
+        ):
+            choice_labels = [
+                self.dataset_config.prompt_label_mapping[label]
+                for label in self.dataset_config.labels
+            ]
+            if isinstance(self.buffer["first_label_token_mapping"], dict):
+                choice_labels = [
+                    self.buffer["first_label_token_mapping"][label]
+                    for label in choice_labels
                 ]
-            )
+            structured_outputs = StructuredOutputsParams(choice=choice_labels)
             log_once(
                 "Using structured generation with the choices: "
                 f"{structured_outputs.choice!r}.",
@@ -562,7 +582,8 @@ class VLLMModel(HuggingFaceEncoderModel):
         completions = self._tokeniser.batch_decode(
             sequences=[
                 torch.LongTensor(completion_id) for completion_id in completion_ids
-            ]
+            ],
+            skip_special_tokens=True,
         )
         if (
             self.end_of_reasoning_token is not None
@@ -924,6 +945,32 @@ def load_model_and_tokeniser(
                 "If you trust the suppliers of this model, then you can enable "
                 "this by setting the `--trust-remote-code` flag."
             ) from e
+        elif "See stack trace for root cause." in str(
+            e
+        ) or "See root cause above." in str(e):
+            msg = (
+                f"The model {model_id!r} could not be loaded, but vLLM did not "
+                "mention exactly what happened. "
+            )
+            msg += (
+                (
+                    "Since you're running in verbose mode, you might see a descriptive "
+                    "error above already. Note however that if the error message urges "
+                    "you to set the environment variable `VLLM_ATTENTION_BACKEND` to "
+                    "'FLEX_ATTENTION', please try setting it to 'FLASH_ATTN' first, as "
+                    "that often solves the issue, whereas 'FLEX_ATTENTION' usually "
+                    "doesn't. If you don't see any descriptive error above, then you "
+                    "can try "
+                )
+                if benchmark_config.verbose
+                else "Try "
+            )
+            msg += (
+                "re-running the benchmark with the environment variable `FULL_LOG` "
+                "set to `1` to see the full stack trace. E.g., "
+                f"`FULL_LOG=1 euroeval --model {model_id}`."
+            )
+            raise InvalidModel(msg) from e
         raise InvalidModel(
             f"The model {model_id!r} could not be loaded. The error was {e!r}."
         ) from e

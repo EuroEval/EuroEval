@@ -163,6 +163,7 @@ def test_prepare_languages(
             None,
             new_config := DatasetConfig(
                 name="new-dataset",
+                pretty_name="New Dataset",
                 source="some/hf-dataset",
                 task=LA,
                 languages=[DANISH, ENGLISH],

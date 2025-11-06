@@ -15,13 +15,14 @@ from euroeval.dataset_configs import get_all_dataset_configs
 from euroeval.enums import InferenceBackend, ModelType
 from euroeval.languages import DANISH, get_all_languages
 from euroeval.metrics import HuggingFaceMetric
-from euroeval.tasks import SENT, get_all_tasks
+from euroeval.tasks import SENT
 
 
 def pytest_configure() -> None:
     """Set a global flag when `pytest` is being run."""
     setattr(sys, "_called_from_test", True)
-    os.environ["CUDA_VISIBLE_DEVICES"] = "-1"  # Ensure no GPUs are used in tests
+    if torch.cuda.is_available():
+        os.environ["CUDA_VISIBLE_DEVICES"] = "0"  # Ensure only one GPU is used in tests
 
 
 def pytest_unconfigure() -> None:
@@ -121,8 +122,10 @@ def metric() -> Generator[HuggingFaceMetric, None, None]:
 
 @pytest.fixture(
     scope="session",
-    params=list(get_all_tasks().values()),
-    ids=list(get_all_tasks().keys()),
+    params=list(
+        {dataset_config.task for dataset_config in get_all_dataset_configs().values()}
+    ),
+    ids=lambda task: task.name,
 )
 def task(request: pytest.FixtureRequest) -> Generator[Task, None, None]:
     """Yields a dataset task used in tests."""
@@ -198,5 +201,9 @@ def cli_params() -> Generator[dict[str | None, ParamType], None, None]:
 def dataset_config() -> c.Generator[DatasetConfig, None, None]:
     """Yields a dataset configuration used in tests."""
     yield DatasetConfig(
-        name="dataset", source="dataset_id", task=SENT, languages=[DANISH]
+        name="dataset",
+        pretty_name="Dataset",
+        source="dataset_id",
+        task=SENT,
+        languages=[DANISH],
     )

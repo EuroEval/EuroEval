@@ -5,6 +5,7 @@ import typing as t
 from ..data_models import PromptConfig
 from ..languages import (
     BULGARIAN,
+    CROATIAN,
     CZECH,
     DANISH,
     DUTCH,
@@ -26,6 +27,7 @@ from ..languages import (
     PORTUGUESE,
     SERBIAN,
     SLOVAK,
+    SLOVENIAN,
     SPANISH,
     SWEDISH,
     UKRAINIAN,
@@ -54,6 +56,29 @@ NER_TEMPLATES: dict["Language", PromptConfig] = {
         "обекти в изречението. Трябва да изведете това като JSON речник с ключовете "
         "{labels_str}. Стойностите трябва да бъдат списъци на именуваните обекти от "
         "този тип, точно както се появяват в изречението.",
+    ),
+    CROATIAN: PromptConfig(
+        default_prompt_label_mapping={
+            "b-per": "osoba",
+            "i-per": "osoba",
+            "b-loc": "mjesto",
+            "i-loc": "mjesto",
+            "b-org": "organizacija",
+            "i-org": "organizacija",
+            "b-misc": "razno",
+            "i-misc": "razno",
+        },
+        default_prompt_prefix=(
+            "Sljedeće su rečenice i JSON rječnici s imenicama koje se pojavljuju u "
+            "rečenicama."
+        ),
+        default_prompt_template=("Rečenica: {text}\nImenovane entiteti: {label}"),
+        default_instruction_prompt=(
+            "Rečenica: {text}\n\n"
+            "Identificirajte imenovane entitete u rečenici. Prikažite ih kao JSON "
+            "rječnik s ključevima {labels_str}. Vrijednosti trebaju biti popisi "
+            "imenovanih entiteta navedenog tipa, točno kako se pojavljuju u rečenici."
+        ),
     ),
     CZECH: PromptConfig(
         default_prompt_label_mapping={
@@ -457,6 +482,29 @@ NER_TEMPLATES: dict["Language", PromptConfig] = {
         "entity vo vete. Výstup by mal byť vo forme JSON-objektu s kľúčmi "
         "{labels_str}. Hodnoty by mali byť zoznamy pomenovaných entít danej "
         "kategórie, presne tak, ako sa vyskytujú vo vete.",
+    ),
+    SLOVENIAN: PromptConfig(
+        default_prompt_label_mapping={
+            "b-per": "oseba",
+            "i-per": "oseba",
+            "b-loc": "kraj",
+            "i-loc": "kraj",
+            "b-org": "organizacija",
+            "i-org": "organizacija",
+            "b-misc": "razno",
+            "i-misc": "razno",
+        },
+        default_prompt_prefix=(
+            "Naslednje so povedi in JSON slovarji z poimenovanimi "
+            "entitetami, ki se pojavijo v dani povedi."
+        ),
+        default_prompt_template=("Poved: {text}\nPoimenovane entitete: {label}"),
+        default_instruction_prompt=(
+            "Poved: {text}\n\nIdentificirajte poimenovane entitete v povedi. "
+            "To morate izpisati kot JSON slovar s ključi {labels_str}. "
+            "Vrednosti morajo biti seznami poimenovanih entitet te kategorije, "
+            "tako kot se pojavijo v povedi."
+        ),
     ),
     SERBIAN: PromptConfig(
         default_prompt_label_mapping={
