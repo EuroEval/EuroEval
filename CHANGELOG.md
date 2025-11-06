@@ -18,6 +18,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   - We don't require the API key to be given if the server does not require it.
   - We added a more detailed documentation on how to evaluate models on custom
       inference APIs in the readme.
+- Now always truncates prompts to fit within the model's maximum context length when
+  evaluating vLLM models. Previously we only did this when catching the associated
+  error, but we cannot do this anymore as vLLM only returns generic errors now.
 
 ### Deprecated
 
