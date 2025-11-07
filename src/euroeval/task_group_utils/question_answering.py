@@ -439,16 +439,20 @@ def prepare_test_examples(
     # using a stride. This results in one example possible giving several features when
     # a context is long, each of those features having a context that overlaps a bit
     # the context of the previous feature.
-    tokenised_examples = tokeniser(
-        text=examples["question"],
-        text_pair=examples["context"],
-        truncation="only_second",
-        max_length=max_length,
-        stride=stride,
-        return_overflowing_tokens=True,
-        return_offsets_mapping=True,
-        padding="max_length",
-    )
+    try:
+        tokenised_examples = tokeniser(
+            text=examples["question"],
+            text_pair=examples["context"],
+            truncation="only_second",
+            max_length=max_length,
+            stride=stride,
+            return_overflowing_tokens=True,
+            return_offsets_mapping=True,
+            padding="max_length",
+        )
+    except Exception:
+        breakpoint()
+        pass
 
     # Since one example might give us several features if it has a long context, we
     # need a map from a feature to its corresponding example. This key gives us just
