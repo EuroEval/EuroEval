@@ -13,6 +13,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   evaluating vLLM models. Previously we only did this when catching the associated
   error, but we cannot do this anymore as vLLM only returns generic errors now.
 
+### Fixed
+
+- Prevent special case when negative stride occurred when an encoder model is being
+  evaluated on the reading comprehension task.
+
 ## [v16.6.0] - 2025-11-04
 
 ### Added
