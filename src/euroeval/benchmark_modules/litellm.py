@@ -254,6 +254,7 @@ class LiteLLMModel(BenchmarkModule):
             generative_type=self.generative_type,
             log_metadata=self.log_metadata,
         )
+        self.buffer["max_concurrent_calls"] = 20
 
     @property
     def generative_type(self) -> GenerativeType | None:
@@ -266,11 +267,12 @@ class LiteLLMModel(BenchmarkModule):
             type_ = self.benchmark_config.generative_type
         elif self.is_ollama:
             reasoning_model = "thinking" in (self._ollama_show.capabilities or [])
-            type_ = (
-                GenerativeType.REASONING
-                if reasoning_model
-                else GenerativeType.INSTRUCTION_TUNED
-            )
+            if reasoning_model:
+                type_ = GenerativeType.REASONING
+            elif self.model_config.model_id.startswith("ollama_chat/"):
+                type_ = GenerativeType.INSTRUCTION_TUNED
+            else:
+                type_ = GenerativeType.BASE
         elif self.model_config.param in {"thinking"}:
             type_ = GenerativeType.REASONING
         elif self.model_config.param in {"no-thinking"}:
@@ -345,8 +347,12 @@ class LiteLLMModel(BenchmarkModule):
             batch_indices, batch_inputs = zip(*inputs_to_run)
             successes, failures = safe_run(
                 self._generate_async(
-                    model_id=self.model_config.model_id,
+                    model_id=clean_model_id(
+                        model_id=self.model_config.model_id,
+                        benchmark_config=self.benchmark_config,
+                    ),
                     inputs=list(batch_inputs),
+                    max_concurrent_calls=self.buffer["max_concurrent_calls"],
                     **generation_kwargs,
                 )
             )
@@ -372,6 +378,29 @@ class LiteLLMModel(BenchmarkModule):
                 f"{failures[0][1]}.",
                 level=logging.DEBUG,
             )
+
+            # Check if any errors are due to HTTP 429 (too many requests), in which case
+            # we reduce the number of concurrent calls
+            http_429_errors = [
+                idx
+                for idx, (_, error) in enumerate(failures)
+                if isinstance(error, RateLimitError) and "Error code: 429" in str(error)
+            ]
+            if http_429_errors and self.buffer["max_concurrent_calls"] > 1:
+                failures = [
+                    failures[i]
+                    for i in range(len(failures))
+                    if i not in http_429_errors
+                ]
+                self.buffer["max_concurrent_calls"] = max(
+                    1, self.buffer["max_concurrent_calls"] // 2
+                )
+                log(
+                    f"Reducing the maximum number of concurrent calls to "
+                    f"{self.buffer['max_concurrent_calls']:,} due to rate limiting.",
+                    level=logging.DEBUG,
+                )
+                continue
 
             # Attempt to handle the exceptions, to improve the chance of getting
             # successful generations next time around
@@ -687,6 +716,7 @@ class LiteLLMModel(BenchmarkModule):
         self,
         model_id: str,
         inputs: c.Sequence[c.Sequence[litellm.AllMessageValues] | str],
+        max_concurrent_calls: int,
         **generation_kwargs,
     ) -> tuple[
         c.Sequence[tuple[int, "ModelResponse"]], c.Sequence[tuple[int, Exception]]
@@ -698,6 +728,8 @@ class LiteLLMModel(BenchmarkModule):
                 The ID of the model to use for generation.
             inputs:
                 The inputs to pass to the model.
+            max_concurrent_calls:
+                The maximum number of concurrent calls to make to the model.
             **generation_kwargs:
                 Additional generation arguments to pass to the model.
 
@@ -718,7 +750,6 @@ class LiteLLMModel(BenchmarkModule):
         )
 
         # Get the LLM generations asynchronously
-        max_concurrent_calls = 20
         semaphore = asyncio.Semaphore(max_concurrent_calls)
         if self.generative_type == GenerativeType.BASE:
             if not all(isinstance(input_, str) for input_ in inputs):
@@ -728,7 +759,11 @@ class LiteLLMModel(BenchmarkModule):
             requests = [
                 add_semaphore_and_catch_exception(
                     router.atext_completion(
-                        model=model_id, prompt=input_, **generation_kwargs
+                        model=clean_model_id(
+                            model_id=model_id, benchmark_config=self.benchmark_config
+                        ),
+                        prompt=input_,
+                        **generation_kwargs,
                     ),
                     semaphore=semaphore,
                 )
@@ -744,7 +779,11 @@ class LiteLLMModel(BenchmarkModule):
             requests = [
                 add_semaphore_and_catch_exception(
                     router.acompletion(
-                        model=model_id, messages=input_, **generation_kwargs
+                        model=clean_model_id(
+                            model_id=model_id, benchmark_config=self.benchmark_config
+                        ),
+                        messages=input_,
+                        **generation_kwargs,
                     ),
                     semaphore=semaphore,
                 )
@@ -1245,7 +1284,9 @@ class LiteLLMModel(BenchmarkModule):
             try:
                 litellm.completion(
                     messages=[dict(role="user", content="X")],
-                    model=model_id,
+                    model=clean_model_id(
+                        model_id=model_id, benchmark_config=benchmark_config
+                    ),
                     max_tokens=1,
                     api_key=benchmark_config.api_key,
                     api_base=benchmark_config.api_base,
@@ -1278,6 +1319,15 @@ class LiteLLMModel(BenchmarkModule):
                 )
                 sleep(10)
             except (BadRequestError, NotFoundError):
+                # In case we're using `api_base`, try again with the `/v1` suffix
+                if (
+                    benchmark_config.api_base is not None
+                    and not benchmark_config.api_base.endswith("/v1")
+                ):
+                    benchmark_config.api_base += "/v1"
+                    continue
+
+                # Check for misspelled model IDs
                 candidate_models = [
                     candidate_model_id
                     for candidate_model_id in litellm.model_list
@@ -1557,8 +1607,12 @@ class LiteLLMModel(BenchmarkModule):
         for _ in range(num_attempts := 10):
             _, failures = safe_run(
                 self._generate_async(
-                    model_id=self.model_config.model_id,
+                    model_id=clean_model_id(
+                        model_id=self.model_config.model_id,
+                        benchmark_config=self.benchmark_config,
+                    ),
                     inputs=[test_input],
+                    max_concurrent_calls=1,
                     **generation_kwargs,
                 )
             )
@@ -1671,3 +1725,31 @@ def try_download_ollama_model(model_id: str) -> bool:
             level=logging.DEBUG,
         )
         return True
+
+
+def clean_model_id(model_id: str, benchmark_config: BenchmarkConfig) -> str:
+    """Clean a model ID.
+
+    This adds the default `openai/` prefix to the model ID if we're benchmarking a
+    custom API inference server and no prefix is used, just to make it more
+    convenient for the user.
+
+    Args:
+        model_id:
+            The model ID.
+        benchmark_config:
+            The benchmark configuration.
+
+    Returns:
+        The cleaned model ID.
+    """
+    if (
+        benchmark_config.api_base is not None
+        and re.search(pattern=r"^[a-zA-Z0-9_-]+\/", string=model_id) is None
+    ):
+        if benchmark_config.generative_type == GenerativeType.BASE:
+            prefix = "text-completion-openai/"
+        else:
+            prefix = "openai/"
+        model_id = prefix + model_id
+    return model_id

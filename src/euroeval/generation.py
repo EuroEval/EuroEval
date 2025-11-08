@@ -6,12 +6,11 @@ import sys
 import typing as t
 from pathlib import Path
 
-import more_itertools as mit
 from datasets import Dataset
 from tqdm.auto import tqdm
 
 from .enums import BatchingPreference, TaskGroup
-from .exceptions import InvalidBenchmark
+from .exceptions import InvalidBenchmark, InvalidModel
 from .logging_utils import get_pbar, log, log_once
 from .model_cache import (
     ModelCache,
@@ -146,15 +145,24 @@ def generate_single_iteration(
             case BatchingPreference.ALL_AT_ONCE:
                 itr = [non_cached_dataset[:]]
             case _:
-                num_batches = len(non_cached_dataset) // benchmark_config.batch_size
-                if len(non_cached_dataset) % benchmark_config.batch_size != 0:
-                    num_batches += 1
-                itr = get_pbar(
-                    iterable=mit.batched(
-                        iterable=non_cached_dataset, n=benchmark_config.batch_size
-                    ),
-                    total=len(non_cached_dataset) // benchmark_config.batch_size,
+                raise InvalidModel(
+                    f"The batching preference {model.batching_preference!r} is "
+                    "currently not supported."
                 )
+                # NOTE: The code below can be used if we want to support batching for
+                # generative models. But in that case, we have to deal with the naming
+                # of the batch size variable, since it is currently
+                # `finetuning_batch_size`, as it is only used during finetuning of
+                # encoder models.
+                # num_batches = len(non_cached_dataset) // benchmark_config.batch_size
+                # if len(non_cached_dataset) % benchmark_config.batch_size != 0:
+                #     num_batches += 1
+                # itr = get_pbar(
+                #     iterable=mit.batched(
+                #         iterable=non_cached_dataset, n=benchmark_config.batch_size
+                #     ),
+                #     total=len(non_cached_dataset) // benchmark_config.batch_size,
+                # )
 
         # Generate the completions for the non-cached examples
         for batch in itr:

@@ -5,7 +5,10 @@ import typing as t
 from collections import defaultdict
 
 import numpy as np
-from transformers.tokenization_utils_base import PreTrainedTokenizerBase
+from transformers.tokenization_utils_base import (
+    PreTrainedTokenizerBase,
+    TruncationStrategy,
+)
 from transformers.trainer import Trainer
 
 from ..exceptions import InvalidBenchmark
@@ -427,9 +430,13 @@ def prepare_test_examples(
     max_question_tokens = max(len(tokeniser(q).input_ids) for q in examples["question"])
     num_special_tokens = int(has_cls_token) + int(has_sep_token)
     stride = tokeniser.model_max_length // 4
+    stride = min(
+        stride,
+        tokeniser.model_max_length - stride - max_question_tokens - num_special_tokens,
+    )
+    stride = max(stride, 0)
     max_length = tokeniser.model_max_length - stride
-    stride = min(stride, max_length - max_question_tokens - num_special_tokens)
-    max_length = tokeniser.model_max_length - stride
+    max_length = max(max_length, 0)
 
     # Tokenise our examples with truncation and maybe padding, but keep the overflows
     # using a stride. This results in one example possible giving several features when
@@ -438,7 +445,7 @@ def prepare_test_examples(
     tokenised_examples = tokeniser(
         text=examples["question"],
         text_pair=examples["context"],
-        truncation="only_second",
+        truncation=TruncationStrategy.LONGEST_FIRST,
         max_length=max_length,
         stride=stride,
         return_overflowing_tokens=True,
