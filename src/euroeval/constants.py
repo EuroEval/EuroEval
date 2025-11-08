@@ -61,11 +61,26 @@ MERGE_TAGS = ["merge", "mergekit"]
 VLLM_BF16_MIN_CUDA_COMPUTE_CAPABILITY = 8.0
 
 
+# The candidates for end-of-sequence, beginning-of-sequence and padding tokens
+EOS_TOKENS = ["</s>", "<|end_of_text|>", "<|endoftext|>", "[SEP]", "<|return|>"]
+BOS_TOKENS = ["<s>", "<|begin_of_text|>", "<|startoftext|>", "[CLS]"]
+PAD_TOKENS = [
+    "<pad>",
+    "<PAD>",
+    "[pad]",
+    "[PAD]",
+    "<|endoftext|>",
+    "<｜end▁of▁sentence｜>",
+    "<|im_end|>",
+]
+
+
 # Used to detect whether a model is a reasoning model
 REASONING_TOKENS = [
     ("<think>", "</think>"),
     ("<reason>", "</reason>"),
     ("<reasoning>", "</reasoning>"),
+    ("<|channel|>analysis<|message|>", "<|channel|>final<|message|>"),
 ]
 
 
