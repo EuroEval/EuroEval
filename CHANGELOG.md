@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Added
+
+- Now allows the 'low', 'medium' and 'high' reasoning effort parameters for the GPT-OSS
+  models, which can be set by appending `#low`, `#medium` or `#high` to the model ID.
+
 ### Changed
 
 - Improved the support for evaluating models on custom inference API servers. This
