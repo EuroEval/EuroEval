@@ -451,12 +451,8 @@ class BenchmarkConfig:
     Attributes:
         datasets:
             The datasets to benchmark on.
-        model_languages:
-            The languages of the models to benchmark.
-        dataset_languages:
-            The languages of the datasets in the benchmark.
-        batch_size:
-            The batch size to use.
+        finetuning_batch_size:
+            The batch size to use for finetuning.
         raise_errors:
             Whether to raise errors instead of skipping them.
         cache_dir:
@@ -511,9 +507,8 @@ class BenchmarkConfig:
     """
 
     datasets: c.Sequence[DatasetConfig]
-    model_languages: c.Sequence[Language]
-    dataset_languages: c.Sequence[Language]
-    batch_size: int
+    languages: c.Sequence[Language]
+    finetuning_batch_size: int
     raise_errors: bool
     cache_dir: str
     api_key: str | None
@@ -541,6 +536,13 @@ class BenchmarkConfig:
         """Get the tasks in the benchmark configuration."""
         return list({dataset_config.task for dataset_config in self.datasets})
 
+    def __post_init__(self) -> None:
+        """Post-initialisation checks."""
+        # Set dummy API key if it has not been set and we're benchmarking a model on an
+        # inference API
+        if self.api_key is None and self.api_base is not None:
+            self.api_key = "dummy"
+
 
 class BenchmarkConfigParams(pydantic.BaseModel):
     """The parameters for the benchmark configuration."""
@@ -554,10 +556,8 @@ class BenchmarkConfigParams(pydantic.BaseModel):
     progress_bar: bool
     save_results: bool
     language: str | c.Sequence[str]
-    model_language: str | c.Sequence[str] | None
-    dataset_language: str | c.Sequence[str] | None
     device: Device | None
-    batch_size: int
+    finetuning_batch_size: int
     raise_errors: bool
     cache_dir: str
     api_key: str | None
@@ -583,7 +583,7 @@ class BenchmarkResult(pydantic.BaseModel):
 
     dataset: str
     task: str
-    dataset_languages: c.Sequence[str]
+    languages: c.Sequence[str]
     model: str
     results: ScoreDict
     num_model_parameters: int
@@ -632,6 +632,10 @@ class BenchmarkResult(pydantic.BaseModel):
             config["few_shot"] = zero_shot_matches is None
         if "validation_split" not in config:
             config["validation_split"] = val_matches is not None
+
+        # Backwards compatibility
+        if "dataset_languages" in config:
+            config["languages"] = config.pop("dataset_languages")
 
         return cls(**config)
 

@@ -81,10 +81,9 @@ def benchmark_config(
 ) -> Generator[BenchmarkConfig, None, None]:
     """Yields a benchmark configuration used in tests."""
     yield BenchmarkConfig(
-        model_languages=[DANISH],
-        dataset_languages=[DANISH],
+        languages=[DANISH],
         datasets=list(get_all_dataset_configs().values()),
-        batch_size=1,
+        finetuning_batch_size=1,
         raise_errors=False,
         cache_dir=".euroeval_cache",
         api_key=auth,

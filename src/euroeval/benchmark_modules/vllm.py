@@ -493,10 +493,21 @@ class VLLMModel(HuggingFaceEncoderModel):
             )
             prompts = [prompt.strip() for prompt in prompts]
 
+        # Truncate the prompts if needed
+        max_tokens_per_prompt = (
+            min(self._tokeniser.model_max_length, MAX_CONTEXT_LENGTH) - max_tokens
+        )
+        tokenized_prompts = self._tokeniser(
+            text=list(prompts), truncation=True, max_length=max_tokens_per_prompt
+        )
+        prompts = self._tokeniser.batch_decode(
+            sequences=tokenized_prompts.input_ids, skip_special_tokens=True
+        )
+
         # Generate sequences using vLLM
         input_is_a_test = len(prompts) == 1 and len(set(prompts[0])) == 1
         num_attempts = 3
-        truncation_attempts = 0
+        truncation_attempts = 1
         for _ in range(num_attempts):
             try:
                 raw_outputs = self._model.generate(

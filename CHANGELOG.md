@@ -7,6 +7,34 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Changed
+
+- Improved the support for evaluating models on custom inference API servers. This
+  includes the following:
+  - We now dynamically reduce the number of concurrent connections if we run into
+      issues with too many requests.
+  - When benchmarking models on custom servers, we now automatically add the LiteLLM
+      prefix `openai/` to the model ID if no prefix is given, as LiteLLM requires this.
+  - We don't require the API key to be given if the server does not require it.
+  - We added a more detailed documentation on how to evaluate models on custom
+      inference APIs in the readme.
+- Now always truncates prompts to fit within the model's maximum context length when
+  evaluating vLLM models. Previously we only did this when catching the associated
+  error, but we cannot do this anymore as vLLM only returns generic errors now.
+
+### Fixed
+
+- When evaluating encoder models on reading comprehension datasets, we now also truncate
+  the question in case the model's maximum context length is very small.
+  
+### Deprecated
+
+- Deprecated the `--model-language`, `--dataset-language`, and `--batch-size` arguments
+  (and the equivalent ones in the `Benchmarker` API). We now only use the `--language`
+  argument for languages, and now use `--finetuning-batch-size` for the batch size. We
+  chose this renaming of the batch size argument as it is only used during finetuning,
+  and this caused confusion when evaluating generative models.
+
 ## [v16.6.0] - 2025-11-04
 
 ### Added

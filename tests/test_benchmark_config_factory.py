@@ -197,7 +197,7 @@ def test_prepare_dataset_configs(
         expected_dataset_configs = request.getfixturevalue(expected_dataset_configs)
 
     prepared_dataset_configs = prepare_dataset_configs(
-        task=input_task, dataset=input_dataset, dataset_languages=input_languages
+        task=input_task, dataset=input_dataset, languages=input_languages
     )
     assert set(prepared_dataset_configs) == set(expected_dataset_configs)
 
@@ -205,16 +205,14 @@ def test_prepare_dataset_configs(
 def test_prepare_dataset_configs_invalid_task() -> None:
     """Test that an invalid task raises an error."""
     with pytest.raises(InvalidBenchmark):
-        prepare_dataset_configs(
-            task="invalid-task", dataset=None, dataset_languages=[DANISH]
-        )
+        prepare_dataset_configs(task="invalid-task", dataset=None, languages=[DANISH])
 
 
 def test_prepare_dataset_configs_invalid_dataset() -> None:
     """Test that an invalid dataset raises an error."""
     with pytest.raises(InvalidBenchmark):
         prepare_dataset_configs(
-            task=None, dataset="invalid-dataset", dataset_languages=[DANISH]
+            task=None, dataset="invalid-dataset", languages=[DANISH]
         )
 
 

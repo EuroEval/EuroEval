@@ -66,7 +66,7 @@ def finetune(
     else:
         dtype = DataType.FP32
 
-    bs: int = benchmark_config.batch_size
+    bs: int = benchmark_config.finetuning_batch_size
     scores: list[dict[str, float]] = list()
     for idx in get_pbar(
         iterable=range(benchmark_config.num_iterations),
@@ -291,7 +291,7 @@ def get_training_args(
         logging_strategy = IntervalStrategy.NO
 
     if batch_size is None:
-        batch_size = benchmark_config.batch_size
+        batch_size = benchmark_config.finetuning_batch_size
 
     training_args = TrainingArguments(
         output_dir=model_config.model_cache_dir,

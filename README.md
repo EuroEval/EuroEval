@@ -156,19 +156,42 @@ sentiment-classification`.
 
 If the model you want to benchmark is hosted by a custom inference provider, such as a
 [vLLM server](https://docs.vllm.ai/en/stable/), then this is also supported in EuroEval.
+
 When benchmarking, you simply have to set the `--api-base` argument (`api_base` when
 using the `Benchmarker` API) to the URL of the inference API, and optionally the
 `--api-key` argument (`api_key`) to the API key, if authentication is required.
 
-When benchmarking models hosted on a custom inference API, the model ID
-(`--model`/`model`) should be the model name as registered on the inference server,
-potentially with a required prefix, depending on the type of inference server used. For
-instance, if the model is hosted on a vLLM server, the model ID should be prefixed with
-`hosted_vllm/`, and if the model is hosted on an Ollama server, the model ID should be
-prefixed with `ollama_chat/`. See the full list of possible inference providers as well
-as their corresponding prefixes in the [LiteLLM
-documentation](https://docs.litellm.ai/docs/providers/), as EuroEval uses LiteLLM to
-handle evaluation of inference APIs in general.
+If you're benchmarking an Ollama model, then you're urged to add the prefix
+`ollama_chat/` to the model name, as that will also fetch model metadata as well as pull
+the models from the Ollama model repository before evaluating it, e.g.:
+
+```bash
+euroeval --model ollama_chat/mymodel --api-base http://localhost:11434
+```
+
+For all other OpenAI-compatible inference APIs, you simply provide the model name as
+is, e.g.:
+
+```bash
+euroeval --model my-model --api-base http://localhost:8000
+```
+
+Again, if the inference API requires authentication, you simply add the `--api-key`
+argument:
+
+```bash
+euroeval --model my-model --api-base http://localhost:8000 --api-key my-secret-key
+```
+
+When using the `Benchmarker` API, the same applies. Here is an example of benchmarking
+an Ollama model hosted locally:
+
+```python
+>>> benchmarker.benchmark(
+...     model="ollama_chat/mymodel",
+...     api_base="http://localhost:11434",
+... )
+```
 
 ## Benchmarking in an offline environment
 

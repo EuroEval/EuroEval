@@ -76,7 +76,9 @@ class TestGetTrainingArgs:
             dtype=DataType.FP32,
             batch_size=None,
         )
-        assert args.per_device_train_batch_size == benchmark_config.batch_size
+        assert (
+            args.per_device_train_batch_size == benchmark_config.finetuning_batch_size
+        )
 
     @pytest.mark.parametrize(
         argnames=["verbose", "expected_logging_strategy"],

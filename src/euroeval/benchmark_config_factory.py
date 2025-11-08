@@ -31,26 +31,21 @@ def build_benchmark_config(
     language_codes = get_correct_language_codes(
         language_codes=benchmark_config_params.language
     )
-    model_languages = prepare_languages(
-        language_codes=benchmark_config_params.model_language,
-        default_language_codes=language_codes,
-    )
-    dataset_languages = prepare_languages(
-        language_codes=benchmark_config_params.dataset_language,
+    languages = prepare_languages(
+        language_codes=benchmark_config_params.language,
         default_language_codes=language_codes,
     )
 
     dataset_configs = prepare_dataset_configs(
         task=benchmark_config_params.task,
         dataset=benchmark_config_params.dataset,
-        dataset_languages=dataset_languages,
+        languages=languages,
     )
 
     return BenchmarkConfig(
-        model_languages=model_languages,
-        dataset_languages=dataset_languages,
         datasets=dataset_configs,
-        batch_size=benchmark_config_params.batch_size,
+        languages=languages,
+        finetuning_batch_size=benchmark_config_params.finetuning_batch_size,
         raise_errors=benchmark_config_params.raise_errors,
         cache_dir=benchmark_config_params.cache_dir,
         api_key=benchmark_config_params.api_key,
@@ -154,7 +149,7 @@ def prepare_languages(
 
 def prepare_dataset_configs(
     task: "str | Task | c.Sequence[str | Task] | None",
-    dataset_languages: c.Sequence["Language"],
+    languages: c.Sequence["Language"],
     dataset: "str | DatasetConfig | c.Sequence[str | DatasetConfig] | None",
 ) -> c.Sequence["DatasetConfig"]:
     """Prepare dataset config(s) for benchmarking.
@@ -163,11 +158,11 @@ def prepare_dataset_configs(
         task:
             The tasks to include for dataset. If None then datasets will not be
             filtered based on their task.
-        dataset_languages:
+        languages:
             The languages of the datasets in the benchmark.
         dataset:
             The datasets to include for task. If None then all datasets will be
-            included, limited by the `task` and `dataset_languages` parameters.
+            included, limited by the `task` and `languages` parameters.
 
     Returns:
         The prepared dataset configs.
@@ -218,7 +213,7 @@ def prepare_dataset_configs(
         ds
         for ds in datasets
         if (tasks is None or ds.task in tasks)
-        and any(lang in dataset_languages for lang in ds.languages)
+        and any(lang in languages for lang in ds.languages)
     ]
 
     return datasets

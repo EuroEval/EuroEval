@@ -9,10 +9,8 @@ def test_cli_param_names(cli_params: dict[str, ParamType]) -> None:
         "model",
         "task",
         "language",
-        "model_language",
-        "dataset_language",
+        "finetuning_batch_size",
         "dataset",
-        "batch_size",
         "progress_bar",
         "raise_errors",
         "verbose",
@@ -34,6 +32,9 @@ def test_cli_param_names(cli_params: dict[str, ParamType]) -> None:
         "requires_safetensors",
         "generative_type",
         "download_only",
+        "model_language",
+        "dataset_language",
+        "batch_size",
     }
 
 
@@ -42,10 +43,8 @@ def test_cli_param_types(cli_params: dict[str, ParamType]) -> None:
     assert cli_params["model"] == STRING
     assert cli_params["dataset"] == STRING
     assert isinstance(cli_params["language"], Choice)
-    assert isinstance(cli_params["model_language"], Choice)
-    assert isinstance(cli_params["dataset_language"], Choice)
     assert cli_params["task"] == STRING
-    assert isinstance(cli_params["batch_size"], Choice)
+    assert isinstance(cli_params["finetuning_batch_size"], Choice)
     assert cli_params["progress_bar"] == BOOL
     assert cli_params["raise_errors"] == BOOL
     assert cli_params["verbose"] == BOOL
