@@ -1158,15 +1158,10 @@ def get_end_of_reasoning_token(
         prompt = templated_prompt
 
     # Check that the beginning-of-reasoning token is actually used by the model
-    completion = (
-        model.generate(
-            prompts=[prompt],
-            sampling_params=SamplingParams(max_tokens=10),
-            use_tqdm=False,
-        )[0]
-        .outputs[0]
-        .text
-    )
+    output = model.generate(
+        prompts=[prompt], sampling_params=SamplingParams(max_tokens=10), use_tqdm=False
+    )[0]
+    completion = tokeniser.decode(token_ids=output.outputs[0].token_ids)
     bor_reasoning_matches = [
         (bor_token, eor_token)
         for bor_token, eor_token in REASONING_TOKENS
@@ -1181,16 +1176,13 @@ def get_end_of_reasoning_token(
         )
         return None
 
-    # Check that the beginning-of-reasoning token is actually used by the model
-    completion = (
-        model.generate(
-            prompts=[prompt],
-            sampling_params=SamplingParams(max_tokens=REASONING_MAX_TOKENS),
-            use_tqdm=False,
-        )[0]
-        .outputs[0]
-        .text
-    )
+    # Check that the end-of-reasoning token is actually used by the model
+    output = model.generate(
+        prompts=[prompt],
+        sampling_params=SamplingParams(max_tokens=REASONING_MAX_TOKENS),
+        use_tqdm=False,
+    )[0]
+    completion = tokeniser.decode(token_ids=output.outputs[0].token_ids)
     eor_reasoning_matches = [
         (bor_token, eor_token)
         for bor_token, eor_token in bor_reasoning_matches
@@ -1264,15 +1256,12 @@ def get_custom_stop_tokens(
     max_tokens = (
         REASONING_MAX_TOKENS if generative_type == GenerativeType.REASONING else 10
     )
-    completion = (
-        model.generate(
-            prompts=[prompt],
-            sampling_params=SamplingParams(max_tokens=max_tokens, temperature=0.0),
-            use_tqdm=False,
-        )[0]
-        .outputs[0]
-        .text
-    )
+    output = model.generate(
+        prompts=[prompt],
+        sampling_params=SamplingParams(max_tokens=max_tokens, temperature=0.0),
+        use_tqdm=False,
+    )[0]
+    completion = tokeniser.decode(token_ids=output.outputs[0].token_ids)
 
     stop_tokens = [
         stop_token
