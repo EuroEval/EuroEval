@@ -28,6 +28,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 - When evaluating encoder models on reading comprehension datasets, we now also truncate
   the question in case the model's maximum context length is very small.
+- Now correctly detects the reasoning tokens of the GPT-OSS models.
 
 ### Deprecated
 
