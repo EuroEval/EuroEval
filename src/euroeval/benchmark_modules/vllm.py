@@ -1182,15 +1182,16 @@ def get_end_of_reasoning_token(
         (bor_token, eor_token)
         for bor_token, eor_token in REASONING_TOKENS
         if (
-            (isinstance(bor_token, str) and bor_token in prompt)
+            (
+                isinstance(bor_token, str)
+                and (bor_token in prompt or bor_token in completion)
+            )
             or (
                 isinstance(bor_token, re.Pattern)
-                and re.search(bor_token, prompt) is not None
-            )
-            or (isinstance(eor_token, str) and eor_token in prompt)
-            or (
-                isinstance(eor_token, re.Pattern)
-                and re.search(eor_token, prompt) is not None
+                and (
+                    bor_token.search(prompt) is not None
+                    or bor_token.search(completion) is not None
+                )
             )
         )
     ]
@@ -1217,7 +1218,7 @@ def get_end_of_reasoning_token(
             (isinstance(eor_token, str) and eor_token in completion)
             or (
                 isinstance(eor_token, re.Pattern)
-                and re.search(eor_token, completion) is not None
+                and eor_token.search(completion) is not None
             )
         )
     ]
@@ -1242,9 +1243,16 @@ def get_end_of_reasoning_token(
         )
 
     bor_token, eor_token = eor_reasoning_matches[0]
+
+    bor_token_logging: str = (
+        bor_token if isinstance(bor_token, str) else bor_token.pattern
+    )
+    eor_token_logging: str = (
+        eor_token if isinstance(eor_token, str) else eor_token.pattern
+    )
     log_once(
-        f"Detected beginning-of-reasoning token {bor_token!r} and end-of-reasoning "
-        f"token {eor_token!r} for model {model_id!r}.",
+        f"Detected beginning-of-reasoning token {bor_token_logging!r} and "
+        f"end-of-reasoning token {eor_token_logging!r} for model {model_id!r}.",
         level=logging.DEBUG,
     )
 
