@@ -1,5 +1,6 @@
 """Constants used throughout the project."""
 
+import re
 from typing import TypeVar
 
 from .enums import TaskGroup
@@ -76,11 +77,14 @@ PAD_TOKENS = [
 
 
 # Used to detect whether a model is a reasoning model
-REASONING_TOKENS = [
+REASONING_TOKENS: list[tuple[str | re.Pattern, str | re.Pattern]] = [
     ("<think>", "</think>"),
     ("<reason>", "</reason>"),
     ("<reasoning>", "</reasoning>"),
-    ("<|channel|>analysis<|message|>", "<|channel|>final<|message|>"),
+    (
+        re.compile(pattern=r"<\|channel\|>(analysis|commentary)<\|message\|>"),
+        "<|channel|>final<|message|>",
+    ),
 ]
 
 

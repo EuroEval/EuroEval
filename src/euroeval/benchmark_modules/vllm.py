@@ -1125,7 +1125,7 @@ def clear_vllm() -> None:
 
 def get_end_of_reasoning_token(
     model: "LLM", tokeniser: "PreTrainedTokenizer", model_config: "ModelConfig"
-) -> str | None:
+) -> str | re.Pattern | None:
     """Get the end-of-reasoning token for a generative model.
 
     Args:
@@ -1165,7 +1165,18 @@ def get_end_of_reasoning_token(
     bor_reasoning_matches = [
         (bor_token, eor_token)
         for bor_token, eor_token in REASONING_TOKENS
-        if bor_token in prompt or bor_token in completion
+        if (
+            (isinstance(bor_token, str) and bor_token in prompt)
+            or (
+                isinstance(bor_token, re.Pattern)
+                and re.search(bor_token, prompt) is not None
+            )
+            or (isinstance(eor_token, str) and eor_token in prompt)
+            or (
+                isinstance(eor_token, re.Pattern)
+                and re.search(eor_token, prompt) is not None
+            )
+        )
     ]
     if not bor_reasoning_matches:
         log_once(
@@ -1186,7 +1197,13 @@ def get_end_of_reasoning_token(
     eor_reasoning_matches = [
         (bor_token, eor_token)
         for bor_token, eor_token in bor_reasoning_matches
-        if eor_token in completion
+        if (
+            (isinstance(eor_token, str) and eor_token in completion)
+            or (
+                isinstance(eor_token, re.Pattern)
+                and re.search(eor_token, completion) is not None
+            )
+        )
     ]
     if not eor_reasoning_matches:
         log_once(
