@@ -620,9 +620,18 @@ class VLLMModel(HuggingFaceEncoderModel):
         ):
             num_samples_without_eor_token = 0
             for idx in range(len(completions)):
-                if self.end_of_reasoning_token in completions[idx]:
+                if (
+                    isinstance(self.end_of_reasoning_token, str)
+                    and self.end_of_reasoning_token in completions[idx]
+                ):
                     completions[idx] = completions[idx].split(
                         self.end_of_reasoning_token
+                    )[-1]
+                elif isinstance(
+                    self.end_of_reasoning_token, re.Pattern
+                ) and self.end_of_reasoning_token.search(completions[idx]):
+                    completions[idx] = self.end_of_reasoning_token.split(
+                        completions[idx]
                     )[-1]
                 else:
                     num_samples_without_eor_token += 1
