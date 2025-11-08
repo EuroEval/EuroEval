@@ -518,3 +518,51 @@ def load_custom_datasets_module() -> ModuleType | None:
         spec.loader.exec_module(module)
         return module
     return None
+
+
+class flash_attention_backend:
+    """Context manager to temporarily set the flash attention backend.
+
+    This sets the `VLLM_ATTENTION_BACKEND` environment variable to `FLASH_ATTN`
+    for the duration of the context manager, and restores the previous value afterwards.
+    """
+
+    def __init__(self, disabled: bool = False) -> None:
+        """Initialise the context manager.
+
+        Args:
+            disabled:
+                If True, this context manager does nothing.
+        """
+        self.disabled = disabled
+        self.previous_value: str | None = None
+
+    def __enter__(self) -> None:
+        """Enter the context manager."""
+        if self.disabled:
+            return
+        self.previous_value = os.getenv("VLLM_ATTENTION_BACKEND")
+        os.environ["VLLM_ATTENTION_BACKEND"] = "FLASH_ATTN"
+
+    def __exit__(
+        self,
+        exc_type: t.Type[BaseException] | None,
+        exc_value: BaseException | None,
+        traceback: type[BaseException] | None,
+    ) -> None:
+        """Exit the context manager.
+
+        Args:
+            exc_type:
+                The type of the exception.
+            exc_value:
+                The value of the exception.
+            exc_tb:
+                The traceback of the exception.
+        """
+        if self.disabled:
+            return
+        if self.previous_value is None:
+            os.environ.pop("VLLM_ATTENTION_BACKEND", None)
+        else:
+            os.environ["VLLM_ATTENTION_BACKEND"] = self.previous_value

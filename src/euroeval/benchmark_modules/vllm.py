@@ -72,6 +72,7 @@ from ..types import ExtractLabelsFunction
 from ..utils import (
     clear_memory,
     create_model_cache_dir,
+    flash_attention_backend,
     get_hf_token,
     get_min_cuda_compute_capability,
     internet_connection_available,
@@ -95,6 +96,11 @@ if t.TYPE_CHECKING:
     from transformers.trainer import Trainer
 
     from ..data_models import BenchmarkConfig, DatasetConfig, Task
+
+
+MODELS_REQUIRING_FLASH_ATTENTION: list[re.Pattern] = [
+    re.compile(r".*gpt-oss.*", flags=re.IGNORECASE)
+]
 
 
 class VLLMModel(HuggingFaceEncoderModel):
@@ -144,7 +150,15 @@ class VLLMModel(HuggingFaceEncoderModel):
             model_config=model_config, allowed_params=self.allowed_params
         )
 
-        with no_terminal_output(disable=benchmark_config.verbose):
+        with (
+            no_terminal_output(disable=benchmark_config.verbose),
+            flash_attention_backend(
+                disabled=all(
+                    not re.search(pattern=pattern, string=model_config.model_id)
+                    for pattern in MODELS_REQUIRING_FLASH_ATTENTION
+                )
+            ),
+        ):
             model, tokeniser = load_model_and_tokeniser(
                 model_config=model_config, benchmark_config=benchmark_config
             )
