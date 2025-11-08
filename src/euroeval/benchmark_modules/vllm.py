@@ -587,7 +587,8 @@ class VLLMModel(HuggingFaceEncoderModel):
                     level=logging.DEBUG,
                 )
 
-        # Parse the raw model outputs
+        # Parse the raw model outputs. We keep the special tokens for now, as we need
+        # them to potentially remove reasoning content and stop tokens
         completion_ids: c.Sequence[c.Sequence[int]] = [
             list(output.outputs[0].token_ids) for output in raw_outputs
         ]
@@ -595,7 +596,7 @@ class VLLMModel(HuggingFaceEncoderModel):
             sequences=[
                 torch.LongTensor(completion_id) for completion_id in completion_ids
             ],
-            skip_special_tokens=True,
+            skip_special_tokens=False,
         )
         if (
             self.end_of_reasoning_token is not None
@@ -628,10 +629,15 @@ class VLLMModel(HuggingFaceEncoderModel):
             "|".join(re.escape(stop_token) for stop_token in stop_tokens)
         )
         completions = [
-            re.split(pattern=stop_token_pattern, string=completion)[0]
+            re.split(pattern=stop_token_pattern, string=completion)[0].strip()
             for completion in completions
         ]
-        completions = [completion.strip() for completion in completions]
+
+        # Remove all the special tokens from the completions, if any are present
+        completion_ids = self._tokeniser(text=completions).input_ids
+        completions = self._tokeniser.batch_decode(
+            sequences=completion_ids, skip_special_tokens=True
+        )
 
         # Sanity check
         if len(completions) != len(prompts):
