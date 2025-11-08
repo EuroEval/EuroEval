@@ -103,7 +103,10 @@ class VLLMModel(HuggingFaceEncoderModel):
     fresh_model = False
     batching_preference = BatchingPreference.ALL_AT_ONCE
     high_priority = True
-    allowed_params = {re.compile(r".*"): ["thinking", "no-thinking", "slow-tokenizer"]}
+    allowed_params = {
+        re.compile(r".*"): ["thinking", "no-thinking", "slow-tokenizer"],
+        re.compile(r".*gpt-oss.*", flags=re.IGNORECASE): ["low", "medium", "high"],
+    }
 
     def __init__(
         self,
@@ -503,6 +506,19 @@ class VLLMModel(HuggingFaceEncoderModel):
             )
             prompts = self._tokeniser.batch_decode(
                 sequences=tokenized_prompts.input_ids, skip_special_tokens=True
+            )
+
+        # Set reasoning mode if needed
+        if self.model_config.param in {"low", "medium", "high"}:
+            prompts = [
+                prompts.replace(
+                    "Reasoning: medium", f"Reasoning: {self.model_config.param}"
+                )
+                for prompts in prompts
+            ]
+            log_once(
+                f"Set reasoning mode to {self.model_config.param!r}.",
+                level=logging.DEBUG,
             )
 
         # Generate sequences using vLLM
