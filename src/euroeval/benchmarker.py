@@ -1166,8 +1166,9 @@ def clear_model_cache_fn(cache_dir: str) -> None:
     num_new_open_files = len(open_files_after) - len(open_files)
     new_open_files = [f for f in get_open_files() if f not in open_files]
     log(
-        "After clearing the model cache, there are now "
-        f"{num_new_open_files:,} more open files than before: {new_open_files}",
+        f"After clearing the model cache, there are now {num_new_open_files:,} more "
+        f"open files than before: {new_open_files} (from {len(open_files):,} to "
+        f"{len(open_files_after):,}).",
         level=logging.DEBUG,
     )
 
