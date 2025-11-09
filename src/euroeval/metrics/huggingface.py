@@ -158,7 +158,8 @@ class HuggingFaceMetric(Metric):
         }
         log(
             f"After computing scores, the following {len(new_open_files):,} new files "
-            f"were opened: {new_open_files}",
+            f"were opened: {new_open_files} (from {len(open_files):,} to "
+            f"{len(open_files_after):,} open files)",
             level=logging.DEBUG,
         )
 
