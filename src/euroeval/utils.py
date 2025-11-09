@@ -19,7 +19,6 @@ from types import ModuleType
 import demjson3
 import huggingface_hub as hf_hub
 import numpy as np
-import psutil
 import torch
 
 from .caching_utils import cache_arguments
@@ -567,21 +566,3 @@ class flash_attention_backend:
             os.environ.pop("VLLM_ATTENTION_BACKEND", None)
         else:
             os.environ["VLLM_ATTENTION_BACKEND"] = self.previous_value
-
-
-def log_open_files() -> None:
-    """Log statistics about open files."""
-    p = psutil.Process(os.getpid())
-    total_fds = p.num_fds()
-    open_files = p.open_files()
-    connections = p.net_connections(kind="all")
-
-    log(f"\n--- [FD SUMMARY | PID {p.pid}] ---", level=logging.DEBUG)
-    log(f"Total File Descriptors: {total_fds}", level=logging.DEBUG)
-    log(f"  - Regular Files: {len(open_files)}", level=logging.DEBUG)
-    log(f"  - Connections (Sockets): {len(connections)}", level=logging.DEBUG)
-    log(
-        f"  - Other (Pipes, etc.): {total_fds - len(open_files) - len(connections)}",
-        level=logging.DEBUG,
-    )
-    log("--------------------------------", level=logging.DEBUG)

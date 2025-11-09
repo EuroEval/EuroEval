@@ -1,7 +1,6 @@
 """All the Hugging Face metrics used in EuroEval."""
 
 import collections.abc as c
-import logging
 import typing as t
 from pathlib import Path
 
@@ -9,8 +8,7 @@ import evaluate
 import numpy as np
 from datasets import DownloadConfig, DownloadMode
 
-from ..logging_utils import log, no_terminal_output
-from ..utils import log_open_files
+from ..logging_utils import no_terminal_output
 from .base import Metric
 
 if t.TYPE_CHECKING:
@@ -131,17 +129,10 @@ class HuggingFaceMetric(Metric):
             "__call__ method."
         )
 
-        log("BEFORE METRIC CALL", level=logging.DEBUG)
-        log_open_files()
-
         with no_terminal_output(disable=benchmark_config.verbose):
             results = self.metric.compute(
                 predictions=predictions, references=references, **self.compute_kwargs
             )
-
-        # TEMP
-        log("AFTER METRIC CALL", level=logging.DEBUG)
-        log_open_files()
 
         # The metric returns None if we are running on multi-GPU and the current
         # process is not the main process
