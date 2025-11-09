@@ -152,11 +152,13 @@ class HuggingFaceMetric(Metric):
             score = float(score)
 
         # TEMP
-        new_open_files = [f for f in get_open_files() if f not in open_files]
+        open_files_after = get_open_files()
+        new_open_files = {
+            fd: path for fd, path in open_files_after.items() if fd not in open_files
+        }
         log(
-            f"After computing metrics, there are now {len(new_open_files):,} more "
-            f"open files than before: {new_open_files} (from {len(open_files):,} to "
-            f"{len(get_open_files()):,})",
+            f"After computing scores, the following {len(new_open_files):,} new files "
+            f"were opened: {new_open_files}",
             level=logging.DEBUG,
         )
 

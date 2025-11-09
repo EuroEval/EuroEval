@@ -11,7 +11,6 @@ import os
 import random
 import re
 import socket
-import subprocess
 import sys
 import typing as t
 from pathlib import Path
@@ -20,6 +19,7 @@ from types import ModuleType
 import demjson3
 import huggingface_hub as hf_hub
 import numpy as np
+import psutil
 import torch
 
 from .caching_utils import cache_arguments
@@ -569,22 +569,12 @@ class flash_attention_backend:
             os.environ["VLLM_ATTENTION_BACKEND"] = self.previous_value
 
 
-def get_open_files() -> list[Path]:
+def get_open_files() -> dict[int, Path]:
     """Get a list of open files used by the evaluate package.
 
     Returns:
-        A list of paths to open files.
+        A dictionary mapping file descriptors to file paths.
     """
-    # Execute lsof command to get open files for the current PID
-    # The +p flag is used to scan only the specified PID, which can be faster.
-    # The -p flag would be ORed with other selections.
-    command = ["lsof", "-p", str(os.getpid())]
-    result = subprocess.run(command, capture_output=True, text=True, check=True)
-    lines = result.stdout.strip().split("\n")
-    open_files: list[Path] = []
-    for line in lines[1:]:  # Skip the header line
-        parts = line.split()
-        if len(parts) >= 9:
-            file_path = parts[8]
-            open_files.append(Path(file_path))
-    return open_files
+    p = psutil.Process(os.getpid())
+    open_files = p.open_files()
+    return {f.fd: Path(f.path) for f in open_files}

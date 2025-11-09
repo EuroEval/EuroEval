@@ -32,7 +32,6 @@ from .speed_benchmark import benchmark_speed
 from .tasks import SPEED
 from .utils import (
     enforce_reproducibility,
-    get_open_files,
     get_package_version,
     internet_connection_available,
     split_model_id,
@@ -1150,9 +1149,6 @@ def clear_model_cache_fn(cache_dir: str) -> None:
         cache_dir:
             The path to the cache directory.
     """
-    # TEMP
-    open_files = get_open_files()
-
     model_cache_path = Path(cache_dir) / "model_cache"
     model_cache_path.mkdir(parents=True, exist_ok=True)
     for model_dir in model_cache_path.iterdir():
@@ -1160,17 +1156,6 @@ def clear_model_cache_fn(cache_dir: str) -> None:
             for sub_model_dir in model_dir.iterdir():
                 if sub_model_dir.is_dir():
                     rmtree(sub_model_dir)
-
-    # TEMP
-    open_files_after = get_open_files()
-    num_new_open_files = len(open_files_after) - len(open_files)
-    new_open_files = [f for f in get_open_files() if f not in open_files]
-    log(
-        f"After clearing the model cache, there are now {num_new_open_files:,} more "
-        f"open files than before: {new_open_files} (from {len(open_files):,} to "
-        f"{len(open_files_after):,}).",
-        level=logging.DEBUG,
-    )
 
 
 def prepare_dataset_configs(
