@@ -2,12 +2,13 @@
 
 import collections.abc as c
 import logging
+import os
+import subprocess
 import typing as t
 from pathlib import Path
 
 import evaluate
 import numpy as np
-import psutil
 from datasets import DownloadConfig
 
 from ..logging_utils import log, no_terminal_output
@@ -159,14 +160,19 @@ def get_open_files() -> list[Path]:
     Returns:
         A list of paths to open files.
     """
-    all_open_files: list[Path] = []
-    for proc in psutil.process_iter():
-        try:
-            open_fd = proc.open_files()
-        except (psutil.NoSuchProcess, psutil.AccessDenied):
-            continue
-        all_open_files.extend(Path(f.path) for f in open_fd)
-    return all_open_files
+    # Execute lsof command to get open files for the current PID
+    # The +p flag is used to scan only the specified PID, which can be faster.
+    # The -p flag would be ORed with other selections.
+    command = ["lsof", "-p", str(os.getpid())]
+    result = subprocess.run(command, capture_output=True, text=True, check=True)
+    lines = result.stdout.strip().split("\n")
+    open_files: list[Path] = []
+    for line in lines[1:]:  # Skip the header line
+        parts = line.split()
+        if len(parts) >= 9:
+            file_path = parts[8]
+            open_files.append(Path(file_path))
+    return open_files
 
 
 mcc_metric = HuggingFaceMetric(
