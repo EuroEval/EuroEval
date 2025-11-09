@@ -1162,10 +1162,12 @@ def clear_model_cache_fn(cache_dir: str) -> None:
                     rmtree(sub_model_dir)
 
     # TEMP
+    open_files_after = get_open_files()
+    num_new_open_files = len(open_files_after) - len(open_files)
     new_open_files = [f for f in get_open_files() if f not in open_files]
     log(
         "After clearing the model cache, there are now "
-        f"{len(new_open_files):,} more open files than before: {new_open_files}",
+        f"{num_new_open_files:,} more open files than before: {new_open_files}",
         level=logging.DEBUG,
     )
 
