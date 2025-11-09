@@ -1,6 +1,7 @@
 """All the Hugging Face metrics used in EuroEval."""
 
 import collections.abc as c
+import logging
 import typing as t
 from pathlib import Path
 
@@ -9,7 +10,7 @@ import numpy as np
 import psutil
 from datasets import DownloadConfig
 
-from ..logging_utils import no_terminal_output
+from ..logging_utils import log, no_terminal_output
 from .base import Metric
 
 if t.TYPE_CHECKING:
@@ -91,7 +92,7 @@ class HuggingFaceMetric(Metric):
         self.metric = evaluate.load(
             path=self.huggingface_id,
             download_config=download_config,
-            cache_dir=metric_cache_dir.as_posix(),
+            # cache_dir=metric_cache_dir.as_posix(),
         )
         return self
 
@@ -121,6 +122,9 @@ class HuggingFaceMetric(Metric):
         Returns:
             The calculated metric score, or None if the score should be ignored.
         """
+        # TEMP
+        log(f"There are now {len(get_open_files())} open files.", level=logging.DEBUG)
+
         if self.metric is None:
             self.download(cache_dir=benchmark_config.cache_dir)
 
@@ -146,22 +150,7 @@ class HuggingFaceMetric(Metric):
         if isinstance(score, np.floating):
             score = float(score)
 
-        self.close()
         return score
-
-    def close(self) -> None:
-        """Close any resources held by the metric."""
-        if self.metric is not None:
-            if self.metric.filelock is not None:
-                self.metric.filelock._release()
-            if self.metric.writer is not None:
-                self.metric.writer.finalize(close_stream=True)
-
-    def __del__(self) -> None:
-        """Clean up the metric from memory."""
-        if self.metric is not None:
-            self.close()
-            del self.metric
 
 
 def get_open_files() -> list[Path]:
