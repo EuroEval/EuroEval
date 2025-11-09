@@ -123,7 +123,7 @@ class HuggingFaceMetric(Metric):
             The calculated metric score, or None if the score should be ignored.
         """
         # TEMP
-        log(f"There are now {len(get_open_files())} open files.", level=logging.DEBUG)
+        num_open_files = len(get_open_files())
 
         if self.metric is None:
             self.download(cache_dir=benchmark_config.cache_dir)
@@ -149,6 +149,14 @@ class HuggingFaceMetric(Metric):
             score = sum(score) / len(score)
         if isinstance(score, np.floating):
             score = float(score)
+
+        # TEMP
+        num_open_files_after = len(get_open_files())
+        log(
+            f"After computing Hugging Face metric {self.pretty_name!r}, there are "
+            f"{num_open_files_after - num_open_files:,} more open files than before.",
+            level=logging.DEBUG,
+        )
 
         return score
 

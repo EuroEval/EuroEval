@@ -1151,7 +1151,7 @@ def clear_model_cache_fn(cache_dir: str) -> None:
             The path to the cache directory.
     """
     # TEMP
-    log(f"There are now {len(get_open_files())} open files.", level=logging.DEBUG)
+    num_open_files = len(get_open_files())
 
     model_cache_path = Path(cache_dir) / "model_cache"
     model_cache_path.mkdir(parents=True, exist_ok=True)
@@ -1160,6 +1160,14 @@ def clear_model_cache_fn(cache_dir: str) -> None:
             for sub_model_dir in model_dir.iterdir():
                 if sub_model_dir.is_dir():
                     rmtree(sub_model_dir)
+
+    # TEMP
+    num_open_files_after = len(get_open_files())
+    log(
+        "After clearing the model cache, there are now "
+        f"{num_open_files_after - num_open_files:,} more open files than before.",
+        level=logging.DEBUG,
+    )
 
 
 def prepare_dataset_configs(
