@@ -7,7 +7,7 @@ from pathlib import Path
 
 import evaluate
 import numpy as np
-from datasets import DownloadConfig
+from datasets import DownloadConfig, DownloadMode
 
 from ..logging_utils import log, no_terminal_output
 from ..utils import get_open_files
@@ -92,6 +92,7 @@ class HuggingFaceMetric(Metric):
         self.metric = evaluate.load(
             path=self.huggingface_id,
             download_config=download_config,
+            download_mode=DownloadMode.REUSE_CACHE_IF_EXISTS,
             cache_dir=metric_cache_dir.as_posix(),
         )
         return self
@@ -153,8 +154,9 @@ class HuggingFaceMetric(Metric):
         # TEMP
         new_open_files = [f for f in get_open_files() if f not in open_files]
         log(
-            "After clearing the model cache, there are now "
-            f"{len(new_open_files):,} more open files than before: {new_open_files}",
+            f"After computing metrics, there are now {len(new_open_files):,} more "
+            f"open files than before: {new_open_files} (from {len(open_files):,} to "
+            f"{len(get_open_files()):,})",
             level=logging.DEBUG,
         )
 
