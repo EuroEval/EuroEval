@@ -11,6 +11,7 @@ import os
 import random
 import re
 import socket
+import subprocess
 import sys
 import typing as t
 from pathlib import Path
@@ -566,3 +567,24 @@ class flash_attention_backend:
             os.environ.pop("VLLM_ATTENTION_BACKEND", None)
         else:
             os.environ["VLLM_ATTENTION_BACKEND"] = self.previous_value
+
+
+def get_open_files() -> list[Path]:
+    """Get a list of open files used by the evaluate package.
+
+    Returns:
+        A list of paths to open files.
+    """
+    # Execute lsof command to get open files for the current PID
+    # The +p flag is used to scan only the specified PID, which can be faster.
+    # The -p flag would be ORed with other selections.
+    command = ["lsof", "-p", str(os.getpid())]
+    result = subprocess.run(command, capture_output=True, text=True, check=True)
+    lines = result.stdout.strip().split("\n")
+    open_files: list[Path] = []
+    for line in lines[1:]:  # Skip the header line
+        parts = line.split()
+        if len(parts) >= 9:
+            file_path = parts[8]
+            open_files.append(Path(file_path))
+    return open_files

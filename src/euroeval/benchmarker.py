@@ -32,6 +32,7 @@ from .speed_benchmark import benchmark_speed
 from .tasks import SPEED
 from .utils import (
     enforce_reproducibility,
+    get_open_files,
     get_package_version,
     internet_connection_available,
     split_model_id,
@@ -1149,6 +1150,9 @@ def clear_model_cache_fn(cache_dir: str) -> None:
         cache_dir:
             The path to the cache directory.
     """
+    # TEMP
+    log(f"There are now {len(get_open_files())} open files.", level=logging.DEBUG)
+
     model_cache_path = Path(cache_dir) / "model_cache"
     model_cache_path.mkdir(parents=True, exist_ok=True)
     for model_dir in model_cache_path.iterdir():
