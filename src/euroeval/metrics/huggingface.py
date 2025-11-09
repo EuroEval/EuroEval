@@ -123,9 +123,6 @@ class HuggingFaceMetric(Metric):
         Returns:
             The calculated metric score, or None if the score should be ignored.
         """
-        log("BEFORE METRIC CALL", level=logging.DEBUG)
-        log_open_files()
-
         if self.metric is None:
             self.download(cache_dir=benchmark_config.cache_dir)
 
@@ -134,10 +131,17 @@ class HuggingFaceMetric(Metric):
             "__call__ method."
         )
 
+        log("BEFORE METRIC CALL", level=logging.DEBUG)
+        log_open_files()
+
         with no_terminal_output(disable=benchmark_config.verbose):
             results = self.metric.compute(
                 predictions=predictions, references=references, **self.compute_kwargs
             )
+
+        # TEMP
+        log("AFTER METRIC CALL", level=logging.DEBUG)
+        log_open_files()
 
         # The metric returns None if we are running on multi-GPU and the current
         # process is not the main process
@@ -150,10 +154,6 @@ class HuggingFaceMetric(Metric):
             score = sum(score) / len(score)
         if isinstance(score, np.floating):
             score = float(score)
-
-        # TEMP
-        log("AFTER METRIC CALL", level=logging.DEBUG)
-        log_open_files()
 
         return score
 
