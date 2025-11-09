@@ -569,12 +569,19 @@ class flash_attention_backend:
             os.environ["VLLM_ATTENTION_BACKEND"] = self.previous_value
 
 
-def get_open_files() -> dict[int, Path]:
-    """Get a list of open files used by the evaluate package.
-
-    Returns:
-        A dictionary mapping file descriptors to file paths.
-    """
+def log_open_files() -> None:
+    """Log statistics about open files."""
     p = psutil.Process(os.getpid())
+    total_fds = p.num_fds()
     open_files = p.open_files()
-    return {f.fd: Path(f.path) for f in open_files}
+    connections = p.net_connections(kind="all")
+
+    log(f"\n--- [FD SUMMARY | PID {p.pid}] ---", level=logging.DEBUG)
+    log(f"Total File Descriptors: {total_fds}", level=logging.DEBUG)
+    log(f"  - Regular Files: {len(open_files)}", level=logging.DEBUG)
+    log(f"  - Connections (Sockets): {len(connections)}", level=logging.DEBUG)
+    log(
+        f"  - Other (Pipes, etc.): {total_fds - len(open_files) - len(connections)}",
+        level=logging.DEBUG,
+    )
+    log("--------------------------------", level=logging.DEBUG)

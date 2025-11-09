@@ -10,7 +10,7 @@ import numpy as np
 from datasets import DownloadConfig, DownloadMode
 
 from ..logging_utils import log, no_terminal_output
-from ..utils import get_open_files
+from ..utils import log_open_files
 from .base import Metric
 
 if t.TYPE_CHECKING:
@@ -123,8 +123,8 @@ class HuggingFaceMetric(Metric):
         Returns:
             The calculated metric score, or None if the score should be ignored.
         """
-        # TEMP
-        open_files = get_open_files()
+        log("BEFORE METRIC CALL", level=logging.DEBUG)
+        log_open_files()
 
         if self.metric is None:
             self.download(cache_dir=benchmark_config.cache_dir)
@@ -152,16 +152,8 @@ class HuggingFaceMetric(Metric):
             score = float(score)
 
         # TEMP
-        open_files_after = get_open_files()
-        new_open_files = {
-            fd: path for fd, path in open_files_after.items() if fd not in open_files
-        }
-        log(
-            f"After computing scores, the following {len(new_open_files):,} new files "
-            f"were opened: {new_open_files} (from {len(open_files):,} to "
-            f"{len(open_files_after):,} open files)",
-            level=logging.DEBUG,
-        )
+        log("AFTER METRIC CALL", level=logging.DEBUG)
+        log_open_files()
 
         return score
 
