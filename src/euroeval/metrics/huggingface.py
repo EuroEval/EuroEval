@@ -92,7 +92,7 @@ class HuggingFaceMetric(Metric):
         self.metric = evaluate.load(
             path=self.huggingface_id,
             download_config=download_config,
-            # cache_dir=metric_cache_dir.as_posix(),
+            cache_dir=metric_cache_dir.as_posix(),
         )
         return self
 
