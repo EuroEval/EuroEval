@@ -394,6 +394,15 @@ def apply_prompt(
                         )
                         break
 
+            # Custom chat template kwargs
+            chat_template_kwargs: dict[str, t.Any] = dict()
+            if model_config.param in {"low", "medium", "high"}:
+                chat_template_kwargs["reasoning_effort"] = model_config.param
+                log_once(
+                    f"Set reasoning mode to {model_config.param!r}.",
+                    level=logging.DEBUG,
+                )
+
             texts = [
                 apply_chat_template(
                     conversation=messages,
@@ -402,6 +411,7 @@ def apply_prompt(
                     add_generation_prompt=True,
                     enable_thinking=(generative_type == GenerativeType.REASONING),
                     chat_template=chat_template,
+                    **chat_template_kwargs,
                 )
                 for messages in messages_list
             ]

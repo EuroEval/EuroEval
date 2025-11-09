@@ -522,19 +522,6 @@ class VLLMModel(HuggingFaceEncoderModel):
                 sequences=tokenized_prompts.input_ids, skip_special_tokens=True
             )
 
-        # Set reasoning mode if needed
-        if self.model_config.param in {"low", "medium", "high"}:
-            prompts = [
-                prompts.replace(
-                    "Reasoning: medium", f"Reasoning: {self.model_config.param}"
-                )
-                for prompts in prompts
-            ]
-            log_once(
-                f"Set reasoning mode to {self.model_config.param!r}.",
-                level=logging.DEBUG,
-            )
-
         # Generate sequences using vLLM
         input_is_a_test = len(prompts) == 1 and len(set(prompts[0])) == 1
         num_attempts = 3
