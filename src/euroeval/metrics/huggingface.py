@@ -6,6 +6,7 @@ from pathlib import Path
 
 import evaluate
 import numpy as np
+import psutil
 from datasets import DownloadConfig
 
 from ..logging_utils import no_terminal_output
@@ -85,10 +86,12 @@ class HuggingFaceMetric(Metric):
         Returns:
             The metric object itself.
         """
-        # Annoying but needed to make the metric download to a different cache dir
-        download_config = DownloadConfig(cache_dir=Path(cache_dir, "evaluate"))
+        metric_cache_dir = Path(cache_dir) / "metrics"
+        download_config = DownloadConfig(cache_dir=metric_cache_dir)
         self.metric = evaluate.load(
-            path=self.huggingface_id, download_config=download_config
+            path=self.huggingface_id,
+            download_config=download_config,
+            cache_dir=metric_cache_dir.as_posix(),
         )
         return self
 
@@ -159,6 +162,22 @@ class HuggingFaceMetric(Metric):
         if self.metric is not None:
             self.close()
             del self.metric
+
+
+def get_open_files() -> list[Path]:
+    """Get a list of open files used by the evaluate package.
+
+    Returns:
+        A list of paths to open files.
+    """
+    all_open_files: list[Path] = []
+    for proc in psutil.process_iter():
+        try:
+            open_fd = proc.open_files()
+        except (psutil.NoSuchProcess, psutil.AccessDenied):
+            continue
+        all_open_files.extend(Path(f.path) for f in open_fd)
+    return all_open_files
 
 
 mcc_metric = HuggingFaceMetric(
