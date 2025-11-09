@@ -182,14 +182,9 @@ class no_terminal_output:
                 If True, this context manager does nothing.
         """
         self.disable = disable
-        self.nothing_file: TextIOWrapper | None = None
-        self._cpp_stdout_file: int | None = None
-        self._cpp_stderr_file: int | None = None
-        try:
-            self._cpp_stdout_file = os.dup(sys.stdout.fileno())
-            self._cpp_stderr_file = os.dup(sys.stderr.fileno())
-        except OSError:
-            self._log_windows_warning()
+        self.devnull_file: TextIOWrapper | None = None
+        self._original_stdout_fd: int | None = None
+        self._original_stderr_fd: int | None = None
 
     def _log_windows_warning(self) -> None:
         """Log a warning about Windows not supporting blocking terminal output."""
@@ -201,13 +196,25 @@ class no_terminal_output:
 
     def __enter__(self) -> None:
         """Suppress all terminal output."""
-        if not self.disable:
-            self.nothing_file = open(os.devnull, "w")
-            try:
-                os.dup2(fd=self.nothing_file.fileno(), fd2=sys.stdout.fileno())
-                os.dup2(fd=self.nothing_file.fileno(), fd2=sys.stderr.fileno())
-            except OSError:
-                self._log_windows_warning()
+        if self.disable:
+            return
+
+        try:
+            # Save original FDs by duplicating them
+            self._original_stdout_fd = os.dup(sys.stdout.fileno())
+            self._original_stderr_fd = os.dup(sys.stderr.fileno())
+
+            # Open /dev/null
+            self.devnull_file = open(os.devnull, "w")
+
+            # Redirect stdout/stderr to /dev/null
+            os.dup2(self.devnull_file.fileno(), sys.stdout.fileno())
+            os.dup2(self.devnull_file.fileno(), sys.stderr.fileno())
+
+        except OSError:
+            self._log_windows_warning()
+            # If setup fails, clean up any resources we might have acquired
+            self.__exit__(None, None, None)
 
     def __exit__(
         self,
@@ -216,16 +223,27 @@ class no_terminal_output:
         exc_tb: type[BaseException] | None,
     ) -> None:
         """Re-enable terminal output."""
-        if not self.disable:
-            if self.nothing_file is not None:
-                self.nothing_file.close()
-            try:
-                if self._cpp_stdout_file is not None:
-                    os.dup2(fd=self._cpp_stdout_file, fd2=sys.stdout.fileno())
-                if self._cpp_stderr_file is not None:
-                    os.dup2(fd=self._cpp_stderr_file, fd2=sys.stderr.fileno())
-            except OSError:
-                self._log_windows_warning()
+        if self.disable:
+            return
+
+        # Restore stdout/stderr from our saved FDs
+        try:
+            if self._original_stdout_fd is not None:
+                os.dup2(self._original_stdout_fd, sys.stdout.fileno())
+            if self._original_stderr_fd is not None:
+                os.dup2(self._original_stderr_fd, sys.stderr.fileno())
+        except OSError:
+            self._log_windows_warning()
+        finally:
+            # Close the duplicated FDs we created
+            if self._original_stdout_fd is not None:
+                os.close(self._original_stdout_fd)
+            if self._original_stderr_fd is not None:
+                os.close(self._original_stderr_fd)
+
+            # Close the /dev/null file
+            if self.devnull_file is not None:
+                self.devnull_file.close()
 
 
 def adjust_logging_level(verbose: bool, ignore_testing: bool = False) -> int:
