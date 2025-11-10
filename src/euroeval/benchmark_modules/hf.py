@@ -36,6 +36,7 @@ from transformers.models.auto.tokenization_auto import AutoTokenizer
 from transformers.trainer import Trainer
 from urllib3.exceptions import RequestError
 
+from ..caching_utils import cache_arguments
 from ..constants import (
     DUMMY_FILL_VALUE,
     GENERATIVE_PIPELINE_TAGS,
@@ -43,7 +44,7 @@ from ..constants import (
     MAX_CONTEXT_LENGTH,
     MERGE_TAGS,
 )
-from ..data_models import HFModelInfo, ModelConfig
+from ..data_models import HashableDict, HFModelInfo, ModelConfig
 from ..enums import (
     BatchingPreference,
     GenerativeType,
@@ -60,6 +61,7 @@ from ..exceptions import (
 )
 from ..generation_utils import raise_if_wrong_params
 from ..languages import get_all_languages
+from ..logging_utils import block_terminal_output, log, log_once
 from ..task_group_utils import (
     multiple_choice_classification,
     question_answering,
@@ -67,12 +69,10 @@ from ..task_group_utils import (
 )
 from ..tokenisation_utils import get_bos_token, get_eos_token
 from ..utils import (
-    block_terminal_output,
     create_model_cache_dir,
     get_class_by_name,
     get_hf_token,
     internet_connection_available,
-    log_once,
     split_model_id,
 )
 from .base import BenchmarkModule
@@ -84,8 +84,6 @@ if t.TYPE_CHECKING:
 
     from ..data_models import BenchmarkConfig, DatasetConfig, Task
     from ..types import ExtractLabelsFunction
-
-logger = logging.getLogger("euroeval")
 
 
 class HuggingFaceEncoderModel(BenchmarkModule):
@@ -183,12 +181,13 @@ class HuggingFaceEncoderModel(BenchmarkModule):
         elif hasattr(self._model, "parameters"):
             num_params = sum(p.numel() for p in self._model.parameters())
         else:
-            logger.warning(
+            log(
                 "The number of parameters could not be determined for the model, since "
                 "the model is not stored in the safetensors format. If this is your "
                 "own model, then you can use this Hugging Face Space to convert your "
                 "model to the safetensors format: "
-                "https://huggingface.co/spaces/safetensors/convert."
+                "https://huggingface.co/spaces/safetensors/convert.",
+                level=logging.WARNING,
             )
             num_params = -1
         return num_params
@@ -268,7 +267,7 @@ class HuggingFaceEncoderModel(BenchmarkModule):
         return model_max_length
 
     @property
-    def data_collator(self) -> c.Callable[[list[t.Any]], dict[str, t.Any]]:
+    def data_collator(self) -> c.Callable[[c.Sequence[t.Any]], dict[str, t.Any]]:
         """The data collator used to prepare samples during finetuning.
 
         Returns:
@@ -491,7 +490,11 @@ class HuggingFaceEncoderModel(BenchmarkModule):
         model_info = get_model_repo_info(
             model_id=model_id_components.model_id,
             revision=model_id_components.revision,
-            benchmark_config=benchmark_config,
+            api_key=benchmark_config.api_key,
+            cache_dir=benchmark_config.cache_dir,
+            trust_remote_code=benchmark_config.trust_remote_code,
+            requires_safetensors=benchmark_config.requires_safetensors,
+            run_with_cli=benchmark_config.run_with_cli,
         )
         return (
             model_info is not None
@@ -517,7 +520,11 @@ class HuggingFaceEncoderModel(BenchmarkModule):
         model_info = get_model_repo_info(
             model_id=model_id_components.model_id,
             revision=model_id_components.revision,
-            benchmark_config=benchmark_config,
+            api_key=benchmark_config.api_key,
+            cache_dir=benchmark_config.cache_dir,
+            trust_remote_code=benchmark_config.trust_remote_code,
+            requires_safetensors=benchmark_config.requires_safetensors,
+            run_with_cli=benchmark_config.run_with_cli,
         )
         if model_info is None:
             raise InvalidModel(f"The model {model_id!r} could not be found.")
@@ -583,8 +590,8 @@ def load_model_and_tokeniser(
     config = load_hf_model_config(
         model_id=model_id,
         num_labels=len(id2label),
-        id2label=id2label,
-        label2id={label: idx for idx, label in id2label.items()},
+        id2label=HashableDict(id2label),
+        label2id=HashableDict({label: idx for idx, label in id2label.items()}),
         revision=model_config.revision,
         model_cache_dir=model_config.model_cache_dir,
         api_key=benchmark_config.api_key,
@@ -636,17 +643,21 @@ def load_model_and_tokeniser(
             break
         except (KeyError, RuntimeError) as e:
             if not model_kwargs["ignore_mismatched_sizes"]:
-                logger.debug(
+                log(
                     f"{type(e).__name__} occurred during the loading "
                     f"of the {model_id!r} model. Retrying with "
-                    "`ignore_mismatched_sizes` set to True."
+                    "`ignore_mismatched_sizes` set to True.",
+                    level=logging.DEBUG,
                 )
                 model_kwargs["ignore_mismatched_sizes"] = True
                 continue
             else:
                 raise InvalidModel(str(e)) from e
         except (TimeoutError, RequestError):
-            logger.info(f"Couldn't load the model {model_id!r}. Retrying.")
+            log(
+                f"Couldn't load the model {model_id!r}. Retrying.",
+                level=logging.WARNING,
+            )
             sleep(5)
             continue
         except (OSError, ValueError) as e:
@@ -694,8 +705,15 @@ def load_model_and_tokeniser(
     return model, tokeniser
 
 
+@cache_arguments("model_id", "revision")
 def get_model_repo_info(
-    model_id: str, revision: str, benchmark_config: "BenchmarkConfig"
+    model_id: str,
+    revision: str,
+    api_key: str | None,
+    cache_dir: str,
+    trust_remote_code: bool,
+    requires_safetensors: bool,
+    run_with_cli: bool,
 ) -> "HFModelInfo | None":
     """Get the information about the model from the HF Hub or a local directory.
 
@@ -704,13 +722,11 @@ def get_model_repo_info(
             The model ID.
         revision:
             The revision of the model.
-        benchmark_config:
-            The benchmark configuration.
 
     Returns:
         The information about the model, or None if the model could not be found.
     """
-    token = get_hf_token(api_key=benchmark_config.api_key)
+    token = get_hf_token(api_key=api_key)
     hf_api = HfApi(token=token)
 
     # Get information on the model.
@@ -718,7 +734,7 @@ def get_model_repo_info(
     # model info object.
     model_info: HfApiModelInfo | None = None
     if Path(model_id).is_dir():
-        logger.debug(f"Checking for local model in {model_id}.")
+        log(f"Checking for local model in {model_id}.", level=logging.DEBUG)
         if all(
             (Path(model_id) / required_file).exists()
             for required_file in LOCAL_MODELS_REQUIRED_FILES
@@ -744,42 +760,39 @@ def get_model_repo_info(
             except (GatedRepoError, LocalTokenNotFoundError) as e:
                 try:
                     hf_whoami(token=token)
-                    logger.debug(
+                    log(
                         f"Could not access the model {model_id} with the revision "
-                        f"{revision}. The error was {str(e)!r}."
+                        f"{revision}. The error was {str(e)!r}.",
+                        level=logging.DEBUG,
                     )
                     return None
                 except LocalTokenNotFoundError:
-                    logger.debug(
+                    log(
                         f"Could not access the model {model_id} with the revision "
                         f"{revision}. The error was {str(e)!r}. Please set the "
                         "`HUGGINGFACE_API_KEY` environment variable or use the "
-                        "`--api-key` argument."
+                        "`--api-key` argument.",
+                        level=logging.DEBUG,
                     )
                     return None
-            except (RepositoryNotFoundError, HFValidationError):
+            except (RepositoryNotFoundError, HFValidationError, HfHubHTTPError):
                 return None
-            except HfHubHTTPError as e:
-                if "unauthorized" in str(e).lower():
-                    raise InvalidModel(
-                        "It seems like your specified Hugging Face API key is invalid. "
-                        "Please double-check your API key."
-                    ) from e
-                raise InvalidModel(str(e)) from e
             except (OSError, RequestException) as e:
                 if internet_connection_available():
                     errors.append(e)
                     continue
-                logger.debug(
+                log(
                     "Could not access the Hugging Face Hub. Please check your internet "
-                    "connection."
+                    "connection.",
+                    level=logging.DEBUG,
                 )
                 return None
         else:
-            logger.debug(
+            log(
                 f"Could not access model info for the model {model_id!r} from the "
                 f"Hugging Face Hub, after {num_attempts} attempts. The errors "
-                f"encountered were {errors!r}."
+                f"encountered were {errors!r}.",
+                level=logging.DEBUG,
             )
             return None
 
@@ -810,15 +823,15 @@ def get_model_repo_info(
         hf_config = load_hf_model_config(
             model_id=base_model_id or model_id,
             num_labels=0,
-            id2label=dict(),
-            label2id=dict(),
+            id2label=HashableDict(),
+            label2id=HashableDict(),
             revision=revision,
             model_cache_dir=create_model_cache_dir(
-                cache_dir=benchmark_config.cache_dir, model_id=model_id
+                cache_dir=cache_dir, model_id=model_id
             ),
-            api_key=benchmark_config.api_key,
-            trust_remote_code=benchmark_config.trust_remote_code,
-            run_with_cli=benchmark_config.run_with_cli,
+            api_key=api_key,
+            trust_remote_code=trust_remote_code,
+            run_with_cli=run_with_cli,
         )
         class_names = hf_config.architectures
         generative_class_names = [
@@ -833,19 +846,19 @@ def get_model_repo_info(
         else:
             pipeline_tag = "fill-mask"
 
-    if benchmark_config.requires_safetensors:
+    if requires_safetensors:
         repo_files = hf_api.list_repo_files(repo_id=model_id, revision=revision)
         has_safetensors = any(f.endswith(".safetensors") for f in repo_files)
         if not has_safetensors:
             msg = f"Model {model_id} does not have safetensors weights available. "
-            if benchmark_config.run_with_cli:
+            if run_with_cli:
                 msg += "Skipping since the `--only-allow-safetensors` flag is set."
             else:
                 msg += (
                     "Skipping since the `requires_safetensors` argument is set "
                     "to `True`."
                 )
-            logger.warning(msg)
+            log(msg, level=logging.WARNING)
             return None
 
         # Also check base model if we are evaluating an adapter
@@ -859,7 +872,7 @@ def get_model_repo_info(
                     f"Base model {base_model_id} does not have safetensors weights "
                     "available."
                 )
-                if benchmark_config.run_with_cli:
+                if run_with_cli:
                     msg += " Skipping since the `--only-allow-safetensors` flag is set."
                 else:
                     msg += (
@@ -925,7 +938,10 @@ def load_tokeniser(
                 f"Could not load tokeniser for model {model_id!r}."
             ) from e
         except (TimeoutError, RequestError):
-            logger.info(f"Couldn't load tokeniser for {model_id!r}. Retrying.")
+            log(
+                f"Couldn't load tokeniser for {model_id!r}. Retrying.",
+                level=logging.WARNING,
+            )
             sleep(5)
             continue
     else:
@@ -941,6 +957,7 @@ def load_tokeniser(
     return tokeniser
 
 
+@cache_arguments()
 def get_dtype(
     device: torch.device, dtype_is_set: bool, bf16_available: bool
 ) -> str | torch.dtype:
@@ -949,6 +966,7 @@ def get_dtype(
     Args:
         device:
             The device to use.
+        dtype_is_set:
             Whether the data type is set in the model configuration.
         bf16_available:
             Whether bfloat16 is available.
@@ -966,6 +984,7 @@ def get_dtype(
     return torch.float32
 
 
+@cache_arguments("model_id", "revision", "num_labels", "id2label", "label2id")
 def load_hf_model_config(
     model_id: str,
     num_labels: int,
@@ -1015,12 +1034,7 @@ def load_hf_model_config(
                 cache_dir=model_cache_dir,
                 local_files_only=not internet_connection_available(),
             )
-            if config.eos_token_id is not None and config.pad_token_id is None:
-                if isinstance(config.eos_token_id, list):
-                    config.pad_token_id = config.eos_token_id[0]
-                else:
-                    config.pad_token_id = config.eos_token_id
-            return config
+            break
         except KeyError as e:
             key = e.args[0]
             raise InvalidModel(
@@ -1028,18 +1042,23 @@ def load_hf_model_config(
                 f"loaded, as the key {key!r} was not found in the config."
             ) from e
         except (OSError, GatedRepoError) as e:
-            # TEMP: When the model is gated then we cannot set cache dir, for some
-            # reason (since transformers v4.38.2, still a problem in v4.48.0). This
-            # should be included back in when this is fixed.
-            if "gated repo" in str(e):
-                model_cache_dir = None
-                continue
+            if isinstance(e, GatedRepoError) or "gated repo" in str(e).lower():
+                raise InvalidModel(
+                    f"The model {model_id!r} is a gated repository. Please ensure "
+                    "that you are logged in with `hf auth login` or have provided a "
+                    "valid Hugging Face access token with the `HUGGINGFACE_API_KEY` "
+                    "environment variable or the `--api-key` argument. Also check that "
+                    "your account has access to this model."
+                ) from e
             raise InvalidModel(
                 f"Couldn't load model config for {model_id!r}. The error was "
                 f"{e!r}. Skipping"
             ) from e
         except (TimeoutError, RequestError):
-            logger.info(f"Couldn't load model config for {model_id!r}. Retrying.")
+            log(
+                f"Couldn't load model config for {model_id!r}. Retrying.",
+                level=logging.WARNING,
+            )
             sleep(5)
             continue
         except ValueError as e:
@@ -1063,6 +1082,15 @@ def load_hf_model_config(
             f"Couldn't load model config for {model_id!r} after {num_attempts} "
             "attempts."
         )
+
+    # Ensure that the PAD token ID is set
+    if config.eos_token_id is not None and config.pad_token_id is None:
+        if isinstance(config.eos_token_id, list):
+            config.pad_token_id = config.eos_token_id[0]
+        else:
+            config.pad_token_id = config.eos_token_id
+
+    return config
 
 
 def setup_model_for_question_answering(model: "PreTrainedModel") -> "PreTrainedModel":
@@ -1231,6 +1259,7 @@ def align_model_and_tokeniser(
     return model, tokeniser
 
 
+@cache_arguments()
 def task_group_to_class_name(task_group: TaskGroup) -> str:
     """Convert a task group to a class name.
 

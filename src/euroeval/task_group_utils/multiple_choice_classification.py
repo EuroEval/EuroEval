@@ -1,7 +1,7 @@
 """Utility functions related to the multiple-choice classification task group."""
 
+import collections.abc as c
 import hashlib
-import logging
 import re
 import typing as t
 from collections import defaultdict
@@ -18,8 +18,6 @@ if t.TYPE_CHECKING:
 
     from ..types import Labels, Predictions
 
-logger = logging.getLogger("euroeval")
-
 
 class MultipleChoiceClassificationTrainer(Trainer):
     """Trainer subclass for multiple-choice classification tasks."""
@@ -27,7 +25,7 @@ class MultipleChoiceClassificationTrainer(Trainer):
     def evaluate(  # type: ignore[override]
         self,
         eval_dataset: "Dataset | None" = None,
-        ignore_keys: list[str] | None = None,
+        ignore_keys: c.Sequence[str] | None = None,
         metric_key_prefix: str = "eval",
     ) -> dict[str, float]:
         """Evaluate the model on the given dataset.

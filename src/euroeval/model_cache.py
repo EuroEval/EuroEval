@@ -1,5 +1,6 @@
 """ModelCache class for caching model outputs."""
 
+import collections.abc as c
 import hashlib
 import json
 import logging
@@ -8,19 +9,14 @@ import typing as t
 from collections import defaultdict
 from dataclasses import asdict
 
-from tqdm.auto import tqdm
-
 from .constants import NUM_GENERATION_TOKENS_FOR_CLASSIFICATION
 from .data_models import GenerativeModelOutput, SingleGenerativeModelOutput
-from .utils import log_once
+from .logging_utils import get_pbar, log, log_once
 
 if t.TYPE_CHECKING:
     from pathlib import Path
 
     from datasets import Dataset
-
-
-logger = logging.getLogger("euroeval")
 
 
 class ModelCache:
@@ -65,9 +61,10 @@ class ModelCache:
             with self.cache_path.open() as f:
                 json_cache = json.load(f)
         except json.JSONDecodeError:
-            logger.warning(
+            log(
                 f"Failed to load the cache from {self.cache_path}. The cache will be "
-                f"re-initialised."
+                f"re-initialised.",
+                level=logging.WARNING,
             )
             json_cache = dict()
             with self.cache_path.open("w") as f:
@@ -89,15 +86,16 @@ class ModelCache:
             with self.cache_path.open("w") as f:
                 json.dump(dumpable_cache, f)
         except KeyError:
-            logger.warning(
+            log(
                 f"Failed to load the cache from {self.cache_path}. The cache will be "
-                f"re-initialised."
+                f"re-initialised.",
+                level=logging.WARNING,
             )
             self.cache = dict()
             with self.cache_path.open("w") as f:
                 json.dump(dict(), f)
 
-    def _hash_key(self, key: str | list[dict[str, str]]) -> str:
+    def _hash_key(self, key: str | c.Sequence[dict[str, str]]) -> str:
         """Hash the key to use as an index in the cache.
 
         Args:
@@ -110,7 +108,7 @@ class ModelCache:
         return hashlib.md5(string=str(key).encode()).hexdigest()
 
     def __getitem__(
-        self, key: str | list[dict[str, str]]
+        self, key: str | c.Sequence[dict[str, str]]
     ) -> SingleGenerativeModelOutput:
         """Get an item from the cache.
 
@@ -125,7 +123,7 @@ class ModelCache:
         return self.cache[hashed_key]
 
     def __setitem__(
-        self, key: str | list[dict[str, str]], value: SingleGenerativeModelOutput
+        self, key: str | c.Sequence[dict[str, str]], value: SingleGenerativeModelOutput
     ) -> None:
         """Set an item in the cache.
 
@@ -143,7 +141,7 @@ class ModelCache:
         self.cache_path.unlink()
         del self.cache
 
-    def __contains__(self, key: str | list[dict[str, str]]) -> bool:
+    def __contains__(self, key: str | c.Sequence[dict[str, str]]) -> bool:
         """Check if a key is in the cache.
 
         Args:
@@ -172,18 +170,18 @@ class ModelCache:
 
         # Double check that the number of inputs and outputs match
         if not len(model_inputs) == len(model_output.sequences):
-            logger.warning(
+            log(
                 f"Number of model inputs ({len(model_inputs)}) does not match the "
                 f"number of model outputs ({len(model_output.sequences)}). We will not "
-                f"cache the model outputs."
+                f"cache the model outputs.",
+                level=logging.WARNING,
             )
             return
 
         # Store the generated sequences in the cache, one by one
-        with tqdm(
+        with get_pbar(
             iterable=model_inputs,
             desc="Caching model outputs",
-            leave=False,
             disable=hasattr(sys, "_called_from_test"),
         ) as pbar:
             for sample_idx, model_input in enumerate(pbar):
@@ -261,7 +259,7 @@ def load_cached_model_outputs(
         The model output containing the cached sequences.
     """
     input_column = "messages" if "messages" in cached_dataset.column_names else "text"
-    cached_model_outputs: list[SingleGenerativeModelOutput] = [
+    cached_model_outputs: c.Sequence[SingleGenerativeModelOutput] = [
         cache[prompt] for prompt in cached_dataset[input_column]
     ]
 

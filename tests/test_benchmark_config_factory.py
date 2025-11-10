@@ -7,33 +7,37 @@ import torch
 
 from euroeval.benchmark_config_factory import (
     get_correct_language_codes,
+    prepare_dataset_configs,
     prepare_device,
     prepare_languages,
-    prepare_tasks_and_datasets,
 )
-from euroeval.data_models import Language, Task
+from euroeval.data_models import DatasetConfig, Language
 from euroeval.dataset_configs import get_all_dataset_configs
+from euroeval.dataset_configs.danish import ANGRY_TWEETS_CONFIG, SCALA_DA_CONFIG
 from euroeval.enums import Device
 from euroeval.exceptions import InvalidBenchmark
-from euroeval.languages import DA, EN, NB, NN, NO, get_all_languages
-from euroeval.tasks import LA, NER, SENT, SPEED, get_all_tasks
+from euroeval.languages import (
+    DANISH,
+    ENGLISH,
+    NORWEGIAN,
+    NORWEGIAN_BOKMÅL,
+    NORWEGIAN_NYNORSK,
+    get_all_languages,
+)
+from euroeval.tasks import LA
 
 
 @pytest.fixture(scope="module")
-def all_official_dataset_names() -> Generator[list[str], None, None]:
-    """Fixture for all linguistic acceptability dataset configurations."""
-    yield [
-        cfg.name
-        for cfg in get_all_dataset_configs().values()
-        if not cfg.unofficial and cfg.task != SPEED
-    ]
+def all_official_dataset_configs() -> Generator[list[DatasetConfig], None, None]:
+    """Fixture for all official dataset configurations."""
+    yield [cfg for cfg in get_all_dataset_configs().values() if not cfg.unofficial]
 
 
 @pytest.fixture(scope="module")
-def all_official_la_dataset_names() -> Generator[list[str], None, None]:
+def all_official_la_dataset_configs() -> Generator[list[DatasetConfig], None, None]:
     """Fixture for all linguistic acceptability dataset configurations."""
     yield [
-        cfg.name
+        cfg
         for cfg in get_all_dataset_configs().values()
         if LA == cfg.task and not cfg.unofficial
     ]
@@ -69,12 +73,12 @@ def test_get_correct_language_codes(
 @pytest.mark.parametrize(
     argnames=["input_language_codes", "input_language", "expected_language"],
     argvalues=[
-        ("da", None, [DA]),
-        (["da"], None, [DA]),
-        (["da", "no"], ["da"], [DA]),
-        (["da", "en"], None, [DA, EN]),
-        ("no", None, [NO, NB, NN]),
-        (["nb"], None, [NB, NO]),
+        ("da", None, [DANISH]),
+        (["da"], None, [DANISH]),
+        (["da", "no"], ["da"], [DANISH]),
+        (["da", "en"], None, [DANISH, ENGLISH]),
+        ("no", None, [NORWEGIAN, NORWEGIAN_BOKMÅL, NORWEGIAN_NYNORSK]),
+        (["nb"], None, [NORWEGIAN_BOKMÅL, NORWEGIAN]),
         ("all", None, list(get_all_languages().values())),
     ],
     ids=[
@@ -109,65 +113,63 @@ def test_prepare_languages(
         "input_task",
         "input_dataset",
         "input_languages",
-        "expected_task",
-        "expected_dataset",
+        "expected_dataset_configs",
     ],
     argvalues=[
         (
             None,
             None,
             list(get_all_languages().values()),
-            [t for t in get_all_tasks().values() if t != SPEED],
-            "all_official_dataset_names",
+            "all_official_dataset_configs",
         ),
         (
             "linguistic-acceptability",
             None,
             list(get_all_languages().values()),
-            [LA],
-            "all_official_la_dataset_names",
+            "all_official_la_dataset_configs",
         ),
-        (
-            None,
-            "scala-da",
-            list(get_all_languages().values()),
-            [t for t in get_all_tasks().values() if t != SPEED],
-            ["scala-da"],
-        ),
+        (None, "scala-da", list(get_all_languages().values()), [SCALA_DA_CONFIG]),
         (
             "linguistic-acceptability",
             ["scala-da", "angry-tweets"],
             list(get_all_languages().values()),
-            [LA],
-            ["scala-da"],
+            [SCALA_DA_CONFIG],
         ),
         (
             ["linguistic-acceptability", "named-entity-recognition"],
             "scala-da",
             list(get_all_languages().values()),
-            [LA, NER],
-            ["scala-da"],
+            [SCALA_DA_CONFIG],
         ),
         (
             ["linguistic-acceptability", "sentiment-classification"],
             ["scala-da", "angry-tweets", "scandiqa-da"],
             list(get_all_languages().values()),
-            [LA, SENT],
-            ["scala-da", "angry-tweets"],
+            [SCALA_DA_CONFIG, ANGRY_TWEETS_CONFIG],
         ),
         (
             ["linguistic-acceptability", "sentiment-classification"],
             ["scala-da", "angry-tweets", "scandiqa-sv"],
-            [DA],
-            [LA, SENT],
-            ["scala-da", "angry-tweets"],
+            [DANISH],
+            [SCALA_DA_CONFIG, ANGRY_TWEETS_CONFIG],
         ),
         (
             ["linguistic-acceptability", "sentiment-classification"],
             None,
-            [DA],
-            [LA, SENT],
-            ["scala-da", "angry-tweets"],
+            [DANISH],
+            [SCALA_DA_CONFIG, ANGRY_TWEETS_CONFIG],
+        ),
+        (
+            None,
+            new_config := DatasetConfig(
+                name="new-dataset",
+                pretty_name="New Dataset",
+                source="some/hf-dataset",
+                task=LA,
+                languages=[DANISH, ENGLISH],
+            ),
+            [DANISH],
+            [new_config],
         ),
     ],
     ids=[
@@ -179,41 +181,38 @@ def test_prepare_languages(
         "multiple tasks and datasets",
         "multiple tasks and datasets, filtered by language",
         "multiple tasks, filtered by language",
+        "custom dataset config",
     ],
 )
-def test_prepare_tasks_and_datasets(
+def test_prepare_dataset_configs(
     input_task: str | list[str] | None,
     input_dataset: str | list[str] | None,
     input_languages: list[Language],
-    expected_task: list[Task],
-    expected_dataset: list[str] | str,
+    expected_dataset_configs: list[DatasetConfig] | str,
     request: pytest.FixtureRequest,
 ) -> None:
-    """Test the output of `prepare_tasks_and_datasets`."""
+    """Test the output of `prepare_dataset_configs`."""
     # This replaces the string with the actual fixture
-    if isinstance(expected_dataset, str):
-        expected_dataset = request.getfixturevalue(expected_dataset)
+    if isinstance(expected_dataset_configs, str):
+        expected_dataset_configs = request.getfixturevalue(expected_dataset_configs)
 
-    prepared_tasks, prepared_datasets = prepare_tasks_and_datasets(
-        task=input_task, dataset=input_dataset, dataset_languages=input_languages
+    prepared_dataset_configs = prepare_dataset_configs(
+        task=input_task, dataset=input_dataset, languages=input_languages
     )
-    assert set(prepared_tasks) == set(expected_task)
-    assert set(prepared_datasets) == set(expected_dataset)
+    assert set(prepared_dataset_configs) == set(expected_dataset_configs)
 
 
-def test_prepare_tasks_and_datasets_invalid_task() -> None:
+def test_prepare_dataset_configs_invalid_task() -> None:
     """Test that an invalid task raises an error."""
     with pytest.raises(InvalidBenchmark):
-        prepare_tasks_and_datasets(
-            task="invalid-task", dataset=None, dataset_languages=[DA]
-        )
+        prepare_dataset_configs(task="invalid-task", dataset=None, languages=[DANISH])
 
 
-def test_prepare_tasks_and_datasets_invalid_dataset() -> None:
+def test_prepare_dataset_configs_invalid_dataset() -> None:
     """Test that an invalid dataset raises an error."""
     with pytest.raises(InvalidBenchmark):
-        prepare_tasks_and_datasets(
-            task=None, dataset="invalid-dataset", dataset_languages=[DA]
+        prepare_dataset_configs(
+            task=None, dataset="invalid-dataset", languages=[DANISH]
         )
 
 

@@ -6,7 +6,7 @@ import json
 import logging
 import re
 import typing as t
-from functools import cache, cached_property, partial
+from functools import cached_property, partial
 from time import sleep
 
 import litellm
@@ -36,8 +36,8 @@ from litellm.utils import supports_reasoning, supports_response_schema
 from pydantic import conlist, create_model
 from requests.exceptions import RequestException
 from tqdm.asyncio import tqdm as tqdm_async
-from tqdm.auto import tqdm
 
+from ..caching_utils import cache_arguments
 from ..constants import (
     JSON_STRIP_CHARACTERS,
     LITELLM_CLASSIFICATION_OUTPUT_KEY,
@@ -70,6 +70,7 @@ from ..generation_utils import (
     extract_few_shot_examples,
     raise_if_wrong_params,
 )
+from ..logging_utils import get_pbar, log, log_once
 from ..task_group_utils import (
     logical_reasoning,
     question_answering,
@@ -84,7 +85,6 @@ from ..utils import (
     add_semaphore_and_catch_exception,
     create_model_cache_dir,
     get_hf_token,
-    log_once,
     safe_run,
     split_model_id,
 )
@@ -95,8 +95,6 @@ if t.TYPE_CHECKING:
     from datasets import DatasetDict
     from litellm.types.utils import ModelResponse
     from transformers.trainer import Trainer
-
-logger = logging.getLogger("euroeval")
 
 
 VOCAB_SIZE_MAPPING = {
@@ -134,6 +132,7 @@ MODEL_MAX_LENGTH_MAPPING = {
     r"gpt-4.1.*": 1_047_576,
     # Anthropic models
     r"(anthropic/)?claude-[1-9](-[1-9])?-(opus|sonnet|haiku)-[0-9]{8}": 200_000,
+    r"(anthropic/)?claude-(opus|sonnet|haiku)-[1-9](-[1-9])?-[0-9]{8}": 200_000,
     # Gemini models
     r"(gemini/)?gemini-1\.5-flash.*": 1_048_576,
     r"(gemini/)?gemini-1\.5-pro.*": 2_097_152,
@@ -164,6 +163,7 @@ REASONING_MODELS = [
     r"(gemini/)?gemini.*thinking.*",
     r"(gemini/)?gemini-2.5.*",
     r"(xai/)?grok-3-mini.*",
+    r".*gpt-oss.*",
 ]
 
 BASE_DECODER_MODELS = [
@@ -173,6 +173,17 @@ BASE_DECODER_MODELS = [
     r"curie-[0-9]{3}",
     r"davinci-[0-9]{3}",
     r"text-davinci-[0-9]{3}",
+]
+
+CUSTOM_INFERENCE_API_PREFIXES = [
+    "hosted_vllm/",
+    "vllm/",
+    "ollama/",
+    "ollama_chat/",
+    "llamafile/",
+    "litellm_proxy/",
+    "lm_studio/",
+    "openai/",
 ]
 
 
@@ -256,6 +267,7 @@ class LiteLLMModel(BenchmarkModule):
             generative_type=self.generative_type,
             log_metadata=self.log_metadata,
         )
+        self.buffer["max_concurrent_calls"] = 20
 
     @property
     def generative_type(self) -> GenerativeType | None:
@@ -268,21 +280,26 @@ class LiteLLMModel(BenchmarkModule):
             type_ = self.benchmark_config.generative_type
         elif self.is_ollama:
             reasoning_model = "thinking" in (self._ollama_show.capabilities or [])
-            type_ = (
-                GenerativeType.REASONING
-                if reasoning_model
-                else GenerativeType.INSTRUCTION_TUNED
-            )
+            if reasoning_model:
+                type_ = GenerativeType.REASONING
+            elif self.model_config.model_id.startswith("ollama_chat/"):
+                type_ = GenerativeType.INSTRUCTION_TUNED
+            else:
+                type_ = GenerativeType.BASE
         elif self.model_config.param in {"thinking"}:
             type_ = GenerativeType.REASONING
         elif self.model_config.param in {"no-thinking"}:
             type_ = GenerativeType.INSTRUCTION_TUNED
         elif re.fullmatch(
-            pattern="|".join(REASONING_MODELS), string=self.model_config.model_id
+            pattern="|".join(REASONING_MODELS),
+            string=self.model_config.model_id,
+            flags=re.IGNORECASE,
         ):
             type_ = GenerativeType.REASONING
         elif re.fullmatch(
-            pattern="|".join(BASE_DECODER_MODELS), string=self.model_config.model_id
+            pattern="|".join(BASE_DECODER_MODELS),
+            string=self.model_config.model_id,
+            flags=re.IGNORECASE,
         ):
             type_ = GenerativeType.BASE
         elif supports_reasoning(model=self.model_config.model_id):
@@ -312,7 +329,7 @@ class LiteLLMModel(BenchmarkModule):
             InvalidBenchmark:
                 If the inputs do not contain either 'messages' or 'text' keys.
         """
-        model_inputs: list[list[litellm.AllMessageValues] | str]
+        model_inputs: c.Sequence[c.Sequence[litellm.AllMessageValues] | str]
         if "messages" in inputs:
             model_inputs = inputs["messages"]
         elif "text" in inputs:
@@ -333,9 +350,9 @@ class LiteLLMModel(BenchmarkModule):
         )
 
         all_responses: dict[int, "ModelResponse"] = {}
-        inputs_to_run: list[tuple[int, list[litellm.AllMessageValues] | str]] = list(
-            enumerate(model_inputs)
-        )
+        inputs_to_run: c.Sequence[
+            tuple[int, c.Sequence[litellm.AllMessageValues] | str]
+        ] = list(enumerate(model_inputs))
         for attempt in range(num_attempts := 10):
             if not inputs_to_run:
                 break
@@ -347,8 +364,12 @@ class LiteLLMModel(BenchmarkModule):
             batch_indices, batch_inputs = zip(*inputs_to_run)
             successes, failures = safe_run(
                 self._generate_async(
-                    model_id=self.model_config.model_id,
+                    model_id=clean_model_id(
+                        model_id=self.model_config.model_id,
+                        benchmark_config=self.benchmark_config,
+                    ),
                     inputs=list(batch_inputs),
+                    max_concurrent_calls=self.buffer["max_concurrent_calls"],
                     **generation_kwargs,
                 )
             )
@@ -368,11 +389,35 @@ class LiteLLMModel(BenchmarkModule):
                 (batch_indices[idx], model_inputs[batch_indices[idx]])
                 for idx, _ in failures
             ]
-            logger.debug(
+            log(
                 f"Attempt {attempt + 1:,}/{num_attempts:,}: retrying "
                 f"{len(inputs_to_run):,} failed message(s). Here is the first error: "
-                f"{failures[0][1]}."
+                f"{failures[0][1]}.",
+                level=logging.DEBUG,
             )
+
+            # Check if any errors are due to HTTP 429 (too many requests), in which case
+            # we reduce the number of concurrent calls
+            http_429_errors = [
+                idx
+                for idx, (_, error) in enumerate(failures)
+                if isinstance(error, RateLimitError) and "Error code: 429" in str(error)
+            ]
+            if http_429_errors and self.buffer["max_concurrent_calls"] > 1:
+                failures = [
+                    failures[i]
+                    for i in range(len(failures))
+                    if i not in http_429_errors
+                ]
+                self.buffer["max_concurrent_calls"] = max(
+                    1, self.buffer["max_concurrent_calls"] // 2
+                )
+                log(
+                    f"Reducing the maximum number of concurrent calls to "
+                    f"{self.buffer['max_concurrent_calls']:,} due to rate limiting.",
+                    level=logging.DEBUG,
+                )
+                continue
 
             # Attempt to handle the exceptions, to improve the chance of getting
             # successful generations next time around
@@ -423,14 +468,19 @@ class LiteLLMModel(BenchmarkModule):
             "'stop' is not supported with this model",
             "'$.stop' is invalid",
         ]
+        stop_pattern = re.compile(r"does not support parameters: \[.*'stop'.*\]")
         logprobs_messages = [
             "you are not allowed to request logprobs",
             "you've reached the maximum number of requests with logprobs",
             "logprobs is not supported",
             "logprobs is not enabled",
+            "Invalid value at 'generation_config.response_logprobs' (TYPE_BOOL)",
         ]
-        top_logprobs_messages = ["got an unexpected keyword argument 'top_logprobs'"]
         logprobs_pattern = re.compile(
+            r"does not support parameters: \[.*'logprobs'.*\]"
+        )
+        top_logprobs_messages = ["got an unexpected keyword argument 'top_logprobs'"]
+        top_logprobs_pattern = re.compile(
             r"does not support parameters: \[.*'top_logprobs'.*\]"
         )
         max_completion_tokens_pattern = re.compile(
@@ -439,6 +489,7 @@ class LiteLLMModel(BenchmarkModule):
         temperature_messages = [
             "'temperature' is not supported with this model.",
             "temperature is not supported with this model",
+            r"does not support parameters: \[.*'temperature'.*\]",
         ]
         temperature_must_be_one_messages = [
             "`temperature` may only be set to 1",
@@ -459,7 +510,10 @@ class LiteLLMModel(BenchmarkModule):
             "the model returned empty outputs",
         ]
 
-        if any(msg.lower() in error_msg for msg in stop_messages):
+        if (
+            any(msg.lower() in error_msg for msg in stop_messages)
+            or stop_pattern.search(string=error_msg) is not None
+        ):
             log_once(
                 f"The model {model_id!r} does not support "
                 "stop sequences, so disabling them.",
@@ -469,7 +523,7 @@ class LiteLLMModel(BenchmarkModule):
             return generation_kwargs
         elif (
             any(msg.lower() in error_msg for msg in logprobs_messages)
-            or logprobs_pattern.search(string=error_msg)
+            or logprobs_pattern.search(string=error_msg) is not None
             # Special case for Vertex AI models, since they have strict rate
             # limits on using logprobs. They also have a cap of 5 logprobs, but
             # we ignore this since the rate limiting makes it unusable anyway.
@@ -479,10 +533,15 @@ class LiteLLMModel(BenchmarkModule):
                 f"The model {model_id!r} does not support logprobs, so disabling it.",
                 level=logging.DEBUG,
             )
+            self.buffer["first_label_token_mapping"] = False
             generation_kwargs.pop("logprobs", None)
             generation_kwargs.pop("top_logprobs", None)
+            generation_kwargs.pop("response_format", None)
             return generation_kwargs
-        elif any(msg.lower() in error_msg for msg in top_logprobs_messages):
+        elif (
+            any(msg.lower() in error_msg for msg in top_logprobs_messages)
+            or top_logprobs_pattern.search(string=error_msg) is not None
+        ):
             log_once(
                 f"The model {model_id!r} does not support the `top_logprobs` argument, "
                 "so moving the value to `logprobs`.",
@@ -527,7 +586,7 @@ class LiteLLMModel(BenchmarkModule):
             )
             ner_tag_names = list(self.dataset_config.prompt_label_mapping.values())
             keys_and_their_types = {
-                tag_name: (list[str], ...) for tag_name in ner_tag_names
+                tag_name: (c.Sequence[str], ...) for tag_name in ner_tag_names
             }
             pydantic_class = create_model("AnswerFormat", **keys_and_their_types)
             generation_kwargs["response_format"] = pydantic_class
@@ -599,9 +658,10 @@ class LiteLLMModel(BenchmarkModule):
         elif isinstance(
             error, (Timeout, ServiceUnavailableError, InternalServerError, SystemError)
         ):
-            logger.debug(
+            log(
                 f"Service temporarily unavailable. The error message was: {error}. "
-                "Retrying in 10 seconds..."
+                "Retrying in 10 seconds...",
+                level=logging.DEBUG,
             )
             sleep(10)
             return generation_kwargs
@@ -631,10 +691,32 @@ class LiteLLMModel(BenchmarkModule):
             ) from error
 
         if isinstance(error, RateLimitError):
-            raise InvalidModel(
+            log(
                 f"You have encountered your rate limit for model {model_id!r}. "
-                "Skipping."
-            ) from error
+                "Retrying in 10 seconds...",
+                level=logging.DEBUG,
+            )
+            sleep(10)
+            return generation_kwargs
+
+        if (
+            isinstance(error, BadRequestError)
+            and (
+                retry_match := re.search(
+                    pattern=r"\bretry in ([0-9]+(.[0-9]+)?) ?(s|seconds)\b",
+                    string=error_msg,
+                )
+            )
+            is not None
+        ):
+            retry_seconds = float(retry_match.group(1))
+            log(
+                f"Bad request error encountered. Retrying in {retry_seconds:.1f} "
+                "seconds...",
+                level=logging.DEBUG,
+            )
+            sleep(retry_seconds)
+            return generation_kwargs
 
         if isinstance(error, AuthenticationError):
             raise NeedsAdditionalArgument(
@@ -650,9 +732,12 @@ class LiteLLMModel(BenchmarkModule):
     async def _generate_async(
         self,
         model_id: str,
-        inputs: list[list[litellm.AllMessageValues] | str],
+        inputs: c.Sequence[c.Sequence[litellm.AllMessageValues] | str],
+        max_concurrent_calls: int,
         **generation_kwargs,
-    ) -> tuple[list[tuple[int, "ModelResponse"]], list[tuple[int, Exception]]]:
+    ) -> tuple[
+        c.Sequence[tuple[int, "ModelResponse"]], c.Sequence[tuple[int, Exception]]
+    ]:
         """Generate outputs from the model asynchronously.
 
         Args:
@@ -660,6 +745,8 @@ class LiteLLMModel(BenchmarkModule):
                 The ID of the model to use for generation.
             inputs:
                 The inputs to pass to the model.
+            max_concurrent_calls:
+                The maximum number of concurrent calls to make to the model.
             **generation_kwargs:
                 Additional generation arguments to pass to the model.
 
@@ -680,7 +767,6 @@ class LiteLLMModel(BenchmarkModule):
         )
 
         # Get the LLM generations asynchronously
-        max_concurrent_calls = 20
         semaphore = asyncio.Semaphore(max_concurrent_calls)
         if self.generative_type == GenerativeType.BASE:
             if not all(isinstance(input_, str) for input_ in inputs):
@@ -690,7 +776,11 @@ class LiteLLMModel(BenchmarkModule):
             requests = [
                 add_semaphore_and_catch_exception(
                     router.atext_completion(
-                        model=model_id, prompt=input_, **generation_kwargs
+                        model=clean_model_id(
+                            model_id=model_id, benchmark_config=self.benchmark_config
+                        ),
+                        prompt=input_,
+                        **generation_kwargs,
                     ),
                     semaphore=semaphore,
                 )
@@ -706,14 +796,20 @@ class LiteLLMModel(BenchmarkModule):
             requests = [
                 add_semaphore_and_catch_exception(
                     router.acompletion(
-                        model=model_id, messages=input_, **generation_kwargs
+                        model=clean_model_id(
+                            model_id=model_id, benchmark_config=self.benchmark_config
+                        ),
+                        messages=input_,
+                        **generation_kwargs,
                     ),
                     semaphore=semaphore,
                 )
                 for input_ in inputs
                 if isinstance(input_, list)
             ]
-        responses = await tqdm_async.gather(*requests, leave=False)
+        responses = await tqdm_async.gather(
+            *requests, colour="yellow", ascii="—▰", leave=False
+        )
 
         # If the outputs are empty, convert them to exceptions
         if all(
@@ -743,13 +839,15 @@ class LiteLLMModel(BenchmarkModule):
                 try:
                     request.close()
                 except RuntimeError as e:
-                    logger.debug(f"RuntimeError during request.close(): {e}")
+                    log(
+                        f"RuntimeError during request.close(): {e}", level=logging.DEBUG
+                    )
 
         return successes, failures
 
     @staticmethod
     def _create_model_output(
-        model_responses: list["ModelResponse"], model_id: str
+        model_responses: c.Sequence["ModelResponse"], model_id: str
     ) -> GenerativeModelOutput:
         """Create a GenerativeModelOutput object from a list of ModelResponse objects.
 
@@ -768,10 +866,11 @@ class LiteLLMModel(BenchmarkModule):
         for model_response in model_responses:
             if not model_response.choices:
                 sequences.append("")
-                logger.warning(
+                log(
                     f"The model {model_id!r} did not end up "
                     "generating any text. This is likely because the model ran "
-                    "out of tokens while reasoning. Returning an empty string."
+                    "out of tokens while reasoning. Returning an empty string.",
+                    level=logging.WARNING,
                 )
                 continue
 
@@ -822,7 +921,7 @@ class LiteLLMModel(BenchmarkModule):
                     )
                     continue
 
-                logprobs_list: list[list[tuple[str, float]]]
+                logprobs_list: c.Sequence[c.Sequence[tuple[str, float]]]
                 if isinstance(logprobs_obj, ChoiceLogprobs):
                     logprobs_list = [
                         [
@@ -859,11 +958,12 @@ class LiteLLMModel(BenchmarkModule):
                 scores.append(logprobs_list)
 
         if not sequences:
-            logger.warning(
+            log(
                 "No sequences were generated by the model "
                 f"{model_id!r}. This may be due to the "
                 "model running out of tokens or an issue with the input data. "
-                "Returning an empty GenerativeModelOutput."
+                "Returning an empty GenerativeModelOutput.",
+                level=logging.WARNING,
             )
             return GenerativeModelOutput(sequences=[], scores=None)
 
@@ -1117,7 +1217,7 @@ class LiteLLMModel(BenchmarkModule):
         return -1
 
     @property
-    def data_collator(self) -> c.Callable[[list[t.Any]], dict[str, t.Any]]:
+    def data_collator(self) -> c.Callable[[c.Sequence[t.Any]], dict[str, t.Any]]:
         """The data collator used to prepare samples during finetuning.
 
         Returns:
@@ -1142,6 +1242,7 @@ class LiteLLMModel(BenchmarkModule):
                 return partial(
                     sequence_classification.extract_labels_from_generation,
                     dataset_config=self.dataset_config,
+                    model_config=self.model_config,
                     first_label_token_mapping=self.buffer["first_label_token_mapping"],
                 )
             case TaskGroup.TEXT_TO_TEXT:
@@ -1202,7 +1303,9 @@ class LiteLLMModel(BenchmarkModule):
             try:
                 litellm.completion(
                     messages=[dict(role="user", content="X")],
-                    model=model_id,
+                    model=clean_model_id(
+                        model_id=model_id, benchmark_config=benchmark_config
+                    ),
                     max_tokens=1,
                     api_key=benchmark_config.api_key,
                     api_base=benchmark_config.api_base,
@@ -1219,20 +1322,31 @@ class LiteLLMModel(BenchmarkModule):
                 ServiceUnavailableError,
                 InternalServerError,
             ) as e:
-                logger.debug(
+                log(
                     f"Service temporarily unavailable. The error message was: {e}. "
-                    "Retrying in 10 seconds..."
+                    "Retrying in 10 seconds...",
+                    level=logging.DEBUG,
                 )
                 sleep(10)
             except APIError as e:
                 if "'503 Service Unavailable" not in str(e):
                     raise e
-                logger.warning(
+                log(
                     f"Failed to check if model {model_id!r} exists. Retrying in 10 "
-                    "seconds..."
+                    "seconds...",
+                    level=logging.WARNING,
                 )
                 sleep(10)
             except (BadRequestError, NotFoundError):
+                # In case we're using `api_base`, try again with the `/v1` suffix
+                if (
+                    benchmark_config.api_base is not None
+                    and not benchmark_config.api_base.endswith("/v1")
+                ):
+                    benchmark_config.api_base += "/v1"
+                    continue
+
+                # Check for misspelled model IDs
                 candidate_models = [
                     candidate_model_id
                     for candidate_model_id in litellm.model_list
@@ -1242,21 +1356,25 @@ class LiteLLMModel(BenchmarkModule):
                     case 0:
                         pass
                     case 1:
-                        logger.warning(
+                        log(
                             f"Could not find the model ID {model_id!r}. Did you mean "
-                            f"{candidate_models[0]!r}?"
+                            f"{candidate_models[0]!r}?",
+                            level=logging.WARNING,
                         )
                     case _:
                         candidate_models_str = "', '".join(candidate_models)
-                        logger.warning(
+                        log(
                             f"Could not find the model ID {model_id!r}. Did you mean "
-                            f"any of the following model IDs: '{candidate_models_str}'?"
+                            "any of the following model IDs: "
+                            f"'{candidate_models_str}'?",
+                            level=logging.WARNING,
                         )
                 return False
         else:
-            logger.error(
+            log(
                 f"Failed to check if model {model_id!r} exists after {num_attempts} "
-                "attempts. Assuming it does not exist."
+                "attempts. Assuming it does not exist.",
+                level=logging.ERROR,
             )
             return False
 
@@ -1289,7 +1407,8 @@ class LiteLLMModel(BenchmarkModule):
                 "that the revision is actually the parameter and set the revision "
                 "to 'main'. In the future, use the new '#' syntax to specify the "
                 f"parameter (in this case, this would be {proper_model_id!r}), as this "
-                "will be an error in future versions of EuroEval."
+                "will be an error in future versions of EuroEval.",
+                level=logging.WARNING,
             )
             model_id_components.param = model_id_components.revision
             model_id_components.revision = "main"
@@ -1377,7 +1496,7 @@ class LiteLLMModel(BenchmarkModule):
 
         return dataset
 
-    @cache
+    @cache_arguments()
     def get_generation_kwargs(self, dataset_config: DatasetConfig) -> dict[str, t.Any]:
         """Get the generation arguments for the model.
 
@@ -1497,7 +1616,7 @@ class LiteLLMModel(BenchmarkModule):
         # First attempt is a test run with a single conversation to handle errors
         # quickly. We repeat this multiple times to deal with different types of
         # errors, and stop if we get a successful response.
-        test_input: list[litellm.AllMessageValues] | str
+        test_input: c.Sequence[litellm.AllMessageValues] | str
         if self.generative_type == GenerativeType.BASE:
             test_input = "Test message"
         else:
@@ -1507,8 +1626,12 @@ class LiteLLMModel(BenchmarkModule):
         for _ in range(num_attempts := 10):
             _, failures = safe_run(
                 self._generate_async(
-                    model_id=self.model_config.model_id,
+                    model_id=clean_model_id(
+                        model_id=self.model_config.model_id,
+                        benchmark_config=self.benchmark_config,
+                    ),
                     inputs=[test_input],
+                    max_concurrent_calls=1,
                     **generation_kwargs,
                 )
             )
@@ -1556,7 +1679,7 @@ def try_download_ollama_model(model_id: str) -> bool:
         )
 
     try:
-        downloaded_ollama_models: list[str] = [
+        downloaded_ollama_models: c.Sequence[str] = [
             model_obj.model
             for model_obj in ollama.list().models
             if model_obj.model is not None
@@ -1585,7 +1708,8 @@ def try_download_ollama_model(model_id: str) -> bool:
                         f"The model {model_id!r} cannot be found on Ollama, but the "
                         f"model {model_id_with_prefix} *was* found, so we would "
                         "recommend you cancelling this run and trying the evaluation "
-                        "with that model ID instead."
+                        "with that model ID instead.",
+                        level=logging.WARNING,
                     )
                     return False
                 except ollama.ResponseError as inner_e:
@@ -1603,11 +1727,8 @@ def try_download_ollama_model(model_id: str) -> bool:
                 ) from e
 
         # Download the model
-        with tqdm(
-            desc=f"Downloading {ollama_model_id}",
-            unit_scale=True,
-            unit="B",
-            leave=False,
+        with get_pbar(
+            desc=f"Downloading {ollama_model_id}", unit_scale=True, unit="B"
         ) as pbar:
             for status in response:
                 if status.total is not None:
@@ -1623,3 +1744,30 @@ def try_download_ollama_model(model_id: str) -> bool:
             level=logging.DEBUG,
         )
         return True
+
+
+def clean_model_id(model_id: str, benchmark_config: BenchmarkConfig) -> str:
+    """Clean a model ID.
+
+    This adds the default `openai/` prefix to the model ID if we're benchmarking a
+    custom API inference server and no prefix is used, just to make it more
+    convenient for the user.
+
+    Args:
+        model_id:
+            The model ID.
+        benchmark_config:
+            The benchmark configuration.
+
+    Returns:
+        The cleaned model ID.
+    """
+    if benchmark_config.api_base is not None and not any(
+        model_id.startswith(prefix) for prefix in CUSTOM_INFERENCE_API_PREFIXES
+    ):
+        if benchmark_config.generative_type == GenerativeType.BASE:
+            prefix = "text-completion-openai/"
+        else:
+            prefix = "openai/"
+        model_id = prefix + model_id
+    return model_id

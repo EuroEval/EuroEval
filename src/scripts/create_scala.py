@@ -22,14 +22,18 @@ from datasets.arrow_dataset import Dataset
 from datasets.dataset_dict import DatasetDict
 from huggingface_hub.hf_api import HfApi
 from load_ud_pos import (
+    load_bgdt_pos,
+    load_csdt_pos,
     load_dadt_pos,
     load_dedt_pos,
+    load_eldt_pos,
     load_endt_pos,
     load_esdt_pos,
     load_etdt_pos,
     load_fidt_pos,
     load_fodt_pos,
     load_frdt_pos,
+    load_hrdt_pos,
     load_isdt_pos,
     load_itdt_pos,
     load_ltdt_pos,
@@ -39,7 +43,11 @@ from load_ud_pos import (
     load_nodt_nn_pos,
     load_pldt_pos,
     load_ptdt_pos,
+    load_skdt_pos,
+    load_sldt_pos,
+    load_srdt_pos,
     load_svdt_pos,
+    load_ukdt_pos,
 )
 from pandas.errors import SettingWithCopyWarning
 from tqdm.auto import tqdm
@@ -67,6 +75,14 @@ def main() -> None:
         "et": load_etdt_pos,
         "pl": load_pldt_pos,
         "lt": load_ltdt_pos,
+        "cs": load_csdt_pos,
+        "sk": load_skdt_pos,
+        "uk": load_ukdt_pos,
+        "el": load_eldt_pos,
+        "bg": load_bgdt_pos,
+        "sr": load_srdt_pos,
+        "sl": load_sldt_pos,
+        "hr": load_hrdt_pos,
     }
 
     # Set up the progress bar and iterate over the languages
@@ -232,7 +248,7 @@ def delete(tokens: List[str], pos_tags: List[str]) -> Union[str, None]:
     indices = [
         idx
         for idx, pos_tag in enumerate(pos_tags)
-        if pos_tag not in ["ADJ", "ADV", "PUNCT", "SYM", "DET", "NUM"]
+        if pos_tag not in ["ADJ", "ADV", "PUNCT", "SYM", "DET", "NUM", "PART"]
         and (
             pos_tag not in ["NOUN", "PROPN"]
             or (

@@ -805,21 +805,21 @@ Here are a few examples from the training split:
 
 ```json
 {
-  "text": "Il sushi marciva sul bancone a meno che non venisse messo nel frigorifero, poiché il _ lo esponeva alla contaminazione. A cosa si riferisce il vuoto _?\nScelte:\na. Opzione A: bancone\nb. Opzione B: frigorifero",
+  "text": "Il sushi marciva sul bancone a meno che non venisse messo nel frigorifero, poiché il _ lo esponeva alla contaminazione. A cosa si riferisce il vuoto _?\nScelte:\na. bancone\nb. frigorifero",
   "label": "a"
 }
 ```
 
 ```json
 {
-  "text": "Rebecca ha preso Amy per fare il carpooling al lavoro ogni giorno, quindi _ ha chiesto dei soldi per la benzina. A cosa si riferisce il vuoto _?\nScelte:\na. Opzione A: Rebecca\nb. Opzione B: Amy",
+  "text": "Rebecca ha preso Amy per fare il carpooling al lavoro ogni giorno, quindi _ ha chiesto dei soldi per la benzina. A cosa si riferisce il vuoto _?\nScelte:\na. Rebecca\nb. Amy",
   "label": "a"
 }
 ```
 
 ```json
 {
-  "text": "Laura aveva sempre più motivazione nella vita e nel raggiungere obiettivi rispetto a Katrina, poiché _ era pigra. A cosa si riferisce il vuoto _?\nScelte:\na. Opzione A: Laura\nb. Opzione B: Katrina",
+  "text": "Laura aveva sempre più motivazione nella vita e nel raggiungere obiettivi rispetto a Katrina, poiché _ era pigra. A cosa si riferisce il vuoto _?\nScelte:\na. Laura\nb. Katrina",
   "label": "b"
 }
 ```

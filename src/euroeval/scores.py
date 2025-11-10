@@ -1,22 +1,23 @@
 """Aggregation of raw scores into the mean and a confidence interval."""
 
+import collections.abc as c
 import logging
 import typing as t
 import warnings
 
 import numpy as np
 
+from .logging_utils import log
+
 if t.TYPE_CHECKING:
     from .metrics import Metric
     from .types import ScoreDict
 
-logger = logging.getLogger("euroeval")
-
 
 def log_scores(
     dataset_name: str,
-    metrics: list["Metric"],
-    scores: list[dict[str, float]],
+    metrics: c.Sequence["Metric"],
+    scores: c.Sequence[dict[str, float]],
     model_id: str,
     model_revision: str,
     model_param: str | None,
@@ -48,9 +49,8 @@ def log_scores(
     if model_param is not None:
         model_id += f"#{model_param}"
 
-    logger.info(f"Finished evaluation of {model_id} on {dataset_name}.")
-
     total_dict: dict[str, float] = dict()
+    all_log_strs: list[str] = [f"Finished benchmarking {model_id} on {dataset_name}."]
     for metric in metrics:
         test_score, test_se = aggregate_scores(scores=scores, metric=metric)
         test_score, test_score_str = metric.postprocessing_fn(test_score)
@@ -58,17 +58,18 @@ def log_scores(
         total_dict[f"test_{metric.name}"] = test_score
         total_dict[f"test_{metric.name}_se"] = test_se
         log_str = (
-            f"{metric.pretty_name}: {test_score_str} ± {test_se_str}"
+            f"- {metric.pretty_name}: {test_score_str} ± {test_se_str}"
             if not np.isnan(test_se)
-            else f"{metric.pretty_name}: {test_score_str}"
+            else f"- {metric.pretty_name}: {test_score_str}"
         )
-        logger.info(log_str)
+        all_log_strs.append(log_str)
+    log("\n".join(all_log_strs), level=logging.INFO)
 
     return dict(raw=scores, total=total_dict)
 
 
 def aggregate_scores(
-    scores: list[dict[str, float]], metric: "Metric"
+    scores: c.Sequence[dict[str, float]], metric: "Metric"
 ) -> tuple[float, float]:
     """Helper function to compute the mean with confidence intervals.
 

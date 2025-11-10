@@ -237,7 +237,85 @@ euroeval --model <model-id> --dataset scala-sv
 
 ## Reading Comprehension
 
-### ScandiQA-sv
+### MultiWikiQA-sv
+
+This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2509.04111)
+and contains Wikipedia articles with LLM-generated questions and answers in 300+
+languages.
+
+The original full dataset consists of 5,000 samples in a single split. We use a 1,024 /
+256 / 2,048 split for training, validation and testing, respectively, sampled randomly.
+
+Here are a few examples from the training split:
+
+```json
+{
+    "context": "Juan Mayorga, född 6 april 1965 i Madrid, är en spansk dramatiker och manusförfattare.\n\nBiografi\nJuan Mayorga har en examen i matematik och filosofi från Universidad Complutense de Madrid 1988. Därefter arbetade han som forskarassistent i filosofi vid Consejo Superior de Investigaciones Científicas. Fortsatta studier i Münster, Berlin och Paris ledde till en doktorsexamen i filosofi 1997 med en avhandling om Walter Benjamin. Han debuterade som dramatiker 1989 med Siete hombres buenos (Sju goda män). Tillsammans med dramatiker kollegorna José Ramón Fernández, Luis Miguel González Cruz och Raúl Hernández Garrido grundade han 1993 teatergruppen Teatro del Astillero. 2011 grundade han en ny teatergrupp, La Loca de la Casa. Sedan 1998 är Mayorga har han undervisat i filosofi och dramatik vid Escuela Superior de Arte Dramático i Madrid. För närvarande (2017) är han chef för avdelningen för scenkonst vid Universidad Carlos III de Madrid. Han har skrivit ett trettiotal pjäser (2017) och hans dramatik har spelats i 18 länder och översatts till 16 språk. Han eftersträvar en filosofiskt präglad teater som tvingar publiken till ställningstaganden. Till hans förebilder hör Harold Pinter. Bland utmärkelser han tilldelats kan nämnas de spanska priserna Nacional de Teatro 2007 och Nacional de Literatura Dramática 2013 samt Premio Europa New Theatrical Realities 2016.\n\n2007 regisserade Alexander Mørk-Eidem Mayorgas Himmelweg på Nationaltheatret i Oslo. 2014 skulle han även ha regisserat den på Stockholms stadsteater under titeln Himlavägen i Jens Nordenhöks översättning men det ställdes in.\n\nReferenser\n\nKällor\n Pressrelease, Premio Europa 14/3 2016 \n Juan Mayorga, The Playwrights Database (läst 5 april 2017)\n Juan Mayorga, France culture (läst 5 april 2017)\n Juan Mayorga, theatre-contemporain.net (läst 5 april 2017)\n Juan Mayorga, Théâtre de Rond-Point, Paris (läst 5 april 2017)\n Juan Mayorga, madridesteatro.com (läst 5 april 2017)\n Arkiv, Kulturhuset Stadsteatern (läst 5 april 2017)\n Lillian Bikset: Teater, løgn og bedrag, Dagbladet 31/8 2007\n Elisabeth Leinslie: Kjenn din besøkelsestid, Dagsavisen 2/9 2007\n Rocío García: Juan Mayorga: las obsesiones de un matemático y autor de éxito, El País 1/6 2016\n\nNoter\n\nExterna länkar\n Juan Mayorga, Internet Movie Database (IMDb)\n\nSpanska dramatiker\nSpanskspråkiga dramatiker\nSpanska manusförfattare\nSpanska författare under 1900-talet\nSpanska författare under 2000-talet\nDramatiker under 1900-talet\nDramatiker under 2000-talet\nPersoner från Madrid\nFödda 1965\nLevande personer\nMän",
+    "question": "Vilka akademiska examina har Juan Mayorga avlagt vid Universidad Complutense de Madrid?",
+    "answers": {
+        "answer_start": array([126]),
+        "text": array(["matematik och filosofi"], dtype=object)
+    }
+}
+```
+
+```json
+{
+    "context": "Janka Kupala (egentligen Ivan Daminikavitj Lutsevitj) född 7 juli 1882 i Vjazynka utanför Minsk, död 28 juni 1942 i Moskva, var en belarusisk författare. Tillsammans med Jakub Kolas räknas han som en av den moderna belarusiska litteraturens grundare.\n\nKupala var till stor del självlärd som författare. Han blev aktiv i den \"belarusiska pånyttfödelsen\" (1903–1921) och redaktör för den belarusiska tidskriften Nasja niva (1914–1915). 1928 blev han ledamot av den belarusiska och ukrainska vetenskapsakademin.\n\nHans tidiga diktning var patriotisk idealiserade den östslaviska statsbildningen i Polotsk under 900- till 1200-talet som ett slags vision för Belarus. Han var även en hård kritiker av både det tidiga polsk-litauiska och ryska väldet över Belarus, varför många av hans verk förbjöds av sovjetregimen. På grund av den politiska förföljelsen under Stalin försökte han 1930 begå självmord och därefter blev han mindre produktiv som författare. Under de sista årtiondena var hans diktning en lång hyllning till socialismen och sovjetmakten. 1941 fick han ta emot Leninorden för sin diktsamling Ад сэрца (1940).\n\nVid Nazitysklands ockupation av Vitryska SSR 1941 flyttade han till Moskva och senare till Tatarstan. \n \nHans fru grundade ett museum över honom i Minsk där många av hans verk finns samlade. Staden Hrodna namngav ett universitet efter honom Janka Kupala Statsuniversitet 1978.\n\nBibliografi i urval \n Sjalejka 1908 (diktsamling)\n Husljar 1910 (diktsamling)\n Advetsjnaja pesnja 1910 (poem)\n Paulinka 1912 (skådespel)\n Sjljacham sjytstsia 1913 (diktsamling)\n Son na kurgane 1913 (poem)\n Raskidanaje hnjazdo 1913 (skådespel)\n\nKällor\n\nNoter\n\nBelarusiska författare\nBelarusiskspråkiga författare\nSovjetiska författare\nPersoner från Minsk voblast\nMän\nFödda 1882\nAvlidna 1942",
+    "question": "Vilket datum är Janka Kupalas födelsedag?",
+    "answers": {
+        "answer_start": array([59]),
+        "text": array(["7 juli 1882"], dtype=object)
+    }
+}
+```
+
+```json
+{
+    "context": "Storsäl (Erignathus barbatus) är en sälart som lever i Norra ishavet.\n\nUtseende och anatomi \n\nStorsälen har gråbrun päls som är ljusare på buken än på ryggen. På vintern får den ett mycket tjock fettskikt så att huvudet ser ovanligt litet ut. Vikten är på vintern omkring 360\xa0kg (ibland upp till 430\xa0kg) och på sommaren ungefär 230\xa0kg. Djuret är vanligen mellan 230 och 250\xa0cm långt och har ett långt vitt skägg. Bröstfenorna har en kännetecknande fyrkantig form. Mellan mars och augusti byter individerna pälsens hår.\n\nUtbredning \n\nStorsälen förekommer på isflaken i hela Arktis. Många individer lever i Berings hav. Under vandringen händer det ibland att några djur simmar fel så att de kommer till europeiska kustlinjer. En gång har djuret observerats i norra Portugal. Liknande iakttagelser rapporterades i norra Kina och från den japanska ön Hokkaido.\n\nEkologi \n\nStorsälen lever mestadels ensam. De vistas alltid i närheten av vattnet, så de kan flytta sig när en isbjörn närmar sig. Djuret kan dyka till 200\xa0meters djup men föredrar att förbli i närheten av havsytan. Under sommaren när antalet isflak minskar vilar den ibland på land. Med skägget letar den på havsbotten efter räkor, musslor och snäckor. Dessutom ingår fiskar i födan.\n\nHannen skapar under vattnet ett ljud som liknar valarnas sång. Troligtvis är ljudet till för att skydda sälens territorium eller för att imponera på honan.\n\nHonan är dräktig i omkring elva månader och föder i april eller maj ett ungdjur. Under dessa elva månader stannar embryots utveckling av en tid så att ungen inte föds för tidig. Kuten väger vid födelsen omkring 34\xa0kg. Honan ger di till kuten två till tre veckor (18 till 24 dagar) och lämnar den sedan ensam på isen. Oftast kan kuten simma redan vid denna ålder. Unga honor blir efter 3 till 8 år könsmogna och unga hannar efter 6 till 7 år. Vanligen blir storsälar inte äldre än 25 år men enskilda individer med en livslängd på 31 år är dokumenterade.\n\nStorsälar jagas aktiv av isbjörnar och de dödas ibland av späckhuggare. Sällsynt faller ungar offer för valross.\n\nStorsäl och människan \n\nJakt på storsäl för kött och hud har bedrivits länge. Men storsälen lever inte i flockar och är därför inte lika lättjagad som andra sälarter. Huden används till exempel för umiak och skor. Själva pälsen är inte eftertraktad. Under senare 1900-talet och början av 2000-talet uppskattades antalet dödade individer per år till 6\xa0800 i Alaska, 2\xa0400 i Kanada och 500 till 1\xa0000 på Grönland. En mera omfattande jakt skedde efter andra världskriget i de sovjetiska delarna av Arktiska havet, där upp till 13\xa0000 individer dödades per år. När arten blev sällsynt under 1970-talet minskade jakten betydlig. Den sovjetiska/ryska fångsten under 1980-talet uppgick bara till 2\xa0000 individer per år. IUCN listar arten som livskraftig (LC) på grund av det stora utbredningsområdet och eftersom beståndsutvecklingen bedöms som stabil.\n\nNoter \n\nÖronlösa sälar\nDäggdjur i palearktiska regionen\nDäggdjur i nearktiska regionen",
+    "question": "Vilken bevarandestatus har storsälen enligt IUCN?",
+    "answers": {
+        "answer_start": array([2804]),
+        "text": array(["livskraftig (LC)"], dtype=object)
+    }
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 4
+- Prefix prompt:
+
+  ```text
+  Nedan följer texter med tillhörande frågor och svar.
+  ```
+
+- Base prompt template:
+
+  ```text
+  Text: {text}
+  Fråga: {question}
+  Svar på max 3 ord: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Text: {text}
+
+  Besvara följande fråga om texten ovan med högst 3 ord.
+
+  Fråga: {question}
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset multi-wiki-qa-sv
+```
+
+### Unofficial: ScandiQA-sv
 
 This dataset was published in [this paper](https://aclanthology.org/2023.nodalida-1.20/)
 and was automatically created from the Swedish part of the [MKQA
@@ -396,84 +474,6 @@ You can evaluate this dataset directly as follows:
 
 ```bash
 euroeval --model <model-id> --dataset belebele-sv
-```
-
-### Unofficial: MultiWikiQA-sv
-
-This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2509.04111)
-and contains Wikipedia articles with LLM-generated questions and answers in 300+
-languages.
-
-The original full dataset consists of 5,000 samples in a single split. We use a 1,024 /
-256 / 2,048 split for training, validation and testing, respectively, sampled randomly.
-
-Here are a few examples from the training split:
-
-```json
-{
-    "context": "Juan Mayorga, född 6 april 1965 i Madrid, är en spansk dramatiker och manusförfattare.\n\nBiografi\nJuan Mayorga har en examen i matematik och filosofi från Universidad Complutense de Madrid 1988. Därefter arbetade han som forskarassistent i filosofi vid Consejo Superior de Investigaciones Científicas. Fortsatta studier i Münster, Berlin och Paris ledde till en doktorsexamen i filosofi 1997 med en avhandling om Walter Benjamin. Han debuterade som dramatiker 1989 med Siete hombres buenos (Sju goda män). Tillsammans med dramatiker kollegorna José Ramón Fernández, Luis Miguel González Cruz och Raúl Hernández Garrido grundade han 1993 teatergruppen Teatro del Astillero. 2011 grundade han en ny teatergrupp, La Loca de la Casa. Sedan 1998 är Mayorga har han undervisat i filosofi och dramatik vid Escuela Superior de Arte Dramático i Madrid. För närvarande (2017) är han chef för avdelningen för scenkonst vid Universidad Carlos III de Madrid. Han har skrivit ett trettiotal pjäser (2017) och hans dramatik har spelats i 18 länder och översatts till 16 språk. Han eftersträvar en filosofiskt präglad teater som tvingar publiken till ställningstaganden. Till hans förebilder hör Harold Pinter. Bland utmärkelser han tilldelats kan nämnas de spanska priserna Nacional de Teatro 2007 och Nacional de Literatura Dramática 2013 samt Premio Europa New Theatrical Realities 2016.\n\n2007 regisserade Alexander Mørk-Eidem Mayorgas Himmelweg på Nationaltheatret i Oslo. 2014 skulle han även ha regisserat den på Stockholms stadsteater under titeln Himlavägen i Jens Nordenhöks översättning men det ställdes in.\n\nReferenser\n\nKällor\n Pressrelease, Premio Europa 14/3 2016 \n Juan Mayorga, The Playwrights Database (läst 5 april 2017)\n Juan Mayorga, France culture (läst 5 april 2017)\n Juan Mayorga, theatre-contemporain.net (läst 5 april 2017)\n Juan Mayorga, Théâtre de Rond-Point, Paris (läst 5 april 2017)\n Juan Mayorga, madridesteatro.com (läst 5 april 2017)\n Arkiv, Kulturhuset Stadsteatern (läst 5 april 2017)\n Lillian Bikset: Teater, løgn og bedrag, Dagbladet 31/8 2007\n Elisabeth Leinslie: Kjenn din besøkelsestid, Dagsavisen 2/9 2007\n Rocío García: Juan Mayorga: las obsesiones de un matemático y autor de éxito, El País 1/6 2016\n\nNoter\n\nExterna länkar\n Juan Mayorga, Internet Movie Database (IMDb)\n\nSpanska dramatiker\nSpanskspråkiga dramatiker\nSpanska manusförfattare\nSpanska författare under 1900-talet\nSpanska författare under 2000-talet\nDramatiker under 1900-talet\nDramatiker under 2000-talet\nPersoner från Madrid\nFödda 1965\nLevande personer\nMän",
-    "question": "Vilka akademiska examina har Juan Mayorga avlagt vid Universidad Complutense de Madrid?",
-    "answers": {
-        "answer_start": array([126]),
-        "text": array(["matematik och filosofi"], dtype=object)
-    }
-}
-```
-
-```json
-{
-    "context": "Janka Kupala (egentligen Ivan Daminikavitj Lutsevitj) född 7 juli 1882 i Vjazynka utanför Minsk, död 28 juni 1942 i Moskva, var en belarusisk författare. Tillsammans med Jakub Kolas räknas han som en av den moderna belarusiska litteraturens grundare.\n\nKupala var till stor del självlärd som författare. Han blev aktiv i den \"belarusiska pånyttfödelsen\" (1903–1921) och redaktör för den belarusiska tidskriften Nasja niva (1914–1915). 1928 blev han ledamot av den belarusiska och ukrainska vetenskapsakademin.\n\nHans tidiga diktning var patriotisk idealiserade den östslaviska statsbildningen i Polotsk under 900- till 1200-talet som ett slags vision för Belarus. Han var även en hård kritiker av både det tidiga polsk-litauiska och ryska väldet över Belarus, varför många av hans verk förbjöds av sovjetregimen. På grund av den politiska förföljelsen under Stalin försökte han 1930 begå självmord och därefter blev han mindre produktiv som författare. Under de sista årtiondena var hans diktning en lång hyllning till socialismen och sovjetmakten. 1941 fick han ta emot Leninorden för sin diktsamling Ад сэрца (1940).\n\nVid Nazitysklands ockupation av Vitryska SSR 1941 flyttade han till Moskva och senare till Tatarstan. \n \nHans fru grundade ett museum över honom i Minsk där många av hans verk finns samlade. Staden Hrodna namngav ett universitet efter honom Janka Kupala Statsuniversitet 1978.\n\nBibliografi i urval \n Sjalejka 1908 (diktsamling)\n Husljar 1910 (diktsamling)\n Advetsjnaja pesnja 1910 (poem)\n Paulinka 1912 (skådespel)\n Sjljacham sjytstsia 1913 (diktsamling)\n Son na kurgane 1913 (poem)\n Raskidanaje hnjazdo 1913 (skådespel)\n\nKällor\n\nNoter\n\nBelarusiska författare\nBelarusiskspråkiga författare\nSovjetiska författare\nPersoner från Minsk voblast\nMän\nFödda 1882\nAvlidna 1942",
-    "question": "Vilket datum är Janka Kupalas födelsedag?",
-    "answers": {
-        "answer_start": array([59]),
-        "text": array(["7 juli 1882"], dtype=object)
-    }
-}
-```
-
-```json
-{
-    "context": "Storsäl (Erignathus barbatus) är en sälart som lever i Norra ishavet.\n\nUtseende och anatomi \n\nStorsälen har gråbrun päls som är ljusare på buken än på ryggen. På vintern får den ett mycket tjock fettskikt så att huvudet ser ovanligt litet ut. Vikten är på vintern omkring 360\xa0kg (ibland upp till 430\xa0kg) och på sommaren ungefär 230\xa0kg. Djuret är vanligen mellan 230 och 250\xa0cm långt och har ett långt vitt skägg. Bröstfenorna har en kännetecknande fyrkantig form. Mellan mars och augusti byter individerna pälsens hår.\n\nUtbredning \n\nStorsälen förekommer på isflaken i hela Arktis. Många individer lever i Berings hav. Under vandringen händer det ibland att några djur simmar fel så att de kommer till europeiska kustlinjer. En gång har djuret observerats i norra Portugal. Liknande iakttagelser rapporterades i norra Kina och från den japanska ön Hokkaido.\n\nEkologi \n\nStorsälen lever mestadels ensam. De vistas alltid i närheten av vattnet, så de kan flytta sig när en isbjörn närmar sig. Djuret kan dyka till 200\xa0meters djup men föredrar att förbli i närheten av havsytan. Under sommaren när antalet isflak minskar vilar den ibland på land. Med skägget letar den på havsbotten efter räkor, musslor och snäckor. Dessutom ingår fiskar i födan.\n\nHannen skapar under vattnet ett ljud som liknar valarnas sång. Troligtvis är ljudet till för att skydda sälens territorium eller för att imponera på honan.\n\nHonan är dräktig i omkring elva månader och föder i april eller maj ett ungdjur. Under dessa elva månader stannar embryots utveckling av en tid så att ungen inte föds för tidig. Kuten väger vid födelsen omkring 34\xa0kg. Honan ger di till kuten två till tre veckor (18 till 24 dagar) och lämnar den sedan ensam på isen. Oftast kan kuten simma redan vid denna ålder. Unga honor blir efter 3 till 8 år könsmogna och unga hannar efter 6 till 7 år. Vanligen blir storsälar inte äldre än 25 år men enskilda individer med en livslängd på 31 år är dokumenterade.\n\nStorsälar jagas aktiv av isbjörnar och de dödas ibland av späckhuggare. Sällsynt faller ungar offer för valross.\n\nStorsäl och människan \n\nJakt på storsäl för kött och hud har bedrivits länge. Men storsälen lever inte i flockar och är därför inte lika lättjagad som andra sälarter. Huden används till exempel för umiak och skor. Själva pälsen är inte eftertraktad. Under senare 1900-talet och början av 2000-talet uppskattades antalet dödade individer per år till 6\xa0800 i Alaska, 2\xa0400 i Kanada och 500 till 1\xa0000 på Grönland. En mera omfattande jakt skedde efter andra världskriget i de sovjetiska delarna av Arktiska havet, där upp till 13\xa0000 individer dödades per år. När arten blev sällsynt under 1970-talet minskade jakten betydlig. Den sovjetiska/ryska fångsten under 1980-talet uppgick bara till 2\xa0000 individer per år. IUCN listar arten som livskraftig (LC) på grund av det stora utbredningsområdet och eftersom beståndsutvecklingen bedöms som stabil.\n\nNoter \n\nÖronlösa sälar\nDäggdjur i palearktiska regionen\nDäggdjur i nearktiska regionen",
-    "question": "Vilken bevarandestatus har storsälen enligt IUCN?",
-    "answers": {
-        "answer_start": array([2804]),
-        "text": array(["livskraftig (LC)"], dtype=object)
-    }
-}
-```
-
-When evaluating generative models, we use the following setup (see the
-[methodology](/methodology) for more information on how these are used):
-
-- Number of few-shot examples: 4
-- Prefix prompt:
-
-  ```text
-  Nedan följer texter med tillhörande frågor och svar.
-  ```
-
-- Base prompt template:
-
-  ```text
-  Text: {text}
-  Fråga: {question}
-  Svar på max 3 ord: {label}
-  ```
-
-- Instruction-tuned prompt template:
-
-  ```text
-  Text: {text}
-
-  Besvara följande fråga om texten ovan med högst 3 ord.
-
-  Fråga: {question}
-  ```
-
-You can evaluate this dataset directly as follows:
-
-```bash
-euroeval --model <model-id> --dataset multi-wiki-qa-sv
 ```
 
 ## Knowledge

@@ -8,8 +8,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## [Unreleased]
 ### Added
 
-- Added the Estonian translation of MMLU, `mmlu-et`, as an unofficial knowledge
-  dataset.
+- Now allows the 'low', 'medium' and 'high' reasoning effort parameters for the GPT-OSS
+  models, which can be set by appending `#low`, `#medium` or `#high` to the model ID.
 - Added the Danish zebra puzzle dataset
   [zebra_puzzles](https://huggingface.co/datasets/alexandrainst/zebra_puzzles). The split
   is given by 128 / 1,024 samples for train / test, respectively. It is marked as
@@ -17,9 +17,151 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Drafted the logical reasoning task. This was contributed by [@sofiehb]
   (https://github.com/sofiehb) ✨
 
+### Changed
+
+- Improved the support for evaluating models on custom inference API servers. This
+  includes the following:
+  - We now dynamically reduce the number of concurrent connections if we run into
+      issues with too many requests.
+  - When benchmarking models on custom servers, we now automatically add the LiteLLM
+      prefix `openai/` to the model ID if no prefix is given, as LiteLLM requires this.
+  - We don't require the API key to be given if the server does not require it.
+  - We added a more detailed documentation on how to evaluate models on custom
+      inference APIs in the readme.
+- Now always truncates prompts to fit within the model's maximum context length when
+  evaluating vLLM models. Previously we only did this when catching the associated
+  error, but we cannot do this anymore as vLLM only returns generic errors now.
+- Marked OpenAI's GPT-OSS models as reasoning models when benchmarking them on a custom
+  inference server.
+
+### Fixed
+
+- When evaluating encoder models on reading comprehension datasets, we now also truncate
+  the question in case the model's maximum context length is very small.
+- Now correctly detects the reasoning tokens of the GPT-OSS models.
+
+### Deprecated
+
+- Deprecated the `--model-language`, `--dataset-language`, and `--batch-size` arguments
+  (and the equivalent ones in the `Benchmarker` API). We now only use the `--language`
+  argument for languages, and now use `--finetuning-batch-size` for the batch size. We
+  chose this renaming of the batch size argument as it is only used during finetuning,
+  and this caused confusion when evaluating generative models.
+
+## [v16.6.0] - 2025-11-04
+
+### Added
+
+- Added support for Croatian 🇭🇷! This includes the sentiment classification dataset
+  MMS-hr, the linguistic acceptability dataset ScaLA-hr, the named entity recognition
+  dataset WikiANN-hr, the reading comprehension dataset MultiWikiQA-hr, the knowledge
+  dataset MMLU-hr, and the common-sense reasoning dataset Winogrande-hr.
+- Added a system dependency check for `nvcc` in the `VLLMModel.__init__` method to
+  ensure the CUDA Toolkit is installed. Raises an error with installation instructions
+  if NVCC is not available in the system PATH.
 
 ### Changed
 
+- Removed the `--custom-datasets-file` argument, which is now always
+  `custom_datasets.py` in the current working directory. This enables us to auto-read
+  this file, making it possible to evaluate custom datasets by name only when using the
+  `Benchmarker` API.
+
+### Fixed
+
+- Now disabled structured generation for classification tasks if we're disabling
+  logprobs, to force evaluation using raw outputs and word edit distance instead.
+
+## [v16.5.0] - 2025-10-28
+
+### Added
+
+- Added support for Slovenian 🇸🇮! This includes the sentiment classification dataset
+  Sentinews, the linguistic acceptability dataset ScaLA-sl, the named entity recognition
+  dataset ssj500k-NER, the reading comprehension
+  dataset MultiWikiQA-sl, the knowledge dataset MMLU-sl, and the common-sense reasoning
+  dataset Winogrande-sl.
+- Added better support for evaluating on custom datasets, by allowing `DatasetConfig`
+  objects directly in the `Benchmarker.benchmark` method. We also support custom
+  datasets with the CLI, by simply defining the desired `DatasetConfig`s in a
+  `custom_datasets.py` file (path can be changed with the `--custom-datasets-file`
+  argument. In the `DatasetConfig`s we also support loading datasets from CSVs directly,
+  with the new `source` argument. This argument can both be the Hugging Face Hub ID of
+  the dataset or a dictionary with 'train', 'val' and 'test', and values the paths to
+  the CSV files.
+- Added support for Serbian 🇷🇸! This includes the sentiment classification dataset
+  MMS-sr, the linguistic acceptability dataset ScaLA-sr, the named entity recognition
+  dataset UNER-sr, the reading comprehension dataset MultiWikiQA-sr, the summarisation
+  dataset LR-Sum-sr, the knowledge dataset MMLU-sr, and the common-sense reasoning
+  dataset Winogrande-sr. This was contributed by @oliverkinch ✨
+- Added support for Bulgarian 🇧🇬! This includes the sentiment classification dataset
+  Cinexio, the linguistic acceptability dataset ScaLA-bg, the named entity recognition
+  dataset BG-NER-BSNLP, the reading comprehension dataset MultiWikiQA-bg, the knowledge
+  dataset Exams-bg, and the common-sense reasoning dataset Winogrande-bg. This was
+  contributed by @oliverkinch ✨
+- Added support for Greek 🇬🇷! This includes the binary sentiment classification dataset
+  Greek-SA, the linguistic acceptability dataset ScaLA-el, the named entity recognition
+  dataset elNER, the reading comprehension dataset MultiWikiQA-el, the summarisation
+  dataset Greek-Wikipedia, the knowledge dataset Global-MMLU-el, and the common-sense
+  reasoning dataset Winogrande-el. This was contributed by @oliverkinch ✨
+- Added support for Ukrainian 🇺🇦! This includes the sentiment classification dataset
+  Cross-Domain UK Reviews, the linguistic acceptability dataset ScaLA-uk, the named
+  entity recognition dataset NER-uk, the reading comprehension dataset MultiWikiQA-uk,
+  the summarisation dataset LR-Sum-uk, and the knowledge dataset Global-MMLU-uk. This
+  was contributed by @oliverkinch ✨
+
+### Changed
+
+- Now returns all the desired results from the `Benchmarker.benchmark` method, rather
+  than only the ones that were newly computed (so we load all previous results from disk
+  as well).
+
+### Fixed
+
+- Fixed the "double option" problem in Winogrande datasets across all languages.
+  Previously, option labels were duplicated for multiple languages (e.g.,
+  "Svarmuligheder:\na. Valgmulighed A: Natalie\nb. Valgmulighed B: Betty" instead of
+  just "Svarmuligheder:\na. Natalie\nb. Betty").
+- The previous fix to close arrow writers in metrics did not work as intended, as the
+  "too many open files" error still occurred. We now ensure that the writers are closed
+  properly after each metric computation to avoid this issue.
+- Now correctly allows specifying inference provider API keys with the `--api-key`
+  argument. Previously, this conflicted with the Hugging Face API key.
+- Fixed an issue where some pretrained generative models required prefix spaces in the
+  labels for classification tasks, which resulted in faulty structured choice
+  generation. We now correctly take this into account, which significantly increases
+  the classification performance of these models.
+
+## [v16.4.0] - 2025-10-21
+
+### Added
+
+- Added support for Slovak 🇸🇰! This includes the sentiment classification dataset
+  CSFD-sentiment-sk, the linguistic acceptability dataset ScaLA-sk, the named entity
+  recognition dataset UNER-sk, the reading comprehension dataset MultiWikiQA-sk, the
+  multiple-choice classification dataset MMLU-sk, and the common-sense reasoning dataset
+  Winogrande-sk. This was contributed by @oliverkinch ✨
+- Added support for Czech 🇨🇿! This includes the sentiment classification dataset
+  CSFD-sentiment, the linguistic acceptability dataset ScaLA-cs, the linguistic
+  acceptability dataset CS-GEC, the named entity recognition dataset PONER, the reading
+  comprehension dataset SQAD, the summarization dataset Czech News, the common-sense
+  reasoning dataset HellaSwag-cs, and the knowledge dataset Umimeto-qa. This was
+  contributed by @oliverkinch ✨
+- Added the Lithuanian summarisation dataset Lrytas based on the Lithuanian
+  public media news portal [Lrytas.lt](https://www.lrytas.lt/). This was contributed by
+  @oliverkinch ✨
+- Added the Estonian translation of MMLU, `mmlu-et`, as an unofficial knowledge
+  dataset.
+
+
+### Changed
+
+- Updated vLLM to `>=0.11.0`, which features several breaking changes, so we had to
+  force the minimum version. This also features support for multiple new models, such as
+  Qwen3-Next and OLMo3.
+- Now uses MultiWikiQA-da and MultiWikiQA-sv as the official Danish and Swedish reading
+  comprehension datasets, respectively, as the quality is substantially better than
+  ScandiQA-da and ScandiQA-sv.
 - Used 128 of the test samples from the Winogrande datasets for validation, as we
   previously did not use a validation split. This is done for all languages except
   Icelandic and Estonian, as these are manually translated and corrected splits from a
@@ -29,6 +171,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   affected by this change.
 - In the same vein as the above, we now use 32 samples for validation for the Lithuanian
   LT-history dataset and the Swedish Skolprov dataset.
+- Changed logging styling.
 
 ### Fixed
 
@@ -37,16 +180,31 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   supporting Literal types in JSON schemas.
 - Removed "e" options from the Skolprov multiple-choice dataset, as this inconsistency
   in number of options caused issues when evaluating models on it.
+- Fixed an issue where an uninformative logging message was shown when a model
+  configuration could not be loaded from the Hugging Face Hub, when the model was gated.
+  We now show that this is due to the gatedness, indicating that the user should log in
+  or provide a Hugging Face Hub access token to evaluate the model.
+- Now caches functions related to loading repo info or fetching model configs from the
+  Hugging Face Hub, to avoid repeated calls to the Hub, resulting in rate limits.
+- When running an evaluation that required the test split (e.g., European values
+  evaluation) as the last benchmark for a given model, then subsequent models would
+  continue to be evaluated on the test split, even if the user requested to use the
+  validation split. We now reset this not just after each dataset, but also after each
+  model, so that this does not happen.
+- Now catches more errors when evaluating LiteLLM models, which were related to some
+  generation parameters not being supported (such as stop sequences) for some models.
+- We now clean up metric writers when we're done with them, which prevents a "too many
+  open files" error when evaluating many models and datasets in a single run.
 
 ## [v16.3.0] - 2025-09-23
 
 ### Added
 
 - Added support for Lithuanian 🇱🇹! This includes the sentiment classification dataset
-  Lithuanian Emotions, the linguistic acceptability dataset ScaLA-lt, the reading
-  comprehension dataset MultiWikiQA-lt, the named entity recognition dataset WikiANN-lt,
-  the the history knowledge dataset LT-History, and the common-sense reasoning dataset
-  Winogrande-lt. This was contributed by @oliverkinch ✨
+  Lithuanian Emotions, the linguistic acceptability dataset ScaLA-lt (unofficial), the
+  reading comprehension dataset MultiWikiQA-lt, the named entity recognition dataset
+  WikiANN-lt, the the history knowledge dataset LT-History, and the common-sense
+  reasoning dataset Winogrande-lt. This was contributed by @oliverkinch ✨
 - Added "slow-tokenizer" model parameter, which can be used to force the use of a slow
   tokenizer when loading it. Use this by replacing your model ID with
   `<model-id>#slow-tokenizer`.

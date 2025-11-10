@@ -4,33 +4,102 @@ import typing as t
 
 from ..data_models import PromptConfig
 from ..languages import (
-    DA,
-    DE,
-    EN,
-    ES,
-    ET,
-    FI,
-    FO,
-    FR,
-    IS,
-    IT,
-    LT,
-    LV,
-    NB,
-    NL,
-    NN,
-    NO,
-    PL,
-    PT,
-    SV,
+    BULGARIAN,
+    CROATIAN,
+    CZECH,
+    DANISH,
+    DUTCH,
+    ENGLISH,
+    ESTONIAN,
+    FAROESE,
+    FINNISH,
+    FRENCH,
+    GERMAN,
+    GREEK,
+    ICELANDIC,
+    ITALIAN,
+    LATVIAN,
+    LITHUANIAN,
+    NORWEGIAN,
+    NORWEGIAN_BOKMÅL,
+    NORWEGIAN_NYNORSK,
+    POLISH,
+    PORTUGUESE,
+    SERBIAN,
+    SLOVAK,
+    SLOVENIAN,
+    SPANISH,
+    SWEDISH,
+    UKRAINIAN,
 )
 
 if t.TYPE_CHECKING:
-    from ..data_models import Language
+    from ..languages import Language
 
 
 NER_TEMPLATES: dict["Language", PromptConfig] = {
-    DA: PromptConfig(
+    BULGARIAN: PromptConfig(
+        default_prompt_label_mapping={
+            "b-per": "лице",
+            "i-per": "лице",
+            "b-loc": "място",
+            "i-loc": "място",
+            "b-org": "организация",
+            "i-org": "организация",
+            "b-misc": "разни",
+            "i-misc": "разни",
+        },
+        default_prompt_prefix="По-долу са изречения и JSON речници с именуваните "
+        "обекти, които се срещат в дадените изречения.",
+        default_prompt_template="Изречение: {text}\nИменувани обекти: {label}",
+        default_instruction_prompt="Изречение: {text}\n\nИдентифицирайте именуваните "
+        "обекти в изречението. Трябва да изведете това като JSON речник с ключовете "
+        "{labels_str}. Стойностите трябва да бъдат списъци на именуваните обекти от "
+        "този тип, точно както се появяват в изречението.",
+    ),
+    CROATIAN: PromptConfig(
+        default_prompt_label_mapping={
+            "b-per": "osoba",
+            "i-per": "osoba",
+            "b-loc": "mjesto",
+            "i-loc": "mjesto",
+            "b-org": "organizacija",
+            "i-org": "organizacija",
+            "b-misc": "razno",
+            "i-misc": "razno",
+        },
+        default_prompt_prefix=(
+            "Sljedeće su rečenice i JSON rječnici s imenicama koje se pojavljuju u "
+            "rečenicama."
+        ),
+        default_prompt_template=("Rečenica: {text}\nImenovane entiteti: {label}"),
+        default_instruction_prompt=(
+            "Rečenica: {text}\n\n"
+            "Identificirajte imenovane entitete u rečenici. Prikažite ih kao JSON "
+            "rječnik s ključevima {labels_str}. Vrijednosti trebaju biti popisi "
+            "imenovanih entiteta navedenog tipa, točno kako se pojavljuju u rečenici."
+        ),
+    ),
+    CZECH: PromptConfig(
+        default_prompt_label_mapping={
+            "b-per": "osoba",
+            "i-per": "osoba",
+            "b-loc": "místo",
+            "i-loc": "místo",
+            "b-org": "organizace",
+            "i-org": "organizace",
+            "b-misc": "různé",
+            "i-misc": "různé",
+        },
+        default_prompt_prefix="Následující jsou věty a JSON slovníky s pojmenovanými "
+        "entitami, které se v dané větě vyskytují.",
+        default_prompt_template="Věta: {text}\nPojmenované entity: {label}",
+        default_instruction_prompt="Věta: {text}\n\nIdentifikujte pojmenované entity "
+        "ve větě. Měli byste to vypsat jako JSON slovník s klíči {labels_str}. "
+        "Hodnoty by měly být seznamy pojmenovaných entit tohoto typu, přesně tak, "
+        "jak se objevují ve větě.",
+    ),
+    DANISH: PromptConfig(
         default_prompt_label_mapping={
             "b-per": "person",
             "i-per": "person",
@@ -49,7 +118,7 @@ NER_TEMPLATES: dict["Language", PromptConfig] = {
         "{labels_str}. Værdierne skal være lister over de navngivne enheder af den "
         "type, præcis som de forekommer i sætningen.",
     ),
-    DE: PromptConfig(
+    GERMAN: PromptConfig(
         default_prompt_label_mapping={
             "b-per": "person",
             "i-per": "person",
@@ -68,7 +137,26 @@ NER_TEMPLATES: dict["Language", PromptConfig] = {
         "Schlüsseln {labels_str} ausgeben. Die Werte sollten Listen der "
         "benannten Entitäten dieses Typs sein, genau wie sie im Satz erscheinen.",
     ),
-    EN: PromptConfig(
+    GREEK: PromptConfig(
+        default_prompt_label_mapping={
+            "b-per": "πρόσωπο",
+            "i-per": "πρόσωπο",
+            "b-loc": "τοποθεσία",
+            "i-loc": "τοποθεσία",
+            "b-org": "οργανισμός",
+            "i-org": "οργανισμός",
+            "b-misc": "διάφορα",
+            "i-misc": "διάφορα",
+        },
+        default_prompt_prefix="Ακολουθούν προτάσεις και λεξικά JSON με τις "
+        "ονομαστικές οντότητες που εμφανίζονται στην δεδομένη πρόταση.",
+        default_prompt_template="Πρόταση: {text}\nΟνομαστικές οντότητες: {label}",
+        default_instruction_prompt="Πρόταση: {text}\n\nΑναγνωρίστε τις ονομαστικές "
+        "οντότητες στην πρόταση. Θα πρέπει να παράγετε αυτό ως λεξικό JSON με "
+        "κλειδιά {labels_str}. Οι τιμές πρέπει να είναι λίστες των ονομαστικών "
+        "οντοτήτων αυτού του τύπου, ακριβώς όπως εμφανίζονται στην πρόταση.",
+    ),
+    ENGLISH: PromptConfig(
         default_prompt_label_mapping={
             "b-per": "person",
             "i-per": "person",
@@ -87,7 +175,7 @@ NER_TEMPLATES: dict["Language", PromptConfig] = {
         "{labels_str}. The values should be lists of the named entities of that "
         "type, exactly as they appear in the sentence.",
     ),
-    ES: PromptConfig(
+    SPANISH: PromptConfig(
         default_prompt_label_mapping={
             "b-per": "persona",
             "i-per": "persona",
@@ -106,7 +194,7 @@ NER_TEMPLATES: dict["Language", PromptConfig] = {
         "claves {labels_str}. Los valores deben ser listas de las "
         "entidades nombradas de ese tipo, exactamente como aparecen en la oración.",
     ),
-    ET: PromptConfig(
+    ESTONIAN: PromptConfig(
         default_prompt_label_mapping={
             "b-per": "inimene",
             "i-per": "inimene",
@@ -125,7 +213,7 @@ NER_TEMPLATES: dict["Language", PromptConfig] = {
         "mille võtmed on {labels_str}. Väärtused peaksid olema kindlat tüüpi nimetatud "
         "üksuste loendid, täpselt nii nagu need lauses esinevad.",
     ),
-    PT: PromptConfig(
+    PORTUGUESE: PromptConfig(
         default_prompt_label_mapping={
             "b-per": "pessoa",
             "i-per": "pessoa",
@@ -144,7 +232,7 @@ NER_TEMPLATES: dict["Language", PromptConfig] = {
         "{labels_str}. Os valores devem ser listas contendo as entidades "
         "mencionadas desse tipo, tal como ocorrem na frase.",
     ),
-    FI: PromptConfig(
+    FINNISH: PromptConfig(
         default_prompt_label_mapping={
             "b-per": "henkilö",
             "i-per": "henkilö",
@@ -163,7 +251,7 @@ NER_TEMPLATES: dict["Language", PromptConfig] = {
         "Arvojen tulee olla listoja kyseisen tyypin nimetyistä entiteeteistä "
         "täsmälleen siinä muodossa kuin ne esiintyvät lauseessa.",
     ),
-    FO: PromptConfig(
+    FAROESE: PromptConfig(
         default_prompt_label_mapping={
             "b-per": "persónur",
             "i-per": "persónur",
@@ -182,7 +270,7 @@ NER_TEMPLATES: dict["Language", PromptConfig] = {
         "{labels_str}. Gildin ættu að vera listi yfir nevndu einingarnar af "
         "þeirri gerð, nákvæmlega eins og þær koma fram í setningunni.",
     ),
-    FR: PromptConfig(
+    FRENCH: PromptConfig(
         default_prompt_label_mapping={
             "b-per": "personne",
             "i-per": "personne",
@@ -203,7 +291,7 @@ NER_TEMPLATES: dict["Language", PromptConfig] = {
         "entités nommées de ce type, exactement comme elles apparaissent dans "
         "la phrase.",
     ),
-    IS: PromptConfig(
+    ICELANDIC: PromptConfig(
         default_prompt_label_mapping={
             "b-per": "einstaklingur",
             "i-per": "einstaklingur",
@@ -223,7 +311,7 @@ NER_TEMPLATES: dict["Language", PromptConfig] = {
         "einingarnar af þeirri gerð, nákvæmlega eins og þær koma fram í "
         "setningunni.",
     ),
-    IT: PromptConfig(
+    ITALIAN: PromptConfig(
         default_prompt_label_mapping={
             "b-per": "persona",
             "i-per": "persona",
@@ -242,7 +330,7 @@ NER_TEMPLATES: dict["Language", PromptConfig] = {
         "{labels_str}. I valori devono essere elenchi di entità "
         "nominate di quel tipo, esattamente come appaiono nella frase.",
     ),
-    LT: PromptConfig(
+    LITHUANIAN: PromptConfig(
         default_prompt_label_mapping={
             "b-per": "asmuo",
             "i-per": "asmuo",
@@ -261,7 +349,7 @@ NER_TEMPLATES: dict["Language", PromptConfig] = {
         "{labels_str}. Reikšmės turi būti to tipo vardinių vienetų sąrašai, "
         "tiksliai taip, kaip jie rodomi sakinyje.",
     ),
-    LV: PromptConfig(
+    LATVIAN: PromptConfig(
         default_prompt_label_mapping={
             "b-per": "persona",
             "i-per": "persona",
@@ -281,7 +369,7 @@ NER_TEMPLATES: dict["Language", PromptConfig] = {
         "{labels_str}. Vērtībām jābūt šī tipa nosaukto objektu sarakstiem, "
         "tieši tā, kā tie parādās teikumā.",
     ),
-    NB: PromptConfig(
+    NORWEGIAN_BOKMÅL: PromptConfig(
         default_prompt_label_mapping={
             "b-per": "person",
             "i-per": "person",
@@ -300,7 +388,7 @@ NER_TEMPLATES: dict["Language", PromptConfig] = {
         "{labels_str}. Verdiene skal være lister over de navngitte enhetene av den "
         "typen, akkurat som de vises i frasen.",
     ),
-    NL: PromptConfig(
+    DUTCH: PromptConfig(
         default_prompt_label_mapping={
             "b-per": "persoon",
             "i-per": "persoon",
@@ -319,7 +407,7 @@ NER_TEMPLATES: dict["Language", PromptConfig] = {
         "{labels_str}. De waarden moeten lijsten zijn van de "
         "genoemde entiteiten van dat type, precies zoals ze voorkomen in de zin.",
     ),
-    NN: PromptConfig(
+    NORWEGIAN_NYNORSK: PromptConfig(
         default_prompt_label_mapping={
             "b-per": "person",
             "i-per": "person",
@@ -338,7 +426,7 @@ NER_TEMPLATES: dict["Language", PromptConfig] = {
         "Verdiene skal være lister over de navngitte enhetene "
         "av den typen, akkurat som de vises i frasen.",
     ),
-    NO: PromptConfig(
+    NORWEGIAN: PromptConfig(
         default_prompt_label_mapping={
             "b-per": "person",
             "i-per": "person",
@@ -357,26 +445,87 @@ NER_TEMPLATES: dict["Language", PromptConfig] = {
         "Verdiene skal være lister over de navngitte enhetene "
         "av den typen, akkurat som de vises i frasen.",
     ),
-    PL: PromptConfig(
+    POLISH: PromptConfig(
         default_prompt_label_mapping={
             "b-per": "osoba",
             "i-per": "osoba",
-            "b-loc": "lokalizacja",
-            "i-loc": "lokalizacja",
+            "b-loc": "miejsce",
+            "i-loc": "miejsce",
             "b-org": "organizacja",
             "i-org": "organizacja",
-            "b-misc": "różne",
-            "i-misc": "różne",
+            "b-misc": "inne",
+            "i-misc": "inne",
         },
-        default_prompt_prefix="Poniżej znajdują się zdania i słowniki JSON z nazwanymi "
-        "jednostkami występującymi w danym zdaniu.",
-        default_prompt_template="Zdanie: {text}\nNazwane jednostki: {label}",
-        default_instruction_prompt="Zdanie: {text}\n\nZidentyfikuj nazwane jednostki "
-        "w zdaniu. Powinieneś wypisać to jako słownik JSON z kluczami "
-        "{labels_str}. Wartości powinny być listami nazwanych jednostek "
-        "tego typu, dokładnie tak jak pojawiają się w zdaniu.",
+        default_prompt_prefix="Poniżej znajdują się zdania i słowniki JSON "
+        "z jednostkami nazewniczymi, które występują w danym zdaniu.",
+        default_prompt_template="Zdanie: {text}\nJednostki nazewnicze: {label}",
+        default_instruction_prompt="Zdanie: {text}\n\nZidentyfikuj jednostki "
+        "nazewnicze w zdaniu. Wypisz je jako słownik JSON z kluczami "
+        "{labels_str}. Wartości odpowiadające kluczom powinny być listami jednostek "
+        "nazewniczych danego typu, dokładnie tak, jak pojawiają się w zdaniu.",
     ),
-    SV: PromptConfig(
+    SLOVAK: PromptConfig(
+        default_prompt_label_mapping={
+            "b-per": "osoba",
+            "i-per": "osoba",
+            "b-loc": "miesto",
+            "i-loc": "miesto",
+            "b-org": "organizácia",
+            "i-org": "organizácia",
+            "b-misc": "rôzne",
+            "i-misc": "rôzne",
+        },
+        default_prompt_prefix="Nasledujúce sú vety a JSON-objekty s pomenovanými "
+        "entitami, ktoré sa nachádzajú v danej vete.",
+        default_prompt_template="Veta: {text}\nPomenované entity: {label}",
+        default_instruction_prompt="Veta: {text}\n\nIdentifikujte pomenované "
+        "entity vo vete. Výstup by mal byť vo forme JSON-objektu s kľúčmi "
+        "{labels_str}. Hodnoty by mali byť zoznamy pomenovaných entít danej "
+        "kategórie, presne tak, ako sa vyskytujú vo vete.",
+    ),
+    SLOVENIAN: PromptConfig(
+        default_prompt_label_mapping={
+            "b-per": "oseba",
+            "i-per": "oseba",
+            "b-loc": "kraj",
+            "i-loc": "kraj",
+            "b-org": "organizacija",
+            "i-org": "organizacija",
+            "b-misc": "razno",
+            "i-misc": "razno",
+        },
+        default_prompt_prefix=(
+            "Naslednje so povedi in JSON slovarji z poimenovanimi "
+            "entitetami, ki se pojavijo v dani povedi."
+        ),
+        default_prompt_template=("Poved: {text}\nPoimenovane entitete: {label}"),
+        default_instruction_prompt=(
+            "Poved: {text}\n\nIdentificirajte poimenovane entitete v povedi. "
+            "To morate izpisati kot JSON slovar s ključi {labels_str}. "
+            "Vrednosti morajo biti seznami poimenovanih entitet te kategorije, "
+            "tako kot se pojavijo v povedi."
+        ),
+    ),
+    SERBIAN: PromptConfig(
+        default_prompt_label_mapping={
+            "b-per": "osoba",
+            "i-per": "osoba",
+            "b-loc": "mesto",
+            "i-loc": "mesto",
+            "b-org": "organizacija",
+            "i-org": "organizacija",
+            "b-misc": "razno",
+            "i-misc": "razno",
+        },
+        default_prompt_prefix="Sledeće su rečenice i JSON rečnici sa imenovanim "
+        "entitetima koji se pojavljuju u datoj rečenici.",
+        default_prompt_template="Rečenica: {text}\nImenovani entiteti: {label}",
+        default_instruction_prompt="Rečenica: {text}\n\nIdentifikujte imenovane "
+        "entitete u rečenici. Trebalo bi da ovo ispišete kao JSON rečnik sa ključevima "
+        "{labels_str}. Vrednosti treba da budu liste imenovanih entiteta te "
+        "kategorije, tačno onako kako se pojavljuju u rečenici.",
+    ),
+    SWEDISH: PromptConfig(
         default_prompt_label_mapping={
             "b-per": "person",
             "i-per": "person",
@@ -392,7 +541,27 @@ NER_TEMPLATES: dict["Language", PromptConfig] = {
         default_prompt_template="Mening: {text}\nNamngivna entiteter: {label}",
         default_instruction_prompt="Mening: {text}\n\nIdentifiera de namngivna "
         "enheterna i meningen. Du ska outputta detta som en JSON-ordbok med nycklarna "
-        "{labels_str}. Värdena ska vara listor över de namngivna enheter av den "
+        "{labels_str}. Värdena ska vara listor över de namngivna enheterna av den "
         "typen, precis som de förekommer i meningen.",
+    ),
+    UKRAINIAN: PromptConfig(
+        default_prompt_label_mapping={
+            "b-per": "особа",
+            "i-per": "особа",
+            "b-loc": "місце",
+            "i-loc": "місце",
+            "b-org": "організація",
+            "i-org": "організація",
+            "b-misc": "різне",
+            "i-misc": "різне",
+        },
+        default_prompt_prefix="Нижче наведені речення та JSON-словники з іменованими "
+        "сутностями, які присутні у даному реченні.",
+        default_prompt_template="Речення: {text}\nІменовані сутності: {label}",
+        default_instruction_prompt="Речення: {text}\n\n"
+        "Ідентифікуйте іменовані сутності у "
+        "реченні. Ви повинні вивести це як JSON-словник з ключами {labels_str}. "
+        "Значення мають бути списками іменованих сутностей цього типу, точно "
+        "такими, як вони з'являються у реченні.",
     ),
 }

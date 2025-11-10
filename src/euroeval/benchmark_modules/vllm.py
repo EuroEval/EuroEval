@@ -6,6 +6,7 @@ import importlib.util
 import json
 import logging
 import re
+import shutil
 import typing as t
 from functools import partial
 from pathlib import Path
@@ -14,7 +15,6 @@ from time import sleep
 import torch
 from huggingface_hub import snapshot_download
 from pydantic import conlist, create_model
-from tqdm.auto import tqdm
 from transformers.models.auto.configuration_auto import AutoConfig
 from transformers.models.auto.tokenization_auto import AutoTokenizer
 from transformers.tokenization_mistral_common import MistralCommonTokenizer
@@ -30,7 +30,7 @@ from ..constants import (
     REASONING_TOKENS,
     VLLM_BF16_MIN_CUDA_COMPUTE_CAPABILITY,
 )
-from ..data_models import GenerativeModelOutput, ModelConfig
+from ..data_models import GenerativeModelOutput, HashableDict, ModelConfig
 from ..enums import (
     BatchingPreference,
     GenerativeType,
@@ -43,6 +43,7 @@ from ..exceptions import (
     InvalidModel,
     NeedsEnvironmentVariable,
     NeedsExtraInstalled,
+    NeedsSystemDependency,
 )
 from ..generation_utils import (
     apply_prompt,
@@ -50,6 +51,7 @@ from ..generation_utils import (
     raise_if_wrong_params,
 )
 from ..languages import get_all_languages
+from ..logging_utils import get_pbar, log, log_once, no_terminal_output
 from ..task_group_utils import (
     logical_reasoning,
     question_answering,
@@ -71,10 +73,10 @@ from ..types import ExtractLabelsFunction
 from ..utils import (
     clear_memory,
     create_model_cache_dir,
+    flash_attention_backend,
     get_hf_token,
     get_min_cuda_compute_capability,
     internet_connection_available,
-    log_once,
     resolve_model_path,
     split_model_id,
 )
@@ -87,7 +89,7 @@ if t.TYPE_CHECKING or importlib.util.find_spec("vllm") is not None:
         destroy_model_parallel,
     )
     from vllm.lora.request import LoRARequest
-    from vllm.sampling_params import GuidedDecodingParams
+    from vllm.sampling_params import StructuredOutputsParams
 
 if t.TYPE_CHECKING:
     from datasets import DatasetDict
@@ -96,7 +98,10 @@ if t.TYPE_CHECKING:
 
     from ..data_models import BenchmarkConfig, DatasetConfig, Task
 
-logger = logging.getLogger("euroeval")
+
+MODELS_REQUIRING_FLASH_ATTENTION: list[re.Pattern] = [
+    re.compile(r".*gpt-oss.*", flags=re.IGNORECASE)
+]
 
 
 class VLLMModel(HuggingFaceEncoderModel):
@@ -105,7 +110,10 @@ class VLLMModel(HuggingFaceEncoderModel):
     fresh_model = False
     batching_preference = BatchingPreference.ALL_AT_ONCE
     high_priority = True
-    allowed_params = {re.compile(r".*"): ["thinking", "no-thinking", "slow-tokenizer"]}
+    allowed_params = {
+        re.compile(r".*"): ["thinking", "no-thinking", "slow-tokenizer"],
+        re.compile(r".*gpt-oss.*", flags=re.IGNORECASE): ["low", "medium", "high"],
+    }
 
     def __init__(
         self,
@@ -129,13 +137,32 @@ class VLLMModel(HuggingFaceEncoderModel):
         if importlib.util.find_spec("vllm") is None:
             raise NeedsExtraInstalled(extra="generative")
 
+        if shutil.which("nvcc") is None:
+            raise NeedsSystemDependency(
+                dependency="nvcc",
+                instructions=(
+                    "Please install the CUDA Toolkit from "
+                    "https://developer.nvidia.com/cuda-downloads or ensure that NVCC "
+                    "is available in your PATH."
+                ),
+            )
+
         raise_if_wrong_params(
             model_config=model_config, allowed_params=self.allowed_params
         )
 
-        model, tokeniser = load_model_and_tokeniser(
-            model_config=model_config, benchmark_config=benchmark_config
-        )
+        with (
+            no_terminal_output(disable=benchmark_config.verbose),
+            flash_attention_backend(
+                disabled=all(
+                    not re.search(pattern=pattern, string=model_config.model_id)
+                    for pattern in MODELS_REQUIRING_FLASH_ATTENTION
+                )
+            ),
+        ):
+            model, tokeniser = load_model_and_tokeniser(
+                model_config=model_config, benchmark_config=benchmark_config
+            )
         self._model: "LLM" = model
         self._tokeniser: "PreTrainedTokenizer" = tokeniser
 
@@ -246,6 +273,7 @@ class VLLMModel(HuggingFaceEncoderModel):
                 return partial(
                     sequence_classification.extract_labels_from_generation,
                     dataset_config=self.dataset_config,
+                    model_config=self.model_config,
                     first_label_token_mapping=self.buffer["first_label_token_mapping"],
                 )
             case TaskGroup.LOGICAL_REASONING:
@@ -397,10 +425,11 @@ class VLLMModel(HuggingFaceEncoderModel):
             self.dataset_config.task.uses_structured_output
             or (self.dataset_config.task.uses_logprobs and self.dataset_config.labels)
         ) and self.generative_type == GenerativeType.REASONING:
-            guided_decoding = None
-            logger.debug(
+            structured_outputs = None
+            log_once(
                 "The dataset uses structured output, but we are not using it as the "
-                "model is a reasoning model."
+                f"model {self.model_config.model_id!r} is a reasoning model.",
+                level=logging.DEBUG,
             )
         elif self.dataset_config.task.uses_structured_output:
             ner_tag_names = list(self.dataset_config.prompt_label_mapping.values())
@@ -415,21 +444,31 @@ class VLLMModel(HuggingFaceEncoderModel):
                 f"{json.dumps(structured_generation_schema)}",
                 level=logging.DEBUG,
             )
-            guided_decoding = GuidedDecodingParams(json=structured_generation_schema)
-        elif self.dataset_config.task.uses_logprobs and self.dataset_config.labels:
-            guided_decoding = GuidedDecodingParams(
-                choice=[
-                    self.dataset_config.prompt_label_mapping[label]
-                    for label in self.dataset_config.labels
-                ]
+            structured_outputs = StructuredOutputsParams(
+                json=structured_generation_schema
             )
+        elif (
+            self.dataset_config.task.uses_logprobs
+            and self.dataset_config.labels
+            and self.buffer.get("first_label_token_mapping", False)
+        ):
+            choice_labels = [
+                self.dataset_config.prompt_label_mapping[label]
+                for label in self.dataset_config.labels
+            ]
+            if isinstance(self.buffer["first_label_token_mapping"], dict):
+                choice_labels = [
+                    self.buffer["first_label_token_mapping"][label]
+                    for label in choice_labels
+                ]
+            structured_outputs = StructuredOutputsParams(choice=choice_labels)
             log_once(
                 "Using structured generation with the choices: "
-                f"{guided_decoding.choice!r}.",
+                f"{structured_outputs.choice!r}.",
                 level=logging.DEBUG,
             )
         else:
-            guided_decoding = None
+            structured_outputs = None
             log_once(
                 "Not using structured generation as the dataset does not require it.",
                 level=logging.DEBUG,
@@ -448,14 +487,14 @@ class VLLMModel(HuggingFaceEncoderModel):
             else None,
             temperature=0.0,
             stop=[stop_token for stop_token in stop_tokens if stop_token],
-            guided_decoding=guided_decoding,
+            structured_outputs=structured_outputs,
         )
 
         # If any of the prompts are empty then we need to replace them with a BOS token
         # so that the vLLM model can generate from them
-        prompts: list[str] = inputs["text"]
+        prompts: c.Sequence[str] = inputs["text"]
         if any(len(prompt) == 0 for prompt in prompts):
-            logger.debug("Found empty prompts, replacing with BOS token.")
+            log("Found empty prompts, replacing with BOS token.", level=logging.DEBUG)
             prompts = [
                 prompt if len(prompt) > 0 else str(self._tokeniser.bos_token)
                 for prompt in prompts
@@ -474,22 +513,35 @@ class VLLMModel(HuggingFaceEncoderModel):
             )
             prompts = [prompt.strip() for prompt in prompts]
 
+        # Truncate the prompts if needed, but only if it's not a reasoning model
+        if self.generative_type != GenerativeType.REASONING:
+            max_tokens_per_prompt = (
+                min(self._tokeniser.model_max_length, MAX_CONTEXT_LENGTH) - max_tokens
+            )
+            tokenized_prompts = self._tokeniser(
+                text=list(prompts), truncation=True, max_length=max_tokens_per_prompt
+            )
+            prompts = self._tokeniser.batch_decode(
+                sequences=tokenized_prompts.input_ids, skip_special_tokens=True
+            )
+
         # Generate sequences using vLLM
         input_is_a_test = len(prompts) == 1 and len(set(prompts[0])) == 1
         num_attempts = 3
-        truncation_attempts = 0
+        truncation_attempts = 1
         for _ in range(num_attempts):
             try:
                 raw_outputs = self._model.generate(
                     prompts=prompts,
                     sampling_params=sampling_params,
-                    use_tqdm=False if input_is_a_test else get_pbar_without_leave,
+                    use_tqdm=False if input_is_a_test else get_pbar,
                     lora_request=self.buffer.get("lora_request"),
                 )
                 break
             except TypeError as e:
-                logger.debug(
-                    f"Encountered error during vLLM generation: {str(e)}. Retrying..."
+                log(
+                    f"Encountered error during vLLM generation: {str(e)}. Retrying...",
+                    level=logging.DEBUG,
                 )
                 sleep(1)
             except ValueError as e:
@@ -501,10 +553,11 @@ class VLLMModel(HuggingFaceEncoderModel):
                     re.search(pattern, str(e), flags=re.IGNORECASE) is not None
                     for pattern in truncate_error_messages
                 ):
-                    logger.info(
-                        "Prompts are too long, so truncating them and trying again..."
+                    log(
+                        "Prompts are too long, so truncating them and trying again...",
+                        level=logging.WARNING,
                     )
-                    logger.debug(f"The error message was: {str(e)}")
+                    log(f"The error message was: {str(e)}", level=logging.DEBUG)
 
                     # If we have already tried truncating the prompts a few times, then
                     # we truncate a bit more aggressively
@@ -547,57 +600,73 @@ class VLLMModel(HuggingFaceEncoderModel):
                     f"{num_extra_outputs!r} extra outputs."
                 )
             else:
-                logger.debug(
+                log(
                     f"Filtered out {num_extra_outputs:,} extra outputs from the model, "
                     "which occured as we interupted the generation when we truncated "
-                    "the prompts."
+                    "the prompts.",
+                    level=logging.DEBUG,
                 )
 
-        # Parse the raw model outputs
-        completion_ids: list[list[int]] = [
-            output.outputs[0].token_ids for output in raw_outputs
+        # Parse the raw model outputs. We keep the special tokens for now, as we need
+        # them to potentially remove reasoning content and stop tokens
+        completion_ids: c.Sequence[c.Sequence[int]] = [
+            list(output.outputs[0].token_ids) for output in raw_outputs
         ]
         completions = self._tokeniser.batch_decode(
             sequences=[
                 torch.LongTensor(completion_id) for completion_id in completion_ids
-            ]
+            ],
+            skip_special_tokens=False,
         )
         if (
             self.end_of_reasoning_token is not None
             and self.generative_type == GenerativeType.REASONING
         ):
+            num_samples_without_eor_token = 0
             for idx in range(len(completions)):
-                if self.end_of_reasoning_token in completions[idx]:
+                if (
+                    isinstance(self.end_of_reasoning_token, str)
+                    and self.end_of_reasoning_token in completions[idx]
+                ):
                     completions[idx] = completions[idx].split(
                         self.end_of_reasoning_token
                     )[-1]
-                elif self.benchmark_config.verbose:
-                    logger.warning(
-                        f"The model {self.model_config.model_id!r} is a reasoning "
-                        "model, but the generated output does not contain the end of "
-                        f"reasoning token ({self.end_of_reasoning_token!r}). Using "
-                        "an empty string as the prediction instead."
-                    )
-                    completions[idx] = ""
+                elif isinstance(
+                    self.end_of_reasoning_token, re.Pattern
+                ) and self.end_of_reasoning_token.search(completions[idx]):
+                    completions[idx] = self.end_of_reasoning_token.split(
+                        completions[idx]
+                    )[-1]
                 else:
-                    log_once(
-                        f"The model {self.model_config.model_id!r} is a reasoning "
-                        "model, but the generated output does not contain the end of "
-                        f"reasoning token ({self.end_of_reasoning_token!r}). Using "
-                        "an empty string as the prediction instead. Only showing "
-                        "this warning once - see all occurrences if you run with the "
-                        "`verbose` flag.",
-                        level=logging.WARNING,
-                    )
+                    num_samples_without_eor_token += 1
                     completions[idx] = ""
+            if num_samples_without_eor_token > 0:
+                log_once(
+                    f"The model {self.model_config.model_id!r} is a reasoning "
+                    "model, but the generated output did not contain the end of "
+                    f"reasoning token ({self.end_of_reasoning_token!r}) in "
+                    f"{num_samples_without_eor_token:,}/{len(completions):,} of "
+                    "the samples. Using an empty string for all these samples "
+                    "instead.",
+                    level=(
+                        logging.WARNING
+                        if num_samples_without_eor_token / len(completions) > 0.5
+                        else logging.DEBUG
+                    ),
+                )
         stop_token_pattern = re.compile(
             "|".join(re.escape(stop_token) for stop_token in stop_tokens)
         )
         completions = [
-            re.split(pattern=stop_token_pattern, string=completion)[0]
+            re.split(pattern=stop_token_pattern, string=completion)[0].strip()
             for completion in completions
         ]
-        completions = [completion.strip() for completion in completions]
+
+        # Remove all the special tokens from the completions, if any are present
+        completion_ids = self._tokeniser(text=completions).input_ids
+        completions = self._tokeniser.batch_decode(
+            sequences=completion_ids, skip_special_tokens=True
+        )
 
         # Sanity check
         if len(completions) != len(prompts):
@@ -607,13 +676,13 @@ class VLLMModel(HuggingFaceEncoderModel):
 
         # Add logprobs scores to the output
         if self.buffer["first_label_token_mapping"]:
-            scores: list[list[list[tuple[str, float]]]] = [
+            scores: c.Sequence[c.Sequence[c.Sequence[tuple[str, float]]]] = [
                 [
                     [
-                        (obj.decoded_token, obj.logprob)
+                        (obj.decoded_token or "", obj.logprob)
                         for obj in token_logprobs_dict.values()
                     ]
-                    for token_logprobs_dict in raw_output.outputs[0].logprobs
+                    for token_logprobs_dict in raw_output.outputs[0].logprobs or list()
                 ]
                 for raw_output in raw_outputs
             ]
@@ -651,7 +720,13 @@ class VLLMModel(HuggingFaceEncoderModel):
         revision = model_id_components.revision
 
         model_info = get_model_repo_info(
-            model_id=model_id, revision=revision, benchmark_config=benchmark_config
+            model_id=model_id,
+            revision=revision,
+            api_key=benchmark_config.api_key,
+            cache_dir=benchmark_config.cache_dir,
+            trust_remote_code=benchmark_config.trust_remote_code,
+            requires_safetensors=benchmark_config.requires_safetensors,
+            run_with_cli=benchmark_config.run_with_cli,
         )
         return (
             model_info is not None
@@ -677,7 +752,11 @@ class VLLMModel(HuggingFaceEncoderModel):
         model_info = get_model_repo_info(
             model_id=model_id_components.model_id,
             revision=model_id_components.revision,
-            benchmark_config=benchmark_config,
+            api_key=benchmark_config.api_key,
+            cache_dir=benchmark_config.cache_dir,
+            trust_remote_code=benchmark_config.trust_remote_code,
+            requires_safetensors=benchmark_config.requires_safetensors,
+            run_with_cli=benchmark_config.run_with_cli,
         )
         if model_info is None:
             raise InvalidModel(f"The model {model_id!r} could not be found.")
@@ -708,7 +787,7 @@ class VLLMModel(HuggingFaceEncoderModel):
         return model_config
 
     @property
-    def data_collator(self) -> c.Callable[[list[t.Any]], dict[str, t.Any]]:
+    def data_collator(self) -> c.Callable[[c.Sequence[t.Any]], dict[str, t.Any]]:
         """The data collator used to prepare samples during finetuning.
 
         Returns:
@@ -754,8 +833,8 @@ def load_model_and_tokeniser(
     hf_model_config = load_hf_model_config(
         model_id=model_id,
         num_labels=0,
-        id2label=dict(),
-        label2id=dict(),
+        id2label=HashableDict(),
+        label2id=HashableDict(),
         revision=revision,
         model_cache_dir=model_config.model_cache_dir,
         api_key=benchmark_config.api_key,
@@ -782,32 +861,36 @@ def load_model_and_tokeniser(
     # Choose bf16 over fp16 if the model is a fp32 model and the GPU supports it
     if hf_model_config.dtype == torch.float32:
         if torch.cuda.is_bf16_supported():
-            logger.info(
+            log(
                 "You are loading a model with dtype FP32, which we will convert to "
                 "BF16 as FP32 is not supported by vLLM and BF16 is supported by your "
-                "GPU."
+                "GPU.",
+                level=logging.WARNING,
             )
             dtype = torch.bfloat16
         else:
-            logger.info(
+            log(
                 "You are loading a model with dtype FP32, which we will convert to "
                 "FP16 as FP32 is not supported by vLLM and BF16 is not supported by "
-                "your GPU."
+                "your GPU.",
+                level=logging.WARNING,
             )
             dtype = torch.float16
 
     # If the model is a quantized model, we might need to change the dtype
     if quantization == "mxfp4" and hf_model_config.dtype is None:
         dtype = torch.bfloat16 if torch.cuda.is_bf16_supported() else torch.float16
-        logger.debug(
+        log(
             "You are loading a quantized model where `dtype` has not been set. "
-            f"Setting dtype to {dtype!r}."
+            f"Setting dtype to {dtype!r}.",
+            level=logging.DEBUG,
         )
     elif quantization is not None and hf_model_config.dtype != torch.float16:
-        logger.info(
+        log(
             "You are loading a quantized model with dtype "
             f"{hf_model_config.dtype}, which vLLM does not support. Setting "
-            "dtype to float16 instead."
+            "dtype to float16 instead.",
+            level=logging.WARNING,
         )
         dtype = torch.float16
 
@@ -818,12 +901,13 @@ def load_model_and_tokeniser(
 
         if min_cuda_compute_capability is not None:
             if min_cuda_compute_capability < required_capability:
-                logger.info(
+                log(
                     f"You are loading a model with dtype {hf_model_config.dtype}, "
                     "which vLLM only supports for CUDA devices with CUDA compute "
                     f"capability >={required_capability}. You are using one or more "
                     f"devices with compute capability {min_cuda_compute_capability}. "
-                    "Setting dtype to float16 instead."
+                    "Setting dtype to float16 instead.",
+                    level=logging.WARNING,
                 )
                 dtype = torch.float16
 
@@ -908,6 +992,32 @@ def load_model_and_tokeniser(
                 "If you trust the suppliers of this model, then you can enable "
                 "this by setting the `--trust-remote-code` flag."
             ) from e
+        elif "See stack trace for root cause." in str(
+            e
+        ) or "See root cause above." in str(e):
+            msg = (
+                f"The model {model_id!r} could not be loaded, but vLLM did not "
+                "mention exactly what happened. "
+            )
+            msg += (
+                (
+                    "Since you're running in verbose mode, you might see a descriptive "
+                    "error above already. Note however that if the error message urges "
+                    "you to set the environment variable `VLLM_ATTENTION_BACKEND` to "
+                    "'FLEX_ATTENTION', please try setting it to 'FLASH_ATTN' first, as "
+                    "that often solves the issue, whereas 'FLEX_ATTENTION' usually "
+                    "doesn't. If you don't see any descriptive error above, then you "
+                    "can try "
+                )
+                if benchmark_config.verbose
+                else "Try "
+            )
+            msg += (
+                "re-running the benchmark with the environment variable `FULL_LOG` "
+                "set to `1` to see the full stack trace. E.g., "
+                f"`FULL_LOG=1 euroeval --model {model_id}`."
+            )
+            raise InvalidModel(msg) from e
         raise InvalidModel(
             f"The model {model_id!r} could not be loaded. The error was {e!r}."
         ) from e
@@ -990,13 +1100,17 @@ def load_tokeniser(
                     f"Could not load tokeniser for model {model_id!r}. The error was "
                     f"{str(e)}."
                 ) from e
-            logger.debug(
+            log(
                 f"Could not load tokeniser for {model_id!r}. Falling back to "
-                f"{adapter_base_model_id!r}."
+                f"{adapter_base_model_id!r}.",
+                level=logging.DEBUG,
             )
             model_id = adapter_base_model_id
         except (TimeoutError, RequestError):
-            logger.info(f"Couldn't load tokeniser for {model_id!r}. Retrying.")
+            log(
+                f"Couldn't load tokeniser for {model_id!r}. Retrying.",
+                level=logging.WARNING,
+            )
             sleep(5)
             continue
         except (KeyError, ValueError) as e:
@@ -1040,7 +1154,7 @@ def clear_vllm() -> None:
 
 def get_end_of_reasoning_token(
     model: "LLM", tokeniser: "PreTrainedTokenizer", model_config: "ModelConfig"
-) -> str | None:
+) -> str | re.Pattern | None:
     """Get the end-of-reasoning token for a generative model.
 
     Args:
@@ -1073,19 +1187,26 @@ def get_end_of_reasoning_token(
         prompt = templated_prompt
 
     # Check that the beginning-of-reasoning token is actually used by the model
-    completion = (
-        model.generate(
-            prompts=[prompt],
-            sampling_params=SamplingParams(max_tokens=10),
-            use_tqdm=False,
-        )[0]
-        .outputs[0]
-        .text
-    )
+    output = model.generate(
+        prompts=[prompt], sampling_params=SamplingParams(max_tokens=10), use_tqdm=False
+    )[0]
+    completion = tokeniser.decode(token_ids=output.outputs[0].token_ids)
     bor_reasoning_matches = [
         (bor_token, eor_token)
         for bor_token, eor_token in REASONING_TOKENS
-        if bor_token in prompt or bor_token in completion
+        if (
+            (
+                isinstance(bor_token, str)
+                and (bor_token in prompt or bor_token in completion)
+            )
+            or (
+                isinstance(bor_token, re.Pattern)
+                and (
+                    bor_token.search(prompt) is not None
+                    or bor_token.search(completion) is not None
+                )
+            )
+        )
     ]
     if not bor_reasoning_matches:
         log_once(
@@ -1096,20 +1217,23 @@ def get_end_of_reasoning_token(
         )
         return None
 
-    # Check that the beginning-of-reasoning token is actually used by the model
-    completion = (
-        model.generate(
-            prompts=[prompt],
-            sampling_params=SamplingParams(max_tokens=REASONING_MAX_TOKENS),
-            use_tqdm=False,
-        )[0]
-        .outputs[0]
-        .text
-    )
+    # Check that the end-of-reasoning token is actually used by the model
+    output = model.generate(
+        prompts=[prompt],
+        sampling_params=SamplingParams(max_tokens=REASONING_MAX_TOKENS),
+        use_tqdm=False,
+    )[0]
+    completion = tokeniser.decode(token_ids=output.outputs[0].token_ids)
     eor_reasoning_matches = [
         (bor_token, eor_token)
         for bor_token, eor_token in bor_reasoning_matches
-        if eor_token in completion
+        if (
+            (isinstance(eor_token, str) and eor_token in completion)
+            or (
+                isinstance(eor_token, re.Pattern)
+                and eor_token.search(completion) is not None
+            )
+        )
     ]
     if not eor_reasoning_matches:
         log_once(
@@ -1132,9 +1256,16 @@ def get_end_of_reasoning_token(
         )
 
     bor_token, eor_token = eor_reasoning_matches[0]
+
+    bor_token_logging: str = (
+        bor_token if isinstance(bor_token, str) else bor_token.pattern
+    )
+    eor_token_logging: str = (
+        eor_token if isinstance(eor_token, str) else eor_token.pattern
+    )
     log_once(
-        f"Detected beginning-of-reasoning token {bor_token!r} and end-of-reasoning "
-        f"token {eor_token!r} for model {model_id!r}.",
+        f"Detected beginning-of-reasoning token {bor_token_logging!r} and "
+        f"end-of-reasoning token {eor_token_logging!r} for model {model_id!r}.",
         level=logging.DEBUG,
     )
 
@@ -1179,15 +1310,12 @@ def get_custom_stop_tokens(
     max_tokens = (
         REASONING_MAX_TOKENS if generative_type == GenerativeType.REASONING else 10
     )
-    completion = (
-        model.generate(
-            prompts=[prompt],
-            sampling_params=SamplingParams(max_tokens=max_tokens, temperature=0.0),
-            use_tqdm=False,
-        )[0]
-        .outputs[0]
-        .text
-    )
+    output = model.generate(
+        prompts=[prompt],
+        sampling_params=SamplingParams(max_tokens=max_tokens, temperature=0.0),
+        use_tqdm=False,
+    )[0]
+    completion = tokeniser.decode(token_ids=output.outputs[0].token_ids)
 
     stop_tokens = [
         stop_token
@@ -1195,30 +1323,15 @@ def get_custom_stop_tokens(
         if stop_token in prompt or stop_token in completion
     ]
     if stop_tokens:
-        logger.debug(
+        log(
             f"Found the following custom stop tokens for model {model_id!r}: "
-            f"{stop_tokens}."
+            f"{stop_tokens}.",
+            level=logging.DEBUG,
         )
     else:
-        logger.debug(f"Found no custom stop tokens for model {model_id!r}.")
+        log(f"Found no custom stop tokens for model {model_id!r}.", level=logging.DEBUG)
 
     return stop_tokens
-
-
-def get_pbar_without_leave(*tqdm_args, **tqdm_kwargs) -> tqdm:
-    """Get a progress bar for vLLM which disappears after completion.
-
-    Args:
-        *tqdm_args:
-            Positional arguments to pass to tqdm.
-        **tqdm_kwargs:
-            Additional keyword arguments to pass to tqdm.
-
-    Returns:
-        A tqdm progress bar.
-    """
-    tqdm_kwargs.pop("leave", None)  # Remove the 'leave' key if it exists
-    return tqdm(*tqdm_args, leave=False, **tqdm_kwargs)
 
 
 def get_vllm_tokenisation_params(

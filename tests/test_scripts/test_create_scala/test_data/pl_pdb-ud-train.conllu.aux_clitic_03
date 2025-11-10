@@ -1,0 +1,16 @@
+# sent_id = train-s17446
+# text = Chciałbym abyś został tu przez cały dzień.
+# orig_file_sentence = PDB_projected_1365#1365
+1-3	Chciałbym	_	_	_	_	_	_	_	_
+1	Chciał	chcieć	VERB	praet:sg:m1:imperf	Animacy=Hum|Aspect=Imp|Gender=Masc|Mood=Ind|Number=Sing|Tense=Past|VerbForm=Fin|Voice=Act	0	root	0:root	_
+2	by	by	AUX	part	_	1	aux:cnd	1:aux:cnd	_
+3	m	być	AUX	aglt:sg:pri:imperf:nwok	Aspect=Imp|Number=Sing|Person=1|Variant=Short	1	aux:clitic	1:aux:clitic	_
+4-5	abyś	_	_	_	_	_	_	_	_
+4	aby	aby	SCONJ	comp	_	6	mark	6:mark	_
+5	ś	być	AUX	aglt:sg:sec:imperf:nwok	Aspect=Imp|Number=Sing|Person=2|Variant=Short	6	aux:clitic	6:aux:clitic	_
+6	został	zostać	VERB	praet:sg:m1:perf	Animacy=Hum|Aspect=Perf|Gender=Masc|Mood=Ind|Number=Sing|Tense=Past|VerbForm=Fin|Voice=Act	1	advcl	1:advcl	_
+7	tu	tu	ADV	adv	PronType=Dem	6	advmod	6:advmod	_
+8	przez	przez	ADP	prep:acc:nwok	AdpType=Prep|Variant=Short	10	case	10:case	Case=Acc
+9	cały	cały	ADJ	adj:sg:acc:m3:pos	Animacy=Inan|Case=Acc|Degree=Pos|Gender=Masc|Number=Sing	10	amod	10:amod	_
+10	dzień	dzień	NOUN	subst:sg:acc:m3	Animacy=Inan|Case=Acc|Gender=Masc|Number=Sing	6	obl	6:obl	SpaceAfter=No
+11	.	.	PUNCT	interp	PunctType=Peri	1	punct	1:punct	_

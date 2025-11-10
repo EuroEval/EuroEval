@@ -1,5 +1,6 @@
 """Utility functions related to the sequence-classification task group."""
 
+import collections.abc as c
 import logging
 import re
 import typing as t
@@ -19,11 +20,13 @@ if t.TYPE_CHECKING:
     from datasets.arrow_dataset import Dataset
     from transformers.trainer_utils import EvalPrediction
 
-    from ..data_models import BenchmarkConfig, DatasetConfig, GenerativeModelOutput
+    from ..data_models import (
+        BenchmarkConfig,
+        DatasetConfig,
+        GenerativeModelOutput,
+        ModelConfig,
+    )
     from ..types import Labels, Predictions
-
-
-logger = logging.getLogger("euroeval")
 
 
 def compute_metrics(
@@ -106,8 +109,9 @@ def extract_labels_from_generation(
     input_batch: dict[str, list],
     model_output: "GenerativeModelOutput",
     dataset_config: "DatasetConfig",
+    model_config: "ModelConfig",
     first_label_token_mapping: dict[str, str] | bool,
-) -> list[str]:
+) -> c.Sequence[str]:
     """Extract the predicted labels from the generated output.
 
     Args:
@@ -118,6 +122,8 @@ def extract_labels_from_generation(
             The raw generated output of the model.
         dataset_config:
             The configuration of the dataset.
+        model_config:
+            The configuration of the model.
         first_label_token_mapping:
             A mapping from labels to the first token in each label, or alternatively a
             Boolean value indicating whether the model should output scores (if the
@@ -167,6 +173,7 @@ def extract_labels_from_generation(
             )
 
     new_predicted_labels: list[str] = list()
+    num_predictions_being_very_off = 0
     for idx, predicted_label in enumerate(model_output.sequences):
         # If the prediction includes a boxed answer, use that instead of the full
         # generation
@@ -199,42 +206,48 @@ def extract_labels_from_generation(
         # word edit distance to the predicted label (if invalid model outputs are
         # allowed), or we raise an error
         if min(edit_distances) >= 1000:
-            if dataset_config.allow_invalid_model_outputs:
-                logger.warning(
-                    "No candidate labels found for the predicted label "
-                    f"{predicted_label!r}, out of the candidate labels "
-                    f"{sample_candidate_labels[idx]}. This likely means that the model "
-                    "output is completely off, but since invalid model outputs are "
-                    "allowed for this task, we will use the closest candidate label "
-                    f"({best_candidate_label})) as the output label. If you see this "
-                    "warning very often, please report this issue to the EuroEval "
-                    "team at github.com/EuroEval/EuroEval/issues."
-                )
-                logger.debug(
-                    "The candidate labels were extracted from the prompt: "
-                    f"{input_batch['text'][idx]!r}."
-                )
-            else:
-                raise InvalidBenchmark(
-                    "No candidate labels found for the predicted label "
-                    f"{predicted_label!r}, out of the candidate labels "
-                    f"{sample_candidate_labels[idx]}. This likely means that the model "
-                    "output is completely off, and we cannot extract any labels from "
-                    "it. Please check the model output and the candidate labels. The "
-                    "candidate labels were extracted from the prompt: "
-                    f"{input_batch['text'][idx]!r}."
-                )
+            num_predictions_being_very_off += 1
 
         new_predicted_labels.append(best_candidate_label)
+
+    if num_predictions_being_very_off > 0:
+        if dataset_config.allow_invalid_model_outputs:
+            log_msg = (
+                "No candidate labels found for the predicted label in "
+                f"{num_predictions_being_very_off:,}/{len(model_output.sequences):,} "
+                f"of the samples with the model {model_config.model_id!r}. This "
+                "likely means that the model were completely off in these cases, "
+                "but since invalid model outputs are allowed for this task, we used "
+                "the closest candidate labels as the output labels."
+            )
+            level = logging.DEBUG
+            if num_predictions_being_very_off / len(model_output.sequences) > 0.5:
+                log_msg += (
+                    " Since this happened for most of the model's predictions, please "
+                    "report this issue to the EuroEval team at "
+                    "github.com/EuroEval/EuroEval/issues."
+                )
+                level = logging.WARNING
+            log_once(log_msg, level=level)
+        else:
+            raise InvalidBenchmark(
+                "No candidate labels found for the predicted label in "
+                f"{num_predictions_being_very_off:,}/{len(model_output.sequences):,} "
+                "of the samples. This likely means that the model were completely "
+                "off in these cases. Since this task does not allow invalid model "
+                "outputs, we have to abort the evaluation. Please re-run the "
+                "evaluation with the `--debug` flag (or `debug=True` if you're using "
+                "the `Benchmarker` API) to see the precise model outputs."
+            )
 
     return new_predicted_labels
 
 
 def get_closest_logprobs_labels(
-    generation_logprobs: list[list[list[tuple[str, float]]]],
+    generation_logprobs: c.Sequence[c.Sequence[c.Sequence[tuple[str, float]]]],
     first_label_token_mapping: dict[str, str] | t.Literal[True],
-    candidate_labels: list[list[str]],
-) -> list[str] | None:
+    candidate_labels: c.Sequence[c.Sequence[str]],
+) -> c.Sequence[str] | None:
     """Get the labels with the highest predicted logprob value.
 
     In case a candidate label is split into multiple tokens, we only use the first
@@ -355,7 +368,7 @@ def get_closest_logprobs_labels(
                     "be determined. This means that using logprobs to extract the "
                     "labels is not reliable, and we will instead fall back to "
                     "extracting the labels using word edit distance.",
-                    level=logging.INFO,
+                    level=logging.DEBUG,
                 )
             else:
                 log_once(
@@ -363,7 +376,7 @@ def get_closest_logprobs_labels(
                     "means that using logprobs to extract the labels is not reliable, "
                     "and we will instead fall back to extracting the labels using "
                     "word edit distance.",
-                    level=logging.INFO,
+                    level=logging.DEBUG,
                 )
             return None
 

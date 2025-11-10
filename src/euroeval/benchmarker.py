@@ -1,10 +1,12 @@
 """Class that benchmarks language models."""
 
+import collections.abc as c
 import contextlib
+import datetime as dt
 import json
 import logging
+import os
 import re
-import sys
 import typing as t
 from pathlib import Path
 from shutil import rmtree
@@ -12,7 +14,6 @@ from time import sleep
 
 from huggingface_hub.constants import HF_HUB_ENABLE_HF_TRANSFER
 from torch.distributed import destroy_process_group
-from tqdm.auto import tqdm
 
 from .benchmark_config_factory import build_benchmark_config
 from .constants import GENERATIVE_PIPELINE_TAGS
@@ -23,6 +24,7 @@ from .enums import Device, GenerativeType, ModelType
 from .exceptions import HuggingFaceHubDown, InvalidBenchmark, InvalidModel
 from .finetuning import finetune
 from .generation import generate
+from .logging_utils import adjust_logging_level, get_pbar, log, log_once
 from .model_config import get_model_config
 from .model_loading import load_model
 from .scores import log_scores
@@ -32,16 +34,12 @@ from .utils import (
     enforce_reproducibility,
     get_package_version,
     internet_connection_available,
-    log_once,
     split_model_id,
 )
 
 if t.TYPE_CHECKING:
     from .benchmark_modules import BenchmarkModule
-    from .data_models import BenchmarkConfig, DatasetConfig, ModelConfig
-
-
-logger = logging.getLogger("euroeval")
+    from .data_models import BenchmarkConfig, DatasetConfig, ModelConfig, Task
 
 
 class Benchmarker:
@@ -65,13 +63,11 @@ class Benchmarker:
         self,
         progress_bar: bool = True,
         save_results: bool = True,
-        task: str | list[str] | None = None,
-        dataset: list[str] | str | None = None,
-        language: str | list[str] = "all",
-        model_language: str | list[str] | None = None,
-        dataset_language: str | list[str] | None = None,
+        task: "str | Task | c.Sequence[str | Task] | None" = None,
+        dataset: "str | DatasetConfig | c.Sequence[str | DatasetConfig] | None" = None,
+        language: str | c.Sequence[str] = "all",
         device: Device | None = None,
-        batch_size: int = 32,
+        finetuning_batch_size: int = 32,
         raise_errors: bool = False,
         cache_dir: str = ".euroeval_cache",
         api_key: str | None = None,
@@ -90,6 +86,9 @@ class Benchmarker:
         run_with_cli: bool = False,
         requires_safetensors: bool = False,
         download_only: bool = False,
+        model_language: str | c.Sequence[str] | None = None,
+        dataset_language: str | c.Sequence[str] | None = None,
+        batch_size: int | None = None,
     ) -> None:
         """Initialise the benchmarker.
 
@@ -110,18 +109,10 @@ class Benchmarker:
                 The language codes of the languages to include, both for models and
                 datasets. Set this to 'all' if all languages should be considered.
                 Defaults to "all".
-            model_language:
-                The language codes of the languages to include for models. If specified
-                then this overrides the `language` parameter for model languages.
-                Defaults to None.
-            dataset_language:
-                The language codes of the languages to include for datasets. If
-                specified then this overrides the `language` parameter for dataset
-                languages. Defaults to None.
             device:
                 The device to use for benchmarking. Defaults to None.
-            batch_size:
-                The batch size to use. Defaults to 32.
+            finetuning_batch_size:
+                The batch size to use when finetuning. Defaults to 32.
             raise_errors:
                 Whether to raise errors instead of skipping the model evaluation.
                 Defaults to False.
@@ -174,11 +165,19 @@ class Benchmarker:
             download_only:
                 Whether to only download models and datasets without performing any
                 benchmarking. Defaults to False.
+            model_language:
+                Deprecated argument. Please use `language` instead.
+            dataset_language:
+                Deprecated argument. Please use `language` instead.
+            batch_size:
+                Deprecated argument. Please use `finetuning_batch_size` instead.
 
         Raises:
             ValueError:
                 If both `task` and `dataset` are specified, or if `download_only`
                 is True and we have no internet connection.
+            ImportError:
+                If `hf_transfer` is enabled but not installed.
         """
         if task is not None and dataset is not None:
             raise ValueError("Only one of `task` and `dataset` can be specified.")
@@ -200,16 +199,65 @@ class Benchmarker:
                 "Try installing it with `pip install hf_transfer`."
             )
 
+        # Deprecation warnings
+        if batch_size is not None:
+            if run_with_cli:
+                msg = (
+                    "The --batch-size option is deprecated and will be removed in a "
+                    "future version. Please use --finetuning-batch-size instead. "
+                    "Overwriting --finetuning-batch-size with the value from "
+                    "--batch-size."
+                )
+            else:
+                msg = (
+                    "The `batch_size` argument is deprecated and will be removed in a "
+                    "future version. Please use `finetuning_batch_size` instead. "
+                    "Overwriting `finetuning_batch_size` with the value from "
+                    "`batch_size`."
+                )
+            log(msg, level=logging.WARNING)
+            finetuning_batch_size = batch_size
+        if model_language is not None:
+            if run_with_cli:
+                msg = (
+                    "The --model-language option is deprecated and will be removed in "
+                    "a future version. Please use --language instead. Ignoring the "
+                    "--model-language value."
+                )
+            else:
+                msg = (
+                    "The `model_language` argument is deprecated and will be removed "
+                    "in a future version. Please use `language` instead. Ignoring the "
+                    "`model_language` value."
+                )
+            log(msg, level=logging.WARNING)
+        if dataset_language is not None:
+            if run_with_cli:
+                msg = (
+                    "The --dataset-language option is deprecated and will be removed "
+                    "in a future version. Please use --language instead. Ignoring the "
+                    "--dataset-language value."
+                )
+            else:
+                msg = (
+                    "The `dataset_language` argument is deprecated and will be removed "
+                    "in a future version. Please use `language` instead. Ignoring the "
+                    "`dataset_language` value."
+                )
+            log(msg, level=logging.WARNING)
+
+        # If FULL_LOG has been set, then force verbose mode
+        if os.getenv("FULL_LOG", "0") == "1":
+            verbose = True
+
         self.benchmark_config_default_params = BenchmarkConfigParams(
             task=task,
             dataset=dataset,
             progress_bar=progress_bar,
             save_results=save_results,
             language=language,
-            model_language=model_language,
-            dataset_language=dataset_language,
             device=device,
-            batch_size=batch_size,
+            finetuning_batch_size=finetuning_batch_size,
             raise_errors=raise_errors,
             cache_dir=cache_dir,
             api_key=api_key,
@@ -235,13 +283,13 @@ class Benchmarker:
         )
 
         # Initialise variable storing model lists, so we only have to fetch it once
-        self._model_lists: dict[str, list[str]] | None = None
+        self._model_lists: dict[str, c.Sequence[str]] | None = None
 
         self.results_path = Path.cwd() / "euroeval_benchmark_results.jsonl"
         adjust_logging_level(verbose=self.benchmark_config.verbose)
 
     @property
-    def benchmark_results(self) -> list[BenchmarkResult]:
+    def benchmark_results(self) -> c.Sequence[BenchmarkResult]:
         """The benchmark results.
 
         Returns:
@@ -295,13 +343,14 @@ class Benchmarker:
             model_config: The configuration for the model.
             benchmark_config: The configuration for the benchmark.
         """
-        log_once(f"Loading data for {dataset_config.pretty_name}", level=logging.INFO)
+        log_once(
+            f"Loading data for {dataset_config.logging_string}", level=logging.INFO
+        )
         dataset = load_raw_data(
             dataset_config=dataset_config, cache_dir=benchmark_config.cache_dir
         )
         del dataset
 
-        log_once(f"Loading model {model_config.model_id}", level=logging.INFO)
         model = load_model(
             model_config=model_config,
             dataset_config=dataset_config,
@@ -320,16 +369,14 @@ class Benchmarker:
 
     def benchmark(
         self,
-        model: list[str] | str,
-        task: str | list[str] | None = None,
-        dataset: list[str] | str | None = None,
+        model: c.Sequence[str] | str,
+        task: "str | Task | c.Sequence[str | Task] | None" = None,
+        dataset: "str | DatasetConfig | c.Sequence[str | DatasetConfig] | None" = None,
         progress_bar: bool | None = None,
         save_results: bool | None = None,
-        language: str | list[str] | None = None,
-        model_language: str | list[str] | None = None,
-        dataset_language: str | list[str] | None = None,
+        language: str | c.Sequence[str] | None = None,
         device: Device | None = None,
-        batch_size: int | None = None,
+        finetuning_batch_size: int | None = None,
         raise_errors: bool | None = None,
         cache_dir: str | None = None,
         api_key: str | None = None,
@@ -347,7 +394,10 @@ class Benchmarker:
         force: bool | None = None,
         verbose: bool | None = None,
         debug: bool | None = None,
-    ) -> list[BenchmarkResult]:
+        model_language: str | c.Sequence[str] | None = None,
+        dataset_language: str | c.Sequence[str] | None = None,
+        batch_size: int | None = None,
+    ) -> c.Sequence[BenchmarkResult]:
         """Benchmarks models on datasets.
 
         Args:
@@ -376,21 +426,12 @@ class Benchmarker:
                 datasets. Here 'no' means both Bokmål (nb) and Nynorsk (nn). Set this to
                 'all' if all languages should be considered. Defaults to the value
                 specified when initialising the benchmarker.
-            model_language:
-                The language codes of the languages to include for models. If specified
-                then this overrides the `language` parameter for model languages.
-                Defaults to the value specified when initialising the benchmarker.
-            dataset_language:
-                The language codes of the languages to include for datasets. If
-                specified then this overrides the `language` parameter for dataset
-                languages. Defaults to the value specified when initialising the
-                benchmarker.
             device:
                 The device to use for benchmarking. Defaults to the value specified when
                 initialising the benchmarker.
-            batch_size:
-                The batch size to use. Defaults to the value specified when initialising
-                the benchmarker.
+            finetuning_batch_size:
+                The batch size to use for finetuning. Defaults to the value specified
+                when initialising the benchmarker.
             raise_errors:
                 Whether to raise errors instead of skipping the model evaluation.
             cache_dir:
@@ -451,6 +492,12 @@ class Benchmarker:
             debug:
                 Whether to output debug information. Defaults to the value specified
                 when initialising the benchmarker.
+            model_language:
+                Deprecated argument. Please use `language` instead.
+            dataset_language:
+                Deprecated argument. Please use `language` instead.
+            batch_size:
+                Deprecated argument. Please use `finetuning_batch_size` instead.
 
         Returns:
             A list of benchmark results.
@@ -461,6 +508,31 @@ class Benchmarker:
         """
         if task is not None and dataset is not None:
             raise ValueError("Only one of `task` and `dataset` can be specified.")
+
+        # Deprecation warnings
+        if batch_size is not None:
+            log(
+                "The `batch_size` argument is deprecated and will be removed in a "
+                "future version. Please use `finetuning_batch_size` instead. "
+                "Overwriting `finetuning_batch_size` with the value from "
+                "`batch_size`.",
+                level=logging.WARNING,
+            )
+            finetuning_batch_size = batch_size
+        if model_language is not None:
+            log(
+                "The `model_language` argument is deprecated and will be removed "
+                "in a future version. Please use `language` instead. Ignoring the "
+                "`model_language` value.",
+                level=logging.WARNING,
+            )
+        if dataset_language is not None:
+            log(
+                "The `dataset_language` argument is deprecated and will be removed "
+                "in a future version. Please use `language` instead. Ignoring the "
+                "`dataset_language` value.",
+                level=logging.WARNING,
+            )
 
         # Get a new updated benchmark configuration, based on any changes to the
         # parameters
@@ -488,25 +560,15 @@ class Benchmarker:
                 if language is not None
                 else self.benchmark_config_default_params.language
             ),
-            model_language=(
-                model_language
-                if model_language is not None
-                else self.benchmark_config_default_params.model_language
-            ),
-            dataset_language=(
-                dataset_language
-                if dataset_language is not None
-                else self.benchmark_config_default_params.dataset_language
-            ),
             device=(
                 device
                 if device is not None
                 else self.benchmark_config_default_params.device
             ),
-            batch_size=(
-                batch_size
-                if batch_size is not None
-                else self.benchmark_config_default_params.batch_size
+            finetuning_batch_size=(
+                finetuning_batch_size
+                if finetuning_batch_size is not None
+                else self.benchmark_config_default_params.finetuning_batch_size
             ),
             raise_errors=(
                 raise_errors
@@ -605,13 +667,11 @@ class Benchmarker:
             clear_model_cache_fn(cache_dir=benchmark_config.cache_dir)
 
         model_ids = self._prepare_model_ids(model_id=model)
-        dataset_configs = prepare_dataset_configs(
-            dataset_names=benchmark_config.datasets
-        )
+        dataset_configs = benchmark_config.datasets
 
         # Get all the model configs
         model_configs: list[ModelConfig] = list()
-        for model_id in tqdm(
+        for model_id in get_pbar(
             iterable=model_ids,
             desc="Fetching model configurations",
             disable=not benchmark_config.verbose or not benchmark_config.progress_bar,
@@ -622,50 +682,63 @@ class Benchmarker:
                 )
                 model_configs.append(model_config)
             except InvalidModel as e:
-                logger.info(e.message)
+                log(e.message, level=logging.ERROR)
 
         # Create a dictionary that takes each model config to the dataset configs that
-        # we need to benchmark the model on. Here we remove the datasets that the model
-        # has already been benchmarked on, or datasets that the model cannot be
-        # benchmarked on.
-        model_config_to_dataset_configs: dict[ModelConfig, list[DatasetConfig]] = {
+        # we need to benchmark the model on. We initially include all the relevant
+        # datasets for each model.
+        model_config_to_dataset_configs: dict[
+            ModelConfig, c.Sequence[DatasetConfig]
+        ] = {
             model_config: [
                 dataset_config
                 for dataset_config in dataset_configs
-                if (
-                    benchmark_config.force
-                    or not model_has_been_benchmarked(
-                        model_config=model_config,
-                        dataset_config=dataset_config,
-                        benchmark_config=benchmark_config,
-                        benchmark_results=self.benchmark_results,
-                    )
-                )
-                and model_config.model_type in dataset_config.allowed_model_types
+                if model_config.model_type in dataset_config.allowed_model_types
             ]
             for model_config in model_configs
         }
+
+        # Initialise the current benchmark results with all the ones that we have cached
+        # on disk already (can be none), and remove those datasets from the mapping
+        current_benchmark_results: list[BenchmarkResult] = list()
+        for (
+            model_config,
+            model_dataset_configs,
+        ) in model_config_to_dataset_configs.items():
+            new_model_dataset_configs: list[DatasetConfig] = list()
+            for dataset_config in model_dataset_configs:
+                benchmark_record = get_record(
+                    model_config=model_config,
+                    dataset_config=dataset_config,
+                    benchmark_config=benchmark_config,
+                    benchmark_results=self.benchmark_results,
+                )
+                if benchmark_record is not None and not benchmark_config.force:
+                    current_benchmark_results.append(benchmark_record)
+                else:
+                    new_model_dataset_configs.append(dataset_config)
+            model_config_to_dataset_configs[model_config] = new_model_dataset_configs
 
         total_benchmarks = sum(
             len(dataset_configs)
             for dataset_configs in model_config_to_dataset_configs.values()
         )
         if total_benchmarks == 0:
-            logger.info(
+            log(
                 "No benchmarks to run, as all the selected models have already been "
-                "benchmarked on all the selected datasets."
+                "benchmarked on all the selected datasets.",
+                level=logging.INFO,
             )
-            return list()
-
-        logger.info(f"Initiated evaluation of {total_benchmarks:,} benchmarks.")
+            return current_benchmark_results
 
         num_finished_benchmarks = 0
-        current_benchmark_results: list[BenchmarkResult] = list()
+        benchmark_params_to_revert: dict[str, t.Any] = dict()
         for model_config in model_configs:
             if not model_config_to_dataset_configs[model_config]:
-                logger.debug(
+                log(
                     f"Skipping model {model_config.model_id!r} because it has "
-                    "already been benchmarked on all valid datasets."
+                    "already been benchmarked on all valid datasets.",
+                    level=logging.DEBUG,
                 )
                 continue
 
@@ -691,7 +764,6 @@ class Benchmarker:
                     )
 
             loaded_model: BenchmarkModule | None = None
-            benchmark_params_to_revert: dict[str, t.Any] = dict()
             for dataset_config in model_config_to_dataset_configs[model_config]:
                 # Revert any changes to the benchmark configuration made for the
                 # previous dataset
@@ -704,18 +776,20 @@ class Benchmarker:
                     "val" not in dataset_config.splits
                     and not benchmark_config.evaluate_test_split
                 ):
-                    logger.debug(
+                    log(
                         "The dataset does not have a validation split, so even though "
                         "you requested evaluating the validation split (the default), "
-                        "we will evaluate on the test split."
+                        "we will evaluate on the test split.",
+                        level=logging.DEBUG,
                     )
                     benchmark_params_to_revert["evaluate_test_split"] = False
                     benchmark_config.evaluate_test_split = True
                 if dataset_config.task.requires_zero_shot and benchmark_config.few_shot:
-                    logger.debug(
+                    log(
                         "The task requires zero-shot evaluation, so even though you "
                         "requested few-shot evaluation (the default), we will evaluate "
-                        "zero-shot."
+                        "zero-shot.",
+                        level=logging.DEBUG,
                     )
                     benchmark_params_to_revert["few_shot"] = True
                     benchmark_config.few_shot = False
@@ -723,13 +797,7 @@ class Benchmarker:
                 # We do not re-initialise generative models as their architecture is not
                 # customised to specific datasets
                 if model_config.model_type == ModelType.GENERATIVE:
-                    initial_logging(
-                        model_config=model_config,
-                        dataset_config=dataset_config,
-                        benchmark_config=benchmark_config,
-                    )
                     if loaded_model is None:
-                        logger.info("Loading model...")
                         try:
                             loaded_model = load_model(
                                 model_config=model_config,
@@ -739,7 +807,7 @@ class Benchmarker:
                         except InvalidModel as e:
                             if benchmark_config.raise_errors:
                                 raise e
-                            logger.info(e.message)
+                            log(e.message, level=logging.ERROR)
 
                             # Add the remaining number of benchmarks for the model to
                             # our benchmark counter, since we're skipping the rest of
@@ -759,12 +827,13 @@ class Benchmarker:
                         loaded_model.generative_type
                         not in dataset_config.allowed_generative_types
                     ):
-                        logger.debug(
+                        log(
                             f"Skipping the benchmark of model "
                             f"{model_config.model_id!r}on dataset "
                             f"{dataset_config.name!r} because the model has generative "
                             f"type {loaded_model.generative_type} and the dataset "
-                            f"only allows {dataset_config.allowed_generative_types}."
+                            f"only allows {dataset_config.allowed_generative_types}.",
+                            level=logging.DEBUG,
                         )
                         num_finished_benchmarks += 1
                         continue
@@ -775,6 +844,8 @@ class Benchmarker:
                     model_config=model_config,
                     dataset_config=dataset_config,
                     benchmark_config=benchmark_config,
+                    num_finished_benchmarks=num_finished_benchmarks,
+                    num_total_benchmarks=total_benchmarks,
                 )
 
                 if (
@@ -784,12 +855,12 @@ class Benchmarker:
                     raise benchmark_output_or_err
 
                 elif isinstance(benchmark_output_or_err, InvalidBenchmark):
-                    logger.info(benchmark_output_or_err.message)
+                    log(benchmark_output_or_err.message, level=logging.WARNING)
                     num_finished_benchmarks += 1
                     continue
 
                 elif isinstance(benchmark_output_or_err, InvalidModel):
-                    logger.info(benchmark_output_or_err.message)
+                    log(benchmark_output_or_err.message, level=logging.WARNING)
 
                     # Add the remaining number of benchmarks for the model to our
                     # benchmark counter, since we're skipping the rest of them
@@ -805,14 +876,14 @@ class Benchmarker:
                         record.append_to_results(results_path=self.results_path)
 
                 num_finished_benchmarks += 1
-                logger.info(
-                    f"Finished {num_finished_benchmarks} out of "
-                    f"{total_benchmarks} benchmarks."
-                )
 
             del loaded_model
             if benchmark_config.clear_model_cache:
                 clear_model_cache_fn(cache_dir=benchmark_config.cache_dir)
+
+        log(
+            f"\nCompleted {num_finished_benchmarks:,} benchmarks.\n", level=logging.INFO
+        )
 
         # This avoids the following warning at the end of the benchmarking:
         #   Warning: WARNING: process group has NOT been destroyed before we destruct
@@ -826,7 +897,7 @@ class Benchmarker:
             destroy_process_group()
         return current_benchmark_results
 
-    def _prepare_model_ids(self, model_id: list[str] | str) -> list[str]:
+    def _prepare_model_ids(self, model_id: c.Sequence[str] | str) -> c.Sequence[str]:
         """Prepare the model ID(s) to be benchmarked.
 
         Args:
@@ -857,6 +928,8 @@ class Benchmarker:
         model_config: "ModelConfig",
         dataset_config: "DatasetConfig",
         benchmark_config: "BenchmarkConfig",
+        num_finished_benchmarks: int,
+        num_total_benchmarks: int,
     ) -> BenchmarkResult | InvalidBenchmark | InvalidModel:
         """Benchmark a single model on a single dataset.
 
@@ -869,6 +942,10 @@ class Benchmarker:
                 The configuration of the dataset we are evaluating on.
             benchmark_config:
                 The general benchmark configuration.
+            num_finished_benchmarks:
+                The number of benchmarks that have already been completed.
+            num_total_benchmarks:
+                The total number of benchmarks to be completed.
 
         Returns:
             The benchmark result, or an error if the benchmark was unsuccessful.
@@ -881,13 +958,6 @@ class Benchmarker:
             InvalidModel:
                 If the model is invalid.
         """
-        if model is None:
-            initial_logging(
-                model_config=model_config,
-                dataset_config=dataset_config,
-                benchmark_config=benchmark_config,
-            )
-
         for _ in range(num_attempts := 5):
             try:
                 # Set random seeds to enforce reproducibility of the randomly
@@ -895,13 +965,20 @@ class Benchmarker:
                 rng = enforce_reproducibility()
 
                 if model is None or model_config.model_type != ModelType.GENERATIVE:
-                    logger.info("Loading model...")
                     model = load_model(
                         model_config=model_config,
                         dataset_config=dataset_config,
                         benchmark_config=benchmark_config,
                     )
                 assert model is not None
+
+                initial_logging(
+                    model_config=model_config,
+                    dataset_config=dataset_config,
+                    benchmark_config=benchmark_config,
+                    num_finished_benchmarks=num_finished_benchmarks,
+                    num_total_benchmarks=num_total_benchmarks,
+                )
 
                 if dataset_config.task == SPEED:
                     scores = benchmark_speed(
@@ -935,7 +1012,7 @@ class Benchmarker:
                         )
 
                 results = log_scores(
-                    dataset_name=dataset_config.pretty_name,
+                    dataset_name=dataset_config.logging_string,
                     metrics=dataset_config.task.metrics,
                     scores=scores,
                     model_id=model_config.model_id,
@@ -952,9 +1029,7 @@ class Benchmarker:
                 record = BenchmarkResult(
                     dataset=dataset_config.name,
                     task=dataset_config.task.name,
-                    dataset_languages=[
-                        language.code for language in dataset_config.languages
-                    ],
+                    languages=[language.code for language in dataset_config.languages],
                     model=model_id_to_be_stored,
                     results=results,
                     num_model_parameters=model.num_params,
@@ -970,14 +1045,15 @@ class Benchmarker:
                     few_shot=benchmark_config.few_shot,
                     validation_split=not benchmark_config.evaluate_test_split,
                 )
-                logger.debug(f"Results:\n{results}")
+                log(f"Results:\n{results}", level=logging.DEBUG)
                 return record
 
             except HuggingFaceHubDown:
                 wait_time = 30
-                logger.debug(
+                log(
                     f"The Hugging Face Hub seems to be down. Retrying in {wait_time} "
-                    "seconds."
+                    "seconds.",
+                    level=logging.DEBUG,
                 )
                 sleep(wait_time)
                 continue
@@ -1008,20 +1084,21 @@ class Benchmarker:
 
     def __call__(self, *args: t.Any, **kwds: t.Any) -> t.Any:  # noqa: ANN401
         """Alias for `self.benchmark()`."""
-        logger.warning(
+        log(
             "Calling the `Benchmarker` class directly is deprecated. Please use the "
-            "`benchmark` function instead. This will be removed in a future version."
+            "`benchmark` function instead. This will be removed in a future version.",
+            level=logging.WARNING,
         )
         return self.benchmark(*args, **kwds)
 
 
-def model_has_been_benchmarked(
+def get_record(
     model_config: "ModelConfig",
     dataset_config: "DatasetConfig",
     benchmark_config: "BenchmarkConfig",
-    benchmark_results: list[BenchmarkResult],
-) -> bool:
-    """Checks whether a model has already been benchmarked on a dataset.
+    benchmark_results: c.Sequence[BenchmarkResult],
+) -> BenchmarkResult | None:
+    """Get the benchmark record for a given model and dataset.
 
     Args:
         model_config:
@@ -1034,7 +1111,7 @@ def model_has_been_benchmarked(
             The benchmark results.
 
     Returns:
-        Whether the model has already been evaluated on the dataset.
+        The benchmark record, or None if no such record exists.
     """
     for record in benchmark_results:
         model_id_components = split_model_id(model_id=record.model)
@@ -1059,30 +1136,8 @@ def model_has_been_benchmarked(
             and same_split
             and same_num_shots
         ):
-            return True
-    return False
-
-
-def adjust_logging_level(verbose: bool, ignore_testing: bool = False) -> int:
-    """Adjust the logging level based on verbosity.
-
-    Args:
-        verbose:
-            Whether to output additional output.
-        ignore_testing:
-            Whether to ignore the testing flag.
-
-    Returns:
-        The logging level that was set.
-    """
-    if hasattr(sys, "_called_from_test") and not ignore_testing:
-        logging_level = logging.CRITICAL
-    elif verbose:
-        logging_level = logging.DEBUG
-    else:
-        logging_level = logging.INFO
-    logger.setLevel(logging_level)
-    return logging_level
+            return record
+    return None
 
 
 def clear_model_cache_fn(cache_dir: str) -> None:
@@ -1103,7 +1158,9 @@ def clear_model_cache_fn(cache_dir: str) -> None:
                     rmtree(sub_model_dir)
 
 
-def prepare_dataset_configs(dataset_names: list[str]) -> list["DatasetConfig"]:
+def prepare_dataset_configs(
+    dataset_names: c.Sequence[str],
+) -> c.Sequence["DatasetConfig"]:
     """Prepare the dataset configuration(s) to be benchmarked.
 
     Args:
@@ -1122,6 +1179,8 @@ def initial_logging(
     model_config: "ModelConfig",
     dataset_config: "DatasetConfig",
     benchmark_config: "BenchmarkConfig",
+    num_finished_benchmarks: int,
+    num_total_benchmarks: int,
 ) -> None:
     """Initial logging at the start of the benchmarking process.
 
@@ -1132,6 +1191,10 @@ def initial_logging(
             The configuration of the dataset we are evaluating on.
         benchmark_config:
             The general benchmark configuration.
+        num_finished_benchmarks:
+            The number of benchmarks that have already been finished.
+        num_total_benchmarks:
+            The total number of benchmarks to be run.
     """
     model_id = model_config.model_id
     if model_config.revision and model_config.revision != "main":
@@ -1148,21 +1211,25 @@ def initial_logging(
     else:
         eval_type = "Benchmarking"
 
-    logger.info(
-        f"{eval_type} {model_id} on the {split_type} split of "
-        f"{dataset_config.pretty_name}"
+    log_once(
+        f"\n{eval_type} {model_id} on the {split_type} split of "
+        f"{dataset_config.logging_string} ({num_finished_benchmarks + 1}/"
+        f"{num_total_benchmarks} benchmarks)...",
+        prefix=f"\n[{dt.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}]",
     )
 
     if dataset_config.unofficial:
-        logger.info(
+        log_once(
             f"Note that the {dataset_config.name!r} dataset is unofficial, "
             "meaning that the resulting evaluation will not be included in the "
-            "official leaderboard."
+            "official leaderboard.",
+            level=logging.WARNING,
         )
 
     if benchmark_config.debug:
-        logger.info(
+        log_once(
             "Running in debug mode. This will output additional information, as "
             "well as store the model outputs in the current directory after each "
-            "batch. For this reason, evaluation will be slower."
+            "batch. For this reason, evaluation will be slower.",
+            level=logging.WARNING,
         )

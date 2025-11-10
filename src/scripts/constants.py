@@ -26,14 +26,18 @@ MAX_REPETITIONS = 50
 
 
 CHOICES_MAPPING = {
+    "bg": "Възможности",
+    "cs": "Výběr",
     "da": "Svarmuligheder",
     "de": "Antwortmöglichkeiten",
+    "el": "Επιλογές",
     "en": "Choices",
     "es": "Opciones",
     "et": "Vastusevariandid",
     "fi": "Vastausvaihtoehdot",
     "fo": "Svarmøguleikar",
     "fr": "Choix",
+    "hr": "Izbori",
     "is": "Svarmöguleikar",
     "it": "Scelte",
     "lt": "Pasirinkimai",
@@ -42,5 +46,9 @@ CHOICES_MAPPING = {
     "no": "Svaralternativer",
     "pl": "Opcje",
     "pt": "Opções",
+    "sk": "Možnosti",
+    "sl": "Možnosti",
+    "sr": "Opcije",
     "sv": "Svarsalternativ",
+    "uk": "Варіанти",
 }

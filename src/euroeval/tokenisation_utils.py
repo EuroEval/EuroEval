@@ -1,24 +1,23 @@
 """Utility functions related to tokenisation."""
 
+import collections.abc as c
 import logging
 import re
 import typing as t
 
 import torch
-from transformers import MistralCommonTokenizer
+from transformers.tokenization_mistral_common import MistralCommonTokenizer
 
+from .constants import BOS_TOKENS, EOS_TOKENS, PAD_TOKENS
 from .enums import GenerativeType
 from .exceptions import InvalidModel
-from .utils import log_once
+from .logging_utils import log, log_once
 
 if t.TYPE_CHECKING:
     from transformers.tokenization_utils import PreTrainedTokenizer
     from transformers.tokenization_utils_base import PreTrainedTokenizerBase
 
     from .data_models import DatasetConfig, ModelConfig
-
-
-logger = logging.getLogger("euroeval")
 
 
 def get_special_token_metadata(tokeniser: "PreTrainedTokenizerBase") -> dict:
@@ -74,7 +73,7 @@ def get_special_token_metadata(tokeniser: "PreTrainedTokenizerBase") -> dict:
 
 
 def should_prompts_be_stripped(
-    labels_to_be_generated: list[str], tokeniser: "PreTrainedTokenizer"
+    labels_to_be_generated: c.Sequence[str], tokeniser: "PreTrainedTokenizer"
 ) -> bool:
     """Determine if we should strip the prompts for few-shot evaluation.
 
@@ -113,7 +112,7 @@ def should_prompts_be_stripped(
 
 
 def should_prefix_space_be_added_to_labels(
-    labels_to_be_generated: list[str], tokeniser: "PreTrainedTokenizer"
+    labels_to_be_generated: c.Sequence[str], tokeniser: "PreTrainedTokenizer"
 ) -> bool:
     """Determine if we should add a prefix space to the labels.
 
@@ -171,8 +170,7 @@ def get_bos_token(
 
     vocab: dict[str, int] = tokeniser.get_vocab()
 
-    candidate_bos_tokens = ["<s>", "<|begin_of_text|>", "<|startoftext|>", "[CLS]"]
-    for candidate_bos_token in candidate_bos_tokens:
+    for candidate_bos_token in BOS_TOKENS:
         if candidate_bos_token in vocab:
             bos_token = candidate_bos_token
             bos_token_id = vocab[bos_token]
@@ -182,7 +180,7 @@ def get_bos_token(
             "The model does not have a beginning-of-sequence token. Please ensure that "
             "this has been set in the tokeniser's configuration. Using no BOS token."
             " This may lead to unexpected behavior in the model.",
-            level=logging.INFO,
+            level=logging.WARNING,
         )
         return None, None
 
@@ -212,8 +210,7 @@ def get_eos_token(
 
     vocab: dict[str, int] = tokeniser.get_vocab()
 
-    candidate_eos_tokens = ["</s>", "<|end_of_text|>", "<|endoftext|>", "[SEP]"]
-    for candidate_eos_token in candidate_eos_tokens:
+    for candidate_eos_token in EOS_TOKENS:
         if candidate_eos_token in vocab:
             eos_token = candidate_eos_token
             eos_token_id = vocab[eos_token]
@@ -223,14 +220,14 @@ def get_eos_token(
             "The model does not have an end-of-sequence token. Please ensure that this "
             "has been set in the tokeniser's configuration. Using no EOS token. This "
             "may lead to unexpected behavior in the model.",
-            level=logging.INFO,
+            level=logging.WARNING,
         )
         return None, None
 
     log_once(
         f"End-of-sequence token was not set, but detected it as {eos_token!r} with "
         f"ID {eos_token_id}.",
-        level=logging.DEBUG,
+        level=logging.WARNING,
     )
     return eos_token, eos_token_id
 
@@ -288,15 +285,7 @@ def get_pad_token(
 
     # Otherwise, try to find a candidate padding token in the vocabulary
     else:
-        pad_token_candidates = [
-            "<pad>",
-            "[pad]",
-            "<|endoftext|>",
-            "<｜end▁of▁sentence｜>",
-            "<|im_end|>",
-        ]
-        pad_token_candidates.extend([c.upper() for c in pad_token_candidates])
-        for candidate in pad_token_candidates:
+        for candidate in PAD_TOKENS:
             if candidate in tokeniser.get_vocab():
                 pad_token = candidate
                 pad_token_id = tokeniser.get_vocab()[candidate]
@@ -306,7 +295,7 @@ def get_pad_token(
                 "Could not identify a padding token for the model. Please ensure that "
                 "this has been set in the tokeniser's configuration. Using no padding "
                 "token. This may lead to unexpected behavior in the model.",
-                level=logging.INFO,
+                level=logging.WARNING,
             )
             return None, None
 
@@ -320,7 +309,7 @@ def get_pad_token(
 
 def get_end_of_chat_token_ids(
     tokeniser: "PreTrainedTokenizer", generative_type: GenerativeType | None
-) -> list[int] | None:
+) -> c.Sequence[int] | None:
     """Get the end token ID for chat models.
 
     This is only relevant for tokenisers with a chat template.
@@ -358,12 +347,16 @@ def get_end_of_chat_token_ids(
             x_token_index = idx
             break
     else:
-        logger.debug("Could not locate the end-of-chat token for the model.")
+        log(
+            "Could not locate the end-of-chat token for the model.", level=logging.DEBUG
+        )
         return None
 
     end_of_chat_tokens = token_ids[x_token_index + 1 :]
     if len(end_of_chat_tokens) == 0:
-        logger.debug("Could not locate the end-of-chat token for the model.")
+        log(
+            "Could not locate the end-of-chat token for the model.", level=logging.DEBUG
+        )
         return None
 
     log_once(
@@ -432,13 +425,19 @@ def get_first_label_token_mapping(
 
     # Tokenise some text containing each label, which we will use to extract the
     # first token of each label
-    all_tokens: list[list[str]]
+    all_tokens: c.Sequence[c.Sequence[str]]
     if not has_chat_template(tokeniser=tokeniser):
         add_prefix_space = should_prefix_space_be_added_to_labels(
             labels_to_be_generated=local_labels, tokeniser=tokeniser
         )
         all_tokens = [
-            tokeniser.tokenize(text=f" {label}" if add_prefix_space else label)
+            [
+                tokeniser.decode(token_id)
+                for token_id in tokeniser.encode(
+                    text=f" {label}" if add_prefix_space else label,
+                    add_special_tokens=False,
+                )
+            ]
             for label in local_labels
         ]
     else:
@@ -465,7 +464,7 @@ def get_first_label_token_mapping(
     all_tokens = [
         [
             re.sub(
-                pattern=r"^[^a-zæøåüöä0-9]+|[^a-zæøåüöä0-9]+$",
+                pattern=r"^[^a-zæøåüöä0-9 ]+|[^a-zæøåüöä0-9 ]+$",
                 repl="",
                 string=token.lower(),
             )
@@ -477,11 +476,13 @@ def get_first_label_token_mapping(
     # Extract the first token of each label
     first_tokens: list[str] = list()
     for token_list, label in zip(all_tokens, local_labels):
-        matching_tokens = [tok for tok in token_list if tok and label.startswith(tok)]
+        matching_tokens = [
+            tok for tok in token_list if tok and label.startswith(tok.strip())
+        ]
         if not matching_tokens:
             if log_metadata:
                 log_once(
-                    f"No matching token found in token_list for label '{label}', so "
+                    f"No matching token found in token_list for label {label!r}, so "
                     "we will not use logprobs with the model.",
                     level=logging.DEBUG,
                 )
@@ -506,7 +507,8 @@ def get_first_label_token_mapping(
             log_once(
                 "We will not use logprobs with the model since the first tokens of the "
                 "labels are not distinct. The first tokens for the labels "
-                f"{local_labels} are {first_tokens}"
+                f"{local_labels} are {first_tokens}",
+                level=logging.DEBUG,
             )
         return False
 
@@ -547,12 +549,12 @@ def has_chat_template(tokeniser: "PreTrainedTokenizer") -> bool:
 
 
 def apply_chat_template(
-    conversation: list[dict[str, str]],
+    conversation: c.Sequence[dict[str, str]],
     tokeniser: "PreTrainedTokenizer",
     tokenise: bool,
     add_generation_prompt: bool,
     **extra_kwargs,
-) -> str | list[int]:
+) -> str | c.Sequence[int]:
     """Apply the chat template to a prompt.
 
     Args:

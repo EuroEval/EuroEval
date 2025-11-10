@@ -1,15 +1,14 @@
 """All the Hugging Face metrics used in EuroEval."""
 
 import collections.abc as c
-import logging
 import typing as t
 from pathlib import Path
 
 import evaluate
 import numpy as np
-from datasets import DownloadConfig
+from datasets import DownloadConfig, DownloadMode
 
-from ..utils import HiddenPrints
+from ..logging_utils import no_terminal_output
 from .base import Metric
 
 if t.TYPE_CHECKING:
@@ -17,8 +16,6 @@ if t.TYPE_CHECKING:
     from evaluate import EvaluationModule
 
     from ..data_models import BenchmarkConfig, DatasetConfig
-
-logger: logging.Logger = logging.getLogger("euroeval")
 
 
 class HuggingFaceMetric(Metric):
@@ -88,10 +85,13 @@ class HuggingFaceMetric(Metric):
         Returns:
             The metric object itself.
         """
-        # Annoying but needed to make the metric download to a different cache dir
-        download_config = DownloadConfig(cache_dir=Path(cache_dir, "evaluate"))
+        metric_cache_dir = Path(cache_dir) / "metrics"
+        download_config = DownloadConfig(cache_dir=metric_cache_dir)
         self.metric = evaluate.load(
-            path=self.huggingface_id, download_config=download_config
+            path=self.huggingface_id,
+            download_config=download_config,
+            download_mode=DownloadMode.REUSE_CACHE_IF_EXISTS,
+            cache_dir=metric_cache_dir.as_posix(),
         )
         return self
 
@@ -124,9 +124,12 @@ class HuggingFaceMetric(Metric):
         if self.metric is None:
             self.download(cache_dir=benchmark_config.cache_dir)
 
-        assert self.metric is not None
+        assert self.metric is not None, (
+            "Metric has not been downloaded. Please call download() before using the "
+            "__call__ method."
+        )
 
-        with HiddenPrints():
+        with no_terminal_output(disable=benchmark_config.verbose):
             results = self.metric.compute(
                 predictions=predictions, references=references, **self.compute_kwargs
             )

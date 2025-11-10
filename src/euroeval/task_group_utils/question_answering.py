@@ -1,12 +1,14 @@
 """Utility functions related to the question-answering task group."""
 
 import collections.abc as c
-import logging
 import typing as t
 from collections import defaultdict
 
 import numpy as np
-from transformers.tokenization_utils_base import PreTrainedTokenizerBase
+from transformers.tokenization_utils_base import (
+    PreTrainedTokenizerBase,
+    TruncationStrategy,
+)
 from transformers.trainer import Trainer
 
 from ..exceptions import InvalidBenchmark
@@ -26,8 +28,6 @@ if t.TYPE_CHECKING:
     from ..data_models import BenchmarkConfig, DatasetConfig, GenerativeModelOutput
     from ..types import Labels, Predictions
 
-logger = logging.getLogger("euroeval")
-
 
 class QuestionAnsweringTrainer(Trainer):
     """Trainer subclass for question answering tasks."""
@@ -40,7 +40,7 @@ class QuestionAnsweringTrainer(Trainer):
         train_dataset: "Dataset",
         eval_dataset: "Dataset",
         compute_metrics: "c.Callable[[EvalPrediction], dict[str, float]]",
-        callbacks: "list[TrainerCallback]",
+        callbacks: "c.Sequence[TrainerCallback]",
         data_collator: "c.Callable",
         **kwargs,
     ) -> None:
@@ -70,7 +70,7 @@ class QuestionAnsweringTrainer(Trainer):
         self,
         eval_dataset: "Dataset | None" = None,
         orig_eval_dataset: "Dataset | None" = None,
-        ignore_keys: list[str] | None = None,
+        ignore_keys: c.Sequence[str] | None = None,
         metric_key_prefix: str = "eval",
     ) -> dict[str, float]:
         """Evaluate the model on the given dataset.
@@ -206,7 +206,7 @@ def compute_metrics(
 
 def extract_labels_from_generation(
     input_batch: dict[str, list], model_output: "GenerativeModelOutput"
-) -> list[t.Any]:
+) -> c.Sequence[t.Any]:
     """Extract the predicted labels from the generated output.
 
     Args:
@@ -268,8 +268,11 @@ def prepare_train_examples(
     max_question_tokens = max(len(tokeniser(q).input_ids) for q in examples["question"])
     num_special_tokens = int(has_cls_token) + int(has_sep_token)
     stride = tokeniser.model_max_length // 4
-    max_length = tokeniser.model_max_length - stride
-    stride = min(stride, max_length - max_question_tokens - num_special_tokens)
+    stride = min(
+        stride,
+        tokeniser.model_max_length - stride - max_question_tokens - num_special_tokens,
+    )
+    stride = max(stride, 0)
     max_length = tokeniser.model_max_length - stride
 
     # Tokenise our examples with truncation and padding, but keep the overflows using a
@@ -338,9 +341,17 @@ def prepare_train_examples(
             end_char = start_char + len(answers["text"][0])
 
             # Start token index of the current span in the text.
-            token_start_index = 0
-            while sequence_ids[token_start_index] != 1:
-                token_start_index += 1
+            try:
+                token_start_index = 0
+                while sequence_ids[token_start_index] != 1:
+                    token_start_index += 1
+
+            # If it turns out that we cannot find the context in the span, then we
+            # treat this as an impossible case
+            except IndexError:
+                tokenised_examples.start_positions.append(cls_index)
+                tokenised_examples.end_positions.append(cls_index)
+                continue
 
             # End token index of the current span in the text.
             token_end_index = len(input_ids) - 1
@@ -419,9 +430,13 @@ def prepare_test_examples(
     max_question_tokens = max(len(tokeniser(q).input_ids) for q in examples["question"])
     num_special_tokens = int(has_cls_token) + int(has_sep_token)
     stride = tokeniser.model_max_length // 4
+    stride = min(
+        stride,
+        tokeniser.model_max_length - stride - max_question_tokens - num_special_tokens,
+    )
+    stride = max(stride, 0)
     max_length = tokeniser.model_max_length - stride
-    stride = min(stride, max_length - max_question_tokens - num_special_tokens)
-    max_length = tokeniser.model_max_length - stride
+    max_length = max(max_length, 0)
 
     # Tokenise our examples with truncation and maybe padding, but keep the overflows
     # using a stride. This results in one example possible giving several features when
@@ -430,7 +445,7 @@ def prepare_test_examples(
     tokenised_examples = tokeniser(
         text=examples["question"],
         text_pair=examples["context"],
-        truncation="only_second",
+        truncation=TruncationStrategy.LONGEST_FIRST,
         max_length=max_length,
         stride=stride,
         return_overflowing_tokens=True,
@@ -472,7 +487,7 @@ def postprocess_predictions_and_labels(
     dataset: "Dataset",
     prepared_dataset: "Dataset",
     cls_token_index: int,
-) -> tuple[list[dict], list[dict]]:
+) -> tuple[c.Sequence[dict], c.Sequence[dict]]:
     """Postprocess the predictions and labels, to allow easier metric computation.
 
     Args:
@@ -553,7 +568,7 @@ def find_best_answer(
     all_start_logits: np.ndarray,
     all_end_logits: np.ndarray,
     prepared_dataset: "Dataset",
-    feature_indices: list[int],
+    feature_indices: c.Sequence[int],
     context: str,
     max_answer_length: int,
     num_best_logits: int,
@@ -586,7 +601,7 @@ def find_best_answer(
         The best answer for the example.
     """
     # Loop through all the features associated to the current example
-    valid_answers = list()
+    valid_answers: list[dict] = list()
     for feature_index in feature_indices:
         # Get the features associated with the current example
         features = prepared_dataset[feature_index]
@@ -627,12 +642,12 @@ def find_best_answer(
 def find_valid_answers(
     start_logits: np.ndarray,
     end_logits: np.ndarray,
-    offset_mapping: list[tuple[int, int]],
+    offset_mapping: c.Sequence[tuple[int, int]],
     context: str,
     max_answer_length: int,
     num_best_logits: int,
     min_null_score: float,
-) -> list[dict]:
+) -> c.Sequence[dict]:
     """Find the valid answers from the start and end indexes.
 
     Args:

@@ -11,6 +11,7 @@
 """Create the Winogrande datasets and upload them to the HF Hub."""
 
 import logging
+import re
 from collections import Counter
 
 import pandas as pd
@@ -30,12 +31,15 @@ logger = logging.getLogger("create_winogrande")
 
 
 LANGUAGES = [
+    "bg",
     "da",
     "de",
+    "el",
     "en",
     "es",
     "fi",
     "fr",
+    "hr",
     "it",
     "lt",
     "lv",
@@ -43,7 +47,11 @@ LANGUAGES = [
     "no",
     "pl",
     "pt",
+    "sk",
+    "sl",
+    "sr",
     "sv",
+    "uk",
 ]
 
 
@@ -80,6 +88,7 @@ def main() -> None:
             val=Dataset.from_pandas(val_df, split=Split.VALIDATION),
             test=Dataset.from_pandas(test_df, split=Split.TEST),
         )
+
         logger.info(
             f"Final sizes for the Winogrande {language} dataset: "
             f"{len(dataset['train'])} train, {len(dataset['val'])} val, "
@@ -119,10 +128,10 @@ def prepare_dataframe(df: pd.DataFrame, language: str) -> pd.DataFrame:
         "Not all instructions have exactly 6 lines!"
     )
     df["option_a"] = df.instruction.map(
-        lambda x: x.split("\n")[2].replace("Option A:", "").strip()
+        lambda x: re.sub(r"[^ ]+ A: ?", "", x.split("\n")[2]).strip()
     )
     df["option_b"] = df.instruction.map(
-        lambda x: x.split("\n")[3].replace("Option B:", "").strip()
+        lambda x: re.sub(r"[^ ]+ B: ?", "", x.split("\n")[3]).strip()
     )
     df.instruction = df.instruction.map(lambda x: " ".join(x.split("\n")[:2]).strip())
 

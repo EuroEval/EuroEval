@@ -1,9 +1,11 @@
 """Utility functions to be used in other scripts."""
 
 import asyncio
+import collections.abc as c
 import gc
 import importlib
 import importlib.metadata
+import importlib.util
 import logging
 import os
 import random
@@ -11,28 +13,22 @@ import re
 import socket
 import sys
 import typing as t
-import warnings
-from functools import cache
 from pathlib import Path
+from types import ModuleType
 
 import demjson3
 import huggingface_hub as hf_hub
-import litellm
 import numpy as np
 import torch
-from datasets.utils import disable_progress_bar
-from transformers import logging as tf_logging
 
+from .caching_utils import cache_arguments
+from .constants import T
 from .exceptions import InvalidBenchmark, InvalidModel, NaNValueInModelOutput
+from .logging_utils import log, log_once
 
 if t.TYPE_CHECKING:
-    from types import TracebackType
-
     from .data_models import ModelIdComponents
     from .types import Predictions
-
-
-logger = logging.getLogger("euroeval")
 
 
 def create_model_cache_dir(cache_dir: str, model_id: str) -> str:
@@ -149,69 +145,9 @@ def enforce_reproducibility(seed: int = 4242) -> np.random.Generator:
     return rng
 
 
-def block_terminal_output() -> None:
-    """Blocks libraries from writing output to the terminal.
-
-    This filters warnings from some libraries, sets the logging level to ERROR for some
-    libraries, disabled tokeniser progress bars when using Hugging Face tokenisers, and
-    disables most of the logging from the `transformers` library.
-    """
-    if os.getenv("FULL_LOG") == "1":
-        return
-
-    # Ignore miscellaneous warnings
-    warnings.filterwarnings("ignore", category=UserWarning)
-    warnings.filterwarnings("ignore", category=FutureWarning)
-    logging.getLogger("absl").setLevel(logging.CRITICAL)
-
-    # Disable matplotlib logging
-    logging.getLogger("matplotlib.font_manager").setLevel(logging.CRITICAL)
-
-    # Disable PyTorch logging
-    logging.getLogger("torch.utils.cpp_extension").setLevel(logging.CRITICAL)
-    warnings.filterwarnings(action="ignore", module="torch*")
-    os.environ["TORCH_LOGS"] = "-all"
-
-    # Disable huggingface_hub logging
-    logging.getLogger("huggingface_hub").setLevel(logging.CRITICAL)
-
-    # Disable LiteLLM logging
-    logging.getLogger("LiteLLM").setLevel(logging.CRITICAL)
-    logging.getLogger("LiteLLM Router").setLevel(logging.CRITICAL)
-    logging.getLogger("LiteLLM Proxy").setLevel(logging.CRITICAL)
-    logging.getLogger("openai").setLevel(logging.CRITICAL)
-    logging.getLogger("httpx").setLevel(logging.CRITICAL)
-    litellm.suppress_debug_info = True
-
-    # Disable vLLM logging
-    logging.getLogger("vllm").setLevel(logging.CRITICAL)
-    logging.getLogger("vllm.engine.llm_engine").setLevel(logging.CRITICAL)
-    logging.getLogger("vllm.transformers_utils.tokenizer").setLevel(logging.CRITICAL)
-    logging.getLogger("vllm.core.scheduler").setLevel(logging.CRITICAL)
-    logging.getLogger("vllm.model_executor.weight_utils").setLevel(logging.CRITICAL)
-    logging.getLogger("vllm.platforms").setLevel(logging.CRITICAL)
-    logging.getLogger("mistral_common.tokens.tokenizers.tekken").setLevel(
-        logging.CRITICAL
-    )
-    os.environ["LOG_LEVEL"] = "CRITICAL"
-    os.environ["VLLM_CONFIGURE_LOGGING"] = "0"
-
-    # Disable datasets logging
-    logging.getLogger("datasets").setLevel(logging.CRITICAL)
-    logging.getLogger("filelock").setLevel(logging.CRITICAL)
-    disable_progress_bar()
-
-    # Disable evaluate logging
-    warnings.filterwarnings("ignore", module="seqeval*")
-
-    # Disable most of the `transformers` logging
-    tf_logging._default_log_level = logging.CRITICAL
-    tf_logging.set_verbosity(logging.CRITICAL)
-    logging.getLogger("transformers.trainer").setLevel(logging.CRITICAL)
-    logging.getLogger("accelerate").setLevel(logging.CRITICAL)
-
-
-def get_class_by_name(class_name: str | list[str], module_name: str) -> t.Type | None:
+def get_class_by_name(
+    class_name: str | c.Sequence[str], module_name: str
+) -> t.Type | None:
     """Get a class by its name.
 
     Args:
@@ -240,9 +176,10 @@ def get_class_by_name(class_name: str | list[str], module_name: str) -> t.Type |
 
     if error_messages:
         errors = "\n- " + "\n- ".join(error_messages)
-        logger.debug(
+        log(
             f"Could not find the class with the name(s) {', '.join(class_name)}. The "
-            f"following error messages were raised: {errors}"
+            f"following error messages were raised: {errors}",
+            level=logging.DEBUG,
         )
 
     # If the class could not be found, return None
@@ -264,49 +201,27 @@ def get_min_cuda_compute_capability() -> float | None:
     return float(f"{major}.{minor}")
 
 
-@cache
+@cache_arguments(disable_condition=lambda: hasattr(sys, "_called_from_test"))
 def internet_connection_available() -> bool:
     """Checks if internet connection is available by pinging google.com.
 
     Returns:
         Whether or not internet connection is available.
     """
+    internet_available: bool = False
+
     try:
         s = socket.create_connection(("1.1.1.1", 80))
         s.close()
-        return True
-
-    # We want to only catch exceptions related to socket connections, but as we cannot
-    # import these here as they're developer dependencies, we check the exception name
-    # instead. If the exception is not related to socket connections, we reraise it.
+        internet_available = True
+    except OSError:
+        pass
     except Exception as e:
         pytest_socket_errors = ["SocketConnectBlockedError", "SocketBlockedError"]
-        if type(e).__name__ in pytest_socket_errors or isinstance(e, OSError):
-            return False
-        raise e
+        if type(e).__name__ not in pytest_socket_errors:
+            raise e
 
-
-class HiddenPrints:
-    """Context manager which removes all terminal output."""
-
-    def __enter__(self) -> None:
-        """Enter the context manager."""
-        self._original_stdout = sys.stdout
-        self._original_stderr = sys.stderr
-        sys.stdout = open(os.devnull, "w")
-        sys.stderr = open(os.devnull, "w")
-
-    def __exit__(
-        self,
-        exc_type: t.Type[BaseException],
-        exc_val: BaseException,
-        exc_tb: "TracebackType",
-    ) -> None:
-        """Exit the context manager."""
-        sys.stdout.close()
-        sys.stderr.close()
-        sys.stdout = self._original_stdout
-        sys.stderr = self._original_stderr
+    return internet_available
 
 
 def raise_if_model_output_contains_nan_values(model_output: "Predictions") -> None:
@@ -364,34 +279,6 @@ def unscramble(scrambled_text: str) -> str:
     return unscrambled
 
 
-@cache
-def log_once(message: str, level: int = logging.INFO) -> None:
-    """Log a message once.
-
-    This is ensured by caching the input/output pairs of this function, using the
-    `functools.cache` decorator.
-
-    Args:
-        message:
-            The message to log.
-        level:
-            The logging level. Defaults to logging.INFO.
-    """
-    match level:
-        case logging.DEBUG:
-            logger.debug(message)
-        case logging.INFO:
-            logger.info(message)
-        case logging.WARNING:
-            logger.warning(message)
-        case logging.ERROR:
-            logger.error(message)
-        case logging.CRITICAL:
-            logger.critical(message)
-        case _:
-            raise ValueError(f"Invalid logging level: {level}")
-
-
 def get_package_version(package_name: str) -> str | None:
     """Get the version of a package.
 
@@ -406,9 +293,6 @@ def get_package_version(package_name: str) -> str | None:
         return importlib.metadata.version(package_name)
     except importlib.metadata.PackageNotFoundError:
         return None
-
-
-T = t.TypeVar("T", bound=object)
 
 
 def safe_run(coroutine: t.Coroutine[t.Any, t.Any, T]) -> T:
@@ -464,37 +348,41 @@ def extract_json_dict_from_string(s: str) -> dict | None:
     """
     json_regex = r"\{[^{}]*?\}"
     if (json_match := re.search(pattern=json_regex, string=s, flags=re.DOTALL)) is None:
-        logger.debug(
+        log(
             "The model output does not contain any JSON dictionary, so cannot parse "
-            f"it. Skipping. Here is the output: {s!r}"
+            f"it. Skipping. Here is the output: {s!r}",
+            level=logging.DEBUG,
         )
         return None
     json_string = json_match.group()
     try:
         json_output = demjson3.decode(txt=json_string)
     except demjson3.JSONDecodeError:
-        logger.debug(
+        log(
             "The model output is not valid JSON, so cannot parse it. Skipping. "
-            f"Here is the output: {json_string!r}"
+            f"Here is the output: {json_string!r}",
+            level=logging.DEBUG,
         )
         return None
     if not isinstance(json_output, dict):
-        logger.debug(
+        log(
             "The model output is not a JSON dictionary, so cannot parse "
-            f"it. Skipping. Here is the output: {json_string!r}"
+            f"it. Skipping. Here is the output: {json_string!r}",
+            level=logging.DEBUG,
         )
         return None
     elif not all(isinstance(key, str) for key in json_output.keys()):
-        logger.debug(
+        log(
             "The model output is not a JSON dictionary with string keys, "
             "so cannot parse it. Skipping. Here is the output: "
-            f"{json_string!r}"
+            f"{json_string!r}",
+            level=logging.DEBUG,
         )
         return None
     return json_output
 
 
-@cache
+@cache_arguments()
 def get_hf_token(api_key: str | None) -> str | bool:
     """Get the Hugging Face token.
 
@@ -538,8 +426,8 @@ def get_hf_token(api_key: str | None) -> str | bool:
 
 
 def extract_multiple_choice_labels(
-    prompt: str, candidate_labels: list[str]
-) -> list[str]:
+    prompt: str, candidate_labels: c.Sequence[str]
+) -> c.Sequence[str]:
     """Extract multiple choice labels from a prompt.
 
     Args:
@@ -598,3 +486,83 @@ def split_model_id(model_id: str) -> "ModelIdComponents":
     revision = revision_match.group(1) if revision_match is not None else "main"
     param = param_match.group(1) if param_match is not None else None
     return ModelIdComponents(model_id=model_id, revision=revision, param=param)
+
+
+def load_custom_datasets_module() -> ModuleType | None:
+    """Load the custom datasets module if it exists.
+
+    Raises:
+        RuntimeError:
+            If the custom datasets module cannot be loaded.
+    """
+    custom_datasets_file = Path("custom_datasets.py")
+    if custom_datasets_file.exists():
+        spec = importlib.util.spec_from_file_location(
+            name="custom_datasets_module", location=str(custom_datasets_file.resolve())
+        )
+        if spec is None:
+            log_once(
+                "Could not load the spec for the custom datasets file from "
+                f"{custom_datasets_file.resolve()}.",
+                level=logging.ERROR,
+            )
+            return None
+        module = importlib.util.module_from_spec(spec=spec)
+        if spec.loader is None:
+            log_once(
+                "Could not load the module for the custom datasets file from "
+                f"{custom_datasets_file.resolve()}.",
+                level=logging.ERROR,
+            )
+            return None
+        spec.loader.exec_module(module)
+        return module
+    return None
+
+
+class flash_attention_backend:
+    """Context manager to temporarily set the flash attention backend.
+
+    This sets the `VLLM_ATTENTION_BACKEND` environment variable to `FLASH_ATTN`
+    for the duration of the context manager, and restores the previous value afterwards.
+    """
+
+    def __init__(self, disabled: bool = False) -> None:
+        """Initialise the context manager.
+
+        Args:
+            disabled:
+                If True, this context manager does nothing.
+        """
+        self.disabled = disabled
+        self.previous_value: str | None = None
+
+    def __enter__(self) -> None:
+        """Enter the context manager."""
+        if self.disabled:
+            return
+        self.previous_value = os.getenv("VLLM_ATTENTION_BACKEND")
+        os.environ["VLLM_ATTENTION_BACKEND"] = "FLASH_ATTN"
+
+    def __exit__(
+        self,
+        exc_type: t.Type[BaseException] | None,
+        exc_value: BaseException | None,
+        traceback: type[BaseException] | None,
+    ) -> None:
+        """Exit the context manager.
+
+        Args:
+            exc_type:
+                The type of the exception.
+            exc_value:
+                The value of the exception.
+            exc_tb:
+                The traceback of the exception.
+        """
+        if self.disabled:
+            return
+        if self.previous_value is None:
+            os.environ.pop("VLLM_ATTENTION_BACKEND", None)
+        else:
+            os.environ["VLLM_ATTENTION_BACKEND"] = self.previous_value

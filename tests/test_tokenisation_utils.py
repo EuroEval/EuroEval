@@ -4,6 +4,7 @@ import pytest
 from transformers.models.auto.tokenization_auto import AutoTokenizer
 
 from euroeval.benchmark_modules.hf import load_hf_model_config
+from euroeval.data_models import HashableDict
 from euroeval.tokenisation_utils import (
     get_end_of_chat_token_ids,
     should_prefix_space_be_added_to_labels,
@@ -19,13 +20,14 @@ from euroeval.tokenisation_utils import (
         ("google-bert/bert-base-uncased", False),
     ],
 )
+@pytest.mark.flaky(reruns=3, reruns_delay=5)
 def test_should_prompts_be_stripped(model_id: str, expected: bool, auth: str) -> None:
     """Test that a model ID is a generative model."""
     config = load_hf_model_config(
         model_id=model_id,
         num_labels=0,
-        id2label=dict(),
-        label2id=dict(),
+        id2label=HashableDict(),
+        label2id=HashableDict(),
         revision="main",
         model_cache_dir=None,
         api_key=auth,
@@ -42,8 +44,13 @@ def test_should_prompts_be_stripped(model_id: str, expected: bool, auth: str) ->
 
 @pytest.mark.parametrize(
     argnames=["model_id", "expected"],
-    argvalues=[("AI-Sweden-Models/gpt-sw3-6.7b-v2", False), ("01-ai/Yi-6B", True)],
+    argvalues=[
+        ("AI-Sweden-Models/gpt-sw3-6.7b-v2", False),
+        ("01-ai/Yi-6B", True),
+        ("common-pile/comma-v0.1-2t", True),
+    ],
 )
+@pytest.mark.flaky(reruns=3, reruns_delay=5)
 def test_should_prefix_space_be_added_to_labels(
     model_id: str, expected: bool, auth: str
 ) -> None:
@@ -70,6 +77,7 @@ def test_should_prefix_space_be_added_to_labels(
         ("ibm-granite/granite-3b-code-instruct-2k", [478], ""),
     ],
 )
+@pytest.mark.flaky(reruns=3, reruns_delay=5)
 def test_get_end_of_chat_token_ids(
     model_id: str,
     expected_token_ids: list[int] | None,

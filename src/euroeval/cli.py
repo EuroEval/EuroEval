@@ -3,10 +3,9 @@
 import click
 
 from .benchmarker import Benchmarker
-from .dataset_configs import get_all_dataset_configs
+from .data_models import DatasetConfig
 from .enums import Device, GenerativeType
 from .languages import get_all_languages
-from .tasks import get_all_tasks
 
 
 @click.command()
@@ -23,7 +22,6 @@ from .tasks import get_all_tasks
     default=None,
     show_default=True,
     multiple=True,
-    type=click.Choice(list(get_all_tasks().keys())),
     help="The dataset tasks to benchmark the model(s) on.",
 )
 @click.option(
@@ -45,8 +43,7 @@ from .tasks import get_all_tasks
     multiple=True,
     metavar="ISO 639-1 LANGUAGE CODE",
     type=click.Choice(["all"] + list(get_all_languages().keys())),
-    help="""The model languages to benchmark. If not specified then this will use the
-    `language` value.""",
+    help="""This option is deprecated - please use --language instead.""",
 )
 @click.option(
     "--dataset-language",
@@ -56,24 +53,28 @@ from .tasks import get_all_tasks
     multiple=True,
     metavar="ISO 639-1 LANGUAGE CODE",
     type=click.Choice(["all"] + list(get_all_languages().keys())),
-    help="""The dataset languages to benchmark. If "all" then the models will be
-    benchmarked on all datasets. If not specified then this will use the `language`
-    value.""",
+    help="""This option is deprecated - please use --language instead.""",
 )
 @click.option(
     "--dataset",
     default=None,
     show_default=True,
     multiple=True,
-    type=click.Choice(list(get_all_dataset_configs().keys())),
     help="""The name of the benchmark dataset. We recommend to use the `task` and
     `language` options instead of this option.""",
 )
 @click.option(
     "--batch-size",
+    default=None,
+    type=click.Choice(["1", "2", "4", "8", "16", "32"]),
+    help="This option is deprecated - please use --finetuning-batch-size instead.",
+    deprecated=True,
+)
+@click.option(
+    "--finetuning-batch-size",
     default="32",
     type=click.Choice(["1", "2", "4", "8", "16", "32"]),
-    help="The batch size to use.",
+    help="The batch size to use for finetuning.",
 )
 @click.option(
     "--progress-bar/--no-progress-bar",
@@ -224,13 +225,14 @@ from .tasks import get_all_tasks
 )
 def benchmark(
     model: tuple[str],
-    dataset: tuple[str],
+    dataset: tuple[str | DatasetConfig],
     language: tuple[str],
     model_language: tuple[str],
     dataset_language: tuple[str],
     raise_errors: bool,
     task: tuple[str],
-    batch_size: str,
+    batch_size: str | None,
+    finetuning_batch_size: str,
     progress_bar: bool,
     save_results: bool,
     cache_dir: str,
@@ -252,25 +254,11 @@ def benchmark(
     download_only: bool,
 ) -> None:
     """Benchmark pretrained language models on language tasks."""
-    models = list(model)
-    datasets = None if len(dataset) == 0 else list(dataset)
-    languages: list[str] = list(language)
-    model_languages = None if len(model_language) == 0 else list(model_language)
-    dataset_languages = None if len(dataset_language) == 0 else list(dataset_language)
-    tasks = None if len(task) == 0 else list(task)
-    batch_size_int = int(batch_size)
-    device = Device[device.upper()] if device is not None else None
-    generative_type_obj = (
-        GenerativeType[generative_type.upper()] if generative_type else None
-    )
-
-    benchmarker = Benchmarker(
-        language=languages,
-        model_language=model_languages,
-        dataset_language=dataset_languages,
-        task=tasks,
-        dataset=datasets,
-        batch_size=batch_size_int,
+    Benchmarker(
+        language=list(language),
+        task=None if len(task) == 0 else list(task),
+        dataset=None if len(dataset) == 0 else list(dataset),
+        finetuning_batch_size=int(finetuning_batch_size),
         progress_bar=progress_bar,
         save_results=save_results,
         raise_errors=raise_errors,
@@ -278,7 +266,7 @@ def benchmark(
         api_key=api_key,
         force=force,
         cache_dir=cache_dir,
-        device=device,
+        device=Device[device.upper()] if device is not None else None,
         trust_remote_code=trust_remote_code,
         clear_model_cache=clear_model_cache,
         evaluate_test_split=evaluate_test_split,
@@ -287,15 +275,17 @@ def benchmark(
         api_base=api_base,
         api_version=api_version,
         gpu_memory_utilization=gpu_memory_utilization,
-        generative_type=generative_type_obj,
+        generative_type=GenerativeType[generative_type.upper()]
+        if generative_type
+        else None,
         debug=debug,
         run_with_cli=True,
         requires_safetensors=requires_safetensors,
         download_only=download_only,
-    )
-
-    # Perform the benchmark evaluation
-    benchmarker.benchmark(model=models)
+        model_language=None if len(model_language) == 0 else list(model_language),
+        dataset_language=None if len(dataset_language) == 0 else list(dataset_language),
+        batch_size=int(batch_size) if batch_size is not None else None,
+    ).benchmark(model=list(model))
 
 
 if __name__ == "__main__":

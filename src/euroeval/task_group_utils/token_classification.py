@@ -1,5 +1,6 @@
 """Utility functions related to the token-classification task group."""
 
+import collections.abc as c
 import logging
 import typing as t
 from copy import deepcopy
@@ -7,6 +8,7 @@ from copy import deepcopy
 import numpy as np
 
 from ..exceptions import InvalidBenchmark
+from ..logging_utils import log
 from ..utils import (
     extract_json_dict_from_string,
     raise_if_model_output_contains_nan_values,
@@ -20,9 +22,6 @@ if t.TYPE_CHECKING:
 
     from ..data_models import BenchmarkConfig, DatasetConfig, GenerativeModelOutput
     from ..types import Labels, Predictions
-
-
-logger = logging.getLogger("euroeval")
 
 
 def compute_metrics(
@@ -61,7 +60,9 @@ def compute_metrics(
 
     predictions: list[list[str]]
     if not isinstance(model_outputs[0][0], str):
-        raw_predictions: list[list[int]] = np.argmax(model_outputs, axis=-1).tolist()
+        raw_predictions: c.Sequence[c.Sequence[int]] = np.argmax(
+            model_outputs, axis=-1
+        ).tolist()
 
         # Remove ignored index (special tokens)
         predictions = [
@@ -191,7 +192,7 @@ def extract_labels_from_generation(
     input_batch: dict[str, list],
     model_output: "GenerativeModelOutput",
     dataset_config: "DatasetConfig",
-) -> list[t.Any]:
+) -> c.Sequence[t.Any]:
     """Extract the predicted labels from the generated output.
 
     Args:
@@ -216,17 +217,19 @@ def extract_labels_from_generation(
         prompt_label_mapping = dataset_config.prompt_label_mapping
         for prompt_tag_name, named_entities in prediction_dict.items():
             if not isinstance(named_entities, list):
-                logger.debug(
+                log(
                     "The model produced an invalid format for the named entities. "
-                    f"Expected a list but got {type(named_entities)}. Skipping."
+                    f"Expected a list but got {type(named_entities)}. Skipping.",
+                    level=logging.DEBUG,
                 )
                 continue
             try:
                 named_entities = [str(ne) for ne in named_entities]
             except Exception:
-                logger.debug(
+                log(
                     "The model produced an invalid format for the named entities. "
-                    f"Expected a list of strings but got {named_entities}. Skipping."
+                    f"Expected a list of strings but got {named_entities}. Skipping.",
+                    level=logging.DEBUG,
                 )
                 continue
             try:
@@ -236,9 +239,10 @@ def extract_labels_from_generation(
                     if prompt_tag == prompt_tag_name
                 ][0]
             except IndexError:
-                logger.debug(
+                log(
                     "The model produced an invalid prompt tag name, "
-                    f"{prompt_tag_name}. Skipping."
+                    f"{prompt_tag_name}. Skipping.",
+                    level=logging.DEBUG,
                 )
                 continue
 
@@ -283,8 +287,8 @@ def tokenize_and_align_labels(
     # tokeniser is of a "fast" variant then this can be accessed through the
     # `word_ids` method. Otherwise, we have to extract it manually.
     all_labels: list[list[int]] = list()
-    labels: list[str]
-    word_ids: list[int | None]
+    labels: c.Sequence[str]
+    word_ids: c.Sequence[int | None]
     for i, labels in enumerate(examples["labels"]):
         # Try to get the word IDs from the tokeniser
         try:
@@ -294,10 +298,10 @@ def tokenize_and_align_labels(
         # IDs manually
         except ValueError:
             # Get the list of words in the document
-            words: list[str] = examples["tokens"][i]
+            words: c.Sequence[str] = examples["tokens"][i]
 
             # Get the list of token IDs in the document
-            tok_ids: list[int] = tokenized_inputs.input_ids[i]
+            tok_ids: c.Sequence[int] = tokenized_inputs.input_ids[i]
 
             # Decode the token IDs
             tokens = tokeniser.convert_ids_to_tokens(tok_ids)
@@ -390,8 +394,8 @@ def tokenize_and_align_labels(
 
 
 def handle_unk_tokens(
-    tokeniser: "PreTrainedTokenizer", tokens: list[str], words: list[str]
-) -> list[str]:
+    tokeniser: "PreTrainedTokenizer", tokens: list[str], words: c.Sequence[str]
+) -> c.Sequence[str]:
     """Replace unknown tokens in the tokens with the corresponding word.
 
     Args:

@@ -1407,21 +1407,21 @@ Here are a few examples from the training split:
 
 ```json
 {
-  "text": "Gjessene foretrekker å hekke på markene i stedet for i skogene fordi i _ er rovdyr veldig synlige. Hva refererer det tomme _ til?\nSvaralternativer:\na. Alternativ A: markene\nb. Alternativ B: skogene",
+  "text": "Gjessene foretrekker å hekke på markene i stedet for i skogene fordi i _ er rovdyr veldig synlige. Hva refererer det tomme _ til?\nSvaralternativer:\na. markene\nb. skogene",
   "label": "a"
 }
 ```
 
 ```json
 {
-  "text": "Planten tok opp for mye plass i urnen, fordi _ var stor. Hva refererer det tomme _ til?\nSvaralternativer:\na. Alternativ A: plante\nb. Alternativ B: urne",
+  "text": "Planten tok opp for mye plass i urnen, fordi _ var stor. Hva refererer det tomme _ til?\nSvaralternativer:\na. plante\nb. urne",
   "label": "a"
 }
 ```
 
 ```json
 {
-  "text": "Lindsey elsket smaken av and, men Megan likte kylling bedre. _ bestilte kung pao kylling til middag. Hva refererer det tomme _ til?\nSvaralternativer:\na. Alternativ A: Lindsey\nb. Alternativ B: Megan",
+  "text": "Lindsey elsket smaken av and, men Megan likte kylling bedre. _ bestilte kung pao kylling til middag. Hva refererer det tomme _ til?\nSvaralternativer:\na. Lindsey\nb. Megan",
   "label": "b"
 }
 ```

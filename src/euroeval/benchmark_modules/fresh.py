@@ -27,7 +27,8 @@ from ..exceptions import (
     NeedsExtraInstalled,
 )
 from ..generation_utils import raise_if_wrong_params
-from ..utils import block_terminal_output, create_model_cache_dir, get_hf_token
+from ..logging_utils import block_terminal_output
+from ..utils import create_model_cache_dir, get_hf_token
 from .hf import (
     HuggingFaceEncoderModel,
     align_model_and_tokeniser,

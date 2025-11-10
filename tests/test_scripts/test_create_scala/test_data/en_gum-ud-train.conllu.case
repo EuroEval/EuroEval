@@ -1,0 +1,70 @@
+# newpar
+# newpar_block = p (1 s)
+# sent_id = GUM_bio_galois-20
+# s_type = decl
+# s_prominence = 2
+# transition = continue
+# text = Much more detailed speculation based on these scant historical details has been interpolated by many of Galois' biographers (most notably by Eric Temple Bell in Men of Mathematics), such as the frequently repeated speculation that the entire incident was stage-managed by the police and royalist factions to eliminate a political enemy. [14]
+1	Much	much	ADV	RB	Degree=Pos	2	advmod	2:advmod	Discourse=adversative-contrast_m:70->57:3:_|Entity=(89-abstract-new-nnnnn-cf6-4-coref
+2	more	more	ADV	RBR	Degree=Cmp	3	advmod	3:advmod	_
+3	detailed	detailed	ADJ	JJ	Degree=Pos	4	amod	4:amod	MSeg=detail-ed
+4	speculation	speculation	NOUN	NN	Number=Sing	13	nsubj:pass	13:nsubj:pass	MSeg=speculat-ion
+5	based	base	VERB	VBN	Tense=Past|VerbForm=Part|Voice=Pass	4	acl	4:acl	Discourse=elaboration-attribute:71->70:0:syn-mdf-569+syn-nmn-570|MSeg=bas-ed
+6	on	on	ADP	IN	_	10	case	10:case	_
+7	these	this	DET	DT	Number=Plur|PronType=Dem	10	det	10:det	Entity=(90-abstract-acc:com-nnnnn-cf3-4-sgl
+8	scant	scant	ADJ	JJ	Degree=Pos	10	amod	10:amod	_
+9	historical	historical	ADJ	JJ	Degree=Pos	10	amod	10:amod	MSeg=histor-ic-al
+10	details	detail	NOUN	NNS	Number=Plur	5	obl	5:obl:on	Entity=90)89)|MSeg=detail-s
+11	has	have	AUX	VBZ	Mood=Ind|Number=Sing|Person=3|Tense=Pres|VerbForm=Fin	13	aux	13:aux	Discourse=same-unit_m:72->70:1:_|MSeg=ha-s
+12	been	be	AUX	VBN	Tense=Past|VerbForm=Part	13	aux:pass	13:aux:pass	_
+13	interpolated	interpolate	VERB	VBN	Tense=Past|VerbForm=Part|Voice=Pass	0	root	0:root	MSeg=interpolat-ed
+14	by	by	ADP	IN	_	15	case	15:case	_
+15	many	many	ADJ	JJ	Degree=Pos	13	obl:agent	13:obl:agent	_
+16	of	of	ADP	IN	_	19	case	19:case	_
+17-18	Galois'	_	_	_	_	_	_	_	_
+17	Galois	Galois	PROPN	NNP	Number=Sing	19	nmod:poss	19:nmod:poss	Entity=(91-person-new-nnnnn-cf10-3-coref(4-person-giv:act-sssss-cf1*-1-coref-Évariste_Galois
+18	'	's	PART	POS	_	17	case	17:case	Entity=4)
+19	biographers	biographer	NOUN	NNS	Number=Plur	15	obl	15:obl:of	Entity=91)|MSeg=biograph-er-s
+20	(	(	PUNCT	-LRB-	_	24	punct	24:punct	Discourse=elaboration-additional:73->72:0:sem-mrnym-582-584,589-595+grf-prn-585,596|SpaceAfter=No
+21	most	most	ADV	RBS	Degree=Sup	22	advmod	22:advmod	_
+22	notably	notably	ADV	RB	Degree=Pos	24	orphan	22.1:advmod	MSeg=notab-ly
+22.1	interpolated	interpolate	VERB	VBN	Tense=Past|VerbForm=Part|Voice=Pass	_	_	13:parataxis	CopyOf=13
+23	by	by	ADP	IN	_	24	case	24:case	_
+24	Eric	Eric	PROPN	NNP	Number=Sing	13	parataxis	22.1:obl:agent	Bridge=91<92|Entity=(92-person-acc:inf-nnnnn-cf5-1,2,3,5,7-sgl-Eric_Temple_Bell|XML=<ref target:::"https://en.wikipedia.org/wiki/Eric_Temple_Bell">
+25	Temple	Temple	PROPN	NNP	Number=Sing	24	flat	24:flat	_
+26	Bell	Bell	PROPN	NNP	Number=Sing	24	flat	24:flat	XML=</ref>
+27	in	in	ADP	IN	_	28	case	28:case	_
+28	Men	Men	PROPN	NNP	Number=Sing	24	orphan	22.1:obl:in	Entity=(93-abstract-new-nnnnn-cf8-1,3-sgl-Men_of_Mathematics|XML=<ref target:::"https://en.wikipedia.org/wiki/Men_of_Mathematics">
+29	of	of	ADP	IN	_	30	case	30:case	_
+30	Mathematics	Mathematics	PROPN	NNP	Number=Sing	28	nmod	28:nmod:of	Entity=(94-abstract-new-nnnnn-cf9-1-sgl-Mathematics)93)92)|MSeg=Mathematic-s|SpaceAfter=No|XML=</ref>
+31	)	)	PUNCT	-RRB-	_	24	punct	24:punct	SpaceAfter=No
+32	,	,	PUNCT	,	_	38	punct	38:punct	_
+33	such	such	ADJ	JJ	ExtPos=ADP	38	case	38:case	Discourse=elaboration-additional:74->70:2:sem-mrnym-566-575,600-622+sem-synym-582-583,620-622
+34	as	as	ADP	IN	_	33	fixed	33:fixed	_
+35	the	the	DET	DT	Definite=Def|PronType=Art	38	det	38:det	Bridge=89<95|Entity=(95-abstract-acc:inf-nnnnn-cf4-4-sgl
+36	frequently	frequently	ADV	RB	Degree=Pos	37	advmod	37:advmod	MSeg=frequent-ly
+37	repeated	repeat	VERB	VBN	Tense=Past|VerbForm=Part|Voice=Pass	38	amod	38:amod	MSeg=repeat-ed
+38	speculation	speculation	NOUN	NN	Number=Sing	10	nmod	10:nmod:such_as	MSeg=speculat-ion
+39	that	that	SCONJ	IN	_	46	mark	46:mark	Discourse=elaboration-attribute:75->74:0:syn-mdf-603
+40	the	the	DET	DT	Definite=Def|PronType=Art	42	det	42:det	Entity=(96-event-acc:com-nnnnn-cf2-3-sgl
+41	entire	entire	ADJ	JJ	Degree=Pos	42	amod	42:amod	_
+42	incident	incident	NOUN	NN	Number=Sing	46	nsubj:pass	46:nsubj:pass	Entity=96)
+43	was	be	AUX	VBD	Mood=Ind|Number=Sing|Person=3|Tense=Past|VerbForm=Fin	46	aux:pass	46:aux:pass	_
+44	stage	stage	NOUN	NN	Number=Sing	46	compound	46:compound	SpaceAfter=No|XML=<w>
+45	-	-	PUNCT	HYPH	_	44	punct	44:punct	SpaceAfter=No
+46	managed	manage	VERB	VBN	Tense=Past|VerbForm=Part|Voice=Pass	38	acl	38:acl:that	MSeg=manag-ed|XML=</w>
+47	by	by	ADP	IN	_	49	case	49:case	_
+48	the	the	DET	DT	Definite=Def|PronType=Art	49	det	49:det	Entity=(97-organization-new-nnnnn-cf7-2-sgl
+49	police	police	NOUN	NN	Number=Sing	46	obl:agent	46:obl:agent	Entity=97)
+50	and	and	CCONJ	CC	_	52	cc	52:cc	_
+51	royalist	royalist	ADJ	JJ	Degree=Pos	52	amod	52:amod	Entity=(98-organization-new-nnnnn-cf11-2-sgl|MSeg=roy-al-ist
+52	factions	faction	NOUN	NNS	Number=Plur	49	conj	46:obl:agent|49:conj:and	Entity=98)|MSeg=faction-s
+53	to	to	PART	TO	_	54	mark	54:mark	Discourse=purpose-goal:76->75:0:syn-inf-618+lex-indwd-619|PDTB=Implicit:Contingency.Purpose.Arg2-as-goal:in order:_:604-617:618-623
+54	eliminate	eliminate	VERB	VB	VerbForm=Inf	46	advcl	46:advcl:to	_
+55	a	a	DET	DT	Definite=Ind|PronType=Art	57	det	57:det	Entity=(4-person-giv:act-sssss-cf1*-3-coref-Évariste_Galois
+56	political	political	ADJ	JJ	Degree=Pos	57	amod	57:amod	MSeg=politic-al
+57	enemy	enemy	NOUN	NN	Number=Sing	54	obj	54:obj	Entity=4)95)|SpaceAfter=No
+58	.	.	PUNCT	.	_	13	punct	13:punct	_
+59	[	[	PUNCT	-LRB-	_	60	punct	60:punct	Discourse=explanation-evidence:77->74:1:grf-prn-624,626|SpaceAfter=No
+60	14	14	NUM	CD	NumForm=Digit|NumType=Card	13	dep	13:dep	Entity=(99-abstract-new-nnnnn-cf12-1-sgl)|SpaceAfter=No|XML=<ref></ref>
+61	]	]	PUNCT	-RRB-	_	60	punct	60:punct	_

@@ -2,15 +2,12 @@
 
 import abc
 import collections.abc as c
-import logging
 import typing as t
 
 if t.TYPE_CHECKING:
     from datasets.arrow_dataset import Dataset
 
     from ..data_models import BenchmarkConfig, DatasetConfig
-
-logger: logging.Logger = logging.getLogger("euroeval")
 
 
 class Metric(abc.ABC):

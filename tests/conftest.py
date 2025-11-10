@@ -11,17 +11,18 @@ from click import ParamType
 
 from euroeval.cli import benchmark
 from euroeval.data_models import BenchmarkConfig, DatasetConfig, ModelConfig, Task
-from euroeval.dataset_configs import SPEED_CONFIG, get_all_dataset_configs
+from euroeval.dataset_configs import get_all_dataset_configs
 from euroeval.enums import InferenceBackend, ModelType
-from euroeval.languages import DA, get_all_languages
+from euroeval.languages import DANISH, get_all_languages
 from euroeval.metrics import HuggingFaceMetric
-from euroeval.tasks import SENT, SPEED, get_all_tasks
+from euroeval.tasks import SENT
 
 
 def pytest_configure() -> None:
     """Set a global flag when `pytest` is being run."""
     setattr(sys, "_called_from_test", True)
-    os.environ["CUDA_VISIBLE_DEVICES"] = "0"  # Ensure only one GPU is used in tests
+    if torch.cuda.is_available():
+        os.environ["CUDA_VISIBLE_DEVICES"] = "0"  # Ensure only one GPU is used in tests
 
 
 def pytest_unconfigure() -> None:
@@ -29,15 +30,24 @@ def pytest_unconfigure() -> None:
     delattr(sys, "_called_from_test")
 
 
-ACTIVE_LANGUAGES = {
-    language_code: language
-    for language_code, language in get_all_languages().items()
-    if any(
-        language in cfg.languages
-        for cfg in get_all_dataset_configs().values()
-        if cfg != SPEED_CONFIG
-    )
-}
+if os.environ.get("CHECK_DATASET") is not None:
+    dataset_configs = [
+        dataset_config
+        for dataset_config in get_all_dataset_configs().values()
+        if dataset_config.name in os.environ["CHECK_DATASET"].split(",")
+        or any(
+            language.code in os.environ["CHECK_DATASET"].split(",")
+            for language in dataset_config.languages
+        )
+        or "all" in os.environ["CHECK_DATASET"].split(",")
+    ]
+    ACTIVE_LANGUAGES = {
+        language_code: language
+        for language_code, language in get_all_languages().items()
+        if any(language in cfg.languages for cfg in dataset_configs)
+    }
+else:
+    ACTIVE_LANGUAGES = dict(da=DANISH)
 
 
 @pytest.fixture(scope="session")
@@ -71,11 +81,9 @@ def benchmark_config(
 ) -> Generator[BenchmarkConfig, None, None]:
     """Yields a benchmark configuration used in tests."""
     yield BenchmarkConfig(
-        model_languages=[DA],
-        dataset_languages=[DA],
-        tasks=[SENT],
-        datasets=list(get_all_dataset_configs().keys()),
-        batch_size=1,
+        languages=[DANISH],
+        datasets=list(get_all_dataset_configs().values()),
+        finetuning_batch_size=1,
         raise_errors=False,
         cache_dir=".euroeval_cache",
         api_key=auth,
@@ -91,7 +99,7 @@ def benchmark_config(
         num_iterations=1,
         api_base=None,
         api_version=None,
-        gpu_memory_utilization=0.9,
+        gpu_memory_utilization=0.8,
         generative_type=None,
         debug=False,
         run_with_cli=True,
@@ -113,8 +121,10 @@ def metric() -> Generator[HuggingFaceMetric, None, None]:
 
 @pytest.fixture(
     scope="session",
-    params=[task for task in get_all_tasks().values() if task != SPEED],
-    ids=[name for name, task in get_all_tasks().items() if task != SPEED],
+    params=list(
+        {dataset_config.task for dataset_config in get_all_dataset_configs().values()}
+    ),
+    ids=lambda task: task.name,
 )
 def task(request: pytest.FixtureRequest) -> Generator[Task, None, None]:
     """Yields a dataset task used in tests."""
@@ -169,7 +179,7 @@ def model_config() -> Generator[ModelConfig, None, None]:
         revision="revision",
         param=None,
         task="task",
-        languages=[DA],
+        languages=[DANISH],
         merge=False,
         inference_backend=InferenceBackend.TRANSFORMERS,
         model_type=ModelType.ENCODER,
@@ -192,7 +202,7 @@ def dataset_config() -> c.Generator[DatasetConfig, None, None]:
     yield DatasetConfig(
         name="dataset",
         pretty_name="Dataset",
-        huggingface_id="dataset_id",
+        source="dataset_id",
         task=SENT,
-        languages=[DA],
+        languages=[DANISH],
     )

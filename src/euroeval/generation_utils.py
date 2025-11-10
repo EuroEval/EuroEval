@@ -1,5 +1,6 @@
 """Utility functions related to generative models."""
 
+import collections.abc as c
 import itertools as it
 import json
 import logging
@@ -9,8 +10,9 @@ import typing as t
 
 from .enums import GenerativeType, TaskGroup
 from .exceptions import InvalidBenchmark, InvalidModel
+from .logging_utils import log_once
 from .tokenisation_utils import apply_chat_template
-from .utils import extract_multiple_choice_labels, log_once
+from .utils import extract_multiple_choice_labels
 
 if t.TYPE_CHECKING:
     from datasets import DatasetDict
@@ -18,15 +20,13 @@ if t.TYPE_CHECKING:
 
     from .data_models import BenchmarkConfig, DatasetConfig, ModelConfig
 
-logger = logging.getLogger("euroeval")
-
 
 def extract_few_shot_examples(
     dataset: "DatasetDict",
     dataset_config: "DatasetConfig",
     benchmark_config: "BenchmarkConfig",
     itr_idx: int,
-) -> list[dict[str, t.Any]]:
+) -> c.Sequence[dict[str, t.Any]]:
     """Extract few-shot examples from a dataset.
 
     This will always extract the examples from the training split.
@@ -79,7 +79,7 @@ def extract_few_shot_examples(
                     lambda example: len(example["text"]) < max_num_tokens
                 )
                 num_short_examples = len(train_with_short_examples)
-                if num_short_examples >= dataset_config.num_few_shot_examples:
+                if num_short_examples >= num_few_shots:
                     break
             else:
                 raise InvalidBenchmark(
@@ -150,7 +150,7 @@ def extract_few_shot_examples(
                     lambda example: len(example["context"]) < max_num_tokens
                 )
                 num_short_examples = len(train_with_short_examples)
-                if num_short_examples >= dataset_config.num_few_shot_examples:
+                if num_short_examples >= num_few_shots:
                     break
             else:
                 raise InvalidBenchmark(
@@ -177,7 +177,7 @@ def extract_few_shot_examples(
 
 def apply_prompt(
     examples: dict[str, t.Any],
-    few_shot_examples: list[dict[str, t.Any]],
+    few_shot_examples: c.Sequence[dict[str, t.Any]],
     model_config: "ModelConfig",
     dataset_config: "DatasetConfig",
     generative_type: GenerativeType | None,
@@ -406,6 +406,15 @@ def apply_prompt(
                         )
                         break
 
+            # Custom chat template kwargs
+            chat_template_kwargs: dict[str, t.Any] = dict()
+            if model_config.param in {"low", "medium", "high"}:
+                chat_template_kwargs["reasoning_effort"] = model_config.param
+                log_once(
+                    f"Set reasoning mode to {model_config.param!r}.",
+                    level=logging.DEBUG,
+                )
+
             texts = [
                 apply_chat_template(
                     conversation=messages,
@@ -414,6 +423,7 @@ def apply_prompt(
                     add_generation_prompt=True,
                     enable_thinking=(generative_type == GenerativeType.REASONING),
                     chat_template=chat_template,
+                    **chat_template_kwargs,
                 )
                 for messages in messages_list
             ]
@@ -444,7 +454,7 @@ def apply_prompt(
 
 
 def raise_if_wrong_params(
-    model_config: "ModelConfig", allowed_params: dict[re.Pattern, list[str]]
+    model_config: "ModelConfig", allowed_params: dict[re.Pattern, c.Sequence[str]]
 ) -> None:
     """Raise an error if the model configuration has invalid parameters.
 
@@ -460,23 +470,24 @@ def raise_if_wrong_params(
         InvalidModel:
             If the model configuration has invalid parameters.
     """
+    # Do nothing if there are no parameters to check
     if model_config.param is None:
         return
+
+    # Make list of all allowed parameters for the model
+    all_allowed_params: set[str] = set()
     for model_regex, allowed_params_list in allowed_params.items():
         if re.fullmatch(pattern=model_regex, string=model_config.model_id):
-            if model_config.param not in allowed_params_list:
-                msg = (
-                    f"Invalid parameter {model_config.param!r} for model "
-                    f"{model_config.model_id!r}."
-                )
-                if allowed_params_list:
-                    msg += f" Allowed parameters are: {', '.join(allowed_params_list)}."
-                else:
-                    msg += " No parameters are allowed."
-                raise InvalidModel(msg)
-            return
-    else:
-        raise InvalidModel(
-            f"The parameter {model_config.param!r} is not supported for the model "
+            all_allowed_params.update(allowed_params_list)
+
+    # Raise error if the parameter is not allowed
+    if model_config.param not in all_allowed_params:
+        msg = (
+            f"Invalid parameter {model_config.param!r} for model "
             f"{model_config.model_id!r}."
         )
+        if all_allowed_params:
+            msg += f" Allowed parameters are: {', '.join(all_allowed_params)}."
+        else:
+            msg += " No parameters are allowed."
+        raise InvalidModel(msg)

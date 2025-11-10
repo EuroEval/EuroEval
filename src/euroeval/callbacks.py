@@ -7,6 +7,8 @@ from collections.abc import Sized
 from tqdm.auto import tqdm
 from transformers.trainer_callback import ProgressCallback
 
+from .logging_utils import get_pbar
+
 if t.TYPE_CHECKING:
     from torch.utils.data import DataLoader
     from transformers.trainer_callback import TrainerControl, TrainerState
@@ -32,11 +34,8 @@ class NeverLeaveProgressCallback(ProgressCallback):
         """Callback actions when training begins."""
         if state.is_local_process_zero:
             desc = "Finetuning model"
-            self.training_bar = tqdm(
-                total=None,
-                leave=False,
-                desc=desc,
-                disable=hasattr(sys, "_called_from_test"),
+            self.training_bar = get_pbar(
+                total=None, desc=desc, disable=hasattr(sys, "_called_from_test")
             )
         self.current_step = 0
 
@@ -67,9 +66,8 @@ class NeverLeaveProgressCallback(ProgressCallback):
         if state.is_local_process_zero and correct_dtype:
             if self.prediction_bar is None:
                 desc = "Evaluating model"
-                self.prediction_bar = tqdm(
+                self.prediction_bar = get_pbar(
                     total=len(eval_dataloader),
-                    leave=False,
                     desc=desc,
                     disable=hasattr(sys, "_called_from_test"),
                 )

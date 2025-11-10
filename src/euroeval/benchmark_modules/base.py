@@ -3,17 +3,16 @@
 import collections.abc as c
 import logging
 import re
-import sys
 import typing as t
 from abc import ABC, abstractmethod
 from functools import cached_property, partial
 
 from datasets import Dataset, DatasetDict
 from torch import nn
-from tqdm.auto import tqdm
 
 from ..enums import TaskGroup
 from ..exceptions import InvalidBenchmark, NeedsEnvironmentVariable, NeedsExtraInstalled
+from ..logging_utils import get_pbar, log_once
 from ..task_group_utils import (
     logical_reasoning,
     question_answering,
@@ -21,7 +20,6 @@ from ..task_group_utils import (
     text_to_text,
     token_classification,
 )
-from ..utils import log_once
 
 if t.TYPE_CHECKING:
     from transformers.tokenization_utils import PreTrainedTokenizer
@@ -36,8 +34,6 @@ if t.TYPE_CHECKING:
     )
     from ..enums import BatchingPreference, GenerativeType
     from ..types import ComputeMetricsFunction, ExtractLabelsFunction
-
-logger = logging.getLogger("euroeval")
 
 
 class BenchmarkModule(ABC):
@@ -57,7 +53,7 @@ class BenchmarkModule(ABC):
     fresh_model: bool
     batching_preference: "BatchingPreference"
     high_priority: bool
-    allowed_params: dict[re.Pattern, list[str]] = {re.compile(r".*"): []}
+    allowed_params: dict[re.Pattern, c.Sequence[str]] = {re.compile(r".*"): []}
 
     def __init__(
         self,
@@ -88,20 +84,12 @@ class BenchmarkModule(ABC):
 
     def _log_metadata(self) -> None:
         """Log the metadata of the model."""
-        # Set logging level based on verbosity
-        if hasattr(sys, "_called_from_test"):
-            logging_level = logging.CRITICAL
-        elif self.benchmark_config.verbose:
-            logging_level = logging.DEBUG
-        else:
-            logging_level = logging.INFO
-        logger.setLevel(logging_level)
-
-        logging_msg: str = ""
+        model_id = self.model_config.model_id
+        logging_msg: str = "    ↳ "
         if self.num_params < 0:
-            logging_msg += "The model has an unknown number of parameters, "
+            logging_msg += f"The model {model_id} has an unknown number of parameters, "
         else:
-            logging_msg += f"The model has {self.num_params:,} parameters, "
+            logging_msg += f"The model {model_id} has {self.num_params:,} parameters, "
         if self.vocab_size < 0:
             logging_msg += "an unknown vocabulary size, "
         else:
@@ -180,7 +168,7 @@ class BenchmarkModule(ABC):
 
     @property
     @abstractmethod
-    def data_collator(self) -> c.Callable[[list[t.Any]], dict[str, t.Any]]:
+    def data_collator(self) -> c.Callable[[c.Sequence[t.Any]], dict[str, t.Any]]:
         """The data collator used to prepare samples during finetuning.
 
         Returns:
@@ -260,7 +248,7 @@ class BenchmarkModule(ABC):
 
     def prepare_datasets(
         self, datasets: list[DatasetDict], task: "Task"
-    ) -> list[DatasetDict]:
+    ) -> c.Sequence[DatasetDict]:
         """Prepare the datasets for the model.
 
         This includes things like tokenisation.
@@ -280,7 +268,7 @@ class BenchmarkModule(ABC):
                 tasks.
         """
         for idx, dataset in enumerate(
-            tqdm(iterable=datasets, desc="Preparing datasets")
+            get_pbar(iterable=datasets, desc="Preparing datasets")
         ):
             prepared_dataset = self.prepare_dataset(
                 dataset=dataset, task=task, itr_idx=idx

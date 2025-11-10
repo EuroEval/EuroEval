@@ -24,6 +24,9 @@ body:
     label: Dataset languages
     description: What languages is the dataset in?
     options:
+      - label: Bulgarian
+      - label: Croatian
+      - label: Czech
       - label: Danish
       - label: Dutch
       - label: English
@@ -32,6 +35,7 @@ body:
       - label: Finnish
       - label: French
       - label: German
+      - label: Greek
       - label: Icelandic
       - label: Italian
       - label: Latvian
@@ -39,8 +43,12 @@ body:
       - label: Norwegian (Bokmål or Nynorsk)
       - label: Polish
       - label: Portuguese
+      - label: Serbian
+      - label: Slovak
+      - label: Slovenian
       - label: Spanish
       - label: Swedish
+      - label: Ukrainian
   validations:
     required: true
 - type: textarea

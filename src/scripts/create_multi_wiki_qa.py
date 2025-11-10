@@ -43,6 +43,13 @@ LANGUAGES = [
     "pt-pt",
     "lv",
     "lt",
+    "sk",
+    "uk",
+    "el",
+    "bg",
+    "sr",
+    "sl",
+    "hr",
 ]
 
 

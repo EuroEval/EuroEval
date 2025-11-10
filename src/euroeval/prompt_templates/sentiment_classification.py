@@ -4,32 +4,50 @@ import typing as t
 
 from ..data_models import PromptConfig
 from ..languages import (
-    DA,
-    DE,
-    EN,
-    ES,
-    ET,
-    FI,
-    FO,
-    FR,
-    IS,
-    IT,
-    LT,
-    LV,
-    NB,
-    NL,
-    NN,
-    NO,
-    PL,
-    PT,
-    SV,
+    BULGARIAN,
+    CROATIAN,
+    CZECH,
+    DANISH,
+    DUTCH,
+    ENGLISH,
+    ESTONIAN,
+    FAROESE,
+    FINNISH,
+    FRENCH,
+    GERMAN,
+    GREEK,
+    ICELANDIC,
+    ITALIAN,
+    LATVIAN,
+    LITHUANIAN,
+    NORWEGIAN,
+    NORWEGIAN_BOKMÅL,
+    NORWEGIAN_NYNORSK,
+    POLISH,
+    PORTUGUESE,
+    SERBIAN,
+    SLOVAK,
+    SLOVENIAN,
+    SPANISH,
+    SWEDISH,
+    UKRAINIAN,
 )
 
 if t.TYPE_CHECKING:
-    from ..data_models import Language
+    from ..languages import Language
 
 SENT_TEMPLATES: dict["Language", PromptConfig] = {
-    DA: PromptConfig(
+    BULGARIAN: PromptConfig(
+        default_prompt_label_mapping=dict(
+            positive="позитивен", neutral="неутрален", negative="негативен"
+        ),
+        default_prompt_prefix="Следват документи и техният сентимент, който може да "
+        "бъде{labels_str}.",
+        default_prompt_template="Документ: {text}\nСентимент: {label}",
+        default_instruction_prompt="Документ: {text}\n\nКласифицирайте сентимента в "
+        "документа. Отговорете с {labels_str}, и нищо друго.",
+    ),
+    DANISH: PromptConfig(
         default_prompt_label_mapping=dict(
             positive="positiv", neutral="neutral", negative="negativ"
         ),
@@ -39,7 +57,30 @@ SENT_TEMPLATES: dict["Language", PromptConfig] = {
         default_instruction_prompt="Dokument: {text}\n\nKlassificer sentimentet i "
         "dokumentet. Svar kun med {labels_str}, og intet andet.",
     ),
-    DE: PromptConfig(
+    CROATIAN: PromptConfig(
+        default_prompt_label_mapping=dict(
+            positive="pozitivno", neutral="neutralno", negative="negativno"
+        ),
+        default_prompt_prefix=(
+            "Slijede dokumenti i njihova osjetila, koja mogu biti {labels_str}."
+        ),
+        default_prompt_template=("Dokument: {text}\nOsjetilo: {label}"),
+        default_instruction_prompt=(
+            "Dokument: {text}\n\nKlasificirajte osjećaj u dokumentu. "
+            "Odgovorite samo s {labels_str}, i ništa drugo."
+        ),
+    ),
+    CZECH: PromptConfig(
+        default_prompt_label_mapping=dict(
+            positive="pozitivní", neutral="neutrální", negative="negativní"
+        ),
+        default_prompt_prefix="Následují dokumenty a jejich sentiment, který může být "
+        "{labels_str}.",
+        default_prompt_template="Dokument: {text}\nSentiment: {label}",
+        default_instruction_prompt="Dokument: {text}\n\nKlasifikujte sentiment v "
+        "dokumentu. Odpovězte pouze s {labels_str}, a nic jiného.",
+    ),
+    GERMAN: PromptConfig(
         default_prompt_label_mapping=dict(
             positive="positiv", neutral="neutral", negative="negativ"
         ),
@@ -49,7 +90,17 @@ SENT_TEMPLATES: dict["Language", PromptConfig] = {
         default_instruction_prompt="Dokument: {text}\n\nKlassifizieren Sie die "
         "Stimmung im Dokument. Antworten Sie mit {labels_str}, und nichts anderes.",
     ),
-    EN: PromptConfig(
+    GREEK: PromptConfig(
+        default_prompt_label_mapping=dict(
+            positive="θετικό", neutral="ουδέτερο", negative="αρνητικό"
+        ),
+        default_prompt_prefix="Τα ακόλουθα είναι έγγραφα και το συναίσθημά τους, "
+        "το οποίο μπορεί να είναι {labels_str}.",
+        default_prompt_template="Έγγραφο: {text}\nΣυναίσθημα: {label}",
+        default_instruction_prompt="Έγγραφο: {text}\n\nΤαξινομήστε το συναίσθημα "
+        "στο έγγραφο. Απαντήστε με {labels_str}, και τίποτα άλλο.",
+    ),
+    ENGLISH: PromptConfig(
         default_prompt_label_mapping=dict(
             positive="positive", neutral="neutral", negative="negative"
         ),
@@ -59,7 +110,7 @@ SENT_TEMPLATES: dict["Language", PromptConfig] = {
         default_instruction_prompt="Document: {text}\n\nClassify the sentiment in the "
         "document. Answer with {labels_str}, and nothing else.",
     ),
-    ES: PromptConfig(
+    SPANISH: PromptConfig(
         default_prompt_label_mapping=dict(
             positive="positivo", neutral="neutral", negative="negativo"
         ),
@@ -69,7 +120,7 @@ SENT_TEMPLATES: dict["Language", PromptConfig] = {
         default_instruction_prompt="Documento: {text}\n\nClasifica el sentimiento del "
         "documento. Responde con {labels_str}, y nada más.",
     ),
-    ET: PromptConfig(
+    ESTONIAN: PromptConfig(
         default_prompt_label_mapping=dict(
             positive="positiivne", neutral="neutraalne", negative="negatiivne"
         ),
@@ -80,7 +131,7 @@ SENT_TEMPLATES: dict["Language", PromptConfig] = {
         "meelestatuse järgi. Võimalikud vastused: {labels_str}. Muud vastused "
         "ei ole lubatud.",
     ),
-    PL: PromptConfig(
+    POLISH: PromptConfig(
         default_prompt_label_mapping=dict(
             positive="pozytywny", neutral="neutralny", negative="negatywny"
         ),
@@ -91,10 +142,10 @@ SENT_TEMPLATES: dict["Language", PromptConfig] = {
         default_prompt_template="Dokument: {text}\nSentyment: {label}",
         default_instruction_prompt=(
             "Dokument: {text}\n\nKlasyfikuj sentyment w dokumencie. "
-            "Odpowiedz z {labels_str}, i nic więcej."
+            "Odpowiedz jednym słowem: {labels_str}."
         ),
     ),
-    PT: PromptConfig(
+    PORTUGUESE: PromptConfig(
         default_prompt_label_mapping=dict(
             positive="positivo", neutral="neutro", negative="negativo"
         ),
@@ -104,7 +155,7 @@ SENT_TEMPLATES: dict["Language", PromptConfig] = {
         default_instruction_prompt="Documento: {text}\n\nClassifica o "
         "sentimento do documento. Responde apenas com {labels_str}.",
     ),
-    FI: PromptConfig(
+    FINNISH: PromptConfig(
         default_prompt_label_mapping=dict(
             positive="positiivinen", neutral="neutrali", negative="negatiivinen"
         ),
@@ -114,7 +165,7 @@ SENT_TEMPLATES: dict["Language", PromptConfig] = {
         default_instruction_prompt="Teksti: {text}\n\nLuokittele arvostelun tunnesävy. "
         "Vastaa vain {labels_str}, ei muuta.",
     ),
-    FO: PromptConfig(
+    FAROESE: PromptConfig(
         default_prompt_label_mapping=dict(
             positive="positivt", neutral="neutralt", negative="negativt"
         ),
@@ -124,7 +175,7 @@ SENT_TEMPLATES: dict["Language", PromptConfig] = {
         default_instruction_prompt="Skjal: {text}\n\nFlokka kensluna í skjalinum. "
         "Svara við {labels_str}, og einki annað.",
     ),
-    FR: PromptConfig(
+    FRENCH: PromptConfig(
         default_prompt_label_mapping=dict(
             positive="positif", neutral="neutre", negative="négatif"
         ),
@@ -134,7 +185,7 @@ SENT_TEMPLATES: dict["Language", PromptConfig] = {
         default_instruction_prompt="Document: {text}\n\nClassez le sentiment dans le "
         "document. Répondez par {labels_str}, et rien d'autre.",
     ),
-    IS: PromptConfig(
+    ICELANDIC: PromptConfig(
         default_prompt_label_mapping=dict(
             positive="jákvætt", neutral="hlutlaust", negative="neikvætt"
         ),
@@ -144,7 +195,7 @@ SENT_TEMPLATES: dict["Language", PromptConfig] = {
         default_instruction_prompt="Textabrot: {text}\n\nGreindu lyndið í "
         "textabrotinu. Svaraðu með {labels_str}, og ekkert annað.",
     ),
-    IT: PromptConfig(
+    ITALIAN: PromptConfig(
         default_prompt_label_mapping=dict(
             positive="positivo", neutral="neutro", negative="negativo"
         ),
@@ -154,7 +205,7 @@ SENT_TEMPLATES: dict["Language", PromptConfig] = {
         default_instruction_prompt="Documento: {text}\n\nClassificare il sentiment del "
         "documento. Rispondere con {labels_str}, e nient'altro.",
     ),
-    LT: PromptConfig(
+    LITHUANIAN: PromptConfig(
         default_prompt_label_mapping=dict(
             positive="teigiamas", neutral="neutralus", negative="neigiamas"
         ),
@@ -164,7 +215,7 @@ SENT_TEMPLATES: dict["Language", PromptConfig] = {
         default_instruction_prompt="Dokumentas: {text}\n\nKlasifikuokite nuotaiką "
         "dokumente. Atsakykite su {labels_str}, ir nieko kito.",
     ),
-    LV: PromptConfig(
+    LATVIAN: PromptConfig(
         default_prompt_label_mapping=dict(
             positive="pozitīvs", neutral="neitrāls", negative="negatīvs"
         ),
@@ -174,7 +225,7 @@ SENT_TEMPLATES: dict["Language", PromptConfig] = {
         default_instruction_prompt="Dokuments: {text}\n\nKlasificējiet noskaņojumu "
         "dokumentā. Atbildiet ar {labels_str}, un neko citu.",
     ),
-    NB: PromptConfig(
+    NORWEGIAN_BOKMÅL: PromptConfig(
         default_prompt_label_mapping=dict(
             positive="positiv", neutral="nøytral", negative="negativ"
         ),
@@ -184,7 +235,7 @@ SENT_TEMPLATES: dict["Language", PromptConfig] = {
         default_instruction_prompt="Dokument: {text}\n\nKlassifiser følelsen i "
         "teksten. Svar med {labels_str}, og ikke noe annet.",
     ),
-    NL: PromptConfig(
+    DUTCH: PromptConfig(
         default_prompt_label_mapping=dict(
             positive="positief", neutral="neutraal", negative="negatief"
         ),
@@ -194,7 +245,7 @@ SENT_TEMPLATES: dict["Language", PromptConfig] = {
         default_instruction_prompt="Document: {text}\n\nClassificeer het sentiment in "
         "het document. Antwoord met {labels_str}, en verder niets.",
     ),
-    NN: PromptConfig(
+    NORWEGIAN_NYNORSK: PromptConfig(
         default_prompt_label_mapping=dict(
             positive="positiv", neutral="nøytral", negative="negativ"
         ),
@@ -204,7 +255,7 @@ SENT_TEMPLATES: dict["Language", PromptConfig] = {
         default_instruction_prompt="Dokument: {text}\n\nKlassifiser følelsen i "
         "teksten. Svar med {labels_str}, og ikke noe annet.",
     ),
-    NO: PromptConfig(
+    NORWEGIAN: PromptConfig(
         default_prompt_label_mapping=dict(
             positive="positiv", neutral="nøytral", negative="negativ"
         ),
@@ -214,7 +265,41 @@ SENT_TEMPLATES: dict["Language", PromptConfig] = {
         default_instruction_prompt="Dokument: {text}\n\nKlassifiser følelsen i "
         "teksten. Svar med {labels_str}, og ikke noe annet.",
     ),
-    SV: PromptConfig(
+    SLOVAK: PromptConfig(
+        default_prompt_label_mapping=dict(
+            positive="pozitívne", neutral="neutrálne", negative="negatívne"
+        ),
+        default_prompt_prefix="Nižšie sú dokumenty a ich sentiment, ktorý môže byť "
+        "{labels_str}.",
+        default_prompt_template="Dokument: {text}\nSentiment: {label}",
+        default_instruction_prompt="Dokument: {text}\n\nKlasifikujte pocit v "
+        "dokumente. Odpovedzte so {labels_str}, a nič iné.",
+    ),
+    SLOVENIAN: PromptConfig(
+        default_prompt_label_mapping=dict(
+            positive="pozitivno", neutral="nevtralno", negative="negativno"
+        ),
+        default_prompt_prefix=(
+            "Spodaj so dokumenti in njihov sentiment, ki je lahko {labels_str}."
+        ),
+        default_prompt_template=("Dokument: {text}\nSentiment: {label}"),
+        default_instruction_prompt=(
+            "Dokument: {text}\n\n"
+            "Klasificirajte sentiment v dokumentu. "
+            "Odgovorite z {labels_str}, in nič drugega."
+        ),
+    ),
+    SERBIAN: PromptConfig(
+        default_prompt_label_mapping=dict(
+            positive="pozitivan", neutral="neutralan", negative="negativan"
+        ),
+        default_prompt_prefix="U nastavku su dokumenti i njihov sentiment, koji može "
+        "biti {labels_str}.",
+        default_prompt_template="Dokument: {text}\nSentiment: {label}",
+        default_instruction_prompt="Dokument: {text}\n\nKlasifikujte sentiment u "
+        "dokumentu. Odgovorite sa {labels_str}, i ništa drugo.",
+    ),
+    SWEDISH: PromptConfig(
         default_prompt_label_mapping=dict(
             positive="positiv", neutral="neutral", negative="negativ"
         ),
@@ -223,5 +308,19 @@ SENT_TEMPLATES: dict["Language", PromptConfig] = {
         default_prompt_template="Dokument: {text}\nSentiment: {label}",
         default_instruction_prompt="Dokument: {text}\n\nKlassificera känslan i "
         "dokumentet. Svara med {labels_str}, och inget annat.",
+    ),
+    UKRAINIAN: PromptConfig(
+        default_prompt_label_mapping=dict(
+            positive="позитивний", neutral="нейтральний", negative="негативний"
+        ),
+        default_prompt_prefix=(
+            "Нижче наведені документи і їх настрій, який може бути {labels_str}."
+        ),
+        default_prompt_template="Документ: {text}\nНастрій: {label}",
+        default_instruction_prompt=(
+            "Документ: {text}\n\n"
+            "Класифікуйте настрій у документі. "
+            "Відповідайте {labels_str}, і нічого більше."
+        ),
     ),
 }

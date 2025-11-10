@@ -24,6 +24,7 @@ from euroeval.model_config import get_model_config
         "non-existent-model",
     ],
 )
+@pytest.mark.flaky(reruns=3, reruns_delay=5)
 def test_get_model_config(
     benchmark_config: BenchmarkConfig, model_id: str, should_raise: bool
 ) -> None:

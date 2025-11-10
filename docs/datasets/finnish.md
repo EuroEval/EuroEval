@@ -632,21 +632,21 @@ Here are a few examples from the training split:
 
 ```json
 {
-  "text": "Kun Dennis oli Puolassa, hän nautti matkasta enemmän kuin Jason, koska _ ymmärsi puolaa syvällisemmin. Mihin tyhjä _ viittaa?\nVastausvaihtoehdot:\na. Vaihtoehto A: Dennis\nb. Vaihtoehto B: Jason",
+  "text": "Kun Dennis oli Puolassa, hän nautti matkasta enemmän kuin Jason, koska _ ymmärsi puolaa syvällisemmin. Mihin tyhjä _ viittaa?\nVastausvaihtoehdot:\na. Dennis\nb. Jason",
   "label": "a"
 }
 ```
 
 ```json
 {
-  "text": "Michael halusi viedä Craigin vesille uudella veneellään. _ sanoi, että olisi hauskaa näyttää hänelle köysiä. Mihin tyhjä _ viittaa?\nVastausvaihtoehdot:\na. Vaihtoehto A: Michael\nb. Vaihtoehto B: Craig",
+  "text": "Michael halusi viedä Craigin vesille uudella veneellään. _ sanoi, että olisi hauskaa näyttää hänelle köysiä. Mihin tyhjä _ viittaa?\nVastausvaihtoehdot:\na. Michael\nb. Craig",
   "label": "a"
 }
 ```
 
 ```json
 {
-  "text": "Voittaaksemme käyttäytymisharhan, meidän täytyy keskittyä enemmän tietoisten toimien muuttamiseen kuin tiedostamattomien toimien muuttamiseen, koska _ toimet ovat vapaaehtoisia. Mihin tyhjä _ viittaa?\nVastausvaihtoehdot:\na. Vaihtoehto A: tiedostamattomat\nb. Vaihtoehto B: tietoiset",
+  "text": "Voittaaksemme käyttäytymisharhan, meidän täytyy keskittyä enemmän tietoisten toimien muuttamiseen kuin tiedostamattomien toimien muuttamiseen, koska _ toimet ovat vapaaehtoisia. Mihin tyhjä _ viittaa?\nVastausvaihtoehdot:\na. tiedostamattomat\nb. tietoiset",
   "label": "b"
 }
 ```

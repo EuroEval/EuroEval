@@ -1,0 +1,11 @@
+# sent_id = dev-s239
+# text = Postanowiliśmy iść za tym pomysłem.
+# orig_file_sentence = 120-2-900063_morph_3.30-s#2420
+1-2	Postanowiliśmy	_	_	_	_	_	_	_	_
+1	Postanowili	postanowić	VERB	praet:pl:m1:perf	Animacy=Hum|Aspect=Perf|Gender=Masc|Mood=Ind|Number=Plur|Tense=Past|VerbForm=Fin|Voice=Act	0	root	0:root	_
+2	śmy	być	AUX	aglt:pl:pri:imperf:nwok	Aspect=Imp|Number=Plur|Person=1|Variant=Short	1	aux:clitic	1:aux:clitic	_
+3	iść	iść	VERB	inf:imperf	Aspect=Imp|VerbForm=Inf|Voice=Act	1	xcomp	1:xcomp	_
+4	za	za	ADP	prep:inst	AdpType=Prep	6	case	6:case	Case=Ins
+5	tym	ten	DET	adj:sg:inst:m3:pos	Animacy=Inan|Case=Ins|Gender=Masc|Number=Sing|PronType=Dem	6	det	6:det	_
+6	pomysłem	pomysł	NOUN	subst:sg:inst:m3	Animacy=Inan|Case=Ins|Gender=Masc|Number=Sing	3	obl:arg	3:obl:arg	SpaceAfter=No
+7	.	.	PUNCT	interp	PunctType=Peri	1	punct	1:punct	_
