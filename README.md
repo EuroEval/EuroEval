@@ -489,6 +489,13 @@ A huge thank you to all the contributors who have helped make this project a suc
         alt="Contributor avatar for mrkowalski"
     />
 </a>
+<a href="https://github.com/sofiehb">
+    <img
+        src="https://avatars.githubusercontent.com/u/199633702"
+        width=50
+        alt="Contributor avatar for sofiehb"
+    />
+</a>
 
 ### Contribute to EuroEval
 
