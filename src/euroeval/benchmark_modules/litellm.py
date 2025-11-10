@@ -162,6 +162,7 @@ REASONING_MODELS = [
     r"(gemini/)?gemini.*thinking.*",
     r"(gemini/)?gemini-2.5.*",
     r"(xai/)?grok-3-mini.*",
+    r".*gpt-oss.*",
 ]
 
 BASE_DECODER_MODELS = [
@@ -171,6 +172,17 @@ BASE_DECODER_MODELS = [
     r"curie-[0-9]{3}",
     r"davinci-[0-9]{3}",
     r"text-davinci-[0-9]{3}",
+]
+
+CUSTOM_INFERENCE_API_PREFIXES = [
+    "hosted_vllm/",
+    "vllm/",
+    "ollama/",
+    "ollama_chat/",
+    "llamafile/",
+    "litellm_proxy/",
+    "lm_studio/",
+    "openai/",
 ]
 
 
@@ -278,11 +290,15 @@ class LiteLLMModel(BenchmarkModule):
         elif self.model_config.param in {"no-thinking"}:
             type_ = GenerativeType.INSTRUCTION_TUNED
         elif re.fullmatch(
-            pattern="|".join(REASONING_MODELS), string=self.model_config.model_id
+            pattern="|".join(REASONING_MODELS),
+            string=self.model_config.model_id,
+            flags=re.IGNORECASE,
         ):
             type_ = GenerativeType.REASONING
         elif re.fullmatch(
-            pattern="|".join(BASE_DECODER_MODELS), string=self.model_config.model_id
+            pattern="|".join(BASE_DECODER_MODELS),
+            string=self.model_config.model_id,
+            flags=re.IGNORECASE,
         ):
             type_ = GenerativeType.BASE
         elif supports_reasoning(model=self.model_config.model_id):
@@ -1743,9 +1759,8 @@ def clean_model_id(model_id: str, benchmark_config: BenchmarkConfig) -> str:
     Returns:
         The cleaned model ID.
     """
-    if (
-        benchmark_config.api_base is not None
-        and re.search(pattern=r"^[a-zA-Z0-9_-]+\/", string=model_id) is None
+    if benchmark_config.api_base is not None and not any(
+        model_id.startswith(prefix) for prefix in CUSTOM_INFERENCE_API_PREFIXES
     ):
         if benchmark_config.generative_type == GenerativeType.BASE:
             prefix = "text-completion-openai/"

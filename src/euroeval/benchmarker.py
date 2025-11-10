@@ -343,7 +343,9 @@ class Benchmarker:
             model_config: The configuration for the model.
             benchmark_config: The configuration for the benchmark.
         """
-        log_once(f"Loading data for {dataset_config.pretty_name}", level=logging.INFO)
+        log_once(
+            f"Loading data for {dataset_config.logging_string}", level=logging.INFO
+        )
         dataset = load_raw_data(
             dataset_config=dataset_config, cache_dir=benchmark_config.cache_dir
         )
@@ -1010,7 +1012,7 @@ class Benchmarker:
                         )
 
                 results = log_scores(
-                    dataset_name=dataset_config.pretty_name,
+                    dataset_name=dataset_config.logging_string,
                     metrics=dataset_config.task.metrics,
                     scores=scores,
                     model_id=model_config.model_id,
@@ -1211,7 +1213,7 @@ def initial_logging(
 
     log_once(
         f"\n{eval_type} {model_id} on the {split_type} split of "
-        f"{dataset_config.pretty_name} ({num_finished_benchmarks + 1}/"
+        f"{dataset_config.logging_string} ({num_finished_benchmarks + 1}/"
         f"{num_total_benchmarks} benchmarks)...",
         prefix=f"\n[{dt.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}]",
     )
