@@ -21,12 +21,14 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Now always truncates prompts to fit within the model's maximum context length when
   evaluating vLLM models. Previously we only did this when catching the associated
   error, but we cannot do this anymore as vLLM only returns generic errors now.
+- Marked OpenAI's GPT-OSS models as reasoning models when benchmarking them on a custom
+  inference server.
 
 ### Fixed
 
 - When evaluating encoder models on reading comprehension datasets, we now also truncate
   the question in case the model's maximum context length is very small.
-  
+
 ### Deprecated
 
 - Deprecated the `--model-language`, `--dataset-language`, and `--batch-size` arguments
