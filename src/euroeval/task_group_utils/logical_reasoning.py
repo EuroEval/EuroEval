@@ -151,8 +151,18 @@ def compare_prediction_and_label(prediction: dict[str,list[str]],
     n_keys = len(label)
     n_elements_per_key = len(label[0])
 
+    # Convert each row to a set of values so the order within the row does not matter
+    prediction_sets = {
+        obj: set(row_attributes)
+        for obj, row_attributes in zip(prediction.keys(), prediction.values())
+    }
+    label_sets = {
+        obj: set(row_attributes)
+        for obj, row_attributes in zip(label.keys(), label.values())
+    }
+
     # Compare the full prediction to the full label
-    if prediction == label:
+    if prediction_sets == label_sets:
         puzzle_score = 1
         cell_score = 1.0
         best_permuted_cell_score = 1.0
@@ -160,8 +170,8 @@ def compare_prediction_and_label(prediction: dict[str,list[str]],
 
     # Compare all cells
     cell_score = compute_cell_score(
-        prediction=prediction,
-        label=label,
+        prediction=prediction_sets,
+        label=label_sets,
         n_keys=n_keys,
         n_elements_per_key=n_elements_per_key,
     )
@@ -175,16 +185,16 @@ def compare_prediction_and_label(prediction: dict[str,list[str]],
 
         # Evaluate every permutation of the objects in the response
         best_permuted_cell_score = compute_best_permuted_cell_score(
-            prediction=prediction,
-            label=label,
+            prediction=prediction_sets,
+            label=label_sets,
             n_keys=n_keys,
             n_elements_per_key=n_elements_per_key,
         )
     return puzzle_score, cell_score, best_permuted_cell_score
 
 def compute_cell_score(
-    prediction: dict[str, list],
-    label: dict[str, list],
+    prediction: dict[str, set],
+    label: dict[str, set],
     n_keys: int,
     n_elements_per_key: int,
 ) -> float:
@@ -201,25 +211,31 @@ def compute_cell_score(
 
     # TODO: Make sure the order of attributes in each object does not matter
     """
+    # Sort the prediction and label by object keys to ensure consistent order
+    prediction = dict(sorted(prediction.items()))
+    label = dict(sorted(label.items()))
+
     # Compare each cell
     cell_score: float = 0.0
-    for attributes_output, attributes_solution in zip(
+    n_correct_attributes: int = 0
+    for attributes_pred, attributes_label in zip(
         prediction.values(), label.values()
     ):
-        for attribute_output, attribute_solution in zip(
-            attributes_output, attributes_solution
-        ):
-            if attribute_output.strip() == attribute_solution.strip():
-                cell_score += 1.0
+        # strip whitespace
+        attributes_pred = {attr.strip() for attr in attributes_pred}
+        attributes_label = {attr.strip() for attr in attributes_label}
+
+        # Count the number of correct attributes
+        n_correct_attributes += len(attributes_pred.intersection(attributes_label))
 
     # Normalise the cell score
-    cell_score /= float(n_keys * n_elements_per_key)
+    cell_score = float(n_correct_attributes) / float(n_keys * n_elements_per_key)
 
     return cell_score
 
 def compute_best_permuted_cell_score(
-    prediction: dict[str, list],
-    label: dict[str, list],
+    prediction: dict[str, set],
+    label: dict[str, set],
     n_keys: int,
     n_elements_per_key: int,
 ) -> float:
@@ -245,8 +261,8 @@ def compute_best_permuted_cell_score(
     for object_permutation in object_permutations:
         # Create a new prediction with the objects permuted
         prediction_permuted = {
-            object: prediction[object]
-            for object in object_permutation
+            obj: prediction[perm_obj]
+            for obj, perm_obj in zip(objects, object_permutation)
         }
 
         # Compare the permuted prediction to the label
