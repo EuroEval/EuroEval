@@ -953,8 +953,12 @@
 <span class="normal">92</span>
 <span class="normal">93</span>
 <span class="normal">94</span>
-<span class="normal">95</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Constants used throughout the project.&quot;&quot;&quot;</span>
+<span class="normal">95</span>
+<span class="normal">96</span>
+<span class="normal">97</span>
+<span class="normal">98</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Constants used throughout the project.&quot;&quot;&quot;</span>
 
+<span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">TypeVar</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">.enums</span><span class="w"> </span><span class="kn">import</span> <span class="n">TaskGroup</span>
@@ -962,10 +966,8 @@
 <span class="c1"># Type variable used for generic typing</span>
 <span class="n">T</span> <span class="o">=</span> <span class="n">TypeVar</span><span class="p">(</span><span class="s2">&quot;T&quot;</span><span class="p">,</span> <span class="n">bound</span><span class="o">=</span><span class="nb">object</span><span class="p">)</span>
 
-
 <span class="c1"># This is used as input to generative models; it cannot be a special token</span>
 <span class="n">DUMMY_FILL_VALUE</span> <span class="o">=</span> <span class="mi">100</span>
-
 
 <span class="c1"># This is the maximum allowed context length for models for the purpose of this</span>
 <span class="c1"># benchmark. We will still report the models&#39; true maximum context length in the</span>
@@ -973,11 +975,9 @@
 <span class="c1"># all tokens in the context.</span>
 <span class="n">MAX_CONTEXT_LENGTH</span> <span class="o">=</span> <span class="mi">8_192</span>
 
-
 <span class="c1"># We need to raise the amount of tokens generated for reasoning models, to give them</span>
 <span class="c1"># time to think</span>
 <span class="n">REASONING_MAX_TOKENS</span> <span class="o">=</span> <span class="mi">8_192</span>
-
 
 <span class="c1"># The Hugging Face Hub pipeline tags used to classify models as generative</span>
 <span class="n">GENERATIVE_PIPELINE_TAGS</span> <span class="o">=</span> <span class="p">[</span>
@@ -988,41 +988,50 @@
     <span class="s2">&quot;video-text-to-text&quot;</span><span class="p">,</span>
 <span class="p">]</span>
 
-
 <span class="c1"># Used to disallow non-generative models to be evaluated on these task groups</span>
 <span class="n">GENERATIVE_DATASET_TASK_GROUPS</span> <span class="o">=</span> <span class="p">[</span><span class="n">TaskGroup</span><span class="o">.</span><span class="n">TEXT_TO_TEXT</span><span class="p">]</span>
 
-
 <span class="c1"># Local models are required to have these files in their directory</span>
 <span class="n">LOCAL_MODELS_REQUIRED_FILES</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;config.json&quot;</span><span class="p">]</span>
-
 
 <span class="c1"># The number of top log probabilities to return for generative models. For several APIs</span>
 <span class="c1"># this is the maximum number of log probabilities that can be returned</span>
 <span class="n">MAX_VLLM_LOGPROBS</span> <span class="o">=</span> <span class="mi">20</span>
 <span class="n">MAX_LITELLM_LOGPROBS</span> <span class="o">=</span> <span class="mi">8</span>
 
-
 <span class="c1"># We make sure to remove these metric attributes after each iteration, to avoid memory</span>
 <span class="c1"># leaks</span>
 <span class="n">METRIC_ATTRIBUTES_TAKING_UP_MEMORY</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;cached_bertscorer&quot;</span><span class="p">]</span>
 
-
 <span class="c1"># Hugging Face Hub tags used to classify models as merge models</span>
 <span class="n">MERGE_TAGS</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;merge&quot;</span><span class="p">,</span> <span class="s2">&quot;mergekit&quot;</span><span class="p">]</span>
-
 
 <span class="c1"># The minimum required CUDA compute capability for using bfloat16 in vLLM</span>
 <span class="n">VLLM_BF16_MIN_CUDA_COMPUTE_CAPABILITY</span> <span class="o">=</span> <span class="mf">8.0</span>
 
+<span class="c1"># The candidates for end-of-sequence, beginning-of-sequence and padding tokens</span>
+<span class="n">EOS_TOKENS</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;&lt;/s&gt;&quot;</span><span class="p">,</span> <span class="s2">&quot;&lt;|end_of_text|&gt;&quot;</span><span class="p">,</span> <span class="s2">&quot;&lt;|endoftext|&gt;&quot;</span><span class="p">,</span> <span class="s2">&quot;[SEP]&quot;</span><span class="p">,</span> <span class="s2">&quot;&lt;|return|&gt;&quot;</span><span class="p">]</span>
+<span class="n">BOS_TOKENS</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;&lt;s&gt;&quot;</span><span class="p">,</span> <span class="s2">&quot;&lt;|begin_of_text|&gt;&quot;</span><span class="p">,</span> <span class="s2">&quot;&lt;|startoftext|&gt;&quot;</span><span class="p">,</span> <span class="s2">&quot;[CLS]&quot;</span><span class="p">]</span>
+<span class="n">PAD_TOKENS</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s2">&quot;&lt;pad&gt;&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;&lt;PAD&gt;&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;[pad]&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;[PAD]&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;&lt;|endoftext|&gt;&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;&lt;｜end▁of▁sentence｜&gt;&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;&lt;|im_end|&gt;&quot;</span><span class="p">,</span>
+<span class="p">]</span>
 
 <span class="c1"># Used to detect whether a model is a reasoning model</span>
-<span class="n">REASONING_TOKENS</span> <span class="o">=</span> <span class="p">[</span>
+<span class="n">REASONING_TOKENS</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span> <span class="o">|</span> <span class="n">re</span><span class="o">.</span><span class="n">Pattern</span><span class="p">,</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">re</span><span class="o">.</span><span class="n">Pattern</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[</span>
     <span class="p">(</span><span class="s2">&quot;&lt;think&gt;&quot;</span><span class="p">,</span> <span class="s2">&quot;&lt;/think&gt;&quot;</span><span class="p">),</span>
     <span class="p">(</span><span class="s2">&quot;&lt;reason&gt;&quot;</span><span class="p">,</span> <span class="s2">&quot;&lt;/reason&gt;&quot;</span><span class="p">),</span>
     <span class="p">(</span><span class="s2">&quot;&lt;reasoning&gt;&quot;</span><span class="p">,</span> <span class="s2">&quot;&lt;/reasoning&gt;&quot;</span><span class="p">),</span>
+    <span class="p">(</span>
+        <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="n">pattern</span><span class="o">=</span><span class="sa">r</span><span class="s2">&quot;&lt;\|channel\|&gt;(analysis|commentary)&lt;\|message\|&gt;&quot;</span><span class="p">),</span>
+        <span class="s2">&quot;&lt;|channel|&gt;final&lt;|message|&gt;&quot;</span><span class="p">,</span>
+    <span class="p">),</span>
 <span class="p">]</span>
-
 
 <span class="c1"># These tokens are sometimes used by models to indicate the end of a generated</span>
 <span class="c1"># response, but they do not use them as a proper EOS token, so we have to deal with them</span>
@@ -1030,16 +1039,13 @@
 <span class="c1"># output</span>
 <span class="n">CUSTOM_STOP_TOKENS</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;&lt;sep&gt;&quot;</span><span class="p">]</span>
 
-
 <span class="c1"># For classification tasks we force LiteLLM models to output a JSON dictionary with a</span>
 <span class="c1"># single key and the values being restricted to the allowed labels. This is the key we</span>
 <span class="c1"># use</span>
 <span class="n">LITELLM_CLASSIFICATION_OUTPUT_KEY</span> <span class="o">=</span> <span class="s2">&quot;label&quot;</span>
 
-
 <span class="c1"># These characters are stripped from JSON output when trying to identify the label</span>
 <span class="n">JSON_STRIP_CHARACTERS</span> <span class="o">=</span> <span class="s1">&#39; </span><span class="si">{}</span><span class="se">\n\r</span><span class="s1">&quot;:&#39;</span>
-
 
 <span class="c1"># The number of tokens we generate when evaluating generative models on classification</span>
 <span class="c1"># tasks. We also use this to determine whether we should store logprobs in the model</span>

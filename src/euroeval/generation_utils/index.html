@@ -1363,7 +1363,18 @@
 <span class="normal">467</span>
 <span class="normal">468</span>
 <span class="normal">469</span>
-<span class="normal">470</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Utility functions related to generative models.&quot;&quot;&quot;</span>
+<span class="normal">470</span>
+<span class="normal">471</span>
+<span class="normal">472</span>
+<span class="normal">473</span>
+<span class="normal">474</span>
+<span class="normal">475</span>
+<span class="normal">476</span>
+<span class="normal">477</span>
+<span class="normal">478</span>
+<span class="normal">479</span>
+<span class="normal">480</span>
+<span class="normal">481</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Utility functions related to generative models.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">c</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">itertools</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">it</span>
@@ -1759,6 +1770,15 @@
                         <span class="p">)</span>
                         <span class="k">break</span>
 
+            <span class="c1"># Custom chat template kwargs</span>
+            <span class="n">chat_template_kwargs</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">t</span><span class="o">.</span><span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">model_config</span><span class="o">.</span><span class="n">param</span> <span class="ow">in</span> <span class="p">{</span><span class="s2">&quot;low&quot;</span><span class="p">,</span> <span class="s2">&quot;medium&quot;</span><span class="p">,</span> <span class="s2">&quot;high&quot;</span><span class="p">}:</span>
+                <span class="n">chat_template_kwargs</span><span class="p">[</span><span class="s2">&quot;reasoning_effort&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">model_config</span><span class="o">.</span><span class="n">param</span>
+                <span class="n">log_once</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;Set reasoning mode to </span><span class="si">{</span><span class="n">model_config</span><span class="o">.</span><span class="n">param</span><span class="si">!r}</span><span class="s2">.&quot;</span><span class="p">,</span>
+                    <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
+                <span class="p">)</span>
+
             <span class="n">texts</span> <span class="o">=</span> <span class="p">[</span>
                 <span class="n">apply_chat_template</span><span class="p">(</span>
                     <span class="n">conversation</span><span class="o">=</span><span class="n">messages</span><span class="p">,</span>
@@ -1767,6 +1787,7 @@
                     <span class="n">add_generation_prompt</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
                     <span class="n">enable_thinking</span><span class="o">=</span><span class="p">(</span><span class="n">generative_type</span> <span class="o">==</span> <span class="n">GenerativeType</span><span class="o">.</span><span class="n">REASONING</span><span class="p">),</span>
                     <span class="n">chat_template</span><span class="o">=</span><span class="n">chat_template</span><span class="p">,</span>
+                    <span class="o">**</span><span class="n">chat_template_kwargs</span><span class="p">,</span>
                 <span class="p">)</span>
                 <span class="k">for</span> <span class="n">messages</span> <span class="ow">in</span> <span class="n">messages_list</span>
             <span class="p">]</span>
@@ -1813,26 +1834,27 @@
 <span class="sd">        InvalidModel:</span>
 <span class="sd">            If the model configuration has invalid parameters.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Do nothing if there are no parameters to check</span>
     <span class="k">if</span> <span class="n">model_config</span><span class="o">.</span><span class="n">param</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="k">return</span>
+
+    <span class="c1"># Make list of all allowed parameters for the model</span>
+    <span class="n">all_allowed_params</span><span class="p">:</span> <span class="nb">set</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
     <span class="k">for</span> <span class="n">model_regex</span><span class="p">,</span> <span class="n">allowed_params_list</span> <span class="ow">in</span> <span class="n">allowed_params</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
         <span class="k">if</span> <span class="n">re</span><span class="o">.</span><span class="n">fullmatch</span><span class="p">(</span><span class="n">pattern</span><span class="o">=</span><span class="n">model_regex</span><span class="p">,</span> <span class="n">string</span><span class="o">=</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span><span class="p">):</span>
-            <span class="k">if</span> <span class="n">model_config</span><span class="o">.</span><span class="n">param</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">allowed_params_list</span><span class="p">:</span>
-                <span class="n">msg</span> <span class="o">=</span> <span class="p">(</span>
-                    <span class="sa">f</span><span class="s2">&quot;Invalid parameter </span><span class="si">{</span><span class="n">model_config</span><span class="o">.</span><span class="n">param</span><span class="si">!r}</span><span class="s2"> for model &quot;</span>
-                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span><span class="si">!r}</span><span class="s2">.&quot;</span>
-                <span class="p">)</span>
-                <span class="k">if</span> <span class="n">allowed_params_list</span><span class="p">:</span>
-                    <span class="n">msg</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot; Allowed parameters are: </span><span class="si">{</span><span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">allowed_params_list</span><span class="p">)</span><span class="si">}</span><span class="s2">.&quot;</span>
-                <span class="k">else</span><span class="p">:</span>
-                    <span class="n">msg</span> <span class="o">+=</span> <span class="s2">&quot; No parameters are allowed.&quot;</span>
-                <span class="k">raise</span> <span class="n">InvalidModel</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
-            <span class="k">return</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="n">InvalidModel</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;The parameter </span><span class="si">{</span><span class="n">model_config</span><span class="o">.</span><span class="n">param</span><span class="si">!r}</span><span class="s2"> is not supported for the model &quot;</span>
+            <span class="n">all_allowed_params</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">allowed_params_list</span><span class="p">)</span>
+
+    <span class="c1"># Raise error if the parameter is not allowed</span>
+    <span class="k">if</span> <span class="n">model_config</span><span class="o">.</span><span class="n">param</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">all_allowed_params</span><span class="p">:</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;Invalid parameter </span><span class="si">{</span><span class="n">model_config</span><span class="o">.</span><span class="n">param</span><span class="si">!r}</span><span class="s2"> for model &quot;</span>
             <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span><span class="si">!r}</span><span class="s2">.&quot;</span>
         <span class="p">)</span>
+        <span class="k">if</span> <span class="n">all_allowed_params</span><span class="p">:</span>
+            <span class="n">msg</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot; Allowed parameters are: </span><span class="si">{</span><span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">all_allowed_params</span><span class="p">)</span><span class="si">}</span><span class="s2">.&quot;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">msg</span> <span class="o">+=</span> <span class="s2">&quot; No parameters are allowed.&quot;</span>
+        <span class="k">raise</span> <span class="n">InvalidModel</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
 
 

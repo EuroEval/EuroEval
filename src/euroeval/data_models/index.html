@@ -1965,13 +1965,43 @@
 <span class="normal">790</span>
 <span class="normal">791</span>
 <span class="normal">792</span>
-<span class="normal">793</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Data models used in EuroEval.&quot;&quot;&quot;</span>
+<span class="normal">793</span>
+<span class="normal">794</span>
+<span class="normal">795</span>
+<span class="normal">796</span>
+<span class="normal">797</span>
+<span class="normal">798</span>
+<span class="normal">799</span>
+<span class="normal">800</span>
+<span class="normal">801</span>
+<span class="normal">802</span>
+<span class="normal">803</span>
+<span class="normal">804</span>
+<span class="normal">805</span>
+<span class="normal">806</span>
+<span class="normal">807</span>
+<span class="normal">808</span>
+<span class="normal">809</span>
+<span class="normal">810</span>
+<span class="normal">811</span>
+<span class="normal">812</span>
+<span class="normal">813</span>
+<span class="normal">814</span>
+<span class="normal">815</span>
+<span class="normal">816</span>
+<span class="normal">817</span>
+<span class="normal">818</span>
+<span class="normal">819</span>
+<span class="normal">820</span>
+<span class="normal">821</span>
+<span class="normal">822</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Data models used in EuroEval.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">c</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">pathlib</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">t</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">copy</span><span class="w"> </span><span class="kn">import</span> <span class="n">deepcopy</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span><span class="p">,</span> <span class="n">field</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">pydantic</span>
@@ -1979,7 +2009,15 @@
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">.enums</span><span class="w"> </span><span class="kn">import</span> <span class="n">Device</span><span class="p">,</span> <span class="n">GenerativeType</span><span class="p">,</span> <span class="n">ModelType</span><span class="p">,</span> <span class="n">TaskGroup</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.exceptions</span><span class="w"> </span><span class="kn">import</span> <span class="n">InvalidBenchmark</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">.languages</span><span class="w"> </span><span class="kn">import</span> <span class="n">ENGLISH</span><span class="p">,</span> <span class="n">NORWEGIAN</span><span class="p">,</span> <span class="n">PORTUGUESE</span><span class="p">,</span> <span class="n">Language</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.languages</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">ENGLISH</span><span class="p">,</span>
+    <span class="n">EUROPEAN_PORTUGUESE</span><span class="p">,</span>
+    <span class="n">NORWEGIAN</span><span class="p">,</span>
+    <span class="n">NORWEGIAN_BOKMÅL</span><span class="p">,</span>
+    <span class="n">NORWEGIAN_NYNORSK</span><span class="p">,</span>
+    <span class="n">PORTUGUESE</span><span class="p">,</span>
+    <span class="n">Language</span><span class="p">,</span>
+<span class="p">)</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.metrics.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">Metric</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">ScoreDict</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_package_version</span>
@@ -2232,9 +2270,25 @@
             <span class="k">else</span> <span class="s2">&quot;&quot;</span>
         <span class="p">)</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">languages</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">logging_languages</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">languages</span><span class="p">))</span>
+            <span class="k">if</span> <span class="p">(</span>
+                <span class="n">NORWEGIAN_BOKMÅL</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">languages</span>
+                <span class="ow">and</span> <span class="n">NORWEGIAN_NYNORSK</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">languages</span>
+                <span class="ow">and</span> <span class="n">NORWEGIAN</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">languages</span>
+            <span class="p">):</span>
+                <span class="n">logging_languages</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">NORWEGIAN_BOKMÅL</span><span class="p">)</span>
+                <span class="n">logging_languages</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">NORWEGIAN_NYNORSK</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="p">(</span>
+                <span class="n">NORWEGIAN_BOKMÅL</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">languages</span>
+                <span class="ow">or</span> <span class="n">NORWEGIAN_NYNORSK</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">languages</span>
+            <span class="p">)</span> <span class="ow">and</span> <span class="n">NORWEGIAN</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">languages</span><span class="p">:</span>
+                <span class="n">logging_languages</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">NORWEGIAN</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">PORTUGUESE</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">languages</span> <span class="ow">and</span> <span class="n">EUROPEAN_PORTUGUESE</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">languages</span><span class="p">:</span>
+                <span class="n">logging_languages</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">EUROPEAN_PORTUGUESE</span><span class="p">)</span>
+
             <span class="n">languages_str</span> <span class="o">=</span> <span class="p">(</span>
-                <span class="s2">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">lang</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">lang</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">languages</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]])</span>
-                <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot; and </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">languages</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="s2">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">lang</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">lang</span> <span class="ow">in</span> <span class="n">logging_languages</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]])</span>
+                <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot; and </span><span class="si">{</span><span class="n">logging_languages</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span>
             <span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">languages_str</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">languages</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">name</span>
@@ -2418,12 +2472,8 @@
 <span class="sd">    Attributes:</span>
 <span class="sd">        datasets:</span>
 <span class="sd">            The datasets to benchmark on.</span>
-<span class="sd">        model_languages:</span>
-<span class="sd">            The languages of the models to benchmark.</span>
-<span class="sd">        dataset_languages:</span>
-<span class="sd">            The languages of the datasets in the benchmark.</span>
-<span class="sd">        batch_size:</span>
-<span class="sd">            The batch size to use.</span>
+<span class="sd">        finetuning_batch_size:</span>
+<span class="sd">            The batch size to use for finetuning.</span>
 <span class="sd">        raise_errors:</span>
 <span class="sd">            Whether to raise errors instead of skipping them.</span>
 <span class="sd">        cache_dir:</span>
@@ -2478,9 +2528,8 @@
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="n">datasets</span><span class="p">:</span> <span class="n">c</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="n">DatasetConfig</span><span class="p">]</span>
-    <span class="n">model_languages</span><span class="p">:</span> <span class="n">c</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="n">Language</span><span class="p">]</span>
-    <span class="n">dataset_languages</span><span class="p">:</span> <span class="n">c</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="n">Language</span><span class="p">]</span>
-    <span class="n">batch_size</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">languages</span><span class="p">:</span> <span class="n">c</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="n">Language</span><span class="p">]</span>
+    <span class="n">finetuning_batch_size</span><span class="p">:</span> <span class="nb">int</span>
     <span class="n">raise_errors</span><span class="p">:</span> <span class="nb">bool</span>
     <span class="n">cache_dir</span><span class="p">:</span> <span class="nb">str</span>
     <span class="n">api_key</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span>
@@ -2508,6 +2557,13 @@
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the tasks in the benchmark configuration.&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="nb">list</span><span class="p">({</span><span class="n">dataset_config</span><span class="o">.</span><span class="n">task</span> <span class="k">for</span> <span class="n">dataset_config</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">datasets</span><span class="p">})</span>
 
+    <span class="k">def</span><span class="w"> </span><span class="nf">__post_init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Post-initialisation checks.&quot;&quot;&quot;</span>
+        <span class="c1"># Set dummy API key if it has not been set and we&#39;re benchmarking a model on an</span>
+        <span class="c1"># inference API</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">api_key</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">api_base</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">api_key</span> <span class="o">=</span> <span class="s2">&quot;dummy&quot;</span>
+
 
 <span class="k">class</span><span class="w"> </span><span class="nc">BenchmarkConfigParams</span><span class="p">(</span><span class="n">pydantic</span><span class="o">.</span><span class="n">BaseModel</span><span class="p">):</span><div class="mkapi-source-link" id="euroeval.data_models.BenchmarkConfigParams"><a href="../../../api/euroeval/data_models/#euroeval.data_models.BenchmarkConfigParams" title="Go to docs">[docs]</a></div>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;The parameters for the benchmark configuration.&quot;&quot;&quot;</span>
@@ -2521,10 +2577,8 @@
     <span class="n">progress_bar</span><span class="p">:</span> <span class="nb">bool</span>
     <span class="n">save_results</span><span class="p">:</span> <span class="nb">bool</span>
     <span class="n">language</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">c</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
-    <span class="n">model_language</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">c</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span>
-    <span class="n">dataset_language</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">c</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span>
     <span class="n">device</span><span class="p">:</span> <span class="n">Device</span> <span class="o">|</span> <span class="kc">None</span>
-    <span class="n">batch_size</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">finetuning_batch_size</span><span class="p">:</span> <span class="nb">int</span>
     <span class="n">raise_errors</span><span class="p">:</span> <span class="nb">bool</span>
     <span class="n">cache_dir</span><span class="p">:</span> <span class="nb">str</span>
     <span class="n">api_key</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span>
@@ -2550,7 +2604,7 @@
 
     <span class="n">dataset</span><span class="p">:</span> <span class="nb">str</span>
     <span class="n">task</span><span class="p">:</span> <span class="nb">str</span>
-    <span class="n">dataset_languages</span><span class="p">:</span> <span class="n">c</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
+    <span class="n">languages</span><span class="p">:</span> <span class="n">c</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
     <span class="n">model</span><span class="p">:</span> <span class="nb">str</span>
     <span class="n">results</span><span class="p">:</span> <span class="n">ScoreDict</span>
     <span class="n">num_model_parameters</span><span class="p">:</span> <span class="nb">int</span>
@@ -2599,6 +2653,10 @@
             <span class="n">config</span><span class="p">[</span><span class="s2">&quot;few_shot&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">zero_shot_matches</span> <span class="ow">is</span> <span class="kc">None</span>
         <span class="k">if</span> <span class="s2">&quot;validation_split&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">config</span><span class="p">:</span>
             <span class="n">config</span><span class="p">[</span><span class="s2">&quot;validation_split&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">val_matches</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+
+        <span class="c1"># Backwards compatibility</span>
+        <span class="k">if</span> <span class="s2">&quot;dataset_languages&quot;</span> <span class="ow">in</span> <span class="n">config</span><span class="p">:</span>
+            <span class="n">config</span><span class="p">[</span><span class="s2">&quot;languages&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;dataset_languages&quot;</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="o">**</span><span class="n">config</span><span class="p">)</span>
 

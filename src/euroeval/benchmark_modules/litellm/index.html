@@ -972,6 +972,15 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#euroeval.benchmark_modules.litellm.clean_model_id" class="md-nav__link">
+    <span class="md-ellipsis">
+      clean_model_id
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -2671,7 +2680,104 @@
 <span class="normal">1670</span>
 <span class="normal">1671</span>
 <span class="normal">1672</span>
-<span class="normal">1673</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Generative models from an inference API, using the LiteLLM framework.&quot;&quot;&quot;</span>
+<span class="normal">1673</span>
+<span class="normal">1674</span>
+<span class="normal">1675</span>
+<span class="normal">1676</span>
+<span class="normal">1677</span>
+<span class="normal">1678</span>
+<span class="normal">1679</span>
+<span class="normal">1680</span>
+<span class="normal">1681</span>
+<span class="normal">1682</span>
+<span class="normal">1683</span>
+<span class="normal">1684</span>
+<span class="normal">1685</span>
+<span class="normal">1686</span>
+<span class="normal">1687</span>
+<span class="normal">1688</span>
+<span class="normal">1689</span>
+<span class="normal">1690</span>
+<span class="normal">1691</span>
+<span class="normal">1692</span>
+<span class="normal">1693</span>
+<span class="normal">1694</span>
+<span class="normal">1695</span>
+<span class="normal">1696</span>
+<span class="normal">1697</span>
+<span class="normal">1698</span>
+<span class="normal">1699</span>
+<span class="normal">1700</span>
+<span class="normal">1701</span>
+<span class="normal">1702</span>
+<span class="normal">1703</span>
+<span class="normal">1704</span>
+<span class="normal">1705</span>
+<span class="normal">1706</span>
+<span class="normal">1707</span>
+<span class="normal">1708</span>
+<span class="normal">1709</span>
+<span class="normal">1710</span>
+<span class="normal">1711</span>
+<span class="normal">1712</span>
+<span class="normal">1713</span>
+<span class="normal">1714</span>
+<span class="normal">1715</span>
+<span class="normal">1716</span>
+<span class="normal">1717</span>
+<span class="normal">1718</span>
+<span class="normal">1719</span>
+<span class="normal">1720</span>
+<span class="normal">1721</span>
+<span class="normal">1722</span>
+<span class="normal">1723</span>
+<span class="normal">1724</span>
+<span class="normal">1725</span>
+<span class="normal">1726</span>
+<span class="normal">1727</span>
+<span class="normal">1728</span>
+<span class="normal">1729</span>
+<span class="normal">1730</span>
+<span class="normal">1731</span>
+<span class="normal">1732</span>
+<span class="normal">1733</span>
+<span class="normal">1734</span>
+<span class="normal">1735</span>
+<span class="normal">1736</span>
+<span class="normal">1737</span>
+<span class="normal">1738</span>
+<span class="normal">1739</span>
+<span class="normal">1740</span>
+<span class="normal">1741</span>
+<span class="normal">1742</span>
+<span class="normal">1743</span>
+<span class="normal">1744</span>
+<span class="normal">1745</span>
+<span class="normal">1746</span>
+<span class="normal">1747</span>
+<span class="normal">1748</span>
+<span class="normal">1749</span>
+<span class="normal">1750</span>
+<span class="normal">1751</span>
+<span class="normal">1752</span>
+<span class="normal">1753</span>
+<span class="normal">1754</span>
+<span class="normal">1755</span>
+<span class="normal">1756</span>
+<span class="normal">1757</span>
+<span class="normal">1758</span>
+<span class="normal">1759</span>
+<span class="normal">1760</span>
+<span class="normal">1761</span>
+<span class="normal">1762</span>
+<span class="normal">1763</span>
+<span class="normal">1764</span>
+<span class="normal">1765</span>
+<span class="normal">1766</span>
+<span class="normal">1767</span>
+<span class="normal">1768</span>
+<span class="normal">1769</span>
+<span class="normal">1770</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Generative models from an inference API, using the LiteLLM framework.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">asyncio</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">c</span>
@@ -2835,6 +2941,7 @@
     <span class="sa">r</span><span class="s2">&quot;(gemini/)?gemini.*thinking.*&quot;</span><span class="p">,</span>
     <span class="sa">r</span><span class="s2">&quot;(gemini/)?gemini-2.5.*&quot;</span><span class="p">,</span>
     <span class="sa">r</span><span class="s2">&quot;(xai/)?grok-3-mini.*&quot;</span><span class="p">,</span>
+    <span class="sa">r</span><span class="s2">&quot;.*gpt-oss.*&quot;</span><span class="p">,</span>
 <span class="p">]</span>
 
 <span class="n">BASE_DECODER_MODELS</span> <span class="o">=</span> <span class="p">[</span>
@@ -2844,6 +2951,17 @@
     <span class="sa">r</span><span class="s2">&quot;curie-[0-9]</span><span class="si">{3}</span><span class="s2">&quot;</span><span class="p">,</span>
     <span class="sa">r</span><span class="s2">&quot;davinci-[0-9]</span><span class="si">{3}</span><span class="s2">&quot;</span><span class="p">,</span>
     <span class="sa">r</span><span class="s2">&quot;text-davinci-[0-9]</span><span class="si">{3}</span><span class="s2">&quot;</span><span class="p">,</span>
+<span class="p">]</span>
+
+<span class="n">CUSTOM_INFERENCE_API_PREFIXES</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s2">&quot;hosted_vllm/&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;vllm/&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;ollama/&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;ollama_chat/&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;llamafile/&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;litellm_proxy/&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;lm_studio/&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;openai/&quot;</span><span class="p">,</span>
 <span class="p">]</span>
 
 
@@ -2927,6 +3045,7 @@
             <span class="n">generative_type</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">generative_type</span><span class="p">,</span>
             <span class="n">log_metadata</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">log_metadata</span><span class="p">,</span>
         <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">buffer</span><span class="p">[</span><span class="s2">&quot;max_concurrent_calls&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">20</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">generative_type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">GenerativeType</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span><div class="mkapi-source-link" id="euroeval.benchmark_modules.litellm.LiteLLMModel.generative_type"><a href="../../../../api/euroeval/benchmark_modules/litellm/#euroeval.benchmark_modules.litellm.LiteLLMModel.generative_type" title="Go to docs">[docs]</a></div>
@@ -2939,21 +3058,26 @@
             <span class="n">type_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">benchmark_config</span><span class="o">.</span><span class="n">generative_type</span>
         <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_ollama</span><span class="p">:</span>
             <span class="n">reasoning_model</span> <span class="o">=</span> <span class="s2">&quot;thinking&quot;</span> <span class="ow">in</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_ollama_show</span><span class="o">.</span><span class="n">capabilities</span> <span class="ow">or</span> <span class="p">[])</span>
-            <span class="n">type_</span> <span class="o">=</span> <span class="p">(</span>
-                <span class="n">GenerativeType</span><span class="o">.</span><span class="n">REASONING</span>
-                <span class="k">if</span> <span class="n">reasoning_model</span>
-                <span class="k">else</span> <span class="n">GenerativeType</span><span class="o">.</span><span class="n">INSTRUCTION_TUNED</span>
-            <span class="p">)</span>
+            <span class="k">if</span> <span class="n">reasoning_model</span><span class="p">:</span>
+                <span class="n">type_</span> <span class="o">=</span> <span class="n">GenerativeType</span><span class="o">.</span><span class="n">REASONING</span>
+            <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;ollama_chat/&quot;</span><span class="p">):</span>
+                <span class="n">type_</span> <span class="o">=</span> <span class="n">GenerativeType</span><span class="o">.</span><span class="n">INSTRUCTION_TUNED</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">type_</span> <span class="o">=</span> <span class="n">GenerativeType</span><span class="o">.</span><span class="n">BASE</span>
         <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">param</span> <span class="ow">in</span> <span class="p">{</span><span class="s2">&quot;thinking&quot;</span><span class="p">}:</span>
             <span class="n">type_</span> <span class="o">=</span> <span class="n">GenerativeType</span><span class="o">.</span><span class="n">REASONING</span>
         <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">param</span> <span class="ow">in</span> <span class="p">{</span><span class="s2">&quot;no-thinking&quot;</span><span class="p">}:</span>
             <span class="n">type_</span> <span class="o">=</span> <span class="n">GenerativeType</span><span class="o">.</span><span class="n">INSTRUCTION_TUNED</span>
         <span class="k">elif</span> <span class="n">re</span><span class="o">.</span><span class="n">fullmatch</span><span class="p">(</span>
-            <span class="n">pattern</span><span class="o">=</span><span class="s2">&quot;|&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">REASONING_MODELS</span><span class="p">),</span> <span class="n">string</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span>
+            <span class="n">pattern</span><span class="o">=</span><span class="s2">&quot;|&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">REASONING_MODELS</span><span class="p">),</span>
+            <span class="n">string</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span><span class="p">,</span>
+            <span class="n">flags</span><span class="o">=</span><span class="n">re</span><span class="o">.</span><span class="n">IGNORECASE</span><span class="p">,</span>
         <span class="p">):</span>
             <span class="n">type_</span> <span class="o">=</span> <span class="n">GenerativeType</span><span class="o">.</span><span class="n">REASONING</span>
         <span class="k">elif</span> <span class="n">re</span><span class="o">.</span><span class="n">fullmatch</span><span class="p">(</span>
-            <span class="n">pattern</span><span class="o">=</span><span class="s2">&quot;|&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">BASE_DECODER_MODELS</span><span class="p">),</span> <span class="n">string</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span>
+            <span class="n">pattern</span><span class="o">=</span><span class="s2">&quot;|&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">BASE_DECODER_MODELS</span><span class="p">),</span>
+            <span class="n">string</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span><span class="p">,</span>
+            <span class="n">flags</span><span class="o">=</span><span class="n">re</span><span class="o">.</span><span class="n">IGNORECASE</span><span class="p">,</span>
         <span class="p">):</span>
             <span class="n">type_</span> <span class="o">=</span> <span class="n">GenerativeType</span><span class="o">.</span><span class="n">BASE</span>
         <span class="k">elif</span> <span class="n">supports_reasoning</span><span class="p">(</span><span class="n">model</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span><span class="p">):</span>
@@ -3018,8 +3142,12 @@
             <span class="n">batch_indices</span><span class="p">,</span> <span class="n">batch_inputs</span> <span class="o">=</span> <span class="nb">zip</span><span class="p">(</span><span class="o">*</span><span class="n">inputs_to_run</span><span class="p">)</span>
             <span class="n">successes</span><span class="p">,</span> <span class="n">failures</span> <span class="o">=</span> <span class="n">safe_run</span><span class="p">(</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_generate_async</span><span class="p">(</span>
-                    <span class="n">model_id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span><span class="p">,</span>
+                    <span class="n">model_id</span><span class="o">=</span><span class="n">clean_model_id</span><span class="p">(</span>
+                        <span class="n">model_id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span><span class="p">,</span>
+                        <span class="n">benchmark_config</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">benchmark_config</span><span class="p">,</span>
+                    <span class="p">),</span>
                     <span class="n">inputs</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="n">batch_inputs</span><span class="p">),</span>
+                    <span class="n">max_concurrent_calls</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">buffer</span><span class="p">[</span><span class="s2">&quot;max_concurrent_calls&quot;</span><span class="p">],</span>
                     <span class="o">**</span><span class="n">generation_kwargs</span><span class="p">,</span>
                 <span class="p">)</span>
             <span class="p">)</span>
@@ -3045,6 +3173,29 @@
                 <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">failures</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">,</span>
                 <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
             <span class="p">)</span>
+
+            <span class="c1"># Check if any errors are due to HTTP 429 (too many requests), in which case</span>
+            <span class="c1"># we reduce the number of concurrent calls</span>
+            <span class="n">http_429_errors</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="n">idx</span>
+                <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="p">(</span><span class="n">_</span><span class="p">,</span> <span class="n">error</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">failures</span><span class="p">)</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">error</span><span class="p">,</span> <span class="n">RateLimitError</span><span class="p">)</span> <span class="ow">and</span> <span class="s2">&quot;Error code: 429&quot;</span> <span class="ow">in</span> <span class="nb">str</span><span class="p">(</span><span class="n">error</span><span class="p">)</span>
+            <span class="p">]</span>
+            <span class="k">if</span> <span class="n">http_429_errors</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">buffer</span><span class="p">[</span><span class="s2">&quot;max_concurrent_calls&quot;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="n">failures</span> <span class="o">=</span> <span class="p">[</span>
+                    <span class="n">failures</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+                    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">failures</span><span class="p">))</span>
+                    <span class="k">if</span> <span class="n">i</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">http_429_errors</span>
+                <span class="p">]</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">buffer</span><span class="p">[</span><span class="s2">&quot;max_concurrent_calls&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span>
+                    <span class="mi">1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">buffer</span><span class="p">[</span><span class="s2">&quot;max_concurrent_calls&quot;</span><span class="p">]</span> <span class="o">//</span> <span class="mi">2</span>
+                <span class="p">)</span>
+                <span class="n">log</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;Reducing the maximum number of concurrent calls to &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">buffer</span><span class="p">[</span><span class="s1">&#39;max_concurrent_calls&#39;</span><span class="p">]</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2"> due to rate limiting.&quot;</span><span class="p">,</span>
+                    <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
+                <span class="p">)</span>
+                <span class="k">continue</span>
 
             <span class="c1"># Attempt to handle the exceptions, to improve the chance of getting</span>
             <span class="c1"># successful generations next time around</span>
@@ -3360,6 +3511,7 @@
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">model_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
         <span class="n">inputs</span><span class="p">:</span> <span class="n">c</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="n">c</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="n">litellm</span><span class="o">.</span><span class="n">AllMessageValues</span><span class="p">]</span> <span class="o">|</span> <span class="nb">str</span><span class="p">],</span>
+        <span class="n">max_concurrent_calls</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
         <span class="o">**</span><span class="n">generation_kwargs</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span>
         <span class="n">c</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="s2">&quot;ModelResponse&quot;</span><span class="p">]],</span> <span class="n">c</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="ne">Exception</span><span class="p">]]</span>
@@ -3371,6 +3523,8 @@
 <span class="sd">                The ID of the model to use for generation.</span>
 <span class="sd">            inputs:</span>
 <span class="sd">                The inputs to pass to the model.</span>
+<span class="sd">            max_concurrent_calls:</span>
+<span class="sd">                The maximum number of concurrent calls to make to the model.</span>
 <span class="sd">            **generation_kwargs:</span>
 <span class="sd">                Additional generation arguments to pass to the model.</span>
 
@@ -3391,7 +3545,6 @@
         <span class="p">)</span>
 
         <span class="c1"># Get the LLM generations asynchronously</span>
-        <span class="n">max_concurrent_calls</span> <span class="o">=</span> <span class="mi">20</span>
         <span class="n">semaphore</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">Semaphore</span><span class="p">(</span><span class="n">max_concurrent_calls</span><span class="p">)</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">generative_type</span> <span class="o">==</span> <span class="n">GenerativeType</span><span class="o">.</span><span class="n">BASE</span><span class="p">:</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">input_</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">for</span> <span class="n">input_</span> <span class="ow">in</span> <span class="n">inputs</span><span class="p">):</span>
@@ -3401,7 +3554,11 @@
             <span class="n">requests</span> <span class="o">=</span> <span class="p">[</span>
                 <span class="n">add_semaphore_and_catch_exception</span><span class="p">(</span>
                     <span class="n">router</span><span class="o">.</span><span class="n">atext_completion</span><span class="p">(</span>
-                        <span class="n">model</span><span class="o">=</span><span class="n">model_id</span><span class="p">,</span> <span class="n">prompt</span><span class="o">=</span><span class="n">input_</span><span class="p">,</span> <span class="o">**</span><span class="n">generation_kwargs</span>
+                        <span class="n">model</span><span class="o">=</span><span class="n">clean_model_id</span><span class="p">(</span>
+                            <span class="n">model_id</span><span class="o">=</span><span class="n">model_id</span><span class="p">,</span> <span class="n">benchmark_config</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">benchmark_config</span>
+                        <span class="p">),</span>
+                        <span class="n">prompt</span><span class="o">=</span><span class="n">input_</span><span class="p">,</span>
+                        <span class="o">**</span><span class="n">generation_kwargs</span><span class="p">,</span>
                     <span class="p">),</span>
                     <span class="n">semaphore</span><span class="o">=</span><span class="n">semaphore</span><span class="p">,</span>
                 <span class="p">)</span>
@@ -3417,7 +3574,11 @@
             <span class="n">requests</span> <span class="o">=</span> <span class="p">[</span>
                 <span class="n">add_semaphore_and_catch_exception</span><span class="p">(</span>
                     <span class="n">router</span><span class="o">.</span><span class="n">acompletion</span><span class="p">(</span>
-                        <span class="n">model</span><span class="o">=</span><span class="n">model_id</span><span class="p">,</span> <span class="n">messages</span><span class="o">=</span><span class="n">input_</span><span class="p">,</span> <span class="o">**</span><span class="n">generation_kwargs</span>
+                        <span class="n">model</span><span class="o">=</span><span class="n">clean_model_id</span><span class="p">(</span>
+                            <span class="n">model_id</span><span class="o">=</span><span class="n">model_id</span><span class="p">,</span> <span class="n">benchmark_config</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">benchmark_config</span>
+                        <span class="p">),</span>
+                        <span class="n">messages</span><span class="o">=</span><span class="n">input_</span><span class="p">,</span>
+                        <span class="o">**</span><span class="n">generation_kwargs</span><span class="p">,</span>
                     <span class="p">),</span>
                     <span class="n">semaphore</span><span class="o">=</span><span class="n">semaphore</span><span class="p">,</span>
                 <span class="p">)</span>
@@ -3918,7 +4079,9 @@
             <span class="k">try</span><span class="p">:</span>
                 <span class="n">litellm</span><span class="o">.</span><span class="n">completion</span><span class="p">(</span>
                     <span class="n">messages</span><span class="o">=</span><span class="p">[</span><span class="nb">dict</span><span class="p">(</span><span class="n">role</span><span class="o">=</span><span class="s2">&quot;user&quot;</span><span class="p">,</span> <span class="n">content</span><span class="o">=</span><span class="s2">&quot;X&quot;</span><span class="p">)],</span>
-                    <span class="n">model</span><span class="o">=</span><span class="n">model_id</span><span class="p">,</span>
+                    <span class="n">model</span><span class="o">=</span><span class="n">clean_model_id</span><span class="p">(</span>
+                        <span class="n">model_id</span><span class="o">=</span><span class="n">model_id</span><span class="p">,</span> <span class="n">benchmark_config</span><span class="o">=</span><span class="n">benchmark_config</span>
+                    <span class="p">),</span>
                     <span class="n">max_tokens</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
                     <span class="n">api_key</span><span class="o">=</span><span class="n">benchmark_config</span><span class="o">.</span><span class="n">api_key</span><span class="p">,</span>
                     <span class="n">api_base</span><span class="o">=</span><span class="n">benchmark_config</span><span class="o">.</span><span class="n">api_base</span><span class="p">,</span>
@@ -3951,6 +4114,15 @@
                 <span class="p">)</span>
                 <span class="n">sleep</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
             <span class="k">except</span> <span class="p">(</span><span class="n">BadRequestError</span><span class="p">,</span> <span class="n">NotFoundError</span><span class="p">):</span>
+                <span class="c1"># In case we&#39;re using `api_base`, try again with the `/v1` suffix</span>
+                <span class="k">if</span> <span class="p">(</span>
+                    <span class="n">benchmark_config</span><span class="o">.</span><span class="n">api_base</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+                    <span class="ow">and</span> <span class="ow">not</span> <span class="n">benchmark_config</span><span class="o">.</span><span class="n">api_base</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;/v1&quot;</span><span class="p">)</span>
+                <span class="p">):</span>
+                    <span class="n">benchmark_config</span><span class="o">.</span><span class="n">api_base</span> <span class="o">+=</span> <span class="s2">&quot;/v1&quot;</span>
+                    <span class="k">continue</span>
+
+                <span class="c1"># Check for misspelled model IDs</span>
                 <span class="n">candidate_models</span> <span class="o">=</span> <span class="p">[</span>
                     <span class="n">candidate_model_id</span>
                     <span class="k">for</span> <span class="n">candidate_model_id</span> <span class="ow">in</span> <span class="n">litellm</span><span class="o">.</span><span class="n">model_list</span>
@@ -4230,8 +4402,12 @@
         <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_attempts</span> <span class="o">:=</span> <span class="mi">10</span><span class="p">):</span>
             <span class="n">_</span><span class="p">,</span> <span class="n">failures</span> <span class="o">=</span> <span class="n">safe_run</span><span class="p">(</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_generate_async</span><span class="p">(</span>
-                    <span class="n">model_id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span><span class="p">,</span>
+                    <span class="n">model_id</span><span class="o">=</span><span class="n">clean_model_id</span><span class="p">(</span>
+                        <span class="n">model_id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span><span class="p">,</span>
+                        <span class="n">benchmark_config</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">benchmark_config</span><span class="p">,</span>
+                    <span class="p">),</span>
                     <span class="n">inputs</span><span class="o">=</span><span class="p">[</span><span class="n">test_input</span><span class="p">],</span>
+                    <span class="n">max_concurrent_calls</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
                     <span class="o">**</span><span class="n">generation_kwargs</span><span class="p">,</span>
                 <span class="p">)</span>
             <span class="p">)</span>
@@ -4344,6 +4520,33 @@
             <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="k">return</span> <span class="kc">True</span>
+
+<div class="mkapi-source-link" id="euroeval.benchmark_modules.litellm.clean_model_id"><a href="../../../../api/euroeval/benchmark_modules/litellm/#euroeval.benchmark_modules.litellm.clean_model_id" title="Go to docs">[docs]</a></div>
+<span class="k">def</span><span class="w"> </span><span class="nf">clean_model_id</span><span class="p">(</span><span class="n">model_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">benchmark_config</span><span class="p">:</span> <span class="n">BenchmarkConfig</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Clean a model ID.</span>
+
+<span class="sd">    This adds the default `openai/` prefix to the model ID if we&#39;re benchmarking a</span>
+<span class="sd">    custom API inference server and no prefix is used, just to make it more</span>
+<span class="sd">    convenient for the user.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        model_id:</span>
+<span class="sd">            The model ID.</span>
+<span class="sd">        benchmark_config:</span>
+<span class="sd">            The benchmark configuration.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        The cleaned model ID.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">benchmark_config</span><span class="o">.</span><span class="n">api_base</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">any</span><span class="p">(</span>
+        <span class="n">model_id</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">prefix</span><span class="p">)</span> <span class="k">for</span> <span class="n">prefix</span> <span class="ow">in</span> <span class="n">CUSTOM_INFERENCE_API_PREFIXES</span>
+    <span class="p">):</span>
+        <span class="k">if</span> <span class="n">benchmark_config</span><span class="o">.</span><span class="n">generative_type</span> <span class="o">==</span> <span class="n">GenerativeType</span><span class="o">.</span><span class="n">BASE</span><span class="p">:</span>
+            <span class="n">prefix</span> <span class="o">=</span> <span class="s2">&quot;text-completion-openai/&quot;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">prefix</span> <span class="o">=</span> <span class="s2">&quot;openai/&quot;</span>
+        <span class="n">model_id</span> <span class="o">=</span> <span class="n">prefix</span> <span class="o">+</span> <span class="n">model_id</span>
+    <span class="k">return</span> <span class="n">model_id</span>
 </code></pre></div></td></tr></table></div>
 
 

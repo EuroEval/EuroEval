@@ -2263,7 +2263,7 @@ The prepared dataset languages.</p>
 <i class="fa-regular fa-square-minus"></i>
 </span>
 </span>
-<span class="mkapi-object-name"><a href="./#euroeval.benchmark_config_factory.prepare_dataset_configs" title="euroeval.benchmark_config_factory.prepare_dataset_configs">prepare_dataset_configs</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">task</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str | <a href="../data_models/#euroeval.data_models.Task" title="euroeval.data_models.Task">Task</a> | <span class="mkapi-tooltip" title="collections.abc">c</span>.<span class="mkapi-tooltip" title="collections.abc.Sequence">Sequence</span>[str | <a href="../data_models/#euroeval.data_models.Task" title="euroeval.data_models.Task">Task</a>] | None</span><span class="mkapi-comma">, </span><span class="mkapi-arg">dataset_languages</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="collections.abc">c</span>.<span class="mkapi-tooltip" title="collections.abc.Sequence">Sequence</span>['Language']</span><span class="mkapi-comma">, </span><span class="mkapi-arg">dataset</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str | <a href="../data_models/#euroeval.data_models.DatasetConfig" title="euroeval.data_models.DatasetConfig">DatasetConfig</a> | <span class="mkapi-tooltip" title="collections.abc">c</span>.<span class="mkapi-tooltip" title="collections.abc.Sequence">Sequence</span>[str | <a href="../data_models/#euroeval.data_models.DatasetConfig" title="euroeval.data_models.DatasetConfig">DatasetConfig</a>] | None</span><span class="mkapi-paren">)</span><span class="mkapi-arrow"> → </span><span class="mkapi-return"><span class="mkapi-tooltip" title="collections.abc">c</span>.<span class="mkapi-tooltip" title="collections.abc.Sequence">Sequence</span>['DatasetConfig']</span></span>
+<span class="mkapi-object-name"><a href="./#euroeval.benchmark_config_factory.prepare_dataset_configs" title="euroeval.benchmark_config_factory.prepare_dataset_configs">prepare_dataset_configs</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">task</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str | <a href="../data_models/#euroeval.data_models.Task" title="euroeval.data_models.Task">Task</a> | <span class="mkapi-tooltip" title="collections.abc">c</span>.<span class="mkapi-tooltip" title="collections.abc.Sequence">Sequence</span>[str | <a href="../data_models/#euroeval.data_models.Task" title="euroeval.data_models.Task">Task</a>] | None</span><span class="mkapi-comma">, </span><span class="mkapi-arg">languages</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="collections.abc">c</span>.<span class="mkapi-tooltip" title="collections.abc.Sequence">Sequence</span>['Language']</span><span class="mkapi-comma">, </span><span class="mkapi-arg">dataset</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str | <a href="../data_models/#euroeval.data_models.DatasetConfig" title="euroeval.data_models.DatasetConfig">DatasetConfig</a> | <span class="mkapi-tooltip" title="collections.abc">c</span>.<span class="mkapi-tooltip" title="collections.abc.Sequence">Sequence</span>[str | <a href="../data_models/#euroeval.data_models.DatasetConfig" title="euroeval.data_models.DatasetConfig">DatasetConfig</a>] | None</span><span class="mkapi-paren">)</span><span class="mkapi-arrow"> → </span><span class="mkapi-return"><span class="mkapi-tooltip" title="collections.abc">c</span>.<span class="mkapi-tooltip" title="collections.abc.Sequence">Sequence</span>['DatasetConfig']</span></span>
 </p>
 <div class="mkapi-document">
 <p>Prepare dataset config(s) for benchmarking.</p>
@@ -2284,7 +2284,7 @@ The tasks to include for dataset. If None then datasets will not be
 filtered based on their task.</p>
 </li>
 <li>
-<p><span class="mkapi-item-name">dataset_languages</span> : 
+<p><span class="mkapi-item-name">languages</span> : 
 <span class="mkapi-item-type"><span class="mkapi-tooltip" title="collections.abc">c</span>.<span class="mkapi-tooltip" title="collections.abc.Sequence">Sequence</span>['Language']</span> <span class="mkapi-dash">&mdash;</span>
 The languages of the datasets in the benchmark.</p>
 </li>
@@ -2292,7 +2292,7 @@ The languages of the datasets in the benchmark.</p>
 <p><span class="mkapi-item-name">dataset</span> : 
 <span class="mkapi-item-type">str | <a href="../data_models/#euroeval.data_models.DatasetConfig" title="euroeval.data_models.DatasetConfig">DatasetConfig</a> | <span class="mkapi-tooltip" title="collections.abc">c</span>.<span class="mkapi-tooltip" title="collections.abc.Sequence">Sequence</span>[str | <a href="../data_models/#euroeval.data_models.DatasetConfig" title="euroeval.data_models.DatasetConfig">DatasetConfig</a>] | None</span> <span class="mkapi-dash">&mdash;</span>
 The datasets to include for task. If None then all datasets will be
-included, limited by the <code>task</code> and <code>dataset_languages</code> parameters.</p>
+included, limited by the <code>task</code> and <code>languages</code> parameters.</p>
 </li>
 </ul>
 </div>

@@ -1246,7 +1246,15 @@
 <span class="normal">350</span>
 <span class="normal">351</span>
 <span class="normal">352</span>
-<span class="normal">353</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Functions related to text generation of models.&quot;&quot;&quot;</span>
+<span class="normal">353</span>
+<span class="normal">354</span>
+<span class="normal">355</span>
+<span class="normal">356</span>
+<span class="normal">357</span>
+<span class="normal">358</span>
+<span class="normal">359</span>
+<span class="normal">360</span>
+<span class="normal">361</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Functions related to text generation of models.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">c</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
@@ -1254,12 +1262,11 @@
 <span class="kn">import</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">t</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
 
-<span class="kn">import</span><span class="w"> </span><span class="nn">more_itertools</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">mit</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">datasets</span><span class="w"> </span><span class="kn">import</span> <span class="n">Dataset</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">tqdm.auto</span><span class="w"> </span><span class="kn">import</span> <span class="n">tqdm</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">.enums</span><span class="w"> </span><span class="kn">import</span> <span class="n">BatchingPreference</span><span class="p">,</span> <span class="n">TaskGroup</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">.exceptions</span><span class="w"> </span><span class="kn">import</span> <span class="n">InvalidBenchmark</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.exceptions</span><span class="w"> </span><span class="kn">import</span> <span class="n">InvalidBenchmark</span><span class="p">,</span> <span class="n">InvalidModel</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.logging_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_pbar</span><span class="p">,</span> <span class="n">log</span><span class="p">,</span> <span class="n">log_once</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.model_cache</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">ModelCache</span><span class="p">,</span>
@@ -1394,15 +1401,24 @@
             <span class="k">case</span> <span class="n">BatchingPreference</span><span class="o">.</span><span class="n">ALL_AT_ONCE</span><span class="p">:</span>
                 <span class="n">itr</span> <span class="o">=</span> <span class="p">[</span><span class="n">non_cached_dataset</span><span class="p">[:]]</span>
             <span class="k">case</span><span class="w"> </span><span class="k">_</span><span class="p">:</span>
-                <span class="n">num_batches</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">non_cached_dataset</span><span class="p">)</span> <span class="o">//</span> <span class="n">benchmark_config</span><span class="o">.</span><span class="n">batch_size</span>
-                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">non_cached_dataset</span><span class="p">)</span> <span class="o">%</span> <span class="n">benchmark_config</span><span class="o">.</span><span class="n">batch_size</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
-                    <span class="n">num_batches</span> <span class="o">+=</span> <span class="mi">1</span>
-                <span class="n">itr</span> <span class="o">=</span> <span class="n">get_pbar</span><span class="p">(</span>
-                    <span class="n">iterable</span><span class="o">=</span><span class="n">mit</span><span class="o">.</span><span class="n">batched</span><span class="p">(</span>
-                        <span class="n">iterable</span><span class="o">=</span><span class="n">non_cached_dataset</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="n">benchmark_config</span><span class="o">.</span><span class="n">batch_size</span>
-                    <span class="p">),</span>
-                    <span class="n">total</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">non_cached_dataset</span><span class="p">)</span> <span class="o">//</span> <span class="n">benchmark_config</span><span class="o">.</span><span class="n">batch_size</span><span class="p">,</span>
+                <span class="k">raise</span> <span class="n">InvalidModel</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;The batching preference </span><span class="si">{</span><span class="n">model</span><span class="o">.</span><span class="n">batching_preference</span><span class="si">!r}</span><span class="s2"> is &quot;</span>
+                    <span class="s2">&quot;currently not supported.&quot;</span>
                 <span class="p">)</span>
+                <span class="c1"># NOTE: The code below can be used if we want to support batching for</span>
+                <span class="c1"># generative models. But in that case, we have to deal with the naming</span>
+                <span class="c1"># of the batch size variable, since it is currently</span>
+                <span class="c1"># `finetuning_batch_size`, as it is only used during finetuning of</span>
+                <span class="c1"># encoder models.</span>
+                <span class="c1"># num_batches = len(non_cached_dataset) // benchmark_config.batch_size</span>
+                <span class="c1"># if len(non_cached_dataset) % benchmark_config.batch_size != 0:</span>
+                <span class="c1">#     num_batches += 1</span>
+                <span class="c1"># itr = get_pbar(</span>
+                <span class="c1">#     iterable=mit.batched(</span>
+                <span class="c1">#         iterable=non_cached_dataset, n=benchmark_config.batch_size</span>
+                <span class="c1">#     ),</span>
+                <span class="c1">#     total=len(non_cached_dataset) // benchmark_config.batch_size,</span>
+                <span class="c1"># )</span>
 
         <span class="c1"># Generate the completions for the non-cached examples</span>
         <span class="k">for</span> <span class="n">batch</span> <span class="ow">in</span> <span class="n">itr</span><span class="p">:</span>

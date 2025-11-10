@@ -1663,14 +1663,24 @@
 <span class="normal">707</span>
 <span class="normal">708</span>
 <span class="normal">709</span>
-<span class="normal">710</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Utility functions related to the question-answering task group.&quot;&quot;&quot;</span>
+<span class="normal">710</span>
+<span class="normal">711</span>
+<span class="normal">712</span>
+<span class="normal">713</span>
+<span class="normal">714</span>
+<span class="normal">715</span>
+<span class="normal">716</span>
+<span class="normal">717</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Utility functions related to the question-answering task group.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">c</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">t</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">collections</span><span class="w"> </span><span class="kn">import</span> <span class="n">defaultdict</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">transformers.tokenization_utils_base</span><span class="w"> </span><span class="kn">import</span> <span class="n">PreTrainedTokenizerBase</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">transformers.tokenization_utils_base</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">PreTrainedTokenizerBase</span><span class="p">,</span>
+    <span class="n">TruncationStrategy</span><span class="p">,</span>
+<span class="p">)</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">transformers.trainer</span><span class="w"> </span><span class="kn">import</span> <span class="n">Trainer</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">..exceptions</span><span class="w"> </span><span class="kn">import</span> <span class="n">InvalidBenchmark</span>
@@ -2092,9 +2102,13 @@
     <span class="n">max_question_tokens</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">tokeniser</span><span class="p">(</span><span class="n">q</span><span class="p">)</span><span class="o">.</span><span class="n">input_ids</span><span class="p">)</span> <span class="k">for</span> <span class="n">q</span> <span class="ow">in</span> <span class="n">examples</span><span class="p">[</span><span class="s2">&quot;question&quot;</span><span class="p">])</span>
     <span class="n">num_special_tokens</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">has_cls_token</span><span class="p">)</span> <span class="o">+</span> <span class="nb">int</span><span class="p">(</span><span class="n">has_sep_token</span><span class="p">)</span>
     <span class="n">stride</span> <span class="o">=</span> <span class="n">tokeniser</span><span class="o">.</span><span class="n">model_max_length</span> <span class="o">//</span> <span class="mi">4</span>
+    <span class="n">stride</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span>
+        <span class="n">stride</span><span class="p">,</span>
+        <span class="n">tokeniser</span><span class="o">.</span><span class="n">model_max_length</span> <span class="o">-</span> <span class="n">stride</span> <span class="o">-</span> <span class="n">max_question_tokens</span> <span class="o">-</span> <span class="n">num_special_tokens</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">stride</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">stride</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
     <span class="n">max_length</span> <span class="o">=</span> <span class="n">tokeniser</span><span class="o">.</span><span class="n">model_max_length</span> <span class="o">-</span> <span class="n">stride</span>
-    <span class="n">stride</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">stride</span><span class="p">,</span> <span class="n">max_length</span> <span class="o">-</span> <span class="n">max_question_tokens</span> <span class="o">-</span> <span class="n">num_special_tokens</span><span class="p">)</span>
-    <span class="n">max_length</span> <span class="o">=</span> <span class="n">tokeniser</span><span class="o">.</span><span class="n">model_max_length</span> <span class="o">-</span> <span class="n">stride</span>
+    <span class="n">max_length</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">max_length</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
 
     <span class="c1"># Tokenise our examples with truncation and maybe padding, but keep the overflows</span>
     <span class="c1"># using a stride. This results in one example possible giving several features when</span>
@@ -2103,7 +2117,7 @@
     <span class="n">tokenised_examples</span> <span class="o">=</span> <span class="n">tokeniser</span><span class="p">(</span>
         <span class="n">text</span><span class="o">=</span><span class="n">examples</span><span class="p">[</span><span class="s2">&quot;question&quot;</span><span class="p">],</span>
         <span class="n">text_pair</span><span class="o">=</span><span class="n">examples</span><span class="p">[</span><span class="s2">&quot;context&quot;</span><span class="p">],</span>
-        <span class="n">truncation</span><span class="o">=</span><span class="s2">&quot;only_second&quot;</span><span class="p">,</span>
+        <span class="n">truncation</span><span class="o">=</span><span class="n">TruncationStrategy</span><span class="o">.</span><span class="n">LONGEST_FIRST</span><span class="p">,</span>
         <span class="n">max_length</span><span class="o">=</span><span class="n">max_length</span><span class="p">,</span>
         <span class="n">stride</span><span class="o">=</span><span class="n">stride</span><span class="p">,</span>
         <span class="n">return_overflowing_tokens</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
