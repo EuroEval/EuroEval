@@ -142,7 +142,6 @@ EUROPEAN_VALUES = Task(
     default_allow_invalid_model_outputs=False,
 )
 
-
 SPEED = Task(
     name="speed",
     task_group=TaskGroup.SPEED,
@@ -152,6 +151,18 @@ SPEED = Task(
     default_max_generated_tokens=5,
     default_labels=[],
 )
+
+LOGIC = Task(
+    name="logical-reasoning",
+    task_group=TaskGroup.LOGICAL_REASONING,
+    template_dict=LOGIC_TEMPLATES,
+    metrics=[m.puzzle_level_accuracy_metric, m.cell_wise_accuracy_metric],
+    default_num_few_shot_examples=8,
+    default_max_generated_tokens=256,
+    default_labels=[],
+    uses_structured_output=True,
+)
+
 
 # Used for custom datasets
 
@@ -187,15 +198,4 @@ MULTIPLE_CHOICE = Task(
     default_labels=None,
     default_allowed_model_types=[ModelType.GENERATIVE],
     uses_logprobs=True,
-)
-
-LOGIC = Task(
-    name="logical-reasoning",
-    task_group=TaskGroup.LOGICAL_REASONING,
-    template_dict=LOGIC_TEMPLATES,
-    metrics=[m.puzzle_level_accuracy_metric, m.cell_wise_accuracy_metric],
-    default_num_few_shot_examples=8,
-    default_max_generated_tokens=256,
-    default_labels=[],
-    uses_structured_output=True,
 )
