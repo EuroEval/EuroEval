@@ -1050,11 +1050,12 @@ You can evaluate this dataset directly as follows:
 ```bash
 euroeval --model <model-id> --dataset winogrande-da
 ```
+
 ## Logical Reasoning
 
 ### Unofficial: zebra-puzzle-da_2x3
 
-This dataset consists of logical puzzles and was created with the code in this repo: https://github.com/alexandrainst/zebra_puzzles
+This dataset consists of logical puzzles and was created with the code in this repo: <https://github.com/alexandrainst/zebra_puzzles>
 
 The original full dataset consists of 128 / 1,024 samples for training and testing, and
 we use the same splits.
@@ -1088,16 +1089,18 @@ Here are a few examples from the training split:
 }
 ```
 
-
 When evaluating generative models, we use the following setup (see the
 [methodology](/methodology) for more information on how these are used):
 
 - Number of few-shot examples: 5
 - Prefix prompt:
+
   ```
   Følgende er en række gåder med svar.
   ```
+
 - Base prompt template:
+
   ```
   Gåde:
 
@@ -1111,7 +1114,9 @@ When evaluating generative models, we use the following setup (see the
   Svar:
   {label}
   ```
+
 - Instruction-tuned prompt template:
+
   ```
   Gåde:
 
@@ -1138,7 +1143,7 @@ euroeval --model <model-id> --dataset zebra-puzzle-da_2x3
 
 ### Unofficial: zebra-puzzle-da_4x5
 
-This dataset consists of logical puzzles and was created with the code in this repo: https://github.com/alexandrainst/zebra_puzzles
+This dataset consists of logical puzzles and was created with the code in this repo: <https://github.com/alexandrainst/zebra_puzzles>
 
 The original full dataset consists of 128 / 1,024 samples for training and testing, and
 we use the same splits.
@@ -1178,16 +1183,18 @@ Here are a few examples from the training split:
 }
 ```
 
-
 When evaluating generative models, we use the following setup (see the
 [methodology](/methodology) for more information on how these are used):
 
 - Number of few-shot examples: 5
 - Prefix prompt:
+
   ```
   Følgende er en række gåder med svar.
   ```
+
 - Base prompt template:
+
   ```
   Gåde:
 
@@ -1201,7 +1208,9 @@ When evaluating generative models, we use the following setup (see the
   Svar:
   {label}
   ```
+
 - Instruction-tuned prompt template:
+
   ```
   Gåde:
 

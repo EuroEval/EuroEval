@@ -4,6 +4,7 @@ import itertools
 import logging
 import typing as t
 from copy import deepcopy
+
 import numpy as np
 
 from ..exceptions import InvalidBenchmark
@@ -14,6 +15,7 @@ from ..utils import (
 
 if t.TYPE_CHECKING:
     from transformers.trainer_utils import EvalPrediction
+
     from ..types import Labels, Predictions
 
 
@@ -53,10 +55,9 @@ def compute_metrics(
     if isinstance(model_outputs, tuple) and len(model_outputs) == 2:
         model_outputs = model_outputs[0]
 
-
     # Parse the model outputs
-    if isinstance(model_outputs, list[dict[str,list[str]]]):
-        predictions: list[dict[str,list[str]]] = deepcopy(model_outputs)
+    if isinstance(model_outputs, list[dict[str, list[str]]]):
+        predictions: list[dict[str, list[str]]] = deepcopy(model_outputs)
     else:
         for raw_prediction in model_outputs:
             if not isinstance(raw_prediction, str):
@@ -69,8 +70,8 @@ def compute_metrics(
     raise_if_model_output_contains_nan_values(model_output=predictions)
 
     # Parse the labels
-    if isinstance(raw_labels, list[dict[str,list[str]]]):
-        labels: list[dict[str,list[str]]] = deepcopy(raw_labels)
+    if isinstance(raw_labels, list[dict[str, list[str]]]):
+        labels: list[dict[str, list[str]]] = deepcopy(raw_labels)
     else:
         for raw_label in raw_labels:
             if not isinstance(raw_label, str):
@@ -81,17 +82,20 @@ def compute_metrics(
             labels.append(extract_json_dict_from_string(s=raw_label))
 
     # Compute the metrics
-    puzzle_scores, cell_scores, best_permuted_cell_scores = \
-        compare_all_predictions_and_labels(predictions=predictions,
-                                           labels=labels)
+    puzzle_scores, cell_scores, best_permuted_cell_scores = (
+        compare_all_predictions_and_labels(predictions=predictions, labels=labels)
+    )
 
-    return dict(puzzle_level_accuracy=puzzle_scores,
-                cell_wise_accuracy=cell_scores,
-                best_permuted_cell_wise_accuracy=best_permuted_cell_scores)
+    return dict(
+        puzzle_level_accuracy=puzzle_scores,
+        cell_wise_accuracy=cell_scores,
+        best_permuted_cell_wise_accuracy=best_permuted_cell_scores,
+    )
 
-def compare_all_predictions_and_labels(predictions: list[dict[str,list[str]]],
-                                       labels: list[dict[str,list[str]]],
-                                       ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+
+def compare_all_predictions_and_labels(
+    predictions: list[dict[str, list[str]]], labels: list[dict[str, list[str]]]
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Compare all predictions and labels and compute the metrics.
 
     Args:
@@ -109,7 +113,7 @@ def compare_all_predictions_and_labels(predictions: list[dict[str,list[str]]],
     best_permuted_cell_scores: np.ndarray = np.zeros(n_puzzles)
 
     # Compute the metrics
-    for i,(prediction, label) in enumerate(zip(predictions, labels)): 
+    for i, (prediction, label) in enumerate(zip(predictions, labels)):
         if not isinstance(prediction, dict):
             raise InvalidBenchmark(
                 "The model output is not a dictionary. Please ensure that the "
@@ -120,23 +124,31 @@ def compare_all_predictions_and_labels(predictions: list[dict[str,list[str]]],
                 "The label is not a dictionary. Please ensure that the labels are "
                 "parsed correctly."
             )
-        puzzle_score, cell_score, best_permuted_cell_score = \
+        puzzle_score, cell_score, best_permuted_cell_score = (
             compare_prediction_and_label(prediction, label)
+        )
         puzzle_scores[i] = puzzle_score
         cell_scores[i] = cell_score
         best_permuted_cell_scores[i] = best_permuted_cell_score
 
     # Raise error if the metrics are invalid
-    if puzzle_scores is None or cell_scores is None or best_permuted_cell_scores is None:
+    if (
+        puzzle_scores is None
+        or cell_scores is None
+        or best_permuted_cell_scores is None
+    ):
         raise InvalidBenchmark("The metrics are invalid.")
 
-    return dict(puzzle_scores=puzzle_scores,
-                cell_scores=cell_scores,
-                best_permuted_cell_scores=best_permuted_cell_scores)
+    return dict(
+        puzzle_scores=puzzle_scores,
+        cell_scores=cell_scores,
+        best_permuted_cell_scores=best_permuted_cell_scores,
+    )
 
-def compare_prediction_and_label(prediction: dict[str,list[str]],
-                                 label: dict[str,list[str]],
-                                 ) -> tuple[int, float, float]:
+
+def compare_prediction_and_label(
+    prediction: dict[str, list[str]], label: dict[str, list[str]]
+) -> tuple[int, float, float]:
     """Compare a prediction and a label and compute the metrics.
 
     Args:
@@ -192,6 +204,7 @@ def compare_prediction_and_label(prediction: dict[str,list[str]],
         )
     return puzzle_score, cell_score, best_permuted_cell_score
 
+
 def compute_cell_score(
     prediction: dict[str, set],
     label: dict[str, set],
@@ -218,9 +231,7 @@ def compute_cell_score(
     # Compare each cell
     cell_score: float = 0.0
     n_correct_attributes: int = 0
-    for attributes_pred, attributes_label in zip(
-        prediction.values(), label.values()
-    ):
+    for attributes_pred, attributes_label in zip(prediction.values(), label.values()):
         # strip whitespace
         attributes_pred = {attr.strip() for attr in attributes_pred}
         attributes_label = {attr.strip() for attr in attributes_label}
@@ -232,6 +243,7 @@ def compute_cell_score(
     cell_score = float(n_correct_attributes) / float(n_keys * n_elements_per_key)
 
     return cell_score
+
 
 def compute_best_permuted_cell_score(
     prediction: dict[str, set],

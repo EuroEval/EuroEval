@@ -32,5 +32,5 @@ LOGIC_TEMPLATES: dict["Language", PromptConfig] = {
         "\n\n{format_example}"
         "\n\nSvar:"
         "\n\n{label}",
-    ),
+    )
 }
