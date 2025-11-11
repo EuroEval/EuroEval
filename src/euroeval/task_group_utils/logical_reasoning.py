@@ -4,9 +4,9 @@ import itertools
 import logging
 import typing as t
 from copy import deepcopy
-from typeguard import check_type
 
 import numpy as np
+from typeguard import check_type
 
 from ..exceptions import InvalidBenchmark
 from ..utils import (
@@ -22,12 +22,14 @@ if t.TYPE_CHECKING:
 
 logger = logging.getLogger("euroeval")
 
+
 def check_full_type(variable, expected_type) -> bool:
     try:
         check_type(variable, expected_type)
         return True
     except TypeError:
         return False
+
 
 def compute_metrics(
     model_outputs_and_labels: "tuple[Predictions, Labels] | EvalPrediction",
@@ -65,7 +67,7 @@ def compute_metrics(
     # Parse the model outputs
 
     if check_full_type(model_outputs, list[dict[str, list[str]]]):
-        predictions: list[dict[str, list[str]]] = deepcopy(model_outputs)
+        predictions: list[dict[str, list[str]]] = deepcopy(model_outputs)  # type: ignore[arg-type]
     else:
         for raw_prediction in model_outputs:
             if not isinstance(raw_prediction, str):
@@ -79,7 +81,7 @@ def compute_metrics(
 
     # Parse the labels
     if check_full_type(raw_labels, list[dict[str, list[str]]]):
-        labels: list[dict[str, list[str]]] = deepcopy(raw_labels)
+        labels: list[dict[str, list[str]]] = deepcopy(raw_labels)  # type: ignore[arg-type]
     else:
         for raw_label in raw_labels:
             if not isinstance(raw_label, str):
@@ -165,7 +167,9 @@ def compare_prediction_and_label(
         A tuple containing the puzzle score, cell score and best permuted cell score.
     """
     n_keys = len(label)
-    n_elements_per_key = len(label[0])
+    # Get the first item to determine the number of elements per key
+    first_key = next(iter(label))
+    n_elements_per_key = len(label[first_key])
 
     # Convert each row to a set of values so the order within the row does not matter
     prediction_sets = {
