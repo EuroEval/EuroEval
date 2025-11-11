@@ -23,7 +23,8 @@ if t.TYPE_CHECKING:
 logger = logging.getLogger("euroeval")
 
 
-def check_full_type(variable, expected_type) -> bool:
+def check_full_type(variable: object, expected_type: t.Type) -> bool:
+    """Check if a variable is of the expected type."""
     try:
         check_type(variable, expected_type)
         return True

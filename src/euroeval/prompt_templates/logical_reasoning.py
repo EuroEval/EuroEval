@@ -3,14 +3,14 @@
 import typing as t
 
 from ..data_models import PromptConfig
-from ..languages import DA
+from ..languages import DANISH
 
 if t.TYPE_CHECKING:
     from ..data_models import Language
 
 
 LOGIC_TEMPLATES: dict["Language", PromptConfig] = {
-    DA: PromptConfig(
+    DANISH: PromptConfig(
         default_prompt_prefix="Følgende er en række gåder med svar.",
         default_prompt_template="Gåde:"
         "\n\n{introduction}"
@@ -32,5 +32,6 @@ LOGIC_TEMPLATES: dict["Language", PromptConfig] = {
         "\n\n{format_example}"
         "\n\nSvar:"
         "\n\n{label}",
+        default_prompt_label_mapping=dict(),
     )
 }
