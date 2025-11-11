@@ -41,13 +41,6 @@ def compute_metrics(
         model_outputs_and_labels:
             The first array contains the model response and the second
             array contains the true labels. Both are JSON dictionaries.
-        dataset_config:
-            The configuration of the dataset.
-        benchmark_config:
-            The configuration of the benchmark.
-        dataset:
-            The dataset used for evaluation. This is only used in case any additional
-            metadata is used to compute the metrics.
 
     Returns:
         A dictionary with the names of the metrics as keys and the metric values as
@@ -70,13 +63,20 @@ def compute_metrics(
     if check_full_type(model_outputs, list[dict[str, list[str]]]):
         predictions: list[dict[str, list[str]]] = deepcopy(model_outputs)  # type: ignore[arg-type]
     else:
+        predictions = []
         for raw_prediction in model_outputs:
             if not isinstance(raw_prediction, str):
                 raise InvalidBenchmark(
                     "The model output is not a string. Please ensure that the model "
                     "outputs are parsed correctly."
                 )
-            predictions.append(extract_json_dict_from_string(s=raw_prediction))
+            prediction = extract_json_dict_from_string(s=raw_prediction)
+            if not check_full_type(prediction, dict[str, list[str]]):
+                raise InvalidBenchmark(
+                    "The model output string was not converted to a dictionary. "
+                    "Please ensure that the model outputs are parsed correctly."
+                )
+            predictions.append(prediction)  # type: ignore[arg-type]
 
     raise_if_model_output_contains_nan_values(model_output=predictions)
 
@@ -90,7 +90,13 @@ def compute_metrics(
                     "The label is not a string. Please ensure that the labels are "
                     "parsed correctly."
                 )
-            labels.append(extract_json_dict_from_string(s=raw_label))
+            label = extract_json_dict_from_string(s=raw_label)
+            if not check_full_type(label, dict[str, list[str]]):
+                raise InvalidBenchmark(
+                    "The label string was not converted to a dictionary. "
+                    "Please ensure that the labels are parsed correctly."
+                )
+            labels.append(extract_json_dict_from_string(s=raw_label))  # type: ignore[arg-type]
 
     # Compute the metrics
     puzzle_scores, cell_scores, best_permuted_cell_scores = (
