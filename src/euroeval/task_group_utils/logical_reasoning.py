@@ -4,6 +4,7 @@ import itertools
 import logging
 import typing as t
 from copy import deepcopy
+from typeguard import check_type
 
 import numpy as np
 
@@ -21,6 +22,12 @@ if t.TYPE_CHECKING:
 
 logger = logging.getLogger("euroeval")
 
+def check_full_type(variable, expected_type) -> bool:
+    try:
+        check_type(variable, expected_type)
+        return True
+    except TypeError:
+        return False
 
 def compute_metrics(
     model_outputs_and_labels: "tuple[Predictions, Labels] | EvalPrediction",
@@ -56,7 +63,8 @@ def compute_metrics(
         model_outputs = model_outputs[0]
 
     # Parse the model outputs
-    if isinstance(model_outputs, list[dict[str, list[str]]]):
+
+    if check_full_type(model_outputs, list[dict[str, list[str]]]):
         predictions: list[dict[str, list[str]]] = deepcopy(model_outputs)
     else:
         for raw_prediction in model_outputs:
@@ -70,7 +78,7 @@ def compute_metrics(
     raise_if_model_output_contains_nan_values(model_output=predictions)
 
     # Parse the labels
-    if isinstance(raw_labels, list[dict[str, list[str]]]):
+    if check_full_type(raw_labels, list[dict[str, list[str]]]):
         labels: list[dict[str, list[str]]] = deepcopy(raw_labels)
     else:
         for raw_label in raw_labels:
@@ -139,11 +147,7 @@ def compare_all_predictions_and_labels(
     ):
         raise InvalidBenchmark("The metrics are invalid.")
 
-    return dict(
-        puzzle_scores=puzzle_scores,
-        cell_scores=cell_scores,
-        best_permuted_cell_scores=best_permuted_cell_scores,
-    )
+    return puzzle_scores, cell_scores, best_permuted_cell_scores
 
 
 def compare_prediction_and_label(
