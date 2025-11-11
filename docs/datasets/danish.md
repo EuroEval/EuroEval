@@ -1095,13 +1095,13 @@ When evaluating generative models, we use the following setup (see the
 - Number of few-shot examples: 5
 - Prefix prompt:
 
-  ```
+  ```text
   Følgende er en række gåder med svar.
   ```
 
 - Base prompt template:
 
-  ```
+  ```text
   Gåde:
 
   {introduction}
@@ -1117,7 +1117,7 @@ When evaluating generative models, we use the following setup (see the
 
 - Instruction-tuned prompt template:
 
-  ```
+  ```text
   Gåde:
 
   {introduction}
@@ -1189,13 +1189,13 @@ When evaluating generative models, we use the following setup (see the
 - Number of few-shot examples: 5
 - Prefix prompt:
 
-  ```
+  ```text
   Følgende er en række gåder med svar.
   ```
 
 - Base prompt template:
 
-  ```
+  ```text
   Gåde:
 
   {introduction}
@@ -1211,7 +1211,7 @@ When evaluating generative models, we use the following setup (see the
 
 - Instruction-tuned prompt template:
 
-  ```
+  ```text
   Gåde:
 
   {introduction}
