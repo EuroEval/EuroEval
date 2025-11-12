@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Fixed
+
+- The `--no-progress-bar` argument (`progress_bar=False` in the `Benchmarker` API) was
+  not hiding all the progress bars for generative models. This has been fixed now.
+
+## [v16.7.0] - 2025-11-10
+
 ### Added
 
 - Now allows the 'low', 'medium' and 'high' reasoning effort parameters for the GPT-OSS
