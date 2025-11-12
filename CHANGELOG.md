@@ -12,18 +12,20 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - The `--no-progress-bar` argument (`progress_bar=False` in the `Benchmarker` API) was
   not hiding all the progress bars for generative models. This has been fixed now.
 
+### Added
+
+- Added the Danish zebra puzzle dataset
+  [zebra_puzzles](https://huggingface.co/datasets/alexandrainst/zebra_puzzles). The split
+  is given by 128 / 1,024 samples for train / test, respectively. It is marked as
+  `unofficial` for now. This was contributed by @sofiehb ✨
+- Drafted the logical reasoning task. This was contributed by @sofiehb ✨
+
 ## [v16.7.0] - 2025-11-10
 
 ### Added
 
 - Now allows the 'low', 'medium' and 'high' reasoning effort parameters for the GPT-OSS
   models, which can be set by appending `#low`, `#medium` or `#high` to the model ID.
-- Added the Danish zebra puzzle dataset
-  [zebra_puzzles](https://huggingface.co/datasets/alexandrainst/zebra_puzzles). The split
-  is given by 128 / 1,024 samples for train / test, respectively. It is marked as
-  `unofficial` for now. This was contributed by [@sofiehb](https://github.com/sofiehb) ✨
-- Drafted the logical reasoning task. This was contributed by [@sofiehb]
-  (<https://github.com/sofiehb>) ✨
 
 ### Changed
 
