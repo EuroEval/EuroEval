@@ -3137,7 +3137,7 @@ The generation arguments for the model.</p>
 <i class="fa-regular fa-square-minus"></i>
 </span>
 </span>
-<span class="mkapi-object-name"><a href="./#euroeval.benchmark_modules.litellm.try_download_ollama_model" title="euroeval.benchmark_modules.litellm.try_download_ollama_model">try_download_ollama_model</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">model_id</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str</span><span class="mkapi-paren">)</span><span class="mkapi-arrow"> → </span><span class="mkapi-return">bool</span></span>
+<span class="mkapi-object-name"><a href="./#euroeval.benchmark_modules.litellm.try_download_ollama_model" title="euroeval.benchmark_modules.litellm.try_download_ollama_model">try_download_ollama_model</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">model_id</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str</span><span class="mkapi-comma">, </span><span class="mkapi-arg">progress_bar</span><span class="mkapi-colon">: </span><span class="mkapi-ann">bool</span><span class="mkapi-paren">)</span><span class="mkapi-arrow"> → </span><span class="mkapi-return">bool</span></span>
 </p>
 <div class="mkapi-document">
 <p>Try to download an Ollama model.</p>
@@ -3156,6 +3156,11 @@ The generation arguments for the model.</p>
 <span class="mkapi-item-type">str</span> <span class="mkapi-dash">&mdash;</span>
 The model ID. If the model does not start with "ollama/" or "ollama_chat/"
 then this function will return False.</p>
+</li>
+<li>
+<p><span class="mkapi-item-name">progress_bar</span> : 
+<span class="mkapi-item-type">bool</span> <span class="mkapi-dash">&mdash;</span>
+Whether to show a progress bar while downloading the model.</p>
 </li>
 </ul>
 </div>

@@ -2163,7 +2163,7 @@ Load the cached model outputs.</p>
 <i class="fa-regular fa-square-minus"></i>
 </span>
 </span><span class="mkapi-object-kind">class</span>
-<span class="mkapi-object-name"><a href="./#euroeval.model_cache.ModelCache" title="euroeval.model_cache.ModelCache">ModelCache</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">model_cache_dir</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="pathlib.Path">Path</span></span><span class="mkapi-comma">, </span><span class="mkapi-arg">cache_name</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str</span><span class="mkapi-comma">, </span><span class="mkapi-arg">max_generated_tokens</span><span class="mkapi-colon">: </span><span class="mkapi-ann">int</span><span class="mkapi-paren">)</span></span>
+<span class="mkapi-object-name"><a href="./#euroeval.model_cache.ModelCache" title="euroeval.model_cache.ModelCache">ModelCache</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">model_cache_dir</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="pathlib.Path">Path</span></span><span class="mkapi-comma">, </span><span class="mkapi-arg">cache_name</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str</span><span class="mkapi-comma">, </span><span class="mkapi-arg">max_generated_tokens</span><span class="mkapi-colon">: </span><span class="mkapi-ann">int</span><span class="mkapi-comma">, </span><span class="mkapi-arg">progress_bar</span><span class="mkapi-colon">: </span><span class="mkapi-ann">bool</span><span class="mkapi-paren">)</span></span>
 </p>
 <div class="mkapi-document">
 <p>A cache for model outputs.</p>
@@ -2198,6 +2198,11 @@ The model output cache.</p>
  <span class="mkapi-dash">&mdash;</span>
 The maximum number of tokens to generate for each example.</p>
 </li>
+<li>
+<p><span class="mkapi-item-name">progress_bar</span>
+ <span class="mkapi-dash">&mdash;</span>
+Whether to show a progress bar when caching model outputs.</p>
+</li>
 </ul>
 </div>
 <p class="mkapi-section">
@@ -2224,6 +2229,11 @@ The name of the cache file.</p>
 <p><span class="mkapi-item-name">max_generated_tokens</span> : 
 <span class="mkapi-item-type">int</span> <span class="mkapi-dash">&mdash;</span>
 The maximum number of tokens to generate for each example.</p>
+</li>
+<li>
+<p><span class="mkapi-item-name">progress_bar</span> : 
+<span class="mkapi-item-type">bool</span> <span class="mkapi-dash">&mdash;</span>
+Whether to show a progress bar when caching model outputs.</p>
 </li>
 </ul>
 </div>

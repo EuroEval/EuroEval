@@ -1207,7 +1207,16 @@
 <span class="normal">269</span>
 <span class="normal">270</span>
 <span class="normal">271</span>
-<span class="normal">272</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;ModelCache class for caching model outputs.&quot;&quot;&quot;</span>
+<span class="normal">272</span>
+<span class="normal">273</span>
+<span class="normal">274</span>
+<span class="normal">275</span>
+<span class="normal">276</span>
+<span class="normal">277</span>
+<span class="normal">278</span>
+<span class="normal">279</span>
+<span class="normal">280</span>
+<span class="normal">281</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;ModelCache class for caching model outputs.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">c</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">hashlib</span>
@@ -1240,10 +1249,16 @@
 <span class="sd">            The model output cache.</span>
 <span class="sd">        max_generated_tokens:</span>
 <span class="sd">            The maximum number of tokens to generate for each example.</span>
+<span class="sd">        progress_bar:</span>
+<span class="sd">            Whether to show a progress bar when caching model outputs.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">model_cache_dir</span><span class="p">:</span> <span class="s2">&quot;Path&quot;</span><span class="p">,</span> <span class="n">cache_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">max_generated_tokens</span><span class="p">:</span> <span class="nb">int</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">model_cache_dir</span><span class="p">:</span> <span class="s2">&quot;Path&quot;</span><span class="p">,</span>
+        <span class="n">cache_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">max_generated_tokens</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">progress_bar</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialise the model output cache.</span>
 
@@ -1254,11 +1269,14 @@
 <span class="sd">                The name of the cache file.</span>
 <span class="sd">            max_generated_tokens:</span>
 <span class="sd">                The maximum number of tokens to generate for each example.</span>
+<span class="sd">            progress_bar:</span>
+<span class="sd">                Whether to show a progress bar when caching model outputs.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">model_cache_dir</span> <span class="o">=</span> <span class="n">model_cache_dir</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">model_cache_dir</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">cache_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model_cache_dir</span> <span class="o">/</span> <span class="n">cache_name</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;/&quot;</span><span class="p">,</span> <span class="s2">&quot;--&quot;</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">max_generated_tokens</span> <span class="o">=</span> <span class="n">max_generated_tokens</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">progress_bar</span> <span class="o">=</span> <span class="n">progress_bar</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">load</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span><div class="mkapi-source-link" id="euroeval.model_cache.ModelCache.load"><a href="../../../api/euroeval/model_cache/#euroeval.model_cache.ModelCache.load" title="Go to docs">[docs]</a></div>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Load the model output cache.&quot;&quot;&quot;</span>
@@ -1391,7 +1409,7 @@
         <span class="k">with</span> <span class="n">get_pbar</span><span class="p">(</span>
             <span class="n">iterable</span><span class="o">=</span><span class="n">model_inputs</span><span class="p">,</span>
             <span class="n">desc</span><span class="o">=</span><span class="s2">&quot;Caching model outputs&quot;</span><span class="p">,</span>
-            <span class="n">disable</span><span class="o">=</span><span class="nb">hasattr</span><span class="p">(</span><span class="n">sys</span><span class="p">,</span> <span class="s2">&quot;_called_from_test&quot;</span><span class="p">),</span>
+            <span class="n">disable</span><span class="o">=</span><span class="nb">hasattr</span><span class="p">(</span><span class="n">sys</span><span class="p">,</span> <span class="s2">&quot;_called_from_test&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">progress_bar</span><span class="p">,</span>
         <span class="p">)</span> <span class="k">as</span> <span class="n">pbar</span><span class="p">:</span>
             <span class="k">for</span> <span class="n">sample_idx</span><span class="p">,</span> <span class="n">model_input</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">pbar</span><span class="p">):</span>
                 <span class="c1"># Extract the scores from the model output, to be cached. We only store</span>
