@@ -154,9 +154,9 @@ SPEED = Task(
 
 LOGIC = Task(
     name="logical-reasoning",
-    task_group=TaskGroup.LOGICAL_REASONING,
+    task_group=TaskGroup.LOGICAL_REASONING,  # TODO: Perhaps change to TEXT_TO_TEXT
     template_dict=LOGIC_TEMPLATES,
-    metrics=[m.puzzle_level_accuracy_metric, m.cell_wise_accuracy_metric],
+    metrics=[m.puzzle_level_accuracy_metric, m.cell_level_accuracy_metric],
     default_num_few_shot_examples=8,
     default_max_generated_tokens=256,
     default_labels=[],

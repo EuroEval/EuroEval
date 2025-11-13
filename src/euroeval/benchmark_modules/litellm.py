@@ -72,7 +72,6 @@ from ..generation_utils import (
 )
 from ..logging_utils import get_pbar, log, log_once
 from ..task_group_utils import (
-    logical_reasoning,
     question_answering,
     sequence_classification,
     text_to_text,
@@ -1254,8 +1253,6 @@ class LiteLLMModel(BenchmarkModule):
                 )
             case TaskGroup.QUESTION_ANSWERING:
                 return question_answering.extract_labels_from_generation
-            case TaskGroup.LOGICAL_REASONING:
-                return logical_reasoning.extract_labels_from_generation
             case _:
                 raise NotImplementedError(
                     f"Unsupported task group: {self.dataset_config.task.task_group}."

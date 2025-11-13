@@ -1,4 +1,6 @@
 """Logic reasoning metrics for puzzles."""
+# TODO: Rename module to something like "structured_generation" or just
+# "custom_generation"
 
 import collections.abc as c
 import logging
@@ -14,11 +16,11 @@ if t.TYPE_CHECKING:
 logger: logging.Logger = logging.getLogger("euroeval")
 
 
-class PuzzleMetric(Metric):
-    """Puzzle metric."""
+class PuzzleLevelAccuracyMetric(Metric):
+    """Puzzle-level accuracy metric."""
 
-    def __init__(self, name: str, pretty_name: str) -> None:
-        """Initialise the puzzle metric.
+    def __init__(self) -> None:
+        """Initialise the puzzle-level accuracy metric.
 
         Args:
             name:
@@ -27,8 +29,8 @@ class PuzzleMetric(Metric):
                 The pretty name of the metric, used for display purposes.
         """
         super().__init__(
-            name=name,
-            pretty_name=pretty_name,
+            name="puzzle_level_accuracy",
+            pretty_name="Puzzle-level Accuracy",
             postprocessing_fn=lambda raw_score: (raw_score, f"{raw_score:,.0f}"),
         )
 
@@ -40,22 +42,77 @@ class PuzzleMetric(Metric):
         dataset_config: "DatasetConfig",
         benchmark_config: "BenchmarkConfig",
     ) -> float | None:
-        """Not used with the puzzle metric, but required for consistency.
-
-        TODO: How are predictions used?
-        """
+        """Compute the puzzle-level accuracy."""
+        # TODO: Implement puzzle-level accuracy computation as in
+        # task_group_utils/logical_reasoning.py (move it)
         raise NotImplementedError
 
 
-puzzle_level_accuracy_metric = PuzzleMetric(
-    name="puzzle_level_accuracy", pretty_name="Puzzle-level Accuracy"
-)
+class CellLevelAccuracyMetric(Metric):
+    """Cell-wise accuracy metric."""
 
-cell_wise_accuracy_metric = PuzzleMetric(
-    name="cell_wise_accuracy", pretty_name="Cell-wise Accuracy"
-)
+    def __init__(self) -> None:
+        """Initialise the cell-wise accuracy metric.
 
-best_permuted_cell_wise_accuracy_metric = PuzzleMetric(
-    name="best_permuted_cell_wise_accuracy",
-    pretty_name="Best Permuted Cell-wise Accuracy",
-)
+        Args:
+            name:
+                The name of the metric in snake_case.
+            pretty_name:
+                The pretty name of the metric, used for display purposes.
+        """
+        super().__init__(
+            name="cell_wise_accuracy",
+            pretty_name="Cell-wise Accuracy",
+            postprocessing_fn=lambda raw_score: (raw_score, f"{raw_score:,.2f}"),
+        )
+
+    def __call__(
+        self,
+        predictions: c.Sequence,
+        references: c.Sequence,
+        dataset: "Dataset",
+        dataset_config: "DatasetConfig",
+        benchmark_config: "BenchmarkConfig",
+    ) -> float | None:
+        """Compute the cell-wise accuracy."""
+        # TODO: Implement cell-wise accuracy computation as in
+        # task_group_utils/logical_reasoning.py (move it)
+        raise NotImplementedError
+
+
+class BestPermutedCellLevelAccuracyMetric(Metric):
+    """Best permuted cell-wise accuracy metric."""
+
+    def __init__(self) -> None:
+        """Initialise the best permuted cell-wise accuracy metric.
+
+        Args:
+            name:
+                The name of the metric in snake_case.
+            pretty_name:
+                The pretty name of the metric, used for display purposes.
+        """
+        super().__init__(
+            name="best_permuted_cell_wise_accuracy",
+            pretty_name="Best Permuted Cell-wise Accuracy",
+            postprocessing_fn=lambda raw_score: (raw_score, f"{raw_score:,.2f}"),
+        )
+        self.cell_accuracy_metric = CellLevelAccuracyMetric()
+
+    def __call__(
+        self,
+        predictions: c.Sequence,
+        references: c.Sequence,
+        dataset: "Dataset",
+        dataset_config: "DatasetConfig",
+        benchmark_config: "BenchmarkConfig",
+    ) -> float | None:
+        """Compute the best permuted cell-wise accuracy."""
+        # TODO: Implement best permuted cell-wise accuracy computation as in
+        # task_group_utils/logical_reasoning.py (move it)
+        raise NotImplementedError
+
+
+puzzle_level_accuracy_metric = PuzzleLevelAccuracyMetric()
+cell_level_accuracy_metric = CellLevelAccuracyMetric()  # TODO: Change to cell-wise
+best_permuted_cell_level_accuracy_metric = BestPermutedCellLevelAccuracyMetric()

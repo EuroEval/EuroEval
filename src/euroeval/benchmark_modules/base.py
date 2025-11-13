@@ -196,12 +196,8 @@ class BenchmarkModule(ABC):
                     dataset_config=self.dataset_config,
                     benchmark_config=self.benchmark_config,
                 )
-            case TaskGroup.LOGICAL_REASONING:
-                return partial(
-                    logical_reasoning.compute_metrics,
-                    dataset_config=self.dataset_config,
-                    benchmark_config=self.benchmark_config,
-                )
+            case TaskGroup.LOGICAL_REASONING:  # TODO: Remove this
+                return partial(logical_reasoning.compute_metrics)
             case TaskGroup.TEXT_TO_TEXT:
                 return partial(
                     text_to_text.compute_metrics,
