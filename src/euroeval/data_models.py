@@ -104,6 +104,9 @@ class Task:
             which is not one of the allowed labels. If True, the model output will be
             mapped to the closest valid label. If False, the model output will be
             considered incorrect and the evaluation will be aborted. Defaults to True.
+        default_multi_label (optional):
+            Whether the task is multi-label classification, i.e., whether multiple
+            labels can be assigned to a single input. Defaults to False.
     """
 
     model_config = pydantic.ConfigDict(
@@ -132,6 +135,7 @@ class Task:
         ]
     )
     default_allow_invalid_model_outputs: bool = True
+    default_multi_label: bool = False
 
     def __post_init__(self) -> None:
         """Post-initialisation checks."""
@@ -206,6 +210,9 @@ class DatasetConfig:
             will be mapped to the closest valid label. If False, the model output will
             be considered incorrect and the evaluation will be aborted. Defaults to
             the one for the task.
+        _multi_label (optional):
+            Whether the dataset is multi-label classification, i.e., whether multiple
+            labels can be assigned to a single input. Defaults to the one for the task.
         _logging_string (optional):
             The string used to describe evaluation on the dataset in logging. If not
             provided, a default string will be generated, based on the pretty name. Only
@@ -234,6 +241,7 @@ class DatasetConfig:
     _allowed_model_types: c.Sequence[ModelType] | None = None
     _allowed_generative_types: c.Sequence[GenerativeType] | None = None
     _allow_invalid_model_outputs: bool | None = None
+    _multi_label: bool | None = None
     _logging_string: str | None = None
     splits: c.Sequence[str] = field(default_factory=lambda: ["train", "val", "test"])
     bootstrap_samples: bool = True
@@ -411,6 +419,15 @@ class DatasetConfig:
             self._allow_invalid_model_outputs
             if self._allow_invalid_model_outputs is not None
             else self.task.default_allow_invalid_model_outputs
+        )
+
+    @property
+    def multi_label(self) -> bool:
+        """Whether the dataset is multi-label classification."""
+        return (
+            self._multi_label
+            if self._multi_label is not None
+            else self.task.default_multi_label
         )
 
     @property

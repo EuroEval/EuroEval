@@ -62,6 +62,16 @@ DANISH_CITIZEN_TESTS_CONFIG = DatasetConfig(
     languages=[DANISH],
 )
 
+DANISH_JOURNALISM_TESTS_CONFIG = DatasetConfig(
+    name="danish-journalism-tests",
+    pretty_name="Danish Journalism Tests",
+    source="EuroEval/danish-journalism-tests",
+    task=KNOW,
+    languages=[DANISH],
+    _labels=["a", "b", "c", "d", "e", "f", "g", "h", "i"],
+    _multi_label=True,
+)
+
 HELLASWAG_DA_CONFIG = DatasetConfig(
     name="hellaswag-da",
     pretty_name="HellaSwag-da",
