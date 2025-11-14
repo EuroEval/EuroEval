@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Fixed
+
+- The `--no-progress-bar` argument (`progress_bar=False` in the `Benchmarker` API) was
+  not hiding all the progress bars for generative models. This has been fixed now.
+
+## [v16.7.0] - 2025-11-10
+
+### Added
+
+- Now allows the 'low', 'medium' and 'high' reasoning effort parameters for the GPT-OSS
+  models, which can be set by appending `#low`, `#medium` or `#high` to the model ID.
+
 ### Changed
 
 - Improved the support for evaluating models on custom inference API servers. This
@@ -28,6 +40,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 - When evaluating encoder models on reading comprehension datasets, we now also truncate
   the question in case the model's maximum context length is very small.
+- Now correctly detects the reasoning tokens of the GPT-OSS models.
 
 ### Deprecated
 

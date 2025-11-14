@@ -8,6 +8,7 @@ import typing as t
 import torch
 from transformers.tokenization_mistral_common import MistralCommonTokenizer
 
+from .constants import BOS_TOKENS, EOS_TOKENS, PAD_TOKENS
 from .enums import GenerativeType
 from .exceptions import InvalidModel
 from .logging_utils import log, log_once
@@ -169,8 +170,7 @@ def get_bos_token(
 
     vocab: dict[str, int] = tokeniser.get_vocab()
 
-    candidate_bos_tokens = ["<s>", "<|begin_of_text|>", "<|startoftext|>", "[CLS]"]
-    for candidate_bos_token in candidate_bos_tokens:
+    for candidate_bos_token in BOS_TOKENS:
         if candidate_bos_token in vocab:
             bos_token = candidate_bos_token
             bos_token_id = vocab[bos_token]
@@ -210,8 +210,7 @@ def get_eos_token(
 
     vocab: dict[str, int] = tokeniser.get_vocab()
 
-    candidate_eos_tokens = ["</s>", "<|end_of_text|>", "<|endoftext|>", "[SEP]"]
-    for candidate_eos_token in candidate_eos_tokens:
+    for candidate_eos_token in EOS_TOKENS:
         if candidate_eos_token in vocab:
             eos_token = candidate_eos_token
             eos_token_id = vocab[eos_token]
@@ -286,15 +285,7 @@ def get_pad_token(
 
     # Otherwise, try to find a candidate padding token in the vocabulary
     else:
-        pad_token_candidates = [
-            "<pad>",
-            "[pad]",
-            "<|endoftext|>",
-            "<｜end▁of▁sentence｜>",
-            "<|im_end|>",
-        ]
-        pad_token_candidates.extend([c.upper() for c in pad_token_candidates])
-        for candidate in pad_token_candidates:
+        for candidate in PAD_TOKENS:
             if candidate in tokeniser.get_vocab():
                 pad_token = candidate
                 pad_token_id = tokeniser.get_vocab()[candidate]

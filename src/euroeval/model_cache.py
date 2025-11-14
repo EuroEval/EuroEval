@@ -31,10 +31,16 @@ class ModelCache:
             The model output cache.
         max_generated_tokens:
             The maximum number of tokens to generate for each example.
+        progress_bar:
+            Whether to show a progress bar when caching model outputs.
     """
 
     def __init__(
-        self, model_cache_dir: "Path", cache_name: str, max_generated_tokens: int
+        self,
+        model_cache_dir: "Path",
+        cache_name: str,
+        max_generated_tokens: int,
+        progress_bar: bool,
     ) -> None:
         """Initialise the model output cache.
 
@@ -45,11 +51,14 @@ class ModelCache:
                 The name of the cache file.
             max_generated_tokens:
                 The maximum number of tokens to generate for each example.
+            progress_bar:
+                Whether to show a progress bar when caching model outputs.
         """
         self.model_cache_dir = model_cache_dir
         self.model_cache_dir.mkdir(parents=True, exist_ok=True)
         self.cache_path = self.model_cache_dir / cache_name.replace("/", "--")
         self.max_generated_tokens = max_generated_tokens
+        self.progress_bar = progress_bar
 
     def load(self) -> None:
         """Load the model output cache."""
@@ -182,7 +191,7 @@ class ModelCache:
         with get_pbar(
             iterable=model_inputs,
             desc="Caching model outputs",
-            disable=hasattr(sys, "_called_from_test"),
+            disable=hasattr(sys, "_called_from_test") or not self.progress_bar,
         ) as pbar:
             for sample_idx, model_input in enumerate(pbar):
                 # Extract the scores from the model output, to be cached. We only store

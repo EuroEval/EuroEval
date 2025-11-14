@@ -5,6 +5,7 @@ import json
 import pathlib
 import re
 import typing as t
+from copy import deepcopy
 from dataclasses import dataclass, field
 
 import pydantic
@@ -12,7 +13,15 @@ import torch
 
 from .enums import Device, GenerativeType, ModelType, TaskGroup
 from .exceptions import InvalidBenchmark
-from .languages import ENGLISH, NORWEGIAN, PORTUGUESE, Language
+from .languages import (
+    ENGLISH,
+    EUROPEAN_PORTUGUESE,
+    NORWEGIAN,
+    NORWEGIAN_BOKMÅL,
+    NORWEGIAN_NYNORSK,
+    PORTUGUESE,
+    Language,
+)
 from .metrics.base import Metric
 from .types import ScoreDict
 from .utils import get_package_version
@@ -259,18 +268,38 @@ class DatasetConfig:
         """The string used to describe evaluation on the dataset in logging."""
         if self._logging_string is not None:
             return self._logging_string
+
         truncated_str = (
             "truncated version of the "
             if isinstance(self.source, str) and self.source.endswith("-mini")
             else ""
         )
+
+        logging_languages = list(deepcopy(self.languages))
         if len(self.languages) > 1:
+            if (
+                NORWEGIAN_BOKMÅL in self.languages
+                and NORWEGIAN_NYNORSK in self.languages
+                and NORWEGIAN in self.languages
+            ):
+                logging_languages.remove(NORWEGIAN_BOKMÅL)
+                logging_languages.remove(NORWEGIAN_NYNORSK)
+            elif (
+                NORWEGIAN_BOKMÅL in self.languages
+                or NORWEGIAN_NYNORSK in self.languages
+            ) and NORWEGIAN in self.languages:
+                logging_languages.remove(NORWEGIAN)
+            if PORTUGUESE in self.languages and EUROPEAN_PORTUGUESE in self.languages:
+                logging_languages.remove(EUROPEAN_PORTUGUESE)
+
+        if len(logging_languages) > 1:
             languages_str = (
-                ", ".join([lang.name for lang in self.languages[:-1]])
-                + f" and {self.languages[-1].name}"
+                ", ".join([lang.name for lang in logging_languages[:-1]])
+                + f" and {logging_languages[-1].name}"
             )
         else:
-            languages_str = self.languages[0].name
+            languages_str = logging_languages[0].name
+
         task_str = self.task.name.replace("-", " ")
         dataset_name_str = (
             self.pretty_name or self.name.replace("-", " ").replace("_", " ").title()

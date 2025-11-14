@@ -1291,7 +1291,9 @@ class LiteLLMModel(BenchmarkModule):
 
         # Separate check for Ollama models
         if model_id.startswith("ollama/") or model_id.startswith("ollama_chat/"):
-            ollama_model_exists = try_download_ollama_model(model_id=model_id)
+            ollama_model_exists = try_download_ollama_model(
+                model_id=model_id, progress_bar=benchmark_config.progress_bar
+            )
             if ollama_model_exists:
                 return ollama_model_exists
 
@@ -1647,13 +1649,15 @@ class LiteLLMModel(BenchmarkModule):
         return generation_kwargs
 
 
-def try_download_ollama_model(model_id: str) -> bool:
+def try_download_ollama_model(model_id: str, progress_bar: bool) -> bool:
     """Try to download an Ollama model.
 
     Args:
         model_id:
             The model ID. If the model does not start with "ollama/" or "ollama_chat/"
             then this function will return False.
+        progress_bar:
+            Whether to show a progress bar while downloading the model.
 
     Returns:
         Whether the model was downloaded successfully.
@@ -1725,7 +1729,10 @@ def try_download_ollama_model(model_id: str) -> bool:
 
         # Download the model
         with get_pbar(
-            desc=f"Downloading {ollama_model_id}", unit_scale=True, unit="B"
+            desc=f"Downloading {ollama_model_id}",
+            unit_scale=True,
+            unit="B",
+            disable=not progress_bar,
         ) as pbar:
             for status in response:
                 if status.total is not None:
