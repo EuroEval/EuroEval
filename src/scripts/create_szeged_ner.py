@@ -57,7 +57,7 @@ def main() -> None:
     )
 
     # Create dataset ID
-    dataset_id = "EuroEval/szeged-ner"
+    dataset_id = "EuroEval/szeged-ner-mini"
 
     # Remove the dataset from Hugging Face Hub if it already exists
     HfApi().delete_repo(dataset_id, repo_type="dataset", missing_ok=True)
