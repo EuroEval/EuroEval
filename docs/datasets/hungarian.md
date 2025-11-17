@@ -231,7 +231,7 @@ euroeval --model <model-id> --dataset scala-hu
 
 ## Reading Comprehension
 
-### MultiWikiQA-bg
+### MultiWikiQA-hu
 
 This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2509.04111)
 and contains Wikipedia articles with LLM-generated questions and answers in 300+
@@ -244,33 +244,33 @@ Here are a few examples from the training split:
 
 ```json
 {
-    "context": "„Нихоншоки“ (; по английската Система на Хепбърн Nihonshoki) или „Нихонги“ (, Nihongi), „Японска хроника“ е една от трите книги смятани за свещени за шинтоизма, заедно с „Коджики“ (, Kojiki) и „Куджики“ (, Kujiki). Считана е за първата същинска японска историография и проследява историята на Япония от сътворението на архипелага до управлението на императрица Джито (, Jitō-tennō) (686\xa0– 697).\n\nИстория \nПаметникът е завършен през 720 г. Съставен е по нареждане и под ръководството на принц Тонери (, Toneri-shinō) заедно с другия главен съставител Фудживара-но Фухито (, Fujiwara-no Fuhito). За образец на съставителите служат древните китайски исторически хроники. Интересен е фактът, че „Нихоншоки“ е написан едва 8 години след съставянето на „Коджики“\xa0– документ с твърде сходно съдържание на неговото. Една от вероятните причини е, че „Нихоншоки“ е написан изцяло на китайски език, което по това време устройвало повече целите на Японския императорски двор.\n\nСъдържание \n„Нихоншоки“ се състои от тридесет свитъка (, maki), разделени на три части. Документът основно се концентрира върху историчски събития и факти, както и върху генеалогията на императорите. Първата част започва с два свитъка, които се занимават с японските митове за сътворението и последвалите го събития. А следващите свитъци дават началото на проследяването на историята на Япония по хронологичен ред на управление на императори, като започват с легендарния първи император Джимму (, Jimmu-tennō). Втората част от свитъци е за управлението на император Темму (, Temmu-tennō) (673\xa0– 686). Третата и последна част обхваща управлението на императрица Джито.\n\nВ документа присъстват и 129 песни/поеми „ута“ (, uta). 50 от тях съвпадат с песните от „Коджики“, а останалите 79 се срещат за първи път. За записването им е използвана същата писмена система, както и в „Коджики“ – Маньогана (,\u3000Man'yōgana) т.е. ползване на китайски писмени знаци само с фонетичната им стойност, не като идеограми.\n\nИзточници \n Калве, Робер „Японците: историята на един народ“. Рива (2005)\n Цигова, Бойка „Пътят на словото в Япония“. Университетско издателство „Св. Климент Охридски“ (2006)\n\nВижте също \n Коджики\n\nВъншни препратки \n  The Internet Sacred Text Archive – Преводи на японски шинтоистки текстове, сред които и на „Нихоншоки“, на английски.\n  和漢籍の書棚  – Текстът на „Нихоншоки“ на японски.\n\nЯпонска литература\nШинтоизъм",
-    "question": "Колко на брой свитъка има в „Нихоншоки“?",
+    "context": "Az utolsó mester (The Last of the Masters) Philip K. Dick egyik novellája, amelyet 1953-ban írt, majd 1954-ben az Orbit Science Fiction magazin november-decemberi számában jelent meg. Magyarul a Lenn a sivár Földön című novelláskötetben olvasható.\n\nTörténet \n\nA világon kétszáz éve az anarchia uralkodik. Akkor történt, hogy először Európában, majd szerte a világban fellázadtak a polgárok, és megdöntötték a kormányokat. Megölték a vezetőket, elpusztították a robotokat és megsemmisítettek minden addig a kormány kezében lévő kutatási anyagot, elpusztították az atombombákat. A világon most egyetlenegy szervezet van, az Anarchista Szövetség, aki csak arra ügyel, hogy nehogy valaki újra felépítsen magának egy rendszert. A robotok közül viszont az egyik – Bors – túlélte a pusztítást, és bujdosva a kétszáz év alatt felépített magának egy kis eldugott birodalmat. Ennek a birodalomnak vannak a legmodernebb eszközei (hiszen a két évszázaddal ezelőtti kutatási eredmények már csak Bors agyában maradtak meg), földcsuszamlásoknak álcázva elzárták a telephez vezető földutakat, és a szomszédos falukban elhelyezett kémeknek köszönhetően mindig időben tudták, ha a Szövetség ügynökei közelednek, így mindig időben félresöpörték őket. Nem sikerül azonban ezt megtenni Edward Tolbyval és lányával, Silviával. Így (bár Silviát sikerül elkapni) Tolby egyedül próbálja meg felvenni a harcot az erőddel. Az őrségen könnyen átjut, hiszen azok soha nem harcoltak, de végül mégis elkezdik őt üldözni. Bemenekül Fowler, Bors egyik helyettesének szobájába. Szerencséjére Fowlernek az az ötlete támad, hogy Tolbyval öleti meg Borst (mivel ő maga erre nem lenne képes, viszont az anarchia szimpatikus neki). Tolbynak végül is sikerül szétvernie Bors robotfejét, akinek halála miatt szétesik az általa felépített rendszer. Fowler a biztonság kedvéért elteszi Bors adatbázisát, hátha még szüksége lesz rá…\n\nForrások \n Philip K. Dick: Lenn a sivár földön (Agave Kiadó, 2005)\n\nPhilip K. Dick-novellák",
+    "question": "Mely kutató munkáját pusztították el a felkelők?",
     "answers": {
-        'answer_start': [1002],
-        "text": ["тридесет"]
+        "answer_start": [407],
+        "text": ["a kormány"]
     }
 }
 ```
 
 ```json
 {
-    "context": "5 старс или срещано на латиница като 5 stars е музикално шоу излъчвано по bTV. Водещи са Светозар Христов, Лора Владова, Владимир Димов, Надя Казакова и Любена Нинова, които са открития от Шоуто на Слави от музикалните проекти „Аз пея в Ку-ку бенд“ през 2004 г. и „Музикална академия Ку-ку бенд“ през 2005 г. В първия сезон на предаването водещ е и Росен Петров.\n\nСезони\n\nПърви сезон \nПървото предаване е излъчено на 11 април 2005 и са излъчени 12 епизода. Първия сезон на шоуто се снима в зала 2 на НДК. В шоуто гостуват известни личности, а петимата водещи им дават кратко интервю, след което изпълняват 5-те му любими песни.\n\nВтори сезон \nВтория сезон на шоуто се излъчва през есента на същата година под името „5 stars: Продължението“. Той е заснет във виртуално студио с 3D ефекти, като сюжета на шоуто е сменен. В него водещите стават репортери и интервюират хора от различни социални групи, съсловия и гилдии за изпълнителя. Предпочитаните песни са определени чрез проучване от специално наета социологическа агенция. В предаването гостува виден представител на анализираната група, а за негово удоволствие пее някой от фаворитите на гилдията.\n\nТрети сезон \nТретия и последен сезон на шоуто е през пролетта на 2006 г., отново пред публика. С началото на третия сезон предаването променя интрото и мелодията.\n\nВъншни препратки \n\nБългарски реалити предавания\nПредавания на БТВ\nОсновани в България през 2005 година",
-    "question": "Как се избират любимите песни от втори сезон?",
+    "context": 'Az U–1230 tengeralattjárót a német haditengerészet rendelte a hamburgi Deutsche Werft AG-től 1941. október 14-én. A hajót 1944. január 26-án vették hadrendbe. Egy járőrutat tett, amelyen egy hajót süllyesztett el.\n\nPályafutása \nAz U–1230 első és egyetlen harci küldetésére Hans Hilbig kapitány irányításával 1944. október 8-án futott ki Hortenből. Az Atlanti-óceán északi részén kelt át, majd november 29-én – az Elster hadművelet (németül Unternehmen Elster, magyarul Szarka hadművelet) – két német ügynököt rakott partra az amerikai Hancock Pointnál. Ezután az Amerikai Egyesült Államok partjainál, Connecticuttól északra vadászott. \n\nDecember 3-án Maine állam partjainak közelében megtorpedózta a kanadai Cornwallis nevű gőzöst, amely Barbadosról tartott St. Johnba, fedélzetén cukorral és melasszal. A Cornwallis 1942. szeptember 11-én kapott már torpedótalálatot Bridgetownban az U–514-től, de akkor még ki lehetett emelni a sekély vízből. Az U–1230 torpedója azonban végzetes volt, a fedélzeten tartózkodó 48 emberből 43 meghalt.\n\nŐrjárata befejeztével a tengeralattjáró visszatért Norvégiába, majd onnan 1945. február 20-án Flensburgba hajózott. 1945. május 5-én a németországi Heligolandnál adta meg magát. 1945. július 24-én Wilhelmshavenből indult a skóciai Loch Ryanbe, ahol a szövetségesek a megsemmisítésre kijelölt búvárhajókat gyűjtötték. Az U– össze 1230-at a HMS Cubitt brit fregatt süllyesztette el a Deadlight hadműveletben.\n\nKapitány\n\nŐrjárat\n\nElsüllyesztett hajó\n\nJegyzetek\n\nForrások \n  \n  \n  \n  \n\nIXC/40 típusú német tengeralattjárók',
+    "question": "Ki rendelte meg az U-1230-as tengeralattjárót?",
     "answers": {
-        "answer_start": [967],
-        "text": ["чрез проучване от специално наета социологическа агенция"]
-        }
+        "answer_start": [62],
+        "text": ["hamburgi Deutsche Werft AG-től"]
+    }
 }
 ```
 
 ```json
 {
-    "context": "Селскостопанската академия (съкратено ССА) е научна организация със седалище в София, България.\n\nПризвана е да извършва научни изследвания и приложна дейност в областта на земеделието, животновъдството и хранителната промишленост. Има право да подготвя докторанти по съответните научни дисциплини.\n\nИстория \nПо примера на Всесъюзната академия на селскостопанските науки „Ленин“ в Москва като български аналог е създадена отрасловата научна академия под името Академия на селскостопанските науки (АСН) със седалище в София през 1961 г. Тя има физически лица за членове, наричани с научното звание „академик“ (действителен член). Закрита е през 1971 г., като нейните членове и учени преминават към общонаучната БАН.\n\nСамо след година (1972) е създадена научно-образователната Селскостопанска академия „Георги Димитров“. Тя обединява научни институти и всички висши училища в страната, подготвящи специалисти в посочените най-горе научни направления. Закрита е след само 3 години (1975). Подобна научно-образователна функция и структура има и повече просъществувала обединена Медицинска академия (1972 – 1990).\n\nОтново е учредена Селскостопанска академия с Указ 1008 (ДВ, бр. 34) на Държавния съвет през 1982 г. ССА обаче – за разлика от предишната ССА „Г. Димитров“, е само научна организация и не се занимава с обучение на студенти. В нея няма членство на учени, каквото има в първоначалната АСН.\n\nАкадемията е преобразувана (ДВ, бр. 113/1999) в Национален център за аграрни науки (НЦАН) в края на 1999 г.\n\nНЦАН е преименуван (ДВ, бр. 43/2008) с предишното название Селскостопанска академия през 2008 г. През лятото на 2018 г. е приет новият Устройствен правилник на ССА, с който се внасят важни изменения в нейната структура. Въведени са научните звания академик и член-кореспондент от 1 август 2018 г. Академичният състав включва: академици, член-кореспонденти, чуждестранни членове и почетни членове на Академията, хабилитирани и нехабилитирани учени, доктори на науките и доктори от системата на Академията, докторанти\n\nСтруктура \n Централно управление\nСелскостопанската академия се ръководи от управителен съвет с мандат от 4 години начело с председател, подпомаган от заместник-председател и главен научен секретар.\n\nПредседателят на Управителния съвет е също председател на ССА и председател на Изпълнителното бюро, което включва още заместник-председателя и главния научен секретар.\n\nКоординати: адрес: 1373, гр. София, ул. „Суходолска“ 30; тел.: 02/9299481; Факс: 02/9202067; e-mail: aa@acad.bg\n\n Научни институти\n\n Други звена\n „Система за агропазарна информация“ (САПИ), София (държавно предприятие към ССА)\n 19 опитни станции (самостоятелни държавни предприятия) – във Варна, Видин, Враца, Кърджали, Лозница, Лом, Павликени, Пазарджик, Поморие, Самоков, Септември, Силистра, Сливен, Смолян, Средец, Търговище, с. Хан Крум (Област Шумен), Хасково, Ямбол.\n 2 експериментални бази (държавни предприятия към институти)\n Национален земеделски музей, София\n\nИзточници\n\nВъншни препратки \n Официален сайт\n Закон за Селскостопанската академия (заглавие изм., ДВ, бр. 43/2008) – обн., ДВ, бр. 113/1999; изм., ДВ, бр. 15/2003; изм., ДВ, бр. 43/2008; изм., ДВ, бр. 54/2008; изм., ДВ, бр. 10/2009; изм., ДВ, бр. 74/2009; изм., ДВ, бр. 99/2009; изм., ДВ, бр. 78/2010\n Устройствен правилник на Селскостопанската академия – приет с ПМС 226 от 15 септември 2008; обн., ДВ, бр. 83/2008; изм., ДВ, бр. 42/2009; изм., ДВ, бр. 79/2009; изм., ДВ, бр. 84/2010; изм., ДВ, бр. 101/2010; изм. и доп., ДВ, бр. 14/2012",
-    "question": "Къде е главната квартира на Академията за селско стопанство?",
+    "context": "A budapesti 56B jelzésű villamos Hűvösvölgy és a Csóka utca között közlekedett a 2022-es budafoki vágányzár idején. A viszonylatot a Budapesti Közlekedési Zrt. üzemeltette.\n\nTörténete \n\n1981. október 22-étől a Széll Kálmán (akkor Moszkva) tér és Hűvösvölgy közötti pályafelújítási munkálatok miatt az 56-os villamos megosztott útvonalon, 56A jelzéssel a Széll Kálmán tér felől, 56B jelzéssel pedig Hűvösvölgy felől Budagyöngyéig közlekedett. 1982. május 24-étől az 56B rövidített útvonalon, minden nap 6 és 12 óra között Budagyöngyétől a Vadaskerti utcáig, majd 12 óra után a Nagyhíd megállóhelyig járt. 1982. szeptember 18-án a felújítás befejeztével megszűnt. 1983. június 13. és 19. között ismét közlekedett, ekkor a Budagyöngye és a Nyéki út közötti szakaszon. November 8-án újraindult a Heinrich István útig, majd november 24-én végleg megszűnt.\n\n2022. október 3. és november 18. között a Hűvösvölgy és a Csóka utca között közlekedett a budafoki vágányzár idején.\n\nÚtvonala\n\nMegállóhelyei \nAz átszállási kapcsolatok között a Hűvösvölgy és a Móricz Zsigmond körtér között azonos útvonalon közlekedő 56-os és 56A villamos nincs feltüntetve.\n\n!Perc\xa0(↓)\n!Megállóhely\n!Perc\xa0(↑)\n!Átszállási kapcsolatok a járat közlekedése idején\n|-\n|0||Hűvösvölgyvégállomás||41\n|align=left|\n|-\n|2||Heinrich István utca||38\n|align=left|\n|-\n|3||Völgy utca||37\n|align=left|\n|-\n|4||Vadaskerti utca||36\n|align=left|\n|-\n|5||Nagyhíd||35\n|align=left|\n|-\n|6||Zuhatag sor||34\n|align=left|\n|-\n|8||Kelemen László utca||33\n|align=left|\n|-\n|9||Akadémia||32\n|align=left|\n|-\n|10||Budagyöngye||31\n|align=left|\n|-\n|11||Nagyajtai utca||29\n|align=left|\n|-\n|14||Szent\xa0János\xa0Kórház||27\n|align=left|\n|-\n|15||Városmajor||26\n|align=left|\n|-\n|16||Nyúl utca||25\n|align=left|\n|-\n|18||Széll\xa0Kálmán\xa0tér\xa0M||24\n|align=left|\n|-\n|20||Déli pályaudvar M||22\n|align=left|\n|-\n|21||Mikó utca||20\n|\n|-\n|22||Krisztina tér||18\n|align=left|\n|-\n|24||Dózsa György tér||16\n|align=left|\n|-\n|26||Döbrentei tér||14\n|align=left|\n|-\n|27||Rudas Gyógyfürdő||13\n|align=left|\n|-\n|30||Szent Gellért tér – Műegyetem M||11\n|align=left|\n|-\n|32||Gárdonyi tér||9\n|align=left|\n|-\n|35||Móricz Zsigmond körtér\xa0M||6\n|align=left|\n|-\n|37||Kosztolányi Dezső tér||4\n|align=left|\n|-\n|38||Karolina út||2\n|align=left|\n|-\n|39||Csóka utcavégállomás||0\n|align=left|\n|}\n\nJegyzetek\n\nForrások \n\nBudapest megszűnt villamosvonalai",
+    "question": "A 2022-es budafoki vágányzár alatt mikor járt az 56B jelzésű villamos a Hűvösvölgy és a Csóka utca között?",
     "answers": {
-        "answer_start": [79],
-        "text": ["София, България"]
+        "answer_start": [852],
+        "text": ["2022. október 3. és november 18. között"]
     }
 }
 ```
@@ -282,31 +282,31 @@ When evaluating generative models, we use the following setup (see the
 - Prefix prompt:
 
   ```text
-  Следват текстове със съответни въпроси и отговори.
+  Az alábbiakban szövegek szerepelnek a hozzájuk tartozó kérdésekkel és válaszokkal.
   ```
 
 - Base prompt template:
 
   ```text
-  Текст: {text}
-  Въпрос: {question}
-  Отговор с максимум 3 думи:
+  Szöveg: {text}
+  Kérdés: {question}
+  Válasz legfeljebb 3 szóban:
   ```
 
 - Instruction-tuned prompt template:
 
   ```text
-  Текст: {text}
+  Szöveg: {text}
 
-  Отговорете на следния въпрос относно текста по-горе с максимум 3 думи.
+  Válaszoljon az alábbi kérdésre a fenti szöveg alapján legfeljebb 3 szóban.
 
-  Въпрос: {question}
+  Kérdés: {question}
   ```
 
 You can evaluate this dataset directly as follows:
 
 ```bash
-euroeval --model <model-id> --dataset multi-wiki-qa-bg
+euroeval --model <model-id> --dataset multi-wiki-qa-hu
 ```
 
 ## Knowledge

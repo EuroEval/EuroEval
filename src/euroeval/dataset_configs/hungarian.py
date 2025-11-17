@@ -30,10 +30,10 @@ SZEGED_NER_CONFIG = DatasetConfig(
     languages=[HUNGARIAN],
 )
 
-MULTI_WIKI_QA_BG_CONFIG = DatasetConfig(
-    name="multi-wiki-qa-bg",
-    pretty_name="MultiWikiQA-bg",
-    source="EuroEval/multi-wiki-qa-bg-mini",
+MULTI_WIKI_QA_HU_CONFIG = DatasetConfig(
+    name="multi-wiki-qa-hu",
+    pretty_name="MultiWikiQA-hu",
+    source="EuroEval/multi-wiki-qa-hu-mini",
     task=RC,
     languages=[HUNGARIAN],
 )
