@@ -18,6 +18,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 - Added support for Hungarian 🇭🇺! This includes the sentiment classification dataset
   HuSST.
+- Added support for Bosnian 🇧🇦! This includes the sentiment classification dataset
+  MMS-bs, the named entity recognition dataset WikiANN-bs, the reading comprehension
+  dataset MultiWikiQA-bs, and the summarisation dataset LR-Sum-bs.
 - Now allows the 'low', 'medium' and 'high' reasoning effort parameters for the GPT-OSS
   models, which can be set by appending `#low`, `#medium` or `#high` to the model ID.
 
@@ -80,7 +83,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 
-- Added support for Slovenian 🇸🇮! This includes the sentiment classification dataset
+- Added support for Slovene 🇸🇮! This includes the sentiment classification dataset
   Sentinews, the linguistic acceptability dataset ScaLA-sl, the named entity recognition
   dataset ssj500k-NER, the reading comprehension
   dataset MultiWikiQA-sl, the knowledge dataset MMLU-sl, and the common-sense reasoning
@@ -2867,7 +2870,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Removed support for TensorFlow and Jax models, due to them not working
   properly anyway. They might be included at a later point, properly.
 
-##  [v1.4.0] - 2021-11-25
+## [v1.4.0] - 2021-11-25
 
 ### Changed
 

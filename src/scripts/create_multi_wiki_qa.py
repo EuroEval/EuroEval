@@ -50,6 +50,7 @@ LANGUAGES = [
     "sr",
     "sl",
     "hr",
+    "bs",
 ]
 
 

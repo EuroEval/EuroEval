@@ -1,7 +1,7 @@
-"""All Slovenian dataset configurations used in EuroEval."""
+"""All Slovene dataset configurations used in EuroEval."""
 
 from ..data_models import DatasetConfig
-from ..languages import SLOVENIAN
+from ..languages import SLOVENE
 from ..tasks import COMMON_SENSE, KNOW, LA, NER, RC, SENT
 
 ### Official datasets ###
@@ -11,7 +11,7 @@ SENTINEWS_CONFIG = DatasetConfig(
     pretty_name="Sentinews-sl",
     source="EuroEval/sentinews-mini",
     task=SENT,
-    languages=[SLOVENIAN],
+    languages=[SLOVENE],
 )
 
 SCALA_SL_CONFIG = DatasetConfig(
@@ -19,7 +19,7 @@ SCALA_SL_CONFIG = DatasetConfig(
     pretty_name="ScaLA-sl",
     source="EuroEval/scala-sl",
     task=LA,
-    languages=[SLOVENIAN],
+    languages=[SLOVENE],
 )
 
 SSJ500K_NER_CONFIG = DatasetConfig(
@@ -27,7 +27,7 @@ SSJ500K_NER_CONFIG = DatasetConfig(
     pretty_name="ssj500k-NER",
     source="EuroEval/ssj500k-ner-mini",
     task=NER,
-    languages=[SLOVENIAN],
+    languages=[SLOVENE],
 )
 
 MULTI_WIKI_QA_SL_CONFIG = DatasetConfig(
@@ -35,7 +35,7 @@ MULTI_WIKI_QA_SL_CONFIG = DatasetConfig(
     pretty_name="MultiWikiQA-sl",
     source="EuroEval/multi-wiki-qa-sl-mini",
     task=RC,
-    languages=[SLOVENIAN],
+    languages=[SLOVENE],
 )
 
 MMLU_SL_CONFIG = DatasetConfig(
@@ -43,7 +43,7 @@ MMLU_SL_CONFIG = DatasetConfig(
     pretty_name="MMLU-sl",
     source="EuroEval/mmlu-sl-mini",
     task=KNOW,
-    languages=[SLOVENIAN],
+    languages=[SLOVENE],
 )
 
 WINOGRANDE_SL_CONFIG = DatasetConfig(
@@ -51,6 +51,6 @@ WINOGRANDE_SL_CONFIG = DatasetConfig(
     pretty_name="Winogrande-sl",
     source="EuroEval/winogrande-sl",
     task=COMMON_SENSE,
-    languages=[SLOVENIAN],
+    languages=[SLOVENE],
     _labels=["a", "b"],
 )

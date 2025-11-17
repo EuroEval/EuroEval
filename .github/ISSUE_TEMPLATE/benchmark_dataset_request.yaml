@@ -25,6 +25,7 @@ body:
     description: What languages is the dataset in?
     options:
       - label: Bulgarian
+      - label: Bosnian
       - label: Croatian
       - label: Czech
       - label: Danish

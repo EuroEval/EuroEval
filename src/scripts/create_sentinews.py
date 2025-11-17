@@ -8,7 +8,7 @@
 # ]
 # ///
 
-"""Create the Slovenian SentiNews sentiment dataset and upload to HF Hub."""
+"""Create the Slovene SentiNews sentiment dataset and upload to HF Hub."""
 
 import pandas as pd
 from datasets import Dataset, DatasetDict, load_dataset
@@ -17,7 +17,7 @@ from sklearn.utils import resample
 
 
 def main() -> None:
-    """Create the Slovenian SentiNews sentiment dataset and upload to HF Hub."""
+    """Create the Slovene SentiNews sentiment dataset and upload to HF Hub."""
     # Define the dataset repository
     repo_id = "cjvt/sentinews"
 

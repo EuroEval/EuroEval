@@ -27,7 +27,7 @@ from ..languages import (
     PORTUGUESE,
     SERBIAN,
     SLOVAK,
-    SLOVENIAN,
+    SLOVENE,
     SPANISH,
     SWEDISH,
     UKRAINIAN,
@@ -223,7 +223,7 @@ LA_TEMPLATES: dict["Language", PromptConfig] = {
             "Odpovedzte so {labels_str}, a nič iné."
         ),
     ),
-    SLOVENIAN: PromptConfig(
+    SLOVENE: PromptConfig(
         default_prompt_label_mapping=dict(correct="da", incorrect="ne"),
         default_prompt_prefix="Sledeče so stavki in ali so slovnično pravilni.",
         default_prompt_template="Stavek: {text}\nSlovnično pravilno: {label}",
