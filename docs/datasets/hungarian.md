@@ -73,7 +73,7 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-euroeval --model <model-id> --dataset husst-mini
+euroeval --model <model-id> --dataset husst
 ```
 
 ## Named Entity Recognition
