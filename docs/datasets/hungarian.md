@@ -155,11 +155,11 @@ euroeval --model <model-id> --dataset bg-ner-bsnlp
 
 ## Linguistic Acceptability
 
-### ScaLA-bg
+### ScaLA-hu
 
 This dataset was published in [this paper](https://aclanthology.org/2023.nodalida-1.20/)
-and was automatically created from the [Bulgarian Universal Dependencies
-treebank](https://github.com/UniversalDependencies/UD_Bulgarian-BTB) by assuming that
+and was automatically created from the [Hungarian Universal Dependencies
+treebank](https://github.com/UniversalDependencies/UD_Hungarian-Szeged) by assuming that
 the documents in the treebank are correct, and corrupting the samples to create
 grammatically incorrect samples. The corruptions were done by either removing a word
 from a sentence, or by swapping two neighbouring words in a sentence. To ensure that
@@ -174,22 +174,22 @@ Here are a few examples from the training split:
 
 ```json
 {
-    "text": "Затова съвсем неслучайно в интервю по БиТиВи Първанов не забрави да се похвали, че столетницата има 240 хиляди души членска маса.",
+    "text": "A kiskereskedelemben teljesen más okra vezethető vissza a mamutvállalkozások létrejötte, mint az élelmiszeriparban.",
     "label": "correct"
 }
 ```
 
 ```json
 {
-    "text": "Формулата на нашето време рязко и ясно се очертава с лаконичното противоречие: прогрес технологията, регрес в морала.",
+    "text": "Még egy jövő évi költségvetési mérleggel sem tisztelte meg a kormány a képviselőházat, az államháztartási mérlegből kellene azt a képviselőknek kibogarászniuk.",
+    "label": "correct"
+}
+```
+
+```json
+{
+    "text": "A Nawa Bányászati Kft. ahhoz Nawa a cégcsoporthoz tartozott, amely a taxisblokád idején jelentette be, hogy az akkor hordónként 29 dolláros világpiaci árnál olcsóbban, 22-23 dollárért tud olajat szerezni.",
     "label": "incorrect"
-}
-```
-
-```json
-{
-    "text": "Част от фойерверките са купени от сергиите, където часове преди полунощ (по време на официалната забрана) те се продаваха свободно.",
-    "label": "correct"
 }
 ```
 
@@ -200,22 +200,22 @@ When evaluating generative models, we use the following setup (see the
 - Prefix prompt:
 
   ```text
-  Следват изречения и дали са граматически правилни.
+  A következő mondatok, és hogy helyesek-e nyelvtanilag.
   ```
 
 - Base prompt template:
 
   ```text
-  Изречение: {text}
-  Граматически правилно: {label}
+  Mondat: {text}
+  Nyelvtanilag helyes: {label}
   ```
 
 - Instruction-tuned prompt template:
 
   ```text
-  Изречение: {text}
+  Mondat: {text}
 
-  Определете дали изречението е граматически правилно или не. Отговорете с 'да', ако е правилно, и 'не', ако не е. Отговорете само с тази дума, и нищо друго.
+  Határozza meg, hogy a mondat nyelvtanilag helyes-e vagy sem. Csak 'igen'-nel válaszoljon, ha helyes, és 'nem'-mel, ha nem helyes. Csak ezzel a szóval válaszoljon, és semmi mással.
   ```
 
 - Label mapping:
@@ -225,7 +225,7 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-euroeval --model <model-id> --dataset scala-bg
+euroeval --model <model-id> --dataset scala-hu
 ```
 
 ## Reading Comprehension

@@ -14,10 +14,10 @@ HUSST_CONFIG = DatasetConfig(
     languages=[HUNGARIAN],
 )
 
-SCALA_BG_CONFIG = DatasetConfig(
-    name="scala-bg",
-    pretty_name="ScaLA-bg",
-    source="EuroEval/scala-bg",
+SCALA_HU_CONFIG = DatasetConfig(
+    name="scala-hu",
+    pretty_name="ScaLA-hu",
+    source="EuroEval/scala-hu",
     task=LA,
     languages=[HUNGARIAN],
 )
