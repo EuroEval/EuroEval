@@ -66,13 +66,6 @@ def main() -> None:
     dataset.push_to_hub(dataset_id, private=True)
 
 
-def download_csv(base_url: str, split: str) -> pd.DataFrame:
-    """Downloads a CSV file from a constructed URL and returns a DataFrame."""
-    url = f"{base_url}/{split}.csv"
-    df = pd.read_csv(url)
-    return df
-
-
 def download_dataset() -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """Download the SzegedNER dataset.
 
@@ -93,7 +86,7 @@ def download_dataset() -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     for dataset_name, base_url in base_urls.items():
         dataset = {}
         for split in splits:
-            df = download_csv(base_url=base_url, split=split)
+            df = pd.read_csv(f"{base_url}/{split}.csv")
             dataset[split] = _process_df(df=df, dataset_name=dataset_name)
         datasets[dataset_name] = dataset
 
