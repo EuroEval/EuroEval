@@ -16,6 +16,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 
+- Added support for Hungarian 🇭🇺! This includes the sentiment classification dataset
+  HuSST.
 - Now allows the 'low', 'medium' and 'high' reasoning effort parameters for the GPT-OSS
   models, which can be set by appending `#low`, `#medium` or `#high` to the model ID.
 
