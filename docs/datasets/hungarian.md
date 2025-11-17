@@ -311,37 +311,40 @@ euroeval --model <model-id> --dataset multi-wiki-qa-hu
 
 ## Knowledge
 
-### Exams-bg
+### MMLU-hu
 
-This dataset was published in [this paper](https://aclanthology.org/2023.acl-long.487/)
-and contains questions collected from high school (HS) examinations in Bulgaria.
+This dataset is a machine translated version of the English [MMLU
+dataset](https://openreview.net/forum?id=d7KBjmI3GmQ) and features questions within 57
+different topics, such as elementary mathematics, US history and law. The translation to
+Hungarian was done by the University of Oregon as part of [this
+paper](https://aclanthology.org/2023.emnlp-demo.28/), using GPT-3.5-turbo.
 
-The original full dataset consists of 1,329 / 365 / 1,472 samples for
-training, validation and testing, respectively. We only keep samples that have 4 choices,
-and we thus use a 1,024 / 94 / 2,048 split for training, validation and testing,
-respectively. The train and validation set are sampled from the original splits, but
-the test set has additional samples from both the original train and validation sets.
+The original full dataset consists of 278 / 1,408 / 13,024 samples for training,
+validation and testing, respectively. We use a 1,024 / 256 / 2,048 split for training,
+validation and testing, respectively (so 3,328 samples used in total). These splits are
+new and there can thus be some overlap between the original validation and test sets and
+our validation and test sets.
 
 Here are a few examples from the training split:
 
 ```json
 {
-    "text": "При свързването на три аминокиселини се образува:\nВъзможности:\na. тризахарид\nb. трипептид\nc. тринуклеотид\nd. триглицерид",
+    "text": "Ha a College Board az egyik évben elhanyagolta volna az agykutatással kapcsolatos kérdések feltételét az AP pszichológiai vizsgán, a teszt hiányozni foghat.\nVálaszlehetőségek:\na. konstruktum validitást.\nb. prediktív validitást.\nc. egyidejű validitást.\nd. tartalmi validitást.",
+    "label": "d"
+}
+```
+
+```json
+{
+    "text": "Ha $\\log_{b}343=-\\frac{3}{2}$, mennyi az $b$ értéke?\nVálaszlehetőségek:\na. 3\nb. \\frac{1}{49}\nc. \\frac{1}{7}\nd. 7",
     "label": "b"
 }
 ```
 
 ```json
 {
-    "text": "През 1911 г. Българското книжовно дружество се преименува на:\nВъзможности:\na. Народна библиотека „Кирил и Методий”\nb. Софийски държавен университет\nc. Българска академия на науките\nd. Висше педагогическо училище",
-    "label": "c"
-}
-```
-
-```json
-{
-    "text": "Коя земеделска култура се отглежда само в Южна България?\nВъзможности:\na. тютюн\nb. слънчоглед\nc. ориз\nd. царевица",
-    "label": "c"
+    "text": "Egy gyalog, akinek lakhelye az A államban van, az B államban keresztezte az utat, amikor egy külföldi állampolgár által vezetett autó elgázolta. Mindkét fél sérüléseket szenvedett. A gyalog $100,000 kártérítési összeget kérő kártérítési pert indított a vezetővel szemben az B állam szövetségi kerületi bíróságában. A vezető úgy véli, hogy a gyalog illegálisan keresztezte az utat, és ezért ő a felelős az ütközésért. Az ügyvéd tanácsadást kér a vezetőtől arra vonatkozóan, hogy hogyan kell a legjobban reagálni a keresetre. Feltételezzük, hogy B állam egy olyan hozzájáruló hanyagság állam, amely szerint mindkét fél részben felelős az esetért. Hogyan tanácsolja az ügyvéd a vezetőnek, hogy reagáljon erre?\nVálaszlehetőségek:\na. Válaszként adjon be egy beadványt, amelyben az hozzájáruló hanyagság pozitív védelmét és a gondatlanság elleni ellenkérelmet emeli, a vezető sérüléseinek kártérítési összegét kérve.\nb. Válaszként adjon be egy beadványt, amelyben az hozzájáruló hanyagság pozitív védelmét és az anyagi bizonyíték alapján történő ítélet kérelmével védekezik.\nc. Kérje az ügy elutasítását a személyi hatáskör hiánya miatt, mert az autó vezetője nem B állam állampolgára.\nd. Kérje az ügy elutasítását az ügy tárgyi hatáskörének hiánya miatt, mert az autó vezetője nem amerikai állampolgár.",
+    "label": "a"
 }
 ```
 
@@ -352,33 +355,33 @@ When evaluating generative models, we use the following setup (see the
 - Prefix prompt:
 
   ```text
-  Следват въпроси с множествен избор (с отговори).
+  Az alábbiakban több választási lehetőséget tartalmazó kérdések találhatók (válaszokkal együtt).
   ```
 
 - Base prompt template:
 
   ```text
-  Въпрос: {text}
-  Възможности:
+  Kérdés: {text}
+  Válaszlehetőségek:
   a. {option_a}
   b. {option_b}
   c. {option_c}
   d. {option_d}
-  Отговор: {label}
+  Válasz: {label}
   ```
 
 - Instruction-tuned prompt template:
 
   ```text
-  Въпрос: {text}
+  Kérdés: {text}
 
-  Отговорете на горния въпрос като отговорите с 'a', 'b', 'c' или 'd', и нищо друго.
+  Válaszoljon a fenti kérdésre az elérhető lehetőségek közül 'a', 'b', 'c' vagy 'd' használatával, és semmi mással.
   ```
 
 You can evaluate this dataset directly as follows:
 
 ```bash
-euroeval --model <model-id> --dataset exams-bg
+euroeval --model <model-id> --dataset mmlu-hu
 ```
 
 ## Common-sense Reasoning

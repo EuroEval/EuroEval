@@ -46,10 +46,10 @@ HUNSUM_CONFIG = DatasetConfig(
     languages=[HUNGARIAN],
 )
 
-EXAMS_BG_CONFIG = DatasetConfig(
-    name="exams-bg",
-    pretty_name="Exams-bg",
-    source="EuroEval/exams-bg-mini",
+MMLU_HU_CONFIG = DatasetConfig(
+    name="mmlu-hu",
+    pretty_name="MMLU-hu",
+    source="EuroEval/mmlu-hu-mini",
     task=KNOW,
     languages=[HUNGARIAN],
 )

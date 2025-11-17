@@ -15,6 +15,7 @@ from ..languages import (
     FRENCH,
     GERMAN,
     GREEK,
+    HUNGARIAN,
     ICELANDIC,
     ITALIAN,
     LATVIAN,
@@ -87,6 +88,20 @@ MULTIPLE_CHOICE_TEMPLATES: dict["Language", PromptConfig] = {
         default_prompt_template="Ερώτηση: {text}\nΑπάντηση: {label}",
         default_instruction_prompt="Ερώτηση: {text}\n\nΑπαντήστε στην παραπάνω ερώτηση "
         "χρησιμοποιώντας {labels_str}, και τίποτα άλλο.",
+        default_prompt_label_mapping="auto",
+    ),
+    HUNGARIAN: PromptConfig(
+        default_prompt_prefix=(
+            "Az alábbiakban több választási lehetőséget tartalmazó kérdések "
+            "találhatók (válaszokkal együtt)."
+        ),
+        default_prompt_template="Kérdés: {text}\nVálasz: {label}",
+        default_instruction_prompt=(
+            "Kérdés: {text}\n\n"
+            "Válaszoljon a fenti kérdésre az elérhető lehetőségek közül "
+            "{labels_str} használatával, "
+            "és semmi mással."
+        ),
         default_prompt_label_mapping="auto",
     ),
     ENGLISH: PromptConfig(
