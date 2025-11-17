@@ -452,3 +452,67 @@ You can evaluate this dataset directly as follows:
 ```bash
 euroeval --model <model-id> --dataset winogrande-bg
 ```
+
+## Summarisation
+
+### HunSum
+
+[The dataset](https://huggingface.co/datasets/ariel-ml/hun-sum-chatml-5k) consists of samples
+from Hungarian news articles, with the summaries given by the lead paragraphs.
+
+The original full dataset consists of 5,000 / 200 / 200 samples for training,
+validation and testing, respectively. We use a 1,024 / 256 / 2,048 split for training,
+validation and testing, respectively.
+
+Here are a few examples from the training split:
+
+```json
+{
+    "text": "Másfél éven belül rend lehet Szíriában\n\nA szíriai kormány és az ellenzéki csoportok képviselői még idén tárgyalásokat kezdenének, fél éven belül átmeneti kormány alakulna, másfél éven belül pedig választásokat tartanának a tervek szerint – közölte Frank-Walter Steinmeier német külügyminiszter.\n\nJohn Kerry amerikai külügyminiszter szerint ahhoz, hogy mindezt elérjék, tűzszünetet kell hirdetni a kormány és a lázadó csoportok között. Az ENSZ Biztonsági Tanácsának öt állandó tagja megegyezett, hogy határozatot fogad el erről. Kerry szerint a legfontosabb, hogy ne a mérsékelt ellenzékkel szembeni harc, hanem az Iszlám Állam (IÁ) és az an-Nuszra Front ellen küzdelem folytatódjon.\n\nAz amerikai külügyminiszter elmondta: az Egyesült Államok és Oroszország között véleménykülönbségek vannak, azonban folytatni kell a közös munkát, ahogy ezt az Iránnal folytatott tárgyalások kapcsán tették korábban, és hozzátette: a tárgyalópartnerek mindannyian Szíria stabilitását tartják szem előtt.\n\nSzergej Lavrov orosz külügyminiszter a sajtótájékoztatón kijelentette: csak a szíriai emberek dönthetnek országuk és elnökük sorsáról. Lavrov szerint a valódi ellenség azonban nem Aszad, hanem az IÁ. Elmondta azt is, hogy a tárgyaláson részt vevő országok számba vették a terrorcsoportokat, ezen listák összehangolását Jordánia végzi majd, és az ENSZ Biztonsági Tanácsa szavazni fog róla.\n\nA békefolyamatot Staffan de Mistura, az ENSZ szíriai különmegbízottja vezeti és szervezi majd – mondta Frank-Walter Steinmeier a 17 ország magas rangú képviselőinek részvételével zajló tanácskozás után.",
+    "target_text": "Swaney Elizabeth trükkök nélkül mutatta be a gyakorlatait, pedig ennek a sportágnak pont az lenne a lényege."
+}
+```
+
+```json
+{
+    "text": "Hoffmann Rózsa a CEU-ról: eddig is jártak magyar fiatalok bécsi egyetemekre\n\nAz ATV Egyenes beszéd című műsorának vendége volt hétfő este Hoffmann Rózsa. A volt köznevelésért felelős államtitkárt a CEU-ról is kérdezték, ezzel kapcsolatban a politikus azt mondta, szerinte nem a kormány űzte el az egyetemet, hanem az intézmény döntött úgy, hogy az amerikai diplomát adó képzéseiket kiviszik az országból.\n\nAmikor a műsorvezető megkérdezte Hoffmanntól, hogy jól van-e ez így, Hoffmann azt válaszolta:\n\n  Nem tudom, hogy jól van, vagy nincs jól, de Bécs nincs a világ végén.\n\nA politikus hozzátette, nincs ebben semmi különös, hiszen eddig is jártak magyar fiatalok bécsi egyetemekre, ingázni is sokan ingáztak eddig. Hoffmann azt mondta, "emberileg" megérti a CEU vezetőségének elkeseredését, de szerinte ez egy túlpolitizált ügy.\n\nHétfőn eldőlt, hogy a CEU Bécsbe költözteti el amerikai diplomát adó képzéseit, miután az elmúlt 20 hónapban mindent megtettek azért, hogy megfeleljenek a törvényeknek, a magyar hatóságok viszont annak ellenére sem írták alá a működéshez szükséges államközi megállapodást, hogy a CEU az amerikai hatóságok által jóváhagyott felsőoktatási képzést indított az Egyesült Államokban.\n\nAz egyetem ugyanakkor közleménye szerint megőrzi magyar egyetemi akkreditációját, és arra törekszik, hogy a jövőben is folytasson tanítási és kutatási tevékenységet Budapesten.",
+    "target_text": "A volt köznevelési államtitkár \"emberileg\" megérti az egyetem vezetőinek elkeseredettségét."
+}
+```
+
+```json
+{
+    "text": "Pörög a turizmus Budapesten: elképesztően erős volt az október\n\nUgyanakkor kérdésesnek nevezik, hogy a kiugró növekedés tartósnak bizonyul-e november-decemberben is, és ami talán még ennél is fontosabb: a küszöbön álló - immár 2020. január 31-i határidővel élesített - Brexit, és annak gazdasági következményei milyen hatást idéznek elő a következő hónapok, évek budapesti vendégforgalmában és a kiutazási trendekben.\nA fővárosi kereskedelmi szálláshelyek árbevétele megközelítette a 25 milliárd forintot. Hosszú idő óta először nem csupán a szállásdíj-bevételek emelkedtek számottevően, hanem a vendégforgalom is - jegyezték meg.\nBudapesten a vendégérkezések 5,5 százalékkal nőttek a vendégéjszakák pedig 6,3 százalékkal.\nAz elemzés szerint ezen belül a húzóerő a külföldi vendégforgalom volt: októberben 372 068 vendég érkezett és 862 427 vendégéjszakát töltött el, előbbi 8,3 százalékos, utóbbi 9,6 százalékos növekedést mutat az előző év tizedik hónapjával összehasonlítva. Mindeközben a belföldről érkező vendégforgalom tovább csökkent.\nA Széchenyi Pihenő Kártya költési értéke októberben 69,4 millió forintot ért el Budapest kereskedelmi szálláshelyein, ez az első 10 havi - budapesti - SZÉP Kártya-bevétel 10 százaléka. A január óta Budapesten keletkezett, nagyságrendileg 700 millió forintos SZÉP Kártya-árbevétel 55 százalékos növekedés a tavalyi év azonos időszakában elért 450 millió forint közeli árbevételhez képest.\nA küldőországok között például kiemelték, hogy impozáns növekedési ütemet mutat a francia, az izraeli, az orosz és a brit küldőpiac, az utóbbi hónapokban pedig felzárkózott a TOP10-be Lengyelország is.", "target_text": "Az idei október volt a 2019-es év legdinamikusabban növekvő hónapja a vendégérkezéseket és a vendégéjszakákat tekintve Budapesten - hívta fel a figyelmet a Budapesti Fesztivál- és Turisztikai Központ (BFTK) elemzésében."
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 1
+- Prefix prompt:
+
+  ```text
+  Az alábbi szövegek tartalmazzák az eredeti cikkeket és azok összefoglalóit.
+  ```
+
+- Base prompt template:
+
+  ```text
+  Szöveg: {text}
+  Összefoglaló: {target_text}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Szöveg: {text}
+
+  Adjon egy rövid összefoglalót a fenti szövegről.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset hunsum
+```
