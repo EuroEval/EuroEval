@@ -44,12 +44,10 @@ structure:
 
 {% for each few-shot example %}
   [document prefix]: [few-shot example document]
-
   [label prefix]: [few-shot example label]
 {% end for %}
 
 [document prefix]: [new document]
-
 [label prefix]:
 ```
 
