@@ -78,37 +78,37 @@ euroeval --model <model-id> --dataset husst
 
 ## Named Entity Recognition
 
-### BG-NER-BSNLP
+### SzegedNER
 
-This dataset was published in [this paper](https://aclanthology.org/W19-3709/)
-and consists of Web documents.
+This dataset was published in [this paper](https://aclanthology.org/L06-1215/).
+The data is a segment of the Szeged Corpus, consisting of short business news
+articles collected from MTI (Hungarian News Agency, <www.mti.hu>).
 
-The original dataset consists of 6,701 / 2,179 samples for the
-training and test splits, respectively. We use 1,024 / 256 / 2,048
-samples for our training, validation and test splits, respectively. The train and
-tests splits are subsets of the original splits, and the validation split is
-created from the training split.
+The original dataset consists of 8,220 / 874 / 1,656 samples for the
+training, validation, and test splits, respectively. We use 1,024 / 256 / 2,048
+samples for our training, validation and test splits, respectively. All the new
+splits are subsets of the original splits.
 
 Here are a few examples from the training split:
 
 ```json
 {
-    "tokens": ["За", "всички", "нас", "е", "по-добре", "да", "постигнем", "споразумение", "възможно", "най-скоро", "\"", ",", "каза", "Захариева", "."],
-    "labels": ["O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "B-PER", "O"]
+    "tokens": ["Ráadásul", "kirúgták", "a", "brüsszeli", "bizottságtól", "azt", "az", "alkalmazottat", ",", "aki", "egy", "csokor", "gyanús", "tényrõl", "szóló", "információkat", "juttatott", "el", "az", "Európai", "Parlament", "(", "EP", ")", "néhány", "képviselõjének", "."],
+    "labels": ["O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "B-ORG", "I-ORG", "O", "B-ORG", "O", "O", "O", "O"]
 }
 ```
 
 ```json
 {
-    "tokens": ["Но", "съм", "уверена", ",", "че", "можем", "да", "сключим", "споразумение", "\"", "."],
-    "labels": ["O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O"]
+    "tokens": ["A", "londoni", "Európai", "Újjáépítési", "és", "Fejlesztési", "Bank", "(", "EBRD", ")", "10,1", "millió", "euróért", "részvényeket", "vesz", "a", "szlovák", "Polnobankából", "az", "olasz", "UniCredito", "pénzintézettől", "."],
+    "labels": ["O", "O", "B-ORG", "I-ORG", "I-ORG", "I-ORG", "I-ORG", "O", "B-ORG", "O", "O", "O", "O", "O", "O", "O", "O", "B-ORG", "O", "O", "B-ORG", "O", "O"]
 }
 ```
 
 ```json
 {
-    "tokens": ["Според", "тях", "130_000", "граждани", "на", "ЕС", "са", "напуснали", "страната", "до", "септември", "миналата", "година", ",", "което", "е", "най-големият", "брой", "от", "2008", "г.", "досега", "."],
-    "labels": ["O", "O", "O", "O", "O", "B-ORG", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O"]
+    "tokens": ["Clinton", "a", "Netanjahuval", "tartott", "vasárnapi", "találkozó", "utáni", "sajtókonferencián", "sürgette", "a", "palesztinokat", "kötelezettségeik", "betartására", ",", "de", "egyúttal", "felszólította", "Izraelt", ",", "hogy", "ne", "függessze", "fel", "az", "októberi", "megállapodás", "végrehajtását", "."],
+    "labels": ["B-PER", "O", "B-PER", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "B-LOC", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O"]
 }
 ```
 
@@ -119,38 +119,39 @@ When evaluating generative models, we use the following setup (see the
 - Prefix prompt:
 
   ```text
-  По-долу са изречения и JSON речници с именуваните обекти, които се срещат в дадените изречения.
+  Az alábbiakban mondatok és JSON szótárak találhatók
+  az adott mondatokban előforduló névjegyzékkel.
   ```
 
 - Base prompt template:
 
   ```text
-  Изречение: {text}
-  Именувани обекти: {label}
+  Mondat: {text}
+  Névjegyzék: {label}
   ```
 
 - Instruction-tuned prompt template:
 
   ```text
-  Изречение: {text}
+  Mondat: {text}
 
-  Идентифицирайте именуваните обекти в изречението. Трябва да изведете това като JSON речник с ключовете 'лице', 'място', 'организация' и 'разни'. Стойностите трябва да бъдат списъци на именуваните обекти от този тип, точно както се появяват в изречението.
+  Nevezze meg a mondatban szereplő neveket. JSON szótárként adja meg a 'személy', 'helyszín', 'szervezet' és 'egyéb' kulcsszavakat. Az értékek a mondatban szereplő névjegyzékek listái legyenek, pontosan úgy, ahogyan megjelennek.
   ```
 
 - Label mapping:
-  - `B-PER` ➡️ `лице`
-  - `I-PER` ➡️ `лице`
-  - `B-LOC` ➡️ `място`
-  - `I-LOC` ➡️ `място`
-  - `B-ORG` ➡️ `организация`
-  - `I-ORG` ➡️ `организация`
-  - `B-MISC` ➡️ `разни`
-  - `I-MISC` ➡️ `разни`
+  - `B-PER` ➡️ `személy`
+  - `I-PER` ➡️ `személy`
+  - `B-LOC` ➡️ `helyszín`
+  - `I-LOC` ➡️ `helyszín`
+  - `B-ORG` ➡️ `szervezet`
+  - `I-ORG` ➡️ `szervezet`
+  - `B-MISC` ➡️ `egyéb`
+  - `I-MISC` ➡️ `egyéb`
 
 You can evaluate this dataset directly as follows:
 
 ```bash
-euroeval --model <model-id> --dataset bg-ner-bsnlp
+euroeval --model <model-id> --dataset szeged-ner
 ```
 
 ## Linguistic Acceptability

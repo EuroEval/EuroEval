@@ -22,10 +22,10 @@ SCALA_HU_CONFIG = DatasetConfig(
     languages=[HUNGARIAN],
 )
 
-BG_NER_BSNLP_CONFIG = DatasetConfig(
-    name="bg-ner-bsnlp",
-    pretty_name="BG-NER-BSNLp",
-    source="EuroEval/bg-ner-bsnlp-mini",
+SZEGED_NER_CONFIG = DatasetConfig(
+    name="szeged-ner",
+    pretty_name="SzegedNER",
+    source="EuroEval/szeged-ner",
     task=NER,
     languages=[HUNGARIAN],
 )
