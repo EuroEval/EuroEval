@@ -14,7 +14,7 @@ and is the Hungarian version of the Stanford Sentiment Treebank.
 The original dataset contains 9,328 / 1,165 / 1,165 samples for the training, validation,
 and test splits, respectively. We use 1,024 / 256 / 2,048 samples for our training,
 validation and test splits, respectively. The train and validation splits are subsets of
-the original splits. The orignial test split does not contain any labels, so our test split
+the original splits. The original test split does not contain any labels, so our test split
 is created from the training split.
 
 Here are a few examples from the training split:
