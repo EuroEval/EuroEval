@@ -7,10 +7,15 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [v16.7.1] - 2025-11-18
+
 ### Fixed
 
 - The `--no-progress-bar` argument (`progress_bar=False` in the `Benchmarker` API) was
   not hiding all the progress bars for generative models. This has been fixed now.
+- Now respects the revision when loading tokenizers with vLLM models. I.e., if
+  evaluating a model `<model_id>@<revision>` then we also load the tokenizer from the
+  `<revision>` branch.
 
 ## [v16.7.0] - 2025-11-10
 
