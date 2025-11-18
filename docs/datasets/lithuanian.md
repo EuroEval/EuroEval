@@ -32,9 +32,9 @@ We map these as follows:
 
 After this mapping, the distribution of sentiment labels is:
 
-- `negative`: 214 samples
-- `neutral`: 822 samples
-- `positive`: 504 samples
+- `negative`: 309 samples
+- `neutral`: 876 samples
+- `positive`: 611 samples
 
 Here are a few examples from the training split:
 
