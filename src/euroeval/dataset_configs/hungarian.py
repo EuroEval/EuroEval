@@ -55,7 +55,7 @@ MMLU_HU_CONFIG = DatasetConfig(
 )
 
 WINOGRANDE_HU_CONFIG = DatasetConfig(
-    name="winogrande-bg",
+    name="winogrande-hu",
     pretty_name="Winogrande-hu",
     source="EuroEval/winogrande-hu",
     task=COMMON_SENSE,
