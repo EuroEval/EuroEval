@@ -534,7 +534,9 @@ class flash_attention_backend:
             disabled:
                 If True, this context manager does nothing.
         """
-        self.disabled = disabled
+        self.disabled = (
+            True if disabled else os.environ["VLLM_ATTENTION_BACKEND"] != "FLASHINFER"
+        )
         self.previous_value: str | None = None
 
     def __enter__(self) -> None:
