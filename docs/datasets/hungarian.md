@@ -220,8 +220,8 @@ When evaluating generative models, we use the following setup (see the
   ```
 
 - Label mapping:
-  - `correct` ➡️ `да`
-  - `incorrect` ➡️ `не`
+  - `correct` ➡️ `taip`
+  - `incorrect` ➡️ `ne`
 
 You can evaluate this dataset directly as follows:
 
