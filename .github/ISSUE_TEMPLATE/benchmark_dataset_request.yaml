@@ -37,6 +37,7 @@ body:
       - label: French
       - label: German
       - label: Greek
+      - label: Hungarian
       - label: Icelandic
       - label: Italian
       - label: Latvian
