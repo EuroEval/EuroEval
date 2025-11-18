@@ -386,7 +386,7 @@ euroeval --model <model-id> --dataset mmlu-hu
 
 ## Common-sense Reasoning
 
-### Winogrande-bg
+### Winogrande-hu
 
 This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2506.19468)
 and is a translated and filtered version of the English [Winogrande
@@ -400,21 +400,21 @@ Here are a few examples from the training split:
 
 ```json
 {
-    "text": "Не можех да контролирам влагата както контролирах дъжда, защото _ идваше отвсякъде. На какво се отнася празното място _?\nВъзможности:\na. влага\nb. дъжд",
+    "text": "Nem tudtam irányítani a nedvességet úgy, mint az esőt, mert a _ mindenhol bejött. Mire utal a hiányzó _?\nVálaszlehetőségek:\na. nedvesség\nb. eső",
     "label": "a"
 }
 ```
 
 ```json
 {
-    "text": "Джесика смяташе, че "Sandstorm" е най-великата песен, писана някога, но Патриция я мразеше. _ купи билет за джаз концерта. На какво се отнася празното място _?\nВъзможности:\na. Джесика\nb. Патриция",
+    "text": "Jessica úgy gondolta, hogy a Sandstorm a valaha írt legjobb dal, de Patricia utálta. _ jegyet vett a jazz koncertre. Mire utal a hiányzó _?\nVálaszlehetőségek:\na. Jessica\nb. Patricia",
     "label": "b"
 }
 ```
 
 ```json
 {
-    "text": "Термостатът показа, че долу е двадесет градуса по-хладно, отколкото горе, затова Байрон остана в _ защото му беше студено. На какво се отнася празното място _?\nВъзможности:\na. долу\nb. горе",
+    "text": "A termosztát azt mutatta, hogy lent húsz fokkal hűvösebb volt, mint fent, így Byron a _ maradt, mert fázott. Mire utal a hiányzó _?\nVálaszlehetőségek:\na. lent\nb. fent",
     "label": "b"
 }
 ```
@@ -426,34 +426,34 @@ When evaluating generative models, we use the following setup (see the
 - Prefix prompt:
 
   ```text
-  Следват въпроси с множествен избор (с отговори).
+  Az alábbiakban több választási lehetőséget tartalmazó kérdések találhatók (válaszokkal együtt).
   ```
 
 - Base prompt template:
 
   ```text
-  Въпрос: {text}
-  Възможности:
+  Kérdés: {text}
+  Lehetőségek:
   a. {option_a}
   b. {option_b}
-  Отговор: {label}
+  Válasz: {label}
   ```
 
 - Instruction-tuned prompt template:
 
   ```text
-  Въпрос: {text}
-  Възможности:
+  Kérdés: {text}
+  Lehetőségek:
   a. {option_a}
   b. {option_b}
 
-  Отговорете на горния въпрос като отговорите с 'a' или 'b', и нищо друго.
+  Válaszoljon a fenti kérdésre az elérhető lehetőségek közül 'a' vagy 'b' használatával, és semmi mással.
   ```
 
 You can evaluate this dataset directly as follows:
 
 ```bash
-euroeval --model <model-id> --dataset winogrande-bg
+euroeval --model <model-id> --dataset winogrande-hu
 ```
 
 ## Summarisation

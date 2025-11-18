@@ -54,10 +54,10 @@ MMLU_HU_CONFIG = DatasetConfig(
     languages=[HUNGARIAN],
 )
 
-WINOGRANDE_BG_CONFIG = DatasetConfig(
+WINOGRANDE_HU_CONFIG = DatasetConfig(
     name="winogrande-bg",
-    pretty_name="Winogrande-bg",
-    source="EuroEval/winogrande-bg",
+    pretty_name="Winogrande-hu",
+    source="EuroEval/winogrande-hu",
     task=COMMON_SENSE,
     languages=[HUNGARIAN],
     _labels=["a", "b"],
