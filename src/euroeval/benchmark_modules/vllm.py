@@ -174,7 +174,7 @@ class VLLMModel(HuggingFaceEncoderModel):
             log_metadata=log_metadata,
         )
 
-        self.end_of_reasoning_token = get_end_of_reasoning_token(
+        self.bor_token, self.eor_token = get_reasoning_tokens(
             model=self._model, tokeniser=self._tokeniser, model_config=model_config
         )
         self.end_of_chat_token_ids = get_end_of_chat_token_ids(
@@ -238,10 +238,7 @@ class VLLMModel(HuggingFaceEncoderModel):
             type_ = GenerativeType.REASONING
         elif self.model_config.param in {"no-thinking"}:
             type_ = GenerativeType.INSTRUCTION_TUNED
-        elif (
-            hasattr(self, "end_of_reasoning_token")
-            and self.end_of_reasoning_token is not None
-        ):
+        elif hasattr(self, "eor_token") and self.eor_token is not None:
             type_ = GenerativeType.REASONING
         elif (
             has_chat_template(tokeniser=self._tokeniser)
@@ -418,17 +415,17 @@ class VLLMModel(HuggingFaceEncoderModel):
             )
 
         structured_generation_schema = None
-        if (
-            self.dataset_config.task.uses_structured_output
-            or (self.dataset_config.task.uses_logprobs and self.dataset_config.labels)
-        ) and self.generative_type == GenerativeType.REASONING:
-            structured_outputs = None
-            log_once(
-                "The dataset uses structured output, but we are not using it as the "
-                f"model {self.model_config.model_id!r} is a reasoning model.",
-                level=logging.DEBUG,
-            )
-        elif self.dataset_config.task.uses_structured_output:
+        # if (
+        #     self.dataset_config.task.uses_structured_output
+        #     or (self.dataset_config.task.uses_logprobs and self.dataset_config.labels)
+        # ) and self.generative_type == GenerativeType.REASONING:
+        #     structured_outputs = None
+        #     log_once(
+        #         "The dataset uses structured output, but we are not using it as the "
+        #         f"model {self.model_config.model_id!r} is a reasoning model.",
+        #         level=logging.DEBUG,
+        #     )
+        if self.dataset_config.task.uses_structured_output:
             ner_tag_names = list(self.dataset_config.prompt_label_mapping.values())
             keys_and_their_types: dict[str, t.Any] = {
                 tag_name: (conlist(str, max_length=5), ...)
@@ -444,24 +441,35 @@ class VLLMModel(HuggingFaceEncoderModel):
             structured_outputs = StructuredOutputsParams(
                 json=structured_generation_schema
             )
-        elif (
-            self.dataset_config.task.uses_logprobs
-            and self.dataset_config.labels
-            and self.buffer.get("first_label_token_mapping", False)
-        ):
+        elif self.dataset_config.task.uses_logprobs and self.dataset_config.labels:
             choice_labels = [
                 self.dataset_config.prompt_label_mapping[label]
                 for label in self.dataset_config.labels
             ]
-            if isinstance(self.buffer["first_label_token_mapping"], dict):
+            if self.buffer.get("first_label_token_mapping", False) and isinstance(
+                self.buffer["first_label_token_mapping"], dict
+            ):
                 choice_labels = [
                     self.buffer["first_label_token_mapping"][label]
                     for label in choice_labels
                 ]
-            structured_outputs = StructuredOutputsParams(choice=choice_labels)
+            if self.eor_token is None:
+                structured_outputs = StructuredOutputsParams(choice=choice_labels)
+            else:
+                choice_labels_pattern = "|".join(
+                    re.escape(label) for label in choice_labels
+                )
+                # We assume that there are ~2 characters per token
+                structured_outputs = StructuredOutputsParams(
+                    regex=(
+                        r"(.){0,"
+                        + str(REASONING_MAX_TOKENS * 2)
+                        + "}"
+                        + rf"{self.eor_token}({choice_labels_pattern})"
+                    )
+                )
             log_once(
-                "Using structured generation with the choices: "
-                f"{structured_outputs.choice!r}.",
+                f"Using structured generation with the choices {choice_labels}.",
                 level=logging.DEBUG,
             )
         else:
@@ -616,24 +624,20 @@ class VLLMModel(HuggingFaceEncoderModel):
             skip_special_tokens=False,
         )
         if (
-            self.end_of_reasoning_token is not None
+            self.eor_token is not None
             and self.generative_type == GenerativeType.REASONING
         ):
             num_samples_without_eor_token = 0
             for idx in range(len(completions)):
                 if (
-                    isinstance(self.end_of_reasoning_token, str)
-                    and self.end_of_reasoning_token in completions[idx]
+                    isinstance(self.eor_token, str)
+                    and self.eor_token in completions[idx]
                 ):
-                    completions[idx] = completions[idx].split(
-                        self.end_of_reasoning_token
-                    )[-1]
-                elif isinstance(
-                    self.end_of_reasoning_token, re.Pattern
-                ) and self.end_of_reasoning_token.search(completions[idx]):
-                    completions[idx] = self.end_of_reasoning_token.split(
-                        completions[idx]
-                    )[-1]
+                    completions[idx] = completions[idx].split(self.eor_token)[-1]
+                elif isinstance(self.eor_token, re.Pattern) and self.eor_token.search(
+                    completions[idx]
+                ):
+                    completions[idx] = self.eor_token.split(completions[idx])[-1]
                 else:
                     num_samples_without_eor_token += 1
                     completions[idx] = ""
@@ -641,7 +645,7 @@ class VLLMModel(HuggingFaceEncoderModel):
                 log_once(
                     f"The model {self.model_config.model_id!r} is a reasoning "
                     "model, but the generated output did not contain the end of "
-                    f"reasoning token ({self.end_of_reasoning_token!r}) in "
+                    f"reasoning token ({self.eor_token!r}) in "
                     f"{num_samples_without_eor_token:,}/{len(completions):,} of "
                     "the samples. Using an empty string for all these samples "
                     "instead.",
@@ -1150,9 +1154,9 @@ def clear_vllm() -> None:
     clear_memory()
 
 
-def get_end_of_reasoning_token(
+def get_reasoning_tokens(
     model: "LLM", tokeniser: "PreTrainedTokenizer", model_config: "ModelConfig"
-) -> str | re.Pattern | None:
+) -> tuple[str | re.Pattern | None, str | re.Pattern | None]:
     """Get the end-of-reasoning token for a generative model.
 
     Args:
@@ -1164,7 +1168,8 @@ def get_end_of_reasoning_token(
             The model configuration.
 
     Returns:
-        The end of reasoning token, or None if it could not be found.
+        A pair (bor_token, eor_token), where `bor_token` is the token signifying the
+        beginning of a reasoning trace, and `eor_token` signifies the end of one.
     """
     model_id = model_config.model_id
 
@@ -1213,7 +1218,7 @@ def get_end_of_reasoning_token(
             "reasoning model.",
             level=logging.DEBUG,
         )
-        return None
+        return None, None
 
     # Check that the end-of-reasoning token is actually used by the model
     output = model.generate(
@@ -1242,7 +1247,7 @@ def get_end_of_reasoning_token(
             "This is probably not correct, so please report this issue.",
             level=logging.WARNING,
         )
-        return None
+        return None, None
 
     if len(eor_reasoning_matches) > 1:
         log_once(
@@ -1267,7 +1272,7 @@ def get_end_of_reasoning_token(
         level=logging.DEBUG,
     )
 
-    return eor_token
+    return bor_token, eor_token
 
 
 def get_custom_stop_tokens(
