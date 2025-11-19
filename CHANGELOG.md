@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Changed
+
+- Reasoning models are now using structured generation! This includes for named entity
+  recognition as well as all classification tasks, including multiple-choice ones. We
+  allow the model to generate its reasoning trace and impose restrictions on its output
+  after it stops reasoning.
+
 ## [v16.7.1] - 2025-11-18
 
 ### Fixed

@@ -58,6 +58,7 @@ from ..task_group_utils import (
     text_to_text,
     token_classification,
 )
+from ..tasks import NER
 from ..tokenisation_utils import (
     apply_chat_template,
     get_bos_token,
@@ -89,6 +90,9 @@ if t.TYPE_CHECKING or importlib.util.find_spec("vllm") is not None:
     )
     from vllm.lora.request import LoRARequest
     from vllm.sampling_params import StructuredOutputsParams
+
+if t.TYPE_CHECKING or importlib.util.find_spec("outlines_core") is not None:
+    from outlines_core.json_schema import build_regex_from_schema
 
 if t.TYPE_CHECKING:
     from datasets import DatasetDict
@@ -133,7 +137,10 @@ class VLLMModel(HuggingFaceEncoderModel):
             log_metadata:
                 Whether to log the model and dataset metadata.
         """
-        if importlib.util.find_spec("vllm") is None:
+        if (
+            importlib.util.find_spec("vllm") is None
+            or importlib.util.find_spec("outlines_core") is None
+        ):
             raise NeedsExtraInstalled(extra="generative")
 
         if shutil.which("nvcc") is None:
@@ -416,21 +423,44 @@ class VLLMModel(HuggingFaceEncoderModel):
 
         structured_generation_schema = None
         if self.dataset_config.task.uses_structured_output:
-            ner_tag_names = list(self.dataset_config.prompt_label_mapping.values())
-            keys_and_their_types: dict[str, t.Any] = {
-                tag_name: (conlist(str, max_length=5), ...)
-                for tag_name in ner_tag_names
-            }
-            answer_format_class = create_model("AnswerFormat", **keys_and_their_types)
-            structured_generation_schema = answer_format_class.model_json_schema()
-            log_once(
-                "Using structured generation with the JSON schema: "
-                f"{json.dumps(structured_generation_schema)}",
-                level=logging.DEBUG,
-            )
-            structured_outputs = StructuredOutputsParams(
-                json=structured_generation_schema
-            )
+            if self.dataset_config.task == NER:
+                ner_tag_names = list(self.dataset_config.prompt_label_mapping.values())
+                keys_and_their_types: dict[str, t.Any] = {
+                    tag_name: (conlist(str, max_length=5), ...)
+                    for tag_name in ner_tag_names
+                }
+                answer_format_class = create_model(
+                    "AnswerFormat", **keys_and_their_types
+                )
+                structured_generation_schema = answer_format_class.model_json_schema()
+                if self.eor_token is None:
+                    log_once(
+                        "Using structured generation with the JSON schema: "
+                        f"{json.dumps(structured_generation_schema)}",
+                        level=logging.DEBUG,
+                    )
+                    structured_outputs = StructuredOutputsParams(
+                        json=structured_generation_schema
+                    )
+                else:
+                    structured_generation_regex = rf"^.*?{self.eor_token}"
+                    structured_generation_regex += build_regex_from_schema(
+                        json_schema=json.dumps(structured_generation_schema)
+                    )
+                    log_once(
+                        "Using structured generation with the regex pattern "
+                        f"{structured_generation_regex!r}.",
+                        level=logging.DEBUG,
+                    )
+                    structured_outputs = StructuredOutputsParams(
+                        regex=structured_generation_regex
+                    )
+            else:
+                raise InvalidBenchmark(
+                    "Structured generation has not been implemented for the task "
+                    f"{self.dataset_config.task.name!r} yet! Please report this issue "
+                    "at https://github.com/EuroEval/EuroEval/issues."
+                )
         elif self.dataset_config.task.uses_logprobs and self.dataset_config.labels:
             choice_labels = [
                 self.dataset_config.prompt_label_mapping[label]
