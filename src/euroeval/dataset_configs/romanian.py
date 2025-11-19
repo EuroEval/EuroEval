@@ -22,10 +22,10 @@ SCALA_RO_CONFIG = DatasetConfig(
     languages=[ROMANIAN],
 )
 
-SZEGED_NER_CONFIG = DatasetConfig(
-    name="szeged-ner",
-    pretty_name="SzegedNER",
-    source="EuroEval/szeged-ner",
+RONEC_CONFIG = DatasetConfig(
+    name="ronec",
+    pretty_name="RoNEC",
+    source="EuroEval/ronec-mini",
     task=NER,
     languages=[ROMANIAN],
 )

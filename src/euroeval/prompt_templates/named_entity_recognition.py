@@ -26,6 +26,7 @@ from ..languages import (
     NORWEGIAN_NYNORSK,
     POLISH,
     PORTUGUESE,
+    ROMANIAN,
     SERBIAN,
     SLOVAK,
     SLOVENE,
@@ -469,6 +470,30 @@ NER_TEMPLATES: dict["Language", PromptConfig] = {
         "i frasen. Du bør outputte dette som en JSON-ordbok med nøklene {labels_str}."
         "Verdiene skal være lister over de navngitte enhetene "
         "av den typen, akkurat som de vises i frasen.",
+    ),
+    ROMANIAN: PromptConfig(
+        default_prompt_label_mapping={
+            "b-per": "persoană",
+            "i-per": "persoană",
+            "b-loc": "locație",
+            "i-loc": "locație",
+            "b-org": "organizație",
+            "i-org": "organizație",
+            "b-misc": "diverse",
+            "i-misc": "diverse",
+        },
+        default_prompt_prefix=(
+            "Mai jos sunt propoziții și dicționare JSON cu entitățile numite "
+            "care apar în propoziția dată."
+        ),
+        default_prompt_template=("Propoziție: {text}\nEntități numite: {label}"),
+        default_instruction_prompt=(
+            "Propoziție: {text}\n\n"
+            "Identifică entitățile numite din propoziție. Ar trebui să le enumeri "
+            "ca un dicționar JSON cu cheile {labels_str}. Valorile cheilor ar "
+            "trebui să fie liste de entități numite de tipul respectiv, exact "
+            "cum apar în propoziție."
+        ),
     ),
     POLISH: PromptConfig(
         default_prompt_label_mapping={

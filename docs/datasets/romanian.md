@@ -77,37 +77,38 @@ euroeval --model <model-id> --dataset ro-sent
 
 ## Named Entity Recognition
 
-### SzegedNER
+### RoNEC
 
-This dataset was published in [this paper](https://aclanthology.org/L06-1215/).
-The data is a segment of the Szeged Corpus, consisting of short business news
-articles collected from MTI (Hungarian News Agency, <www.mti.hu>).
+This dataset was published in [this paper](https://aclanthology.org/2020.lrec-1.546/).
+The sentences have been extracted from a copy-right free newspaper,
+covering several styles.
 
-The original dataset consists of 8,220 / 874 / 1,656 samples for the
+The original dataset consists of 9,000 / 1,330 / 2,000 samples for the
 training, validation, and test splits, respectively. We use 1,024 / 256 / 2,048
-samples for our training, validation and test splits, respectively. All the new
-splits are subsets of the original splits.
+samples for our training, validation and test splits, respectively. The training
+and validation splits are subsets of the original splits, while the test split is
+created using additional samples from the validation split.
 
 Here are a few examples from the training split:
 
 ```json
 {
-    "tokens": ["Ráadásul", "kirúgták", "a", "brüsszeli", "bizottságtól", "azt", "az", "alkalmazottat", ",", "aki", "egy", "csokor", "gyanús", "tényrõl", "szóló", "információkat", "juttatott", "el", "az", "Európai", "Parlament", "(", "EP", ")", "néhány", "képviselõjének", "."],
-    "labels": ["O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "B-ORG", "I-ORG", "O", "B-ORG", "O", "O", "O", "O"]
+    "tokens": ["În", "secolele", "al", "XVII", "-lea", "și", "al", "XVIII", "-lea", ",", "acestea", "erau", ":", "Conseil", "d'en", "haut", "(", "„", "Înaltul", "Consiliu", "”", ")", "-", "format", "din", "rege", ",", "prințul", "moștenitor", "(", "„", "le", "dauphin", "”", ")", ",", "cancelarul", ",", "controlorul", "general", "de", "finanțe", "și", "din", "secretarul", "de", "stat", "responsabil", "cu", "afacerile", "externe", "."],
+    "labels": ["O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "B-PER", "O", "B-PER", "O", "O", "O", "O", "O", "O", "O", "O", "B-PER", "O", "B-PER", "O", "O", "O", "O", "O", "B-PER", "O", "O", "O", "O", "O", "O", "O"]
 }
 ```
 
 ```json
 {
-    "tokens": ["A", "londoni", "Európai", "Újjáépítési", "és", "Fejlesztési", "Bank", "(", "EBRD", ")", "10,1", "millió", "euróért", "részvényeket", "vesz", "a", "szlovák", "Polnobankából", "az", "olasz", "UniCredito", "pénzintézettől", "."],
-    "labels": ["O", "O", "B-ORG", "I-ORG", "I-ORG", "I-ORG", "I-ORG", "O", "B-ORG", "O", "O", "O", "O", "O", "O", "O", "O", "B-ORG", "O", "O", "B-ORG", "O", "O"]
+    "tokens": ["După", "ce", "am", "trecut", "de", "Obârșia-Cloșani", "(", "localitate", "renumită", "datorită", "Peșterii", "Cloșani", ",", "în", "interiorul", "căreia", ",", "în", "1961", ",", "s-", "a", "înființat", "prima", "Stațiune", "de", "cercetări", "speologice", "din", "România", ")", ",", "urcăm", "la", "Cumpăna", "Apelor", ",", "de", "unde", "coborâm", "brâul", "drumului", "în", "serpentine", "strâmte", ",", "până", "în", "Valea", "Cernei", "."],
+    "labels": ["O", "O", "O", "O", "O", "B-LOC", "O", "O", "O", "O", "B-MISC", "I-MISC", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "B-LOC", "O", "O", "O", "O", "B-MISC", "I-MISC", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "B-MISC", "I-MISC", "O"]
 }
 ```
 
 ```json
 {
-    "tokens": ["Clinton", "a", "Netanjahuval", "tartott", "vasárnapi", "találkozó", "utáni", "sajtókonferencián", "sürgette", "a", "palesztinokat", "kötelezettségeik", "betartására", ",", "de", "egyúttal", "felszólította", "Izraelt", ",", "hogy", "ne", "függessze", "fel", "az", "októberi", "megállapodás", "végrehajtását", "."],
-    "labels": ["B-PER", "O", "B-PER", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "B-LOC", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O"]
+    "tokens": ["La", "data", "de", "26", "octombrie", "1994", ",", "și-", "a", "susținut", "teza", "de", "doctorat", "în", "limba", "franceză", ",", "cu", "denumirea", "de", "La", "de", "l'homme", "la", "du", "Dumitru", "Stăniloae", "(", ")", ".", "Cartea", "a", "fost", "publicată", "la", "Editura", "Trinitas", "din", "Iași", ",", "în", "2003", ",", "cu", "prilejul", "„", "Anului", "Stăniloae", "”", "(", "100", "ani", "de", "la", "naștere", "și", "10", "de", "la", "trecerea", "sa", "la", "cele", "veșnice", ")", "."],
+    "labels": ["O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "B-ORG", "I-ORG", "O", "B-LOC", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O"]
 }
 ```
 
@@ -118,39 +119,42 @@ When evaluating generative models, we use the following setup (see the
 - Prefix prompt:
 
   ```text
-  Az alábbiakban mondatok és JSON szótárak találhatók
-  az adott mondatokban előforduló névjegyzékkel.
+  Mai jos sunt propoziții și dicționare JSON cu entitățile numite
+  care apar în propoziția dată.
   ```
 
 - Base prompt template:
 
   ```text
-  Mondat: {text}
-  Névjegyzék: {label}
+  Propoziție: {text}
+  Entități numite: {label}
   ```
 
 - Instruction-tuned prompt template:
 
   ```text
-  Mondat: {text}
+  Propoziție: {text}
 
-  Nevezze meg a mondatban szereplő neveket. JSON szótárként adja meg a 'személy', 'helyszín', 'szervezet' és 'egyéb' kulcsszavakat. Az értékek a mondatban szereplő névjegyzékek listái legyenek, pontosan úgy, ahogyan megjelennek.
+  Identifică entitățile numite din propoziție. Ar trebui să le enumeri
+  ca un dicționar JSON cu cheile {labels_str}. Valorile cheilor ar
+  trebui să fie liste de entități numite de tipul respectiv, exact
+  cum apar în propoziție.
   ```
 
 - Label mapping:
-  - `B-PER` ➡️ `személy`
-  - `I-PER` ➡️ `személy`
-  - `B-LOC` ➡️ `helyszín`
-  - `I-LOC` ➡️ `helyszín`
-  - `B-ORG` ➡️ `szervezet`
-  - `I-ORG` ➡️ `szervezet`
-  - `B-MISC` ➡️ `egyéb`
-  - `I-MISC` ➡️ `egyéb`
+  - `B-PER` ➡️ `persoană`
+  - `I-PER` ➡️ `persoană`
+  - `B-LOC` ➡️ `locație`
+  - `I-LOC` ➡️ `locație`
+  - `B-ORG` ➡️ `organizație`
+  - `I-ORG` ➡️ `organizație`
+  - `B-MISC` ➡️ `diverse`
+  - `I-MISC` ➡️ `diverse`
 
 You can evaluate this dataset directly as follows:
 
 ```bash
-euroeval --model <model-id> --dataset szeged-ner
+euroeval --model <model-id> --dataset ronec
 ```
 
 ## Linguistic Acceptability
