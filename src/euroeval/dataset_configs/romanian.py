@@ -14,10 +14,10 @@ ROSENT_CONFIG = DatasetConfig(
     languages=[ROMANIAN],
 )
 
-SCALA_HU_CONFIG = DatasetConfig(
-    name="scala-hu",
-    pretty_name="ScaLA-hu",
-    source="EuroEval/scala-hu",
+SCALA_RO_CONFIG = DatasetConfig(
+    name="scala-ro",
+    pretty_name="ScaLA-ro",
+    source="EuroEval/scala-ro",
     task=LA,
     languages=[ROMANIAN],
 )

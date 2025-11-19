@@ -25,6 +25,7 @@ from ..languages import (
     NORWEGIAN_NYNORSK,
     POLISH,
     PORTUGUESE,
+    ROMANIAN,
     SERBIAN,
     SLOVAK,
     SLOVENE,
@@ -213,6 +214,18 @@ LA_TEMPLATES: dict["Language", PromptConfig] = {
         default_prompt_template="Setning: {text}\nGrammatisk korrekt: {label}",
         default_instruction_prompt="Setning: {text}\n\nBestem om setningen er "
         "grammatisk korrekt eller ikke. Svar med {labels_str}, og ikke noe annet.",
+    ),
+    ROMANIAN: PromptConfig(
+        default_prompt_label_mapping=dict(correct="da", incorrect="nu"),
+        default_prompt_prefix=(
+            "Următoarele sunt fraze și dacă sunt gramatical corecte."
+        ),
+        default_prompt_template=("Fraza: {text}\nGramatical corect: {label}"),
+        default_instruction_prompt=(
+            "Fraza: {text}\n\n"
+            "Stabiliți dacă fraza este gramatical corectă sau nu. "
+            "Răspundeți cu {labels_str}, și nimic altceva."
+        ),
     ),
     SLOVAK: PromptConfig(
         default_prompt_label_mapping=dict(correct="áno", incorrect="nie"),

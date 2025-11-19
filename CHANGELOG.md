@@ -17,7 +17,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Added
 
 - Added support for Romanian 🇷🇴! This includes the sentiment classification dataset
-  RoSent.
+  RoSent, the linguistic acceptability dataset ScaLA-ro.
 - Added support for Bosnian 🇧🇦! This includes the sentiment classification dataset
   MMS-bs, the named entity recognition dataset WikiANN-bs, the reading comprehension
   dataset MultiWikiQA-bs, and the summarisation dataset LR-Sum-bs.

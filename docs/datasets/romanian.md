@@ -155,11 +155,11 @@ euroeval --model <model-id> --dataset szeged-ner
 
 ## Linguistic Acceptability
 
-### ScaLA-hu
+### ScaLA-ro
 
 This dataset was published in [this paper](https://aclanthology.org/2023.nodalida-1.20/)
-and was automatically created from the [Hungarian Universal Dependencies
-treebank](https://github.com/UniversalDependencies/UD_Hungarian-Szeged) by assuming that
+and was automatically created from the [Romanian Universal Dependencies
+treebank](https://github.com/UniversalDependencies/UD_Romanian-RRT) by assuming that
 the documents in the treebank are correct, and corrupting the samples to create
 grammatically incorrect samples. The corruptions were done by either removing a word
 from a sentence, or by swapping two neighbouring words in a sentence. To ensure that
@@ -174,21 +174,21 @@ Here are a few examples from the training split:
 
 ```json
 {
-    "text": "A kiskereskedelemben teljesen más okra vezethető vissza a mamutvállalkozások létrejötte, mint az élelmiszeriparban.",
+    "text": "Era o fantomă singuratică, rostind un adevăr pe care nimeni nu avea să -l audă vreodată.",
     "label": "correct"
 }
 ```
 
 ```json
 {
-    "text": "Még egy jövő évi költségvetési mérleggel sem tisztelte meg a kormány a képviselőházat, az államháztartási mérlegből kellene azt a képviselőknek kibogarászniuk.",
+    "text": "Pe multe locuri avem apoi dovezi de o solicitudine deosebită, nu numai pentru paza pădurilor, dar și pentru nevoile locuitorilor săteni.",
     "label": "correct"
 }
 ```
 
 ```json
 {
-    "text": "A Nawa Bányászati Kft. ahhoz Nawa a cégcsoporthoz tartozott, amely a taxisblokád idején jelentette be, hogy az akkor hordónként 29 dolláros világpiaci árnál olcsóbban, 22-23 dollárért tud olajat szerezni.",
+    "text": "Dacă experiența nu ne- a reușit însă, este numai numai și din pricina timpului urât de afară.",
     "label": "incorrect"
 }
 ```
@@ -200,32 +200,32 @@ When evaluating generative models, we use the following setup (see the
 - Prefix prompt:
 
   ```text
-  A következő mondatok, és hogy helyesek-e nyelvtanilag.
+  Următoarele sunt fraze și dacă sunt gramatical corecte.
   ```
 
 - Base prompt template:
 
   ```text
-  Mondat: {text}
-  Nyelvtanilag helyes: {label}
+  Fraza: {text}
+  Gramatical corect: {label}
   ```
 
 - Instruction-tuned prompt template:
 
   ```text
-  Mondat: {text}
+  Fraza: {text}
 
-  Határozza meg, hogy a mondat nyelvtanilag helyes-e vagy sem. Csak 'igen'-nel válaszoljon, ha helyes, és 'nem'-mel, ha nem helyes. Csak ezzel a szóval válaszoljon, és semmi mással.
+  Stabiliți dacă fraza este gramatical corectă sau nu. Răspundeți cu 'da' dacă este corectă, și cu 'nu' dacă nu este corectă. Răspundeți doar cu acest cuvânt, și nimic altceva.
   ```
 
 - Label mapping:
-  - `correct` ➡️ `igen`
-  - `incorrect` ➡️ `nem`
+  - `correct` ➡️ `da`
+  - `incorrect` ➡️ `nu`
 
 You can evaluate this dataset directly as follows:
 
 ```bash
-euroeval --model <model-id> --dataset scala-hu
+euroeval --model <model-id> --dataset scala-ro
 ```
 
 ## Reading Comprehension
