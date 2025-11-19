@@ -449,15 +449,8 @@ class VLLMModel(HuggingFaceEncoderModel):
                 choice_labels_pattern = "|".join(
                     re.escape(label) for label in choice_labels
                 )
-                # We assume that there are ~2 characters per token
                 structured_outputs = StructuredOutputsParams(
-                    regex=(
-                        r"(.){0,"
-                        # + str(REASONING_MAX_TOKENS * 2)  # TODO
-                        + str(100)
-                        + "}"
-                        + rf"{self.eor_token}({choice_labels_pattern})"
-                    )
+                    regex=rf"^.*?{self.eor_token}({choice_labels_pattern})$"
                 )
             log_once(
                 f"Using structured generation with the choices {choice_labels}.",
