@@ -34,6 +34,7 @@ LANGUAGES = [
     "en",
     "es",
     "fr",
+    "hu",
     "is",
     "it",
     "nl",

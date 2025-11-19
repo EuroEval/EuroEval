@@ -17,6 +17,7 @@ from ..languages import (
     FRENCH,
     GERMAN,
     GREEK,
+    HUNGARIAN,
     ICELANDIC,
     ITALIAN,
     LATVIAN,
@@ -107,6 +108,21 @@ RC_TEMPLATES: dict["Language", PromptConfig] = {
         "πολύ 3 λέξεις: {label}",
         default_instruction_prompt="Κείμενο: {text}\n\nΑπαντήστε την παρακάτω ερώτηση "
         "σχετικά με το παραπάνω κείμενο σε το πολύ 3 λέξεις.\n\nΕρώτηση: {question}",
+        default_prompt_label_mapping=dict(),
+    ),
+    HUNGARIAN: PromptConfig(
+        default_prompt_prefix=(
+            "Az alábbiakban szövegek szerepelnek a hozzájuk "
+            "tartozó kérdésekkel és válaszokkal."
+        ),
+        default_prompt_template=(
+            "Szöveg: {text}\nKérdés: {question}\nVálasz legfeljebb 3 szóban: {label}"
+        ),
+        default_instruction_prompt=(
+            "Szöveg: {text}\n\n"
+            "Válaszoljon az alábbi kérdésre a fenti szöveg alapján "
+            "legfeljebb 3 szóban.\n\nKérdés: {question}"
+        ),
         default_prompt_label_mapping=dict(),
     ),
     ENGLISH: PromptConfig(

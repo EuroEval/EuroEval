@@ -17,6 +17,7 @@ from ..languages import (
     FRENCH,
     GERMAN,
     GREEK,
+    HUNGARIAN,
     ICELANDIC,
     ITALIAN,
     LATVIAN,
@@ -180,6 +181,30 @@ NER_TEMPLATES: dict["Language", PromptConfig] = {
         "οντότητες στην πρόταση. Θα πρέπει να παράγετε αυτό ως λεξικό JSON με "
         "κλειδιά {labels_str}. Οι τιμές πρέπει να είναι λίστες των ονομαστικών "
         "οντοτήτων αυτού του τύπου, ακριβώς όπως εμφανίζονται στην πρόταση.",
+    ),
+    HUNGARIAN: PromptConfig(
+        default_prompt_label_mapping={
+            "b-per": "személy",
+            "i-per": "személy",
+            "b-loc": "helyszín",
+            "i-loc": "helyszín",
+            "b-org": "szervezet",
+            "i-org": "szervezet",
+            "b-misc": "egyéb",
+            "i-misc": "egyéb",
+        },
+        default_prompt_prefix=(
+            "Az alábbiakban mondatok és JSON szótárak találhatók\n"
+            "az adott mondatokban előforduló névjegyzékkel."
+        ),
+        default_prompt_template="Mondat: {text}\nNévjegyzék: {label}",
+        default_instruction_prompt=(
+            "Mondat: {text}\n\n"
+            "Nevezze meg a mondatban szereplő neveket. "
+            "JSON szótárként adja meg a {labels_str} kulcsszavakat. "
+            "Az értékek a mondatban szereplő névjegyzékek listái legyenek, "
+            "pontosan úgy, ahogyan megjelennek."
+        ),
     ),
     ENGLISH: PromptConfig(
         default_prompt_label_mapping={

@@ -17,6 +17,7 @@ from ..languages import (
     FRENCH,
     GERMAN,
     GREEK,
+    HUNGARIAN,
     ICELANDIC,
     ITALIAN,
     LATVIAN,
@@ -113,6 +114,19 @@ SENT_TEMPLATES: dict["Language", PromptConfig] = {
         default_prompt_template="Έγγραφο: {text}\nΣυναίσθημα: {label}",
         default_instruction_prompt="Έγγραφο: {text}\n\nΤαξινομήστε το συναίσθημα "
         "στο έγγραφο. Απαντήστε με {labels_str}, και τίποτα άλλο.",
+    ),
+    HUNGARIAN: PromptConfig(
+        default_prompt_label_mapping=dict(
+            positive="pozitív", neutral="semleges", negative="negatív"
+        ),
+        default_prompt_prefix=(
+            "Az alábbiak dokumentumok és érzelmük, ami lehet {labels_str}."
+        ),
+        default_prompt_template=("Dokumentum: {text}\nÉrzelem: {label}"),
+        default_instruction_prompt=(
+            "Dokumentum: {text}\n\nOsztályozza az érzelmet a dokumentumban. "
+            "Válaszoljon {labels_str}, és semmi mással."
+        ),
     ),
     ENGLISH: PromptConfig(
         default_prompt_label_mapping=dict(

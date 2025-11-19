@@ -16,6 +16,7 @@ from ..languages import (
     FRENCH,
     GERMAN,
     GREEK,
+    HUNGARIAN,
     ICELANDIC,
     ITALIAN,
     LATVIAN,
@@ -84,6 +85,18 @@ LA_TEMPLATES: dict["Language", PromptConfig] = {
         default_prompt_template="Πρόταση: {text}\nΓραμματικά σωστή: {label}",
         default_instruction_prompt="Πρόταση: {text}\n\nΠροσδιορίστε εάν η πρόταση "
         "είναι γραμματικά σωστή ή όχι. Απαντήστε με {labels_str}, και τίποτα άλλο.",
+    ),
+    HUNGARIAN: PromptConfig(
+        default_prompt_label_mapping=dict(correct="igen", incorrect="nem"),
+        default_prompt_prefix=(
+            "A következő mondatok, és hogy helyesek-e nyelvtanilag."
+        ),
+        default_prompt_template=("Mondat: {text}\nNyelvtanilag helyes: {label}"),
+        default_instruction_prompt=(
+            "Mondat: {text}\n\n"
+            "Határozza meg, hogy a mondat nyelvtanilag helyes-e vagy sem. "
+            "Csak {labels_str}-val válaszoljon, és semmi mással."
+        ),
     ),
     ENGLISH: PromptConfig(
         default_prompt_label_mapping=dict(correct="yes", incorrect="no"),
