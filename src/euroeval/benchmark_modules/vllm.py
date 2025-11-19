@@ -422,6 +422,7 @@ class VLLMModel(HuggingFaceEncoderModel):
             )
 
         structured_generation_schema = None
+        reasoning_trace_regex = r"(.){0," + str(REASONING_MAX_TOKENS * 2) + r"}"
         if self.dataset_config.task.uses_structured_output:
             if self.dataset_config.task == NER:
                 ner_tag_names = list(self.dataset_config.prompt_label_mapping.values())
@@ -443,9 +444,11 @@ class VLLMModel(HuggingFaceEncoderModel):
                         json=structured_generation_schema
                     )
                 else:
-                    structured_generation_regex = rf"^.*?{self.eor_token}"
-                    structured_generation_regex += build_regex_from_schema(
-                        json_schema=json.dumps(structured_generation_schema)
+                    structured_generation_regex = (
+                        reasoning_trace_regex
+                        + build_regex_from_schema(
+                            json_schema=json.dumps(structured_generation_schema)
+                        )
                     )
                     log_once(
                         "Using structured generation with the regex pattern "
@@ -480,7 +483,10 @@ class VLLMModel(HuggingFaceEncoderModel):
                     re.escape(label) for label in choice_labels
                 )
                 structured_outputs = StructuredOutputsParams(
-                    regex=rf"^.*?{self.eor_token}({choice_labels_pattern})$"
+                    regex=(
+                        reasoning_trace_regex
+                        + rf"{self.eor_token}({choice_labels_pattern})"
+                    )
                 )
             log_once(
                 f"Using structured generation with the choices {choice_labels}.",
