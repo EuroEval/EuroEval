@@ -415,16 +415,6 @@ class VLLMModel(HuggingFaceEncoderModel):
             )
 
         structured_generation_schema = None
-        # if (
-        #     self.dataset_config.task.uses_structured_output
-        #     or (self.dataset_config.task.uses_logprobs and self.dataset_config.labels)
-        # ) and self.generative_type == GenerativeType.REASONING:
-        #     structured_outputs = None
-        #     log_once(
-        #         "The dataset uses structured output, but we are not using it as the "
-        #         f"model {self.model_config.model_id!r} is a reasoning model.",
-        #         level=logging.DEBUG,
-        #     )
         if self.dataset_config.task.uses_structured_output:
             ner_tag_names = list(self.dataset_config.prompt_label_mapping.values())
             keys_and_their_types: dict[str, t.Any] = {
