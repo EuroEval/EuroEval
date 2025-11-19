@@ -6,7 +6,7 @@ from pathlib import Path
 
 import evaluate
 import numpy as np
-from datasets import DownloadConfig
+from datasets import DownloadConfig, DownloadMode
 
 from ..logging_utils import no_terminal_output
 from .base import Metric
@@ -85,10 +85,13 @@ class HuggingFaceMetric(Metric):
         Returns:
             The metric object itself.
         """
-        # Annoying but needed to make the metric download to a different cache dir
-        download_config = DownloadConfig(cache_dir=Path(cache_dir, "evaluate"))
+        metric_cache_dir = Path(cache_dir) / "metrics"
+        download_config = DownloadConfig(cache_dir=metric_cache_dir)
         self.metric = evaluate.load(
-            path=self.huggingface_id, download_config=download_config
+            path=self.huggingface_id,
+            download_config=download_config,
+            download_mode=DownloadMode.REUSE_CACHE_IF_EXISTS,
+            cache_dir=metric_cache_dir.as_posix(),
         )
         return self
 
@@ -143,22 +146,7 @@ class HuggingFaceMetric(Metric):
         if isinstance(score, np.floating):
             score = float(score)
 
-        self.close()
         return score
-
-    def close(self) -> None:
-        """Close any resources held by the metric."""
-        if self.metric is not None:
-            if self.metric.filelock is not None:
-                self.metric.filelock._release()
-            if self.metric.writer is not None:
-                self.metric.writer.finalize(close_stream=True)
-
-    def __del__(self) -> None:
-        """Clean up the metric from memory."""
-        if self.metric is not None:
-            self.close()
-            del self.metric
 
 
 mcc_metric = HuggingFaceMetric(

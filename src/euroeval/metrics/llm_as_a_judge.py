@@ -137,6 +137,7 @@ class LLMAsAJudgeMetric(Metric):
             model_cache_dir=Path(judge_model_config.model_cache_dir),
             cache_name=f"{dataset_config.name}-model-outputs.json",
             max_generated_tokens=dataset_config.max_generated_tokens,
+            progress_bar=benchmark_config.progress_bar,
         )
         judge_cache.load()
 

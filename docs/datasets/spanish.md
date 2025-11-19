@@ -17,11 +17,11 @@ validation, and testing, respectively. All our splits are subsets of the origina
 The label distribution for the splits are as follows:
 
 | Split | positive | negative | neutral | Total |
-|-------|----------|----------|---------|--------|
-| Train | 368      | 248      | 245     | 861    |
-| Val   | 88       | 90       | 78      | 256    |
-| Test  | 417      | 293      | 314     | 1,024  |
-| Total | 873      | 631      | 637     | 2,141  |
+|-------|----------|----------|---------|-------|
+| Train | 368      | 248      | 245     | 861   |
+| Val   | 88       | 90       | 78      | 256   |
+| Test  | 417      | 293      | 314     | 1,024 |
+| Total | 873      | 631      | 637     | 2,141 |
 
 Here are a few examples from the training split:
 

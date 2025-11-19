@@ -4,6 +4,7 @@ import typing as t
 
 from ..data_models import PromptConfig
 from ..languages import (
+    BOSNIAN,
     BULGARIAN,
     CROATIAN,
     CZECH,
@@ -27,7 +28,7 @@ from ..languages import (
     PORTUGUESE,
     SERBIAN,
     SLOVAK,
-    SLOVENIAN,
+    SLOVENE,
     SPANISH,
     SWEDISH,
     UKRAINIAN,
@@ -37,6 +38,19 @@ if t.TYPE_CHECKING:
     from ..languages import Language
 
 SENT_TEMPLATES: dict["Language", PromptConfig] = {
+    BOSNIAN: PromptConfig(
+        default_prompt_label_mapping=dict(
+            positive="pozitivno", neutral="neutralno", negative="negativno"
+        ),
+        default_prompt_prefix=(
+            "Slijede dokumenti i njihova osjetila, koja mogu biti {labels_str}."
+        ),
+        default_prompt_template="Dokument: {text}\nOsjetilo: {label}",
+        default_instruction_prompt=(
+            "Dokument: {text}\n\nKlasificirajte osjećaj u dokumentu. "
+            "Odgovorite samo s {labels_str}, i ništa drugo."
+        ),
+    ),
     BULGARIAN: PromptConfig(
         default_prompt_label_mapping=dict(
             positive="позитивен", neutral="неутрален", negative="негативен"
@@ -275,7 +289,7 @@ SENT_TEMPLATES: dict["Language", PromptConfig] = {
         default_instruction_prompt="Dokument: {text}\n\nKlasifikujte pocit v "
         "dokumente. Odpovedzte so {labels_str}, a nič iné.",
     ),
-    SLOVENIAN: PromptConfig(
+    SLOVENE: PromptConfig(
         default_prompt_label_mapping=dict(
             positive="pozitivno", neutral="nevtralno", negative="negativno"
         ),

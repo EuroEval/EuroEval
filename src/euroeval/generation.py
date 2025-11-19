@@ -74,6 +74,7 @@ def generate(
         model_cache_dir=model_cache_dir,
         cache_name=cache_name,
         max_generated_tokens=dataset_config.max_generated_tokens,
+        progress_bar=benchmark_config.progress_bar,
     )
 
     scores: list[dict[str, float]] = list()
@@ -141,7 +142,10 @@ def generate_single_iteration(
         itr: t.Iterable
         match model.batching_preference:
             case BatchingPreference.SINGLE_SAMPLE:
-                itr = get_pbar(iterable=non_cached_dataset)
+                itr = get_pbar(
+                    iterable=non_cached_dataset,
+                    disable=not benchmark_config.progress_bar,
+                )
             case BatchingPreference.ALL_AT_ONCE:
                 itr = [non_cached_dataset[:]]
             case _:

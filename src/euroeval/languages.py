@@ -511,8 +511,8 @@ SINHALA: Language = Language(
 SLOVAK: Language = Language(
     code="sk", name="Slovak", _and_separator="a", _or_separator="alebo"
 )
-SLOVENIAN: Language = Language(
-    code="sl", name="Slovenian", _and_separator="in", _or_separator="ali"
+SLOVENE: Language = Language(
+    code="sl", name="Slovene", _and_separator="in", _or_separator="ali"
 )
 SOMALI: Language = Language(
     code="so", name="Somali", _and_separator="iyo", _or_separator="ama"

@@ -394,6 +394,15 @@ def apply_prompt(
                         )
                         break
 
+            # Custom chat template kwargs
+            chat_template_kwargs: dict[str, t.Any] = dict()
+            if model_config.param in {"low", "medium", "high"}:
+                chat_template_kwargs["reasoning_effort"] = model_config.param
+                log_once(
+                    f"Set reasoning mode to {model_config.param!r}.",
+                    level=logging.DEBUG,
+                )
+
             texts = [
                 apply_chat_template(
                     conversation=messages,
@@ -402,6 +411,7 @@ def apply_prompt(
                     add_generation_prompt=True,
                     enable_thinking=(generative_type == GenerativeType.REASONING),
                     chat_template=chat_template,
+                    **chat_template_kwargs,
                 )
                 for messages in messages_list
             ]
@@ -448,23 +458,24 @@ def raise_if_wrong_params(
         InvalidModel:
             If the model configuration has invalid parameters.
     """
+    # Do nothing if there are no parameters to check
     if model_config.param is None:
         return
+
+    # Make list of all allowed parameters for the model
+    all_allowed_params: set[str] = set()
     for model_regex, allowed_params_list in allowed_params.items():
         if re.fullmatch(pattern=model_regex, string=model_config.model_id):
-            if model_config.param not in allowed_params_list:
-                msg = (
-                    f"Invalid parameter {model_config.param!r} for model "
-                    f"{model_config.model_id!r}."
-                )
-                if allowed_params_list:
-                    msg += f" Allowed parameters are: {', '.join(allowed_params_list)}."
-                else:
-                    msg += " No parameters are allowed."
-                raise InvalidModel(msg)
-            return
-    else:
-        raise InvalidModel(
-            f"The parameter {model_config.param!r} is not supported for the model "
+            all_allowed_params.update(allowed_params_list)
+
+    # Raise error if the parameter is not allowed
+    if model_config.param not in all_allowed_params:
+        msg = (
+            f"Invalid parameter {model_config.param!r} for model "
             f"{model_config.model_id!r}."
         )
+        if all_allowed_params:
+            msg += f" Allowed parameters are: {', '.join(all_allowed_params)}."
+        else:
+            msg += " No parameters are allowed."
+        raise InvalidModel(msg)

@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [v16.7.1] - 2025-11-18
+
+### Fixed
+
+- The `--no-progress-bar` argument (`progress_bar=False` in the `Benchmarker` API) was
+  not hiding all the progress bars for generative models. This has been fixed now.
+- Now respects the revision when loading tokenizers with vLLM models. I.e., if
+  evaluating a model `<model_id>@<revision>` then we also load the tokenizer from the
+  `<revision>` branch.
+
+## [v16.7.0] - 2025-11-10
+
+### Added
+
+- Added support for Bosnian 🇧🇦! This includes the sentiment classification dataset
+  MMS-bs, the named entity recognition dataset WikiANN-bs, the reading comprehension
+  dataset MultiWikiQA-bs, and the summarisation dataset LR-Sum-bs.
+- Now allows the 'low', 'medium' and 'high' reasoning effort parameters for the GPT-OSS
+  models, which can be set by appending `#low`, `#medium` or `#high` to the model ID.
+
 ### Changed
 
 - Improved the support for evaluating models on custom inference API servers. This
@@ -28,6 +48,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 - When evaluating encoder models on reading comprehension datasets, we now also truncate
   the question in case the model's maximum context length is very small.
+- Now correctly detects the reasoning tokens of the GPT-OSS models.
 
 ### Deprecated
 
@@ -65,7 +86,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 
-- Added support for Slovenian 🇸🇮! This includes the sentiment classification dataset
+- Added support for Slovene 🇸🇮! This includes the sentiment classification dataset
   Sentinews, the linguistic acceptability dataset ScaLA-sl, the named entity recognition
   dataset ssj500k-NER, the reading comprehension
   dataset MultiWikiQA-sl, the knowledge dataset MMLU-sl, and the common-sense reasoning
@@ -2852,7 +2873,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Removed support for TensorFlow and Jax models, due to them not working
   properly anyway. They might be included at a later point, properly.
 
-##  [v1.4.0] - 2021-11-25
+## [v1.4.0] - 2021-11-25
 
 ### Changed
 

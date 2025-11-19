@@ -15,7 +15,7 @@ from datasets import Dataset, DatasetDict, Split, load_dataset
 from huggingface_hub import HfApi
 from sklearn.utils import resample
 
-LANGUAGES = ["sr", "hr"]
+LANGUAGES = ["sr", "hr", "bs"]
 
 
 def main() -> None:

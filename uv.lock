@@ -2,7 +2,8 @@ version = 1
 revision = 3
 requires-python = ">=3.11, <4.0"
 resolution-markers = [
-    "python_full_version >= '3.12'",
+    "python_full_version >= '3.14'",
+    "python_full_version >= '3.12' and python_full_version < '3.14'",
     "python_full_version < '3.12'",
 ]
 
@@ -859,7 +860,7 @@ wheels = [
 
 [[package]]
 name = "euroeval"
-version = "16.6.0.dev0"
+version = "16.7.1.dev0"
 source = { editable = "." }
 dependencies = [
     { name = "accelerate" },

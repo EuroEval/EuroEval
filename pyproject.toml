@@ -1,6 +1,6 @@
 [project]
 name = "EuroEval"
-version = "16.6.0.dev"
+version = "16.7.1.dev"
 description = "The robust European language model benchmark."
 readme = "README.md"
 authors = [

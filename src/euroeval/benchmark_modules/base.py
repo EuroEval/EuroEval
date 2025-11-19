@@ -261,7 +261,11 @@ class BenchmarkModule(ABC):
                 tasks.
         """
         for idx, dataset in enumerate(
-            get_pbar(iterable=datasets, desc="Preparing datasets")
+            get_pbar(
+                iterable=datasets,
+                desc="Preparing datasets",
+                disable=not self.benchmark_config.progress_bar,
+            )
         ):
             prepared_dataset = self.prepare_dataset(
                 dataset=dataset, task=task, itr_idx=idx
