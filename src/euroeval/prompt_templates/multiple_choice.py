@@ -35,7 +35,6 @@ from ..languages import (
 if t.TYPE_CHECKING:
     from ..languages import Language
 
-# TODO: Missing Faroese
 MULTIPLE_CHOICE_TEMPLATES: dict["Language", PromptConfig] = {
     BULGARIAN: PromptConfig(
         default_prompt_prefix="Следват въпроси с множествен избор (с отговори).",

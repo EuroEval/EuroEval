@@ -32,7 +32,6 @@ from ..languages import (
 if t.TYPE_CHECKING:
     from ..languages import Language
 
-# TODO: Missing Faroese
 SUMM_TEMPLATES: dict["Language", PromptConfig] = {
     BOSNIAN: PromptConfig(
         default_prompt_prefix=("Slijede dokumenti s priloženim sažecima."),
