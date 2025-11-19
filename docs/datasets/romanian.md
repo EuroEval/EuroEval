@@ -234,7 +234,7 @@ euroeval --model <model-id> --dataset scala-ro
 
 ## Reading Comprehension
 
-### MultiWikiQA-hu
+### MultiWikiQA-ro
 
 This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2509.04111)
 and contains Wikipedia articles with LLM-generated questions and answers in 300+
@@ -247,33 +247,33 @@ Here are a few examples from the training split:
 
 ```json
 {
-    "context": "Az utolsó mester (The Last of the Masters) Philip K. Dick egyik novellája, amelyet 1953-ban írt, majd 1954-ben az Orbit Science Fiction magazin november-decemberi számában jelent meg. Magyarul a Lenn a sivár Földön című novelláskötetben olvasható.\n\nTörténet \n\nA világon kétszáz éve az anarchia uralkodik. Akkor történt, hogy először Európában, majd szerte a világban fellázadtak a polgárok, és megdöntötték a kormányokat. Megölték a vezetőket, elpusztították a robotokat és megsemmisítettek minden addig a kormány kezében lévő kutatási anyagot, elpusztították az atombombákat. A világon most egyetlenegy szervezet van, az Anarchista Szövetség, aki csak arra ügyel, hogy nehogy valaki újra felépítsen magának egy rendszert. A robotok közül viszont az egyik – Bors – túlélte a pusztítást, és bujdosva a kétszáz év alatt felépített magának egy kis eldugott birodalmat. Ennek a birodalomnak vannak a legmodernebb eszközei (hiszen a két évszázaddal ezelőtti kutatási eredmények már csak Bors agyában maradtak meg), földcsuszamlásoknak álcázva elzárták a telephez vezető földutakat, és a szomszédos falukban elhelyezett kémeknek köszönhetően mindig időben tudták, ha a Szövetség ügynökei közelednek, így mindig időben félresöpörték őket. Nem sikerül azonban ezt megtenni Edward Tolbyval és lányával, Silviával. Így (bár Silviát sikerül elkapni) Tolby egyedül próbálja meg felvenni a harcot az erőddel. Az őrségen könnyen átjut, hiszen azok soha nem harcoltak, de végül mégis elkezdik őt üldözni. Bemenekül Fowler, Bors egyik helyettesének szobájába. Szerencséjére Fowlernek az az ötlete támad, hogy Tolbyval öleti meg Borst (mivel ő maga erre nem lenne képes, viszont az anarchia szimpatikus neki). Tolbynak végül is sikerül szétvernie Bors robotfejét, akinek halála miatt szétesik az általa felépített rendszer. Fowler a biztonság kedvéért elteszi Bors adatbázisát, hátha még szüksége lesz rá…\n\nForrások \n Philip K. Dick: Lenn a sivár földön (Agave Kiadó, 2005)\n\nPhilip K. Dick-novellák",
-    "question": "Mely kutató munkáját pusztították el a felkelők?",
+    "context": "Cornel Brahaș, pe numele real Ionel Vițu (n. 23 mai 1950, Poiana, Galați – d. 23 noiembrie 2005, Brăhășești, Galați), a fost scriitor și deputat român în legislatura 1992-1996, ales în municipiul București pe listele PUNR.\n\nBiografie\nA fost membru al Uniunii Scriitorilor din România. \n\nA scris nouă volume de poezie, trei romane-document, o carte de reportaj, două romane și un volum de reportaj-document. \n\nActivitate politică/Funcții: \n membru PUNR (1990-1994, exclus), apoi Partidul Dreapta Românească (din 1995) si PPR;\n deputat PUNR de București (27.09.1992-3.11.1996);\n vicepreședinte al PUNR (3.10.1992) și președinte al filialei București (1992-9.11.1994);\n purtător de cuvânt al PUNR (eliberat la 7.09.1994);\n secretar executiv al Partidului Dreapta Românească (1995-2000);\n vicepreședinte al PPR (3.02.2000)\n\nOpera\nPână la capăt și mai departe (roman-document)\n53 de poeme de dragoste și speranță\nPoezii foarte frumoase\nSfârșit de vânătoare\nPenultimele poeme de dragoste\nPoezii din capul meu\nÎntors\nDespre morți numai de bine (reportaj-document)\nClasa muncitoare - clasa deschisă (roman în probe)\nMocănești. Oamenii dracului\nMorții nu mai știu drumul către casă (roman, Ed. Militară 1990)\nAnno Domini - 2004 \nLaptus Vulgata\nJurnal dactilografiat (1985-1989)\nPoezii fără mijloace\n\nNașteri în 1950\nDecese în 2005\nDeputați români 1992-1996\nScriitori români din secolul al XX-lea\nPoliticieni români din secolul al XX-lea\nScriitori români din secolul al XXI-lea\nPoliticieni români din secolul al XXI-lea\nMembri ai Uniunii Scriitorilor din România\nRomâni cunoscuți sub pseudonimele folosite\nPoeți români din secolul al XX-lea\nPoeți români din secolul al XXI-lea\nMembri ai PUNR\nScriitori cunoscuți sub pseudonimele folosite",
+    "question": "Cum se numește romanul pe care Cornel Brahaș l-a publicat în anul 1990 la Editura Militară?",
     "answers": {
-        "answer_start": [407],
-        "text": ["a kormány"]
+        "answer_start": [1136],
+        "text": ["Morții nu mai știu drumul către casă"]
     }
 }
 ```
 
 ```json
 {
-    "context": 'Az U–1230 tengeralattjárót a német haditengerészet rendelte a hamburgi Deutsche Werft AG-től 1941. október 14-én. A hajót 1944. január 26-án vették hadrendbe. Egy járőrutat tett, amelyen egy hajót süllyesztett el.\n\nPályafutása \nAz U–1230 első és egyetlen harci küldetésére Hans Hilbig kapitány irányításával 1944. október 8-án futott ki Hortenből. Az Atlanti-óceán északi részén kelt át, majd november 29-én – az Elster hadművelet (németül Unternehmen Elster, magyarul Szarka hadművelet) – két német ügynököt rakott partra az amerikai Hancock Pointnál. Ezután az Amerikai Egyesült Államok partjainál, Connecticuttól északra vadászott. \n\nDecember 3-án Maine állam partjainak közelében megtorpedózta a kanadai Cornwallis nevű gőzöst, amely Barbadosról tartott St. Johnba, fedélzetén cukorral és melasszal. A Cornwallis 1942. szeptember 11-én kapott már torpedótalálatot Bridgetownban az U–514-től, de akkor még ki lehetett emelni a sekély vízből. Az U–1230 torpedója azonban végzetes volt, a fedélzeten tartózkodó 48 emberből 43 meghalt.\n\nŐrjárata befejeztével a tengeralattjáró visszatért Norvégiába, majd onnan 1945. február 20-án Flensburgba hajózott. 1945. május 5-én a németországi Heligolandnál adta meg magát. 1945. július 24-én Wilhelmshavenből indult a skóciai Loch Ryanbe, ahol a szövetségesek a megsemmisítésre kijelölt búvárhajókat gyűjtötték. Az U– össze 1230-at a HMS Cubitt brit fregatt süllyesztette el a Deadlight hadműveletben.\n\nKapitány\n\nŐrjárat\n\nElsüllyesztett hajó\n\nJegyzetek\n\nForrások \n  \n  \n  \n  \n\nIXC/40 típusú német tengeralattjárók',
-    "question": "Ki rendelte meg az U-1230-as tengeralattjárót?",
+    "context": "Gerardus Mercator () a fost un cartograf, geograf și matematician flamand de renume din Renaștere. Acest nume este latinizat, un obicei pe atunci foarte răspândit; numele său real în germană a fost Gerhard Kremer („Kremer” înseamnă „negustor”). S-a născut la 5 martie 1512 la Rupelmonde, Flandra, și a murit la 2 decembrie 1594 în Duisburg, Germania. A fost considerat un  \"Ptolemeu contemporan\".\n\nMercator se considera cercetător cosmograf care nu e nevoit să vândă hărți. De la el au rămas doar 5 hărți, păstrate în Muzeul de istorie din Duisburg. În anul 1562 realizează prima hartă a Europei, care este una din hărțile atlasului său. Numele și l-a schimbat în perioada când era la Universitatea Essen-Duisburg.\n\nRealizări \n\n 1530 devine \"Magister\" la \"Universitatea catolică\" din Leuven\n 1537 însărcinează pe meșteșugarul Gaspard van der Heyden să-i confecționeze globul terestru, și bolta cerului\n 1537 Harta \"Pământului sfânt\"\n 1538 o hartă mică de proiecție în formă de inimă a lumii, și o hartă de perete a Flandrei\n 1540 publică cartea  Literarum latinarum, quas italicas, cursoriasque vocant, scribendarum ratio, (pe lemn)\n 1541 își continuă cercetările de proiecție a globului pe o hartă (plan), are probleme  cu biserica catolică (acuzat de erezie)\n 1551 realizează un nou glob pământesc și unul al boltei cerești\n 1552 urmărit de inchiziție se refugiază cu toată familia la Duisburg, principatul Jülich-Kleve-Berg, prințul  Wilhelm der Reiche fiind sub influența humanistului Erasmus von Rotterdam\n 1554 Realizarea lui cea mai valoroasă este \"Proiecția Mercator\", o proiecție a globului terestru pe un plan (hartă). Această proiecție redă fidel unghiurile, fiind prin aceasta de importanță majoră pentru navigația pe Pământ.\n 1559 - 1562 predă matematică și cosmologie la Gimnaziul din Duisburg\n 1563 este numit de  Wilhelm der Reiche cartograf princiar\n 1562 Sub îndrumările lui Johannes Corputius, întocmește o hartă exactă a Duisburgului\n 1594 moare ca un om respectat și bogat, fiind îngropat în cimitirul bisericii \"Salvator\" din Duisburg.\n\nNote\n\nBibliografie\n\nLegături\xa0externe\n\n Cartographic images of maps and globes \nMercator\'s maps at the Eran Laor Cartographic Collection, the National Library of Israel\n\nNașteri în 1512\nDecese în 1594\nExploratori belgieni\nCartografi flamanzi\nPerioada Marilor descoperiri\nIstoria navigației\nEponime ale craterelor de pe Lună\nEponime ale asteroizilor",
+    "question": "În ce an s-a născut Gerardus Mercator?",
     "answers": {
-        "answer_start": [62],
-        "text": ["hamburgi Deutsche Werft AG-től"]
+        "answer_start": [259],
+        "text": ["5 martie 1512"]
     }
 }
 ```
 
 ```json
 {
-    "context": "A budapesti 56B jelzésű villamos Hűvösvölgy és a Csóka utca között közlekedett a 2022-es budafoki vágányzár idején. A viszonylatot a Budapesti Közlekedési Zrt. üzemeltette.\n\nTörténete \n\n1981. október 22-étől a Széll Kálmán (akkor Moszkva) tér és Hűvösvölgy közötti pályafelújítási munkálatok miatt az 56-os villamos megosztott útvonalon, 56A jelzéssel a Széll Kálmán tér felől, 56B jelzéssel pedig Hűvösvölgy felől Budagyöngyéig közlekedett. 1982. május 24-étől az 56B rövidített útvonalon, minden nap 6 és 12 óra között Budagyöngyétől a Vadaskerti utcáig, majd 12 óra után a Nagyhíd megállóhelyig járt. 1982. szeptember 18-án a felújítás befejeztével megszűnt. 1983. június 13. és 19. között ismét közlekedett, ekkor a Budagyöngye és a Nyéki út közötti szakaszon. November 8-án újraindult a Heinrich István útig, majd november 24-én végleg megszűnt.\n\n2022. október 3. és november 18. között a Hűvösvölgy és a Csóka utca között közlekedett a budafoki vágányzár idején.\n\nÚtvonala\n\nMegállóhelyei \nAz átszállási kapcsolatok között a Hűvösvölgy és a Móricz Zsigmond körtér között azonos útvonalon közlekedő 56-os és 56A villamos nincs feltüntetve.\n\n!Perc\xa0(↓)\n!Megállóhely\n!Perc\xa0(↑)\n!Átszállási kapcsolatok a járat közlekedése idején\n|-\n|0||Hűvösvölgyvégállomás||41\n|align=left|\n|-\n|2||Heinrich István utca||38\n|align=left|\n|-\n|3||Völgy utca||37\n|align=left|\n|-\n|4||Vadaskerti utca||36\n|align=left|\n|-\n|5||Nagyhíd||35\n|align=left|\n|-\n|6||Zuhatag sor||34\n|align=left|\n|-\n|8||Kelemen László utca||33\n|align=left|\n|-\n|9||Akadémia||32\n|align=left|\n|-\n|10||Budagyöngye||31\n|align=left|\n|-\n|11||Nagyajtai utca||29\n|align=left|\n|-\n|14||Szent\xa0János\xa0Kórház||27\n|align=left|\n|-\n|15||Városmajor||26\n|align=left|\n|-\n|16||Nyúl utca||25\n|align=left|\n|-\n|18||Széll\xa0Kálmán\xa0tér\xa0M||24\n|align=left|\n|-\n|20||Déli pályaudvar M||22\n|align=left|\n|-\n|21||Mikó utca||20\n|\n|-\n|22||Krisztina tér||18\n|align=left|\n|-\n|24||Dózsa György tér||16\n|align=left|\n|-\n|26||Döbrentei tér||14\n|align=left|\n|-\n|27||Rudas Gyógyfürdő||13\n|align=left|\n|-\n|30||Szent Gellért tér – Műegyetem M||11\n|align=left|\n|-\n|32||Gárdonyi tér||9\n|align=left|\n|-\n|35||Móricz Zsigmond körtér\xa0M||6\n|align=left|\n|-\n|37||Kosztolányi Dezső tér||4\n|align=left|\n|-\n|38||Karolina út||2\n|align=left|\n|-\n|39||Csóka utcavégállomás||0\n|align=left|\n|}\n\nJegyzetek\n\nForrások \n\nBudapest megszűnt villamosvonalai",
-    "question": "A 2022-es budafoki vágányzár alatt mikor járt az 56B jelzésű villamos a Hűvösvölgy és a Csóka utca között?",
+    "context": "Un cod de aeroport ICAO sau un identificator de locație ICAO este un cod alfanumeric, format din patru litere, care desemnează fiecare din aeroporturile din lume.  Aceste coduri au fost definite de International Civil Aviation Organization și au fost publicate în documentul ICAO 7910: Location Indicators ().\n\nCodurile ICAO sunt folosite în controlul traficului aerian și în operările liniilor aeriene cum ar fi planificarea zborurilor.  Ele nu sunt același lucru cu codurile IATA, întâlnite de publicul obișnuit și folosite de către companiile aeriene în orarele zborurilor, rezervări și operațiile legate de bagaje.  Codurile ICAO sunt folosite de asemenea pentru identificarea altor locații precum stații meteo, stații internaționale de servicii ale zborurilor sau centre de control al zonelor, fie că acestea sunt amplasate sau nu în aeroporturi.\n\nSpre deosebire de codurile IATA, codurile ICAO au o structură regională la bază, astfel încât ele nu sunt duplicate ci identifica un singur aeroport.  În general, prima literă alocată după continent și reprezintă o țară sau un grup de țări de pe acel continent.  A doua literă în general reprezintă o țară din acea regiune, iar celelate două litere rămase sunt folosite la identificarea fiecărui aeroport.  Excepțiile de la această regulă sunt țările foarte întinse care au coduri de țară formate dintr-o singură literă, iar celelalte trei litere care rămân desemnează aeroportul.\n\nÎn zona întinsă formată de Statele Unite și Canada, celor mai multor aeroporturi li se asociază codurile de trei litere IATA, care sunt aceleași cu codurile lor ICAO, însă fără litera K sau C de la început, d.e., YYC și CYYC (Calgary International Airport, Calgary, Alberta), IAD și KIAD (Dulles International Airport, Chantilly, Virginia).  Aceste coduri nu trebuie confundate cu semnalele de apel pentru radio sau pentru televiziune, chiar dacă ambele țări folosesc semnale de apel de formate din patru litere care încep cu aceste litere.\n\nTotuși, fiindcă Alaska, Hawaii și alte teritorii din Statele Unite au propriile prefixe ICAO formate din două litere, situația pentru ele este similară altor țări mici, iar codurile ICAO ale aeroporturilor lor sunt în general diferite de identificatoarele FAA/IATA formate din trei litere.  De exemplu, Hilo International Airport (PHTO comparativ cu ITO) și Juneau International Airport (PAJN comparativ cu JNU).\n\nZZZZ este un cod special care se folosește atunci când nu există nici un cod ICAO pentru aeroport, și este folosit de obicei în planurile de zbor.\n\nAeroportul Internațional Henri Coandă din Otopeni are codul LROP, iar Aeroportul Internațional Aurel Vlaicu de la Băneasa are codul LRBS  .\n\nPrefixuri\n\nVezi și\nListă de aeroporturi după codul ICAO\nListă de aeroporturi după codul IATA\nAeroport\n\nLegături externe\nInternational Civil Aviation Organization (official site)\nICAO On-line Publications Purchasing  (official site)\nICAO 7910 - Location Indicators (online version provided by EUROCONTROL)\nCatalogue of ICAO Airfields \nICAO airport code prefixes \n\nCoduri\nAeroporturi",
+    "question": "Care este codul ICAO pentru un aeroport?",
     "answers": {
-        "answer_start": [852],
-        "text": ["2022. október 3. és november 18. között"]
+        "answer_start": [66],
+        "text": ["un cod alfanumeric, format din patru litere, care desemnează fiecare din aeroporturile din lume"]
     }
 }
 ```
@@ -285,31 +285,31 @@ When evaluating generative models, we use the following setup (see the
 - Prefix prompt:
 
   ```text
-  Az alábbiakban szövegek szerepelnek a hozzájuk tartozó kérdésekkel és válaszokkal.
+  Iată texte cu întrebări și răspunsuri însoțite.
   ```
 
 - Base prompt template:
 
   ```text
-  Szöveg: {text}
-  Kérdés: {question}
-  Válasz legfeljebb 3 szóban:
+  Text: {text}
+  Întrebare: {question}
+  Răspuns de maxim 3 cuvinte:
   ```
 
 - Instruction-tuned prompt template:
 
   ```text
-  Szöveg: {text}
+  Text: {text}
 
-  Válaszoljon az alábbi kérdésre a fenti szöveg alapján legfeljebb 3 szóban.
+  Răspunde la următoarea întrebare referitoare la textul de mai sus folosind maxim 3 cuvinte.
 
-  Kérdés: {question}
+  Întrebare: {question}
   ```
 
 You can evaluate this dataset directly as follows:
 
 ```bash
-euroeval --model <model-id> --dataset multi-wiki-qa-hu
+euroeval --model <model-id> --dataset multi-wiki-qa-ro
 ```
 
 ## Knowledge

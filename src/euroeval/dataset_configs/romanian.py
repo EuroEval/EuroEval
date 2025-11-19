@@ -30,10 +30,10 @@ RONEC_CONFIG = DatasetConfig(
     languages=[ROMANIAN],
 )
 
-MULTI_WIKI_QA_HU_CONFIG = DatasetConfig(
-    name="multi-wiki-qa-hu",
-    pretty_name="MultiWikiQA-hu",
-    source="EuroEval/multi-wiki-qa-hu-mini",
+MULTI_WIKI_QA_RO_CONFIG = DatasetConfig(
+    name="multi-wiki-qa-ro",
+    pretty_name="MultiWikiQA-ro",
+    source="EuroEval/multi-wiki-qa-ro-mini",
     task=RC,
     languages=[ROMANIAN],
 )

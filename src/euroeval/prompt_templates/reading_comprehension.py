@@ -26,6 +26,7 @@ from ..languages import (
     NORWEGIAN_NYNORSK,
     POLISH,
     PORTUGUESE,
+    ROMANIAN,
     SERBIAN,
     SLOVAK,
     SLOVENE,
@@ -229,6 +230,18 @@ RC_TEMPLATES: dict["Language", PromptConfig] = {
         "ord: {label}",
         default_instruction_prompt="Tekst: {text}\n\nBesvar følgende spørsmål om "
         "teksten ovenfor med maks 3 ord.\n\nSpørsmål: {question}",
+        default_prompt_label_mapping=dict(),
+    ),
+    ROMANIAN: PromptConfig(
+        default_prompt_prefix="Iată texte cu întrebări și răspunsuri însoțite.",
+        default_prompt_template=(
+            "Text: {text}\nÎntrebare: {question}\nRăspuns de maxim 3 cuvinte: {label}"
+        ),
+        default_instruction_prompt=(
+            "Text: {text}\n\n"
+            "Răspunde la următoarea întrebare referitoare la textul de mai sus "
+            "folosind maxim 3 cuvinte.\n\nÎntrebare: {question}"
+        ),
         default_prompt_label_mapping=dict(),
     ),
     POLISH: PromptConfig(
