@@ -40,6 +40,7 @@ LANGUAGES = [
     "fi",
     "fr",
     "hr",
+    "hu",
     "it",
     "lt",
     "lv",

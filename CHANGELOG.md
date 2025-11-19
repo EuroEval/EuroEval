@@ -12,6 +12,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Added support for Romanian 🇷🇴! This includes the sentiment classification dataset
   RoSent, the linguistic acceptability dataset ScaLA-ro, the named entity recognition
   dataset RoNEC, the reading comprehension dataset MultiWikiQA-ro.
+- Added Lithuanian sentiment classification dataset Atsiliepimai to replace the now unofficial
+  Lithuanian Emotions dataset.
+- Added support for Hungarian 🇭🇺! This includes the sentiment classification dataset
+  HuSST, the linguistic acceptability dataset ScaLA-hu, the named entity recognition
+  dataset SzegedNER, the reading comprehension dataset MultiWikiQA-hu, the
+  summarisation dataset HunSum, the knowledge dataset MMLU-hu, and the common-sense
+  reasoning dataset Winogrande-hu.
 
 ## [v16.7.1] - 2025-11-18
 

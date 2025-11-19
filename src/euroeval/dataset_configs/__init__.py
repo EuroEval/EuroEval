@@ -17,6 +17,7 @@ from .finnish import *  # noqa: F403
 from .french import *  # noqa: F403
 from .german import *  # noqa: F403
 from .greek import *  # noqa: F403
+from .hungarian import *  # noqa: F403
 from .icelandic import *  # noqa: F403
 from .italian import *  # noqa: F403
 from .latvian import *  # noqa: F403

@@ -6,7 +6,97 @@ information about what these constitute.
 
 ## Sentiment Classification
 
-### Lithuanian Emotions
+### Atsiliepimai
+
+This dataset was published
+[here](https://huggingface.co/datasets/alexandrainst/lithuanian-sentiment-analysis). It was
+scraped from [atsiliepimai.lt](https://atsiliepimai.lt/) and
+contains reviews similar to trustpilot reviews.
+
+The original dataset consists of 1,796 samples. We use 512 / 256 / 1,028
+samples for our training, validation and test splits, respectively.
+
+The original dataset contains rating values from 1 to 5. The raw distribution is:
+
+- 1: 125 samples
+- 2: 184 samples
+- 3: 292 samples
+- 4: 584 samples
+- 5: 611 samples
+
+We map these as follows:
+
+- 1 and 2 are mapped to `negative`
+- 3 and 4 are mapped to `neutral`
+- 5 is mapped to `positive`
+
+After this mapping, the distribution of sentiment labels is:
+
+- `negative`: 309 samples
+- `neutral`: 876 samples
+- `positive`: 611 samples
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Atėjau pirkt bevielės klaviatūros žaidimams pasiruošęs ten 60 eur mažiausiai.. sako imk šitą už 13 eur. Tik batareikas įsidek geras. Žodžiu kol kas sedžiu žiauriai patenkintas. Klava ir pele veikia puikiausiai BF1 multiplayer taškiau- jokių užsikirtinejimų nieko, "vėlavimo" irgi arba nėra, arba nesu tiek patyręs, kad pastebėčiau. 13 eurų :D? Dar su garantija 2 metam :D Tik gal kažkiek nustebino pasakymas "tai bevielių klaviatūrų ir nebuna brangių žaidimams" nes tikrai yra, bet tai nesvarbu. Čia 13 eur. už labiau nei nustebinusį rinkinį už tokią kainą. Apskritai jau ne pirmą kartą pas juos perku ir šią chebrą tikrai rekomenduoju. Jie ten savotiškai užsiknisę per tiek laiko, matosi, bet tam nepasiduoda ir vistiek daro kuo geriau.",
+  "label": "neutral"
+}
+```
+
+```json
+{
+  "text": "Pirkau iš šios parduotuvės keletą elektronikos prekių. Labai patiko tai, kad yra didelis pasirinkimas, ilgai ieškojau būtent vieno produkto, lietuvoje tik jie vieni būtent tą produktą turėjo ir už gana gerą kainą. Patinka visa pirkimo internetinė sistema, aptarnavimas irgi geras. Minusų kaip ir nepastebėjau, galėčiau pavadinti šią parduotuvę solidžia ir rimta. Manau pasirinksiu ir kitą kartą jų parduodamus produktus.",
+  "label": "positive"
+}
+```
+
+```json
+{
+  "text": "Tikrai neverta vieta apsilankyti ir mokėti už patį blogiausią aptarnavimą ir šaltą bei neskanų maistą. Apsilankėme su šeima vakar 2025 m. birželio 24 d., nes tikėjomės ramiai, turiningai pasisėdėti ir skaniai pavalgyti. Pradėkime nuo to, kad buvome iš anksto užsisakę-rezervavę staliuką, tačiau jo niekas nedavė, o nusiuntė į bendrą tentu aptrauktą terasą. Lijo, pūtė smarkus vėjas, traukė taip, kad norėjosi kuo greičiau varyti iš tos skylės. Aptarnavimas, čia yra  ..yzdec, kitaip ir nepasakysi. Padavėjo (gal 15-17 m. amžiaus) prie staliuko priėjo tik po gero pusvalandžio kai jau buvome gerokai sušalę. Iš kart užsakėme karštos sriubos, karštą patiekalą. Tai spėkit, dar po 37 min. stebėjau laiką, atnešė pravėsusius kepsnius, o po ilgo laukimo ir šaltą sriubą. Jeigu lankysitės Trakuose, tai jokiu būdu neikite pavalgyti į Senąją kibininę, nes už..is negyvai ir dar Mezymo ar angliuko turėkite, nes atrajosite dar ilgai ta mėsa, kurią deda į tuos brangius ir nebeskanius kibinus.",
+  "label": "negative"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 12
+- Prefix prompt:
+
+  ```text
+  Toliau pateikti dokumentai ir jų nuotaika,
+  kuri gali būti 'teigiamas', 'neutralus' arba 'neigiamas'.
+  ```
+
+- Base prompt template:
+
+  ```text
+  Dokumentas: {text}
+  Nuotaika: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Dokumentas: {text}
+
+  Klasifikuokite nuotaiką dokumente. Atsakykite su 'teigiamas', 'neutralus' arba 'neigiamas', ir nieko kito.
+  ```
+
+- Label mapping:
+  - `positive` ➡️ `teigiamas`
+  - `neutral` ➡️ `neutralus`
+  - `negative` ➡️ `neigiamas`
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset atsiliepimai
+```
+
+### Unofficial: Lithuanian Emotions
 
 This dataset is a combination of machine translated versions of the [GoEmotions
 dataset](https://doi.org/10.48550/arXiv.2005.00547) and the [Kaggle emotions
