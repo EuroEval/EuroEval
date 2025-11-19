@@ -10,10 +10,51 @@
 
 """Create the Hungarian summarisation dataset based on hun-sum-chatml-5k."""
 
+import json
+import os
+
 import pandas as pd
 from constants import MAX_NUM_CHARS_IN_ARTICLE, MIN_NUM_CHARS_IN_ARTICLE
 from datasets import Dataset, DatasetDict, Split, load_dataset
+from dotenv import load_dotenv
 from huggingface_hub import HfApi
+from openai import OpenAI
+from openai.types.chat import ChatCompletionUserMessageParam
+from pydantic import BaseModel
+
+load_dotenv()
+
+CACHE_FILE = "summary_cache.json"
+
+
+class SummaryValidation(BaseModel):
+    """Structured output for the summary validation.
+
+    Args:
+        is_valid_summary: True if the summary aligns with the text, False otherwise.
+    """
+
+    is_valid_summary: bool
+
+
+def load_cache() -> dict:
+    """Load cache from CACHE_FILE if it exists."""
+    try:
+        with open(CACHE_FILE, "r") as cache_file:
+            return json.load(cache_file)
+    except FileNotFoundError:
+        return {}
+
+
+def save_cache(cache: dict) -> None:
+    """Save cache to CACHE_FILE."""
+    with open(CACHE_FILE, "w") as cache_file:
+        json.dump(cache, cache_file, indent=4)
+
+
+summary_cache = load_cache()
+
+client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
 
 
 def main() -> None:
@@ -42,43 +83,23 @@ def main() -> None:
 
     dataset = dataset.map(make_columns)
 
-    # The val and test splits only have 200 samples each.
-    df_train = dataset["train"].to_pandas()
-    df_val = dataset["validation"].to_pandas()
-    df_test = dataset["test"].to_pandas()
-    df = pd.concat([df_train, df_val, df_test], ignore_index=True)
-    keep_columns = ["text", "target_text"]
-    df = df[keep_columns]
+    train_df = dataset["train"].to_pandas()
+    val_df = dataset["validation"].to_pandas()
+    test_df = dataset["test"].to_pandas()
 
-    # Only work with samples where the text is not very large or small
-    lengths = df.text.str.len()
-    lower_bound = MIN_NUM_CHARS_IN_ARTICLE
-    upper_bound = MAX_NUM_CHARS_IN_ARTICLE
-    df = df[lengths.between(lower_bound, upper_bound)]
-    df = df.reset_index(drop=True)
+    train_df = process(df=train_df)
+    val_df = process(df=val_df)
+    test_df = process(df=test_df)
 
-    # Create validation split
-    val_size = 256
-    val_df = df.sample(n=val_size, random_state=4242)
-    remaining = df.drop(index=val_df.index)
-    val_df = val_df.reset_index(drop=True)
-
-    # Create test split
-    test_size = 2048
-    test_df = remaining.sample(n=test_size, random_state=4242)
-    remaining2 = remaining.drop(index=test_df.index)
-    test_df = test_df.reset_index(drop=True)
-
-    # Create train split
-    train_size = 1024
-    train_df = remaining2.sample(n=train_size, random_state=4242)
-    train_df = train_df.reset_index(drop=True)
+    train_df_final, val_df_final, test_df_final = create_splits(
+        train_df=train_df, val_df=val_df, test_df=test_df
+    )
 
     # Collect datasets in a dataset dictionary
     mini_dataset = DatasetDict(
-        train=Dataset.from_pandas(train_df, split=Split.TRAIN),
-        val=Dataset.from_pandas(val_df, split=Split.VALIDATION),
-        test=Dataset.from_pandas(test_df, split=Split.TEST),
+        train=Dataset.from_pandas(train_df_final, split=Split.TRAIN),
+        val=Dataset.from_pandas(val_df_final, split=Split.VALIDATION),
+        test=Dataset.from_pandas(test_df_final, split=Split.TEST),
     )
 
     # Create dataset ID
@@ -89,6 +110,113 @@ def main() -> None:
 
     # Push the dataset to the Hugging Face Hub
     mini_dataset.push_to_hub(mini_dataset_id, private=True)
+
+
+def process(df: pd.DataFrame) -> pd.DataFrame:
+    """Process the dataframe.
+
+    Args:
+        df: The dataframe to process.
+
+    Returns:
+        The processed dataframe.
+    """
+    # Validate samples using an LLM
+    df["is_valid_summary"] = df.apply(_text_summary_alignment, axis=1)
+    df = df[df["is_valid_summary"]]
+
+    keep_columns = ["text", "target_text"]
+    df = df[keep_columns]
+
+    # Only work with samples where the text is not very large or small
+    lengths = df.text.str.len()
+    lower_bound = MIN_NUM_CHARS_IN_ARTICLE
+    upper_bound = MAX_NUM_CHARS_IN_ARTICLE
+    df = df[lengths.between(lower_bound, upper_bound)]
+    df = df.reset_index(drop=True)
+    return df
+
+
+def _text_summary_alignment(row: pd.Series) -> bool:
+    """Check if the summary aligns with the text using an LLM, with caching.
+
+    Args:
+        row: A row from the dataframe.
+
+    Returns:
+        True if the summary aligns with the text, False otherwise.
+    """
+    text = row["text"]
+    summary = row["target_text"]
+    if summary in summary_cache:
+        return summary_cache[summary]
+
+    messages: list[ChatCompletionUserMessageParam] = list()
+    user_message = ChatCompletionUserMessageParam(
+        role="user",
+        content=(
+            f"Does the summary <summary>{summary}</summary> align with the text "
+            f"<text>{text}</text> and represent a true summary?"
+        ),
+    )
+    messages.append(user_message)
+    completion = client.beta.chat.completions.parse(
+        model="gpt-4o", messages=messages, response_format=SummaryValidation
+    )
+    is_valid_summary = completion.choices[0].message.parsed.is_valid_summary
+
+    # Cache the result
+    summary_cache[summary] = is_valid_summary
+    save_cache(cache=summary_cache)
+
+    return is_valid_summary
+
+
+def create_splits(
+    train_df: pd.DataFrame, val_df: pd.DataFrame, test_df: pd.DataFrame
+) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    """Create splits.
+
+    Args:
+        train_df: The training dataframe.
+        val_df: The validation dataframe.
+        test_df: The test dataframe.
+
+    Returns:
+        The final training, validation, and test dataframes.
+    """
+    # Split sizes
+    train_size = 1024
+    val_size = 256
+    test_size = 2048
+
+    # Create train split
+    train_df_final = train_df.sample(n=train_size, random_state=4242)
+    train_df_remaining = train_df[~train_df.index.isin(train_df_final.index)]
+
+    # Create validation split
+    n_missing_val_samples = val_size - len(val_df)
+    val_df_additional = train_df_remaining.sample(
+        n=n_missing_val_samples, random_state=4242
+    )
+    val_df_final = pd.concat([val_df, val_df_additional], ignore_index=True)
+    train_df_remaining = train_df_remaining[
+        ~train_df_remaining.index.isin(val_df_additional.index)
+    ]
+
+    # Create test split
+    n_missing_test_samples = test_size - len(test_df)
+    test_df_additional = train_df_remaining.sample(
+        n=n_missing_test_samples, random_state=4242
+    )
+    test_df_final = pd.concat([test_df, test_df_additional], ignore_index=True)
+
+    # Reset indices
+    train_df_final = train_df_final.reset_index(drop=True)
+    val_df_final = val_df_final.reset_index(drop=True)
+    test_df_final = test_df_final.reset_index(drop=True)
+
+    return train_df_final, val_df_final, test_df_final
 
 
 if __name__ == "__main__":
