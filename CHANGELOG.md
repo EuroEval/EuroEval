@@ -17,6 +17,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   summarisation dataset HunSum, the knowledge dataset MMLU-hu, and the common-sense
   reasoning dataset Winogrande-hu.
 
+### Fixed
+
+- Fixed sample examples for the Hungarian dataset HuSST. Also, HuSST is binary, which
+  is now correctly reflected in the dataset configuration.
+
 ## [v16.7.1] - 2025-11-18
 
 ### Fixed
