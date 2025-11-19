@@ -754,6 +754,8 @@ class GenerativeModelOutput:
     Attributes:
         sequences:
             The generated sequences.
+        reasoning_traces:
+            The reasoning traces if the model is a reasoning model.
         scores:
             The scores of the sequences. This is an array of shape (batch_size,
             num_tokens, num_logprobs, 2), where the last dimension contains the
@@ -761,7 +763,20 @@ class GenerativeModelOutput:
     """
 
     sequences: c.Sequence[str]
+    _reasoning_traces: c.Sequence[str | None] | None = None
     scores: c.Sequence[c.Sequence[c.Sequence[tuple[str, float]]]] | None = None
+
+    @property
+    def reasoning_traces(self) -> c.Sequence[str | None]:
+        """The reasoning traces of the model.
+
+        Returns:
+            The reasoning trace.
+        """
+        if self._reasoning_traces is None:
+            return [None] * len(self.sequences)
+        else:
+            return self._reasoning_traces
 
 
 @dataclass

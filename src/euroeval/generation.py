@@ -353,6 +353,7 @@ def debug_log(
     for idx in range(len(input_texts)):
         data_to_log: dict[str, t.Any] = {
             "Input": input_texts[idx],
+            "Reasoning": model_output.reasoning_traces[idx],
             "Raw output": model_output.sequences[idx],
             "Prediction": extracted_labels[idx],
         }

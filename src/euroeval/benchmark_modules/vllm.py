@@ -463,7 +463,8 @@ class VLLMModel(HuggingFaceEncoderModel):
                 structured_outputs = StructuredOutputsParams(
                     regex=(
                         r"(.){0,"
-                        + str(REASONING_MAX_TOKENS * 2)
+                        # + str(REASONING_MAX_TOKENS * 2)  # TODO
+                        + str(100)
                         + "}"
                         + rf"{self.eor_token}({choice_labels_pattern})"
                     )
@@ -623,6 +624,9 @@ class VLLMModel(HuggingFaceEncoderModel):
             ],
             skip_special_tokens=False,
         )
+
+        # Separate the reasoning traces from the completions
+        reasoning_traces: list[str | None] = [None] * len(completions)
         if (
             self.eor_token is not None
             and self.generative_type == GenerativeType.REASONING
@@ -633,13 +637,18 @@ class VLLMModel(HuggingFaceEncoderModel):
                     isinstance(self.eor_token, str)
                     and self.eor_token in completions[idx]
                 ):
-                    completions[idx] = completions[idx].split(self.eor_token)[-1]
+                    completion_parts = completions[idx].split(self.eor_token)
+                    reasoning_traces[idx] = completion_parts[0]
+                    completions[idx] = completion_parts[-1]
                 elif isinstance(self.eor_token, re.Pattern) and self.eor_token.search(
                     completions[idx]
                 ):
-                    completions[idx] = self.eor_token.split(completions[idx])[-1]
+                    completion_parts = self.eor_token.split(completions[idx])
+                    reasoning_traces[idx] = completion_parts[-1]
+                    completions[idx] = completion_parts[-1]
                 else:
                     num_samples_without_eor_token += 1
+                    reasoning_traces[idx] = completions[idx]
                     completions[idx] = ""
             if num_samples_without_eor_token > 0:
                 log_once(
@@ -655,6 +664,8 @@ class VLLMModel(HuggingFaceEncoderModel):
                         else logging.DEBUG
                     ),
                 )
+
+        # Remove stop tokens
         stop_token_pattern = re.compile(
             "|".join(re.escape(stop_token) for stop_token in stop_tokens)
         )
@@ -669,7 +680,7 @@ class VLLMModel(HuggingFaceEncoderModel):
             sequences=completion_ids, skip_special_tokens=True
         )
 
-        # Sanity check
+        # Sanity check that the number of completions match the number of prompts
         if len(completions) != len(prompts):
             raise InvalidBenchmark(
                 f"Expected {len(prompts):,} completions, but got {len(completions):,}."
@@ -687,9 +698,13 @@ class VLLMModel(HuggingFaceEncoderModel):
                 ]
                 for raw_output in raw_outputs
             ]
-            output = GenerativeModelOutput(sequences=completions, scores=scores)
+            output = GenerativeModelOutput(
+                sequences=completions, _reasoning_traces=reasoning_traces, scores=scores
+            )
         else:
-            output = GenerativeModelOutput(sequences=completions)
+            output = GenerativeModelOutput(
+                sequences=completions, _reasoning_traces=reasoning_traces
+            )
 
         return output
 
