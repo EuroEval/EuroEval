@@ -26,6 +26,7 @@ from ..languages import (
     NORWEGIAN_NYNORSK,
     POLISH,
     PORTUGUESE,
+    ROMANIAN,
     SERBIAN,
     SLOVAK,
     SLOVENE,
@@ -278,6 +279,20 @@ SENT_TEMPLATES: dict["Language", PromptConfig] = {
         default_prompt_template="Dokument: {text}\nSentiment: {label}",
         default_instruction_prompt="Dokument: {text}\n\nKlassifiser følelsen i "
         "teksten. Svar med {labels_str}, og ikke noe annet.",
+    ),
+    ROMANIAN: PromptConfig(
+        default_prompt_label_mapping=dict(
+            positive="pozitiv", neutral="neutru", negative="negativ"
+        ),
+        default_prompt_prefix=(
+            "Urmează documentele și sentimentul acestora, care poate fi {labels_str}."
+        ),
+        default_prompt_template="Document: {text}\nSentiment: {label}",
+        default_instruction_prompt=(
+            "Document: {text}\n\n"
+            "Clasificați sentimentul documentului. "
+            "Răspundeți cu {labels_str}, și nimic altceva."
+        ),
     ),
     SLOVAK: PromptConfig(
         default_prompt_label_mapping=dict(
