@@ -1079,6 +1079,7 @@ def load_tokeniser(
                 break
             tokeniser = AutoTokenizer.from_pretrained(
                 model_id,
+                revision=revision,
                 use_fast=False if model_config.param == "slow-tokenizer" else True,
                 verbose=False,
                 trust_remote_code=trust_remote_code,

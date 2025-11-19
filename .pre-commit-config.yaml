@@ -10,7 +10,7 @@ repos:
       - id: trailing-whitespace
       - id: debug-statements
 -   repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.14.4
+    rev: v0.14.5
     hooks:
       - id: ruff
         args:
@@ -30,7 +30,7 @@ repos:
           - pyi
           - jupyter
 -   repo: https://github.com/kynan/nbstripout
-    rev: 0.8.1
+    rev: 0.8.2
     hooks:
     -   id: nbstripout
 -   repo: https://github.com/pre-commit/mirrors-mypy
@@ -44,7 +44,7 @@ repos:
           - --show-error-codes
           - --check-untyped-defs
 -   repo: https://github.com/DavidAnson/markdownlint-cli2
-    rev: v0.18.1
+    rev: v0.19.0
     hooks:
     -   id: markdownlint-cli2
         args:
