@@ -33,6 +33,8 @@ class ModelCache:
             The maximum number of tokens to generate for each example.
         progress_bar:
             Whether to show a progress bar when caching model outputs.
+        hash_inputs:
+            Whether to hash the model inputs to use as keys in the cache.
     """
 
     def __init__(
@@ -41,6 +43,7 @@ class ModelCache:
         cache_name: str,
         max_generated_tokens: int,
         progress_bar: bool,
+        hash_inputs: bool,
     ) -> None:
         """Initialise the model output cache.
 
@@ -53,12 +56,15 @@ class ModelCache:
                 The maximum number of tokens to generate for each example.
             progress_bar:
                 Whether to show a progress bar when caching model outputs.
+            hash_inputs:
+                Whether to hash the model inputs to use as keys in the cache.
         """
         self.model_cache_dir = model_cache_dir
         self.model_cache_dir.mkdir(parents=True, exist_ok=True)
         self.cache_path = self.model_cache_dir / cache_name.replace("/", "--")
         self.max_generated_tokens = max_generated_tokens
         self.progress_bar = progress_bar
+        self.hash_inputs = hash_inputs
 
     def load(self) -> None:
         """Load the model output cache."""
@@ -114,7 +120,10 @@ class ModelCache:
         Returns:
             The hashed key.
         """
-        return hashlib.md5(string=str(key).encode()).hexdigest()
+        if self.hash_inputs:
+            return hashlib.md5(string=str(key).encode()).hexdigest()
+        else:
+            return str(key)
 
     def __getitem__(
         self, key: str | c.Sequence[dict[str, str]]
