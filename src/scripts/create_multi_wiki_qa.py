@@ -52,6 +52,7 @@ LANGUAGES = [
     "hr",
     "bs",
     "hu",
+    "ca",
 ]
 
 

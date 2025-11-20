@@ -11,7 +11,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 - Added support for Catalan! This includes the sentiment classification dataset
   GuiaCat, the linguistic acceptability dataset ScaLA-ca, the named entity recognition
-  dataset WikiANN-ca.
+  dataset WikiANN-ca, the reading comprehension dataset MultiWikiQA-ca.
 - Added Lithuanian sentiment classification dataset Atsiliepimai to replace the now unofficial
   Lithuanian Emotions dataset.
 - Added support for Hungarian 🇭🇺! This includes the sentiment classification dataset

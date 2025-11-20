@@ -235,7 +235,7 @@ euroeval --model <model-id> --dataset scala-ca
 
 ## Reading Comprehension
 
-### MultiWikiQA-hr
+### MultiWikiQA-ca
 
 This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2509.04111)
 and contains Wikipedia articles with LLM-generated questions and answers in 300+
@@ -248,33 +248,33 @@ Here are a few examples from the training split:
 
 ```json
 {
-    "context": "Arkadija je pokrajina u središnjem dijelu Peloponeza, Grčka.\n\nOsnovni podaci\nGlavni grad Arkadije je Tripoli; populacija pokrajine je 100 611 (podatci iz 2005.), na 38. mjestu u Grčkoj; Površina joj je 4419 km² što je čini 5. po veličini; Gustoća naseljenosti je 22,8/km²; sastoji se od 4 provincije, 22 općine i 1 županije (okruga); poštanski broj je 22, registracijske pločice s oznakom TP; službena web stranica je www.arcadia.gr.\n\nOpćine\n\nPovijest\n\nGradska naselja u Arkadiji su se razvila razmjerno kasno (Mantineja, Orhomen, Tegeja). Bili su saveznici Sparte do sloma njezine hegemonije (371. pr. Kr.), otada tvore samostalan savez pod vodstvom novoosnovanog polisa Megalopola. Samostalnost saveza dokrajčili su Makedonci. U 3. st. pr. Kr. dio gradova u Arkadiji pristupa Ahajskom, a dio Etolskom savezu. Pod rimskom vlašću od 168. pr. Kr.\n\nSimbolika Arkadije\n\nPrema grčkoj tradiciji Arkadija je postojbina Pana, domovina jednostavnih, priprostih i poštenih ljudi (pastira). Kao simbol nepokvarena i idilična života javlja se tzv. bukolska (pastirska) poezija. Obnovljena u doba renesanse pod utjecajem idiličnog romana "Arkadija" talijanskog pisca J. Sannazzara. \n\nPo Arkadiji je ime dobila i čuvena knjižnica Akademija (Accademia degli Arcadi), osnovana 1690. g. u Rimu, a pod njenim utjecajem osnovana su i mnoga slična društva diljem Italije i hrvatske obale (Zadar, Split, Dubrovnik).\n\nVanjske poveznice\n\nPan-Arkadski Kongres.\nhttp://www.arcadians.gr\nSveučilište u Patrasu, Arkadia-Project.\nArkadija, Grčka.\nNepoznata Arkadija.\nhttp://flyingbrick.freeyellow.com/arcadia.htm \nhttp://www.arcadianet.gr/en/\nhttp://www.tripolis.gr\n\nZemljopis Grčke",
-    "question": "Koji je naziv za pjesništvo pastira koje simbolizira neiskvareni i idiličan život?",
+    "context": "Ca l'Alzamora és un casa d'Anglesola (Urgell) inclosa a l'Inventari del Patrimoni Arquitectònic de Catalunya.\n\nDescripció \nEdifici típicament renaixentista amb una tipologia quadrangular i dividida en tres pisos. Consta d'una planta baixa que es caracteritza per una entrada principal situada al mig i dos més als laterals. La principal té una llinda amb relleu esglaonat i adopta uns volums ondulants combinant-ho amb perfils rectes. Les portes laterals són en forma d'arc rebaixat. Entre la planta baixa i la segona hi ha una cornisa sobresortint que fa de separació entre l'una i l'altra. Aquesta primera planta es caracteritza per la senzillesa de tres obertures rectangulars amb perfils totalment rectes, sense cap mena de decoració aparent. Finalment, la tercera planta o golfes és de gran alçada i feta amb maons, construcció totalment contemporània.\n\nL'interior de l'habitatge conserva quasi intactes l'estructura del Casal del  i XIX en el que cal destacar una interessant balustrada de fusta a l'escala principal.\n\nHistòria \nLa façana tenia segons documents gràfics del 1921, dos porxos, però sembla que en tenia més. Els dos últims foren enderrocats el 1936-1937. La casa fou propietat de la família Alzamora, notaris fins que passà a la dels Mestres Apotecaris d'Anglesola. La primitiva façana tenia un interessant ràfec de diferents esglaons fets amb rajola.\n\nReferències \n\nPatrimoni monumental d'Anglesola\nEdificis d'Anglesola",
+    "question": "Com són les portes dels costats de la planta baixa?",
     "answers": {
-        "answer_start": [1037],
-        "text": ["bukolska"]
+        "answer_start": [470],
+        "text": ["arc rebaixat"]
     }
 }
 ```
 
 ```json
 {
-    "context": "Hans Emil Alexander Gaede (Kolberg, 19. veljače 1852. -  Freiburg im Breisgau, 16. rujna 1916.) je bio njemački general i vojni zapovjednik. Tijekom Prvog svjetskog rata zapovijedao je Armijskim odjelom B na Zapadnom bojištu.\n\nVojna karijera\nHans Gaede rođen je 19. veljače 1852. u Kolbergu (danas Kolobrzeg u Poljskoj). Sin je Alexandera Gaede i Emilie Franke. Gaede je u prusku vojsku stupio 1870. godine, te je sudjelovao u Prusko-francuskom ratu u kojem je i ranjen. Nakon rata pohađa Prusku vojnu akademiju, te nakon završetka iste služi u raznim vojnim jedinicama kao u i pruskom ministarstvu rata. Čin pukovnika dostigao 1897. godine kada postaje zapovjednikom i tvrđave Thorn. General bojnikom je postao 1900. godine, dok je 1904. godine promaknut u čin general poručnika kada dobiva zapovjedništvo nad 33. pješačkom divizijom smještenom u Metzu koji se tada nalazio u okviru Njemačkog Carstva. Godine 1907. Gaede je stavljen na raspolaganje.\n\nPrvi svjetski rat\nNa početku Prvog svjetskog rata Gaede je reaktiviran, te postaje zamjenikom zapovjednika XIV. korpusa koji je bio u sastavu 7. armije koja se nalazila pod zapovjedništvom Josiasa von Heeringena. U rujnu 1914. postaje zapovjednikom Armijskog odjela Gaede koji je kasnije preimenovan u Armijski odjel B koji je držao front u Gornjem Alzasu. Za zapovijedanje u borbama u Alzasu Gaede je 25. rujna 1915. godine odlikovan ordenom Pour le Mérite. U prosincu 1915. Gaedeu je na Sveučilištu u Freiburgu dodijeljen počasni doktorat.\n\nSmrt\nU rujnu 1916. godine Gaede se teško razbolio zbog čega je 3. rujna 1916. morao napustiti zapovjedništvo armijskog odjela. Umro je 16. rujna 1916. godine u 64. godini života u bolnici Freiburgu im Breisgau od posljedica operacije.\n\nVanjske poveznice\n     Hans Gaede na stranici Prussianmachine.com\n     Hans Gaede na stranici Deutschland14-18.de\n\nNjemački vojni zapovjednici u Prvom svjetskom ratu",
-    "question": "Koju nagradu je Gaede primio 25. rujna 1915.?",
+    "context": "The Circus (El circ) és una pel·lícula muda de 1928 dirigida per Charles Chaplin.\n\nArgument \nCharlot es troba vagant en una fira, on és confós per un lladre i és perseguit per la policia. Fugint de l'oficial entra en un circ i sense adonar-se'n es converteix en l'estrella de la funció. Aconsegueix escapar. El propietari del circ, veient que es troba a la ruïna i que Charlot feia riure, el crida i li fa una prova que esdevé un fracàs. Després, uns treballadors del circ, que no havien cobrat la seva paga, se'n van enmig de la funció, per la qual cosa el director demana a l'encarregat que contracti el primer home que vegi, que resulta ser Charlot, que des d'un forat de la carpa observa la filla de l'amo. Charlot comença a treballar portant el material d'un mag a l'escenari i acaba per arruïnar-ho tot. Però a la gent li fa gràcia i el propietari del circ s'adona que és una estrella. Charlot no ho sap, i és contractat i explotat com un simple treballador. La filla de l'amo diu a Charlot que ell és l'estrella del circ i tot i així li donen un tracte miserable. El propietari vol colpejar la seva filla, però Charlot l'amenaça dient que si la segueix tractant igual i no li paga més se n'anirà. L'amo accepta les condicions i segueixen treballant fins que un dia una vident llegeix el futur a la noia i li diu que el seu gran amor es troba a prop. Charlot, creient que és ell, es disposa a proposar-li el matrimoni, però s'adona que és un altre: l'equilibrista. En una de les funcions l'equilibrista no compareix, i Charlot el substitueix. La seva actuació és pèssima: va a parar en una fruiteria. Ràpidament torna a entrar al circ justament quan l'amo pega la seva filla. Charlot dona un cop de puny a l'amo i automàticament és acomiadat. La noia li demana que se l'emporti amb ell. Charlot li diu que amb ell no tindrà futur, però que té una solució. Torna al circ, crida l'equilibrista i li diu que ha de proposar el matrimoni a la filla de l'amo, cosa que fa de seguida. Ja casats, el propietari del circ intenta tornar a tractar malament la seva filla, i l'equilibrista li para els peus. L'amo els pregunta si volen conservar la seva feina. Ells diuen que sí, però amb la condició que també contracti Charlot. Així ho fa. El circ marxa, però Charlot decideix no anar-se'n amb ells.\n\nRepartiment \n Charlie Chaplin: un vagabund\n A l'Ernest Garcia: propietari del circ\n Merna Kennedy: fillastra del propietari del circ\n Harry Crocker: Rex\n George Davis: mag\n Henry Bergman: pallasso\n Steve Murphy: lladre\n Tiny Sandford\n John Rand\n\nAl voltant de la pel·lícula \nThe Circus es va convertir en la setena pel·lícula més taquillera de la història del cinema mut: va recaptar quasi quatre milions de dòlars.\n\nLa producció de la pel·lícula va ser l'experiència més difícil en la carrera de Chaplin. Va tenir nombrosos problemes, incloent-hi un incendi en l'estudi de foc, i la filmació va ser interrompuda durant gairebé un any per l'amarg divorci de Chaplin, de la seva segona dona, Lita Grey, i les reclamacions d'impostos per part de l'Internal Revenue Service.\n\nVa ser nominat com a l'Oscar al millor actor i al millor director d'una comèdia. Chaplin va ser guardonat amb un Oscar honorífic per la versatilitat i el talent per a actuar, escriure, dirigir i produir la pel·lícula.\n\nEl 1970, Chaplin va tornar a editar la pel·lícula acompanyada de música.\n\nEnllaços externs \n \n\nPel·lícules mudes dirigides per Charles Chaplin\nPel·lícules dels Estats Units del 1928\nCirc\nPel·lícules dels Estats Units en blanc i negre",
+    "question": "En quin any va Chaplin reeditar el film amb una banda sonora?",
     "answers": {
-        "answer_start": [1395],
-        "text": ["Pour le Mérite"]
+        "answer_start": [3292],
+        "text": ["1970"]
     }
 }
 ```
 
 ```json
 {
-    "context": "Žiroglavci (Enteropneusta) su u klasičnoj sistematici životinjski razred s manje od 100 poznatih vrsta. Ubraja ih se u kojeno polusvitkovce (Hemichordata) i preko njih u drugousti (Deuterostomia), jer im se tijekom embrionalnog razvoja usta razvijaju a ne proizlaze iz "prausta", prvog otvora ranog embrionalnog životnog stadija, gastrule. Njihovo znanstveno ime znači, što izražava i tradicionalno mišljenje da su oni praoblik svitkovaca, u koje spadaju i kralježnjaci.\n\nNo, mjesto žiroglavaca u sistematici je danas sporno. Tako se razmatra moguća srodnost žiroglavaca ne samo sa svitkovcima, nego i s bodljikašima (Echinodermata) u koje spadaju na primjer zvjezdače (Asteroidea) i ježinci (Echinoidea). Čak se sve više smatra vjerojatnijim da žiroglavci ne čine monofiletsku skupinu, što znači da oni nisu svi potomci istih zajedničkih predaka.\n\nGrađa i izgled\nTijelo žiroglavaca je meko, crvoliko, i osim grube podjele na tri dijela, nesegmentirano. Veličinom su vrlo različiti, neke vrste su duge samo nekoliko milimetara, dok druge mogu biti duge i 2,5 metra. Boja im je različita, od bijele do tamno ljubičaste.\n  \nMeđu beskralješnjacima, žiroglavci su neobični jer imaju neke osobine koje su tipične za kralježnjake: \n Njihov živčani sustav satoji se od živčanih vrpci koje se protežu leđnom i trbušnom stranom životinje. U predjelu "glave" i oko crijeva ove dvije živčane vrpce kružno su međusobno povezane a od njih se odvajaju živčane niti koje završavaju u vanjskoj koži. Leđna živčana vrpca smještena je u posebnom naboru. Zbog njegovog nastanka u embrionalnom razvoju ponekad ga se smatra homolognim leđnoj moždini svitkovaca.\n Žiroglavci imaju i do 100 ždrijelnih pukotina koje imaju isto anatomsko porijeklo kao i škrge kod riba. Voda koja im uđe na usni otvor nakon zadržavanja djelića hrane, izlazi iz tijela kroz te pukotine.\n\nHrana, životni prostor i rasprostranjenost\nŽiroglavci se hrane na dva različita načina: ili kopaju kroz sediment morskog dna, što znači da uzimaju mulj dna i probavljaju u njemu sadržan organski sadržaj (kao kišne gliste), ili filtriraju iz vode sadržane djeliće organske materijekao na primjer alge. Zbog toga žive uglavnom u ili neposredno ispod dijela izloženog plimi i oseci, na ili u morskom dnu (bentos) dijelom i do dubine od 5.000 metara, i tamo često žive u kanalićima u obliku slova U. Samo rijetke vrste žive u otvorenom moru (pelagijal). Žiroglavci žive u svim morskim područjima, od tropa pa sve do u polarna područja.\n\nRazmnožavanje\nŽiroglavci su odvojenih spolova, no izgledom se gotovo ne razlikuju. Iz oplođenog jajašca najčešće se prvo razvijaju trepetljive larve vrlo slične larvama bodljikaša. Dio životnog ciklusa prije metamorfoze provodi kao plankton hraneći se djelićima hrane koji se zadrže na trepetljikama larve i od tamo se prenose do ustiju. Kod nekih vrsta razvoj se odvija direktno, bez larvenog stadija.\n\nDrugi projekti i vanjske poveznice\nTaksonomija žiroglavaca  (engleski)\nFilogeneza žiroglavaca (engleski)\n\nPolusvitkovci",
-    "question": "Koliki je broj poznatih vrsta žiroglavaca?",
+    "context": "La paràbola de la figuera estèril és una narració de Jesús que recull l'evangeli segons Lluc (Lc 13, 1).\n\nArgument \nUn home tenia una figuera que feia tres anys que no donava fruit. Va plantejar-se de tallar-la, ja que els treballs que li suposava tenir-ne cura no compensaven si era un arbre estèril. L'amo dels terrenys el va instar a conservar-la un any més, posant-hi adob i especial esforç abans de tallar-la.\n\nAnàlisi \nDéu és el propietari que espera amb paciència que l'arbre (el creient) doni fruit (es converteixi o es comporti segons els preceptes de la fe). Envia els mitjans perquè això passi però adverteix que si continua sent un arbre estèril, es tallarà, és a dir, es condemnarà l'ànima d'aquella persona. La paràbola pertany al grup de narracions sobre la necessitat de seguir Jesús si es vol gaudir del cel, en una línia similar al que es relata a la paràbola de les verges nècies i prudents. La figuera ha gaudit de tres anys, per això ara té un ultimàtum. Aquests tres anys són paral·lels al que dura el Ministeri de Jesús.\n\nTal com passa a la paràbola del gra de mostassa, Jesús usa un símil vegetal parlant de germinació per fer referència al creixement espiritual. L'elecció de la figuera no és casual, era un conreu freqüent a la zona de l'audiència dels evangelis i sovint s'ha identificat amb Israel.\n\nReferències \n\nFiguera Esteril",
+    "question": "A què fa referència el fruit en aquesta paràbola?",
     "answers": {
-        "answer_start": [75],
-        "text": ["manje od 100"]
+        "answer_start": [508],
+        "text": ["es converteixi o es comporti segons els preceptes de la fe"]
     }
 }
 ```
@@ -286,31 +286,31 @@ When evaluating generative models, we use the following setup (see the
 - Prefix prompt:
 
 ```text
-Sljedeći tekstovi sadrže pitanja i odgovore.
+Els textos següents contenen preguntes i respostes.
 ```
 
 - Base prompt template:
 
 ```text
-Tekst: {text}
-Pitanje: {question}
-Odgovor s najviše 3 riječi:
+Text: {text}
+Pregunta: {question}
+Resposta amb un màxim de 3 paraules:
 ```
 
 - Instruction-tuned prompt template:
 
 ```text
-Tekst: {text}
+Text: {text}
 
-Odgovorite na sljedeće pitanje o gornjem tekstu s najviše 3 riječi.
+Respon a la següent pregunta sobre el text anterior amb un màxim de 3 paraules.
 
-Pitanje: {question}
+Pregunta: {question}
 ```
 
 You can evaluate this dataset directly as follows:
 
 ```bash
-euroeval --model <model-id> --dataset multi-wiki-qa-hr
+euroeval --model <model-id> --dataset multi-wiki-qa-ca
 ```
 
 ## Knowledge

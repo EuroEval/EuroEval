@@ -6,6 +6,7 @@ from ..data_models import PromptConfig
 from ..languages import (
     BOSNIAN,
     BULGARIAN,
+    CATALAN,
     CROATIAN,
     CZECH,
     DANISH,
@@ -57,6 +58,20 @@ RC_TEMPLATES: dict["Language", PromptConfig] = {
         "3 думи: {label}",
         default_instruction_prompt="Текст: {text}\n\nОтговорете на следния въпрос "
         "относно текста по-горе с максимум 3 думи.\n\nВъпрос: {question}",
+        default_prompt_label_mapping=dict(),
+    ),
+    CATALAN: PromptConfig(
+        default_prompt_prefix=("Els textos següents contenen preguntes i respostes."),
+        default_prompt_template=(
+            "Text: {text}\nPregunta: {question}\n"
+            "Resposta amb un màxim de 3 paraules: {label}"
+        ),
+        default_instruction_prompt=(
+            "Text: {text}\n\n"
+            "Respon a la següent pregunta sobre el text anterior amb un màxim "
+            "de 3 paraules.\n\n"
+            "Pregunta: {question}"
+        ),
         default_prompt_label_mapping=dict(),
     ),
     CROATIAN: PromptConfig(
