@@ -460,3 +460,75 @@ You can evaluate this dataset directly as follows:
 ```bash
 euroeval --model <model-id> --dataset winogrande-hr
 ```
+
+## Summarisation
+
+### DACSA-ca
+
+This dataset was published in [this paper](https://aclanthology.org/2022.naacl-main.434/)
+and consists of Catalan and Spanish news articles.
+
+The original full dataset consists of 636,596 / 35,376 samples for the training and
+validation splits, respectively. The dataset has two test splits with 35,376 and
+17,836 samples. The first test split contains samples present in the train and
+validation splits, while the second split only has samples that are not present in
+the training and validation splits.
+
+We use a 1,024 / 256 / 2,048 split for training, validation, and testing, respectively
+(totaling 3,328 samples). All new splits are subsets of the original splits.
+Importantly, our new test split is exclusively derived from the original test split
+that does not overlap with the training and validation splits.
+
+Here are a few examples from the training split:
+
+```json
+{
+    "text": "Entre 0,50 i 2,50 euros per persona en funció de la ciutat i l'allotjament. Això és el que paguen els turistes a Catalunya per pernoctar al país des que el 2012 es va aprovar la taxa turística. Els diners recaptats, que no han deixat d’augmentar en paral·lel a l’increment dels turistes, s’utilitzen precisament per promocionar aquesta activitat, que és el compromís que es va assolir en el moment en què es va aprovar. ¿Té sentit que segueixi sent així? Segons qui contesti la pregunta. De fet, la taxa turística genera adhesions, crítiques i peticions de canvi a parts iguals. Ciutats com Barcelona i Tarragona, per exemple, demanen incrementar el retorn als municipis, mentre que a la Costa Brava els empresaris del sector continuen oposant-se a cobrar-la, i a la Costa Daurada, en general, es mostren satisfets. En qualsevol cas, el Parlament ja va deixar clar fa més d’un any amb els vots de CiU i ERC que la capital catalana no havia de rebre un tracte singular sobre aquesta taxa, que recapta i gestiona la Generalitat. 540x30. Marques turístique Marques turístique. De mica en mica, la taxa s’ha convertit en una important font de finançament. El 2015 l’impost sobre estades en establiments turístics va recaptar 43,5 milions d’euros a Catalunya -el màxim registrat fins llavors-, d’entre els quals 22,2 els va aportar directament la ciutat de Barcelona, que, tot i que inicialment havia de recuperar-ne el 34% (uns 7,5 milions d’euros), després d’un conveni segellat al desembre amb el Govern va rebre dos milions d’euros addicionals. L’Ajuntament s’ha fixat l’objectiu a curt termini de consolidar aquest retorn extra i, a llarg termini, assolir el 100% de la taxa. També vol acabar amb la imposició que els diners es destinin només a promoció turística. Malestar a la Costa Brav. L’equip de Colau vol poder compensar, per mitjà d’aquesta taxa, les zones que, com Ciutat Vella i la Sagrada Família, suporten més els problemes derivats de la pressió turística. Turisme de Barcelona, que rep la meitat del que torna a la ciutat -l’altra meitat va a parar a mans de l’Ajuntament-, diu que veu amb bons ulls la batalla del consistori. Però això no és el que diuen les comarques gironines, que després de les de Barcelona són les que reben més diners de la taxa: 7,64 milions d’euros l’any passat, dels quals veuran com en tornen 2,26 a través de la partida que la Generalitat destina als ens locals. A les comarques gironines els ingressos també han crescut any rere any, però el sector no està satisfet amb l’aplicació de la taxa. “Ens agradaria rebre’n una petita part. Que un 2% o un 3% es destinés a l’empresariat”, diu Martí Sabrià, gerent de l’associació Grup Costa Brava Centre Hotels. Antoni Escudero, president de la Federació d’Hostaleria de les Comarques de Girona, es mostra encara més contundent: “Mai no hem estat d’acord amb la taxa turística. L’experiència no és gens bona i la majoria dels empresaris turístics voldrien que s’anul·lés”, assegura. Promoció del sol i platj. El sector turístic de la Costa Daurada, per la seva banda, creu que en els dos últims anys ha millorat el tracte que rep la seva oferta de sol i platja en les campanyes de promoció turística del país. Diverses veus de l’empresariat havien criticat en el passat l’escassa presència del sol i platja en general i de la Costa Daurada en particular en l’estratègia de promoció de la Generalitat, en benefici del turisme rural o el cultural. L’argument era que el sol i platja era, darrere de Barcelona, la tipologia de turisme que més diners recaptava, però que, en canvi, aquests recursos no es retornaven en forma de promoció. Ara, però, els empresaris tarragonins accepten que la situació ha millorat. “Hi ha més sensibilitat”, diu Berta Cabré, presidenta de l’Associació de Càmpings de Tarragona, que no qüestiona que es promocioni el turisme d’interior encara que porti menys turistes, sinó “el pes” que té cada modalitat en la promoció. “Cada vegada se’ns té més en compte, i això és fruit d’haver defensat els nostres interessos”, exposa Joan Antón, gerent de la Federació de Turisme de Tarragona. Marta Farrero, directora tècnica del Patronat de Turisme de la Costa Daurada, creu que “s’ha fet un pas endavant en el reconeixement del sol i platja”. En la mateixa línia està el president de l’Associació Hotelera Salou - Cambrils - La Pineda, Xavier Roig, que, tot i això, alerta contra la proposta d’utilitzar els fons recaptats per reduir els impactes del turisme en lloc de fer que serveixin per promocionar-lo. Si això es consumés, avisa: “Seria legítim que els hotelers deixéssim de recaptar la taxa, perquè no s’estaria complint la normativa”. Per tot això, només hi ha unanimitat en una qüestió relacionada amb aquest impost: que aquest 2016 es tornarà a batre el rècord de recaptació. Una bona notícia, com a mínim, per als comptes del Govern.",
+    "target_text": "Barcelona vol el 100% del que recapta i localitats com Tarragona també demanen un retorn més elevat."
+}
+```
+
+```json
+{
+    "text": "Una dona de 35 anys va morir aquest dimecres al barri de Los Gladiolos de Santa Cruz de Tenerife en un presumpte cas de violència de gènere. L'agressor, de 42 anys, havia estat la seva parella i pare dels seus fills, segons han informat fonts de la Policia Nacional.\xa0Després de 20 anys de relació, estaven separats des d'en feia dos. L'home va abordar\xa0la dona al\xa0replà de l'escala de l'edifici on vivia\xa0ella amb els nens. Van discutir i\xa0ell\xa0la va apunyalar amb un ganivet de caça en presència dels seus dos fills menors d'edat, han assegurat fonts de la investigació. La parella feia tres anys que estava\xa0separada, encara que ell vivia en un bloc pròxim al de la seva exparella al barri de Los Gladiolos a Santa Cruz de Tenerife. Després de cometre presumptament els fets, el detingut es va presentar a la comissaria del districte nord, va confessar els fets i va ser detingut. La\xa0dona va rebre almenys cinc punyalades a l'esquena, una al pit i una altra a l'abdomen. És la primera víctima de l'any per violència de gènere a les Canàries. Tant la víctima com la seva exparella, de 42 anys, són naturals de Tenerife i, segons ha informat la Delegació del Govern a les Canàries, no hi havia denúncies\xa0prèvies per maltractaments en la parella. Més informació de Societat.",
+    "target_text": "L'agressor la va abordar davant l'ascensor quan portava els nens a l'escola."
+}
+```
+
+```json
+{
+    "text": "Aquesta informació es va publicar originalment el 12 de març de 2016 i, per tant, la informació que hi apareix fa referència a la data especificada. Puig Antich continua sent incòmode. Fins i tot quan se li ha dedicat un monument recordatori, sembla que s’hagi fet amb recança. L’homenatge a l’últim català executat per Franco s’ha traslladat a la part més alta de Nou Barris, una plaça de poc pas i que costa de trobar si no ets del barri. Una plaça presidida per un pàrquing, al damunt del qual hi ha un mirador on s’ha instal·lat el monument al jove anarquista... De fet, Puig Antich i el seu barri pòstum, Roquetes –ell no n’era, d’allà-, comparteixen aquesta incomoditat; tots dos se surten del discurs oficial. L’un era un activista que preconitzava l’acció directa i que defensava una ideologia que se sortia dels canals coneguts de navegació, també de la navegació de l’oposició clandestina al franquisme. I Roquetes és una zona que no ha comptat mai gaire per a la Barcelona benpensant. Li va esquitxar poc l’onada olímpica. El que ha aconseguit Roquetes s’ho han hagut de guanyar els veïns, els darrers dels darrers de la immigració del segle passat; encara ara podem detectar en els seus carrers els edificis d’autoconstrucció dignificats, resseguint carrers on fins i tot un cotxe en primera té problemes per pujar. Fins al 2001 no hi va haver un ascensor per salvar els desnivells més importants.. Esperem que ara, quan el monument ja és a lloc, Puig Antich i Roquetes puguin beneficiar-se mútuament. El diumenge posterior a la inauguració d’Ada Colau, el carrer de la Cantera era un seguit de persones pujant a veure l’obra. Un seguit discret, però continuat. Molts d’ells visitaven Roquetes per primer cop, i anaven preguntant a l’un i l’altre la direcció: no hi ha gaire cartells indicatius. Esperem que això també canviï.",
+    "target_text": "«L’homenatge a l'últim català executat per Franco s'ha traslladat a la part més alta de Nou Barris, una plaça de poc pas i que costa de trobar si no ets del barri»."
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 1
+- Prefix prompt:
+
+  ```text
+  A continuació es mostren els documents amb els resums adjunts.
+  ```
+
+- Base prompt template:
+
+  ```text
+  Document: {text}
+  Resum: {target_text}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Document: {text}
+
+  Escriu un resum del document anterior.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset dacsa-ca
+```

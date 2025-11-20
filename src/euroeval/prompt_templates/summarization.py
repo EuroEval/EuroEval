@@ -5,6 +5,7 @@ import typing as t
 from ..data_models import PromptConfig
 from ..languages import (
     BOSNIAN,
+    CATALAN,
     CZECH,
     DANISH,
     DUTCH,
@@ -40,6 +41,16 @@ SUMM_TEMPLATES: dict["Language", PromptConfig] = {
         default_prompt_template=("Dokument: {text}\nSažetak: {target_text}"),
         default_instruction_prompt=(
             "Dokument: {text}\n\nNapišite sažetak gornjeg dokumenta."
+        ),
+        default_prompt_label_mapping=dict(),
+    ),
+    CATALAN: PromptConfig(
+        default_prompt_prefix=(
+            "A continuació es mostren els documents amb els resums adjunts."
+        ),
+        default_prompt_template=("Document: {text}\nResum: {target_text}"),
+        default_instruction_prompt=(
+            "Document: {text}\n\nEscriu un resum del document anterior."
         ),
         default_prompt_label_mapping=dict(),
     ),

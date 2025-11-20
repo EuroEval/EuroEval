@@ -2,7 +2,7 @@
 
 from ..data_models import DatasetConfig
 from ..languages import CATALAN
-from ..tasks import COMMON_SENSE, KNOW, LA, NER, RC, SENT
+from ..tasks import COMMON_SENSE, KNOW, LA, NER, RC, SENT, SUMM
 
 ### Official datasets ###
 
@@ -35,6 +35,14 @@ MULTI_WIKI_QA_CA_CONFIG = DatasetConfig(
     pretty_name="MultiWikiQA-ca",
     source="EuroEval/multi-wiki-qa-ca-mini",
     task=RC,
+    languages=[CATALAN],
+)
+
+DACSA_CA_CONFIG = DatasetConfig(
+    name="dacsa-ca",
+    pretty_name="DACSA-ca",
+    source="EuroEval/dacsa-ca-mini",
+    task=SUMM,
     languages=[CATALAN],
 )
 
