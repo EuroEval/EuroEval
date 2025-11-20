@@ -1,6 +1,6 @@
 # Catalan
 
-This is an overview of all the datasets used in the Croatian part of EuroEval. The
+This is an overview of all the datasets used in the Catalan part of EuroEval. The
 datasets are grouped by their task - see the [task overview](/tasks) for more
 information about what these constitute.
 
