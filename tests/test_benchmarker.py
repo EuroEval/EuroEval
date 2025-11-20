@@ -454,10 +454,27 @@ class TestClearCacheFn:
     argnames=["dataset_names", "dataset_configs"],
     argvalues=[
         ([], []),
-        (["angry-tweets"], [get_dataset_config("angry-tweets")]),
+        (
+            ["angry-tweets"],
+            [
+                get_dataset_config(
+                    dataset_name="angry-tweets",
+                    custom_datasets_file=Path("custom_datasets.py"),
+                )
+            ],
+        ),
         (
             ["angry-tweets", "dansk"],
-            [get_dataset_config("angry-tweets"), get_dataset_config("dansk")],
+            [
+                get_dataset_config(
+                    dataset_name="angry-tweets",
+                    custom_datasets_file=Path("custom_datasets.py"),
+                ),
+                get_dataset_config(
+                    dataset_name="dansk",
+                    custom_datasets_file=Path("custom_datasets.py"),
+                ),
+            ],
         ),
     ],
 )
