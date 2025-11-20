@@ -6,6 +6,7 @@ from ..data_models import PromptConfig
 from ..languages import (
     BOSNIAN,
     BULGARIAN,
+    CATALAN,
     CROATIAN,
     CZECH,
     DANISH,
@@ -61,6 +62,19 @@ SENT_TEMPLATES: dict["Language", PromptConfig] = {
         default_prompt_template="Документ: {text}\nСентимент: {label}",
         default_instruction_prompt="Документ: {text}\n\nКласифицирайте сентимента в "
         "документа. Отговорете с {labels_str}, и нищо друго.",
+    ),
+    CATALAN: PromptConfig(
+        default_prompt_label_mapping=dict(
+            positive="positiu", neutral="neutral", negative="negatiu"
+        ),
+        default_prompt_prefix=(
+            "Els documents següents i el seu sentiment, que pot ser {labels_str}."
+        ),
+        default_prompt_template=("Document: {text}\nSentiment: {label}"),
+        default_instruction_prompt=(
+            "Document: {text}\n\nClassifiqueu el sentiment en el document. "
+            "Contesteu només amb {labels_str}, i res més."
+        ),
     ),
     DANISH: PromptConfig(
         default_prompt_label_mapping=dict(

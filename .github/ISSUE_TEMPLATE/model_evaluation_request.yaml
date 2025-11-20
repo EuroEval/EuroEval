@@ -21,7 +21,7 @@ body:
       - label: Baltic languages (Latvian, Lithuanian)
       - label: Finnic languages (Estonian, Finnish)
       - label: Greek
-      - label: Romance languages (French, Italian, Portuguese, Spanish)
+      - label: Romance languages (Catalan, French, Italian, Portuguese, Spanish)
       - label: Scandinavian languages (Danish, Faroese, Icelandic, Norwegian, Swedish)
       - label: Slavic languages (Bulgarian, Bosnian, Croatian, Czech, Hungarian, Polish, Serbian, Slovak, Slovenian, Ukrainian)
       - label: West Germanic languages (Dutch, English, German)
