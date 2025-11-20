@@ -333,21 +333,21 @@ Here are a few examples from the training split:
 
 ```json
 {
-    "text": "Quin és el valor de y en l'equació y/4 = 8?\nOpciones:\na. 2\nb. 4\nc. 12\nd. 32",
+    "text": "Quin és el valor de y en l'equació y/4 = 8?\nOpcions:\na. 2\nb. 4\nc. 12\nd. 32",
     "label": "d",
 }
 ```
 
 ```json
 {
-    "text": "Mill afirma que una de les objeccions més fortes al utilitarisme es basa en la idea de:\nOpciones:\na. deure.\nb. justícia.\nc. virtut.\nd. supererogació.",
+    "text": "Mill afirma que una de les objeccions més fortes al utilitarisme es basa en la idea de:\nOpcions:\na. deure.\nb. justícia.\nc. virtut.\nd. supererogació.",
     "label": "b",
 }
 ```
 
 ```json
 {
-    "text": "Tots els següents són exemples de condicions motivadores secundàries MENYS\nOpciones:\na. oci\nb. sexe\nc. aprovació\nd. amistat",
+    "text": "Tots els següents són exemples de condicions motivadores secundàries MENYS\nOpcions:\na. oci\nb. sexe\nc. aprovació\nd. amistat",
     "label": "b",
 }
 ```
@@ -406,21 +406,21 @@ Here are a few examples from the training split:
 
 ```json
 {
-    "text": "No podia controlar la humitat com controlava la pluja, perquè el _ entrava per tot arreu. A què es refereix el guió _?\nOpciones:\na. humitat\nb. pluja",
+    "text": "No podia controlar la humitat com controlava la pluja, perquè el _ entrava per tot arreu. A què es refereix el guió _?\nOpcions:\na. humitat\nb. pluja",
     "label": "a"
 }
 ```
 
 ```json
 {
-    "text": "La Jessica pensava que \"Sandstorm\" era la millor cançó mai escrita, però la Patricia la odiava. _ va comprar una entrada per al concert de jazz. A què es refereix el guió _?\nOpciones:\na. Jessica\nb. Patricia",
+    "text": "La Jessica pensava que \"Sandstorm\" era la millor cançó mai escrita, però la Patricia la odiava. _ va comprar una entrada per al concert de jazz. A què es refereix el guió _?\nOpcions:\na. Jessica\nb. Patricia",
     "label": "b"
 }
 ```
 
 ```json
 {
-    "text": "El termòstat mostrava que feia vint graus menys a la planta baixa que a la planta superior, així que Byron es va quedar a la _ perquè tenia fred. A què es refereix el guió _?\nOpciones:\na. planta baixa\nb. planta superior",
+    "text": "El termòstat mostrava que feia vint graus menys a la planta baixa que a la planta superior, així que Byron es va quedar a la _ perquè tenia fred. A què es refereix el guió _?\nOpcions:\na. planta baixa\nb. planta superior",
     "label": "b"
 }
 ```
