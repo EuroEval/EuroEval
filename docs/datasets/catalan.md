@@ -315,39 +315,40 @@ euroeval --model <model-id> --dataset multi-wiki-qa-ca
 
 ## Knowledge
 
-### MMLU-hr
+### MMLU-ca
 
-This dataset was published in
-[this paper](https://doi.org/10.48550/arXiv.2410.08928) and is a machine
-translated version of the English [MMLU dataset](https://openreview.net/forum?id=d7KBjmI3GmQ).
-It features questions within 57 different topics, such as elementary mathematics, US
-history, and law. DeepL was used to translate the dataset to Croatian.
+This dataset is a machine translated version of the English [MMLU
+dataset](https://openreview.net/forum?id=d7KBjmI3GmQ) and features questions within 57
+different topics, such as elementary mathematics, US history and law. The translation to
+Catalan was done by the University of Oregon as part of [this
+paper](https://aclanthology.org/2023.emnlp-demo.28/), using GPT-3.5-turbo.
 
-The original full dataset consists of 254 / 12,338 samples for
-validation and testing. These splits were merged, duplicates removed, and
-new splits were created with 1,024 / 256 / 2048 samples for training, validation, and
-testing, respectively.
+The original full dataset consists of 269 / 1,410 / 13,200 samples for training,
+validation and testing, respectively. We use a 1,024 / 256 / 2,048 split for training,
+validation and testing, respectively (so 3,328 samples used in total). These splits are
+new and there can thus be some overlap between the original validation and test sets and
+our validation and test sets.
 
 Here are a few examples from the training split:
 
 ```json
 {
-    "text": "Kako se odvija lateralna komunikacija u organizaciji?\nIzbori:\na. Informacije se prenose prema gore.\nb. Informacije se prenose prema dolje.\nc. Informacije su dvosmjerni proces.\nd. Informacije se prenose između različitih odjela i funkcija.",
-    "label": "d"
+    "text": "Quin és el valor de y en l'equació y/4 = 8?\nOpciones:\na. 2\nb. 4\nc. 12\nd. 32",
+    "label": "d",
 }
 ```
 
 ```json
 {
-    "text": "Kako astronomi misle da Jupiter generira svoju unutarnju toplinu?\nIzbori:\na. kroz egzotermne kemijske reakcije koje pretvaraju kemijsku potencijalnu energiju u toplinsku energiju\nb. nuklearna fuzija\nc. kontrakcijom koja mijenja gravitacijsku potencijalnu energiju u toplinsku energiju\nd. unutarnje trenje zbog njegove brze rotacije i diferencijalne rotacije",
-    "label": "c"
+    "text": "Mill afirma que una de les objeccions més fortes al utilitarisme es basa en la idea de:\nOpciones:\na. deure.\nb. justícia.\nc. virtut.\nd. supererogació.",
+    "label": "b",
 }
 ```
 
 ```json
 {
-    "text": "Ako se parabola $y_1 = x^2 + 2x + 7$ i pravac $y_2 = 6x + b$ sijeku u samo jednoj točki, koja je vrijednost $b$?\nIzbori:\na. 7\nb. 3\nc. 12\nd. 4",
-    "label": "b"
+    "text": "Tots els següents són exemples de condicions motivadores secundàries MENYS\nOpciones:\na. oci\nb. sexe\nc. aprovació\nd. amistat",
+    "label": "b",
 }
 ```
 
@@ -358,33 +359,33 @@ When evaluating generative models, we use the following setup (see the
 - Prefix prompt:
 
   ```text
-  Sljedeća su pitanja s višestrukim izborom (s odgovorima).
+  Les següents són preguntes de selecció múltiple (amb respostes).
   ```
 
 - Base prompt template:
 
   ```text
-  Pitanje: {text}
-  Izbori:
-  a. {option_a}
-  b. {option_b}
-  c. {option_c}
-  d. {option_d}
-  Odgovor: {label}
+  Pregunta: {text}
+  Resposta: {label}
   ```
 
 - Instruction-tuned prompt template:
 
   ```text
-  Pitanje: {text}
+  Pregunta: {text}
+  Opcions de resposta:
+  a. {option_a}
+  b. {option_b}
+  c. {option_c}
+  d. {option_d}
 
-  Odgovorite na gornje pitanje koristeći 'a', 'b', 'c' ili 'd', i ništa drugo.
+  Respon a la pregunta anterior utilitzant només 'a', 'b', 'c' o 'd', i res més.
   ```
 
 You can evaluate this dataset directly as follows:
 
 ```bash
-euroeval --model <model-id> --dataset mmlu-hr
+euroeval --model <model-id> --dataset mmlu-ca
 ```
 
 ## Common-sense Reasoning

@@ -46,10 +46,10 @@ DACSA_CA_CONFIG = DatasetConfig(
     languages=[CATALAN],
 )
 
-MMLU_HR_CONFIG = DatasetConfig(
-    name="mmlu-hr",
-    pretty_name="MMLU-hr",
-    source="EuroEval/mmlu-hr-mini",
+MMLU_CA_CONFIG = DatasetConfig(
+    name="mmlu-ca",
+    pretty_name="MMLU-ca",
+    source="EuroEval/mmlu-ca-mini",
     task=KNOW,
     languages=[CATALAN],
 )
