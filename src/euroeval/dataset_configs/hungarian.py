@@ -12,6 +12,7 @@ HUSST_CONFIG = DatasetConfig(
     source="EuroEval/husst-mini",
     task=SENT,
     languages=[HUNGARIAN],
+    _labels=["negative", "positive"],
 )
 
 SCALA_HU_CONFIG = DatasetConfig(
