@@ -1,5 +1,7 @@
 """All dataset configurations used in EuroEval."""
 
+from pathlib import Path
+
 from ..data_models import DatasetConfig
 from ..languages import get_all_languages
 from ..tasks import SPEED
@@ -33,14 +35,18 @@ from .swedish import *  # noqa: F403
 from .ukrainian import *  # noqa: F403
 
 
-def get_all_dataset_configs() -> dict[str, DatasetConfig]:
+def get_all_dataset_configs(custom_datasets_file: Path) -> dict[str, DatasetConfig]:
     """Get a mapping of all the dataset configurations.
+
+    Args:
+        custom_datasets_file:
+            A path to a Python file containing custom dataset configurations.
 
     Returns:
         A mapping between names of datasets and their configurations.
     """
     globals_dict = globals()
-    module = load_custom_datasets_module()
+    module = load_custom_datasets_module(custom_datasets_file=custom_datasets_file)
     if module is not None:
         globals_dict |= vars(module)
     dataset_configs = [
@@ -56,12 +62,14 @@ def get_all_dataset_configs() -> dict[str, DatasetConfig]:
     return mapping
 
 
-def get_dataset_config(dataset_name: str) -> DatasetConfig:
+def get_dataset_config(dataset_name: str, custom_datasets_file: Path) -> DatasetConfig:
     """Get the dataset configuration for a dataset.
 
     Args:
         dataset_name:
             The name of the dataset.
+        custom_datasets_file:
+            A path to a Python file containing custom dataset configurations.
 
     Returns:
         The dataset configuration.
@@ -70,7 +78,7 @@ def get_dataset_config(dataset_name: str) -> DatasetConfig:
         ValueError:
             If the dataset is not found.
     """
-    dataset_configs = get_all_dataset_configs()
+    dataset_configs = get_all_dataset_configs(custom_datasets_file=custom_datasets_file)
     if dataset_name not in dataset_configs:
         raise ValueError(f"No dataset config found for dataset {dataset_name}.")
     return dataset_configs[dataset_name]

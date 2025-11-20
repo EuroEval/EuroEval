@@ -9,13 +9,16 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 
-- Added Lithuanian sentiment classification dataset Atsiliepimai to replace the now unofficial
-  Lithuanian Emotions dataset.
+- Added Lithuanian sentiment classification dataset Atsiliepimai to replace the now
+  unofficial Lithuanian Emotions dataset.
 - Added support for Hungarian 🇭🇺! This includes the sentiment classification dataset
   HuSST, the linguistic acceptability dataset ScaLA-hu, the named entity recognition
   dataset SzegedNER, the reading comprehension dataset MultiWikiQA-hu, the
   summarisation dataset HunSum, the knowledge dataset MMLU-hu, and the common-sense
   reasoning dataset Winogrande-hu.
+- Added new `--custom-datasets-file` (`custom_datasets_file` in the `Benchmarker` API)
+  argument, which can be used to specify a custom Python file containing custom dataset
+  definitions. It defaults to `custom_datasets.py` in the current working directory.
 
 ## [v16.7.1] - 2025-11-18
 
