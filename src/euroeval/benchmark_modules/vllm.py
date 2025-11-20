@@ -421,8 +421,50 @@ class VLLMModel(HuggingFaceEncoderModel):
                 "error was. Skipping this evaluation."
             )
 
+        # reasoning_trace_regex = r"(.){0,100}" + rf"{self.eor_token}"
+        # SST5 performance:
+        #   Qwen3-0.6B: 5.88% ± 4.80%
+        #   Qwen3-32B: 20.37% ± 3.13%
+        #   Baguettotron: 4.83% ± 3.73%
+        # CoNNL-en performance:
+        #   Qwen3-0.6B: 26.91% ± 2.79%
+        #   Qwen3-32B: 74.58% ± 1.69%
+        #   Baguettotron: 12.53% ± 4.10%
+
+        reasoning_trace_regex = rf".*{self.eor_token}"
+        # SST5 performance:
+        #   Qwen3-0.6B: 54.23% ± 3.02%
+        #   Qwen3-32B: -1.52% ± 3.05%
+        #   Baguettotron: 3.44% ± 3.77%
+        # CoNNL-en performance:
+        #   Qwen3-0.6B: 20.07% ± 5.66%
+        #   Qwen3-32B: 41.52% ± 7.70%
+        #   Baguettotron: 0.03% ± 0.07%
+
+        # if self.bor_token in inputs["text"][0]:
+        #     reasoning_trace_regex = self.eor_token
+        # else:
+        #     reasoning_trace_regex = rf"{self.bor_token}{self.eor_token}"
+        # SST5 performance:
+        #   Qwen3-0.6B: -4.85% ± 3.11%
+        #   Qwen3-32B: 5.54% ± 4.79%
+        #   Baguettotron: 10.91% ± 4.52%
+        # CoNNL-en performance:
+        #   Qwen3-0.6B: 42.71% ± 1.75%
+        #   Qwen3-32B: 75.46% ± 1.28%
+        #   Baguettotron: 5.33% ± 2.02%
+
+        # structured_outputs = None
+        # SST5 performance:
+        #   Qwen3-0.6B: 53.53% ± 3.74%
+        #   Qwen3-32B: 66.83% ± 2.54%
+        #   Baguettotron: 3.19% ± 3.49%
+        # CoNNL-en performance:
+        #   Qwen3-0.6B: 50.00% ± 2.76%
+        #   Qwen3-32B: 80.87% ± 1.55%
+        #   Baguettotron: 0.03% ± 0.07%
+
         structured_generation_schema = None
-        reasoning_trace_regex = r"(.){0," + str(REASONING_MAX_TOKENS * 2) + r"}"
         if self.dataset_config.task.uses_structured_output:
             if self.dataset_config.task == NER:
                 ner_tag_names = list(self.dataset_config.prompt_label_mapping.values())
@@ -479,14 +521,11 @@ class VLLMModel(HuggingFaceEncoderModel):
             if self.eor_token is None:
                 structured_outputs = StructuredOutputsParams(choice=choice_labels)
             else:
-                choice_labels_pattern = "|".join(
-                    re.escape(label) for label in choice_labels
+                choice_labels_pattern = (
+                    "(" + "|".join(re.escape(label) for label in choice_labels) + ")"
                 )
                 structured_outputs = StructuredOutputsParams(
-                    regex=(
-                        reasoning_trace_regex
-                        + rf"{self.eor_token}({choice_labels_pattern})"
-                    )
+                    regex=reasoning_trace_regex + choice_labels_pattern
                 )
             log_once(
                 f"Using structured generation with the choices {choice_labels}.",
