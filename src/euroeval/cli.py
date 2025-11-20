@@ -221,7 +221,7 @@ from .languages import get_all_languages
 )
 @click.option(
     "--custom-datasets-file",
-    type=click.Path(exists=True, dir_okay=False, path_type=Path),
+    type=click.Path(exists=False, dir_okay=False, path_type=Path),
     default="custom_datasets.py",
     show_default=True,
     help="A Python file defining custom datasets to be used in the benchmark.",
