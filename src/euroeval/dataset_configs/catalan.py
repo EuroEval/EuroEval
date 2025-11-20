@@ -22,10 +22,10 @@ SCALA_CA_CONFIG = DatasetConfig(
     languages=[CATALAN],
 )
 
-WIKIANN_HR_CONFIG = DatasetConfig(
-    name="wikiann-hr",
-    pretty_name="WikiANN-hr",
-    source="EuroEval/wikiann-hr-mini",
+WIKIANN_CA_CONFIG = DatasetConfig(
+    name="wikiann-ca",
+    pretty_name="WikiANN-ca",
+    source="EuroEval/wikiann-ca-mini",
     task=NER,
     languages=[CATALAN],
 )

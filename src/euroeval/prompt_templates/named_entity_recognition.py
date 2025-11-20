@@ -6,6 +6,7 @@ from ..data_models import PromptConfig
 from ..languages import (
     BOSNIAN,
     BULGARIAN,
+    CATALAN,
     CROATIAN,
     CZECH,
     DANISH,
@@ -82,6 +83,30 @@ NER_TEMPLATES: dict["Language", PromptConfig] = {
         "обекти в изречението. Трябва да изведете това като JSON речник с ключовете "
         "{labels_str}. Стойностите трябва да бъдат списъци на именуваните обекти от "
         "този тип, точно както се появяват в изречението.",
+    ),
+    CATALAN: PromptConfig(
+        default_prompt_label_mapping={
+            "b-per": "persona",
+            "i-per": "persona",
+            "b-loc": "lloc",
+            "i-loc": "lloc",
+            "b-org": "organització",
+            "i-org": "organització",
+            "b-misc": "miscel·lània",
+            "i-misc": "miscel·lània",
+        },
+        default_prompt_prefix=(
+            "Aquestes són frases i diccionaris JSON amb els noms que apareixen "
+            "en les frases."
+        ),
+        default_prompt_template=("Frase: {text}\nEntitats anomenades: {label}"),
+        default_instruction_prompt=(
+            "Frase: {text}\n\n"
+            "Identifiqueu les entitats anomenades en la frase. Mostreu-les "
+            "com a diccionari JSON amb les claus {labels_str}. Els valors "
+            "han de ser els llistats de les entitats anomenades del tipus, "
+            "tal com apareixen en la frase."
+        ),
     ),
     CROATIAN: PromptConfig(
         default_prompt_label_mapping={

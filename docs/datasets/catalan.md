@@ -79,7 +79,7 @@ euroeval --model <model-id> --dataset guia-cat
 
 ## Named Entity Recognition
 
-### WikiANN-hr
+### WikiANN-ca
 
 This dataset was published in [this paper](https://aclanthology.org/P17-1178/) and is
 part of a cross-lingual named entity recognition framework for 282 languages from
@@ -96,22 +96,22 @@ Here are a few examples from the training split:
 
 ```json
 {
-    "tokens": array(["Ubrzo", "su", "uslijedile", "narudžbe", "iz", "cijele", "Britanske", "zajednice", "naroda", "."], dtype=object),
-    "labels": ["O", "O", "O", "O", "O", "O", "B-ORG", "I-ORG", "I-ORG", "O"]
+    "tokens": ["Actualment", "es", "conserva", "al", "Museu", "Nacional", "d'Art", "de", "Catalunya", "."],
+    "labels": ["O", "O", "O", "O", "B-ORG", "I-ORG", "I-ORG", "I-ORG", "I-ORG", "O"],
 }
 ```
 
 ```json
 {
-    "tokens": array(["``", "(", "Cole", "Porter", ")"], dtype=object),
-    "labels": ["O", "O", "B-PER", "I-PER", "O"]
+    "tokens": ["Carlos", "Henrique", "Casimiro"],
+    "labels": ["B-PER", "I-PER", "I-PER"],
 }
 ```
 
 ```json
 {
-    "tokens": array(["'", "''", "La", "Liga", "2009.", "/", "10", "."], dtype=object),
-    "labels": ["O", "O", "B-ORG", "I-ORG", "O", "O", "O", "O"]
+    "tokens": ["''", "Megalancistrus", "parananus", "''"],
+    "labels": ["O", "B-LOC", "I-LOC", "O"],
 }
 ```
 
@@ -122,38 +122,40 @@ When evaluating generative models, we use the following setup (see the
 - Prefix prompt:
 
   ```text
-  Sljedeće su rečenice i JSON rječnici s imenicama koje se pojavljuju u rečenicama.
+  Aquestes són frases i diccionaris JSON amb els noms que apareixen en les frases.
   ```
 
 - Base prompt template:
 
   ```text
-  Rečenica: {text}
-  Imenovane entiteti: {label}
+  Frase: {text}
+  Entitats anomenades: {label}
   ```
 
 - Instruction-tuned prompt template:
 
   ```text
-  Rečenica: {text}
+  Frase: {text}
 
-  Identificirajte imenovane entitete u rečenici. Prikažite ih kao JSON rječnik s ključevima 'osoba', 'mjesto', 'organizacija' i 'razno'. Vrijednosti trebaju biti popisi imenovanih entiteta navedenog tipa, točno kako se pojavljuju u rečenici.
+  Identifiqueu les entitats anomenades en la frase. Mostreu-les com a diccionari JSON
+  amb les claus 'persona', 'lloc', 'organització' i 'miscel·lània'. Els valors han de ser
+  els llistats de les entitats anomenades del tipus, tal com apareixen en la frase.
   ```
 
 - Label mapping:
-  - `B-PER` ➡️ `osoba`
-  - `I-PER` ➡️ `osoba`
-  - `B-LOC` ➡️ `mjesto`
-  - `I-LOC` ➡️ `mjesto`
-  - `B-ORG` ➡️ `organizacija`
-  - `I-ORG` ➡️ `organizacija`
-  - `B-MISC` ➡️ `razno`
-  - `I-MISC` ➡️ `razno`
+  - `B-PER` ➡️ `persona`
+  - `I-PER` ➡️ `persona`
+  - `B-LOC` ➡️ `lloc`
+  - `I-LOC` ➡️ `lloc`
+  - `B-ORG` ➡️ `organització`
+  - `I-ORG` ➡️ `organització`
+  - `B-MISC` ➡️ `miscel·lània`
+  - `I-MISC` ➡️ `miscel·lània`
 
 You can evaluate this dataset directly as follows:
 
 ```bash
-euroeval --model <model-id> --dataset wikiann-hr
+euroeval --model <model-id> --dataset wikiann-ca
 ```
 
 ## Linguistic Acceptability
