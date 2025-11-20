@@ -54,10 +54,10 @@ GLOBAL_MMLU_RO_CONFIG = DatasetConfig(
     languages=[ROMANIAN],
 )
 
-WINOGRANDE_HU_CONFIG = DatasetConfig(
-    name="winogrande-hu",
-    pretty_name="Winogrande-hu",
-    source="EuroEval/winogrande-hu",
+WINOGRANDE_RO_CONFIG = DatasetConfig(
+    name="winogrande-ro",
+    pretty_name="Winogrande-ro",
+    source="EuroEval/winogrande-ro",
     task=COMMON_SENSE,
     languages=[ROMANIAN],
     _labels=["a", "b"],
