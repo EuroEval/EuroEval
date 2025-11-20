@@ -314,40 +314,39 @@ euroeval --model <model-id> --dataset multi-wiki-qa-ro
 
 ## Knowledge
 
-### MMLU-hu
+### Global-MMLU-ro
 
-This dataset is a machine translated version of the English [MMLU
+Global-MMLU is a machine translated version of the English [MMLU
 dataset](https://openreview.net/forum?id=d7KBjmI3GmQ) and features questions within 57
 different topics, such as elementary mathematics, US history and law. The translation to
-Hungarian was done by the University of Oregon as part of [this
-paper](https://aclanthology.org/2023.emnlp-demo.28/), using GPT-3.5-turbo.
+Romanian was done by the [Cohere Labs Community](https://cohere.com/research).
 
-The original full dataset consists of 278 / 1,408 / 13,024 samples for training,
+The original full dataset consists of 285 / 14,042 samples for
 validation and testing, respectively. We use a 1,024 / 256 / 2,048 split for training,
-validation and testing, respectively (so 3,328 samples used in total). These splits are
-new and there can thus be some overlap between the original validation and test sets and
-our validation and test sets.
+validation and testing, respectively (so 3,328 samples used in total).
+The validation set is sampled from the dev set, and the new train and test
+sets are sampled from the test set.
 
 Here are a few examples from the training split:
 
 ```json
 {
-    "text": "Ha a College Board az egyik évben elhanyagolta volna az agykutatással kapcsolatos kérdések feltételét az AP pszichológiai vizsgán, a teszt hiányozni foghat.\nVálaszlehetőségek:\na. konstruktum validitást.\nb. prediktív validitást.\nc. egyidejű validitást.\nd. tartalmi validitást.",
-    "label": "d"
+  "text": "O cumpărătoare a suferit răni la spate și la picioare când a alunecat pe o bucată de covor, pe un hol care face legătura între un magazin universal și o cantină. Cumpărătorul a intentat un proces împotriva proprietarului întregii clădiri. Proprietarul a susținut că, de când a închiriat cantina, nu a mai păstrat niciun control asupra holului de legătură. În cazul în care cumpărătorul oferă în dovadă faptul că la două zile după accident, proprietarul a pus din nou covorul de pe hol, instanța ar trebui să stabilească că probele sunt\nOpțiuni:\na. admisibil, deoarece este relevant pentru problema cunoașterii de către proprietar a stării nesigure.\nb. admisibilă, deoarece arată că proprietarul și-a păstrat proprietatea și controlul.\nc. inadmisibil, deoarece arată reparație ulterioară, ceea ce este contrar ordinii publice.\nd. inadmisibil, deoarece probele sunt irelevante pentru accident.",
+  "label": "b",
 }
 ```
 
 ```json
 {
-    "text": "Ha $\\log_{b}343=-\\frac{3}{2}$, mennyi az $b$ értéke?\nVálaszlehetőségek:\na. 3\nb. \\frac{1}{49}\nc. \\frac{1}{7}\nd. 7",
-    "label": "b"
+  "text": "Pentru care dintre aceste două scenarii personajul principal (care folosește I/me/my) face ceva în mod clar greșit din punct de vedere moral, conform standardelor morale obișnuite din SUA începând cu 2020? Scenariul 1 | Am pus copilul pe unghii Scenariul 2 | De obicei prefer să rănesc oamenii în loc să încerc să-i protejez.\nOpțiuni:\na. Greșit, greșit\nb. Greșit, nu greșit\nc. Nu greșit, greșit\nd. Nu greșit, nu greșit",
+  "label": "a",
 }
 ```
 
 ```json
 {
-    "text": "Egy gyalog, akinek lakhelye az A államban van, az B államban keresztezte az utat, amikor egy külföldi állampolgár által vezetett autó elgázolta. Mindkét fél sérüléseket szenvedett. A gyalog $100,000 kártérítési összeget kérő kártérítési pert indított a vezetővel szemben az B állam szövetségi kerületi bíróságában. A vezető úgy véli, hogy a gyalog illegálisan keresztezte az utat, és ezért ő a felelős az ütközésért. Az ügyvéd tanácsadást kér a vezetőtől arra vonatkozóan, hogy hogyan kell a legjobban reagálni a keresetre. Feltételezzük, hogy B állam egy olyan hozzájáruló hanyagság állam, amely szerint mindkét fél részben felelős az esetért. Hogyan tanácsolja az ügyvéd a vezetőnek, hogy reagáljon erre?\nVálaszlehetőségek:\na. Válaszként adjon be egy beadványt, amelyben az hozzájáruló hanyagság pozitív védelmét és a gondatlanság elleni ellenkérelmet emeli, a vezető sérüléseinek kártérítési összegét kérve.\nb. Válaszként adjon be egy beadványt, amelyben az hozzájáruló hanyagság pozitív védelmét és az anyagi bizonyíték alapján történő ítélet kérelmével védekezik.\nc. Kérje az ügy elutasítását a személyi hatáskör hiánya miatt, mert az autó vezetője nem B állam állampolgára.\nd. Kérje az ügy elutasítását az ügy tárgyi hatáskörének hiánya miatt, mert az autó vezetője nem amerikai állampolgár.",
-    "label": "a"
+  "text": "Inventarul Cobb Inc. la 1 mai consta din 200 de unități la un cost total de 1250 USD. Cobb folosește metoda inventarierii periodice. Achizițiile pentru luna au fost după cum urmează: Data Nr. de unități Cost unitar Cost total 4 mai 20 5,80 USD 116,00 USD 17 mai 80 5,50 USD 440,00 USD Cobb a vândut 10 unități pe 14 mai pentru 120 USD. Care este costul mediu ponderat al bunurilor vândute al lui Cobb pentru luna mai?\nOpțiuni:\na. 60,20 USD\nb. 62,10 USD\nc. 62,50 USD\nd. 65",
+  "label": "a",
 }
 ```
 
@@ -358,33 +357,33 @@ When evaluating generative models, we use the following setup (see the
 - Prefix prompt:
 
   ```text
-  Az alábbiakban több választási lehetőséget tartalmazó kérdések találhatók (válaszokkal együtt).
+  Următorul este un set de întrebări cu mai multe opțiuni (cu răspunsuri).
   ```
 
 - Base prompt template:
 
   ```text
-  Kérdés: {text}
-  Válaszlehetőségek:
+  Întrebare: {text}
+  Opțiuni:
   a. {option_a}
   b. {option_b}
   c. {option_c}
   d. {option_d}
-  Válasz: {label}
+  Răspuns: {label}
   ```
 
 - Instruction-tuned prompt template:
 
   ```text
-  Kérdés: {text}
+  Întrebare: {text}
 
-  Válaszoljon a fenti kérdésre az elérhető lehetőségek közül 'a', 'b', 'c' vagy 'd' használatával, és semmi mással.
+  Răspundeți la următoarea întrebare folosind 'a', 'b', 'c' sau 'd', și nimic altceva.
   ```
 
 You can evaluate this dataset directly as follows:
 
 ```bash
-euroeval --model <model-id> --dataset mmlu-hu
+euroeval --model <model-id> --dataset global-mmlu-ro
 ```
 
 ## Common-sense Reasoning

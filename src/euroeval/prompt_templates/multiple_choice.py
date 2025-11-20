@@ -25,6 +25,7 @@ from ..languages import (
     NORWEGIAN_NYNORSK,
     POLISH,
     PORTUGUESE,
+    ROMANIAN,
     SERBIAN,
     SLOVAK,
     SLOVENE,
@@ -208,6 +209,18 @@ MULTIPLE_CHOICE_TEMPLATES: dict["Language", PromptConfig] = {
         default_prompt_template="Spørsmål: {text}\nSvar: {label}",
         default_instruction_prompt="Spørsmål: {text}\n\nBesvar følgende spørsmål med "
         "{labels_str}, og ikke noe annet.",
+        default_prompt_label_mapping="auto",
+    ),
+    ROMANIAN: PromptConfig(
+        default_prompt_prefix=(
+            "Următorul este un set de întrebări cu mai multe opțiuni (cu răspunsuri)."
+        ),
+        default_prompt_template="Întrebare: {text}\nRăspuns: {label}",
+        default_instruction_prompt=(
+            "Întrebare: {text}\n\n"
+            "Răspundeți la următoarea întrebare folosind {labels_str},\n"
+            "și nimic altceva."
+        ),
         default_prompt_label_mapping="auto",
     ),
     POLISH: PromptConfig(

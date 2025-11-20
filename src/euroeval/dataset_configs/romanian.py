@@ -46,10 +46,10 @@ HUNSUM_CONFIG = DatasetConfig(
     languages=[ROMANIAN],
 )
 
-MMLU_HU_CONFIG = DatasetConfig(
-    name="mmlu-hu",
-    pretty_name="MMLU-hu",
-    source="EuroEval/mmlu-hu-mini",
+GLOBAL_MMLU_RO_CONFIG = DatasetConfig(
+    name="global-mmlu-ro",
+    pretty_name="GlobalMMLU-ro",
+    source="EuroEval/global-mmlu-ro-mini",
     task=KNOW,
     languages=[ROMANIAN],
 )
