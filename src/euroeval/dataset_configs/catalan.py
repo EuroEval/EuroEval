@@ -14,10 +14,10 @@ GUIA_CAT_CONFIG = DatasetConfig(
     languages=[CATALAN],
 )
 
-SCALA_HR_CONFIG = DatasetConfig(
-    name="scala-hr",
-    pretty_name="ScaLA-hr",
-    source="EuroEval/scala-hr",
+SCALA_CA_CONFIG = DatasetConfig(
+    name="scala-ca",
+    pretty_name="ScaLA-ca",
+    source="EuroEval/scala-ca",
     task=LA,
     languages=[CATALAN],
 )

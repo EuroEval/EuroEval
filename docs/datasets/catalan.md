@@ -9,8 +9,8 @@ information about what these constitute.
 ### GuiaCat
 
 This dataset was published in [here](https://huggingface.co/datasets/projecte-aina/GuiaCat).
-The dataset consists of 5.750 restaurant reviews in Catalan, with 5 associated scores
-and a label of sentiment. The data was provided by [GuiaCat](https://guiacat.cat/).
+The dataset consists of 5,750 restaurant reviews in Catalan, with five associated scores
+and a sentiment label. The data was provided by [GuiaCat](https://guiacat.cat/).
 
 The original full dataset consists of 4,750 / 500 / 500 samples for the training,
 validation and test splits, respectively. We use 1,024 / 256 / 2,048 samples for our
@@ -177,21 +177,21 @@ Here are a few examples from the training split:
 
 ```json
 {
-    "text": "Nakon kratke intervencije, tijekom koje sam saznala kada se taj osjećaj prvog puta pojavio i zbog čega, sve je nestalo i već mjesecima živim bez opterećenja koji me pratilo cijelog života.",
+    "text": "El portaveu del govern català ha demanat a Maragall que \"ens deixi fer, perquè al final les coses les hem de fer nosaltres dins de la nostra coalició i que cadascú s' ocupi de casa seva\".",
     "label": "correct"
 }
 ```
 
 ```json
 {
-    "text": "Svaki od tih sklopova, i dijelova mora biti homologiran i sukladan s ostalima.",
+    "text": "La petrolera francesa Total llançarà una oferta de compra (OPA) sobre el 41 % de la Petrofina belga per 1,8 bilions de pessetes.",
     "label": "incorrect"
 }
 ```
 
 ```json
 {
-    "text": "Prvi među njima je Laurent Blanc, koji drži Romu na čekanju, a s Parkom prinčeva povezivan je i Fabio Capello.",
+    "text": "Els fluids de l'organisme poden trencar les boles, i això provoca la intoxicació mortal.",
     "label": "correct"
 }
 ```
@@ -203,32 +203,32 @@ When evaluating generative models, we use the following setup (see the
 - Prefix prompt:
 
   ```text
-  Sljedeće su rečenice i jesu li gramatički ispravne.
+  Les següents oracions indiquen si són gramaticalment correctes.
   ```
 
 - Base prompt template:
 
   ```text
-  Rečenica: {text}
-  Gramatički ispravna: {label}
+  Oració: {text}
+  Gramaticalment correcta: {label}
   ```
 
 - Instruction-tuned prompt template:
 
   ```text
-  Rečenica: {text}
+  Oració: {text}
 
-  Odredite je li rečenica gramatički ispravna ili ne. Odgovorite s 'da' ako je ispravna, i s 'ne' ako nije. Odgovorite samo tom riječju i ničim drugim.
+  Determina si l'oració és gramaticalment correcta o no. Respon amb 'sí' si és correcta, i amb 'no' si no ho és. Respon només amb aquesta paraula i res més.
   ```
 
 - Label mapping:
-  - `correct` ➡️ `da`
-  - `incorrect` ➡️ `ne`
+  - `correct` ➡️ `sí`
+  - `incorrect` ➡️ `no`
 
 You can evaluate this dataset directly as follows:
 
 ```bash
-euroeval --model <model-id> --dataset scala-hr
+euroeval --model <model-id> --dataset scala-ca
 ```
 
 ## Reading Comprehension

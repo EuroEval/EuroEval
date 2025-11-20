@@ -5,6 +5,7 @@ import typing as t
 from ..data_models import PromptConfig
 from ..languages import (
     BULGARIAN,
+    CATALAN,
     CROATIAN,
     CZECH,
     DANISH,
@@ -44,6 +45,17 @@ LA_TEMPLATES: dict["Language", PromptConfig] = {
         default_prompt_template="Изречение: {text}\nГраматически правилно: {label}",
         default_instruction_prompt="Изречение: {text}\n\nОпределете дали изречението е "
         "граматически правилно или не. Отговорете с {labels_str}, и нищо друго.",
+    ),
+    CATALAN: PromptConfig(
+        default_prompt_label_mapping=dict(correct="sí", incorrect="no"),
+        default_prompt_prefix=(
+            "Les següents oracions indiquen si són gramaticalment correctes."
+        ),
+        default_prompt_template=("Oració: {text}\nGramaticalment correcta: {label}"),
+        default_instruction_prompt=(
+            "Oració: {text}\n\nDetermina si l'oració és "
+            "gramaticalment correcta o no. Respon amb {labels_str}, i res més."
+        ),
     ),
     CROATIAN: PromptConfig(
         default_prompt_label_mapping=dict(correct="da", incorrect="ne"),
