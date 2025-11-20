@@ -390,13 +390,13 @@ euroeval --model <model-id> --dataset mmlu-ca
 
 ## Common-sense Reasoning
 
-### Winogrande-hr
+### Winogrande-ca
 
 This dataset was published in
 [this paper](https://doi.org/10.48550/arXiv.2506.19468) and is a translated
 and filtered version of the English
 [Winogrande dataset](https://doi.org/10.1145/3474381). DeepL was used to
-translate the dataset to Croatian.
+translate the dataset to Catalan.
 
 The original full dataset consists of 47 / 1,210 samples for training and testing, and
 we use 128 of the test samples for validation, resulting in a 47 / 128 / 1,085 split for
@@ -406,21 +406,21 @@ Here are a few examples from the training split:
 
 ```json
 {
-    "text": "Nisam mogao kontrolirati vlagu kao što sam kontrolirao kišu, jer je _ dolazila odasvud. Na što se odnosi praznina _?\nIzbori:\na. vlaga\nb. kiša",
+    "text": "No podia controlar la humitat com controlava la pluja, perquè el _ entrava per tot arreu. A què es refereix el guió _?\nOpciones:\na. humitat\nb. pluja",
     "label": "a"
 }
 ```
 
 ```json
 {
-    "text": "Jessica je mislila da je Sandstorm najbolja pjesma ikad napisana, ali Patricia ju je mrzila. _ je kupila kartu za jazz koncert. Na što se odnosi praznina _?\nIzbori:\na. Jessica\nb. Patricia",
+    "text": "La Jessica pensava que \"Sandstorm\" era la millor cançó mai escrita, però la Patricia la odiava. _ va comprar una entrada per al concert de jazz. A què es refereix el guió _?\nOpciones:\na. Jessica\nb. Patricia",
     "label": "b"
 }
 ```
 
 ```json
 {
-    "text": "Termostat je pokazivao da je dolje dvadeset stupnjeva hladnije nego gore, pa je Byron ostao u _ jer mu je bilo hladno. Na što se odnosi praznina _?\nIzbori:\na. dolje\nb. gore",
+    "text": "El termòstat mostrava que feia vint graus menys a la planta baixa que a la planta superior, així que Byron es va quedar a la _ perquè tenia fred. A què es refereix el guió _?\nOpciones:\na. planta baixa\nb. planta superior",
     "label": "b"
 }
 ```
@@ -432,34 +432,34 @@ When evaluating generative models, we use the following setup (see the
 - Prefix prompt:
 
   ```text
-  Sljedeća su pitanja s višestrukim izborom (s odgovorima).
+  Les següents són preguntes de selecció múltiple (amb respostes).
   ```
 
 - Base prompt template:
 
   ```text
-  Pitanje: {text}
-  Mogućnosti:
+  Pregunta: {text}
+  Opcions:
   a. {option_a}
   b. {option_b}
-  Odgovor: {label}
+  Resposta: {label}
   ```
 
 - Instruction-tuned prompt template:
 
   ```text
-  Pitanje: {text}
-  Mogućnosti:
+  Pregunta: {text}
+  Opcions:
   a. {option_a}
   b. {option_b}
 
-  Odgovorite na gornje pitanje koristeći 'a' ili 'b', i ništa drugo.
+  Respon a la pregunta anterior utilitzant només 'a' o 'b', i res més.
   ```
 
 You can evaluate this dataset directly as follows:
 
 ```bash
-euroeval --model <model-id> --dataset winogrande-hr
+euroeval --model <model-id> --dataset winogrande-ca
 ```
 
 ## Summarisation

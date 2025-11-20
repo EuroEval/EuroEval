@@ -54,10 +54,10 @@ MMLU_CA_CONFIG = DatasetConfig(
     languages=[CATALAN],
 )
 
-WINOGRANDE_HR_CONFIG = DatasetConfig(
-    name="winogrande-hr",
-    pretty_name="Winogrande-hr",
-    source="EuroEval/winogrande-hr",
+WINOGRANDE_CA_CONFIG = DatasetConfig(
+    name="winogrande-ca",
+    pretty_name="Winogrande-ca",
+    source="EuroEval/winogrande-ca",
     task=COMMON_SENSE,
     languages=[CATALAN],
     _labels=["a", "b"],
