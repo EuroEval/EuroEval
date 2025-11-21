@@ -7,6 +7,7 @@ from .enums import GenerativeType, ModelType, TaskGroup
 from .prompt_templates import (
     CLASSIFICATION_TEMPLATES,
     LA_TEMPLATES,
+    LOGIC_TEMPLATES,
     MULTIPLE_CHOICE_TEMPLATES,
     NER_TEMPLATES,
     RC_TEMPLATES,
@@ -141,7 +142,6 @@ EUROPEAN_VALUES = Task(
     default_allow_invalid_model_outputs=False,
 )
 
-
 SPEED = Task(
     name="speed",
     task_group=TaskGroup.SPEED,
@@ -150,6 +150,17 @@ SPEED = Task(
     default_num_few_shot_examples=0,
     default_max_generated_tokens=5,
     default_labels=[],
+)
+
+LOGIC = Task(
+    name="logical-reasoning",
+    task_group=TaskGroup.LOGICAL_REASONING,  # TODO: Perhaps change to TEXT_TO_TEXT
+    template_dict=LOGIC_TEMPLATES,
+    metrics=[m.puzzle_level_accuracy_metric, m.cell_level_accuracy_metric],
+    default_num_few_shot_examples=8,
+    default_max_generated_tokens=256,
+    default_labels=[],
+    uses_structured_output=True,
 )
 
 

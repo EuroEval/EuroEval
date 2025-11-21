@@ -40,6 +40,7 @@ dependencies = [
     "peft>=0.15.0",
     "protobuf>=2.0.0",
     "cloudpickle>=3.1.1",
+    "typeguard>=4.4.4",
 ]
 
 [project.optional-dependencies]
