@@ -6,7 +6,7 @@ information about what these constitute.
 
 ## Sentiment Classification
 
-### HuSST
+### RoSent
 
 This dataset was first published in [this repository](https://github.com/katakonst/sentiment-analysis-tensorflow)
 and consists of reviews from yelp and imdb.
