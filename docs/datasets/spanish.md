@@ -906,8 +906,10 @@ euroeval --model <model-id> --dataset mlsum-es
 
 ### Unofficial: DACSA-es
 
-This dataset was published in [this paper](https://aclanthology.org/2022.naacl-main.434/).
-The original DACSA dataset consists of Spanish and Catalan news articles, but this configuration (DACSA-es) contains only Spanish articles.
+This dataset was published in [this
+paper](https://aclanthology.org/2022.naacl-main.434/). The original DACSA dataset
+consists of Spanish and Catalan news articles, but this configuration (DACSA-es)
+contains only Spanish articles.
 
 The original full dataset consists of 636,596 / 35,376 samples for the training and
 validation splits, respectively. The dataset has two test splits with 35,376 and
