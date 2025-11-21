@@ -1,6 +1,6 @@
 """Tests for the `cli` module."""
 
-from click.types import BOOL, FLOAT, INT, STRING, Choice, ParamType
+from click.types import BOOL, FLOAT, INT, STRING, Choice, ParamType, Path
 
 
 def test_cli_param_names(cli_params: dict[str, ParamType]) -> None:
@@ -31,6 +31,7 @@ def test_cli_param_names(cli_params: dict[str, ParamType]) -> None:
         "help",
         "requires_safetensors",
         "generative_type",
+        "custom_datasets_file",
         "download_only",
         "model_language",
         "dataset_language",
@@ -65,4 +66,5 @@ def test_cli_param_types(cli_params: dict[str, ParamType]) -> None:
     assert cli_params["help"] == BOOL
     assert cli_params["requires_safetensors"] == BOOL
     assert isinstance(cli_params["generative_type"], Choice)
+    assert isinstance(cli_params["custom_datasets_file"], Path)
     assert cli_params["download_only"] == BOOL

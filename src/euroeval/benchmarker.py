@@ -82,6 +82,7 @@ class Benchmarker:
         api_version: str | None = None,
         gpu_memory_utilization: float = 0.8,
         generative_type: GenerativeType | None = None,
+        custom_datasets_file: Path | str = Path("custom_datasets.py"),
         debug: bool = False,
         run_with_cli: bool = False,
         requires_safetensors: bool = False,
@@ -154,6 +155,9 @@ class Benchmarker:
                 The type of generative model to benchmark. Only relevant if the model is
                 generative. If not specified, then the type will be inferred based on
                 the tags of the model. Defaults to None.
+            custom_datasets_file:
+                Path to a Python file defining custom datasets. Defaults to
+                'custom_datasets.py'.
             debug:
                 Whether to output debug information. Defaults to False.
             run_with_cli:
@@ -272,6 +276,7 @@ class Benchmarker:
             download_only=download_only,
             gpu_memory_utilization=gpu_memory_utilization,
             generative_type=generative_type,
+            custom_datasets_file=Path(custom_datasets_file),
             verbose=verbose,
             force=force,
             debug=debug,
@@ -391,6 +396,7 @@ class Benchmarker:
         download_only: bool | None = None,
         gpu_memory_utilization: float | None = None,
         generative_type: GenerativeType | None = None,
+        custom_datasets_file: Path | str | None = None,
         force: bool | None = None,
         verbose: bool | None = None,
         debug: bool | None = None,
@@ -482,6 +488,9 @@ class Benchmarker:
                 generative. If not specified, then the type will be inferred based on
                 the tags of the model. Defaults to the value specified when initialising
                 the benchmarker.
+            custom_datasets_file:
+                Path to a Python file defining custom datasets. Defaults to the value
+                specified when initialising the benchmarker.
             force:
                 Whether to force evaluations of models, even if they have been
                 benchmarked already. Defaults to the value specified when initialising
@@ -639,6 +648,11 @@ class Benchmarker:
                 generative_type
                 if generative_type is not None
                 else self.benchmark_config_default_params.generative_type
+            ),
+            custom_datasets_file=(
+                Path(custom_datasets_file)
+                if custom_datasets_file is not None
+                else self.benchmark_config_default_params.custom_datasets_file
             ),
             force=(
                 force
@@ -1159,19 +1173,25 @@ def clear_model_cache_fn(cache_dir: str) -> None:
 
 
 def prepare_dataset_configs(
-    dataset_names: c.Sequence[str],
+    dataset_names: c.Sequence[str], custom_datasets_file: Path
 ) -> c.Sequence["DatasetConfig"]:
     """Prepare the dataset configuration(s) to be benchmarked.
 
     Args:
         dataset_names:
             The dataset names to benchmark.
+        custom_datasets_file:
+            A path to a Python file containing custom dataset configurations.
 
     Returns:
         The prepared list of model IDs.
     """
     return [
-        cfg for cfg in get_all_dataset_configs().values() if cfg.name in dataset_names
+        cfg
+        for cfg in get_all_dataset_configs(
+            custom_datasets_file=custom_datasets_file
+        ).values()
+        if cfg.name in dataset_names
     ]
 
 

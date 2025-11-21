@@ -3,6 +3,7 @@
 import collections.abc as c
 import os
 import sys
+from pathlib import Path
 from typing import Generator
 
 import pytest
@@ -33,7 +34,9 @@ def pytest_unconfigure() -> None:
 if os.environ.get("CHECK_DATASET") is not None:
     dataset_configs = [
         dataset_config
-        for dataset_config in get_all_dataset_configs().values()
+        for dataset_config in get_all_dataset_configs(
+            custom_datasets_file=Path("custom_datasets.py")
+        ).values()
         if dataset_config.name in os.environ["CHECK_DATASET"].split(",")
         or any(
             language.code in os.environ["CHECK_DATASET"].split(",")
@@ -82,7 +85,11 @@ def benchmark_config(
     """Yields a benchmark configuration used in tests."""
     yield BenchmarkConfig(
         languages=[DANISH],
-        datasets=list(get_all_dataset_configs().values()),
+        datasets=list(
+            get_all_dataset_configs(
+                custom_datasets_file=Path("custom_datasets.py")
+            ).values()
+        ),
         finetuning_batch_size=1,
         raise_errors=False,
         cache_dir=".euroeval_cache",
@@ -122,7 +129,12 @@ def metric() -> Generator[HuggingFaceMetric, None, None]:
 @pytest.fixture(
     scope="session",
     params=list(
-        {dataset_config.task for dataset_config in get_all_dataset_configs().values()}
+        {
+            dataset_config.task
+            for dataset_config in get_all_dataset_configs(
+                custom_datasets_file=Path("custom_datasets.py")
+            ).values()
+        }
     ),
     ids=lambda task: task.name,
 )
