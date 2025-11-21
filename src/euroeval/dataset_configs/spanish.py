@@ -103,6 +103,15 @@ MULTI_WIKI_QA_ES_CONFIG = DatasetConfig(
     unofficial=True,
 )
 
+DACSA_ES_CONFIG = DatasetConfig(
+    name="dacsa-es",
+    pretty_name="DACSA-es",
+    source="EuroEval/dacsa-es-mini",
+    task=SUMM,
+    languages=[SPANISH],
+    unofficial=True,
+)
+
 GOLDENSWAG_ES_CONFIG = DatasetConfig(
     name="goldenswag-es",
     pretty_name="GoldenSwag-es",
