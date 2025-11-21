@@ -3,6 +3,7 @@
 import os
 from collections.abc import Generator
 from functools import partial
+from pathlib import Path
 
 import pytest
 from datasets import DatasetDict
@@ -36,7 +37,10 @@ class TestLoadData:
         """A loaded dataset."""
         yield load_data(
             rng=default_rng(seed=4242),
-            dataset_config=get_dataset_config("angry-tweets"),
+            dataset_config=get_dataset_config(
+                dataset_name="angry-tweets",
+                custom_datasets_file=Path("custom_datasets.py"),
+            ),
             benchmark_config=benchmark_config,
         )
 
@@ -70,7 +74,9 @@ class TestLoadData:
     argnames="dataset_config",
     argvalues=[
         dataset_config
-        for dataset_config in get_all_dataset_configs().values()
+        for dataset_config in get_all_dataset_configs(
+            custom_datasets_file=Path("custom_datasets.py")
+        ).values()
         if os.getenv("CHECK_DATASET") is not None
         and (
             dataset_config.name in os.environ["CHECK_DATASET"].split(",")
