@@ -24,6 +24,7 @@ from ..languages import (
     NORWEGIAN_NYNORSK,
     POLISH,
     PORTUGUESE,
+    ROMANIAN,
     SERBIAN,
     SPANISH,
     SWEDISH,
@@ -192,6 +193,14 @@ SUMM_TEMPLATES: dict["Language", PromptConfig] = {
         default_prompt_template="Dokument: {text}\nSammendrag: {target_text}",
         default_instruction_prompt="Dokument: {text}\n\nSkriv et sammendrag av "
         "dokumentet ovenfor.",
+        default_prompt_label_mapping=dict(),
+    ),
+    ROMANIAN: PromptConfig(
+        default_prompt_prefix=("Mai jos sunt articolele însoțite de rezumate."),
+        default_prompt_template=("Articol: {text}\nRezumat: {target_text}"),
+        default_instruction_prompt=(
+            "Articol: {text}\n\nScrie un rezumat al articolului de mai sus."
+        ),
         default_prompt_label_mapping=dict(),
     ),
     POLISH: PromptConfig(

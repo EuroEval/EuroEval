@@ -38,10 +38,10 @@ MULTI_WIKI_QA_RO_CONFIG = DatasetConfig(
     languages=[ROMANIAN],
 )
 
-HUNSUM_CONFIG = DatasetConfig(
-    name="hunsum",
-    pretty_name="HunSum",
-    source="EuroEval/hun-sum-mini",
+SUMO_RO_CONFIG = DatasetConfig(
+    name="sumo-ro",
+    pretty_name="SumO-Ro",
+    source="EuroEval/sumo-ro-mini",
     task=SUMM,
     languages=[ROMANIAN],
 )

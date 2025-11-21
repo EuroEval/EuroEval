@@ -460,34 +460,36 @@ euroeval --model <model-id> --dataset winogrande-ro
 
 ## Summarisation
 
-### HunSum
+### SumO-ro
 
-[The dataset](https://huggingface.co/datasets/ariel-ml/hun-sum-chatml-5k) consists of samples
-from Hungarian news articles, with the summaries given by the lead paragraphs.
+[The dataset](https://huggingface.co/datasets/Gabrielaaaaaa/SumO-Ro) and consists of samples
+from Romanian news articles.
 
-The original full dataset consists of 5,000 / 200 / 200 samples for training,
+The original full dataset consists of 179,839 / 1,500 / 1,500 samples for training,
 validation and testing, respectively. We use a 1,024 / 256 / 2,048 split for training,
-validation and testing, respectively.
+validation and testing, respectively. The train and validation set are sampled from
+the original splits, but the test set has additional samples from both the validation set.
 
 Here are a few examples from the training split:
 
 ```json
 {
-    "text": "Másfél éven belül rend lehet Szíriában\n\nA szíriai kormány és az ellenzéki csoportok képviselői még idén tárgyalásokat kezdenének, fél éven belül átmeneti kormány alakulna, másfél éven belül pedig választásokat tartanának a tervek szerint – közölte Frank-Walter Steinmeier német külügyminiszter.\n\nJohn Kerry amerikai külügyminiszter szerint ahhoz, hogy mindezt elérjék, tűzszünetet kell hirdetni a kormány és a lázadó csoportok között. Az ENSZ Biztonsági Tanácsának öt állandó tagja megegyezett, hogy határozatot fogad el erről. Kerry szerint a legfontosabb, hogy ne a mérsékelt ellenzékkel szembeni harc, hanem az Iszlám Állam (IÁ) és az an-Nuszra Front ellen küzdelem folytatódjon.\n\nAz amerikai külügyminiszter elmondta: az Egyesült Államok és Oroszország között véleménykülönbségek vannak, azonban folytatni kell a közös munkát, ahogy ezt az Iránnal folytatott tárgyalások kapcsán tették korábban, és hozzátette: a tárgyalópartnerek mindannyian Szíria stabilitását tartják szem előtt.\n\nSzergej Lavrov orosz külügyminiszter a sajtótájékoztatón kijelentette: csak a szíriai emberek dönthetnek országuk és elnökük sorsáról. Lavrov szerint a valódi ellenség azonban nem Aszad, hanem az IÁ. Elmondta azt is, hogy a tárgyaláson részt vevő országok számba vették a terrorcsoportokat, ezen listák összehangolását Jordánia végzi majd, és az ENSZ Biztonsági Tanácsa szavazni fog róla.\n\nA békefolyamatot Staffan de Mistura, az ENSZ szíriai különmegbízottja vezeti és szervezi majd – mondta Frank-Walter Steinmeier a 17 ország magas rangú képviselőinek részvételével zajló tanácskozás után.",
-    "target_text": "Swaney Elizabeth trükkök nélkül mutatta be a gyakorlatait, pedig ennek a sportágnak pont az lenne a lényege."
+  "text": "Din cauza aglomerației, unul dintre cele cinci centre de testare a fost închis. Autoritățile vor să testeze până la începutul anului școlar 100.000 de elevi și cadre medicale. Testarea elevilor și cadrelor didactice din regiunea Madrid va costa aproximativ un milion de euro, scrie Digi 24. Spania a fost una dintre cele mai afectate țări din Europa de epidemie în primăvară, înainte de introducerea unora dintre cele mai stricte măsuri din lume, care i-a permis să țină apoi cazurile sub control. Însă de când izolarea a fost în totalitate ridicată la 21 iunie, epidemia a revenit în forță, cu o explozie de cazuri legată în special de reuniunile familiale sau de ieșirile nocturne. Cel mai recent bilanț al Ministerului Sănătății, publicat luni, a înregistrat 23.000 de cazuri noi de vineri și un total de 462.858 de cazuri detectate de la începutul epidemiei.",
+  "target_text": "Mii de cadre didactice au format cozi uriașe în Madrid, ca să facă gratuit testul COVID. Testarea trebuie făcută până luni, iar oamenii sunt furioși că au fost anunțați cu doar câteva ore înainte."
 }
 ```
 
 ```json
 {
-    "text": "Hoffmann Rózsa a CEU-ról: eddig is jártak magyar fiatalok bécsi egyetemekre\n\nAz ATV Egyenes beszéd című műsorának vendége volt hétfő este Hoffmann Rózsa. A volt köznevelésért felelős államtitkárt a CEU-ról is kérdezték, ezzel kapcsolatban a politikus azt mondta, szerinte nem a kormány űzte el az egyetemet, hanem az intézmény döntött úgy, hogy az amerikai diplomát adó képzéseiket kiviszik az országból.\n\nAmikor a műsorvezető megkérdezte Hoffmanntól, hogy jól van-e ez így, Hoffmann azt válaszolta:\n\n  Nem tudom, hogy jól van, vagy nincs jól, de Bécs nincs a világ végén.\n\nA politikus hozzátette, nincs ebben semmi különös, hiszen eddig is jártak magyar fiatalok bécsi egyetemekre, ingázni is sokan ingáztak eddig. Hoffmann azt mondta, "emberileg" megérti a CEU vezetőségének elkeseredését, de szerinte ez egy túlpolitizált ügy.\n\nHétfőn eldőlt, hogy a CEU Bécsbe költözteti el amerikai diplomát adó képzéseit, miután az elmúlt 20 hónapban mindent megtettek azért, hogy megfeleljenek a törvényeknek, a magyar hatóságok viszont annak ellenére sem írták alá a működéshez szükséges államközi megállapodást, hogy a CEU az amerikai hatóságok által jóváhagyott felsőoktatási képzést indított az Egyesült Államokban.\n\nAz egyetem ugyanakkor közleménye szerint megőrzi magyar egyetemi akkreditációját, és arra törekszik, hogy a jövőben is folytasson tanítási és kutatási tevékenységet Budapesten.",
-    "target_text": "A volt köznevelési államtitkár \"emberileg\" megérti az egyetem vezetőinek elkeseredettségét."
+  "text": "Cuprins: Trupul neînsuflețit al lui Mircea Diaconu va fi depus luni, între orele 12:00 și 16:00, la Teatrul Nottara, acolo unde apropiații vor putea veni să-și aducă un ultim omagiu. Înmormântarea lui Mircea Diaconu va avea loc marți, la cimitirul din Săftica. Mircea Diaconu era cunoscut pentru rolurile sale memorabile în filme, dar și pentru implicarea sa activă în viața publică, fiind un nume și în politică. Mircea Diaconu a fost un simbol al teatrului și filmului românesc, având o carieră care s-a întins pe mai multe decenii. De asemenea, a fost un nume cunoscut în politică, fiind ales senator și deputat, implicându-se în multiple proiecte pentru îmbunătățirea vieții culturale și sociale din România. Mircea Diaconu, născut pe 24 decembrie 1949, în Vlădești, județul Argeș, a fost un simbol al teatrului și filmului românesc. Mircea Diaconu a absolvit Liceul la Câmpulung Muscel în 1967 și IATC I.L. Caragiale din București în 1971. A debutat în 1970, la Teatrul Bulandra, cu \"Harfa de iarbă de Truman Capote. Debutul în cinematografie a avut loc în 1971, cu filmul \"Nunta de piatră, după Ion Agârbiceanu, în regia lui Dan Pița. Video: Asfalt Tango (1996), regizor Nae Caranfil",
+  "target_text": "Actorul Mircea Diaconu a murit la vârsta de 74 de ani, după o luptă grea cu cancerul, a anunțat, sâmbătă, soția sa, potrivit Observator. Pe 24 decembrie, cunoscutul actor Mircea Diaconu ar fi împlinit 75 de ani, însă cancerul l-a răpus."
 }
 ```
 
 ```json
 {
-    "text": "Pörög a turizmus Budapesten: elképesztően erős volt az október\n\nUgyanakkor kérdésesnek nevezik, hogy a kiugró növekedés tartósnak bizonyul-e november-decemberben is, és ami talán még ennél is fontosabb: a küszöbön álló - immár 2020. január 31-i határidővel élesített - Brexit, és annak gazdasági következményei milyen hatást idéznek elő a következő hónapok, évek budapesti vendégforgalmában és a kiutazási trendekben.\nA fővárosi kereskedelmi szálláshelyek árbevétele megközelítette a 25 milliárd forintot. Hosszú idő óta először nem csupán a szállásdíj-bevételek emelkedtek számottevően, hanem a vendégforgalom is - jegyezték meg.\nBudapesten a vendégérkezések 5,5 százalékkal nőttek a vendégéjszakák pedig 6,3 százalékkal.\nAz elemzés szerint ezen belül a húzóerő a külföldi vendégforgalom volt: októberben 372 068 vendég érkezett és 862 427 vendégéjszakát töltött el, előbbi 8,3 százalékos, utóbbi 9,6 százalékos növekedést mutat az előző év tizedik hónapjával összehasonlítva. Mindeközben a belföldről érkező vendégforgalom tovább csökkent.\nA Széchenyi Pihenő Kártya költési értéke októberben 69,4 millió forintot ért el Budapest kereskedelmi szálláshelyein, ez az első 10 havi - budapesti - SZÉP Kártya-bevétel 10 százaléka. A január óta Budapesten keletkezett, nagyságrendileg 700 millió forintos SZÉP Kártya-árbevétel 55 százalékos növekedés a tavalyi év azonos időszakában elért 450 millió forint közeli árbevételhez képest.\nA küldőországok között például kiemelték, hogy impozáns növekedési ütemet mutat a francia, az izraeli, az orosz és a brit küldőpiac, az utóbbi hónapokban pedig felzárkózott a TOP10-be Lengyelország is.", "target_text": "Az idei október volt a 2019-es év legdinamikusabban növekvő hónapja a vendégérkezéseket és a vendégéjszakákat tekintve Budapesten - hívta fel a figyelmet a Budapesti Fesztivál- és Turisztikai Központ (BFTK) elemzésében."
+  "text": "Intevenția unui elicopter SMURD pentru salvarea unui tursit în zona \"La trei pași de moarte, Munții Făgărașului. A fost chemat în ajutor și elicopterul SMURD din județul Mureș, a anunțat, duminică, șeful Salvamont Sibiu, Dan Popescu, potrivit Agerpres. \"SPJ Salvamont Sibiu și Argeș intervin pentru acordarea de prim ajutor unui turist în vârstă de 38 de ani din Cluj, care acuza o stare de greață, vărsături și este în incapacitate de deplasare. Victima se află în zona \' La trei pași de moarte\' din Munții Făgăraș. A fost alertat și elicopterul SMURD Mureș\", a precizat Popescu. Salvamontiștii din Argeș au anunțat, pe pagina oficială de Facebook, că elicopterul a putut prelua victima. Ei au prezentat și imagini de la intervenție.",
+  "target_text": "Intevenția unui elicopter SMURD pentru salvarea unui tursit în zona \"La trei pași de moarte. Salvamontiștii din două județe, Sibiu și Argeș, au intervenit pentru salvarea unui turist din Cluj, care nu se mai putea deplasa."
 }
 ```
 
@@ -498,26 +500,26 @@ When evaluating generative models, we use the following setup (see the
 - Prefix prompt:
 
   ```text
-  Az alábbi szövegek tartalmazzák az eredeti cikkeket és azok összefoglalóit.
+  Mai jos sunt articolele însoțite de rezumate.
   ```
 
 - Base prompt template:
 
   ```text
-  Szöveg: {text}
-  Összefoglaló: {target_text}
+  Articol: {text}
+  Rezumat: {target_text}
   ```
 
 - Instruction-tuned prompt template:
 
   ```text
-  Szöveg: {text}
+  Articol: {text}
 
-  Adjon egy rövid összefoglalót a fenti szövegről.
+  Scrie un rezumat al articolului de mai sus.
   ```
 
 You can evaluate this dataset directly as follows:
 
 ```bash
-euroeval --model <model-id> --dataset hunsum
+euroeval --model <model-id> --dataset sumo-ro
 ```
