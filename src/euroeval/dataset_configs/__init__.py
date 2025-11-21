@@ -8,6 +8,7 @@ from ..tasks import SPEED
 from ..utils import load_custom_datasets_module
 from .bosnian import *  # noqa: F403
 from .bulgarian import *  # noqa: F403
+from .catalan import *  # noqa: F403
 from .croatian import *  # noqa: F403
 from .czech import *  # noqa: F403
 from .danish import *  # noqa: F403

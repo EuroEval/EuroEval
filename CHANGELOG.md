@@ -14,6 +14,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   dataset RoNEC, the reading comprehension dataset MultiWikiQA-ro, the summarisation
   dataset SumO-Ro, the knowledge dataset Global-MMLU-ro, and the common-sense
   reasoning dataset Winogrande-ro.
+- Added support for Catalan! This includes the sentiment classification dataset
+  GuiaCat, the linguistic acceptability dataset ScaLA-ca, the named entity recognition
+  dataset WikiANN-ca, the reading comprehension dataset MultiWikiQA-ca, the summarisation
+  dataset DACSA-ca, the knowledge dataset MMLU-ca, and the common-sense reasoning dataset
+  Winogrande-ca.
 - Added Spanish summarisation dataset DACSA-es as an unofficial dataset.
 - Added Lithuanian sentiment classification dataset Atsiliepimai to replace the now
   unofficial Lithuanian Emotions dataset.

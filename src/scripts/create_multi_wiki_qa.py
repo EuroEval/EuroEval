@@ -53,6 +53,7 @@ LANGUAGES = [
     "bs",
     "hu",
     "ro",
+    "ca",
 ]
 
 
