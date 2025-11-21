@@ -5,6 +5,7 @@
 #     "huggingface-hub==0.34.4",
 #     "pandas==2.2.0",
 #     "requests==2.32.5",
+#     "scikit-learn==1.6.1",
 # ]
 # ///
 

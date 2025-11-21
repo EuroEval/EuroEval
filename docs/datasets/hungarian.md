@@ -8,14 +8,15 @@ information about what these constitute.
 
 ### HuSST
 
-This dataset was published in [this paper](https://acta.bibl.u-szeged.hu/75891/1/msznykonf_018_431-446.pdf)
-and is the Hungarian version of the Stanford Sentiment Treebank.
+This dataset was published in [this
+paper](https://acta.bibl.u-szeged.hu/75891/1/msznykonf_018_431-446.pdf) and is the
+Hungarian version of the Stanford Sentiment Treebank.
 
-The original dataset contains 9,328 / 1,165 / 1,165 samples for the training, validation,
-and test splits, respectively. We use 1,024 / 256 / 2,048 samples for our training,
-validation and test splits, respectively. The train and validation splits are subsets of
-the original splits. The original test split does not contain any labels, so our test split
-is created from the training split.
+The original dataset contains 9,328 / 1,165 / 1,165 samples for the training,
+validation, and test splits, respectively. We use 1,024 / 256 / 2,048 samples for our
+training, validation and test splits, respectively. The train and validation splits are
+subsets of the original splits. The original test split does not contain any labels, so
+our test split is created from the training split.
 
 Here are a few examples from the training split:
 
@@ -67,6 +68,7 @@ When evaluating generative models, we use the following setup (see the
 
 - Label mapping:
   - `positive` ➡️ `pozitív`
+  - `neutral` ➡️ `semleges`
   - `negative` ➡️ `negatív`
 
 You can evaluate this dataset directly as follows:
