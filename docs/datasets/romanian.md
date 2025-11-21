@@ -20,22 +20,22 @@ Here are a few examples from the training split:
 
 ```json
 {
-    "text": "acest film are mari staruri in anii lor mai devreme: ingor stevens nu a fost niciodata mai frumos; yul brynner a fost un jean lafitte foarte convingator, in conflict cu pirateria sa si dorind sa pastreze neutralitatea cu statele unite. charlton heston a facut o treaba destul de buna ca andrew jackson, dar cateva momente au fost un pic stomac. este un film bun pentru elevii sa invete acea parte a istoriei noastre si arata ca toate incheierile fericite nu includ iubitorii care se intalnesc unul cu celalalt - uneori, sfarsitul fericit este acela ca ei navigheaza departe si gasesc parteneri de acelasi gen care le va intelege mai bine pe termen lung. am vazut-o in fiecare an de cel putin doua ori, timp de 16 ani; si desi nu este cel mai bun film pe care l-am vazut vreodata, il iubesc de fiecare data!",
-    "label": "positive"
+  "text": "Nu imi place telefonul",
+  "label": "negative"
 }
 ```
 
 ```json
 {
-    "text": "un film foarte interesant, inteligent si bine facut. liam neeson si tim roth joaca foarte bine rolurile lor. cinematografia este remarcabila. scenele de lupta sunt uimitoare. acesta este un film pe care il voi bucura de vizionarea din nou si din nou. unul dintre preferatele mele.",
-    "label": "positive"
+  "text": "acest film este de departe cel mai rau film realizat vreodata. daca trebuie sa creezi un film care sa-l pretuiasca pe tipul care il interpreteaza pe lars in greii de greu decat sa nu faca filmul nenorocit. trebuie sa spun ca as putea sa ma uit la leprechaun in spatiu de 6 ori inainte de a putea urmari trailerul pentru acest pos al unui film. adam sandler ar trebui sa fie restrictionat de la orice film dupa aceasta rusine. vizionarea acestui film este ca un amestec de ascultare de cher si de buna voie a pune pula intr-un blender. oricine cu jumatate dintr-o celula creierului isi va da seama ca acest film nu merita un ban. daca as avea un dolar in plus si ar fi trebuit sa-l cheltuiesc, l-as da fundatiei lorraina bobbitt de sprijin inainte de a cumpara acest film.",
+  "label": "negative"
 }
 ```
 
 ```json
 {
-    "text": "prea tare filmul!!!!de-abia ieri l-am vazut si mi-e placut foarte mult! merita vazut!:x",
-    "label": "positive"
+  "text": "in lumea de astazi a fabricarii digitale, nu exista un computer decat poate inlocui actorul si scriitorul. din pacate, acest tip de film \"personalizat\" este mult prea rar in aceste zile. performanta lui duvall, precum si james earl jones sunt credinciosi asteptarilor mari ale audientei. ma intreb daca acest film a fost facut pentru televiziune? are o personalitate \"apropiata\" personala pentru naratiune. este subevaluat faptul ca performantele sunt toate remarcabile. singurul lucru care o pastreaza de a fi o cinematografie masterpiece este lipsa unui mare cinematograf, dar pozele frumoase nu sunt totul. cum poate talentul ca jones si duvall sa continue sa produca o astfel de munca amenda intr-o epoca in care actorii prezinta pentru digitizare?",
+  "label": "positive"
 }
 ```
 
@@ -66,7 +66,6 @@ When evaluating generative models, we use the following setup (see the
 
 - Label mapping:
   - `positive` ➡️ `pozitiv`
-  - `neutral` ➡️ `neutru`
   - `negative` ➡️ `negativ`
 
 You can evaluate this dataset directly as follows:

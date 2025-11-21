@@ -12,6 +12,7 @@ ROSENT_CONFIG = DatasetConfig(
     source="EuroEval/ro-sent-mini",
     task=SENT,
     languages=[ROMANIAN],
+    _labels=["positive", "negative"],
 )
 
 SCALA_RO_CONFIG = DatasetConfig(

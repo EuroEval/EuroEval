@@ -21,6 +21,7 @@ from huggingface_hub import HfApi
 from openai import OpenAI
 from openai.types.chat import ChatCompletionUserMessageParam
 from pydantic import BaseModel, Field
+from sklearn.model_selection import train_test_split
 from sklearn.utils import resample
 
 CACHE_FILE = "llm_sent_cache.json"
@@ -110,8 +111,12 @@ def process(df: pd.DataFrame, n_samples: int) -> pd.DataFrame:
     # Create uniform label distribution
     df = _create_uniform_label_distribution(df=df)
 
-    # Truncate to avoid running rosent on more samples than necessary
-    df = df.head(n_samples)
+    # Use train_test_split with stratify to sample n_samples
+    # across the label distribution. We don't want to prompt an LLM
+    # on more samples than necessary.
+    df, _ = train_test_split(
+        df, train_size=n_samples, random_state=4242, stratify=df["label"]
+    )
 
     label_mapping = {0: "negative", 1: "positive"}
     df["label"] = df["label"].map(label_mapping)
