@@ -488,14 +488,17 @@ def split_model_id(model_id: str) -> "ModelIdComponents":
     return ModelIdComponents(model_id=model_id, revision=revision, param=param)
 
 
-def load_custom_datasets_module() -> ModuleType | None:
+def load_custom_datasets_module(custom_datasets_file: Path) -> ModuleType | None:
     """Load the custom datasets module if it exists.
+
+    Args:
+        custom_datasets_file:
+            The path to the custom datasets module.
 
     Raises:
         RuntimeError:
             If the custom datasets module cannot be loaded.
     """
-    custom_datasets_file = Path("custom_datasets.py")
     if custom_datasets_file.exists():
         spec = importlib.util.spec_from_file_location(
             name="custom_datasets_module", location=str(custom_datasets_file.resolve())

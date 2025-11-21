@@ -75,6 +75,7 @@ def generate(
         cache_name=cache_name,
         max_generated_tokens=dataset_config.max_generated_tokens,
         progress_bar=benchmark_config.progress_bar,
+        hash_inputs=not benchmark_config.debug,
     )
 
     scores: list[dict[str, float]] = list()

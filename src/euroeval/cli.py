@@ -1,5 +1,7 @@
 """Command-line interface for benchmarking."""
 
+from pathlib import Path
+
 import click
 
 from .benchmarker import Benchmarker
@@ -218,6 +220,13 @@ from .languages import get_all_languages
     "not specified, the type will be inferred automatically.",
 )
 @click.option(
+    "--custom-datasets-file",
+    type=click.Path(exists=False, dir_okay=False, path_type=Path),
+    default="custom_datasets.py",
+    show_default=True,
+    help="A Python file defining custom datasets to be used in the benchmark.",
+)
+@click.option(
     "--download-only",
     is_flag=True,
     help="Only download the requested model weights and datasets, and exit.",
@@ -251,6 +260,7 @@ def benchmark(
     debug: bool,
     requires_safetensors: bool,
     generative_type: str | None,
+    custom_datasets_file: Path,
     download_only: bool,
 ) -> None:
     """Benchmark pretrained language models on language tasks."""
@@ -278,6 +288,7 @@ def benchmark(
         generative_type=GenerativeType[generative_type.upper()]
         if generative_type
         else None,
+        custom_datasets_file=custom_datasets_file,
         debug=debug,
         run_with_cli=True,
         requires_safetensors=requires_safetensors,
