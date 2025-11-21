@@ -903,3 +903,73 @@ You can evaluate this dataset directly as follows:
 ```bash
 euroeval --model <model-id> --dataset mlsum-es
 ```
+
+### Unofficial: DACSA-es
+
+This dataset was published in [this paper](https://aclanthology.org/2022.naacl-main.434/).
+The original DACSA dataset consists of Spanish and Catalan news articles, but this configuration (DACSA-es) contains only Spanish articles.
+
+The original full dataset consists of 636,596 / 35,376 samples for the training and
+validation splits, respectively. The dataset has two test splits with 35,376 and
+17,836 samples. The first test split contains samples present in the train and
+validation splits, while the second split only has samples that are not present in
+the training and validation splits.
+
+We use a 1,024 / 256 / 2,048 split for training, validation, and testing, respectively
+(totaling 3,328 samples). All new splits are subsets of the original splits.
+Importantly, our new test split is exclusively derived from the original test split
+that does not overlap with the training and validation splits.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "El Popocatépetl está más activo que nunca. La noche del domingo, el volcán mexicano registró una explosión de material incandescente y una nube de vapor, agua y ceniza de hasta 2.000 metros; según Webcams de México, que captó el momento, se trata de la mayor exhalación en tres años.. Las autoridades de Protección Civil y el Centro Nacional de Prevención de Desastres han pedido a la población que no se acerquen al cráter pues se prevé que continúe la actividad volcánica; pidieron también que se cubran alcantarillas y depósitos de agua para evitar la contaminación con ceniza. El volcán ha empezado a registrar cada vez más actividad en los últimos meses. La última gran erupción del Popocatépetl fue durante el mes de diciembre del año 2000 cuando más de 40.000 personas fueron evacuadas.",
+  "target_text": "Las cámaras de monitoreo registraron que el volcán mexicano lanzó material incandescente y una emisión continua de vapor de agua."
+}
+```
+
+```json
+{
+  "text": "El Power Electronics Valencia derrotó con solvencia al Baloncesto Fuenlabrada (86-60) en la décima jornada de la Liga ACB y mantiene vivo el sueño de clasificarse para la próxima edición de la Copa del Rey, que hace pocas semanas era sólo una utopía. El equipo valenciano controló en todo momento el choque liderado por un brillante Víctor Claver. Asestó un primer golpe al equipo madrileño en los primeros minutos, mantuvo a raya los intentos de remontada de su voluntarioso rival en el segundo tiempo y le desbordó al aprovechar el intenso desgaste al que le había sometido durante treinta minutos. Fiel a la personalidad que se está labrando desde la llegada al banquillo de Svetislav Pesic, el conjunto valenciano saltó a la cancha con una enérgica defensa que ahogó por completo el juego de su rival y que, combinada con diez puntos casi consecutivos de Víctor Claver, le permitió romper el choque en pocos minutos (27-11 m.7).La salida a la pista de los veteranos Ferran Laviña y Salva Guardia le dio al Fuenlabrada cierta tranquilidad. El conjunto madrileño dejó de tratar de igualar el ritmo valenciano , bajó la velocidad de su juego y, por momentos, pareció meterse en el encuentro (29-23, m.12).Pero el que no cambió su apuesta fue el Power Electronics Valencia y con un inmenso despliegue físico de Florent Pietrus volvió a abrir brecha en el marcador, impidiendo que le hicieran daño bajo los aros tanto Ayón como Batista, las dos referencias interiores del Fuenlabrada (50-33, m.20).El paso por el vestuario redujo el acierto ofensivo de los locales y el equipo de Salva Maldonado lo aprovechó. Más concentrado en defensa y bien dirigido por Colom, pudo sacar partido a los puntos de Rabaseda y Kus pero no consiguió que los locales perdieran los nervios. Cuando más atascado estaba el conjunto valenciano dos triples casi consecutivos de Claver permitieron a los locales mantener la calma y encarar el último cuarto con un tranquilizador colchón y, de nuevo, con una agresiva defensa (61-49, m.30).En el último cuarto, el equipo de Pesic recuperó sus mejores armas. Adelantó su línea de presión defensiva, ahogó la salida de balón de los visitantes, les cerró todos los caminos al aro y blindó la zona para no conceder rebotes ofensivos, un recital que en ataque completó con nueve puntos seguidos de Savanovic. Así remató al Fuenlabrada, lo que permite a los locales sumar un nuevo triunfo que mantiene vivo su sueño copero.",
+  "target_text": "En un último cuarto espléndido el Power ha terminado arrollando al Fuenlabrada por 86-60 gracias a un excepcional trabajo de equipo en el que ha destacado Víctor Claver con sus 18."
+}
+```
+
+```json
+{
+  "text": "El 'tanking', la estrategia de acumular derrotas adrede para elegir antes en el 'draft', pone en jaque a la Liga estadounidens. La frustración de Marc Gaso. Las grandes competiciones deportivas son un reducto comunista de Estados Unidos. Los ingresos se reparten entre todos, hay un techo de gasto (y se penaliza a quien lo supera, aunque pueda permitírselo), los salarios están limitados por convenio y se concede a los peores equipos la mejor oportunidad de conseguir el talento joven que entra en la liga. El objetivo es sacar a flote a los de abajo para favorecer la igualdad pero, hecho el sistema, hecha la trampa: con los playoffs a la vuelta de la esquina, casi un tercio de la liga intenta perder tantos partidos como sea posible. Y sin disimular demasiado. El fenómeno se llama tanking, aunque la palabra es tabú en la NBA. A Mark Cuban, el dueño de los Dallas Mavericks, se le ocurrió decir en alto que lo mejor para su equipo era perder partidos y la liga le puso una multa con 600.000 dólares, una de las más altas de la historia. Además, la NBA se preocupó de que se filtrara a la prensa un mensaje interno en el que advertía a las 30 franquicias de lo negativo que eso era para la imagen de la liga. Hay que guardar las formas, aunque en la clasificación haya un elefante: para nueve equipos ganar es un disgusto. Son franquicias que pierden deliberadamente para tener más opciones de conseguir una buena elección de draft. El tanking puede hacerse en pretemporada, construyendo un equipo flojo, o a mitad de curso si algo se tuerce, sentando a los mejores jugadores, simulando lesiones o dejando marchar a otros. Eso es lo que se está viendo ahora. Los Memphis Grizzlies sentaron durante una semana sin motivo a su mejor anotador, Tyreke Evans, y de aquí a final de temporada Marc Gasol descansará cuando tengan dos partidos seguidos. Los Atlanta Hawks dieron la carta de libertad a Ilyasova y Belinelli, un titular y su mejor jugador de banquillo. Los Bulls anunciaron que en los últimos dos meses sentarían a dos titulares para dar sus minutos a los jóvenes y se han llevado un aviso de la liga. Tan serio, que los ambos han vuelto a jugar... 10 minutos. El orden del draft se decide en una lotería donde se sortean las tres primeras plazas: a más derrotas, más papeletas para ganarla. El resto se establece por orden inverso a la clasificación, así que, con un poco de ojo, todas esas derrotas pueden convertirse en la estrella del futuro. La estrategia más agresiva para perder fue la de los Philadelphia 76ers entre 2013 y 2016. Fue tan descarada que tuvo nombre, The Process (El proceso), y su ideólogo, Sam Hinkie, acabó despedido con un pequeño empujón de la NBA. Pasaron cuatro años en los bajos fondos, firmando algunas de las peores temporadas de la historia, pero sacaron a Joel Embiid y Ben Simmons, dos estrellas para una década. Su futuro es deslumbrante y muchos quieren copiarles, pese a que por cada éxito hay muchos fracasos. Equipos como Sacramento o Phoenix llevan años perdiendo y su futuro sigue negro. Ahora la NBA busca soluciones para un problema que daña seriamente su imagen. En verano aprobó una reforma del draft que intenta combatir esta plaga. Hasta ahora, el peor equipo tenía un 25% de posibilidades de conseguir el número uno y el porcentaje descendía gradualmente. Desde 2019, los tres peores tendrán un 14% y subirán las opciones del resto, para no premiar tanto la derrota. Pero lo cierto es que la reforma es una versión aguada de las propuestas anteriores, mera cosmética que no impedirá que en años como éste, tan cargado de grandes talentos, los equipos sigan dejándose caer. Porque al final toda derrota es asumible si permite obtener a DeAndre Ayton o Luka Doncic, jóvenes que pueden cambiar de inmediato el curso de una franquicia. La NBA es un correcalles donde no les da tiempo casi a bajarse del avión. y aquí en Europa vamos por el mismo camino con dos ligas paralelas.",
+  "target_text": "El 'tanking', la estrategia de acumular derrotas adrede para elegir antes en el 'draft', pone en jaque a la Liga estadounidenseLa frustración de Marc Gasol."
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 1
+- Prefix prompt:
+
+  ```text
+  A continuación se presentan documentos con resúmenes adjuntos.
+  ```
+
+- Base prompt template:
+
+  ```text
+  Documento: {text}
+  Resumen: {target_text}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Documento: {text}
+
+  Escribe un resumen del documento anterior.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset dacsa-es
+```
