@@ -160,11 +160,11 @@ euroeval --model <model-id> --dataset wikiann-ca
 
 ## Linguistic Acceptability
 
-### ScaLA-hr
+### ScaLA-ca
 
 This dataset was published in [this paper](https://aclanthology.org/2023.nodalida-1.20/)
-and was automatically created from the [Croatian Universal Dependencies
-treebank](https://github.com/UniversalDependencies/UD_Croatian-SET) by assuming that the
+and was automatically created from the [Catalan Universal Dependencies
+treebank](https://github.com/UniversalDependencies/UD_Catalan-AnCora) by assuming that the
 documents in the treebank are correct, and corrupting the samples to create
 grammatically incorrect samples. The corruptions were done by either removing a word
 from a sentence, or by swapping two neighbouring words in a sentence. To ensure that
