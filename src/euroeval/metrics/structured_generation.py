@@ -1,6 +1,4 @@
 """Logic reasoning metrics for puzzles."""
-# TODO: Rename module to something like "structured_generation" or just
-# "custom_generation"
 
 import collections.abc as c
 import logging
