@@ -18,14 +18,7 @@ class PuzzleLevelAccuracyMetric(Metric):
     """Puzzle-level accuracy metric."""
 
     def __init__(self) -> None:
-        """Initialise the puzzle-level accuracy metric.
-
-        Args:
-            name:
-                The name of the metric in snake_case.
-            pretty_name:
-                The pretty name of the metric, used for display purposes.
-        """
+        """Initialise the puzzle-level accuracy metric."""
         super().__init__(
             name="puzzle_level_accuracy",
             pretty_name="Puzzle-level Accuracy",
@@ -50,14 +43,7 @@ class CellWiseAccuracyMetric(Metric):
     """Cell-wise accuracy metric."""
 
     def __init__(self) -> None:
-        """Initialise the cell-wise accuracy metric.
-
-        Args:
-            name:
-                The name of the metric in snake_case.
-            pretty_name:
-                The pretty name of the metric, used for display purposes.
-        """
+        """Initialise the cell-wise accuracy metric."""
         super().__init__(
             name="cell_wise_accuracy",
             pretty_name="Cell-wise Accuracy",
@@ -82,14 +68,7 @@ class BestPermutedCellWiseAccuracyMetric(Metric):
     """Best permuted cell-wise accuracy metric."""
 
     def __init__(self) -> None:
-        """Initialise the best permuted cell-wise accuracy metric.
-
-        Args:
-            name:
-                The name of the metric in snake_case.
-            pretty_name:
-                The pretty name of the metric, used for display purposes.
-        """
+        """Initialise the best permuted cell-wise accuracy metric."""
         super().__init__(
             name="best_permuted_cell_wise_accuracy",
             pretty_name="Best Permuted Cell-wise Accuracy",
