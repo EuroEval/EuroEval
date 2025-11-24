@@ -84,6 +84,17 @@ SUMM = Task(
     default_allowed_model_types=[ModelType.GENERATIVE],
 )
 
+LOGIC = Task(
+    name="logical-reasoning",
+    task_group=TaskGroup.TEXT_TO_TEXT,
+    template_dict=LOGIC_TEMPLATES,
+    metrics=[m.puzzle_level_accuracy_metric, m.cell_wise_accuracy_metric],
+    default_num_few_shot_examples=8,
+    default_max_generated_tokens=256,
+    default_labels=[],
+    uses_structured_output=True,
+)
+
 
 KNOW = Task(
     name="knowledge",
@@ -150,17 +161,6 @@ SPEED = Task(
     default_num_few_shot_examples=0,
     default_max_generated_tokens=5,
     default_labels=[],
-)
-
-LOGIC = Task(
-    name="logical-reasoning",
-    task_group=TaskGroup.LOGICAL_REASONING,  # TODO: Perhaps change to TEXT_TO_TEXT
-    template_dict=LOGIC_TEMPLATES,
-    metrics=[m.puzzle_level_accuracy_metric, m.cell_wise_accuracy_metric],
-    default_num_few_shot_examples=8,
-    default_max_generated_tokens=256,
-    default_labels=[],
-    uses_structured_output=True,
 )
 
 
