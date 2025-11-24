@@ -48,7 +48,7 @@ class PuzzleLevelAccuracyMetric(Metric):
         raise NotImplementedError
 
 
-class CellLevelAccuracyMetric(Metric):
+class CellWiseAccuracyMetric(Metric):
     """Cell-wise accuracy metric."""
 
     def __init__(self) -> None:
@@ -80,7 +80,7 @@ class CellLevelAccuracyMetric(Metric):
         raise NotImplementedError
 
 
-class BestPermutedCellLevelAccuracyMetric(Metric):
+class BestPermutedCellWiseAccuracyMetric(Metric):
     """Best permuted cell-wise accuracy metric."""
 
     def __init__(self) -> None:
@@ -97,7 +97,7 @@ class BestPermutedCellLevelAccuracyMetric(Metric):
             pretty_name="Best Permuted Cell-wise Accuracy",
             postprocessing_fn=lambda raw_score: (raw_score, f"{raw_score:,.2f}"),
         )
-        self.cell_accuracy_metric = CellLevelAccuracyMetric()
+        self.cell_accuracy_metric = CellWiseAccuracyMetric()
 
     def __call__(
         self,
@@ -114,5 +114,5 @@ class BestPermutedCellLevelAccuracyMetric(Metric):
 
 
 puzzle_level_accuracy_metric = PuzzleLevelAccuracyMetric()
-cell_level_accuracy_metric = CellLevelAccuracyMetric()  # TODO: Change to cell-wise
-best_permuted_cell_level_accuracy_metric = BestPermutedCellLevelAccuracyMetric()
+cell_wise_accuracy_metric = CellWiseAccuracyMetric() 
+best_permuted_cell_wise_accuracy_metric = BestPermutedCellWiseAccuracyMetric()
