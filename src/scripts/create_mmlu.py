@@ -31,9 +31,11 @@ from sklearn.model_selection import train_test_split
 LANGUAGES = [
     "da",
     "de",
+    "ca",
     "en",
     "es",
     "fr",
+    "hu",
     "is",
     "it",
     "nl",

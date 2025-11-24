@@ -12,9 +12,9 @@ from .constants import BOS_TOKENS, EOS_TOKENS, PAD_TOKENS
 from .enums import GenerativeType
 from .exceptions import InvalidModel
 from .logging_utils import log, log_once
+from .types import Tokeniser
 
 if t.TYPE_CHECKING:
-    from transformers.tokenization_utils import PreTrainedTokenizer
     from transformers.tokenization_utils_base import PreTrainedTokenizerBase
 
     from .data_models import DatasetConfig, ModelConfig
@@ -73,7 +73,7 @@ def get_special_token_metadata(tokeniser: "PreTrainedTokenizerBase") -> dict:
 
 
 def should_prompts_be_stripped(
-    labels_to_be_generated: c.Sequence[str], tokeniser: "PreTrainedTokenizer"
+    labels_to_be_generated: c.Sequence[str], tokeniser: Tokeniser
 ) -> bool:
     """Determine if we should strip the prompts for few-shot evaluation.
 
@@ -112,7 +112,7 @@ def should_prompts_be_stripped(
 
 
 def should_prefix_space_be_added_to_labels(
-    labels_to_be_generated: c.Sequence[str], tokeniser: "PreTrainedTokenizer"
+    labels_to_be_generated: c.Sequence[str], tokeniser: Tokeniser
 ) -> bool:
     """Determine if we should add a prefix space to the labels.
 
@@ -152,9 +152,7 @@ def should_prefix_space_be_added_to_labels(
     return add_prefix_space
 
 
-def get_bos_token(
-    tokeniser: "PreTrainedTokenizer",
-) -> tuple[str, int] | tuple[None, None]:
+def get_bos_token(tokeniser: Tokeniser) -> tuple[str, int] | tuple[None, None]:
     """Get the beginning-of-sequence token from a tokeniser.
 
     Args:
@@ -192,9 +190,7 @@ def get_bos_token(
     return bos_token, bos_token_id
 
 
-def get_eos_token(
-    tokeniser: "PreTrainedTokenizer",
-) -> tuple[str, int] | tuple[None, None]:
+def get_eos_token(tokeniser: Tokeniser) -> tuple[str, int] | tuple[None, None]:
     """Get the end-of-sequence token from a tokeniser.
 
     Args:
@@ -232,9 +228,7 @@ def get_eos_token(
     return eos_token, eos_token_id
 
 
-def get_pad_token(
-    tokeniser: "PreTrainedTokenizer",
-) -> tuple[str, int] | tuple[None, None]:
+def get_pad_token(tokeniser: Tokeniser) -> tuple[str, int] | tuple[None, None]:
     """Get the padding token from a tokeniser.
 
     Args:
@@ -308,7 +302,7 @@ def get_pad_token(
 
 
 def get_end_of_chat_token_ids(
-    tokeniser: "PreTrainedTokenizer", generative_type: GenerativeType | None
+    tokeniser: Tokeniser, generative_type: GenerativeType | None
 ) -> c.Sequence[int] | None:
     """Get the end token ID for chat models.
 
@@ -370,7 +364,7 @@ def get_end_of_chat_token_ids(
 def get_first_label_token_mapping(
     dataset_config: "DatasetConfig",
     model_config: "ModelConfig",
-    tokeniser: "PreTrainedTokenizer | None",
+    tokeniser: Tokeniser | None,
     generative_type: "GenerativeType | None",
     log_metadata: bool,
 ) -> dict[str, str] | bool:
@@ -443,7 +437,7 @@ def get_first_label_token_mapping(
     else:
         all_tokens = [
             tokeniser.convert_ids_to_tokens(
-                ids=apply_chat_template(
+                ids=apply_chat_template(  # type: ignore[no-matching-overload]
                     conversation=[
                         dict(role="user", content=""),
                         dict(role="assistant", content=label),
@@ -513,7 +507,7 @@ def get_first_label_token_mapping(
         return False
 
 
-def has_chat_template(tokeniser: "PreTrainedTokenizer") -> bool:
+def has_chat_template(tokeniser: Tokeniser) -> bool:
     """Check if a tokeniser has a chat template.
 
     Args:
@@ -549,12 +543,12 @@ def has_chat_template(tokeniser: "PreTrainedTokenizer") -> bool:
 
 
 def apply_chat_template(
-    conversation: c.Sequence[dict[str, str]],
-    tokeniser: "PreTrainedTokenizer",
+    conversation: list[dict[str, str]],
+    tokeniser: Tokeniser,
     tokenise: bool,
     add_generation_prompt: bool,
     **extra_kwargs,
-) -> str | c.Sequence[int]:
+) -> str | list[int]:
     """Apply the chat template to a prompt.
 
     Args:
@@ -600,4 +594,4 @@ def apply_chat_template(
             tokenize=tokenise,
             **extra_kwargs,
         )
-    return templated_prompt
+    return templated_prompt  #  type: ignore[bad-return]

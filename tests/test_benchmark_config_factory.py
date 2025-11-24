@@ -1,5 +1,6 @@
 """Tests for the `benchmark_config_factory` module."""
 
+from pathlib import Path
 from typing import Generator
 
 import pytest
@@ -30,7 +31,13 @@ from euroeval.tasks import LA
 @pytest.fixture(scope="module")
 def all_official_dataset_configs() -> Generator[list[DatasetConfig], None, None]:
     """Fixture for all official dataset configurations."""
-    yield [cfg for cfg in get_all_dataset_configs().values() if not cfg.unofficial]
+    yield [
+        cfg
+        for cfg in get_all_dataset_configs(
+            custom_datasets_file=Path("custom_datasets.py")
+        ).values()
+        if not cfg.unofficial
+    ]
 
 
 @pytest.fixture(scope="module")
@@ -38,7 +45,9 @@ def all_official_la_dataset_configs() -> Generator[list[DatasetConfig], None, No
     """Fixture for all linguistic acceptability dataset configurations."""
     yield [
         cfg
-        for cfg in get_all_dataset_configs().values()
+        for cfg in get_all_dataset_configs(
+            custom_datasets_file=Path("custom_datasets.py")
+        ).values()
         if LA == cfg.task and not cfg.unofficial
     ]
 
@@ -197,7 +206,10 @@ def test_prepare_dataset_configs(
         expected_dataset_configs = request.getfixturevalue(expected_dataset_configs)
 
     prepared_dataset_configs = prepare_dataset_configs(
-        task=input_task, dataset=input_dataset, languages=input_languages
+        task=input_task,
+        dataset=input_dataset,
+        languages=input_languages,
+        custom_datasets_file=Path("custom_datasets.py"),
     )
     assert set(prepared_dataset_configs) == set(expected_dataset_configs)
 
@@ -205,14 +217,22 @@ def test_prepare_dataset_configs(
 def test_prepare_dataset_configs_invalid_task() -> None:
     """Test that an invalid task raises an error."""
     with pytest.raises(InvalidBenchmark):
-        prepare_dataset_configs(task="invalid-task", dataset=None, languages=[DANISH])
+        prepare_dataset_configs(
+            task="invalid-task",
+            dataset=None,
+            languages=[DANISH],
+            custom_datasets_file=Path("custom_datasets.py"),
+        )
 
 
 def test_prepare_dataset_configs_invalid_dataset() -> None:
     """Test that an invalid dataset raises an error."""
     with pytest.raises(InvalidBenchmark):
         prepare_dataset_configs(
-            task=None, dataset="invalid-dataset", languages=[DANISH]
+            task=None,
+            dataset="invalid-dataset",
+            languages=[DANISH],
+            custom_datasets_file=Path("custom_datasets.py"),
         )
 
 

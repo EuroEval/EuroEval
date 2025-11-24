@@ -28,6 +28,7 @@ from ..exceptions import (
 )
 from ..generation_utils import raise_if_wrong_params
 from ..logging_utils import block_terminal_output
+from ..types import Tokeniser
 from ..utils import create_model_cache_dir, get_hf_token
 from .hf import (
     HuggingFaceEncoderModel,
@@ -38,7 +39,6 @@ from .hf import (
 if t.TYPE_CHECKING:
     from transformers.configuration_utils import PretrainedConfig
     from transformers.modeling_utils import PreTrainedModel
-    from transformers.tokenization_utils import PreTrainedTokenizer
 
     from ..data_models import BenchmarkConfig, DatasetConfig
 
@@ -83,7 +83,7 @@ class FreshEncoderModel(HuggingFaceEncoderModel):
             model_max_length=self.model_max_length,
         )
         self._model: "PreTrainedModel" = model
-        self._tokeniser: "PreTrainedTokenizer" = tokeniser
+        self._tokeniser: Tokeniser = tokeniser
 
         self._model, self._tokeniser = align_model_and_tokeniser(
             model=self._model,
@@ -211,7 +211,7 @@ def load_model_and_tokeniser(
     dataset_config: "DatasetConfig",
     benchmark_config: "BenchmarkConfig",
     model_max_length: int,
-) -> "tuple[PreTrainedModel, PreTrainedTokenizer]":
+) -> tuple["PreTrainedModel", Tokeniser]:
     """Load the model and tokeniser.
 
     Args:
@@ -291,7 +291,7 @@ def load_model_and_tokeniser(
     prefix_models = ["Roberta", "GPT", "Deberta"]
     prefix = any(model_type in type(model).__name__ for model_type in prefix_models)
     try:
-        tokeniser: "PreTrainedTokenizer" = AutoTokenizer.from_pretrained(
+        tokeniser: Tokeniser = AutoTokenizer.from_pretrained(
             real_model_id,
             revision=model_config.revision,
             token=get_hf_token(api_key=benchmark_config.api_key),

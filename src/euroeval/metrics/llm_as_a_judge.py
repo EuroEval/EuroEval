@@ -138,6 +138,7 @@ class LLMAsAJudgeMetric(Metric):
             cache_name=f"{dataset_config.name}-model-outputs.json",
             max_generated_tokens=dataset_config.max_generated_tokens,
             progress_bar=benchmark_config.progress_bar,
+            hash_inputs=not benchmark_config.debug,
         )
         judge_cache.load()
 
@@ -256,5 +257,7 @@ fluency_metric = LLMAsAJudgeMetric(
     "Text: {prediction!r}\n\n"
     "Output your rating as a JSON object with a single key 'fluency'.",
     response_format=Fluency,
-    scoring_fn=lambda output: (output.fluency - 1) / 4.0 if output is not None else 0.0,
+    scoring_fn=lambda output: (output.fluency - 1) / 4.0  # type: ignore[missing-attribute]
+    if output is not None
+    else 0.0,
 )

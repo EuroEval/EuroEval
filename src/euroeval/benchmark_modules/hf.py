@@ -33,6 +33,8 @@ from transformers.modelcard import TASK_MAPPING
 from transformers.modeling_utils import PreTrainedModel
 from transformers.models.auto.configuration_auto import AutoConfig
 from transformers.models.auto.tokenization_auto import AutoTokenizer
+from transformers.tokenization_mistral_common import MistralCommonTokenizer
+from transformers.tokenization_utils import PreTrainedTokenizer
 from transformers.trainer import Trainer
 from urllib3.exceptions import RequestError
 
@@ -68,6 +70,7 @@ from ..task_group_utils import (
     token_classification,
 )
 from ..tokenisation_utils import get_bos_token, get_eos_token
+from ..types import Tokeniser
 from ..utils import (
     create_model_cache_dir,
     get_class_by_name,
@@ -79,7 +82,6 @@ from .base import BenchmarkModule
 
 if t.TYPE_CHECKING:
     from transformers.configuration_utils import PretrainedConfig
-    from transformers.tokenization_utils import PreTrainedTokenizer
     from transformers.tokenization_utils_base import BatchEncoding
 
     from ..data_models import BenchmarkConfig, DatasetConfig, Task
@@ -123,7 +125,7 @@ class HuggingFaceEncoderModel(BenchmarkModule):
             benchmark_config=benchmark_config,
         )
         self._model: "PreTrainedModel" = model
-        self._tokeniser: "PreTrainedTokenizer" = tokeniser
+        self._tokeniser: "PreTrainedTokenizer | MistralCommonTokenizer" = tokeniser
 
         self._model, self._tokeniser = align_model_and_tokeniser(
             model=self._model,
@@ -267,12 +269,16 @@ class HuggingFaceEncoderModel(BenchmarkModule):
         return model_max_length
 
     @property
-    def data_collator(self) -> c.Callable[[c.Sequence[t.Any]], dict[str, t.Any]]:
+    def data_collator(self) -> c.Callable[[list[dict[str, t.Any]]], dict[str, t.Any]]:
         """The data collator used to prepare samples during finetuning.
 
         Returns:
             The data collator.
         """
+        assert isinstance(self._tokeniser, PreTrainedTokenizer), (
+            "The data collator property is only supported for models with a "
+            "PreTrainedTokenizer tokeniser."
+        )
         match self.dataset_config.task.task_group:
             case (
                 TaskGroup.SEQUENCE_CLASSIFICATION
@@ -360,6 +366,8 @@ class HuggingFaceEncoderModel(BenchmarkModule):
                 try:
                     examples["label"] = [
                         self._model.config.label2id[lbl.lower()]
+                        if self._model.config.label2id is not None
+                        else lbl
                         for lbl in examples["label"]
                     ]
                 except KeyError as e:
@@ -380,7 +388,7 @@ class HuggingFaceEncoderModel(BenchmarkModule):
                 ).map(tokenise, batched=True, load_from_cache_file=False)
 
             case TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION:
-                dataset = DatasetDict(
+                dataset = DatasetDict(  # type: ignore[no-matching-overload]
                     {
                         split_name: split.map(
                             partial(
@@ -455,7 +463,7 @@ class HuggingFaceEncoderModel(BenchmarkModule):
                         load_from_cache_file=False,
                         keep_in_memory=True,
                     )
-                dataset = DatasetDict(data_dict)
+                dataset = DatasetDict(data_dict)  # type: ignore[no-matching-overload]
 
                 # The Trainer hides the columns that are not used by the model (here
                 # `id` and `offset_mapping` which we will need for our post-processing),
@@ -559,7 +567,7 @@ def load_model_and_tokeniser(
     model_config: "ModelConfig",
     dataset_config: "DatasetConfig",
     benchmark_config: "BenchmarkConfig",
-) -> tuple["PreTrainedModel", "PreTrainedTokenizer"]:
+) -> tuple["PreTrainedModel", Tokeniser]:
     """Load the model and tokeniser.
 
     Args:
@@ -892,7 +900,7 @@ def load_tokeniser(
     model_id: str,
     trust_remote_code: bool,
     model_config: "ModelConfig",
-) -> "PreTrainedTokenizer":
+) -> Tokeniser:
     """Load the tokeniser.
 
     Args:
@@ -1132,7 +1140,12 @@ def setup_model_for_question_answering(model: "PreTrainedModel") -> "PreTrainedM
         # If the token type embeddings has shape (1, ...) then set the shape to
         # (2, ...) by randomly initializing the second token type embedding
         if token_type_embedding_tensor.shape[0] == 1:
-            token_type_embeddings.weight.data = torch.cat(
+            if not hasattr(token_type_embeddings.weight, "data"):
+                raise InvalidModel(
+                    "The token type embeddings of the model do not have a `data` "
+                    "attribute, which is needed to modify the embeddings."
+                )
+            token_type_embeddings.weight.data = torch.cat(  # type: ignore[missing-attribute]
                 (
                     token_type_embedding_tensor,
                     torch.rand_like(token_type_embedding_tensor),
@@ -1177,10 +1190,10 @@ def get_children_of_module(
 
 def align_model_and_tokeniser(
     model: "PreTrainedModel",
-    tokeniser: "PreTrainedTokenizer",
+    tokeniser: Tokeniser,
     model_max_length: int,
     raise_errors: bool = False,
-) -> tuple["PreTrainedModel", "PreTrainedTokenizer"]:
+) -> tuple["PreTrainedModel", Tokeniser]:
     """Aligns the model and the tokeniser.
 
     Args:

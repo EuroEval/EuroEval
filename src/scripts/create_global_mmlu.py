@@ -32,7 +32,7 @@ def main() -> None:
     # Define the dataset ID
     repo_id = "CohereLabs/Global-MMLU"
 
-    languages = ["uk", "el"]
+    languages = ["uk", "el", "ro"]
 
     for language in languages:
         # Load the dataset

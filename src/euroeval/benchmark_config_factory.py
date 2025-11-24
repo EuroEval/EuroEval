@@ -3,6 +3,7 @@
 import collections.abc as c
 import sys
 import typing as t
+from pathlib import Path
 
 import torch
 
@@ -40,6 +41,7 @@ def build_benchmark_config(
         task=benchmark_config_params.task,
         dataset=benchmark_config_params.dataset,
         languages=languages,
+        custom_datasets_file=benchmark_config_params.custom_datasets_file,
     )
 
     return BenchmarkConfig(
@@ -151,6 +153,7 @@ def prepare_dataset_configs(
     task: "str | Task | c.Sequence[str | Task] | None",
     languages: c.Sequence["Language"],
     dataset: "str | DatasetConfig | c.Sequence[str | DatasetConfig] | None",
+    custom_datasets_file: Path,
 ) -> c.Sequence["DatasetConfig"]:
     """Prepare dataset config(s) for benchmarking.
 
@@ -163,6 +166,8 @@ def prepare_dataset_configs(
         dataset:
             The datasets to include for task. If None then all datasets will be
             included, limited by the `task` and `languages` parameters.
+        custom_datasets_file:
+            A path to a Python file containing custom dataset configurations.
 
     Returns:
         The prepared dataset configs.
@@ -172,7 +177,9 @@ def prepare_dataset_configs(
             If the task or dataset is not found in the benchmark tasks or datasets.
     """
     # Create the list of dataset configs
-    all_dataset_configs = get_all_dataset_configs()
+    all_dataset_configs = get_all_dataset_configs(
+        custom_datasets_file=custom_datasets_file
+    )
     all_official_dataset_configs: c.Sequence[DatasetConfig] = [
         dataset_config
         for dataset_config in all_dataset_configs.values()

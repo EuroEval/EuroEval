@@ -406,8 +406,8 @@ def load_skdt_pos() -> dict[str, pd.DataFrame]:
     """
     # Define download URLs
     base_url = (
-        "https://raw.githubusercontent.com/UniversalDependencies/UD_Slovak-SNK/refs/heads/master/"
-        "sk_snk-ud-{}.conllu"
+        "https://raw.githubusercontent.com/UniversalDependencies/UD_Slovak-SNK/refs"
+        "/heads/master/sk_snk-ud-{}.conllu"
     )
     train_url = base_url.format("train")
     val_url = base_url.format("dev")
@@ -424,8 +424,8 @@ def load_ukdt_pos() -> dict[str, pd.DataFrame]:
     """
     # Define download URLs
     base_url = (
-        "https://raw.githubusercontent.com/UniversalDependencies/UD_Ukrainian-ParlaMint/refs/heads/master/"
-        "uk_parlamint-ud-{}.conllu"
+        "https://raw.githubusercontent.com/UniversalDependencies/"
+        "UD_Ukrainian-ParlaMint/refs/heads/master/uk_parlamint-ud-{}.conllu"
     )
     train_url = base_url.format("train")
     val_url = base_url.format("dev")
@@ -442,8 +442,8 @@ def load_eldt_pos() -> dict[str, pd.DataFrame]:
     """
     # Define download URLs
     base_url = (
-        "https://raw.githubusercontent.com/UniversalDependencies/UD_Greek-GUD/refs/heads/master/"
-        "el_gud-ud-{}.conllu"
+        "https://raw.githubusercontent.com/UniversalDependencies/UD_Greek-GUD/refs"
+        "/heads/master/el_gud-ud-{}.conllu"
     )
     train_url = base_url.format("train")
     val_url = base_url.format("dev")
@@ -460,8 +460,8 @@ def load_bgdt_pos() -> dict[str, pd.DataFrame]:
     """
     # Define download URLs
     base_url = (
-        "https://raw.githubusercontent.com/UniversalDependencies/UD_Bulgarian-BTB/refs/heads/master/"
-        "bg_btb-ud-{}.conllu"
+        "https://raw.githubusercontent.com/UniversalDependencies/UD_Bulgarian-BTB/refs"
+        "/heads/master/bg_btb-ud-{}.conllu"
     )
     train_url = base_url.format("train")
     val_url = base_url.format("dev")
@@ -478,8 +478,8 @@ def load_srdt_pos() -> dict[str, pd.DataFrame]:
     """
     # Define download URLs
     base_url = (
-        "https://raw.githubusercontent.com/UniversalDependencies/UD_Serbian-SET/refs/heads/master/"
-        "sr_set-ud-{}.conllu"
+        "https://raw.githubusercontent.com/UniversalDependencies/UD_Serbian-SET/refs"
+        "/heads/master/sr_set-ud-{}.conllu"
     )
     train_url = base_url.format("train")
     val_url = base_url.format("dev")
@@ -489,15 +489,15 @@ def load_srdt_pos() -> dict[str, pd.DataFrame]:
 
 
 def load_sldt_pos() -> dict[str, pd.DataFrame]:
-    """Load the part-of-speech part of the Slovenian Dependency Treebank.
+    """Load the part-of-speech part of the Slovene Dependency Treebank.
 
     Returns:
         The dataframes, stored in the keys `train`, `val`, and `test`.
     """
     # Define download URLs
     base_url = (
-        "https://raw.githubusercontent.com/UniversalDependencies/UD_Slovenian-SSJ/refs/heads/master/"
-        "sl_ssj-ud-{}.conllu"
+        "https://raw.githubusercontent.com/UniversalDependencies/UD_Slovene-SSJ/refs"
+        "/heads/master/sl_ssj-ud-{}.conllu"
     )
     train_url = base_url.format("train")
     val_url = base_url.format("dev")
@@ -514,8 +514,62 @@ def load_hrdt_pos() -> dict[str, pd.DataFrame]:
     """
     # Define download URLs
     base_url = (
-        "https://raw.githubusercontent.com/UniversalDependencies/UD_Croatian-SET/refs/heads/master/"
-        "hr_set-ud-{}.conllu"
+        "https://raw.githubusercontent.com/UniversalDependencies/UD_Croatian-SET/refs"
+        "/heads/master/hr_set-ud-{}.conllu"
+    )
+    train_url = base_url.format("train")
+    val_url = base_url.format("dev")
+    test_url = base_url.format("test")
+
+    return load_ud_pos(train_url=train_url, val_url=val_url, test_url=test_url)
+
+
+def load_hudt_pos() -> dict[str, pd.DataFrame]:
+    """Load the part-of-speech part of the Hungarian Dependency Treebank.
+
+    Returns:
+        The dataframes, stored in the keys `train`, `val`, and `test`.
+    """
+    # Define download URLs
+    base_url = (
+        "https://raw.githubusercontent.com/UniversalDependencies/UD_Hungarian-Szeged/refs"
+        "/heads/master/hu_szeged-ud-{}.conllu"
+    )
+    train_url = base_url.format("train")
+    val_url = base_url.format("dev")
+    test_url = base_url.format("test")
+
+    return load_ud_pos(train_url=train_url, val_url=val_url, test_url=test_url)
+
+
+def load_rodt_pos() -> dict[str, pd.DataFrame]:
+    """Load the part-of-speech part of the Romanian Dependency Treebank.
+
+    Returns:
+        The dataframes, stored in the keys `train`, `val`, and `test`.
+    """
+    # Define download URLs
+    base_url = (
+        "https://raw.githubusercontent.com/UniversalDependencies/UD_Romanian-RRT/refs"
+        "/heads/master/ro_rrt-ud-{}.conllu"
+    )
+    train_url = base_url.format("train")
+    val_url = base_url.format("dev")
+    test_url = base_url.format("test")
+
+    return load_ud_pos(train_url=train_url, val_url=val_url, test_url=test_url)
+
+
+def load_cadt_pos() -> dict[str, pd.DataFrame]:
+    """Load the part-of-speech part of the Catalan Dependency Treebank.
+
+    Returns:
+        The dataframes, stored in the keys `train`, `val`, and `test`.
+    """
+    # Define download URLs
+    base_url = (
+        "https://raw.githubusercontent.com/UniversalDependencies/UD_Catalan-AnCora/refs"
+        "/heads/master/ca_ancora-ud-{}.conllu"
     )
     train_url = base_url.format("train")
     val_url = base_url.format("dev")

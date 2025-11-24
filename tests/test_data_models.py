@@ -22,7 +22,8 @@ def test_all_classes_are_dataclasses_or_pydantic_models() -> None:
         if not obj_name.startswith("_")
         and inspect.isclass(object=getattr(data_models, obj_name))
         and not hasattr(enums, obj_name)
-        and obj_name not in {"ScoreDict", "Metric", "HashableDict", "InvalidBenchmark"}
+        and obj_name
+        not in {"ScoreDict", "Metric", "HashableDict", "InvalidBenchmark", "Path"}
     ]
     for obj in all_classes:
         obj_is_dataclass = hasattr(obj, "__dataclass_fields__")
@@ -328,7 +329,7 @@ class TestBenchmarkParametersAreConsistent:
         """Test that `BenchmarkConfigParams` agrees with `BenchmarkConfig`."""
         benchmark_config_params = set(
             inspect.signature(BenchmarkConfigParams).parameters.keys()
-        ) - {"dataset", "task", "language"}
+        ) - {"dataset", "task", "language", "custom_datasets_file"}
         benchmark_config_fields = set(
             inspect.signature(BenchmarkConfig).parameters.keys()
         ) - {"datasets", "tasks", "languages"}

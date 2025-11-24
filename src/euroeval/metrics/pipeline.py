@@ -192,7 +192,7 @@ def european_values_preprocessing_fn(
     num_phrasings_per_question = 5
 
     # Convert the predictions to integers
-    integer_predictions = []
+    integer_predictions: list[int] = []
     for prediction, idx_to_choice in zip(predictions, dataset["idx_to_choice"]):
         idx_to_choice = {
             int(idx): int(choice)
@@ -238,7 +238,7 @@ def european_values_preprocessing_fn(
 
         # Use majority voting to get the final prediction for each question
         # Shape: (53,)
-        arr = np.apply_along_axis(lambda x: np.bincount(x).argmax(), axis=1, arr=arr)
+        arr = np.apply_along_axis(lambda x: np.bincount(x).argmax(), axis=1, arr=arr)  #  type: ignore[no-matching-overload]
 
         # Convert the array to a list
         integer_predictions = arr.tolist()

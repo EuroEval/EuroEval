@@ -1,6 +1,6 @@
-# 🇸🇮 Slovenian
+# 🇸🇮 Slovene
 
-This is an overview of all the datasets used in the Slovenian part of EuroEval. The
+This is an overview of all the datasets used in the Slovene part of EuroEval. The
 datasets are grouped by their task - see the [task overview](/tasks) for more
 information about what these constitute.
 
@@ -82,7 +82,7 @@ This dataset was published in
 [this paper](https://nl.ijs.si/jtdh20/pdf/JT-DH_2020_Krek-et-al_The-ssj500k-Training-Corpus-for-Slovene-Language-Processing.pdf),
 and consists of a collection of text samples from the
 [FidaPLUS](https://www.sketchengine.eu/fida-plus-corpus/) corpus of written
-modern Slovenian.
+modern Slovene.
 
 The original dataset consists of 9,489 samples. We use 1,024 / 256 / 2,048
 samples for our training, validation and test splits, respectively.
@@ -156,8 +156,8 @@ euroeval --model <model-id> --dataset ssj500k-ner
 ### ScaLA-sl
 
 This dataset was published in [this paper](https://aclanthology.org/2023.nodalida-1.20/)
-and was automatically created from the [Slovenian Universal Dependencies
-treebank](https://github.com/UniversalDependencies/UD_Slovenian-SSJ) by assuming that the
+and was automatically created from the [Slovene Universal Dependencies
+treebank](https://github.com/UniversalDependencies/UD_Slovene-SSJ) by assuming that the
 documents in the treebank are correct, and corrupting the samples to create
 grammatically incorrect samples. The corruptions were done by either removing a word
 from a sentence, or by swapping two neighbouring words in a sentence. To ensure that
@@ -314,7 +314,7 @@ This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2410.0
 and is a machine translated version of the English [MMLU
 dataset](https://openreview.net/forum?id=d7KBjmI3GmQ) and features questions within 57
 different topics, such as elementary mathematics, US history and law. The translation to
-Slovenian was done using DeepL.
+Slovene was done using DeepL.
 
 The original full dataset consists of 285 / 1,531 / 14,042 samples for training,
 validation, and testing, respectively. These splits were merged, duplicates removed, and
