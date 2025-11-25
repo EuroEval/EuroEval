@@ -34,7 +34,7 @@ from transformers.modeling_utils import PreTrainedModel
 from transformers.models.auto.configuration_auto import AutoConfig
 from transformers.models.auto.tokenization_auto import AutoTokenizer
 from transformers.tokenization_mistral_common import MistralCommonTokenizer
-from transformers.tokenization_utils import PreTrainedTokenizer
+from transformers.tokenization_utils_base import PreTrainedTokenizerBase
 from transformers.trainer import Trainer
 from urllib3.exceptions import RequestError
 
@@ -82,6 +82,7 @@ from .base import BenchmarkModule
 
 if t.TYPE_CHECKING:
     from transformers.configuration_utils import PretrainedConfig
+    from transformers.tokenization_utils import PreTrainedTokenizer
     from transformers.tokenization_utils_base import BatchEncoding
 
     from ..data_models import BenchmarkConfig, DatasetConfig, Task
@@ -275,9 +276,9 @@ class HuggingFaceEncoderModel(BenchmarkModule):
         Returns:
             The data collator.
         """
-        assert isinstance(self._tokeniser, PreTrainedTokenizer), (
+        assert isinstance(self._tokeniser, PreTrainedTokenizerBase), (
             "The data collator property is only supported for models with a "
-            "PreTrainedTokenizer tokeniser."
+            "Hugging Face tokeniser."
         )
         match self.dataset_config.task.task_group:
             case (

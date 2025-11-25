@@ -524,31 +524,34 @@ def load_custom_datasets_module(custom_datasets_file: Path) -> ModuleType | None
     return None
 
 
-class flash_attention_backend:
-    """Context manager to temporarily set the flash attention backend.
+class attention_backend:
+    """Context manager to temporarily set the attention backend.
 
-    This sets the `VLLM_ATTENTION_BACKEND` environment variable to `FLASH_ATTN`
+    This sets the `VLLM_ATTENTION_BACKEND` environment variable to the desired value
     for the duration of the context manager, and restores the previous value afterwards.
     """
 
-    def __init__(self, disabled: bool = False) -> None:
+    def __init__(self, value: str | None) -> None:
         """Initialise the context manager.
 
         Args:
-            disabled:
-                If True, this context manager does nothing.
+            value:
+                The name of the attention backend to set. If None then no change is
+                made. Also, if the user has already set the `VLLM_ATTENTION_BACKEND` env
+                var, then no change is made.
         """
-        self.disabled = (
-            True if disabled else os.environ["VLLM_ATTENTION_BACKEND"] != "FLASHINFER"
+        user_has_set_backend = (
+            os.environ.get("USER_HAS_SET_VLLM_ATTENTION_BACKEND", "0") == "1"
         )
+        self.value = None if user_has_set_backend else value
         self.previous_value: str | None = None
 
     def __enter__(self) -> None:
         """Enter the context manager."""
-        if self.disabled:
+        if self.value is None:
             return
         self.previous_value = os.getenv("VLLM_ATTENTION_BACKEND")
-        os.environ["VLLM_ATTENTION_BACKEND"] = "FLASH_ATTN"
+        os.environ["VLLM_ATTENTION_BACKEND"] = self.value
 
     def __exit__(
         self,
@@ -566,7 +569,7 @@ class flash_attention_backend:
             exc_tb:
                 The traceback of the exception.
         """
-        if self.disabled:
+        if self.value is None:
             return
         if self.previous_value is None:
             os.environ.pop("VLLM_ATTENTION_BACKEND", None)

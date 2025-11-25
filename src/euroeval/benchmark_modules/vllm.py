@@ -70,9 +70,9 @@ from ..tokenisation_utils import (
 )
 from ..types import ExtractLabelsFunction, Tokeniser
 from ..utils import (
+    attention_backend,
     clear_memory,
     create_model_cache_dir,
-    flash_attention_backend,
     get_hf_token,
     get_min_cuda_compute_capability,
     internet_connection_available,
@@ -99,9 +99,12 @@ if t.TYPE_CHECKING:
     from ..data_models import BenchmarkConfig, DatasetConfig, Task
 
 
-MODELS_REQUIRING_FLASH_ATTENTION: list[re.Pattern] = [
-    re.compile(r".*gpt-oss.*", flags=re.IGNORECASE)
-]
+MODELS_REQUIRING_CUSTOM_ATTENTION_BACKENDS: dict[re.Pattern, str] = {
+    re.compile(r".*gpt-oss.*", flags=re.IGNORECASE): "FLASH_ATTN",
+    re.compile(r"google/gemma-3-1b.*", flags=re.IGNORECASE): "FLASH_ATTN",
+    re.compile(r"google/gemma-3n.*", flags=re.IGNORECASE): "FLASH_ATTN",
+    re.compile(r"google/gemma-3-(4|12|27)b.*", flags=re.IGNORECASE): "TRITON_ATTN",
+}
 
 
 class VLLMModel(HuggingFaceEncoderModel):
@@ -151,14 +154,16 @@ class VLLMModel(HuggingFaceEncoderModel):
             model_config=model_config, allowed_params=self.allowed_params
         )
 
+        # See if the model requires a particular attention backend
+        default_flash_attention_backend = None
+        for pattern, backend in MODELS_REQUIRING_CUSTOM_ATTENTION_BACKENDS.items():
+            if re.search(pattern=pattern, string=model_config.model_id):
+                default_flash_attention_backend = backend
+                break
+
         with (
             no_terminal_output(disable=benchmark_config.verbose),
-            flash_attention_backend(
-                disabled=all(
-                    not re.search(pattern=pattern, string=model_config.model_id)
-                    for pattern in MODELS_REQUIRING_FLASH_ATTENTION
-                )
-            ),
+            attention_backend(value=default_flash_attention_backend),
         ):
             model, tokeniser = load_model_and_tokeniser(
                 model_config=model_config, benchmark_config=benchmark_config
