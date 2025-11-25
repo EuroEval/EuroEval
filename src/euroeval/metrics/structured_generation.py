@@ -18,16 +18,8 @@ if t.TYPE_CHECKING:
 logger: logging.Logger = logging.getLogger("euroeval")
 
 
-class PuzzleLevelAccuracyMetric(Metric):
-    """Puzzle-level accuracy metric."""
-
-    def __init__(self) -> None:
-        """Initialise the puzzle-level accuracy metric."""
-        super().__init__(
-            name="puzzle_level_accuracy",
-            pretty_name="Puzzle-level Accuracy",
-            postprocessing_fn=lambda raw_score: (raw_score, f"{raw_score:,.0f}"),
-        )
+class StructuredGenerationMetric(Metric):
+    """Base class for structured generation metrics."""
 
     def __call__(
         self,
@@ -37,7 +29,7 @@ class PuzzleLevelAccuracyMetric(Metric):
         dataset_config: "DatasetConfig",
         benchmark_config: "BenchmarkConfig",
     ) -> float | None:
-        """Compute the puzzle-level accuracy.
+        """Compute the metric.
 
         Args:
             predictions:
@@ -52,7 +44,7 @@ class PuzzleLevelAccuracyMetric(Metric):
                 The benchmark configuration. This is not used.
 
         Returns:
-            The calculated puzzle-level accuracy, or None if the score should be ignored.
+            The calculated metric, or None if the score should be ignored.
         """
         if not predictions or not references:
             return None
@@ -72,7 +64,7 @@ class PuzzleLevelAccuracyMetric(Metric):
         self,
         predictions: list[dict[str, list[str]]],
         labels: list[dict[str, list[str]]],
-    ) -> dict[str, float]:
+    ) -> np.ndarray:
         """Compare all JSON predictions and labels.
 
         Args:
@@ -82,7 +74,7 @@ class PuzzleLevelAccuracyMetric(Metric):
                 The ground truth labels.
 
         Returns:
-            A dictionary with comparison results.
+            An array with comparison results.
         """
         n_puzzles = len(labels)
 
@@ -101,22 +93,20 @@ class PuzzleLevelAccuracyMetric(Metric):
                     "The label is not a dictionary. Please ensure that the labels are "
                     "parsed correctly."
                 )
-            results[i] = (
-                self._compare_prediction_and_label(prediction, label)
-            )
+            results[i] = self._compare_prediction_and_label(prediction, label)
 
         # Raise error if the metrics are invalid
-        if (
-            results is None
-        ):
+        if results is None:
             raise InvalidBenchmark("The metric is invalid.")
 
         return results
 
     def _compare_prediction_and_label(
         self, prediction: dict[str, list[str]], label: dict[str, list[str]]
-    ) -> tuple[int, float, float]:
+    ) -> float:
         """Compare a prediction and a label and compute a metric.
+
+        This method must be implemented by subclasses.
 
         Args:
             prediction:
@@ -125,7 +115,28 @@ class PuzzleLevelAccuracyMetric(Metric):
                 The true labels as a dictionary.
 
         Returns:
-            The metric results.
+            The metric result.
+        """
+        raise NotImplementedError("Subclasses must implement _compare_prediction_and_label")
+
+    @staticmethod
+    def _prepare_data(
+        prediction: dict[str, list[str]], label: dict[str, list[str]]
+    ) -> tuple[dict[str, set], dict[str, set], int, int]:
+        """Prepare prediction and label data for comparison.
+
+        Args:
+            prediction:
+                The model predictions as a dictionary.
+            label:
+                The true labels as a dictionary.
+
+        Returns:
+            A tuple containing:
+                - prediction_sets: The prediction as a dictionary of sets.
+                - label_sets: The label as a dictionary of sets.
+                - n_keys: Number of keys in the label.
+                - n_elements_per_key: Number of elements per key in the label.
         """
         n_keys = len(label)
         # Get the first item to determine the number of elements per key
@@ -135,19 +146,48 @@ class PuzzleLevelAccuracyMetric(Metric):
         # Convert each row to a set of values so the order within the row does not matter
         prediction_sets = {
             obj: set(row_attributes)
-            for obj, row_attributes in zip(prediction.keys(), prediction.values())
+            for obj, row_attributes in prediction.items()
         }
         label_sets = {
             obj: set(row_attributes)
-            for obj, row_attributes in zip(label.keys(), label.values())
+            for obj, row_attributes in label.items()
         }
 
-        result = self._compute_puzzle_score(
-            prediction=prediction_sets,
-            label=label_sets,
+        return prediction_sets, label_sets, n_keys, n_elements_per_key
+
+
+class PuzzleLevelAccuracyMetric(StructuredGenerationMetric):
+    """Puzzle-level accuracy metric."""
+
+    def __init__(self) -> None:
+        """Initialise the puzzle-level accuracy metric."""
+        super().__init__(
+            name="puzzle_level_accuracy",
+            pretty_name="Puzzle-level Accuracy",
+            postprocessing_fn=lambda raw_score: (raw_score, f"{raw_score:,.0f}"),
         )
 
-        return result
+    def _compare_prediction_and_label(
+        self, prediction: dict[str, list[str]], label: dict[str, list[str]]
+    ) -> float:
+        """Compare a prediction and a label and compute the puzzle score.
+
+        Args:
+            prediction:
+                The model predictions as a dictionary.
+            label:
+                The true labels as a dictionary.
+
+        Returns:
+            The puzzle score.
+        """
+        prediction_sets, label_sets, _, _ = self._prepare_data(prediction, label)
+        return float(
+            self._compute_puzzle_score(
+                prediction=prediction_sets,
+                label=label_sets,
+            )
+        )
 
     def _compute_puzzle_score(
         prediction: dict[str, set],
@@ -180,7 +220,7 @@ class PuzzleLevelAccuracyMetric(Metric):
         return 1
 
 
-class CellWiseAccuracyMetric(Metric):
+class CellWiseAccuracyMetric(StructuredGenerationMetric):
     """Cell-wise accuracy metric."""
 
     def __init__(self) -> None:
@@ -191,94 +231,10 @@ class CellWiseAccuracyMetric(Metric):
             postprocessing_fn=lambda raw_score: (raw_score, f"{raw_score:,.2f}"),
         )
 
-    def __call__(
-        self,
-        predictions: c.Sequence,
-        references: c.Sequence,
-        dataset: "Dataset",
-        dataset_config: "DatasetConfig",
-        benchmark_config: "BenchmarkConfig",
-    ) -> float | None:
-        """Compute the cell-wise accuracy.
-
-        Args:
-            predictions:
-                The model predictions.
-            references:
-                The ground truth references.
-            dataset:
-                The dataset used for evaluation. This is not used.
-            dataset_config:
-                The dataset configuration. This is not used.
-            benchmark_config:
-                The benchmark configuration. This is not used.
-
-        Returns:
-            The calculated puzzle-level accuracy, or None if the score should be ignored.
-        """
-        if not predictions or not references:
-            return None
-        elif len(predictions) != len(references):
-            raise InvalidBenchmark(
-                f"The number of predictions ({len(predictions):,}) does not match the "
-                f"number of references ({len(references):,})."
-            )
-
-        results = self._compare_all_json_predictions_and_labels(
-            predictions=predictions, labels=references
-        )
-        mean_result = float(np.mean(results))
-        return mean_result
-
-    def _compare_all_json_predictions_and_labels(
-        self,
-        predictions: list[dict[str, list[str]]],
-        labels: list[dict[str, list[str]]],
-    ) -> dict[str, float]:
-        """Compare all JSON predictions and labels.
-
-        Args:
-            predictions:
-                The model predictions.
-            labels:
-                The ground truth labels.
-
-        Returns:
-            A dictionary with comparison results.
-        """
-        n_puzzles = len(labels)
-
-        # Initialize scores
-        results: np.ndarray = np.zeros(n_puzzles)
-
-        # Compute the metrics
-        for i, (prediction, label) in enumerate(zip(predictions, labels)):
-            if not isinstance(prediction, dict):
-                raise InvalidBenchmark(
-                    "The model output is not a dictionary. Please ensure that the "
-                    "model outputs are parsed correctly."
-                )
-            if not isinstance(label, dict):
-                raise InvalidBenchmark(
-                    "The label is not a dictionary. Please ensure that the labels are "
-                    "parsed correctly."
-                )
-            results[i] = (
-                self._compare_prediction_and_label(prediction, label)
-            )
-
-        # Raise error if the metrics are invalid
-        if (
-            results is None
-        ):
-            raise InvalidBenchmark("The metric is invalid.")
-
-        return results
-
     def _compare_prediction_and_label(
         self, prediction: dict[str, list[str]], label: dict[str, list[str]]
-    ) -> tuple[int, float, float]:
-        """Compare a prediction and a label and compute a metric.
+    ) -> float:
+        """Compare a prediction and a label and compute the cell score.
 
         Args:
             prediction:
@@ -287,31 +243,17 @@ class CellWiseAccuracyMetric(Metric):
                 The true labels as a dictionary.
 
         Returns:
-            The metric results.
+            The cell score.
         """
-        n_keys = len(label)
-        # Get the first item to determine the number of elements per key
-        first_key = next(iter(label))
-        n_elements_per_key = len(label[first_key])
-
-        # Convert each row to a set of values so the order within the row does not matter
-        prediction_sets = {
-            obj: set(row_attributes)
-            for obj, row_attributes in zip(prediction.keys(), prediction.values())
-        }
-        label_sets = {
-            obj: set(row_attributes)
-            for obj, row_attributes in zip(label.keys(), label.values())
-        }
-
-        result = self._compute_cell_score(
+        prediction_sets, label_sets, n_keys, n_elements_per_key = (
+            self._prepare_data(prediction, label)
+        )
+        return self._compute_cell_score(
             prediction=prediction_sets,
             label=label_sets,
             n_keys=n_keys,
             n_elements_per_key=n_elements_per_key,
         )
-
-        return result
 
     def _compute_cell_score(
         prediction: dict[str, set],
@@ -354,7 +296,7 @@ class CellWiseAccuracyMetric(Metric):
         return cell_score
 
 
-class BestPermutedCellWiseAccuracyMetric(Metric):
+class BestPermutedCellWiseAccuracyMetric(StructuredGenerationMetric):
     """Best permuted cell-wise accuracy metric."""
 
     def __init__(self) -> None:
@@ -364,96 +306,13 @@ class BestPermutedCellWiseAccuracyMetric(Metric):
             pretty_name="Best Permuted Cell-wise Accuracy",
             postprocessing_fn=lambda raw_score: (raw_score, f"{raw_score:,.2f}"),
         )
-        self.cell_accuracy_metric = CellWiseAccuracyMetric()
-
-    def __call__(
-        self,
-        predictions: c.Sequence,
-        references: c.Sequence,
-        dataset: "Dataset",
-        dataset_config: "DatasetConfig",
-        benchmark_config: "BenchmarkConfig",
-    ) -> float | None:
-        """Compute the best permuted cell-wise accuracy.
-
-        Args:
-            predictions:
-                The model predictions.
-            references:
-                The ground truth references.
-            dataset:
-                The dataset used for evaluation. This is not used.
-            dataset_config:
-                The dataset configuration. This is not used.
-            benchmark_config:
-                The benchmark configuration. This is not used.
-
-        Returns:
-            The calculated puzzle-level accuracy, or None if the score should be ignored.
-        """
-        if not predictions or not references:
-            return None
-        elif len(predictions) != len(references):
-            raise InvalidBenchmark(
-                f"The number of predictions ({len(predictions):,}) does not match the "
-                f"number of references ({len(references):,})."
-            )
-
-        results = self._compare_all_json_predictions_and_labels(
-            predictions=predictions, labels=references
-        )
-        mean_result = float(np.mean(results))
-        return mean_result
-
-    def _compare_all_json_predictions_and_labels(
-        self,
-        predictions: list[dict[str, list[str]]],
-        labels: list[dict[str, list[str]]],
-    ) -> dict[str, float]:
-        """Compare all JSON predictions and labels.
-
-        Args:
-            predictions:
-                The model predictions.
-            labels:
-                The ground truth labels.
-
-        Returns:
-            A dictionary with comparison results.
-        """
-        n_puzzles = len(labels)
-
-        # Initialize scores
-        results: np.ndarray = np.zeros(n_puzzles)
-
-        # Compute the metrics
-        for i, (prediction, label) in enumerate(zip(predictions, labels)):
-            if not isinstance(prediction, dict):
-                raise InvalidBenchmark(
-                    "The model output is not a dictionary. Please ensure that the "
-                    "model outputs are parsed correctly."
-                )
-            if not isinstance(label, dict):
-                raise InvalidBenchmark(
-                    "The label is not a dictionary. Please ensure that the labels are "
-                    "parsed correctly."
-                )
-            results[i] = (
-                self._compare_prediction_and_label(prediction, label)
-            )
-
-        # Raise error if the metrics are invalid
-        if (
-            results is None
-        ):
-            raise InvalidBenchmark("The metric is invalid.")
-
-        return results
+        # Use CellWiseAccuracyMetric's _compute_cell_score method
+        self._cell_score_computer = CellWiseAccuracyMetric()
 
     def _compare_prediction_and_label(
         self, prediction: dict[str, list[str]], label: dict[str, list[str]]
-    ) -> tuple[int, float, float]:
-        """Compare a prediction and a label and compute a metric.
+    ) -> float:
+        """Compare a prediction and a label and compute the best permuted score.
 
         Args:
             prediction:
@@ -462,31 +321,17 @@ class BestPermutedCellWiseAccuracyMetric(Metric):
                 The true labels as a dictionary.
 
         Returns:
-            The metric results.
+            The best permuted cell score.
         """
-        n_keys = len(label)
-        # Get the first item to determine the number of elements per key
-        first_key = next(iter(label))
-        n_elements_per_key = len(label[first_key])
-
-        # Convert each row to a set of values so the order within the row does not matter
-        prediction_sets = {
-            obj: set(row_attributes)
-            for obj, row_attributes in zip(prediction.keys(), prediction.values())
-        }
-        label_sets = {
-            obj: set(row_attributes)
-            for obj, row_attributes in zip(label.keys(), label.values())
-        }
-
-        result = self._compute_best_permuted_cell_score(
+        prediction_sets, label_sets, n_keys, n_elements_per_key = (
+            self._prepare_data(prediction, label)
+        )
+        return self._compute_best_permuted_cell_score(
             prediction=prediction_sets,
             label=label_sets,
             n_keys=n_keys,
             n_elements_per_key=n_elements_per_key,
         )
-
-        return result
 
     def _compute_best_permuted_cell_score(
         self,
@@ -522,7 +367,7 @@ class BestPermutedCellWiseAccuracyMetric(Metric):
             }
 
             # Compare the permuted prediction to the label
-            permuted_cell_score = self._compute_cell_score(
+            permuted_cell_score = self._cell_score_computer._compute_cell_score(
                 prediction=prediction_permuted,
                 label=label,
                 n_keys=n_keys,
@@ -538,46 +383,6 @@ class BestPermutedCellWiseAccuracyMetric(Metric):
                 best_permuted_cell_score = permuted_cell_score
 
         return best_permuted_cell_score
-
-    def _compute_cell_score(
-        prediction: dict[str, set],
-        label: dict[str, set],
-        n_keys: int,
-        n_elements_per_key: int,
-    ) -> float:
-        """Compute the cell score.
-
-        Args:
-            prediction: The prediction as a dictionary.
-            label: The label as a dictionary.
-            n_keys: Number of keys in the label.
-            n_elements_per_key: Number of elements per key in the label.
-
-        Returns:
-            The cell score as a float.
-        """
-        # Sort the prediction and label by object keys to ensure consistent order
-        prediction = dict(sorted(prediction.items()))
-        label = dict(sorted(label.items()))
-
-        if prediction == label:
-            return 1.0
-
-        # Compare each cell
-        cell_score: float = 0.0
-        n_correct_attributes: int = 0
-        for attributes_pred, attributes_label in zip(prediction.values(), label.values()):
-            # strip whitespace
-            attributes_pred = {attr.strip() for attr in attributes_pred}
-            attributes_label = {attr.strip() for attr in attributes_label}
-
-            # Count the number of correct attributes
-            n_correct_attributes += len(attributes_pred.intersection(attributes_label))
-
-        # Normalise the cell score
-        cell_score = float(n_correct_attributes) / float(n_keys * n_elements_per_key)
-
-        return cell_score
 
 
 puzzle_level_accuracy_metric = PuzzleLevelAccuracyMetric()
