@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Added
+
+- Added the Danish zebra puzzle dataset
+  [zebra_puzzles](https://huggingface.co/datasets/alexandrainst/zebra_puzzles). The split
+  is given by 128 / 1,024 samples for train / test, respectively. It is marked as
+  `unofficial` for now. This was contributed by @sofiehb ✨
+- Drafted the logical reasoning task. This was contributed by @sofiehb ✨
+
 ## [v16.8.0] - 2025-11-25
 
 ### Added
@@ -32,11 +40,6 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Added new `--custom-datasets-file` (`custom_datasets_file` in the `Benchmarker` API)
   argument, which can be used to specify a custom Python file containing custom dataset
   definitions. It defaults to `custom_datasets.py` in the current working directory.
-- Added the Danish zebra puzzle dataset
-  [zebra_puzzles](https://huggingface.co/datasets/alexandrainst/zebra_puzzles). The split
-  is given by 128 / 1,024 samples for train / test, respectively. It is marked as
-  `unofficial` for now. This was contributed by @sofiehb ✨
-- Drafted the logical reasoning task. This was contributed by @sofiehb ✨
 
 ### Changed
 
