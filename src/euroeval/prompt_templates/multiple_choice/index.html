@@ -651,6 +651,12 @@
       
         
       
+        
+      
+        
+      
+        
+      
     
     
     
@@ -1114,13 +1120,23 @@
 <span class="normal">251</span>
 <span class="normal">252</span>
 <span class="normal">253</span>
-<span class="normal">254</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Templates for all multiple choice tasks.&quot;&quot;&quot;</span>
+<span class="normal">254</span>
+<span class="normal">255</span>
+<span class="normal">256</span>
+<span class="normal">257</span>
+<span class="normal">258</span>
+<span class="normal">259</span>
+<span class="normal">260</span>
+<span class="normal">261</span>
+<span class="normal">262</span>
+<span class="normal">263</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Templates for all multiple choice tasks.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">t</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">..data_models</span><span class="w"> </span><span class="kn">import</span> <span class="n">PromptConfig</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..languages</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">BULGARIAN</span><span class="p">,</span>
+    <span class="n">CATALAN</span><span class="p">,</span>
     <span class="n">CROATIAN</span><span class="p">,</span>
     <span class="n">CZECH</span><span class="p">,</span>
     <span class="n">DANISH</span><span class="p">,</span>
@@ -1131,6 +1147,7 @@
     <span class="n">FRENCH</span><span class="p">,</span>
     <span class="n">GERMAN</span><span class="p">,</span>
     <span class="n">GREEK</span><span class="p">,</span>
+    <span class="n">HUNGARIAN</span><span class="p">,</span>
     <span class="n">ICELANDIC</span><span class="p">,</span>
     <span class="n">ITALIAN</span><span class="p">,</span>
     <span class="n">LATVIAN</span><span class="p">,</span>
@@ -1140,6 +1157,7 @@
     <span class="n">NORWEGIAN_NYNORSK</span><span class="p">,</span>
     <span class="n">POLISH</span><span class="p">,</span>
     <span class="n">PORTUGUESE</span><span class="p">,</span>
+    <span class="n">ROMANIAN</span><span class="p">,</span>
     <span class="n">SERBIAN</span><span class="p">,</span>
     <span class="n">SLOVAK</span><span class="p">,</span>
     <span class="n">SLOVENE</span><span class="p">,</span>
@@ -1160,26 +1178,28 @@
         <span class="s2">&quot;като отговорите с </span><span class="si">{labels_str}</span><span class="s2">, и нищо друго.&quot;</span><span class="p">,</span>
         <span class="n">default_prompt_label_mapping</span><span class="o">=</span><span class="s2">&quot;auto&quot;</span><span class="p">,</span>
     <span class="p">),</span>
+    <span class="n">CATALAN</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
+        <span class="n">default_prompt_prefix</span><span class="o">=</span><span class="s2">&quot;Les següents són preguntes de selecció múltiple &quot;</span>
+        <span class="s2">&quot;(amb respostes).&quot;</span><span class="p">,</span>
+        <span class="n">default_prompt_template</span><span class="o">=</span><span class="s2">&quot;Pregunta: </span><span class="si">{text}</span><span class="se">\n</span><span class="s2">Resposta: </span><span class="si">{label}</span><span class="s2">&quot;</span><span class="p">,</span>
+        <span class="n">default_instruction_prompt</span><span class="o">=</span><span class="s2">&quot;Pregunta: </span><span class="si">{text}</span><span class="se">\n\n</span><span class="s2">Respon a la pregunta &quot;</span>
+        <span class="s2">&quot;anterior utilitzant només </span><span class="si">{labels_str}</span><span class="s2">, i res més.&quot;</span><span class="p">,</span>
+        <span class="n">default_prompt_label_mapping</span><span class="o">=</span><span class="s2">&quot;auto&quot;</span><span class="p">,</span>
+    <span class="p">),</span>
     <span class="n">CROATIAN</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
-        <span class="n">default_prompt_prefix</span><span class="o">=</span><span class="p">(</span>
-            <span class="s2">&quot;Sljedeća su pitanja s višestrukim izborom (s odgovorima).&quot;</span>
-        <span class="p">),</span>
-        <span class="n">default_prompt_template</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;Pitanje: </span><span class="si">{text}</span><span class="se">\n</span><span class="s2">Odgovor: </span><span class="si">{label}</span><span class="s2">&quot;</span><span class="p">),</span>
-        <span class="n">default_instruction_prompt</span><span class="o">=</span><span class="p">(</span>
-            <span class="s2">&quot;Pitanje: </span><span class="si">{text}</span><span class="se">\n\n</span><span class="s2">&quot;</span>
-            <span class="s2">&quot;Odgovorite na gornje pitanje koristeći </span><span class="si">{labels_str}</span><span class="s2">, i ništa drugo.&quot;</span>
-        <span class="p">),</span>
+        <span class="n">default_prompt_prefix</span><span class="o">=</span><span class="s2">&quot;Sljedeća su pitanja s višestrukim izborom &quot;</span>
+        <span class="s2">&quot;(s odgovorima).&quot;</span><span class="p">,</span>
+        <span class="n">default_prompt_template</span><span class="o">=</span><span class="s2">&quot;Pitanje: </span><span class="si">{text}</span><span class="se">\n</span><span class="s2">Odgovor: </span><span class="si">{label}</span><span class="s2">&quot;</span><span class="p">,</span>
+        <span class="n">default_instruction_prompt</span><span class="o">=</span><span class="s2">&quot;Pitanje: </span><span class="si">{text}</span><span class="se">\n\n</span><span class="s2">Odgovorite na gornje pitanje &quot;</span>
+        <span class="s2">&quot;koristeći </span><span class="si">{labels_str}</span><span class="s2">, i ništa drugo.&quot;</span><span class="p">,</span>
         <span class="n">default_prompt_label_mapping</span><span class="o">=</span><span class="s2">&quot;auto&quot;</span><span class="p">,</span>
     <span class="p">),</span>
     <span class="n">CZECH</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
-        <span class="n">default_prompt_prefix</span><span class="o">=</span><span class="p">(</span>
-            <span class="s2">&quot;Následující jsou otázky s výběrem z více možností (s odpověďmi).&quot;</span>
-        <span class="p">),</span>
+        <span class="n">default_prompt_prefix</span><span class="o">=</span><span class="s2">&quot;Následující jsou otázky s výběrem z více možností &quot;</span>
+        <span class="s2">&quot;(s odpověďmi).&quot;</span><span class="p">,</span>
         <span class="n">default_prompt_template</span><span class="o">=</span><span class="s2">&quot;Otázka: </span><span class="si">{text}</span><span class="se">\n</span><span class="s2">Odpověď: </span><span class="si">{label}</span><span class="s2">&quot;</span><span class="p">,</span>
-        <span class="n">default_instruction_prompt</span><span class="o">=</span><span class="p">(</span>
-            <span class="s2">&quot;Otázka: </span><span class="si">{text}</span><span class="se">\n\n</span><span class="s2">Odpovězte na výše uvedenou otázku &quot;</span>
-            <span class="s2">&quot;pomocí </span><span class="si">{labels_str}</span><span class="s2">, a nic jiného.&quot;</span>
-        <span class="p">),</span>
+        <span class="n">default_instruction_prompt</span><span class="o">=</span><span class="s2">&quot;Otázka: </span><span class="si">{text}</span><span class="se">\n\n</span><span class="s2">Odpovězte na výše uvedenou &quot;</span>
+        <span class="s2">&quot;otázku pomocí </span><span class="si">{labels_str}</span><span class="s2">, a nic jiného.&quot;</span><span class="p">,</span>
         <span class="n">default_prompt_label_mapping</span><span class="o">=</span><span class="s2">&quot;auto&quot;</span><span class="p">,</span>
     <span class="p">),</span>
     <span class="n">DANISH</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
@@ -1203,6 +1223,14 @@
         <span class="n">default_prompt_template</span><span class="o">=</span><span class="s2">&quot;Ερώτηση: </span><span class="si">{text}</span><span class="se">\n</span><span class="s2">Απάντηση: </span><span class="si">{label}</span><span class="s2">&quot;</span><span class="p">,</span>
         <span class="n">default_instruction_prompt</span><span class="o">=</span><span class="s2">&quot;Ερώτηση: </span><span class="si">{text}</span><span class="se">\n\n</span><span class="s2">Απαντήστε στην παραπάνω ερώτηση &quot;</span>
         <span class="s2">&quot;χρησιμοποιώντας </span><span class="si">{labels_str}</span><span class="s2">, και τίποτα άλλο.&quot;</span><span class="p">,</span>
+        <span class="n">default_prompt_label_mapping</span><span class="o">=</span><span class="s2">&quot;auto&quot;</span><span class="p">,</span>
+    <span class="p">),</span>
+    <span class="n">HUNGARIAN</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
+        <span class="n">default_prompt_prefix</span><span class="o">=</span><span class="s2">&quot;Az alábbiakban több választási lehetőséget tartalmazó &quot;</span>
+        <span class="s2">&quot;kérdések találhatók (válaszokkal együtt).&quot;</span><span class="p">,</span>
+        <span class="n">default_prompt_template</span><span class="o">=</span><span class="s2">&quot;Kérdés: </span><span class="si">{text}</span><span class="se">\n</span><span class="s2">Válasz: </span><span class="si">{label}</span><span class="s2">&quot;</span><span class="p">,</span>
+        <span class="n">default_instruction_prompt</span><span class="o">=</span><span class="s2">&quot;Kérdés: </span><span class="si">{text}</span><span class="se">\n\n</span><span class="s2">Válaszoljon a fenti kérdésre &quot;</span>
+        <span class="s2">&quot;az elérhető lehetőségek közül </span><span class="si">{labels_str}</span><span class="s2"> használatával, és semmi mással.&quot;</span><span class="p">,</span>
         <span class="n">default_prompt_label_mapping</span><span class="o">=</span><span class="s2">&quot;auto&quot;</span><span class="p">,</span>
     <span class="p">),</span>
     <span class="n">ENGLISH</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
@@ -1311,6 +1339,14 @@
         <span class="s2">&quot;</span><span class="si">{labels_str}</span><span class="s2">, og ikke noe annet.&quot;</span><span class="p">,</span>
         <span class="n">default_prompt_label_mapping</span><span class="o">=</span><span class="s2">&quot;auto&quot;</span><span class="p">,</span>
     <span class="p">),</span>
+    <span class="n">ROMANIAN</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
+        <span class="n">default_prompt_prefix</span><span class="o">=</span><span class="s2">&quot;Următorul este un set de întrebări cu mai multe &quot;</span>
+        <span class="s2">&quot;opțiuni (cu răspunsuri).&quot;</span><span class="p">,</span>
+        <span class="n">default_prompt_template</span><span class="o">=</span><span class="s2">&quot;Întrebare: </span><span class="si">{text}</span><span class="se">\n</span><span class="s2">Răspuns: </span><span class="si">{label}</span><span class="s2">&quot;</span><span class="p">,</span>
+        <span class="n">default_instruction_prompt</span><span class="o">=</span><span class="s2">&quot;Întrebare: </span><span class="si">{text}</span><span class="se">\n\n</span><span class="s2">Răspundeți la următoarea &quot;</span>
+        <span class="s2">&quot;întrebare folosind </span><span class="si">{labels_str}</span><span class="s2">,</span><span class="se">\n</span><span class="s2">și nimic altceva.&quot;</span><span class="p">,</span>
+        <span class="n">default_prompt_label_mapping</span><span class="o">=</span><span class="s2">&quot;auto&quot;</span><span class="p">,</span>
+    <span class="p">),</span>
     <span class="n">POLISH</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
         <span class="n">default_prompt_prefix</span><span class="o">=</span><span class="s2">&quot;Poniżej znajdują się pytania wielokrotnego wyboru &quot;</span>
         <span class="s2">&quot;(z odpowiedziami).&quot;</span><span class="p">,</span>
@@ -1320,32 +1356,24 @@
         <span class="n">default_prompt_label_mapping</span><span class="o">=</span><span class="s2">&quot;auto&quot;</span><span class="p">,</span>
     <span class="p">),</span>
     <span class="n">SLOVAK</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
-        <span class="n">default_prompt_prefix</span><span class="o">=</span><span class="p">(</span>
-            <span class="s2">&quot;Nasledujú otázky s viacerými možnosťami (s odpoveďami).&quot;</span>
-        <span class="p">),</span>
+        <span class="n">default_prompt_prefix</span><span class="o">=</span><span class="s2">&quot;Nasledujú otázky s viacerými možnosťami (s odpoveďami).&quot;</span><span class="p">,</span>
         <span class="n">default_prompt_template</span><span class="o">=</span><span class="s2">&quot;Otázka: </span><span class="si">{text}</span><span class="se">\n</span><span class="s2">Odpoveď: </span><span class="si">{label}</span><span class="s2">&quot;</span><span class="p">,</span>
-        <span class="n">default_instruction_prompt</span><span class="o">=</span><span class="p">(</span>
-            <span class="s2">&quot;Otázka: </span><span class="si">{text}</span><span class="se">\n\n</span><span class="s2">&quot;</span>
-            <span class="s2">&quot;Odpovedzte na nasledujúcu otázku použitím </span><span class="si">{labels_str}</span><span class="s2">, a nič iné.&quot;</span>
-        <span class="p">),</span>
+        <span class="n">default_instruction_prompt</span><span class="o">=</span><span class="s2">&quot;Otázka: </span><span class="si">{text}</span><span class="se">\n\n</span><span class="s2">Odpovedzte na nasledujúcu &quot;</span>
+        <span class="s2">&quot;otázku použitím </span><span class="si">{labels_str}</span><span class="s2">, a nič iné.&quot;</span><span class="p">,</span>
         <span class="n">default_prompt_label_mapping</span><span class="o">=</span><span class="s2">&quot;auto&quot;</span><span class="p">,</span>
     <span class="p">),</span>
     <span class="n">SLOVENE</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
         <span class="n">default_prompt_prefix</span><span class="o">=</span><span class="s2">&quot;Naslednja so vprašanja z več možnostmi (z odgovori).&quot;</span><span class="p">,</span>
         <span class="n">default_prompt_template</span><span class="o">=</span><span class="s2">&quot;Vprašanje: </span><span class="si">{text}</span><span class="se">\n</span><span class="s2">Odgovor: </span><span class="si">{label}</span><span class="s2">&quot;</span><span class="p">,</span>
-        <span class="n">default_instruction_prompt</span><span class="o">=</span><span class="p">(</span>
-            <span class="s2">&quot;Vprašanje: </span><span class="si">{text}</span><span class="se">\n\n</span><span class="s2">&quot;</span>
-            <span class="s2">&quot;Odgovorite na navedeno vprašanje z uporabo </span><span class="si">{labels_str}</span><span class="s2">, in nič drugega.&quot;</span>
-        <span class="p">),</span>
+        <span class="n">default_instruction_prompt</span><span class="o">=</span><span class="s2">&quot;Vprašanje: </span><span class="si">{text}</span><span class="se">\n\n</span><span class="s2">Odgovorite na navedeno &quot;</span>
+        <span class="s2">&quot;vprašanje z uporabo </span><span class="si">{labels_str}</span><span class="s2">, in nič drugega.&quot;</span><span class="p">,</span>
         <span class="n">default_prompt_label_mapping</span><span class="o">=</span><span class="s2">&quot;auto&quot;</span><span class="p">,</span>
     <span class="p">),</span>
     <span class="n">SERBIAN</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
-        <span class="n">default_prompt_prefix</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;Slede pitanja višestrukog izbora (sa odgovorima).&quot;</span><span class="p">),</span>
+        <span class="n">default_prompt_prefix</span><span class="o">=</span><span class="s2">&quot;Slede pitanja višestrukog izbora (sa odgovorima).&quot;</span><span class="p">,</span>
         <span class="n">default_prompt_template</span><span class="o">=</span><span class="s2">&quot;Pitanje: </span><span class="si">{text}</span><span class="se">\n</span><span class="s2">Odgovor: </span><span class="si">{label}</span><span class="s2">&quot;</span><span class="p">,</span>
-        <span class="n">default_instruction_prompt</span><span class="o">=</span><span class="p">(</span>
-            <span class="s2">&quot;Pitanje: </span><span class="si">{text}</span><span class="se">\n\n</span><span class="s2">&quot;</span>
-            <span class="s2">&quot;Odgovorite na navedeno pitanje koristeći </span><span class="si">{labels_str}</span><span class="s2">, i ništa drugo.&quot;</span>
-        <span class="p">),</span>
+        <span class="n">default_instruction_prompt</span><span class="o">=</span><span class="s2">&quot;Pitanje: </span><span class="si">{text}</span><span class="se">\n\n</span><span class="s2">Odgovorite na navedeno &quot;</span>
+        <span class="s2">&quot;pitanje koristeći </span><span class="si">{labels_str}</span><span class="s2">, i ništa drugo.&quot;</span><span class="p">,</span>
         <span class="n">default_prompt_label_mapping</span><span class="o">=</span><span class="s2">&quot;auto&quot;</span><span class="p">,</span>
     <span class="p">),</span>
     <span class="n">SWEDISH</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
@@ -1356,15 +1384,11 @@
         <span class="n">default_prompt_label_mapping</span><span class="o">=</span><span class="s2">&quot;auto&quot;</span><span class="p">,</span>
     <span class="p">),</span>
     <span class="n">UKRAINIAN</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
-        <span class="n">default_prompt_prefix</span><span class="o">=</span><span class="p">(</span>
-            <span class="s2">&quot;Нижче наведено питання з кількома варіантами відповідей (з відповідями).&quot;</span>
-        <span class="p">),</span>
-        <span class="n">default_prompt_template</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;Питання: </span><span class="si">{text}</span><span class="se">\n</span><span class="s2">Відповідь: </span><span class="si">{label}</span><span class="s2">&quot;</span><span class="p">),</span>
-        <span class="n">default_instruction_prompt</span><span class="o">=</span><span class="p">(</span>
-            <span class="s2">&quot;Питання: </span><span class="si">{text}</span><span class="se">\n\n</span><span class="s2">&quot;</span>
-            <span class="s2">&quot;Дайте відповідь на наведене вище питання, використовуючи &quot;</span>
-            <span class="s2">&quot;</span><span class="si">{labels_str}</span><span class="s2">, і нічого іншого.&quot;</span>
-        <span class="p">),</span>
+        <span class="n">default_prompt_prefix</span><span class="o">=</span><span class="s2">&quot;Нижче наведено питання з кількома варіантами &quot;</span>
+        <span class="s2">&quot;відповідей (з відповідями).&quot;</span><span class="p">,</span>
+        <span class="n">default_prompt_template</span><span class="o">=</span><span class="s2">&quot;Питання: </span><span class="si">{text}</span><span class="se">\n</span><span class="s2">Відповідь: </span><span class="si">{label}</span><span class="s2">&quot;</span><span class="p">,</span>
+        <span class="n">default_instruction_prompt</span><span class="o">=</span><span class="s2">&quot;Питання: </span><span class="si">{text}</span><span class="se">\n\n</span><span class="s2">Дайте відповідь на наведене &quot;</span>
+        <span class="s2">&quot;вище питання, використовуючи </span><span class="si">{labels_str}</span><span class="s2">, і нічого іншого.&quot;</span><span class="p">,</span>
         <span class="n">default_prompt_label_mapping</span><span class="o">=</span><span class="s2">&quot;auto&quot;</span><span class="p">,</span>
     <span class="p">),</span>
 <span class="p">}</span>

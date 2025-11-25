@@ -659,6 +659,12 @@
       
         
       
+        
+      
+        
+      
+        
+      
     
     
     
@@ -1075,6 +1081,12 @@
       
         
       
+        
+      
+        
+      
+        
+      
     
     
     
@@ -1158,6 +1170,29 @@
   
   <span class="md-ellipsis">
     euroeval.dataset_configs.bulgarian
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="catalan/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    euroeval.dataset_configs.catalan
     
   </span>
   
@@ -1428,6 +1463,29 @@
   
   
     <li class="md-nav__item">
+      <a href="hungarian/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    euroeval.dataset_configs.hungarian
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="icelandic/" class="md-nav__link">
         
   
@@ -1572,6 +1630,29 @@
   
   <span class="md-ellipsis">
     euroeval.dataset_configs.portuguese
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="romanian/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    euroeval.dataset_configs.romanian
     
   </span>
   
@@ -2601,10 +2682,27 @@ Get the dataset configuration for a dataset.</p>
 <i class="fa-regular fa-square-minus"></i>
 </span>
 </span>
-<span class="mkapi-object-name"><a href="./#euroeval.dataset_configs.get_all_dataset_configs" title="euroeval.dataset_configs.get_all_dataset_configs">get_all_dataset_configs</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-paren">)</span><span class="mkapi-arrow"> → </span><span class="mkapi-return">dict[str, <a href="../data_models/#euroeval.data_models.DatasetConfig" title="euroeval.data_models.DatasetConfig">DatasetConfig</a>]</span></span>
+<span class="mkapi-object-name"><a href="./#euroeval.dataset_configs.get_all_dataset_configs" title="euroeval.dataset_configs.get_all_dataset_configs">get_all_dataset_configs</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">custom_datasets_file</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="pathlib.Path">Path</span></span><span class="mkapi-paren">)</span><span class="mkapi-arrow"> → </span><span class="mkapi-return">dict[str, <a href="../data_models/#euroeval.data_models.DatasetConfig" title="euroeval.data_models.DatasetConfig">DatasetConfig</a>]</span></span>
 </p>
 <div class="mkapi-document">
 <p>Get a mapping of all the dataset configurations.</p>
+<p class="mkapi-section">
+<span class="mkapi-object-link">
+<span class="mkapi-section-toggle" title="Toggle parameters">
+<i class="fa-regular fa-square-minus"></i>
+</span>
+</span>
+<span class="mkapi-section-name">Parameters</span>
+</p>
+<div class="mkapi-section-content">
+<ul class="mkapi-item-list">
+<li>
+<p><span class="mkapi-item-name">custom_datasets_file</span> : 
+<span class="mkapi-item-type"><span class="mkapi-tooltip" title="pathlib.Path">Path</span></span> <span class="mkapi-dash">&mdash;</span>
+A path to a Python file containing custom dataset configurations.</p>
+</li>
+</ul>
+</div>
 <p class="mkapi-section">
 <span class="mkapi-object-link">
 <span class="mkapi-section-toggle" title="Toggle returns">
@@ -2631,7 +2729,7 @@ A mapping between names of datasets and their configurations.</p>
 <i class="fa-regular fa-square-minus"></i>
 </span>
 </span>
-<span class="mkapi-object-name"><a href="./#euroeval.dataset_configs.get_dataset_config" title="euroeval.dataset_configs.get_dataset_config">get_dataset_config</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">dataset_name</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str</span><span class="mkapi-paren">)</span><span class="mkapi-arrow"> → </span><span class="mkapi-return"><a href="../data_models/#euroeval.data_models.DatasetConfig" title="euroeval.data_models.DatasetConfig">DatasetConfig</a></span></span>
+<span class="mkapi-object-name"><a href="./#euroeval.dataset_configs.get_dataset_config" title="euroeval.dataset_configs.get_dataset_config">get_dataset_config</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">dataset_name</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str</span><span class="mkapi-comma">, </span><span class="mkapi-arg">custom_datasets_file</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="pathlib.Path">Path</span></span><span class="mkapi-paren">)</span><span class="mkapi-arrow"> → </span><span class="mkapi-return"><a href="../data_models/#euroeval.data_models.DatasetConfig" title="euroeval.data_models.DatasetConfig">DatasetConfig</a></span></span>
 </p>
 <div class="mkapi-document">
 <p>Get the dataset configuration for a dataset.</p>
@@ -2649,6 +2747,11 @@ A mapping between names of datasets and their configurations.</p>
 <p><span class="mkapi-item-name">dataset_name</span> : 
 <span class="mkapi-item-type">str</span> <span class="mkapi-dash">&mdash;</span>
 The name of the dataset.</p>
+</li>
+<li>
+<p><span class="mkapi-item-name">custom_datasets_file</span> : 
+<span class="mkapi-item-type"><span class="mkapi-tooltip" title="pathlib.Path">Path</span></span> <span class="mkapi-dash">&mdash;</span>
+A path to a Python file containing custom dataset configurations.</p>
 </li>
 </ul>
 </div>

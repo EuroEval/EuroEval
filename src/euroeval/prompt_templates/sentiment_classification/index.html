@@ -651,6 +651,12 @@
       
         
       
+        
+      
+        
+      
+        
+      
     
     
     
@@ -1200,7 +1206,22 @@
 <span class="normal">337</span>
 <span class="normal">338</span>
 <span class="normal">339</span>
-<span class="normal">340</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Templates for the Sentiment Analysis task.&quot;&quot;&quot;</span>
+<span class="normal">340</span>
+<span class="normal">341</span>
+<span class="normal">342</span>
+<span class="normal">343</span>
+<span class="normal">344</span>
+<span class="normal">345</span>
+<span class="normal">346</span>
+<span class="normal">347</span>
+<span class="normal">348</span>
+<span class="normal">349</span>
+<span class="normal">350</span>
+<span class="normal">351</span>
+<span class="normal">352</span>
+<span class="normal">353</span>
+<span class="normal">354</span>
+<span class="normal">355</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Templates for the Sentiment Analysis task.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">t</span>
 
@@ -1208,6 +1229,7 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">..languages</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">BOSNIAN</span><span class="p">,</span>
     <span class="n">BULGARIAN</span><span class="p">,</span>
+    <span class="n">CATALAN</span><span class="p">,</span>
     <span class="n">CROATIAN</span><span class="p">,</span>
     <span class="n">CZECH</span><span class="p">,</span>
     <span class="n">DANISH</span><span class="p">,</span>
@@ -1219,6 +1241,7 @@
     <span class="n">FRENCH</span><span class="p">,</span>
     <span class="n">GERMAN</span><span class="p">,</span>
     <span class="n">GREEK</span><span class="p">,</span>
+    <span class="n">HUNGARIAN</span><span class="p">,</span>
     <span class="n">ICELANDIC</span><span class="p">,</span>
     <span class="n">ITALIAN</span><span class="p">,</span>
     <span class="n">LATVIAN</span><span class="p">,</span>
@@ -1228,6 +1251,7 @@
     <span class="n">NORWEGIAN_NYNORSK</span><span class="p">,</span>
     <span class="n">POLISH</span><span class="p">,</span>
     <span class="n">PORTUGUESE</span><span class="p">,</span>
+    <span class="n">ROMANIAN</span><span class="p">,</span>
     <span class="n">SERBIAN</span><span class="p">,</span>
     <span class="n">SLOVAK</span><span class="p">,</span>
     <span class="n">SLOVENE</span><span class="p">,</span>
@@ -1244,14 +1268,11 @@
         <span class="n">default_prompt_label_mapping</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span>
             <span class="n">positive</span><span class="o">=</span><span class="s2">&quot;pozitivno&quot;</span><span class="p">,</span> <span class="n">neutral</span><span class="o">=</span><span class="s2">&quot;neutralno&quot;</span><span class="p">,</span> <span class="n">negative</span><span class="o">=</span><span class="s2">&quot;negativno&quot;</span>
         <span class="p">),</span>
-        <span class="n">default_prompt_prefix</span><span class="o">=</span><span class="p">(</span>
-            <span class="s2">&quot;Slijede dokumenti i njihova osjetila, koja mogu biti </span><span class="si">{labels_str}</span><span class="s2">.&quot;</span>
-        <span class="p">),</span>
+        <span class="n">default_prompt_prefix</span><span class="o">=</span><span class="s2">&quot;Slijede dokumenti i njihova osjetila, koja mogu biti &quot;</span>
+        <span class="s2">&quot;</span><span class="si">{labels_str}</span><span class="s2">.&quot;</span><span class="p">,</span>
         <span class="n">default_prompt_template</span><span class="o">=</span><span class="s2">&quot;Dokument: </span><span class="si">{text}</span><span class="se">\n</span><span class="s2">Osjetilo: </span><span class="si">{label}</span><span class="s2">&quot;</span><span class="p">,</span>
-        <span class="n">default_instruction_prompt</span><span class="o">=</span><span class="p">(</span>
-            <span class="s2">&quot;Dokument: </span><span class="si">{text}</span><span class="se">\n\n</span><span class="s2">Klasificirajte osjećaj u dokumentu. &quot;</span>
-            <span class="s2">&quot;Odgovorite samo s </span><span class="si">{labels_str}</span><span class="s2">, i ništa drugo.&quot;</span>
-        <span class="p">),</span>
+        <span class="n">default_instruction_prompt</span><span class="o">=</span><span class="s2">&quot;Dokument: </span><span class="si">{text}</span><span class="se">\n\n</span><span class="s2">Klasificirajte osjećaj u &quot;</span>
+        <span class="s2">&quot;dokumentu. Odgovorite samo s </span><span class="si">{labels_str}</span><span class="s2">, i ništa drugo.&quot;</span><span class="p">,</span>
     <span class="p">),</span>
     <span class="n">BULGARIAN</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
         <span class="n">default_prompt_label_mapping</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span>
@@ -1262,6 +1283,16 @@
         <span class="n">default_prompt_template</span><span class="o">=</span><span class="s2">&quot;Документ: </span><span class="si">{text}</span><span class="se">\n</span><span class="s2">Сентимент: </span><span class="si">{label}</span><span class="s2">&quot;</span><span class="p">,</span>
         <span class="n">default_instruction_prompt</span><span class="o">=</span><span class="s2">&quot;Документ: </span><span class="si">{text}</span><span class="se">\n\n</span><span class="s2">Класифицирайте сентимента в &quot;</span>
         <span class="s2">&quot;документа. Отговорете с </span><span class="si">{labels_str}</span><span class="s2">, и нищо друго.&quot;</span><span class="p">,</span>
+    <span class="p">),</span>
+    <span class="n">CATALAN</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
+        <span class="n">default_prompt_label_mapping</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span>
+            <span class="n">positive</span><span class="o">=</span><span class="s2">&quot;positiu&quot;</span><span class="p">,</span> <span class="n">neutral</span><span class="o">=</span><span class="s2">&quot;neutral&quot;</span><span class="p">,</span> <span class="n">negative</span><span class="o">=</span><span class="s2">&quot;negatiu&quot;</span>
+        <span class="p">),</span>
+        <span class="n">default_prompt_prefix</span><span class="o">=</span><span class="s2">&quot;Els documents següents i el seu sentiment, que pot &quot;</span>
+        <span class="s2">&quot;ser </span><span class="si">{labels_str}</span><span class="s2">.&quot;</span><span class="p">,</span>
+        <span class="n">default_prompt_template</span><span class="o">=</span><span class="s2">&quot;Document: </span><span class="si">{text}</span><span class="se">\n</span><span class="s2">Sentiment: </span><span class="si">{label}</span><span class="s2">&quot;</span><span class="p">,</span>
+        <span class="n">default_instruction_prompt</span><span class="o">=</span><span class="s2">&quot;Document: </span><span class="si">{text}</span><span class="se">\n\n</span><span class="s2">Classifiqueu el sentiment en &quot;</span>
+        <span class="s2">&quot;el document. Contesteu només amb </span><span class="si">{labels_str}</span><span class="s2">, i res més.&quot;</span><span class="p">,</span>
     <span class="p">),</span>
     <span class="n">DANISH</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
         <span class="n">default_prompt_label_mapping</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span>
@@ -1277,14 +1308,11 @@
         <span class="n">default_prompt_label_mapping</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span>
             <span class="n">positive</span><span class="o">=</span><span class="s2">&quot;pozitivno&quot;</span><span class="p">,</span> <span class="n">neutral</span><span class="o">=</span><span class="s2">&quot;neutralno&quot;</span><span class="p">,</span> <span class="n">negative</span><span class="o">=</span><span class="s2">&quot;negativno&quot;</span>
         <span class="p">),</span>
-        <span class="n">default_prompt_prefix</span><span class="o">=</span><span class="p">(</span>
-            <span class="s2">&quot;Slijede dokumenti i njihova osjetila, koja mogu biti </span><span class="si">{labels_str}</span><span class="s2">.&quot;</span>
-        <span class="p">),</span>
-        <span class="n">default_prompt_template</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;Dokument: </span><span class="si">{text}</span><span class="se">\n</span><span class="s2">Osjetilo: </span><span class="si">{label}</span><span class="s2">&quot;</span><span class="p">),</span>
-        <span class="n">default_instruction_prompt</span><span class="o">=</span><span class="p">(</span>
-            <span class="s2">&quot;Dokument: </span><span class="si">{text}</span><span class="se">\n\n</span><span class="s2">Klasificirajte osjećaj u dokumentu. &quot;</span>
-            <span class="s2">&quot;Odgovorite samo s </span><span class="si">{labels_str}</span><span class="s2">, i ništa drugo.&quot;</span>
-        <span class="p">),</span>
+        <span class="n">default_prompt_prefix</span><span class="o">=</span><span class="s2">&quot;Slijede dokumenti i njihova osjetila, koja mogu biti &quot;</span>
+        <span class="s2">&quot;</span><span class="si">{labels_str}</span><span class="s2">.&quot;</span><span class="p">,</span>
+        <span class="n">default_prompt_template</span><span class="o">=</span><span class="s2">&quot;Dokument: </span><span class="si">{text}</span><span class="se">\n</span><span class="s2">Osjetilo: </span><span class="si">{label}</span><span class="s2">&quot;</span><span class="p">,</span>
+        <span class="n">default_instruction_prompt</span><span class="o">=</span><span class="s2">&quot;Dokument: </span><span class="si">{text}</span><span class="se">\n\n</span><span class="s2">Klasificirajte osjećaj u &quot;</span>
+        <span class="s2">&quot;dokumentu. Odgovorite samo s </span><span class="si">{labels_str}</span><span class="s2">, i ništa drugo.&quot;</span><span class="p">,</span>
     <span class="p">),</span>
     <span class="n">CZECH</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
         <span class="n">default_prompt_label_mapping</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span>
@@ -1315,6 +1343,16 @@
         <span class="n">default_prompt_template</span><span class="o">=</span><span class="s2">&quot;Έγγραφο: </span><span class="si">{text}</span><span class="se">\n</span><span class="s2">Συναίσθημα: </span><span class="si">{label}</span><span class="s2">&quot;</span><span class="p">,</span>
         <span class="n">default_instruction_prompt</span><span class="o">=</span><span class="s2">&quot;Έγγραφο: </span><span class="si">{text}</span><span class="se">\n\n</span><span class="s2">Ταξινομήστε το συναίσθημα &quot;</span>
         <span class="s2">&quot;στο έγγραφο. Απαντήστε με </span><span class="si">{labels_str}</span><span class="s2">, και τίποτα άλλο.&quot;</span><span class="p">,</span>
+    <span class="p">),</span>
+    <span class="n">HUNGARIAN</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
+        <span class="n">default_prompt_label_mapping</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span>
+            <span class="n">positive</span><span class="o">=</span><span class="s2">&quot;pozitív&quot;</span><span class="p">,</span> <span class="n">neutral</span><span class="o">=</span><span class="s2">&quot;semleges&quot;</span><span class="p">,</span> <span class="n">negative</span><span class="o">=</span><span class="s2">&quot;negatív&quot;</span>
+        <span class="p">),</span>
+        <span class="n">default_prompt_prefix</span><span class="o">=</span><span class="s2">&quot;Az alábbiak dokumentumok és érzelmük, ami lehet &quot;</span>
+        <span class="s2">&quot;</span><span class="si">{labels_str}</span><span class="s2">.&quot;</span><span class="p">,</span>
+        <span class="n">default_prompt_template</span><span class="o">=</span><span class="s2">&quot;Dokumentum: </span><span class="si">{text}</span><span class="se">\n</span><span class="s2">Érzelem: </span><span class="si">{label}</span><span class="s2">&quot;</span><span class="p">,</span>
+        <span class="n">default_instruction_prompt</span><span class="o">=</span><span class="s2">&quot;Dokumentum: </span><span class="si">{text}</span><span class="se">\n\n</span><span class="s2">Osztályozza az érzelmet a &quot;</span>
+        <span class="s2">&quot;dokumentumban. Válaszoljon </span><span class="si">{labels_str}</span><span class="s2">, és semmi mással.&quot;</span><span class="p">,</span>
     <span class="p">),</span>
     <span class="n">ENGLISH</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
         <span class="n">default_prompt_label_mapping</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span>
@@ -1351,15 +1389,11 @@
         <span class="n">default_prompt_label_mapping</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span>
             <span class="n">positive</span><span class="o">=</span><span class="s2">&quot;pozytywny&quot;</span><span class="p">,</span> <span class="n">neutral</span><span class="o">=</span><span class="s2">&quot;neutralny&quot;</span><span class="p">,</span> <span class="n">negative</span><span class="o">=</span><span class="s2">&quot;negatywny&quot;</span>
         <span class="p">),</span>
-        <span class="n">default_prompt_prefix</span><span class="o">=</span><span class="p">(</span>
-            <span class="s2">&quot;Poniżej znajdują się dokumenty i ich sentyment, który może być &quot;</span>
-            <span class="s2">&quot;</span><span class="si">{labels_str}</span><span class="s2">.&quot;</span>
-        <span class="p">),</span>
+        <span class="n">default_prompt_prefix</span><span class="o">=</span><span class="s2">&quot;Poniżej znajdują się dokumenty i ich sentyment, który &quot;</span>
+        <span class="s2">&quot;może być </span><span class="si">{labels_str}</span><span class="s2">.&quot;</span><span class="p">,</span>
         <span class="n">default_prompt_template</span><span class="o">=</span><span class="s2">&quot;Dokument: </span><span class="si">{text}</span><span class="se">\n</span><span class="s2">Sentyment: </span><span class="si">{label}</span><span class="s2">&quot;</span><span class="p">,</span>
-        <span class="n">default_instruction_prompt</span><span class="o">=</span><span class="p">(</span>
-            <span class="s2">&quot;Dokument: </span><span class="si">{text}</span><span class="se">\n\n</span><span class="s2">Klasyfikuj sentyment w dokumencie. &quot;</span>
-            <span class="s2">&quot;Odpowiedz jednym słowem: </span><span class="si">{labels_str}</span><span class="s2">.&quot;</span>
-        <span class="p">),</span>
+        <span class="n">default_instruction_prompt</span><span class="o">=</span><span class="s2">&quot;Dokument: </span><span class="si">{text}</span><span class="se">\n\n</span><span class="s2">Klasyfikuj sentyment w &quot;</span>
+        <span class="s2">&quot;dokumencie. Odpowiedz jednym słowem: </span><span class="si">{labels_str}</span><span class="s2">.&quot;</span><span class="p">,</span>
     <span class="p">),</span>
     <span class="n">PORTUGUESE</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
         <span class="n">default_prompt_label_mapping</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span>
@@ -1481,6 +1515,16 @@
         <span class="n">default_instruction_prompt</span><span class="o">=</span><span class="s2">&quot;Dokument: </span><span class="si">{text}</span><span class="se">\n\n</span><span class="s2">Klassifiser følelsen i &quot;</span>
         <span class="s2">&quot;teksten. Svar med </span><span class="si">{labels_str}</span><span class="s2">, og ikke noe annet.&quot;</span><span class="p">,</span>
     <span class="p">),</span>
+    <span class="n">ROMANIAN</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
+        <span class="n">default_prompt_label_mapping</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span>
+            <span class="n">positive</span><span class="o">=</span><span class="s2">&quot;pozitiv&quot;</span><span class="p">,</span> <span class="n">neutral</span><span class="o">=</span><span class="s2">&quot;neutru&quot;</span><span class="p">,</span> <span class="n">negative</span><span class="o">=</span><span class="s2">&quot;negativ&quot;</span>
+        <span class="p">),</span>
+        <span class="n">default_prompt_prefix</span><span class="o">=</span><span class="s2">&quot;Urmează documentele și sentimentul acestora, care &quot;</span>
+        <span class="s2">&quot;poate fi </span><span class="si">{labels_str}</span><span class="s2">.&quot;</span><span class="p">,</span>
+        <span class="n">default_prompt_template</span><span class="o">=</span><span class="s2">&quot;Document: </span><span class="si">{text}</span><span class="se">\n</span><span class="s2">Sentiment: </span><span class="si">{label}</span><span class="s2">&quot;</span><span class="p">,</span>
+        <span class="n">default_instruction_prompt</span><span class="o">=</span><span class="s2">&quot;Document: </span><span class="si">{text}</span><span class="se">\n\n</span><span class="s2">Clasificați sentimentul &quot;</span>
+        <span class="s2">&quot;documentului. Răspundeți cu </span><span class="si">{labels_str}</span><span class="s2">, și nimic altceva.&quot;</span><span class="p">,</span>
+    <span class="p">),</span>
     <span class="n">SLOVAK</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
         <span class="n">default_prompt_label_mapping</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span>
             <span class="n">positive</span><span class="o">=</span><span class="s2">&quot;pozitívne&quot;</span><span class="p">,</span> <span class="n">neutral</span><span class="o">=</span><span class="s2">&quot;neutrálne&quot;</span><span class="p">,</span> <span class="n">negative</span><span class="o">=</span><span class="s2">&quot;negatívne&quot;</span>
@@ -1495,15 +1539,11 @@
         <span class="n">default_prompt_label_mapping</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span>
             <span class="n">positive</span><span class="o">=</span><span class="s2">&quot;pozitivno&quot;</span><span class="p">,</span> <span class="n">neutral</span><span class="o">=</span><span class="s2">&quot;nevtralno&quot;</span><span class="p">,</span> <span class="n">negative</span><span class="o">=</span><span class="s2">&quot;negativno&quot;</span>
         <span class="p">),</span>
-        <span class="n">default_prompt_prefix</span><span class="o">=</span><span class="p">(</span>
-            <span class="s2">&quot;Spodaj so dokumenti in njihov sentiment, ki je lahko </span><span class="si">{labels_str}</span><span class="s2">.&quot;</span>
-        <span class="p">),</span>
-        <span class="n">default_prompt_template</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;Dokument: </span><span class="si">{text}</span><span class="se">\n</span><span class="s2">Sentiment: </span><span class="si">{label}</span><span class="s2">&quot;</span><span class="p">),</span>
-        <span class="n">default_instruction_prompt</span><span class="o">=</span><span class="p">(</span>
-            <span class="s2">&quot;Dokument: </span><span class="si">{text}</span><span class="se">\n\n</span><span class="s2">&quot;</span>
-            <span class="s2">&quot;Klasificirajte sentiment v dokumentu. &quot;</span>
-            <span class="s2">&quot;Odgovorite z </span><span class="si">{labels_str}</span><span class="s2">, in nič drugega.&quot;</span>
-        <span class="p">),</span>
+        <span class="n">default_prompt_prefix</span><span class="o">=</span><span class="s2">&quot;Spodaj so dokumenti in njihov sentiment, ki je lahko &quot;</span>
+        <span class="s2">&quot;</span><span class="si">{labels_str}</span><span class="s2">.&quot;</span><span class="p">,</span>
+        <span class="n">default_prompt_template</span><span class="o">=</span><span class="s2">&quot;Dokument: </span><span class="si">{text}</span><span class="se">\n</span><span class="s2">Sentiment: </span><span class="si">{label}</span><span class="s2">&quot;</span><span class="p">,</span>
+        <span class="n">default_instruction_prompt</span><span class="o">=</span><span class="s2">&quot;Dokument: </span><span class="si">{text}</span><span class="se">\n\n</span><span class="s2">Klasificirajte sentiment v &quot;</span>
+        <span class="s2">&quot;dokumentu. Odgovorite z </span><span class="si">{labels_str}</span><span class="s2">, in nič drugega.&quot;</span><span class="p">,</span>
     <span class="p">),</span>
     <span class="n">SERBIAN</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
         <span class="n">default_prompt_label_mapping</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span>
@@ -1529,15 +1569,11 @@
         <span class="n">default_prompt_label_mapping</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span>
             <span class="n">positive</span><span class="o">=</span><span class="s2">&quot;позитивний&quot;</span><span class="p">,</span> <span class="n">neutral</span><span class="o">=</span><span class="s2">&quot;нейтральний&quot;</span><span class="p">,</span> <span class="n">negative</span><span class="o">=</span><span class="s2">&quot;негативний&quot;</span>
         <span class="p">),</span>
-        <span class="n">default_prompt_prefix</span><span class="o">=</span><span class="p">(</span>
-            <span class="s2">&quot;Нижче наведені документи і їх настрій, який може бути </span><span class="si">{labels_str}</span><span class="s2">.&quot;</span>
-        <span class="p">),</span>
+        <span class="n">default_prompt_prefix</span><span class="o">=</span><span class="s2">&quot;Нижче наведені документи і їх настрій, який може &quot;</span>
+        <span class="s2">&quot;бути </span><span class="si">{labels_str}</span><span class="s2">.&quot;</span><span class="p">,</span>
         <span class="n">default_prompt_template</span><span class="o">=</span><span class="s2">&quot;Документ: </span><span class="si">{text}</span><span class="se">\n</span><span class="s2">Настрій: </span><span class="si">{label}</span><span class="s2">&quot;</span><span class="p">,</span>
-        <span class="n">default_instruction_prompt</span><span class="o">=</span><span class="p">(</span>
-            <span class="s2">&quot;Документ: </span><span class="si">{text}</span><span class="se">\n\n</span><span class="s2">&quot;</span>
-            <span class="s2">&quot;Класифікуйте настрій у документі. &quot;</span>
-            <span class="s2">&quot;Відповідайте </span><span class="si">{labels_str}</span><span class="s2">, і нічого більше.&quot;</span>
-        <span class="p">),</span>
+        <span class="n">default_instruction_prompt</span><span class="o">=</span><span class="s2">&quot;Документ: </span><span class="si">{text}</span><span class="se">\n\n</span><span class="s2">Класифікуйте настрій у &quot;</span>
+        <span class="s2">&quot;документі. Відповідайте </span><span class="si">{labels_str}</span><span class="s2">, і нічого більше.&quot;</span><span class="p">,</span>
     <span class="p">),</span>
 <span class="p">}</span>
 </code></pre></div></td></tr></table></div>

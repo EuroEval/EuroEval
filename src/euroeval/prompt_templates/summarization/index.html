@@ -651,6 +651,12 @@
       
         
       
+        
+      
+        
+      
+        
+      
     
     
     
@@ -1072,13 +1078,33 @@
 <span class="normal">209</span>
 <span class="normal">210</span>
 <span class="normal">211</span>
-<span class="normal">212</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Templates for the Summarization task.&quot;&quot;&quot;</span>
+<span class="normal">212</span>
+<span class="normal">213</span>
+<span class="normal">214</span>
+<span class="normal">215</span>
+<span class="normal">216</span>
+<span class="normal">217</span>
+<span class="normal">218</span>
+<span class="normal">219</span>
+<span class="normal">220</span>
+<span class="normal">221</span>
+<span class="normal">222</span>
+<span class="normal">223</span>
+<span class="normal">224</span>
+<span class="normal">225</span>
+<span class="normal">226</span>
+<span class="normal">227</span>
+<span class="normal">228</span>
+<span class="normal">229</span>
+<span class="normal">230</span>
+<span class="normal">231</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Templates for the Summarization task.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">t</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">..data_models</span><span class="w"> </span><span class="kn">import</span> <span class="n">PromptConfig</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..languages</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">BOSNIAN</span><span class="p">,</span>
+    <span class="n">CATALAN</span><span class="p">,</span>
     <span class="n">CZECH</span><span class="p">,</span>
     <span class="n">DANISH</span><span class="p">,</span>
     <span class="n">DUTCH</span><span class="p">,</span>
@@ -1088,6 +1114,7 @@
     <span class="n">FRENCH</span><span class="p">,</span>
     <span class="n">GERMAN</span><span class="p">,</span>
     <span class="n">GREEK</span><span class="p">,</span>
+    <span class="n">HUNGARIAN</span><span class="p">,</span>
     <span class="n">ICELANDIC</span><span class="p">,</span>
     <span class="n">ITALIAN</span><span class="p">,</span>
     <span class="n">LATVIAN</span><span class="p">,</span>
@@ -1097,6 +1124,7 @@
     <span class="n">NORWEGIAN_NYNORSK</span><span class="p">,</span>
     <span class="n">POLISH</span><span class="p">,</span>
     <span class="n">PORTUGUESE</span><span class="p">,</span>
+    <span class="n">ROMANIAN</span><span class="p">,</span>
     <span class="n">SERBIAN</span><span class="p">,</span>
     <span class="n">SPANISH</span><span class="p">,</span>
     <span class="n">SWEDISH</span><span class="p">,</span>
@@ -1109,19 +1137,25 @@
 <span class="c1"># TODO: Missing Faroese</span>
 <span class="n">SUMM_TEMPLATES</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="s2">&quot;Language&quot;</span><span class="p">,</span> <span class="n">PromptConfig</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
     <span class="n">BOSNIAN</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
-        <span class="n">default_prompt_prefix</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;Slijede dokumenti s priloženim sažecima.&quot;</span><span class="p">),</span>
-        <span class="n">default_prompt_template</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;Dokument: </span><span class="si">{text}</span><span class="se">\n</span><span class="s2">Sažetak: </span><span class="si">{target_text}</span><span class="s2">&quot;</span><span class="p">),</span>
-        <span class="n">default_instruction_prompt</span><span class="o">=</span><span class="p">(</span>
-            <span class="s2">&quot;Dokument: </span><span class="si">{text}</span><span class="se">\n\n</span><span class="s2">Napišite sažetak gornjeg dokumenta.&quot;</span>
-        <span class="p">),</span>
+        <span class="n">default_prompt_prefix</span><span class="o">=</span><span class="s2">&quot;Slijede dokumenti s priloženim sažecima.&quot;</span><span class="p">,</span>
+        <span class="n">default_prompt_template</span><span class="o">=</span><span class="s2">&quot;Dokument: </span><span class="si">{text}</span><span class="se">\n</span><span class="s2">Sažetak: </span><span class="si">{target_text}</span><span class="s2">&quot;</span><span class="p">,</span>
+        <span class="n">default_instruction_prompt</span><span class="o">=</span><span class="s2">&quot;Dokument: </span><span class="si">{text}</span><span class="se">\n\n</span><span class="s2">Napišite sažetak gornjeg &quot;</span>
+        <span class="s2">&quot;dokumenta.&quot;</span><span class="p">,</span>
+        <span class="n">default_prompt_label_mapping</span><span class="o">=</span><span class="nb">dict</span><span class="p">(),</span>
+    <span class="p">),</span>
+    <span class="n">CATALAN</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
+        <span class="n">default_prompt_prefix</span><span class="o">=</span><span class="s2">&quot;A continuació es mostren els documents amb els &quot;</span>
+        <span class="s2">&quot;resums adjunts.&quot;</span><span class="p">,</span>
+        <span class="n">default_prompt_template</span><span class="o">=</span><span class="s2">&quot;Document: </span><span class="si">{text}</span><span class="se">\n</span><span class="s2">Resum: </span><span class="si">{target_text}</span><span class="s2">&quot;</span><span class="p">,</span>
+        <span class="n">default_instruction_prompt</span><span class="o">=</span><span class="s2">&quot;Document: </span><span class="si">{text}</span><span class="se">\n\n</span><span class="s2">Escriu un resum del &quot;</span>
+        <span class="s2">&quot;document anterior.&quot;</span><span class="p">,</span>
         <span class="n">default_prompt_label_mapping</span><span class="o">=</span><span class="nb">dict</span><span class="p">(),</span>
     <span class="p">),</span>
     <span class="n">CZECH</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
-        <span class="n">default_prompt_prefix</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;Následující jsou dokumenty s přiloženými souhrny.&quot;</span><span class="p">),</span>
-        <span class="n">default_prompt_template</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;Dokument: </span><span class="si">{text}</span><span class="se">\n</span><span class="s2">Souhrn: </span><span class="si">{target_text}</span><span class="s2">&quot;</span><span class="p">),</span>
-        <span class="n">default_instruction_prompt</span><span class="o">=</span><span class="p">(</span>
-            <span class="s2">&quot;Dokument: </span><span class="si">{text}</span><span class="se">\n\n</span><span class="s2">Napište souhrn výše uvedeného dokumentu.&quot;</span>
-        <span class="p">),</span>
+        <span class="n">default_prompt_prefix</span><span class="o">=</span><span class="s2">&quot;Následující jsou dokumenty s přiloženými souhrny.&quot;</span><span class="p">,</span>
+        <span class="n">default_prompt_template</span><span class="o">=</span><span class="s2">&quot;Dokument: </span><span class="si">{text}</span><span class="se">\n</span><span class="s2">Souhrn: </span><span class="si">{target_text}</span><span class="s2">&quot;</span><span class="p">,</span>
+        <span class="n">default_instruction_prompt</span><span class="o">=</span><span class="s2">&quot;Dokument: </span><span class="si">{text}</span><span class="se">\n\n</span><span class="s2">Napište souhrn výše &quot;</span>
+        <span class="s2">&quot;uvedeného dokumentu.&quot;</span><span class="p">,</span>
         <span class="n">default_prompt_label_mapping</span><span class="o">=</span><span class="nb">dict</span><span class="p">(),</span>
     <span class="p">),</span>
     <span class="n">DANISH</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
@@ -1144,6 +1178,14 @@
         <span class="n">default_prompt_template</span><span class="o">=</span><span class="s2">&quot;Έγγραφο: </span><span class="si">{text}</span><span class="se">\n</span><span class="s2">Περίληψη: </span><span class="si">{target_text}</span><span class="s2">&quot;</span><span class="p">,</span>
         <span class="n">default_instruction_prompt</span><span class="o">=</span><span class="s2">&quot;Έγγραφο: </span><span class="si">{text}</span><span class="se">\n\n</span><span class="s2">Γράψτε μια περίληψη του &quot;</span>
         <span class="s2">&quot;παραπάνω εγγράφου.&quot;</span><span class="p">,</span>
+        <span class="n">default_prompt_label_mapping</span><span class="o">=</span><span class="nb">dict</span><span class="p">(),</span>
+    <span class="p">),</span>
+    <span class="n">HUNGARIAN</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
+        <span class="n">default_prompt_prefix</span><span class="o">=</span><span class="s2">&quot;Az alábbiakban összefoglalókkal ellátott szövegek &quot;</span>
+        <span class="s2">&quot;találhatók.&quot;</span><span class="p">,</span>
+        <span class="n">default_prompt_template</span><span class="o">=</span><span class="s2">&quot;Szöveg: </span><span class="si">{text}</span><span class="se">\n</span><span class="s2">Összefoglaló: </span><span class="si">{target_text}</span><span class="s2">&quot;</span><span class="p">,</span>
+        <span class="n">default_instruction_prompt</span><span class="o">=</span><span class="s2">&quot;Szöveg: </span><span class="si">{text}</span><span class="se">\n\n</span><span class="s2">Írj egy összefoglalót a fenti &quot;</span>
+        <span class="s2">&quot;szövegről.&quot;</span><span class="p">,</span>
         <span class="n">default_prompt_label_mapping</span><span class="o">=</span><span class="nb">dict</span><span class="p">(),</span>
     <span class="p">),</span>
     <span class="n">ENGLISH</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
@@ -1193,20 +1235,16 @@
     <span class="n">LATVIAN</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
         <span class="n">default_prompt_prefix</span><span class="o">=</span><span class="s2">&quot;Tālāk ir dokumenti ar pievienotām kopsavilkumiem.&quot;</span><span class="p">,</span>
         <span class="n">default_prompt_template</span><span class="o">=</span><span class="s2">&quot;Dokuments: </span><span class="si">{text}</span><span class="se">\n</span><span class="s2">Kopsavilkums: </span><span class="si">{target_text}</span><span class="s2">&quot;</span><span class="p">,</span>
-        <span class="n">default_instruction_prompt</span><span class="o">=</span><span class="p">(</span>
-            <span class="s2">&quot;Dokuments: </span><span class="si">{text}</span><span class="se">\n\n</span><span class="s2">&quot;</span>
-            <span class="s2">&quot;Uzrakstiet kopsavilkumu par iepriekš minēto dokumentu.&quot;</span>
-        <span class="p">),</span>
+        <span class="n">default_instruction_prompt</span><span class="o">=</span><span class="s2">&quot;Dokuments: </span><span class="si">{text}</span><span class="se">\n\n</span><span class="s2">Uzrakstiet kopsavilkumu &quot;</span>
+        <span class="s2">&quot;par iepriekš minēto dokumentu.&quot;</span><span class="p">,</span>
         <span class="n">default_prompt_label_mapping</span><span class="o">=</span><span class="nb">dict</span><span class="p">(),</span>
     <span class="p">),</span>
     <span class="n">LITHUANIAN</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
-        <span class="n">default_prompt_prefix</span><span class="o">=</span><span class="p">(</span>
-            <span class="s2">&quot;Žemiau pateikiami dokumentai su pridėtomis santraukomis.&quot;</span>
-        <span class="p">),</span>
-        <span class="n">default_prompt_template</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;Dokumentas: </span><span class="si">{text}</span><span class="se">\n</span><span class="s2">Santrauka: </span><span class="si">{target_text}</span><span class="s2">&quot;</span><span class="p">),</span>
-        <span class="n">default_instruction_prompt</span><span class="o">=</span><span class="p">(</span>
-            <span class="s2">&quot;Dokumentas: </span><span class="si">{text}</span><span class="se">\n\n</span><span class="s2">Parašykite aukščiau pateikto dokumento santrauką.&quot;</span>
-        <span class="p">),</span>
+        <span class="n">default_prompt_prefix</span><span class="o">=</span><span class="s2">&quot;Žemiau pateikiami dokumentai su pridėtomis &quot;</span>
+        <span class="s2">&quot;santraukomis.&quot;</span><span class="p">,</span>
+        <span class="n">default_prompt_template</span><span class="o">=</span><span class="s2">&quot;Dokumentas: </span><span class="si">{text}</span><span class="se">\n</span><span class="s2">Santrauka: </span><span class="si">{target_text}</span><span class="s2">&quot;</span><span class="p">,</span>
+        <span class="n">default_instruction_prompt</span><span class="o">=</span><span class="s2">&quot;Dokumentas: </span><span class="si">{text}</span><span class="se">\n\n</span><span class="s2">Parašykite aukščiau &quot;</span>
+        <span class="s2">&quot;pateikto dokumento santrauką.&quot;</span><span class="p">,</span>
         <span class="n">default_prompt_label_mapping</span><span class="o">=</span><span class="nb">dict</span><span class="p">(),</span>
     <span class="p">),</span>
     <span class="n">ITALIAN</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
@@ -1253,6 +1291,13 @@
         <span class="s2">&quot;dokumentet ovenfor.&quot;</span><span class="p">,</span>
         <span class="n">default_prompt_label_mapping</span><span class="o">=</span><span class="nb">dict</span><span class="p">(),</span>
     <span class="p">),</span>
+    <span class="n">ROMANIAN</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
+        <span class="n">default_prompt_prefix</span><span class="o">=</span><span class="s2">&quot;Mai jos sunt articolele însoțite de rezumate.&quot;</span><span class="p">,</span>
+        <span class="n">default_prompt_template</span><span class="o">=</span><span class="s2">&quot;Articol: </span><span class="si">{text}</span><span class="se">\n</span><span class="s2">Rezumat: </span><span class="si">{target_text}</span><span class="s2">&quot;</span><span class="p">,</span>
+        <span class="n">default_instruction_prompt</span><span class="o">=</span><span class="s2">&quot;Articol: </span><span class="si">{text}</span><span class="se">\n\n</span><span class="s2">Scrie un rezumat al &quot;</span>
+        <span class="s2">&quot;articolului de mai sus.&quot;</span><span class="p">,</span>
+        <span class="n">default_prompt_label_mapping</span><span class="o">=</span><span class="nb">dict</span><span class="p">(),</span>
+    <span class="p">),</span>
     <span class="n">POLISH</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
         <span class="n">default_prompt_prefix</span><span class="o">=</span><span class="s2">&quot;Poniżej znajdują się artykuły z towarzyszącymi &quot;</span>
         <span class="s2">&quot;im streszczeniami.&quot;</span><span class="p">,</span>
@@ -1278,9 +1323,8 @@
     <span class="n">UKRAINIAN</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
         <span class="n">default_prompt_prefix</span><span class="o">=</span><span class="s2">&quot;Нижче наведено документи з супровідними резюме.&quot;</span><span class="p">,</span>
         <span class="n">default_prompt_template</span><span class="o">=</span><span class="s2">&quot;Документ: </span><span class="si">{text}</span><span class="se">\n</span><span class="s2">Резюме: </span><span class="si">{target_text}</span><span class="s2">&quot;</span><span class="p">,</span>
-        <span class="n">default_instruction_prompt</span><span class="o">=</span><span class="p">(</span>
-            <span class="s2">&quot;Документ: </span><span class="si">{text}</span><span class="se">\n\n</span><span class="s2">Напишіть резюме наведеного вище документа.&quot;</span>
-        <span class="p">),</span>
+        <span class="n">default_instruction_prompt</span><span class="o">=</span><span class="s2">&quot;Документ: </span><span class="si">{text}</span><span class="se">\n\n</span><span class="s2">Напишіть резюме наведеного &quot;</span>
+        <span class="s2">&quot;вище документа.&quot;</span><span class="p">,</span>
         <span class="n">default_prompt_label_mapping</span><span class="o">=</span><span class="nb">dict</span><span class="p">(),</span>
     <span class="p">),</span>
 <span class="p">}</span>

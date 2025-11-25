@@ -651,6 +651,12 @@
       
         
       
+        
+      
+        
+      
+        
+      
     
     
     
@@ -1609,7 +1615,11 @@
 <span class="normal">567</span>
 <span class="normal">568</span>
 <span class="normal">569</span>
-<span class="normal">570</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Utility functions to be used in other scripts.&quot;&quot;&quot;</span>
+<span class="normal">570</span>
+<span class="normal">571</span>
+<span class="normal">572</span>
+<span class="normal">573</span>
+<span class="normal">574</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Utility functions to be used in other scripts.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">asyncio</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">c</span>
@@ -1625,12 +1635,13 @@
 <span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">t</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">types</span><span class="w"> </span><span class="kn">import</span> <span class="n">ModuleType</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">types</span><span class="w"> </span><span class="kn">import</span> <span class="n">ModuleType</span><span class="p">,</span> <span class="n">TracebackType</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">demjson3</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">huggingface_hub</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">hf_hub</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">huggingface_hub.errors</span><span class="w"> </span><span class="kn">import</span> <span class="n">LocalTokenNotFoundError</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">.caching_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">cache_arguments</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.constants</span><span class="w"> </span><span class="kn">import</span> <span class="n">T</span>
@@ -2027,7 +2038,7 @@
             <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="k">return</span> <span class="kc">True</span>
-    <span class="k">except</span> <span class="n">hf_hub</span><span class="o">.</span><span class="n">errors</span><span class="o">.</span><span class="n">LocalTokenNotFoundError</span><span class="p">:</span>
+    <span class="k">except</span> <span class="n">LocalTokenNotFoundError</span><span class="p">:</span>
         <span class="n">log_once</span><span class="p">(</span>
             <span class="s2">&quot;No Hugging Face API key was set and the user is not logged in to Hugging &quot;</span>
             <span class="s2">&quot;Face, so no token will be used.&quot;</span><span class="p">,</span>
@@ -2098,15 +2109,18 @@
     <span class="n">param</span> <span class="o">=</span> <span class="n">param_match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="k">if</span> <span class="n">param_match</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
     <span class="k">return</span> <span class="n">ModelIdComponents</span><span class="p">(</span><span class="n">model_id</span><span class="o">=</span><span class="n">model_id</span><span class="p">,</span> <span class="n">revision</span><span class="o">=</span><span class="n">revision</span><span class="p">,</span> <span class="n">param</span><span class="o">=</span><span class="n">param</span><span class="p">)</span>
 
-
-<span class="k">def</span><span class="w"> </span><span class="nf">load_custom_datasets_module</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">ModuleType</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span><div class="mkapi-source-link" id="euroeval.utils.load_custom_datasets_module"><a href="../../../api/euroeval/utils/#euroeval.utils.load_custom_datasets_module" title="Go to docs">[docs]</a></div>
+<div class="mkapi-source-link" id="euroeval.utils.load_custom_datasets_module"><a href="../../../api/euroeval/utils/#euroeval.utils.load_custom_datasets_module" title="Go to docs">[docs]</a></div>
+<span class="k">def</span><span class="w"> </span><span class="nf">load_custom_datasets_module</span><span class="p">(</span><span class="n">custom_datasets_file</span><span class="p">:</span> <span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ModuleType</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Load the custom datasets module if it exists.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        custom_datasets_file:</span>
+<span class="sd">            The path to the custom datasets module.</span>
 
 <span class="sd">    Raises:</span>
 <span class="sd">        RuntimeError:</span>
 <span class="sd">            If the custom datasets module cannot be loaded.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">custom_datasets_file</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="s2">&quot;custom_datasets.py&quot;</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">custom_datasets_file</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
         <span class="n">spec</span> <span class="o">=</span> <span class="n">importlib</span><span class="o">.</span><span class="n">util</span><span class="o">.</span><span class="n">spec_from_file_location</span><span class="p">(</span>
             <span class="n">name</span><span class="o">=</span><span class="s2">&quot;custom_datasets_module&quot;</span><span class="p">,</span> <span class="n">location</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">custom_datasets_file</span><span class="o">.</span><span class="n">resolve</span><span class="p">())</span>
@@ -2161,7 +2175,7 @@
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">exc_type</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Type</span><span class="p">[</span><span class="ne">BaseException</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">exc_value</span><span class="p">:</span> <span class="ne">BaseException</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">traceback</span><span class="p">:</span> <span class="nb">type</span><span class="p">[</span><span class="ne">BaseException</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">exc_tb</span><span class="p">:</span> <span class="n">TracebackType</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Exit the context manager.</span>
 

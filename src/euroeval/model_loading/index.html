@@ -651,6 +651,12 @@
       
         
       
+        
+      
+        
+      
+        
+      
     
     
     
@@ -988,7 +994,7 @@
 
     <span class="c1"># The order matters; the first model type that matches will be used. For this</span>
     <span class="c1"># reason, they have been ordered in terms of the most common model types.</span>
-    <span class="n">model_class</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Type</span><span class="p">[</span><span class="n">BenchmarkModule</span><span class="p">]</span>
+    <span class="n">model_class</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Type</span><span class="p">[</span><span class="s2">&quot;BenchmarkModule&quot;</span><span class="p">]</span>
     <span class="k">match</span> <span class="p">(</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_type</span><span class="p">,</span> <span class="n">model_config</span><span class="o">.</span><span class="n">inference_backend</span><span class="p">,</span> <span class="n">model_config</span><span class="o">.</span><span class="n">fresh</span><span class="p">):</span>
         <span class="k">case</span> <span class="p">(</span><span class="n">ModelType</span><span class="o">.</span><span class="n">GENERATIVE</span><span class="p">,</span> <span class="n">InferenceBackend</span><span class="o">.</span><span class="n">VLLM</span><span class="p">,</span> <span class="kc">False</span><span class="p">):</span>
             <span class="n">model_class</span> <span class="o">=</span> <span class="n">VLLMModel</span>

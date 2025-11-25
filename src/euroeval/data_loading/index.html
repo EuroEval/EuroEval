@@ -651,6 +651,12 @@
       
         
       
+        
+      
+        
+      
+        
+      
     
     
     
@@ -1142,7 +1148,7 @@
     <span class="c1"># If we are testing then truncate the test set, unless we need the full set for</span>
     <span class="c1"># evaluation</span>
     <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">sys</span><span class="p">,</span> <span class="s2">&quot;_called_from_test&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">dataset_config</span><span class="o">.</span><span class="n">task</span> <span class="o">!=</span> <span class="n">EUROPEAN_VALUES</span><span class="p">:</span>
-        <span class="n">dataset</span><span class="p">[</span><span class="s2">&quot;test&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">dataset</span><span class="p">[</span><span class="s2">&quot;test&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span>
+        <span class="n">dataset</span><span class="p">[</span><span class="s2">&quot;test&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">dataset</span><span class="p">[</span><span class="s2">&quot;test&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span>  <span class="c1"># type: ignore[unsupported-operation]</span>
 
     <span class="c1"># Bootstrap the splits, if applicable</span>
     <span class="k">if</span> <span class="n">dataset_config</span><span class="o">.</span><span class="n">bootstrap_samples</span><span class="p">:</span>
@@ -1153,12 +1159,12 @@
                 <span class="nb">len</span><span class="p">(</span><span class="n">dataset</span><span class="p">[</span><span class="n">split</span><span class="p">]),</span>
                 <span class="n">size</span><span class="o">=</span><span class="p">(</span><span class="n">benchmark_config</span><span class="o">.</span><span class="n">num_iterations</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">dataset</span><span class="p">[</span><span class="n">split</span><span class="p">])),</span>
             <span class="p">)</span>
-            <span class="n">bootstrapped_splits</span><span class="p">[</span><span class="n">split</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">bootstrapped_splits</span><span class="p">[</span><span class="n">split</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span>  <span class="c1"># type: ignore[unsupported-operation]</span>
                 <span class="n">dataset</span><span class="p">[</span><span class="n">split</span><span class="p">]</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="n">bootstrap_indices</span><span class="p">[</span><span class="n">idx</span><span class="p">])</span>
                 <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">benchmark_config</span><span class="o">.</span><span class="n">num_iterations</span><span class="p">)</span>
             <span class="p">]</span>
         <span class="n">datasets</span> <span class="o">=</span> <span class="p">[</span>
-            <span class="n">DatasetDict</span><span class="p">(</span>
+            <span class="n">DatasetDict</span><span class="p">(</span>  <span class="c1"># type: ignore[no-matching-overload]</span>
                 <span class="p">{</span>
                     <span class="n">split</span><span class="p">:</span> <span class="n">bootstrapped_splits</span><span class="p">[</span><span class="n">split</span><span class="p">][</span><span class="n">idx</span><span class="p">]</span>
                     <span class="k">for</span> <span class="n">split</span> <span class="ow">in</span> <span class="n">dataset_config</span><span class="o">.</span><span class="n">splits</span>
@@ -1269,7 +1275,7 @@
             <span class="s2">&quot;The dataset is missing the following required splits: &quot;</span>
             <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">missing_keys</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
         <span class="p">)</span>
-    <span class="k">return</span> <span class="n">DatasetDict</span><span class="p">({</span><span class="n">key</span><span class="p">:</span> <span class="n">dataset</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">dataset_config</span><span class="o">.</span><span class="n">splits</span><span class="p">})</span>
+    <span class="k">return</span> <span class="n">DatasetDict</span><span class="p">({</span><span class="n">key</span><span class="p">:</span> <span class="n">dataset</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">dataset_config</span><span class="o">.</span><span class="n">splits</span><span class="p">})</span>  <span class="c1"># type: ignore[no-matching-overload]</span>
 </code></pre></div></td></tr></table></div>
 
 

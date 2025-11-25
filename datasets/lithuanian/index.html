@@ -659,6 +659,12 @@
       
         
       
+        
+      
+        
+      
+        
+      
     
     
     
@@ -745,6 +751,29 @@
   
   <span class="md-ellipsis">
     🇧🇬 Bulgarian
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../catalan/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Catalan
     
   </span>
   
@@ -1015,6 +1044,29 @@
   
   
     <li class="md-nav__item">
+      <a href="../hungarian/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    🇭🇺 Hungarian
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../icelandic/" class="md-nav__link">
         
   
@@ -1144,9 +1196,18 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#lithuanian-emotions" class="md-nav__link">
+  <a href="#atsiliepimai" class="md-nav__link">
     <span class="md-ellipsis">
-      Lithuanian Emotions
+      Atsiliepimai
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#unofficial-lithuanian-emotions" class="md-nav__link">
+    <span class="md-ellipsis">
+      Unofficial: Lithuanian Emotions
     </span>
   </a>
   
@@ -1369,6 +1430,29 @@
   
   <span class="md-ellipsis">
     🇵🇹 Portuguese
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../romanian/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    🇷🇴 Romanian
     
   </span>
   
@@ -1685,9 +1769,18 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#lithuanian-emotions" class="md-nav__link">
+  <a href="#atsiliepimai" class="md-nav__link">
     <span class="md-ellipsis">
-      Lithuanian Emotions
+      Atsiliepimai
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#unofficial-lithuanian-emotions" class="md-nav__link">
+    <span class="md-ellipsis">
+      Unofficial: Lithuanian Emotions
     </span>
   </a>
   
@@ -1866,7 +1959,81 @@
 datasets are grouped by their task - see the <a href="/tasks">task overview</a> for more
 information about what these constitute.</p>
 <h2 id="sentiment-classification">Sentiment Classification</h2>
-<h3 id="lithuanian-emotions">Lithuanian Emotions</h3>
+<h3 id="atsiliepimai">Atsiliepimai</h3>
+<p>This dataset was published
+<a href="https://huggingface.co/datasets/alexandrainst/lithuanian-sentiment-analysis">here</a>. It was
+scraped from <a href="https://atsiliepimai.lt/">atsiliepimai.lt</a> and
+contains reviews similar to trustpilot reviews.</p>
+<p>The original dataset consists of 1,796 samples. We use 512 / 256 / 1,028
+samples for our training, validation and test splits, respectively.</p>
+<p>The original dataset contains rating values from 1 to 5. The raw distribution is:</p>
+<ul>
+<li>1: 125 samples</li>
+<li>2: 184 samples</li>
+<li>3: 292 samples</li>
+<li>4: 584 samples</li>
+<li>5: 611 samples</li>
+</ul>
+<p>We map these as follows:</p>
+<ul>
+<li>1 and 2 are mapped to <code>negative</code></li>
+<li>3 and 4 are mapped to <code>neutral</code></li>
+<li>5 is mapped to <code>positive</code></li>
+</ul>
+<p>After this mapping, the distribution of sentiment labels is:</p>
+<ul>
+<li><code>negative</code>: 309 samples</li>
+<li><code>neutral</code>: 876 samples</li>
+<li><code>positive</code>: 611 samples</li>
+</ul>
+<p>Here are a few examples from the training split:</p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Atėjau pirkt bevielės klaviatūros žaidimams pasiruošęs ten 60 eur mažiausiai.. sako imk šitą už 13 eur. Tik batareikas įsidek geras. Žodžiu kol kas sedžiu žiauriai patenkintas. Klava ir pele veikia puikiausiai BF1 multiplayer taškiau- jokių užsikirtinejimų nieko, &quot;</span><span class="err">vėlavimo</span><span class="s2">&quot; irgi arba nėra, arba nesu tiek patyręs, kad pastebėčiau. 13 eurų :D? Dar su garantija 2 metam :D Tik gal kažkiek nustebino pasakymas &quot;</span><span class="kc">ta</span><span class="err">i</span><span class="w"> </span><span class="err">bevielių</span><span class="w"> </span><span class="err">klavia</span><span class="kc">t</span><span class="err">ūrų</span><span class="w"> </span><span class="err">ir</span><span class="w"> </span><span class="kc">ne</span><span class="err">bu</span><span class="kc">na</span><span class="w"> </span><span class="err">bra</span><span class="kc">n</span><span class="err">gių</span><span class="w"> </span><span class="err">žaidimams</span><span class="s2">&quot; nes tikrai yra, bet tai nesvarbu. Čia 13 eur. už labiau nei nustebinusį rinkinį už tokią kainą. Apskritai jau ne pirmą kartą pas juos perku ir šią chebrą tikrai rekomenduoju. Jie ten savotiškai užsiknisę per tiek laiko, matosi, bet tam nepasiduoda ir vistiek daro kuo geriau.&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;neutral&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Pirkau iš šios parduotuvės keletą elektronikos prekių. Labai patiko tai, kad yra didelis pasirinkimas, ilgai ieškojau būtent vieno produkto, lietuvoje tik jie vieni būtent tą produktą turėjo ir už gana gerą kainą. Patinka visa pirkimo internetinė sistema, aptarnavimas irgi geras. Minusų kaip ir nepastebėjau, galėčiau pavadinti šią parduotuvę solidžia ir rimta. Manau pasirinksiu ir kitą kartą jų parduodamus produktus.&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;positive&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Tikrai neverta vieta apsilankyti ir mokėti už patį blogiausią aptarnavimą ir šaltą bei neskanų maistą. Apsilankėme su šeima vakar 2025 m. birželio 24 d., nes tikėjomės ramiai, turiningai pasisėdėti ir skaniai pavalgyti. Pradėkime nuo to, kad buvome iš anksto užsisakę-rezervavę staliuką, tačiau jo niekas nedavė, o nusiuntė į bendrą tentu aptrauktą terasą. Lijo, pūtė smarkus vėjas, traukė taip, kad norėjosi kuo greičiau varyti iš tos skylės. Aptarnavimas, čia yra  ..yzdec, kitaip ir nepasakysi. Padavėjo (gal 15-17 m. amžiaus) prie staliuko priėjo tik po gero pusvalandžio kai jau buvome gerokai sušalę. Iš kart užsakėme karštos sriubos, karštą patiekalą. Tai spėkit, dar po 37 min. stebėjau laiką, atnešė pravėsusius kepsnius, o po ilgo laukimo ir šaltą sriubą. Jeigu lankysitės Trakuose, tai jokiu būdu neikite pavalgyti į Senąją kibininę, nes už..is negyvai ir dar Mezymo ar angliuko turėkite, nes atrajosite dar ilgai ta mėsa, kurią deda į tuos brangius ir nebeskanius kibinus.&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;negative&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>When evaluating generative models, we use the following setup (see the
+<a href="/methodology">methodology</a> for more information on how these are used):</p>
+<ul>
+<li>Number of few-shot examples: 12</li>
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Toliau pateikti dokumentai ir jų nuotaika,
+kuri gali būti &#39;teigiamas&#39;, &#39;neutralus&#39; arba &#39;neigiamas&#39;.
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Dokumentas: {text}
+Nuotaika: {label}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Dokumentas: {text}
+
+Klasifikuokite nuotaiką dokumente. Atsakykite su &#39;teigiamas&#39;, &#39;neutralus&#39; arba &#39;neigiamas&#39;, ir nieko kito.
+</code></pre></div>
+<ul>
+<li>Label mapping:</li>
+<li><code>positive</code> ➡️ <code>teigiamas</code></li>
+<li><code>neutral</code> ➡️ <code>neutralus</code></li>
+<li><code>negative</code> ➡️ <code>neigiamas</code></li>
+</ul>
+<p>You can evaluate this dataset directly as follows:</p>
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>atsiliepimai
+</code></pre></div>
+<h3 id="unofficial-lithuanian-emotions">Unofficial: Lithuanian Emotions</h3>
 <p>This dataset is a combination of machine translated versions of the <a href="https://doi.org/10.48550/arXiv.2005.00547">GoEmotions
 dataset</a> and the <a href="https://www.kaggle.com/datasets/nelgiriyewithana/emotions">Kaggle emotions
 dataset</a>. GoEmotions consists

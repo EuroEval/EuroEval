@@ -651,6 +651,12 @@
       
         
       
+        
+      
+        
+      
+        
+      
     
     
     
@@ -1452,7 +1458,54 @@
 <span class="normal">589</span>
 <span class="normal">590</span>
 <span class="normal">591</span>
-<span class="normal">592</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Templates for the Named Entity Recognition task.&quot;&quot;&quot;</span>
+<span class="normal">592</span>
+<span class="normal">593</span>
+<span class="normal">594</span>
+<span class="normal">595</span>
+<span class="normal">596</span>
+<span class="normal">597</span>
+<span class="normal">598</span>
+<span class="normal">599</span>
+<span class="normal">600</span>
+<span class="normal">601</span>
+<span class="normal">602</span>
+<span class="normal">603</span>
+<span class="normal">604</span>
+<span class="normal">605</span>
+<span class="normal">606</span>
+<span class="normal">607</span>
+<span class="normal">608</span>
+<span class="normal">609</span>
+<span class="normal">610</span>
+<span class="normal">611</span>
+<span class="normal">612</span>
+<span class="normal">613</span>
+<span class="normal">614</span>
+<span class="normal">615</span>
+<span class="normal">616</span>
+<span class="normal">617</span>
+<span class="normal">618</span>
+<span class="normal">619</span>
+<span class="normal">620</span>
+<span class="normal">621</span>
+<span class="normal">622</span>
+<span class="normal">623</span>
+<span class="normal">624</span>
+<span class="normal">625</span>
+<span class="normal">626</span>
+<span class="normal">627</span>
+<span class="normal">628</span>
+<span class="normal">629</span>
+<span class="normal">630</span>
+<span class="normal">631</span>
+<span class="normal">632</span>
+<span class="normal">633</span>
+<span class="normal">634</span>
+<span class="normal">635</span>
+<span class="normal">636</span>
+<span class="normal">637</span>
+<span class="normal">638</span>
+<span class="normal">639</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Templates for the Named Entity Recognition task.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">t</span>
 
@@ -1460,6 +1513,7 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">..languages</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">BOSNIAN</span><span class="p">,</span>
     <span class="n">BULGARIAN</span><span class="p">,</span>
+    <span class="n">CATALAN</span><span class="p">,</span>
     <span class="n">CROATIAN</span><span class="p">,</span>
     <span class="n">CZECH</span><span class="p">,</span>
     <span class="n">DANISH</span><span class="p">,</span>
@@ -1471,6 +1525,7 @@
     <span class="n">FRENCH</span><span class="p">,</span>
     <span class="n">GERMAN</span><span class="p">,</span>
     <span class="n">GREEK</span><span class="p">,</span>
+    <span class="n">HUNGARIAN</span><span class="p">,</span>
     <span class="n">ICELANDIC</span><span class="p">,</span>
     <span class="n">ITALIAN</span><span class="p">,</span>
     <span class="n">LATVIAN</span><span class="p">,</span>
@@ -1480,6 +1535,7 @@
     <span class="n">NORWEGIAN_NYNORSK</span><span class="p">,</span>
     <span class="n">POLISH</span><span class="p">,</span>
     <span class="n">PORTUGUESE</span><span class="p">,</span>
+    <span class="n">ROMANIAN</span><span class="p">,</span>
     <span class="n">SERBIAN</span><span class="p">,</span>
     <span class="n">SLOVAK</span><span class="p">,</span>
     <span class="n">SLOVENE</span><span class="p">,</span>
@@ -1504,18 +1560,13 @@
             <span class="s2">&quot;b-misc&quot;</span><span class="p">:</span> <span class="s2">&quot;razno&quot;</span><span class="p">,</span>
             <span class="s2">&quot;i-misc&quot;</span><span class="p">:</span> <span class="s2">&quot;razno&quot;</span><span class="p">,</span>
         <span class="p">},</span>
-        <span class="n">default_prompt_prefix</span><span class="o">=</span><span class="p">(</span>
-            <span class="s2">&quot;Slijede rečenice i JSON riječnici s imenovanim entitetima &quot;</span>
-            <span class="s2">&quot;koji se pojavljuju u rečenicama.&quot;</span>
-        <span class="p">),</span>
-        <span class="n">default_prompt_template</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;Rečenica: </span><span class="si">{text}</span><span class="se">\n</span><span class="s2">Imenovani entiteti: </span><span class="si">{label}</span><span class="s2">&quot;</span><span class="p">),</span>
-        <span class="n">default_instruction_prompt</span><span class="o">=</span><span class="p">(</span>
-            <span class="s2">&quot;Rečenica: </span><span class="si">{text}</span><span class="se">\n\n</span><span class="s2">&quot;</span>
-            <span class="s2">&quot;Identificirajte imenovane entitete u rečenici. Prikažite ih kao &quot;</span>
-            <span class="s2">&quot;JSON riječnik s ključevima </span><span class="si">{labels_str}</span><span class="s2">. Vrijednosti trebaju biti &quot;</span>
-            <span class="s2">&quot;popisi imenovanih entiteta navedenog tipa, točno kako se pojavljuju &quot;</span>
-            <span class="s2">&quot;u rečenici.&quot;</span>
-        <span class="p">),</span>
+        <span class="n">default_prompt_prefix</span><span class="o">=</span><span class="s2">&quot;Slijede rečenice i JSON riječnici s imenovanim &quot;</span>
+        <span class="s2">&quot;entitetima koji se pojavljuju u rečenicama.&quot;</span><span class="p">,</span>
+        <span class="n">default_prompt_template</span><span class="o">=</span><span class="s2">&quot;Rečenica: </span><span class="si">{text}</span><span class="se">\n</span><span class="s2">Imenovani entiteti: </span><span class="si">{label}</span><span class="s2">&quot;</span><span class="p">,</span>
+        <span class="n">default_instruction_prompt</span><span class="o">=</span><span class="s2">&quot;Rečenica: </span><span class="si">{text}</span><span class="se">\n\n</span><span class="s2">Identificirajte imenovane &quot;</span>
+        <span class="s2">&quot;entitete u rečenici. Prikažite ih kao JSON riječnik s ključevima &quot;</span>
+        <span class="s2">&quot;</span><span class="si">{labels_str}</span><span class="s2">. Vrijednosti trebaju biti popisi imenovanih entiteta &quot;</span>
+        <span class="s2">&quot;navedenog tipa, točno kako se pojavljuju u rečenici.&quot;</span><span class="p">,</span>
     <span class="p">),</span>
     <span class="n">BULGARIAN</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
         <span class="n">default_prompt_label_mapping</span><span class="o">=</span><span class="p">{</span>
@@ -1536,6 +1587,25 @@
         <span class="s2">&quot;</span><span class="si">{labels_str}</span><span class="s2">. Стойностите трябва да бъдат списъци на именуваните обекти от &quot;</span>
         <span class="s2">&quot;този тип, точно както се появяват в изречението.&quot;</span><span class="p">,</span>
     <span class="p">),</span>
+    <span class="n">CATALAN</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
+        <span class="n">default_prompt_label_mapping</span><span class="o">=</span><span class="p">{</span>
+            <span class="s2">&quot;b-per&quot;</span><span class="p">:</span> <span class="s2">&quot;persona&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;i-per&quot;</span><span class="p">:</span> <span class="s2">&quot;persona&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;b-loc&quot;</span><span class="p">:</span> <span class="s2">&quot;lloc&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;i-loc&quot;</span><span class="p">:</span> <span class="s2">&quot;lloc&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;b-org&quot;</span><span class="p">:</span> <span class="s2">&quot;organització&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;i-org&quot;</span><span class="p">:</span> <span class="s2">&quot;organització&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;b-misc&quot;</span><span class="p">:</span> <span class="s2">&quot;miscel·lània&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;i-misc&quot;</span><span class="p">:</span> <span class="s2">&quot;miscel·lània&quot;</span><span class="p">,</span>
+        <span class="p">},</span>
+        <span class="n">default_prompt_prefix</span><span class="o">=</span><span class="s2">&quot;Aquestes són frases i diccionaris JSON amb els noms &quot;</span>
+        <span class="s2">&quot;que apareixen en les frases.&quot;</span><span class="p">,</span>
+        <span class="n">default_prompt_template</span><span class="o">=</span><span class="s2">&quot;Frase: </span><span class="si">{text}</span><span class="se">\n</span><span class="s2">Entitats anomenades: </span><span class="si">{label}</span><span class="s2">&quot;</span><span class="p">,</span>
+        <span class="n">default_instruction_prompt</span><span class="o">=</span><span class="s2">&quot;Frase: </span><span class="si">{text}</span><span class="se">\n\n</span><span class="s2">Identifiqueu les entitats &quot;</span>
+        <span class="s2">&quot;anomenades en la frase. Mostreu-les com a diccionari JSON amb les claus &quot;</span>
+        <span class="s2">&quot;</span><span class="si">{labels_str}</span><span class="s2">. Els valors han de ser els llistats de les entitats anomenades &quot;</span>
+        <span class="s2">&quot;del tipus, tal com apareixen en la frase.&quot;</span><span class="p">,</span>
+    <span class="p">),</span>
     <span class="n">CROATIAN</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
         <span class="n">default_prompt_label_mapping</span><span class="o">=</span><span class="p">{</span>
             <span class="s2">&quot;b-per&quot;</span><span class="p">:</span> <span class="s2">&quot;osoba&quot;</span><span class="p">,</span>
@@ -1547,17 +1617,13 @@
             <span class="s2">&quot;b-misc&quot;</span><span class="p">:</span> <span class="s2">&quot;razno&quot;</span><span class="p">,</span>
             <span class="s2">&quot;i-misc&quot;</span><span class="p">:</span> <span class="s2">&quot;razno&quot;</span><span class="p">,</span>
         <span class="p">},</span>
-        <span class="n">default_prompt_prefix</span><span class="o">=</span><span class="p">(</span>
-            <span class="s2">&quot;Sljedeće su rečenice i JSON rječnici s imenicama koje se pojavljuju u &quot;</span>
-            <span class="s2">&quot;rečenicama.&quot;</span>
-        <span class="p">),</span>
-        <span class="n">default_prompt_template</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;Rečenica: </span><span class="si">{text}</span><span class="se">\n</span><span class="s2">Imenovane entiteti: </span><span class="si">{label}</span><span class="s2">&quot;</span><span class="p">),</span>
-        <span class="n">default_instruction_prompt</span><span class="o">=</span><span class="p">(</span>
-            <span class="s2">&quot;Rečenica: </span><span class="si">{text}</span><span class="se">\n\n</span><span class="s2">&quot;</span>
-            <span class="s2">&quot;Identificirajte imenovane entitete u rečenici. Prikažite ih kao JSON &quot;</span>
-            <span class="s2">&quot;rječnik s ključevima </span><span class="si">{labels_str}</span><span class="s2">. Vrijednosti trebaju biti popisi &quot;</span>
-            <span class="s2">&quot;imenovanih entiteta navedenog tipa, točno kako se pojavljuju u rečenici.&quot;</span>
-        <span class="p">),</span>
+        <span class="n">default_prompt_prefix</span><span class="o">=</span><span class="s2">&quot;Sljedeće su rečenice i JSON rječnici s imenicama koje &quot;</span>
+        <span class="s2">&quot;se pojavljuju u rečenicama.&quot;</span><span class="p">,</span>
+        <span class="n">default_prompt_template</span><span class="o">=</span><span class="s2">&quot;Rečenica: </span><span class="si">{text}</span><span class="se">\n</span><span class="s2">Imenovane entiteti: </span><span class="si">{label}</span><span class="s2">&quot;</span><span class="p">,</span>
+        <span class="n">default_instruction_prompt</span><span class="o">=</span><span class="s2">&quot;Rečenica: </span><span class="si">{text}</span><span class="se">\n\n</span><span class="s2">Identificirajte imenovane &quot;</span>
+        <span class="s2">&quot;entitete u rečenici. Prikažite ih kao JSON rječnik s ključevima &quot;</span>
+        <span class="s2">&quot;</span><span class="si">{labels_str}</span><span class="s2">. Vrijednosti trebaju biti popisi imenovanih entiteta &quot;</span>
+        <span class="s2">&quot;navedenog tipa, točno kako se pojavljuju u rečenici.&quot;</span><span class="p">,</span>
     <span class="p">),</span>
     <span class="n">CZECH</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
         <span class="n">default_prompt_label_mapping</span><span class="o">=</span><span class="p">{</span>
@@ -1634,6 +1700,25 @@
         <span class="s2">&quot;οντότητες στην πρόταση. Θα πρέπει να παράγετε αυτό ως λεξικό JSON με &quot;</span>
         <span class="s2">&quot;κλειδιά </span><span class="si">{labels_str}</span><span class="s2">. Οι τιμές πρέπει να είναι λίστες των ονομαστικών &quot;</span>
         <span class="s2">&quot;οντοτήτων αυτού του τύπου, ακριβώς όπως εμφανίζονται στην πρόταση.&quot;</span><span class="p">,</span>
+    <span class="p">),</span>
+    <span class="n">HUNGARIAN</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
+        <span class="n">default_prompt_label_mapping</span><span class="o">=</span><span class="p">{</span>
+            <span class="s2">&quot;b-per&quot;</span><span class="p">:</span> <span class="s2">&quot;személy&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;i-per&quot;</span><span class="p">:</span> <span class="s2">&quot;személy&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;b-loc&quot;</span><span class="p">:</span> <span class="s2">&quot;helyszín&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;i-loc&quot;</span><span class="p">:</span> <span class="s2">&quot;helyszín&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;b-org&quot;</span><span class="p">:</span> <span class="s2">&quot;szervezet&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;i-org&quot;</span><span class="p">:</span> <span class="s2">&quot;szervezet&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;b-misc&quot;</span><span class="p">:</span> <span class="s2">&quot;egyéb&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;i-misc&quot;</span><span class="p">:</span> <span class="s2">&quot;egyéb&quot;</span><span class="p">,</span>
+        <span class="p">},</span>
+        <span class="n">default_prompt_prefix</span><span class="o">=</span><span class="s2">&quot;Az alábbiakban mondatok és JSON szótárak találhatók</span><span class="se">\n</span><span class="s2">&quot;</span>
+        <span class="s2">&quot;az adott mondatokban előforduló névjegyzékkel.&quot;</span><span class="p">,</span>
+        <span class="n">default_prompt_template</span><span class="o">=</span><span class="s2">&quot;Mondat: </span><span class="si">{text}</span><span class="se">\n</span><span class="s2">Névjegyzék: </span><span class="si">{label}</span><span class="s2">&quot;</span><span class="p">,</span>
+        <span class="n">default_instruction_prompt</span><span class="o">=</span><span class="s2">&quot;Mondat: </span><span class="si">{text}</span><span class="se">\n\n</span><span class="s2">Nevezze meg a mondatban &quot;</span>
+        <span class="s2">&quot;szereplő neveket. JSON szótárként adja meg a </span><span class="si">{labels_str}</span><span class="s2"> kulcsszavakat. &quot;</span>
+        <span class="s2">&quot;Az értékek a mondatban szereplő névjegyzékek listái legyenek, pontosan úgy, &quot;</span>
+        <span class="s2">&quot;ahogyan megjelennek.&quot;</span><span class="p">,</span>
     <span class="p">),</span>
     <span class="n">ENGLISH</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
         <span class="n">default_prompt_label_mapping</span><span class="o">=</span><span class="p">{</span>
@@ -1924,6 +2009,25 @@
         <span class="s2">&quot;Verdiene skal være lister over de navngitte enhetene &quot;</span>
         <span class="s2">&quot;av den typen, akkurat som de vises i frasen.&quot;</span><span class="p">,</span>
     <span class="p">),</span>
+    <span class="n">ROMANIAN</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
+        <span class="n">default_prompt_label_mapping</span><span class="o">=</span><span class="p">{</span>
+            <span class="s2">&quot;b-per&quot;</span><span class="p">:</span> <span class="s2">&quot;persoană&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;i-per&quot;</span><span class="p">:</span> <span class="s2">&quot;persoană&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;b-loc&quot;</span><span class="p">:</span> <span class="s2">&quot;locație&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;i-loc&quot;</span><span class="p">:</span> <span class="s2">&quot;locație&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;b-org&quot;</span><span class="p">:</span> <span class="s2">&quot;organizație&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;i-org&quot;</span><span class="p">:</span> <span class="s2">&quot;organizație&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;b-misc&quot;</span><span class="p">:</span> <span class="s2">&quot;diverse&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;i-misc&quot;</span><span class="p">:</span> <span class="s2">&quot;diverse&quot;</span><span class="p">,</span>
+        <span class="p">},</span>
+        <span class="n">default_prompt_prefix</span><span class="o">=</span><span class="s2">&quot;Mai jos sunt propoziții și dicționare JSON cu &quot;</span>
+        <span class="s2">&quot;entitățile numite care apar în propoziția dată.&quot;</span><span class="p">,</span>
+        <span class="n">default_prompt_template</span><span class="o">=</span><span class="s2">&quot;Propoziție: </span><span class="si">{text}</span><span class="se">\n</span><span class="s2">Entități numite: </span><span class="si">{label}</span><span class="s2">&quot;</span><span class="p">,</span>
+        <span class="n">default_instruction_prompt</span><span class="o">=</span><span class="s2">&quot;Propoziție: </span><span class="si">{text}</span><span class="se">\n\n</span><span class="s2">Identifică entitățile &quot;</span>
+        <span class="s2">&quot;numite din propoziție. Ar trebui să le enumeri ca un dicționar JSON cu &quot;</span>
+        <span class="s2">&quot;cheile </span><span class="si">{labels_str}</span><span class="s2">. Valorile cheilor ar trebui să fie liste de entități &quot;</span>
+        <span class="s2">&quot;numite de tipul respectiv, exact cum apar în propoziție.&quot;</span><span class="p">,</span>
+    <span class="p">),</span>
     <span class="n">POLISH</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
         <span class="n">default_prompt_label_mapping</span><span class="o">=</span><span class="p">{</span>
             <span class="s2">&quot;b-per&quot;</span><span class="p">:</span> <span class="s2">&quot;osoba&quot;</span><span class="p">,</span>
@@ -1973,17 +2077,13 @@
             <span class="s2">&quot;b-misc&quot;</span><span class="p">:</span> <span class="s2">&quot;razno&quot;</span><span class="p">,</span>
             <span class="s2">&quot;i-misc&quot;</span><span class="p">:</span> <span class="s2">&quot;razno&quot;</span><span class="p">,</span>
         <span class="p">},</span>
-        <span class="n">default_prompt_prefix</span><span class="o">=</span><span class="p">(</span>
-            <span class="s2">&quot;Naslednje so povedi in JSON slovarji z poimenovanimi &quot;</span>
-            <span class="s2">&quot;entitetami, ki se pojavijo v dani povedi.&quot;</span>
-        <span class="p">),</span>
-        <span class="n">default_prompt_template</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;Poved: </span><span class="si">{text}</span><span class="se">\n</span><span class="s2">Poimenovane entitete: </span><span class="si">{label}</span><span class="s2">&quot;</span><span class="p">),</span>
-        <span class="n">default_instruction_prompt</span><span class="o">=</span><span class="p">(</span>
-            <span class="s2">&quot;Poved: </span><span class="si">{text}</span><span class="se">\n\n</span><span class="s2">Identificirajte poimenovane entitete v povedi. &quot;</span>
-            <span class="s2">&quot;To morate izpisati kot JSON slovar s ključi </span><span class="si">{labels_str}</span><span class="s2">. &quot;</span>
-            <span class="s2">&quot;Vrednosti morajo biti seznami poimenovanih entitet te kategorije, &quot;</span>
-            <span class="s2">&quot;tako kot se pojavijo v povedi.&quot;</span>
-        <span class="p">),</span>
+        <span class="n">default_prompt_prefix</span><span class="o">=</span><span class="s2">&quot;Naslednje so povedi in JSON slovarji z poimenovanimi &quot;</span>
+        <span class="s2">&quot;entitetami, ki se pojavijo v dani povedi.&quot;</span><span class="p">,</span>
+        <span class="n">default_prompt_template</span><span class="o">=</span><span class="s2">&quot;Poved: </span><span class="si">{text}</span><span class="se">\n</span><span class="s2">Poimenovane entitete: </span><span class="si">{label}</span><span class="s2">&quot;</span><span class="p">,</span>
+        <span class="n">default_instruction_prompt</span><span class="o">=</span><span class="s2">&quot;Poved: </span><span class="si">{text}</span><span class="se">\n\n</span><span class="s2">Identificirajte poimenovane &quot;</span>
+        <span class="s2">&quot;entitete v povedi. To morate izpisati kot JSON slovar s ključi </span><span class="si">{labels_str}</span><span class="s2">. &quot;</span>
+        <span class="s2">&quot;Vrednosti morajo biti seznami poimenovanih entitet te kategorije, tako kot &quot;</span>
+        <span class="s2">&quot;se pojavijo v povedi.&quot;</span><span class="p">,</span>
     <span class="p">),</span>
     <span class="n">SERBIAN</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
         <span class="n">default_prompt_label_mapping</span><span class="o">=</span><span class="p">{</span>

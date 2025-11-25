@@ -651,6 +651,12 @@
       
         
       
+        
+      
+        
+      
+        
+      
     
     
     
@@ -2333,7 +2339,21 @@
 <span class="normal">1276</span>
 <span class="normal">1277</span>
 <span class="normal">1278</span>
-<span class="normal">1279</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Encoder models from the Hugging Face Hub.&quot;&quot;&quot;</span>
+<span class="normal">1279</span>
+<span class="normal">1280</span>
+<span class="normal">1281</span>
+<span class="normal">1282</span>
+<span class="normal">1283</span>
+<span class="normal">1284</span>
+<span class="normal">1285</span>
+<span class="normal">1286</span>
+<span class="normal">1287</span>
+<span class="normal">1288</span>
+<span class="normal">1289</span>
+<span class="normal">1290</span>
+<span class="normal">1291</span>
+<span class="normal">1292</span>
+<span class="normal">1293</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Encoder models from the Hugging Face Hub.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">c</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
@@ -2368,6 +2388,8 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">transformers.modeling_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">PreTrainedModel</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">transformers.models.auto.configuration_auto</span><span class="w"> </span><span class="kn">import</span> <span class="n">AutoConfig</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">transformers.models.auto.tokenization_auto</span><span class="w"> </span><span class="kn">import</span> <span class="n">AutoTokenizer</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">transformers.tokenization_mistral_common</span><span class="w"> </span><span class="kn">import</span> <span class="n">MistralCommonTokenizer</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">transformers.tokenization_utils_base</span><span class="w"> </span><span class="kn">import</span> <span class="n">PreTrainedTokenizerBase</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">transformers.trainer</span><span class="w"> </span><span class="kn">import</span> <span class="n">Trainer</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">urllib3.exceptions</span><span class="w"> </span><span class="kn">import</span> <span class="n">RequestError</span>
 
@@ -2403,6 +2425,7 @@
     <span class="n">token_classification</span><span class="p">,</span>
 <span class="p">)</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..tokenisation_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_bos_token</span><span class="p">,</span> <span class="n">get_eos_token</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..types</span><span class="w"> </span><span class="kn">import</span> <span class="n">Tokeniser</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..utils</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">create_model_cache_dir</span><span class="p">,</span>
     <span class="n">get_class_by_name</span><span class="p">,</span>
@@ -2458,7 +2481,7 @@
             <span class="n">benchmark_config</span><span class="o">=</span><span class="n">benchmark_config</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_model</span><span class="p">:</span> <span class="s2">&quot;PreTrainedModel&quot;</span> <span class="o">=</span> <span class="n">model</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_tokeniser</span><span class="p">:</span> <span class="s2">&quot;PreTrainedTokenizer&quot;</span> <span class="o">=</span> <span class="n">tokeniser</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_tokeniser</span><span class="p">:</span> <span class="s2">&quot;PreTrainedTokenizer | MistralCommonTokenizer&quot;</span> <span class="o">=</span> <span class="n">tokeniser</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">_model</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tokeniser</span> <span class="o">=</span> <span class="n">align_model_and_tokeniser</span><span class="p">(</span>
             <span class="n">model</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_model</span><span class="p">,</span>
@@ -2602,12 +2625,16 @@
         <span class="k">return</span> <span class="n">model_max_length</span>
 
     <span class="nd">@property</span><div class="mkapi-source-link" id="euroeval.benchmark_modules.hf.HuggingFaceEncoderModel.data_collator"><a href="../../../../api/euroeval/benchmark_modules/hf/#euroeval.benchmark_modules.hf.HuggingFaceEncoderModel.data_collator" title="Go to docs">[docs]</a></div>
-    <span class="k">def</span><span class="w"> </span><span class="nf">data_collator</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">c</span><span class="o">.</span><span class="n">Callable</span><span class="p">[[</span><span class="n">c</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">Any</span><span class="p">]],</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">t</span><span class="o">.</span><span class="n">Any</span><span class="p">]]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">data_collator</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">c</span><span class="o">.</span><span class="n">Callable</span><span class="p">[[</span><span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">t</span><span class="o">.</span><span class="n">Any</span><span class="p">]]],</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">t</span><span class="o">.</span><span class="n">Any</span><span class="p">]]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;The data collator used to prepare samples during finetuning.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The data collator.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_tokeniser</span><span class="p">,</span> <span class="n">PreTrainedTokenizerBase</span><span class="p">),</span> <span class="p">(</span>
+            <span class="s2">&quot;The data collator property is only supported for models with a &quot;</span>
+            <span class="s2">&quot;Hugging Face tokeniser.&quot;</span>
+        <span class="p">)</span>
         <span class="k">match</span> <span class="bp">self</span><span class="o">.</span><span class="n">dataset_config</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">task_group</span><span class="p">:</span>
             <span class="k">case</span> <span class="p">(</span>
                 <span class="n">TaskGroup</span><span class="o">.</span><span class="n">SEQUENCE_CLASSIFICATION</span>
@@ -2695,6 +2722,8 @@
                 <span class="k">try</span><span class="p">:</span>
                     <span class="n">examples</span><span class="p">[</span><span class="s2">&quot;label&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span>
                         <span class="bp">self</span><span class="o">.</span><span class="n">_model</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">label2id</span><span class="p">[</span><span class="n">lbl</span><span class="o">.</span><span class="n">lower</span><span class="p">()]</span>
+                        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_model</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">label2id</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+                        <span class="k">else</span> <span class="n">lbl</span>
                         <span class="k">for</span> <span class="n">lbl</span> <span class="ow">in</span> <span class="n">examples</span><span class="p">[</span><span class="s2">&quot;label&quot;</span><span class="p">]</span>
                     <span class="p">]</span>
                 <span class="k">except</span> <span class="ne">KeyError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
@@ -2715,7 +2744,7 @@
                 <span class="p">)</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">tokenise</span><span class="p">,</span> <span class="n">batched</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">load_from_cache_file</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 
             <span class="k">case</span> <span class="n">TaskGroup</span><span class="o">.</span><span class="n">MULTIPLE_CHOICE_CLASSIFICATION</span><span class="p">:</span>
-                <span class="n">dataset</span> <span class="o">=</span> <span class="n">DatasetDict</span><span class="p">(</span>
+                <span class="n">dataset</span> <span class="o">=</span> <span class="n">DatasetDict</span><span class="p">(</span>  <span class="c1"># type: ignore[no-matching-overload]</span>
                     <span class="p">{</span>
                         <span class="n">split_name</span><span class="p">:</span> <span class="n">split</span><span class="o">.</span><span class="n">map</span><span class="p">(</span>
                             <span class="n">partial</span><span class="p">(</span>
@@ -2790,7 +2819,7 @@
                         <span class="n">load_from_cache_file</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                         <span class="n">keep_in_memory</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
                     <span class="p">)</span>
-                <span class="n">dataset</span> <span class="o">=</span> <span class="n">DatasetDict</span><span class="p">(</span><span class="n">data_dict</span><span class="p">)</span>
+                <span class="n">dataset</span> <span class="o">=</span> <span class="n">DatasetDict</span><span class="p">(</span><span class="n">data_dict</span><span class="p">)</span>  <span class="c1"># type: ignore[no-matching-overload]</span>
 
                 <span class="c1"># The Trainer hides the columns that are not used by the model (here</span>
                 <span class="c1"># `id` and `offset_mapping` which we will need for our post-processing),</span>
@@ -2894,7 +2923,7 @@
     <span class="n">model_config</span><span class="p">:</span> <span class="s2">&quot;ModelConfig&quot;</span><span class="p">,</span>
     <span class="n">dataset_config</span><span class="p">:</span> <span class="s2">&quot;DatasetConfig&quot;</span><span class="p">,</span>
     <span class="n">benchmark_config</span><span class="p">:</span> <span class="s2">&quot;BenchmarkConfig&quot;</span><span class="p">,</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="s2">&quot;PreTrainedModel&quot;</span><span class="p">,</span> <span class="s2">&quot;PreTrainedTokenizer&quot;</span><span class="p">]:</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="s2">&quot;PreTrainedModel&quot;</span><span class="p">,</span> <span class="n">Tokeniser</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Load the model and tokeniser.</span>
 
 <span class="sd">    Args:</span>
@@ -3227,7 +3256,7 @@
     <span class="n">model_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">trust_remote_code</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
     <span class="n">model_config</span><span class="p">:</span> <span class="s2">&quot;ModelConfig&quot;</span><span class="p">,</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;PreTrainedTokenizer&quot;</span><span class="p">:</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tokeniser</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Load the tokeniser.</span>
 
 <span class="sd">    Args:</span>
@@ -3467,7 +3496,12 @@
         <span class="c1"># If the token type embeddings has shape (1, ...) then set the shape to</span>
         <span class="c1"># (2, ...) by randomly initializing the second token type embedding</span>
         <span class="k">if</span> <span class="n">token_type_embedding_tensor</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
-            <span class="n">token_type_embeddings</span><span class="o">.</span><span class="n">weight</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">(</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">token_type_embeddings</span><span class="o">.</span><span class="n">weight</span><span class="p">,</span> <span class="s2">&quot;data&quot;</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="n">InvalidModel</span><span class="p">(</span>
+                    <span class="s2">&quot;The token type embeddings of the model do not have a `data` &quot;</span>
+                    <span class="s2">&quot;attribute, which is needed to modify the embeddings.&quot;</span>
+                <span class="p">)</span>
+            <span class="n">token_type_embeddings</span><span class="o">.</span><span class="n">weight</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">(</span>  <span class="c1"># type: ignore[missing-attribute]</span>
                 <span class="p">(</span>
                     <span class="n">token_type_embedding_tensor</span><span class="p">,</span>
                     <span class="n">torch</span><span class="o">.</span><span class="n">rand_like</span><span class="p">(</span><span class="n">token_type_embedding_tensor</span><span class="p">),</span>
@@ -3512,10 +3546,10 @@
 
 <span class="k">def</span><span class="w"> </span><span class="nf">align_model_and_tokeniser</span><span class="p">(</span><div class="mkapi-source-link" id="euroeval.benchmark_modules.hf.align_model_and_tokeniser"><a href="../../../../api/euroeval/benchmark_modules/hf/#euroeval.benchmark_modules.hf.align_model_and_tokeniser" title="Go to docs">[docs]</a></div>
     <span class="n">model</span><span class="p">:</span> <span class="s2">&quot;PreTrainedModel&quot;</span><span class="p">,</span>
-    <span class="n">tokeniser</span><span class="p">:</span> <span class="s2">&quot;PreTrainedTokenizer&quot;</span><span class="p">,</span>
+    <span class="n">tokeniser</span><span class="p">:</span> <span class="n">Tokeniser</span><span class="p">,</span>
     <span class="n">model_max_length</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
     <span class="n">raise_errors</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="s2">&quot;PreTrainedModel&quot;</span><span class="p">,</span> <span class="s2">&quot;PreTrainedTokenizer&quot;</span><span class="p">]:</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="s2">&quot;PreTrainedModel&quot;</span><span class="p">,</span> <span class="n">Tokeniser</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Aligns the model and the tokeniser.</span>
 
 <span class="sd">    Args:</span>

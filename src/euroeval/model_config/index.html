@@ -651,6 +651,12 @@
       
         
       
+        
+      
+        
+      
+        
+      
     
     
     
@@ -996,7 +1002,7 @@
     <span class="n">needs_extras</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
     <span class="n">needs_env_vars</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
     <span class="k">for</span> <span class="n">benchmark_module</span> <span class="ow">in</span> <span class="n">all_benchmark_modules</span><span class="p">:</span>
-        <span class="n">exists_or_err</span> <span class="o">=</span> <span class="n">benchmark_module</span><span class="o">.</span><span class="n">model_exists</span><span class="p">(</span>
+        <span class="n">exists_or_err</span> <span class="o">=</span> <span class="n">benchmark_module</span><span class="o">.</span><span class="n">model_exists</span><span class="p">(</span>  <span class="c1"># type: ignore[missing-attribute]</span>
             <span class="n">model_id</span><span class="o">=</span><span class="n">model_id</span><span class="p">,</span> <span class="n">benchmark_config</span><span class="o">=</span><span class="n">benchmark_config</span>
         <span class="p">)</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">exists_or_err</span><span class="p">,</span> <span class="n">NeedsExtraInstalled</span><span class="p">):</span>
@@ -1009,7 +1015,7 @@
                 <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">benchmark_module</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2"> benchmark module.&quot;</span><span class="p">,</span>
                 <span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
             <span class="p">)</span>
-            <span class="n">model_config</span> <span class="o">=</span> <span class="n">benchmark_module</span><span class="o">.</span><span class="n">get_model_config</span><span class="p">(</span>
+            <span class="n">model_config</span> <span class="o">=</span> <span class="n">benchmark_module</span><span class="o">.</span><span class="n">get_model_config</span><span class="p">(</span>  <span class="c1"># type: ignore[missing-attribute]</span>
                 <span class="n">model_id</span><span class="o">=</span><span class="n">model_id</span><span class="p">,</span> <span class="n">benchmark_config</span><span class="o">=</span><span class="n">benchmark_config</span>
             <span class="p">)</span>
             <span class="k">return</span> <span class="n">model_config</span>
