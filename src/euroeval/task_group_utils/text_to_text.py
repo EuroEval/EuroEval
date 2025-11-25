@@ -113,6 +113,10 @@ def compute_metrics(
                         "Please ensure that the labels are parsed correctly."
                     )
                 labels.append(extract_json_dict_from_string(s=raw_label))  # type: ignore[arg-type]
+        
+        #TODO: Figure out how to get the results using the structured generation metrics
+        # Do we use dataset_config.task.metrics?
+        # Should some functions from structured_generation.py be moved to this file?
         results = compare_all_json_predictions_and_labels(predictions=predictions,
                                                           labels=labels)
 
@@ -203,79 +207,3 @@ def extract_labels_from_generation(
         Results for a metric.
     """
     return model_output.sequences
-
-def compare_all_json_predictions_and_labels(
-    predictions: list[dict[str, list[str]]],
-    labels: list[dict[str, list[str]]],
-) -> dict[str, float]:
-    """Compare all JSON predictions and labels.
-
-    Args:
-        predictions:
-            The model predictions.
-        labels:
-            The ground truth labels.
-    Returns:
-        A dictionary with comparison results.
-    """
-    n_puzzles = len(labels)
-
-    # Initialize scores
-    results: np.ndarray = np.zeros(n_puzzles)
-
-    # Compute the metrics
-    for i, (prediction, label) in enumerate(zip(predictions, labels)):
-        if not isinstance(prediction, dict):
-            raise InvalidBenchmark(
-                "The model output is not a dictionary. Please ensure that the "
-                "model outputs are parsed correctly."
-            )
-        if not isinstance(label, dict):
-            raise InvalidBenchmark(
-                "The label is not a dictionary. Please ensure that the labels are "
-                "parsed correctly."
-            )
-        results[i] = (
-            compare_prediction_and_label(prediction, label)
-        )
-
-    # Raise error if the metrics are invalid
-    if (
-        results is None
-    ):
-        raise InvalidBenchmark("The metric is invalid.")
-
-    return results
-
-
-def compare_prediction_and_label(
-    prediction: dict[str, list[str]], label: dict[str, list[str]]
-) -> tuple[int, float, float]:
-    """Compare a prediction and a label and compute a metric.
-
-    Args:
-        prediction:
-            The model predictions as a dictionary.
-        label:
-            The true labels as a dictionary.
-
-    Returns:
-        The metric results.
-    """
-    n_keys = len(label)
-    # Get the first item to determine the number of elements per key
-    first_key = next(iter(label))
-    n_elements_per_key = len(label[first_key])
-
-    # Convert each row to a set of values so the order within the row does not matter
-    prediction_sets = {
-        obj: set(row_attributes)
-        for obj, row_attributes in zip(prediction.keys(), prediction.values())
-    }
-    label_sets = {
-        obj: set(row_attributes)
-        for obj, row_attributes in zip(label.keys(), label.values())
-    }
-
-    # TODO: Compute a result
-    return result

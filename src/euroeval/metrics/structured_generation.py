@@ -45,7 +45,7 @@ class StructuredGenerationMetric(Metric):
 
         Returns:
             The calculated metric, or None if the score should be ignored.
-        """
+        """  # noqa: D214, D405, D410, D411
         if not predictions or not references:
             return None
         elif len(predictions) != len(references):
