@@ -26,6 +26,7 @@ if t.TYPE_CHECKING:
 
 logger = logging.getLogger("euroeval")
 
+
 def check_full_type(variable: object, expected_type: t.Type) -> bool:
     """Check if a variable is of the expected type."""
     try:
@@ -33,6 +34,7 @@ def check_full_type(variable: object, expected_type: t.Type) -> bool:
         return True
     except TypeError:
         return False
+
 
 def compute_metrics(
     model_outputs_and_labels: "tuple[Predictions, Labels] | EvalPrediction",
@@ -113,12 +115,13 @@ def compute_metrics(
                         "Please ensure that the labels are parsed correctly."
                     )
                 labels.append(extract_json_dict_from_string(s=raw_label))  # type: ignore[arg-type]
-        
-        #TODO: Figure out how to get the results using the structured generation metrics
+
+        # TODO: Figure out how to get the results using structured generation metrics
         # Do we use dataset_config.task.metrics?
         # Should some functions from structured_generation.py be moved to this file?
-        results = compare_all_json_predictions_and_labels(predictions=predictions,
-                                                          labels=labels)
+        results = compare_all_json_predictions_and_labels(
+            predictions=predictions, labels=labels
+        )
 
     else:
         labels = raw_labels
@@ -165,8 +168,8 @@ def compute_metrics(
                         metric.compute_kwargs["device"] = "cpu"
                         log(
                             "Out of memory error occurred during the computation of "
-                            f"the metric {metric.pretty_name}. Moving the computation to "
-                            "the CPU.",
+                            f"the metric {metric.pretty_name}. Moving the computation "
+                            "to the CPU.",
                             level=logging.DEBUG,
                         )
                     else:

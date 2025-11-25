@@ -1,7 +1,7 @@
 """Logic reasoning metrics for puzzles."""
 
-import itertools
 import collections.abc as c
+import itertools
 import logging
 import typing as t
 
@@ -117,7 +117,9 @@ class StructuredGenerationMetric(Metric):
         Returns:
             The metric result.
         """
-        raise NotImplementedError("Subclasses must implement _compare_prediction_and_label")
+        raise NotImplementedError(
+            "Subclasses must implement _compare_prediction_and_label"
+        )
 
     @staticmethod
     def _prepare_data(
@@ -143,15 +145,11 @@ class StructuredGenerationMetric(Metric):
         first_key = next(iter(label))
         n_elements_per_key = len(label[first_key])
 
-        # Convert each row to a set of values so the order within the row does not matter
+        # Convert each row to a set of values so the order within the row doesn't matter
         prediction_sets = {
-            obj: set(row_attributes)
-            for obj, row_attributes in prediction.items()
+            obj: set(row_attributes) for obj, row_attributes in prediction.items()
         }
-        label_sets = {
-            obj: set(row_attributes)
-            for obj, row_attributes in label.items()
-        }
+        label_sets = {obj: set(row_attributes) for obj, row_attributes in label.items()}
 
         return prediction_sets, label_sets, n_keys, n_elements_per_key
 
@@ -183,16 +181,10 @@ class PuzzleLevelAccuracyMetric(StructuredGenerationMetric):
         """
         prediction_sets, label_sets, _, _ = self._prepare_data(prediction, label)
         return float(
-            self._compute_puzzle_score(
-                prediction=prediction_sets,
-                label=label_sets,
-            )
+            self._compute_puzzle_score(prediction=prediction_sets, label=label_sets)
         )
 
-    def _compute_puzzle_score(
-        prediction: dict[str, set],
-        label: dict[str, set],
-    ) -> int:
+    def _compute_puzzle_score(prediction: dict[str, set], label: dict[str, set]) -> int:
         """Compute the puzzle score.
 
         Args:
@@ -210,7 +202,9 @@ class PuzzleLevelAccuracyMetric(StructuredGenerationMetric):
             return 1
 
         # Check if all rows are correct
-        for attributes_pred, attributes_label in zip(prediction.values(), label.values()):
+        for attributes_pred, attributes_label in zip(
+            prediction.values(), label.values()
+        ):
             # strip whitespace
             attributes_pred = {attr.strip() for attr in attributes_pred}
             attributes_label = {attr.strip() for attr in attributes_label}
@@ -245,8 +239,8 @@ class CellWiseAccuracyMetric(StructuredGenerationMetric):
         Returns:
             The cell score.
         """
-        prediction_sets, label_sets, n_keys, n_elements_per_key = (
-            self._prepare_data(prediction, label)
+        prediction_sets, label_sets, n_keys, n_elements_per_key = self._prepare_data(
+            prediction, label
         )
         return self._compute_cell_score(
             prediction=prediction_sets,
@@ -282,7 +276,9 @@ class CellWiseAccuracyMetric(StructuredGenerationMetric):
         # Compare each cell
         cell_score: float = 0.0
         n_correct_attributes: int = 0
-        for attributes_pred, attributes_label in zip(prediction.values(), label.values()):
+        for attributes_pred, attributes_label in zip(
+            prediction.values(), label.values()
+        ):
             # strip whitespace
             attributes_pred = {attr.strip() for attr in attributes_pred}
             attributes_label = {attr.strip() for attr in attributes_label}
@@ -323,8 +319,8 @@ class BestPermutedCellWiseAccuracyMetric(StructuredGenerationMetric):
         Returns:
             The best permuted cell score.
         """
-        prediction_sets, label_sets, n_keys, n_elements_per_key = (
-            self._prepare_data(prediction, label)
+        prediction_sets, label_sets, n_keys, n_elements_per_key = self._prepare_data(
+            prediction, label
         )
         return self._compute_best_permuted_cell_score(
             prediction=prediction_sets,
