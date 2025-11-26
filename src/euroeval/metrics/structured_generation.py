@@ -4,10 +4,13 @@ import collections.abc as c
 import itertools
 import logging
 import typing as t
+from copy import deepcopy
 
 import numpy as np
+from typeguard import check_type
 
 from ..exceptions import InvalidBenchmark
+from ..utils import extract_json_dict_from_string
 from .base import Metric
 
 if t.TYPE_CHECKING:
@@ -54,11 +57,67 @@ class StructuredGenerationMetric(Metric):
                 f"number of references ({len(references):,})."
             )
 
+        raw_labels = deepcopy(references)
+        raw_predictions = deepcopy(predictions)
+
+        # Parse the model outputs and create predictions
+        if self._check_full_type(raw_predictions, list[dict[str, list[str]]]):
+            formatted_predictions: list[dict[str, list[str]]] = deepcopy(
+                raw_predictions
+            )  # type: ignore[arg-type]
+        else:
+            formatted_predictions = []
+            for raw_prediction in raw_predictions:
+                if not isinstance(raw_prediction, str):
+                    logger.warning(
+                        "The prediction is not a string. Please ensure that the model "
+                        "outputs are parsed correctly."
+                    )
+                    raw_prediction = str(raw_prediction)
+                formatted_prediction = extract_json_dict_from_string(s=raw_prediction)
+                if not self._check_full_type(
+                    formatted_prediction, dict[str, list[str]]
+                ):
+                    logger.warning(
+                        "The prediction string was not converted to a dictionary. "
+                        "Please ensure that the model outputs are parsed correctly."
+                    )
+                    formatted_prediction = {
+                        "object_1": [f"Invalid prediction: {raw_prediction}"]
+                    }
+                formatted_predictions.append(formatted_prediction)  # type: ignore[arg-type]
+        # Parse the labels
+        if self._check_full_type(raw_labels, list[dict[str, list[str]]]):
+            labels: list[dict[str, list[str]]] = deepcopy(raw_labels)  # type: ignore[arg-type]
+        else:
+            for raw_label in raw_labels:
+                if not isinstance(raw_label, str):
+                    raise InvalidBenchmark(
+                        "The label is not a string. Please ensure that the labels are "
+                        "parsed correctly."
+                    )
+                label = extract_json_dict_from_string(s=raw_label)
+                if not self._check_full_type(label, dict[str, list[str]]):
+                    raise InvalidBenchmark(
+                        "The label string was not converted to a dictionary. "
+                        "Please ensure that the labels are parsed correctly."
+                    )
+                labels.append(extract_json_dict_from_string(s=raw_label))  # type: ignore[arg-type]
+
         results = self._compare_all_json_predictions_and_labels(
-            predictions=predictions, labels=references
+            predictions=formatted_predictions, labels=labels
         )
         mean_result = float(np.mean(results))
         return mean_result
+
+    @staticmethod
+    def _check_full_type(variable: object, expected_type: t.Type) -> bool:
+        """Check if a variable is of the expected type."""
+        try:
+            check_type(variable, expected_type)
+            return True
+        except TypeError:
+            return False
 
     def _compare_all_json_predictions_and_labels(
         self,
