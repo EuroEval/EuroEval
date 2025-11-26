@@ -104,6 +104,7 @@ dev = [
     "pytest-socket>=0.7.0",
     "pytest-rerunfailures>=16.1",
     "pytest-depends>=1.0.1",
+    "pyrefly>=0.43.1",
 ]
 
 [tool.ruff]
