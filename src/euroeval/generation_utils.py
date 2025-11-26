@@ -131,12 +131,6 @@ def extract_few_shot_examples(
                     lambda x: x["text"] != example["text"]
                 )
 
-        case TaskGroup.LOGICAL_REASONING:
-            # TODO: Implement
-            raise NotImplementedError(
-                f"Unsupported task group: {dataset_config.task.task_group}."
-            )
-
         case TaskGroup.TOKEN_CLASSIFICATION:
             labels = it.cycle(
                 [
@@ -333,12 +327,6 @@ def apply_prompt(
                 create_prompt(text=text.replace("\n", " ").strip(), target_text="")
                 for text in examples["text"]
             ]
-
-        case TaskGroup.LOGICAL_REASONING:
-            # TODO: Implement
-            raise NotImplementedError(
-                f"Unsupported task group: {dataset_config.task.task_group}."
-            )
 
         case TaskGroup.TOKEN_CLASSIFICATION:
             labels_str = dataset_config.get_labels_str()

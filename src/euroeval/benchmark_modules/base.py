@@ -14,7 +14,6 @@ from ..enums import TaskGroup
 from ..exceptions import InvalidBenchmark, NeedsEnvironmentVariable, NeedsExtraInstalled
 from ..logging_utils import get_pbar, log_once
 from ..task_group_utils import (
-    logical_reasoning,
     question_answering,
     sequence_classification,
     text_to_text,
@@ -196,8 +195,6 @@ class BenchmarkModule(ABC):
                     dataset_config=self.dataset_config,
                     benchmark_config=self.benchmark_config,
                 )
-            case TaskGroup.LOGICAL_REASONING:  # TODO: Remove this
-                return partial(logical_reasoning.compute_metrics)
             case TaskGroup.TEXT_TO_TEXT:
                 return partial(
                     text_to_text.compute_metrics,
