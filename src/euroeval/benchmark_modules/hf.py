@@ -175,7 +175,14 @@ class HuggingFaceEncoderModel(BenchmarkModule):
             and repo_info.safetensors is not None
             and "total" in repo_info.safetensors
         ):
-            num_params = repo_info.safetensors["total"]
+            num_params_candidates: list[int] = [repo_info.safetensors["total"]]
+            if "parameters" in repo_info.safetensors and isinstance(
+                repo_info.safetensors["parameters"], dict
+            ):
+                num_params_candidates.extend(
+                    int(v) for v in repo_info.safetensors["parameters"].values()
+                )
+            num_params = max(num_params_candidates)
         elif (
             hasattr(self._model.config, "num_params")
             and self._model.config.num_params is not None

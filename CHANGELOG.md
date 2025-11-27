@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Fixed
+
+When a model has registered the number of parameters wrongly within their safetensors
+files, we collect all the potential parameter counts from the safetensors file and pick
+the largest one.
+
 ## [v16.8.0] - 2025-11-25
 
 ### Added
