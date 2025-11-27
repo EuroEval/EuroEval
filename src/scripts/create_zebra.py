@@ -43,12 +43,21 @@ def main() -> None:
         test_df: pd.DataFrame = test_data.to_pandas()
 
         # Remove unused columns
-        train_df = train_df[["introduction", "clues", "format_example", "solution"]]
-        test_df = test_df[["introduction", "clues", "format_example", "solution"]]
+        # TODO: Consider including format_example in the dataset
+        train_df = train_df[["introduction", "clues", "solution"]]
+        test_df = test_df[["introduction", "clues", "solution"]]
+
+        # Combine introduction and clues into a single text column
+        train_df["text"] = train_df["introduction"] + train_df["clues"].apply(
+            lambda clues: "\n".join(clues)
+        )
+        test_df["text"] = test_df["introduction"] + test_df["clues"].apply(
+            lambda clues: "\n".join(clues)
+        )
 
         # Rename the solution column as label
-        train_df.rename(columns={"solution": "label"}, inplace=True)
-        test_df.rename(columns={"solution": "label"}, inplace=True)
+        train_df.rename(columns={"solution": "target_text"}, inplace=True)
+        test_df.rename(columns={"solution": "target_text"}, inplace=True)
 
         # Collect datasets in a dataset dictionary
         dataset = DatasetDict(

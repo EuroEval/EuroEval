@@ -1063,29 +1063,23 @@ we use the same splits.
 Here are a few examples from the training split:
 
 ```json
-{"introduction": "En række huse er nummereret fra 1 til 2 fra venstre mod højre.\n\nI hvert hus bor en person med en unik egenskab i hver af de følgende kategorier:\n\nJobs: lærer og minister.\nHobbyer: brætspil og maleri.\nYndlingsfrugter: appelsin og skovjordbær.\n\nDerudover ved vi følgende:\n\n",
-"clues": ["1. Ministeren sejler ofte.", "2. Personen der elsker fysik bor ikke i hus nummer 2.", "3. Læreren er gode venner med personen der synes den næstbedste frugt er mango.", "4. Personen der spiller brætspil bor til højre for personen der elsker appelsiner.", "5. Personen med en tatovering bor ikke i hus nummer 2.", "6. Personen med et marsvin bor i hus nummer 1.", "7. Ministeren bor ikke i hus nummer 1."],
-"format_example": "Følgende er et eksempel på svarformatet:\n\n{\n    'object_1': [\n        'jobs_1',\n        'hobbyer_1',\n        'yndlingsfrugter_1'\n    ],\n    'object_2': [\n        'jobs_2',\n        'hobbyer_2',\n        'yndlingsfrugter_2'\n    ]\n}",
-"label": {"object_1": ["lærer", "maleri", "appelsin"],
-          "object_2": ["minister", "brætspil", "skovjordbær"]},
+{"text": "En række huse er nummereret fra 1 til 2 fra venstre mod højre.\n\nI hvert hus bor en person med en unik egenskab i hver af de følgende kategorier:\n\nJobs: lærer og minister.\nHobbyer: brætspil og maleri.\nYndlingsfrugter: appelsin og skovjordbær.\n\nDerudover ved vi følgende:\n\n1. Ministeren sejler ofte.\n2. Personen der elsker fysik bor ikke i hus nummer 2.\n3. Læreren er gode venner med personen der synes den næstbedste frugt er mango.\n4. Personen der spiller brætspil bor til højre for personen der elsker appelsiner.\n5. Personen med en tatovering bor ikke i hus nummer 2.\n6. Personen med et marsvin bor i hus nummer 1.\n7. Ministeren bor ikke i hus nummer 1."],
+"target_text": {"object_1": ["lærer", "maleri", "appelsin"],
+                "object_2": ["minister", "brætspil", "skovjordbær"]},
 }
 ```
 
 ```json
-{"introduction": "En række huse er nummereret fra 1 til 2 fra venstre mod højre.\n\nI hvert hus bor en person med en unik egenskab i hver af de følgende kategorier:\n\nNationaliteter: Storbritannien og Sverige.\nKæledyr: hund og vandrende pind.\nYndlingsboggenrer: gyser og kærlighedsromaner.\n\nDerudover ved vi følgende:\n\n",
-"clues": ["1. Ejeren af en vandrende pind læser gysere.", "2. Personen med en tatovering bor ikke i hus nummer 1.", "3. Briten har en hund.", "4. Personen med en cykel har en kandidatgrad i matematik.", "5. Gyserlæseren bor til venstre for personen der læser kærlighedsromaner.", "6. Personen der synes den næstbedste frugt er mango bor ikke i hus nummer 2.", "7. Alle husene har store vinduer.", "8. Personen der elsker fysik bor ikke i hus nummer 1."],
-"format_example": "Følgende er et eksempel på svarformatet:\n\n{\n    'object_1': [\n        'nationaliteter_1',\n        'kæledyr_1',\n        'yndlingsboggenrer_1'\n    ],\n    'object_2': [\n       'nationaliteter_2',\n        'kæledyr_2',\n        'yndlingsboggenrer_2'\n    ]\n}",
-"label": {"object_1": ["Sverige", "vandrende pind", "gyser"],
-          "object_2": ["Storbritannien", "hund", "kærlighedsromaner"]},
+{"text": "En række huse er nummereret fra 1 til 2 fra venstre mod højre.\n\nI hvert hus bor en person med en unik egenskab i hver af de følgende kategorier:\n\nNationaliteter: Storbritannien og Sverige.\nKæledyr: hund og vandrende pind.\nYndlingsboggenrer: gyser og kærlighedsromaner.\n\nDerudover ved vi følgende:\n\n1. Ejeren af en vandrende pind læser gysere.\n2. Personen med en tatovering bor ikke i hus nummer 1.\n3. Briten har en hund.\n4. Personen med en cykel har en kandidatgrad i matematik.\n5. Gyserlæseren bor til venstre for personen der læser kærlighedsromaner.\n6. Personen der synes den næstbedste frugt er mango bor ikke i hus nummer 2.\n7. Alle husene har store vinduer.\n8. Personen der elsker fysik bor ikke i hus nummer 1.",
+"target_text": {"object_1": ["Sverige", "vandrende pind", "gyser"],
+                "object_2": ["Storbritannien", "hund", "kærlighedsromaner"]},
 }
 ```
 
 ```json
-{"introduction": "En række huse er nummereret fra 1 til 2 fra venstre mod højre.\n\nI hvert hus bor en person med en unik egenskab i hver af de følgende kategorier:\n\nKæledyr: kat og zebra.\nDrikke: kaffe og sodavand.\nYndlingsfrugter: banan og jordbær.\n\nDerudover ved vi følgende:\n\n",
-"clues": ["1. Personen der synes den næstbedste frugt er mango har et kæledyr som er gammelt for sin art.", "2. Sild er fisk.", "3. Personen der ikke ejer en kaktus bor ikke i hus nummer 2.", "4. Sodavandsdrikkeren bor til højre for personen der elsker bananer.", "5. Katteejeren bor ved siden af personen med en cykel.", "6. Sodavandsdrikkeren ved at solsystemet bevæger sig med en fart på ca. 200 km/s rundt om galaksens centrum.", "7. Zebraejeren bor til venstre for personen der elsker jordbær."],
-"format_example": "Følgende er et eksempel på svarformatet:\n\n{\n    'object_1': [\n        'kæledyr_1',\n        'drikke_1',\n        'yndlingsfrugter_1'\n    ],\n    'object_2': [\n        'kæledyr_2',\n        'drikke_2',\n        'yndlingsfrugter_2'\n    ]\n}",
-"label": {"object_1": ["zebra", "kaffe", "banan"],
-          "object_2": ["kat", "sodavand", "jordbær"]},
+{"text": "En række huse er nummereret fra 1 til 2 fra venstre mod højre.\n\nI hvert hus bor en person med en unik egenskab i hver af de følgende kategorier:\n\nKæledyr: kat og zebra.\nDrikke: kaffe og sodavand.\nYndlingsfrugter: banan og jordbær.\n\nDerudover ved vi følgende:\n\n1. Personen der synes den næstbedste frugt er mango har et kæledyr som er gammelt for sin art.\n2. Sild er fisk.\n3. Personen der ikke ejer en kaktus bor ikke i hus nummer 2.\n4. Sodavandsdrikkeren bor til højre for personen der elsker bananer.\n5. Katteejeren bor ved siden af personen med en cykel.\n6. Sodavandsdrikkeren ved at solsystemet bevæger sig med en fart på ca. 200 km/s rundt om galaksens centrum.\n7. Zebraejeren bor til venstre for personen der elsker jordbær.",
+"target_text": {"object_1": ["zebra", "kaffe", "banan"],
+                "object_2": ["kat", "sodavand", "jordbær"]},
 }
 ```
 
@@ -1104,15 +1098,14 @@ When evaluating generative models, we use the following setup (see the
   ```text
   Gåde:
 
-  {introduction}
-  {"\n".join(clues)}
+  {text}
 
   Hvem har hvilke egenskaber og bor i hvilket hus?
 
   Angiv venligst dit svar som et JSON dictionary. Hver key skal være object_X hvor X er husnummeret. Hver value skal være en liste med de egenskaber fra kategorierne ovenfor som tilhører personen i hus nr. X.
 
   Svar:
-  {label}
+  {target_text}
   ```
 
 - Instruction-tuned prompt template:
@@ -1120,19 +1113,14 @@ When evaluating generative models, we use the following setup (see the
   ```text
   Gåde:
 
-  {introduction}
-  {"\n".join(clues)}
+  {text}
 
   Hvem har hvilke egenskaber og bor i hvilket hus?
 
   Angiv venligst dit svar som et JSON dictionary. Hver key skal være object_X hvor X er husnummeret. Hver value skal være en liste med de egenskaber fra kategorierne ovenfor som tilhører personen i hus nr. X.
 
-  Følgende er et eksempel på svarformatet:
-
-  {format_example}
-
   Svar:
-  {label}
+  {target_text}
   ```
 
 You can evaluate this dataset directly as follows:
@@ -1151,40 +1139,36 @@ we use the same splits.
 Here are a few examples from the training split:
 
 ```json
-{"introduction": "En række huse er nummereret fra 1 til 4 fra venstre mod højre.\n\nI hvert hus bor en person med en unik egenskab i hver af de følgende kategorier:\n\nJobs: bager, butiksassistent, politibetjent og sygeplejerske.\nKæledyr: hund, kanin, kat og snegl.\nDrikke: juice, kaffe, kakao og te.\nYndlingsboggenrer: fantasy, gyser, krimi og kærlighedsromaner.\nYndlingsfrugter: appelsin, jordbær, skovjordbær og æble.\n\nDerudover ved vi følgende:\n\n",
-"clues": ["1. Butiksassistenten er gode venner med personen der spiller guitar.", "2. Kakaodrikkeren bor lige til venstre for personen der elsker skovjordbær.", "3. Personen med en søster har en kandidatgrad i matematik.", "4. Krimilæseren bor mellem personen der læser kærlighedsromaner og personen der elsker æbler.", "5. Personen der læser kærlighedsromaner er gode venner med personen med rødt hår.", "6. Katteejeren bor ved siden af juicedrikkeren.", "7. Butiksassistenten bor ikke i hus nummer 3.", "8. Hundeejeren bor ikke mellem juicedrikkeren og personen der læser kærlighedsromaner, og de er tre forskellige personer.", "9. Der er ét hus mellem kaffedrikkeren og fantasylæseren.", "10. Der er ét hus mellem sygeplejersken og bageren.", "11. Gyserlæseren bor i hus nummer 1.", "12. Fantasylæseren bor ikke ved siden af personen der elsker appelsiner, og de er ikke den samme person.", "13. Alle husene har store vinduer.", "14. Kaninejeren har et kæledyr som er gammelt for sin art.", "15. Personen der læser kærlighedsromaner bor mellem snegleejeren og gyserlæseren.", "16. Sygeplejersken bor mellem butiksassistenten og kakaodrikkeren.", "17. Kaninejeren bor i hus nummer 3."],
-"format_example": "Følgende er et eksempel på svarformatet:\n\n{\n    'object_1': [\n        'jobs_1',\n        'kæledyr_1',\n        'drikke_1',\n        'yndlingsboggenrer_1',\n        'yndlingsfrugter_1'\n    ],\n    'object_2': [\n        'jobs_2',\n        'kæledyr_2',\n        'drikke_2',\n        'yndlingsboggenrer_2',\n        'yndlingsfrugter_2'\n    ],\n    'object_3': [\n        'jobs_3',\n        'kæledyr_3',\n        'drikke_3',\n        'yndlingsboggenrer_3',\n        'yndlingsfrugter_3'\n    ],\n    'object_4': [\n        'jobs_4',\n        'kæledyr_4',\n        'drikke_4',\n        'yndlingsboggenrer_4',\n        'yndlingsfrugter_4'\n    ]\n}",
-"label": {"object_1": ["bager", "hund", "kakao", "gyser", "appelsin"],
-          "object_2": ["politibetjent", "kat", "kaffe", "kærlighedsromaner", "skovjordbær"],
-          "object_3": ["sygeplejerske", "kanin", "juice", "krimi", "jordbær"],
-          "object_4": ["butiksassistent", "snegl", "te", "fantasy", "æble"]},
+{"text": "En række huse er nummereret fra 1 til 4 fra venstre mod højre.\n\nI hvert hus bor en person med en unik egenskab i hver af de følgende kategorier:\n\nJobs: bager, butiksassistent, politibetjent og sygeplejerske.\nKæledyr: hund, kanin, kat og snegl.\nDrikke: juice, kaffe, kakao og te.\nYndlingsboggenrer: fantasy, gyser, krimi og kærlighedsromaner.\nYndlingsfrugter: appelsin, jordbær, skovjordbær og æble.\n\nDerudover ved vi følgende:\n\n1. Butiksassistenten er gode venner med personen der spiller guitar.\n2. Kakaodrikkeren bor lige til venstre for personen der elsker skovjordbær.\n3. Personen med en søster har en kandidatgrad i matematik.\n4. Krimilæseren bor mellem personen der læser kærlighedsromaner og personen der elsker æbler.\n5. Personen der læser kærlighedsromaner er gode venner med personen med rødt hår.\n6. Katteejeren bor ved siden af juicedrikkeren.\n7. Butiksassistenten bor ikke i hus nummer 3.\n8. Hundeejeren bor ikke mellem juicedrikkeren og personen der læser kærlighedsromaner, og de er tre forskellige personer.\n9. Der er ét hus mellem kaffedrikkeren og fantasylæseren.\n10. Der er ét hus mellem sygeplejersken og bageren.\n11. Gyserlæseren bor i hus nummer 1.\n12. Fantasylæseren bor ikke ved siden af personen der elsker appelsiner, og de er ikke den samme person.\n13. Alle husene har store vinduer.\n14. Kaninejeren har et kæledyr som er gammelt for sin art.\n15. Personen der læser kærlighedsromaner bor mellem snegleejeren og gyserlæseren.\n16. Sygeplejersken bor mellem butiksassistenten og kakaodrikkeren.\n17. Kaninejeren bor i hus nummer 3.",
+"target_text": {"object_1": ["bager", "hund", "kakao", "gyser", "appelsin"],
+                "object_2": ["politibetjent", "kat", "kaffe", "kærlighedsromaner", "skovjordbær"],
+                "object_3": ["sygeplejerske", "kanin", "juice", "krimi", "jordbær"],
+                "object_4": ["butiksassistent", "snegl", "te", "fantasy", "æble"]},
 }
 ```
 
 ```json
-{"introduction": "En række huse er nummereret fra 1 til 4 fra venstre mod højre.\n\nI hvert hus bor en person med en unik egenskab i hver af de følgende kategorier:\n\nNationaliteter: Frankrig, Island, Nederlandene og Sverige.\nJobs: bager, lærer, minister og softwareudvikler.\nKæledyr: hund, kat, snegl og vandrende pind.\nHobbyer: fodbold, håndbold, hækling og tennis.\nYndlingsfrugter: appelsin, jordbær, skovjordbær og æble.\n\nDerudover ved vi følgende:\n\n",
-"clues": ["1. Personen der elsker æbler bor ikke i hus nummer 4.", "2. Islænderen bor ikke mellem hundeejeren og personen der elsker appelsiner, og de er tre forskellige personer.", "3. Nederlænderen og katteejeren bor med 2 huse mellem sig.", "4. Personen der hækler bor ikke i hus nummer 3.", "5. Personen der ser skihop bor ikke i hus nummer 2.", "6. Læreren bor ikke ved siden af personen der elsker skovjordbær, og de er ikke den samme person.", "7. Personen der spiller håndbold bor ved siden af personen der hækler.", "8. Katteejeren er gode venner med personen der ikke ejer en kaktus.", "9. Personen der elsker skovjordbær er gode venner med personen med rødt hår.", "10. Læreren bor til venstre for snegleejeren.", "11. Personen der hækler har en tatovering.", "12. Bageren bor ikke mellem hundeejeren og personen der elsker æbler, og de er tre forskellige personer.", "13. Svenskeren bor i hus nummer 2.", "14. Personen der elsker fysik bor i hus nummer 1.", "15. Læreren bor mellem ministeren og personen der spiller tennis.", "16. Personen der spiller håndbold bor lige til højre for personen der elsker jordbær.", "17. Personen der spiller tennis bor i hus nummer 2."],
-"format_example": "Følgende er et eksempel på svarformatet:\n\n{\n    'object_1': [\n        'nationaliteter_1',\n        'jobs_1',\n        'kæledyr_1',\n        'hobbyer_1',\n        'yndlingsfrugter_1'\n    ],\n    'object_2': [\n        'nationaliteter_2',\n        'jobs_2',\n        'kæledyr_2',\n        'hobbyer_2',\n        'yndlingsfrugter_2'\n    ],\n    'object_3': [\n        'nationaliteter_3',\n        'jobs_3',\n        'kæledyr_3',\n        'hobbyer_3',\n        'yndlingsfrugter_3'\n    ],\n    'object_4': [\n        'nationaliteter_4',\n        'jobs_4',\n        'kæledyr_4',\n        'hobbyer_4',\n        'yndlingsfrugter_4'\n    ]\n}",
-"label": {"object_1": ["Island", "bager", "kat", "fodbold", "skovjordbær"],
-          "object_2": ["Sverige", "softwareudvikler", "hund", "tennis", "jordbær"],
-          "object_3": ["Frankrig", "lærer", "vandrende pind", "håndbold", "æble"],
-          "object_4": ["Nederlandene", "minister", "snegl", "hækling", "appelsin"]},
+{"text": "En række huse er nummereret fra 1 til 4 fra venstre mod højre.\n\nI hvert hus bor en person med en unik egenskab i hver af de følgende kategorier:\n\nNationaliteter: Frankrig, Island, Nederlandene og Sverige.\nJobs: bager, lærer, minister og softwareudvikler.\nKæledyr: hund, kat, snegl og vandrende pind.\nHobbyer: fodbold, håndbold, hækling og tennis.\nYndlingsfrugter: appelsin, jordbær, skovjordbær og æble.\n\nDerudover ved vi følgende:\n\n1. Personen der elsker æbler bor ikke i hus nummer 4.\n2. Islænderen bor ikke mellem hundeejeren og personen der elsker appelsiner, og de er tre forskellige personer.\n3. Nederlænderen og katteejeren bor med 2 huse mellem sig.\n4. Personen der hækler bor ikke i hus nummer 3.\n5. Personen der ser skihop bor ikke i hus nummer 2.\n6. Læreren bor ikke ved siden af personen der elsker skovjordbær, og de er ikke den samme person.\n7. Personen der spiller håndbold bor ved siden af personen der hækler.\n8. Katteejeren er gode venner med personen der ikke ejer en kaktus.\n9. Personen der elsker skovjordbær er gode venner med personen med rødt hår.\n10. Læreren bor til venstre for snegleejeren.\n11. Personen der hækler har en tatovering.\n12. Bageren bor ikke mellem hundeejeren og personen der elsker æbler, og de er tre forskellige personer.\n13. Svenskeren bor i hus nummer 2.\n14. Personen der elsker fysik bor i hus nummer 1.\n15. Læreren bor mellem ministeren og personen der spiller tennis.\n16. Personen der spiller håndbold bor lige til højre for personen der elsker jordbær.\n17. Personen der spiller tennis bor i hus nummer 2.",
+"target_text": {"object_1": ["Island", "bager", "kat", "fodbold", "skovjordbær"],
+                "object_2": ["Sverige", "softwareudvikler", "hund", "tennis", "jordbær"],
+               "object_3": ["Frankrig", "lærer", "vandrende pind", "håndbold", "æble"],
+                "object_4": ["Nederlandene", "minister", "snegl", "hækling", "appelsin"]},
 }
 ```
 
 ```json
-{"introduction": "En række huse er nummereret fra 1 til 4 fra venstre mod højre.\n\nI hvert hus bor en person med en unik egenskab i hver af de følgende kategorier:\n\nNationaliteter: Danmark, Letland, Norge og Spanien.\nJobs: bager, butiksassistent, lærer og softwareudvikler.\nKæledyr: hund, snegl, undulat og zebra.\nHobbyer: brætspil, håndbold, klatring og maleri.\nYndlingsfrugter: appelsin, banan, jordbær og æble.\n\nDerudover ved vi følgende:\n\n",
-"clues": ["1. Letteren spiller brætspil.", "2. Alle vejens huse har flotte haver.", "3. Flere af husene har en grøn dør.", "4. Snegleejeren bor lige til venstre for personen der elsker æbler.", "5. Softwareudvikleren bor ved siden af personen med briller.", "6. Bageren bor til venstre for personen der klatrer.", "7. Softwareudvikleren er gode venner med personen med en søster.", "8. Der er ét hus mellem undulatejeren og personen der klatrer.", "9. Undulatejeren bor lige til venstre for hundeejeren.", "10. Personen der klatrer kan ikke lide jordbær.", "11. Nordmanden ved at kaffe indeholder koffein.", "12. Læreren bor mellem danskeren og hundeejeren.", "13. Personen der maler elsker bananer.", "14. Der er ét hus mellem spanieren og letteren.", "15. Der er ét hus mellem danskeren og softwareudvikleren.", "16. Hundeejeren bor ikke ved siden af personen der elsker bananer, og de er ikke den samme person."],
-"format_example": "Følgende er et eksempel på svarformatet:\n\n{\n    'object_1': [\n        'nationaliteter_1',\n        'jobs_1',\n        'kæledyr_1',\n        'hobbyer_1',\n        'yndlingsfrugter_1'\n    ],\n    'object_2': [\n        'nationaliteter_2',\n        'jobs_2',\n        'kæledyr_2',\n        'hobbyer_2',\n        'yndlingsfrugter_2'\n    ],\n    'object_3': [\n        'nationaliteter_3',\n        'jobs_3',\n        'kæledyr_3',\n        'hobbyer_3',\n        'yndlingsfrugter_3'\n    ],\n    'object_4': [\n        'nationaliteter_4',\n        'jobs_4',\n        'kæledyr_4',\n        'hobbyer_4',\n        'yndlingsfrugter_4'\n    ]\n}",
-"label": {"object_1": ["Danmark", "bager", "snegl", "maleri", "banan"],
-          "object_2": ["Letland", "lærer", "undulat", "brætspil", "æble"],
-          "object_3": ["Norge", "softwareudvikler", "hund", "håndbold", "jordbær"],
-          "object_4": ["Spanien", "butiksassistent", "zebra", "klatring", "appelsin"]},
+{"text": "En række huse er nummereret fra 1 til 4 fra venstre mod højre.\n\nI hvert hus bor en person med en unik egenskab i hver af de følgende kategorier:\n\nNationaliteter: Danmark, Letland, Norge og Spanien.\nJobs: bager, butiksassistent, lærer og softwareudvikler.\nKæledyr: hund, snegl, undulat og zebra.\nHobbyer: brætspil, håndbold, klatring og maleri.\nYndlingsfrugter: appelsin, banan, jordbær og æble.\n\nDerudover ved vi følgende:\n\n1. Letteren spiller brætspil.\n2. Alle vejens huse har flotte haver.\n3. Flere af husene har en grøn dør.\n4. Snegleejeren bor lige til venstre for personen der elsker æbler.\n5. Softwareudvikleren bor ved siden af personen med briller.\n6. Bageren bor til venstre for personen der klatrer.\n7. Softwareudvikleren er gode venner med personen med en søster.\n8. Der er ét hus mellem undulatejeren og personen der klatrer.\n9. Undulatejeren bor lige til venstre for hundeejeren.\n10. Personen der klatrer kan ikke lide jordbær.\n11. Nordmanden ved at kaffe indeholder koffein.\n12. Læreren bor mellem danskeren og hundeejeren.\n13. Personen der maler elsker bananer.\n14. Der er ét hus mellem spanieren og letteren.\n15. Der er ét hus mellem danskeren og softwareudvikleren.\n16. Hundeejeren bor ikke ved siden af personen der elsker bananer, og de er ikke den samme person.",
+"target_text": {"object_1": ["Danmark", "bager", "snegl", "maleri", "banan"],
+                "object_2": ["Letland", "lærer", "undulat", "brætspil", "æble"],
+               "object_3": ["Norge", "softwareudvikler", "hund", "håndbold", "jordbær"],
+               "object_4": ["Spanien", "butiksassistent", "zebra", "klatring", "appelsin"]},
 }
 ```
 
 When evaluating generative models, we use the following setup (see the
 [methodology](/methodology) for more information on how these are used):
+
+# TODO: Update this
 
 - Number of few-shot examples: 5
 - Prefix prompt:
@@ -1198,15 +1182,14 @@ When evaluating generative models, we use the following setup (see the
   ```text
   Gåde:
 
-  {introduction}
-  {"\n".join(clues)}
+  {text}
 
   Hvem har hvilke egenskaber og bor i hvilket hus?
 
   Angiv venligst dit svar som et JSON dictionary. Hver key skal være object_X hvor X er husnummeret. Hver value skal være en liste med de egenskaber fra kategorierne ovenfor som tilhører personen i hus nr. X.
 
   Svar:
-  {label}
+  {target_text}
   ```
 
 - Instruction-tuned prompt template:
@@ -1214,19 +1197,14 @@ When evaluating generative models, we use the following setup (see the
   ```text
   Gåde:
 
-  {introduction}
-  {"\n".join(clues)}
+  {text}
 
   Hvem har hvilke egenskaber og bor i hvilket hus?
 
   Angiv venligst dit svar som et JSON dictionary. Hver key skal være object_X hvor X er husnummeret. Hver value skal være en liste med de egenskaber fra kategorierne ovenfor som tilhører personen i hus nr. X.
 
-  Følgende er et eksempel på svarformatet:
-
-  {format_example}
-
   Svar:
-  {label}
+  {target_text}
   ```
 
 You can evaluate this dataset directly as follows:
