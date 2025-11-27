@@ -203,6 +203,7 @@ def prepare_dataset_configs(
 
     # Create the list of dataset tasks
     task_mapping = {cfg.task.name: cfg.task for cfg in all_dataset_configs.values()}
+
     try:
         if task is None:
             tasks = None
