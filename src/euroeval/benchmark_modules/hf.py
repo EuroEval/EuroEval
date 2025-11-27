@@ -180,7 +180,9 @@ class HuggingFaceEncoderModel(BenchmarkModule):
                 repo_info.safetensors["parameters"], dict
             ):
                 num_params_candidates.extend(
-                    int(v) for v in repo_info.safetensors["parameters"].values()
+                    int(v)
+                    for v in repo_info.safetensors["parameters"].values()
+                    if isinstance(v, int) or (isinstance(v, str) and v.isdigit())
                 )
             num_params = max(num_params_candidates)
         elif (
