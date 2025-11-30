@@ -2353,7 +2353,16 @@
 <span class="normal">1290</span>
 <span class="normal">1291</span>
 <span class="normal">1292</span>
-<span class="normal">1293</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Encoder models from the Hugging Face Hub.&quot;&quot;&quot;</span>
+<span class="normal">1293</span>
+<span class="normal">1294</span>
+<span class="normal">1295</span>
+<span class="normal">1296</span>
+<span class="normal">1297</span>
+<span class="normal">1298</span>
+<span class="normal">1299</span>
+<span class="normal">1300</span>
+<span class="normal">1301</span>
+<span class="normal">1302</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Encoder models from the Hugging Face Hub.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">c</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
@@ -2530,7 +2539,16 @@
             <span class="ow">and</span> <span class="n">repo_info</span><span class="o">.</span><span class="n">safetensors</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
             <span class="ow">and</span> <span class="s2">&quot;total&quot;</span> <span class="ow">in</span> <span class="n">repo_info</span><span class="o">.</span><span class="n">safetensors</span>
         <span class="p">):</span>
-            <span class="n">num_params</span> <span class="o">=</span> <span class="n">repo_info</span><span class="o">.</span><span class="n">safetensors</span><span class="p">[</span><span class="s2">&quot;total&quot;</span><span class="p">]</span>
+            <span class="n">num_params_candidates</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">repo_info</span><span class="o">.</span><span class="n">safetensors</span><span class="p">[</span><span class="s2">&quot;total&quot;</span><span class="p">]]</span>
+            <span class="k">if</span> <span class="s2">&quot;parameters&quot;</span> <span class="ow">in</span> <span class="n">repo_info</span><span class="o">.</span><span class="n">safetensors</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span>
+                <span class="n">repo_info</span><span class="o">.</span><span class="n">safetensors</span><span class="p">[</span><span class="s2">&quot;parameters&quot;</span><span class="p">],</span> <span class="nb">dict</span>
+            <span class="p">):</span>
+                <span class="n">num_params_candidates</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span>
+                    <span class="nb">int</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+                    <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">repo_info</span><span class="o">.</span><span class="n">safetensors</span><span class="p">[</span><span class="s2">&quot;parameters&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">()</span>
+                    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">and</span> <span class="n">v</span><span class="o">.</span><span class="n">isdigit</span><span class="p">())</span>
+                <span class="p">)</span>
+            <span class="n">num_params</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">num_params_candidates</span><span class="p">)</span>
         <span class="k">elif</span> <span class="p">(</span>
             <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_model</span><span class="o">.</span><span class="n">config</span><span class="p">,</span> <span class="s2">&quot;num_params&quot;</span><span class="p">)</span>
             <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_model</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">num_params</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
