@@ -834,10 +834,34 @@
   
 </li>
         
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#quickstart_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      Quickstart
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Quickstart">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#benchmarking-from-the-command-line_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      Benchmarking from the command line
+    </span>
+  </a>
+  
+</li>
+        
           <li class="md-nav__item">
   <a href="#benchmarking-from-a-script" class="md-nav__link">
     <span class="md-ellipsis">
-      Benchmarking from a Script
+      Benchmarking from a script
     </span>
   </a>
   
@@ -847,6 +871,48 @@
   <a href="#benchmarking-from-docker" class="md-nav__link">
     <span class="md-ellipsis">
       Benchmarking from Docker
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#benchmarking-custom-inference-apis" class="md-nav__link">
+    <span class="md-ellipsis">
+      Benchmarking custom inference APIs
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#benchmarking-in-an-offline-environment" class="md-nav__link">
+    <span class="md-ellipsis">
+      Benchmarking in an offline environment
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#benchmarking-custom-datasets" class="md-nav__link">
+    <span class="md-ellipsis">
+      Benchmarking custom datasets
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Benchmarking custom datasets">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#creating-your-own-custom-task" class="md-nav__link">
+    <span class="md-ellipsis">
+      Creating your own custom task
     </span>
   </a>
   
@@ -979,10 +1045,34 @@
   
 </li>
         
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#quickstart_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      Quickstart
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Quickstart">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#benchmarking-from-the-command-line_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      Benchmarking from the command line
+    </span>
+  </a>
+  
+</li>
+        
           <li class="md-nav__item">
   <a href="#benchmarking-from-a-script" class="md-nav__link">
     <span class="md-ellipsis">
-      Benchmarking from a Script
+      Benchmarking from a script
     </span>
   </a>
   
@@ -992,6 +1082,48 @@
   <a href="#benchmarking-from-docker" class="md-nav__link">
     <span class="md-ellipsis">
       Benchmarking from Docker
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#benchmarking-custom-inference-apis" class="md-nav__link">
+    <span class="md-ellipsis">
+      Benchmarking custom inference APIs
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#benchmarking-in-an-offline-environment" class="md-nav__link">
+    <span class="md-ellipsis">
+      Benchmarking in an offline environment
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#benchmarking-custom-datasets" class="md-nav__link">
+    <span class="md-ellipsis">
+      Benchmarking custom datasets
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Benchmarking custom datasets">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#creating-your-own-custom-task" class="md-nav__link">
+    <span class="md-ellipsis">
+      Creating your own custom task
     </span>
   </a>
   
@@ -1062,22 +1194,54 @@ arguments. Here is an example with two models:</p>
 <p>See all the arguments and options available for the <code>euroeval</code> command by typing</p>
 <div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--help
 </code></pre></div>
-<h3 id="benchmarking-from-a-script">Benchmarking from a Script</h3>
+<h2 id="quickstart_1">Quickstart</h2>
+<h3 id="benchmarking-from-the-command-line_1">Benchmarking from the command line</h3>
+<p>The easiest way to benchmark pretrained models is via the command line interface. After
+having installed the package, you can benchmark your favorite model like so:</p>
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;
+</code></pre></div>
+<p>Here <code>model</code> is the HuggingFace model ID, which can be found on the <a href="https://huggingface.co/models">HuggingFace
+Hub</a>. By default this will benchmark the model on all
+the tasks available. If you want to benchmark on a particular task, then use the
+<code>--task</code> argument:</p>
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--task<span class="w"> </span>sentiment-classification
+</code></pre></div>
+<p>We can also narrow down which languages we would like to benchmark on. This can be done
+by setting the <code>--language</code> argument. Here we thus benchmark the model on the Danish
+sentiment classification task:</p>
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--task<span class="w"> </span>sentiment-classification<span class="w"> </span>--language<span class="w"> </span>da
+</code></pre></div>
+<p>Multiple models, datasets and/or languages can be specified by just attaching multiple
+arguments. Here is an example with two models:</p>
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id1&gt;<span class="w"> </span>--model<span class="w"> </span>&lt;model-id2&gt;
+</code></pre></div>
+<p>The specific model version/revision to use can also be added after the suffix '@':</p>
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;@&lt;commit&gt;
+</code></pre></div>
+<p>This can be a branch name, a tag name, or a commit id. It defaults to 'main' for latest.</p>
+<p>See all the arguments and options available for the <code>euroeval</code> command by typing</p>
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--help
+</code></pre></div>
+<h3 id="benchmarking-from-a-script">Benchmarking from a script</h3>
 <p>In a script, the syntax is similar to the command line interface. You simply initialise
 an object of the <code>Benchmarker</code> class, and call this benchmark object with your favorite
 model:</p>
 <div class="highlight"><pre><span></span><code><span class="o">&gt;&gt;&gt;</span> <span class="kn">from</span><span class="w"> </span><span class="nn">euroeval</span><span class="w"> </span><span class="kn">import</span> <span class="n">Benchmarker</span>
-<span class="o">&gt;&gt;&gt;</span> <span class="n">benchmark</span> <span class="o">=</span> <span class="n">Benchmarker</span><span class="p">()</span>
-<span class="o">&gt;&gt;&gt;</span> <span class="n">benchmark</span><span class="p">(</span><span class="n">model</span><span class="o">=</span><span class="s2">&quot;&lt;model&gt;&quot;</span><span class="p">)</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">benchmarker</span> <span class="o">=</span> <span class="n">Benchmarker</span><span class="p">()</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">benchmarker</span><span class="o">.</span><span class="n">benchmark</span><span class="p">(</span><span class="n">model</span><span class="o">=</span><span class="s2">&quot;&lt;model-id&gt;&quot;</span><span class="p">)</span>
 </code></pre></div>
 <p>To benchmark on a specific task and/or language, you simply specify the <code>task</code> or
 <code>language</code> arguments, shown here with same example as above:</p>
-<div class="highlight"><pre><span></span><code><span class="o">&gt;&gt;&gt;</span> <span class="n">benchmark</span><span class="p">(</span><span class="n">model</span><span class="o">=</span><span class="s2">&quot;&lt;model&gt;&quot;</span><span class="p">,</span> <span class="n">task</span><span class="o">=</span><span class="s2">&quot;sentiment-classification&quot;</span><span class="p">,</span> <span class="n">language</span><span class="o">=</span><span class="s2">&quot;da&quot;</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><span class="o">&gt;&gt;&gt;</span> <span class="n">benchmarker</span><span class="o">.</span><span class="n">benchmark</span><span class="p">(</span>
+<span class="o">...</span>     <span class="n">model</span><span class="o">=</span><span class="s2">&quot;&lt;model-id&gt;&quot;</span><span class="p">,</span>
+<span class="o">...</span>     <span class="n">task</span><span class="o">=</span><span class="s2">&quot;sentiment-classification&quot;</span><span class="p">,</span>
+<span class="o">...</span>     <span class="n">language</span><span class="o">=</span><span class="s2">&quot;da&quot;</span><span class="p">,</span>
+<span class="o">...</span> <span class="p">)</span>
 </code></pre></div>
 <p>If you want to benchmark a subset of all the models on the Hugging Face Hub, you can
 simply leave out the <code>model</code> argument. In this example, we're benchmarking all Danish
 models on the Danish sentiment classification task:</p>
-<div class="highlight"><pre><span></span><code><span class="o">&gt;&gt;&gt;</span> <span class="n">benchmark</span><span class="p">(</span><span class="n">task</span><span class="o">=</span><span class="s2">&quot;sentiment-classification&quot;</span><span class="p">,</span> <span class="n">language</span><span class="o">=</span><span class="s2">&quot;da&quot;</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><span class="o">&gt;&gt;&gt;</span> <span class="n">benchmarker</span><span class="o">.</span><span class="n">benchmark</span><span class="p">(</span><span class="n">task</span><span class="o">=</span><span class="s2">&quot;sentiment-classification&quot;</span><span class="p">,</span> <span class="n">language</span><span class="o">=</span><span class="s2">&quot;da&quot;</span><span class="p">)</span>
 </code></pre></div>
 <h3 id="benchmarking-from-docker">Benchmarking from Docker</h3>
 <p>A Dockerfile is provided in the repo, which can be downloaded and run, without needing
@@ -1101,6 +1265,170 @@ image as follows:</p>
 <p>Here <code>&lt;euroeval-arguments&gt;</code> consists of the arguments added to the <code>euroeval</code> CLI
 argument. This could for instance be <code>--model &lt;model-id&gt; --task
 sentiment-classification</code>.</p>
+<h2 id="benchmarking-custom-inference-apis">Benchmarking custom inference APIs</h2>
+<p>If the model you want to benchmark is hosted by a custom inference provider, such as a
+<a href="https://docs.vllm.ai/en/stable/">vLLM server</a>, then this is also supported in EuroEval.</p>
+<p>When benchmarking, you simply have to set the <code>--api-base</code> argument (<code>api_base</code> when
+using the <code>Benchmarker</code> API) to the URL of the inference API, and optionally the
+<code>--api-key</code> argument (<code>api_key</code>) to the API key, if authentication is required.</p>
+<p>If you're benchmarking an Ollama model, then you're urged to add the prefix
+<code>ollama_chat/</code> to the model name, as that will also fetch model metadata as well as pull
+the models from the Ollama model repository before evaluating it, e.g.:</p>
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>ollama_chat/mymodel<span class="w"> </span>--api-base<span class="w"> </span>http://localhost:11434
+</code></pre></div>
+<p>For all other OpenAI-compatible inference APIs, you simply provide the model name as
+is, e.g.:</p>
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>my-model<span class="w"> </span>--api-base<span class="w"> </span>http://localhost:8000
+</code></pre></div>
+<p>Again, if the inference API requires authentication, you simply add the <code>--api-key</code>
+argument:</p>
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>my-model<span class="w"> </span>--api-base<span class="w"> </span>http://localhost:8000<span class="w"> </span>--api-key<span class="w"> </span>my-secret-key
+</code></pre></div>
+<p>If your model is a reasoning model, then you need to specify this as follows:</p>
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>my-reasoning-model<span class="w"> </span>--api-base<span class="w"> </span>http://localhost:8000<span class="w"> </span>--generative-type<span class="w"> </span>reasoning
+</code></pre></div>
+<p>Likewise, if it is a pretrained decoder model (aka a completion model), then you specify
+this as follows:</p>
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>my-base-decoder-model<span class="w"> </span>--api-base<span class="w"> </span>http://localhost:8000<span class="w"> </span>--generative-type<span class="w"> </span>base
+</code></pre></div>
+<p>When using the <code>Benchmarker</code> API, the same applies. Here is an example of benchmarking
+an Ollama model hosted locally:</p>
+<div class="highlight"><pre><span></span><code><span class="o">&gt;&gt;&gt;</span> <span class="n">benchmarker</span><span class="o">.</span><span class="n">benchmark</span><span class="p">(</span>
+<span class="o">...</span>     <span class="n">model</span><span class="o">=</span><span class="s2">&quot;ollama_chat/mymodel&quot;</span><span class="p">,</span>
+<span class="o">...</span>     <span class="n">api_base</span><span class="o">=</span><span class="s2">&quot;http://localhost:11434&quot;</span><span class="p">,</span>
+<span class="o">...</span> <span class="p">)</span>
+</code></pre></div>
+<h2 id="benchmarking-in-an-offline-environment">Benchmarking in an offline environment</h2>
+<p>If you need to benchmark in an offline environment, you need to download the models,
+datasets and metrics beforehand. This can be done by adding the <code>--download-only</code>
+argument, from the command line, or the <code>download_only</code> argument, if benchmarking from a
+script. For example to download the model you want and all of the Danish sentiment
+classification datasets:</p>
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--task<span class="w"> </span>sentiment-classification<span class="w"> </span>--language<span class="w"> </span>da<span class="w"> </span>--download-only
+</code></pre></div>
+<p>Or from a script:</p>
+<div class="highlight"><pre><span></span><code><span class="o">&gt;&gt;&gt;</span> <span class="n">benchmarker</span><span class="o">.</span><span class="n">benchmark</span><span class="p">(</span>
+<span class="o">...</span> <span class="n">model</span><span class="o">=</span><span class="s2">&quot;&lt;model-id&gt;&quot;</span><span class="p">,</span>
+<span class="o">...</span> <span class="n">task</span><span class="o">=</span><span class="s2">&quot;sentiment-classification&quot;</span><span class="p">,</span>
+<span class="o">...</span> <span class="n">language</span><span class="o">=</span><span class="s2">&quot;da&quot;</span><span class="p">,</span>
+<span class="o">...</span> <span class="n">download_only</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<span class="o">...</span> <span class="p">)</span>
+</code></pre></div>
+<p>Please note: Offline benchmarking of adapter models is not currently supported, meaning
+that we still require an internet connection during the evaluation of these. If offline
+support of adapters is important to you, please consider <a href="https://github.com/EuroEval/EuroEval/issues">opening an
+issue</a>.</p>
+<h2 id="benchmarking-custom-datasets">Benchmarking custom datasets</h2>
+<p>If you want to benchmark models on your own custom dataset, this is also possible.
+First, you need to set up your dataset to be compatible with EuroEval. This means
+splitting up your dataset in a training, validation and test split, and ensuring that
+the column names are correct. We use <code>text</code> as the column name for the input text, and
+the output column name depends on the type of task:</p>
+<ul>
+<li><strong>Text or multiple-choice classification</strong>: <code>label</code></li>
+<li><strong>Token classification</strong>: <code>labels</code></li>
+<li><strong>Reading comprehension</strong>: <code>answers</code></li>
+<li><strong>Free-form text generation</strong>: <code>target_text</code></li>
+</ul>
+<p>Text and multiple-choice classification tasks are by far the most common. Next, you
+store your three dataset splits as three different CSV files with the desired two
+columns. Finally, you create a file called <code>custom_datasets.py</code> script in which you
+define the associated <code>DatasetConfig</code> objects for your dataset. Here is an example of a
+simple text classification dataset with two classes:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">euroeval</span><span class="w"> </span><span class="kn">import</span> <span class="n">DatasetConfig</span><span class="p">,</span> <span class="n">TEXT_CLASSIFICATION</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">euroeval.languages</span><span class="w"> </span><span class="kn">import</span> <span class="n">ENGLISH</span>
+
+<span class="n">MY_CONFIG</span> <span class="o">=</span> <span class="n">DatasetConfig</span><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;my-dataset&quot;</span><span class="p">,</span>
+    <span class="n">pretty_name</span><span class="o">=</span><span class="s2">&quot;My Dataset&quot;</span><span class="p">,</span>
+    <span class="n">source</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">train</span><span class="o">=</span><span class="s2">&quot;train.csv&quot;</span><span class="p">,</span> <span class="n">val</span><span class="o">=</span><span class="s2">&quot;val.csv&quot;</span><span class="p">,</span> <span class="n">test</span><span class="o">=</span><span class="s2">&quot;test.csv&quot;</span><span class="p">),</span>
+    <span class="n">task</span><span class="o">=</span><span class="n">TEXT_CLASSIFICATION</span><span class="p">,</span>
+    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">ENGLISH</span><span class="p">],</span>
+    <span class="n">_labels</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;positive&quot;</span><span class="p">,</span> <span class="s2">&quot;negative&quot;</span><span class="p">],</span>
+<span class="p">)</span>
+</code></pre></div>
+<p>You can then benchmark your custom dataset by simply running</p>
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--dataset<span class="w"> </span>my-dataset<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;
+</code></pre></div>
+<p>You can also run the benchmark from a Python script, by simply providing your custom
+dataset configuration directly into the <code>benchmark</code> method:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">euroeval</span><span class="w"> </span><span class="kn">import</span> <span class="n">Benchmarker</span>
+
+<span class="n">benchmarker</span> <span class="o">=</span> <span class="n">Benchmarker</span><span class="p">()</span>
+<span class="n">benchmarker</span><span class="o">.</span><span class="n">benchmark</span><span class="p">(</span><span class="n">model</span><span class="o">=</span><span class="s2">&quot;&lt;model-id&gt;&quot;</span><span class="p">,</span> <span class="n">dataset</span><span class="o">=</span><span class="n">MY_CONFIG</span><span class="p">)</span>
+</code></pre></div>
+<p>We have included three convenience tasks to make it easier to set up custom datasets:</p>
+<ul>
+<li><code>TEXT_CLASSIFICATION</code>, which is used for text classification tasks. This requires you
+  to set the <code>_labels</code> argument in the <code>DatasetConfig</code>, and requires the columns <code>text</code>
+  and <code>label</code> to be present in the dataset.</li>
+<li><code>MULTIPLE_CHOICE</code>, which is used for multiple-choice classification tasks. This
+  also requires you to set the <code>_labels</code> argument in the <code>DatasetConfig</code>. Note that for
+  multiple choice tasks, you need to set up your <code>text</code> column to also list all the
+  choices, and all the samples should have the same number of choices. This requires the
+  columns <code>text</code> and <code>label</code> to be present in the dataset.</li>
+<li><code>TOKEN_CLASSIFICATION</code>, which is used when classifying individual tokens in a text.
+  This also require you to set the <code>_labels</code> argument in the <code>DatasetConfig</code>. This
+  requires the columns <code>tokens</code> and <code>labels</code> to be present in the dataset, where
+  <code>tokens</code> is a list of tokens/words in the text, and <code>labels</code> is a list of the
+  corresponding labels for each token (so the two lists have the same length).</li>
+</ul>
+<p>On top of these three convenience tasks, there are of course also the tasks that we use
+in the official benchmark, which you can use if you want to use one of these tasks with
+your own bespoke dataset:</p>
+<ul>
+<li><code>LA</code>, for linguistic acceptability datasets.</li>
+<li><code>NER</code>, for named entity recognition datasets with the standard BIO tagging scheme.</li>
+<li><code>RC</code>, for reading comprehension datasets in the SQuAD format.</li>
+<li><code>SENT</code>, for sentiment classification datasets.</li>
+<li><code>SUMM</code>, for text summarisation datasets.</li>
+<li><code>KNOW</code>, for multiple-choice knowledge datasets (e.g., MMLU).</li>
+<li><code>MCRC</code>, for multiple-choice reading comprehension datasets (e.g., Belebele).</li>
+<li><code>COMMON_SENSE</code>, for multiple-choice common-sense reasoning datasets (e.g., HellaSwag).</li>
+</ul>
+<p>These can all be imported from <code>euroeval.tasks</code> module.</p>
+<h3 id="creating-your-own-custom-task">Creating your own custom task</h3>
+<p>You are of course also free to define your own task from scratch, which allows you to
+customise the prompts used when evaluating generative models, for instance. Here is an
+example of a custom free-form text generation task, where the goal for the model is to
+generate a SQL query based on a natural language input:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">euroeval</span><span class="w"> </span><span class="kn">import</span> <span class="n">DatasetConfig</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">euroeval.data_models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Task</span><span class="p">,</span> <span class="n">PromptConfig</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">euroeval.enums</span><span class="w"> </span><span class="kn">import</span> <span class="n">TaskGroup</span><span class="p">,</span> <span class="n">ModelType</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">euroeval.languages</span><span class="w"> </span><span class="kn">import</span> <span class="n">ENGLISH</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">euroeval.metrics</span><span class="w"> </span><span class="kn">import</span> <span class="n">rouge_l_metric</span>
+
+<span class="n">sql_generation_task</span> <span class="o">=</span> <span class="n">Task</span><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;sql-generation&quot;</span><span class="p">,</span>
+    <span class="n">task_group</span><span class="o">=</span><span class="n">TaskGroup</span><span class="o">.</span><span class="n">TEXT_TO_TEXT</span><span class="p">,</span>
+    <span class="n">template_dict</span><span class="o">=</span><span class="p">{</span>
+        <span class="n">ENGLISH</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
+            <span class="n">default_prompt_prefix</span><span class="o">=</span><span class="s2">&quot;The following are natural language texts and their &quot;</span>
+            <span class="s2">&quot;corresponding SQL queries.&quot;</span><span class="p">,</span>
+            <span class="n">default_prompt_template</span><span class="o">=</span><span class="s2">&quot;Natural language query: </span><span class="si">{text}</span><span class="se">\n</span><span class="s2">SQL query: &quot;</span>
+            <span class="s2">&quot;</span><span class="si">{target_text}</span><span class="s2">&quot;</span><span class="p">,</span>
+            <span class="n">default_instruction_prompt</span><span class="o">=</span><span class="s2">&quot;Generate the SQL query for the following &quot;</span>
+            <span class="s2">&quot;natural language query:</span><span class="se">\n</span><span class="si">{text!r}</span><span class="s2">&quot;</span><span class="p">,</span>
+            <span class="n">default_prompt_label_mapping</span><span class="o">=</span><span class="nb">dict</span><span class="p">(),</span>
+        <span class="p">),</span>
+    <span class="p">},</span>
+    <span class="n">metrics</span><span class="o">=</span><span class="p">[</span><span class="n">rouge_l_metric</span><span class="p">],</span>
+    <span class="n">default_num_few_shot_examples</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
+    <span class="n">default_max_generated_tokens</span><span class="o">=</span><span class="mi">256</span><span class="p">,</span>
+    <span class="n">default_allowed_model_types</span><span class="o">=</span><span class="p">[</span><span class="n">ModelType</span><span class="o">.</span><span class="n">GENERATIVE</span><span class="p">],</span>
+<span class="p">)</span>
+
+<span class="n">MY_SQL_DATASET</span> <span class="o">=</span> <span class="n">DatasetConfig</span><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;my-sql-dataset&quot;</span><span class="p">,</span>
+    <span class="n">pretty_name</span><span class="o">=</span><span class="s2">&quot;My SQL Dataset&quot;</span><span class="p">,</span>
+    <span class="n">source</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">train</span><span class="o">=</span><span class="s2">&quot;train.csv&quot;</span><span class="p">,</span> <span class="n">val</span><span class="o">=</span><span class="s2">&quot;val.csv&quot;</span><span class="p">,</span> <span class="n">test</span><span class="o">=</span><span class="s2">&quot;test.csv&quot;</span><span class="p">),</span>
+    <span class="n">task</span><span class="o">=</span><span class="n">sql_generation_task</span><span class="p">,</span>
+    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">ENGLISH</span><span class="p">],</span>
+<span class="p">)</span>
+</code></pre></div>
+<p>Again, with this you can benchmark your custom dataset by simply running</p>
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--dataset<span class="w"> </span>my-sql-dataset<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;
+</code></pre></div>
 
 
 
