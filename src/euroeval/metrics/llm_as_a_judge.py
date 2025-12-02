@@ -29,7 +29,7 @@ class LLMAsAJudgeMetric(Metric):
         judge_kwargs: dict[str, t.Any],
         user_prompt: str,
         response_format: t.Type[BaseModel],
-        scoring_fn: t.Callable[[BaseModel | None], float],
+        scoring_fn: t.Callable[..., float],
         condition_formatting_fn: t.Callable[[str], str] = lambda x: x,
         system_prompt: str | None = None,
     ) -> None:
@@ -231,33 +231,135 @@ class LLMAsAJudgeMetric(Metric):
 ### Fluency metric ###
 
 
-class Fluency(BaseModel):
-    """Response format for the fluency metric.
+class GEvalOutput(BaseModel):
+    """Response format for the GEval metric.
 
     Attributes:
+        coherency:
+            Coherency score between 1 and 5.
+        consistency:
+            Consistency score between 1 and 5.
         fluency:
-            The fluency rating, an integer between 1 and 5.
+            Fluency score between 1 and 3.
+        relevance:
+            Relevance score between 1 and 5.
     """
 
-    fluency: t.Annotated[int, Field(ge=1, le=5)]
+    coherency: t.Annotated[int, Field(ge=1, le=5)]
+    consistency: t.Annotated[int, Field(ge=1, le=5)]
+    fluency: t.Annotated[int, Field(ge=1, le=3)]
+    relevance: t.Annotated[int, Field(ge=1, le=5)]
 
 
-fluency_metric = LLMAsAJudgeMetric(
-    name="fluency",
-    pretty_name="Fluency",
+def geval_scoring_fn(output: GEvalOutput | None) -> float:
+    """Scoring function for the GEval metric.
+
+    Args:
+        output:
+            The GEval output object, containing all the raw scores, or None if the
+            output could not be parsed.
+
+    Returns:
+        The overall GEval score between 0.0 and 1.0.
+    """
+    if output is None:
+        return 0.0
+    normalised_coherency = (output.coherency - 1) / 4
+    normalised_consistency = (output.consistency - 1) / 4
+    normalised_fluency = (output.fluency - 1) / 2
+    normalised_relevance = (output.relevance - 1) / 4
+    overall_score = (
+        normalised_coherency
+        + normalised_consistency
+        + normalised_fluency
+        + normalised_relevance
+    ) / 4
+    return overall_score
+
+
+geval_metric = LLMAsAJudgeMetric(
+    name="geval",
+    pretty_name="GEval",
     judge_id="gpt-5-2025-08-07",
     judge_kwargs=dict(temperature=1.0),
-    user_prompt="Please rate the fluency of the following text on a scale from 1 to 5, "
-    "with the following definitions:\n"
-    "- 1: Very poor fluency, many grammatical errors\n"
-    "- 2: Poor fluency, several grammatical errors\n"
-    "- 3: Average fluency, a few grammatical errors\n"
-    "- 4: Good fluency, no grammatical errors but sounds a bit off\n"
-    "- 5: Excellent fluency, no grammatical errors and sounds natural\n\n"
-    "Text: {prediction!r}\n\n"
-    "Output your rating as a JSON object with a single key 'fluency'.",
-    response_format=Fluency,
-    scoring_fn=lambda output: (output.fluency - 1) / 4.0  # type: ignore[missing-attribute]
-    if output is not None
-    else 0.0,
+    response_format=GEvalOutput,
+    scoring_fn=geval_scoring_fn,
+    user_prompt="""
+<instruction>
+You will be given one summary written for an article. Your task is to rate the summary
+on one metric.
+</instruction>
+
+<list_of_evaluation_criteria>
+    <evaluation_criterion>
+        <name>
+            Coherency
+        </name>
+        <scale>
+            1-5
+        </scale>
+        <description>
+            The collective quality of all sentences. We align this dimension with the
+            DUC quality question of structure and coherence whereby "the summary should
+            be well-structured and well-organized. The summary should not just be a heap
+            of related information, but should build from sentence to a coherent body of
+            information about a topic.
+        </description>
+    </evaluation_criterion>
+    <evaluation_criterion>
+        <name>
+            Consistency
+        </name>
+        <scale>
+            1-5
+        </scale>
+        <description>
+            The factual alignment between the summary and the summarized source. A
+            factually consistent summary contains only statements that are entailed by
+            the source document. Annotators were also asked to penalize summaries that
+            contained hallucinated facts.
+        </description>
+    </evaluation_criterion>
+    <evaluation_criterion>
+        <name>
+            Fluency
+        </name>
+        <scale>
+            1-3
+        </scale>
+        <description>
+            The quality of the summary in terms of grammar, spelling, punctuation, word
+            choice, and sentence structure.
+
+            - 1: Poor. The summary has many errors that make it hard to understand or
+              sound unnatural.
+            - 2: Fair. The summary has some errors that affect the clarity or smoothness
+              of the text, but the main points are still comprehensible.
+            - 3: Good. The summary has few or no errors and is easy to read and follow.
+        </description>
+    </evaluation_criterion>
+    <evaluation_criterion>
+        <name>
+            Relevance
+        </name>
+        <scale>
+            1-5
+        </scale>
+        <description>
+            Selection of important content from the source. The summary should include
+            only important information from the source document. Annotators were
+            instructed to penalize summaries which contained redundancies and excess
+            information.
+        </description>
+    </evaluation_criterion>
+</list_of_evaluation_criteria>
+<output_format>
+    You will output a single JSON object with the keys "coherency", "consistency",
+    "fluency", and "relevance", each with an integer as the associated value, which is
+    within the specified scale as the value.
+</output_format>
+<text_to_evaluate>
+{prediction}
+</text_to_evaluate>
+    """,
 )
