@@ -280,16 +280,15 @@ def geval_scoring_fn(output: GEvalOutput | None) -> float:
 geval_metric = LLMAsAJudgeMetric(
     name="geval",
     pretty_name="GEval",
-    judge_id="gpt-5-2025-08-07",
-    judge_kwargs=dict(temperature=1.0),
+    judge_id="gpt-4.1-2025-04-14",
+    judge_kwargs=dict(temperature=0.0),
     response_format=GEvalOutput,
     scoring_fn=geval_scoring_fn,
-    user_prompt="""
+    system_prompt="""
 <instruction>
-You will be given one summary written for an article. Your task is to rate the summary
-on one metric.
+    You will be given one summary written for an article. Your task is to rate the
+    summary on one metric.
 </instruction>
-
 <list_of_evaluation_criteria>
     <evaluation_criterion>
         <name>
@@ -304,6 +303,24 @@ on one metric.
             be well-structured and well-organized. The summary should not just be a heap
             of related information, but should build from sentence to a coherent body of
             information about a topic.
+
+            - 1. Incoherent: The summary is disorganized and hard to follow. Sentences
+              do not logically connect, making it difficult to understand the overall
+              message.
+            - 2. Decent Coherency: The summary has some organization, but there are
+              noticeable gaps in the flow of ideas. Some sentences may feel out of place
+              or disconnected from the main topic.
+            - 3. Good Coherency: The summary is generally well-organized, with
+              sentences that mostly connect logically. There may be minor issues with
+              transitions or flow, but the overall message is clear. This is the level
+              expected of a good human-written summary.
+            - 4. Very Good Coherency: The summary is well-structured and easy to follow.
+              Sentences connect logically, and transitions between ideas are smooth.
+              This level is expected of very highly skilled human summarizers.
+            - 5. Excellent Coherency: The summary is exceptionally well-organized and
+              coherent. Ideas flow seamlessly from one to the next, creating a clear and
+              compelling narrative. This level is rarely achieved, even by expert human
+              summarizers.
         </description>
     </evaluation_criterion>
     <evaluation_criterion>
@@ -318,6 +335,22 @@ on one metric.
             factually consistent summary contains only statements that are entailed by
             the source document. Annotators were also asked to penalize summaries that
             contained hallucinated facts.
+
+            - 1. Inconsistent: The summary contains multiple factual inaccuracies or
+                hallucinations that contradict the source document.
+            - 2. Somewhat Consistent: The summary has some factual alignment with the
+                source, but there are noticeable inaccuracies or hallucinations present.
+            - 3. Mostly Consistent: The summary is generally factually aligned with the
+                source, with only minor inaccuracies or hallucinations that do not
+                significantly affect the overall understanding. This is the level
+                expected of a good human-written summary.
+            - 4. Very Consistent: The summary is factually accurate and aligns well with
+                the source document, with only rare and minor inaccuracies. This level
+                is expected of very highly skilled human summarizers.
+            - 5. Perfectly Consistent: The summary is entirely factually accurate and
+                fully aligns with the source document, containing no inaccuracies or
+                hallucinations. This level is rarely achieved, even by expert human
+                summarizers.
         </description>
     </evaluation_criterion>
     <evaluation_criterion>
@@ -325,17 +358,27 @@ on one metric.
             Fluency
         </name>
         <scale>
-            1-3
+            1-5
         </scale>
         <description>
             The quality of the summary in terms of grammar, spelling, punctuation, word
             choice, and sentence structure.
 
-            - 1: Poor. The summary has many errors that make it hard to understand or
-              sound unnatural.
-            - 2: Fair. The summary has some errors that affect the clarity or smoothness
-              of the text, but the main points are still comprehensible.
-            - 3: Good. The summary has few or no errors and is easy to read and follow.
+            - 1. Poor Fluency: The summary contains numerous grammatical errors,
+                spelling mistakes, and awkward sentence structures that significantly
+                hinder readability.
+            - 2. Fair Fluency: The summary has several grammatical errors and awkward
+                phrasings, but the overall meaning is still understandable.
+            - 3. Good Fluency: The summary is generally well-written, with only minor
+                grammatical errors or awkward phrasings that do not significantly affect
+                readability. This is the level expected of a good human-written summary.
+            - 4. Very Good Fluency: The summary is well-written and easy to read
+                overall, with very few grammatical errors or awkward phrasings. This
+                level is expected of very highly skilled human summarizers.
+            - 5. Excellent Fluency: The summary is exceptionally well-written, with
+                flawless grammar, spelling, and sentence structure that make it a
+                pleasure to read. This level is rarely achieved, even by expert human
+                summarizers.
         </description>
     </evaluation_criterion>
     <evaluation_criterion>
@@ -350,6 +393,26 @@ on one metric.
             only important information from the source document. Annotators were
             instructed to penalize summaries which contained redundancies and excess
             information.
+
+            - 1. Irrelevant: The summary includes little to no important information
+                from the source document, focusing instead on trivial or unrelated
+                details.
+            - 2. Somewhat Relevant: The summary includes some important information
+                from the source, but also contains a significant amount of trivial or
+                unrelated details.
+            - 3. Mostly Relevant: The summary generally captures the important
+                information from the source, with only minor inclusion of trivial or
+                unrelated details that do not significantly detract from the overall
+                understanding. This is the level expected of a good human-written
+                summary.
+            - 4. Very Relevant: The summary effectively captures the important
+                information from the source document, with minimal inclusion of trivial
+                or unrelated details. This level is expected of very highly skilled
+                human summarizers.
+            - 5. Perfectly Relevant: The summary exclusively includes important
+                information from the source document, with no trivial or unrelated
+                details. This level is rarely achieved, even by expert human
+                summarizers.
         </description>
     </evaluation_criterion>
 </list_of_evaluation_criteria>
@@ -358,6 +421,8 @@ on one metric.
     "fluency", and "relevance", each with an integer as the associated value, which is
     within the specified scale as the value.
 </output_format>
+""",
+    user_prompt="""
 <text_to_evaluate>
 {prediction}
 </text_to_evaluate>
