@@ -2389,7 +2389,13 @@
 <span class="normal">1371</span>
 <span class="normal">1372</span>
 <span class="normal">1373</span>
-<span class="normal">1374</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Generative models using the vLLM inference framework.&quot;&quot;&quot;</span>
+<span class="normal">1374</span>
+<span class="normal">1375</span>
+<span class="normal">1376</span>
+<span class="normal">1377</span>
+<span class="normal">1378</span>
+<span class="normal">1379</span>
+<span class="normal">1380</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Generative models using the vLLM inference framework.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">c</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">contextlib</span>
@@ -2408,7 +2414,6 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">pydantic</span><span class="w"> </span><span class="kn">import</span> <span class="n">conlist</span><span class="p">,</span> <span class="n">create_model</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">transformers.models.auto.configuration_auto</span><span class="w"> </span><span class="kn">import</span> <span class="n">AutoConfig</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">transformers.models.auto.tokenization_auto</span><span class="w"> </span><span class="kn">import</span> <span class="n">AutoTokenizer</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">transformers.tokenization_mistral_common</span><span class="w"> </span><span class="kn">import</span> <span class="n">MistralCommonTokenizer</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">urllib3.exceptions</span><span class="w"> </span><span class="kn">import</span> <span class="n">RequestError</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">..constants</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
@@ -2471,6 +2476,13 @@
     <span class="n">split_model_id</span><span class="p">,</span>
 <span class="p">)</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.hf</span><span class="w"> </span><span class="kn">import</span> <span class="n">HuggingFaceEncoderModel</span><span class="p">,</span> <span class="n">get_model_repo_info</span><span class="p">,</span> <span class="n">load_hf_model_config</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">transformers.tokenization_mistral_common</span><span class="w"> </span><span class="kn">import</span> <span class="n">MistralCommonTokenizer</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">transformers.tokenization_mistral_common</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+        <span class="n">MistralCommonBackend</span> <span class="k">as</span> <span class="n">MistralCommonTokenizer</span><span class="p">,</span>
+    <span class="p">)</span>
 
 <span class="k">if</span> <span class="n">t</span><span class="o">.</span><span class="n">TYPE_CHECKING</span> <span class="ow">or</span> <span class="n">importlib</span><span class="o">.</span><span class="n">util</span><span class="o">.</span><span class="n">find_spec</span><span class="p">(</span><span class="s2">&quot;vllm&quot;</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">vllm</span><span class="w"> </span><span class="kn">import</span> <span class="n">LLM</span><span class="p">,</span> <span class="n">SamplingParams</span>  <span class="c1"># type: ignore[missing-import]</span>

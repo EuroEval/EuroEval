@@ -2362,7 +2362,13 @@
 <span class="normal">1299</span>
 <span class="normal">1300</span>
 <span class="normal">1301</span>
-<span class="normal">1302</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Encoder models from the Hugging Face Hub.&quot;&quot;&quot;</span>
+<span class="normal">1302</span>
+<span class="normal">1303</span>
+<span class="normal">1304</span>
+<span class="normal">1305</span>
+<span class="normal">1306</span>
+<span class="normal">1307</span>
+<span class="normal">1308</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Encoder models from the Hugging Face Hub.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">c</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
@@ -2397,7 +2403,6 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">transformers.modeling_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">PreTrainedModel</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">transformers.models.auto.configuration_auto</span><span class="w"> </span><span class="kn">import</span> <span class="n">AutoConfig</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">transformers.models.auto.tokenization_auto</span><span class="w"> </span><span class="kn">import</span> <span class="n">AutoTokenizer</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">transformers.tokenization_mistral_common</span><span class="w"> </span><span class="kn">import</span> <span class="n">MistralCommonTokenizer</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">transformers.tokenization_utils_base</span><span class="w"> </span><span class="kn">import</span> <span class="n">PreTrainedTokenizerBase</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">transformers.trainer</span><span class="w"> </span><span class="kn">import</span> <span class="n">Trainer</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">urllib3.exceptions</span><span class="w"> </span><span class="kn">import</span> <span class="n">RequestError</span>
@@ -2443,6 +2448,13 @@
     <span class="n">split_model_id</span><span class="p">,</span>
 <span class="p">)</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">BenchmarkModule</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">transformers.tokenization_mistral_common</span><span class="w"> </span><span class="kn">import</span> <span class="n">MistralCommonTokenizer</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">transformers.tokenization_mistral_common</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+        <span class="n">MistralCommonBackend</span> <span class="k">as</span> <span class="n">MistralCommonTokenizer</span><span class="p">,</span>
+    <span class="p">)</span>
 
 <span class="k">if</span> <span class="n">t</span><span class="o">.</span><span class="n">TYPE_CHECKING</span><span class="p">:</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">transformers.configuration_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">PretrainedConfig</span>

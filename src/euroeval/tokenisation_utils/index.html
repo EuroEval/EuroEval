@@ -1561,7 +1561,13 @@
 <span class="normal">594</span>
 <span class="normal">595</span>
 <span class="normal">596</span>
-<span class="normal">597</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Utility functions related to tokenisation.&quot;&quot;&quot;</span>
+<span class="normal">597</span>
+<span class="normal">598</span>
+<span class="normal">599</span>
+<span class="normal">600</span>
+<span class="normal">601</span>
+<span class="normal">602</span>
+<span class="normal">603</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Utility functions related to tokenisation.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">c</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
@@ -1569,13 +1575,19 @@
 <span class="kn">import</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">t</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">transformers.tokenization_mistral_common</span><span class="w"> </span><span class="kn">import</span> <span class="n">MistralCommonTokenizer</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">.constants</span><span class="w"> </span><span class="kn">import</span> <span class="n">BOS_TOKENS</span><span class="p">,</span> <span class="n">EOS_TOKENS</span><span class="p">,</span> <span class="n">PAD_TOKENS</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.enums</span><span class="w"> </span><span class="kn">import</span> <span class="n">GenerativeType</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.exceptions</span><span class="w"> </span><span class="kn">import</span> <span class="n">InvalidModel</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.logging_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">log</span><span class="p">,</span> <span class="n">log_once</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">Tokeniser</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">transformers.tokenization_mistral_common</span><span class="w"> </span><span class="kn">import</span> <span class="n">MistralCommonTokenizer</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">transformers.tokenization_mistral_common</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+        <span class="n">MistralCommonBackend</span> <span class="k">as</span> <span class="n">MistralCommonTokenizer</span><span class="p">,</span>
+    <span class="p">)</span>
 
 <span class="k">if</span> <span class="n">t</span><span class="o">.</span><span class="n">TYPE_CHECKING</span><span class="p">:</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">transformers.tokenization_utils_base</span><span class="w"> </span><span class="kn">import</span> <span class="n">PreTrainedTokenizerBase</span>
