@@ -17,9 +17,10 @@ from tempfile import TemporaryDirectory
 
 import pandas as pd
 import requests
-from constants import CHOICES_MAPPING  # noqa
 from datasets import Dataset, DatasetDict, Split
 from huggingface_hub import HfApi
+
+from .constants import CHOICES_MAPPING  # noqa
 
 
 def main() -> None:
@@ -45,9 +46,11 @@ def main() -> None:
         )
 
         dataset = DatasetDict(
-            train=Dataset.from_pandas(final_train_df, split=Split.TRAIN),
-            val=Dataset.from_pandas(final_val_df, split=Split.VALIDATION),
-            test=Dataset.from_pandas(final_test_df, split=Split.TEST),
+            {
+                "train": Dataset.from_pandas(final_train_df, split=Split.TRAIN),
+                "val": Dataset.from_pandas(final_val_df, split=Split.VALIDATION),
+                "test": Dataset.from_pandas(final_test_df, split=Split.TEST),
+            }
         )
 
         dataset_id = "EuroEval/exams-bg-mini"
@@ -126,7 +129,7 @@ def process_split(df: pd.DataFrame) -> pd.DataFrame:
         sorted_choices = sorted(choices, key=lambda x: x["label"])
 
         # Build the text with choices
-        choice_lines = []
+        choice_lines: list[str] = []
         for choice in sorted_choices:
             label = choice["label"].lower()
             text = choice["text"]
@@ -139,7 +142,7 @@ def process_split(df: pd.DataFrame) -> pd.DataFrame:
         text = f"{question_stem}\n{choices_text}:\n" + "\n".join(choice_lines)
 
         # Get the correct answer label (lowercase)
-        label = row["answerKey"].lower()
+        label = row.answerKey.lower()
 
         texts.append(text)
         labels.append(label)
@@ -169,7 +172,7 @@ def create_splits(
     test_size = 2048
 
     final_train_df = train_df.sample(n=train_size, random_state=4242)
-    remaining_train_df = train_df.drop(final_train_df.index)
+    remaining_train_df = train_df.drop(final_train_df.index.tolist())
     test_df_with_remaining_train_samples = pd.concat(
         [test_df, remaining_train_df], ignore_index=True
     )
@@ -180,7 +183,7 @@ def create_splits(
         [test_df_with_remaining_train_samples, additional_val_samples],
         ignore_index=True,
     )
-    final_val_df = val_df.drop(additional_val_samples.index)
+    final_val_df = val_df.drop(additional_val_samples.index.tolist())
 
     final_train_df = final_train_df.reset_index(drop=True)
     final_val_df = final_val_df.reset_index(drop=True)

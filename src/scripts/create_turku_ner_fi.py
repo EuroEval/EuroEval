@@ -57,9 +57,11 @@ def main() -> None:
 
     # Collect datasets in a dataset dictionary
     dataset = DatasetDict(
-        train=Dataset.from_pandas(train_df, split=Split.TRAIN),
-        val=Dataset.from_pandas(val_df, split=Split.VALIDATION),
-        test=Dataset.from_pandas(test_df, split=Split.TEST),
+        {
+            "train": Dataset.from_pandas(train_df, split=Split.TRAIN),
+            "val": Dataset.from_pandas(val_df, split=Split.VALIDATION),
+            "test": Dataset.from_pandas(test_df, split=Split.TEST),
+        }
     )
 
     # Push the dataset to the Hugging Face Hub
@@ -70,7 +72,10 @@ def main() -> None:
 
 def read_dataset() -> dict:
     """Read the CoNLL-formatted TSV files and convert them to the required format."""
-    base_url = "https://raw.githubusercontent.com/TurkuNLP/turku-ner-corpus/refs/heads/master/data/conll/{}.tsv"
+    base_url = (
+        "https://raw.githubusercontent.com/TurkuNLP/turku-ner-corpus/refs/heads/"
+        "master/data/conll/{}.tsv"
+    )
     train_url = base_url.format("train")
     val_url = base_url.format("dev")
     test_url = base_url.format("test")

@@ -20,9 +20,13 @@ def main() -> None:
     # Load source dataset
     repo_id = "projecte-aina/GuiaCat"
     dataset = load_dataset(repo_id)
+    assert isinstance(dataset, DatasetDict)
     train_df = dataset["train"].to_pandas()
     val_df = dataset["validation"].to_pandas()
     test_df = dataset["test"].to_pandas()
+    assert isinstance(train_df, pd.DataFrame)
+    assert isinstance(val_df, pd.DataFrame)
+    assert isinstance(test_df, pd.DataFrame)
 
     # Process data
     train_df = process(df=train_df)
@@ -36,9 +40,11 @@ def main() -> None:
 
     # Create dataset dictionary
     dataset_dict = DatasetDict(
-        train=Dataset.from_pandas(train_df_final),
-        val=Dataset.from_pandas(val_df_final),
-        test=Dataset.from_pandas(test_df_final),
+        {
+            "train": Dataset.from_pandas(train_df_final),
+            "val": Dataset.from_pandas(val_df_final),
+            "test": Dataset.from_pandas(test_df_final),
+        }
     )
 
     # Push to HF Hub
@@ -64,11 +70,11 @@ def process(df: pd.DataFrame) -> pd.DataFrame:
         "dolent": "negative",
         "molt dolent": "negative",
     }
-    df["label"] = df["label"].map(label_mapping)
+    df["label"] = df["label"].map(lambda x: label_mapping[x])
 
     # Keep only text and label columns
     keep_columns = ["text", "label"]
-    df = df[keep_columns]
+    df = df.loc[keep_columns]
     return df
 
 
@@ -108,6 +114,10 @@ def make_splits(
     train_df_final = train_df_final.reset_index(drop=True)
     val_df_final = val_df_final.reset_index(drop=True)
     test_df_final = test_df_final.reset_index(drop=True)
+
+    assert isinstance(train_df_final, pd.DataFrame)
+    assert isinstance(val_df_final, pd.DataFrame)
+    assert isinstance(test_df_final, pd.DataFrame)
 
     return train_df_final, val_df_final, test_df_final
 

@@ -12,24 +12,30 @@
 
 import hashlib
 
-from constants import (
+import pandas as pd
+from datasets import Dataset, DatasetDict, Split, load_dataset
+from huggingface_hub import HfApi
+
+from .constants import (
     MAX_NUM_CHARS_IN_CONTEXT,
     MAX_NUM_CHARS_IN_QUESTION,
     MIN_NUM_CHARS_IN_CONTEXT,
     MIN_NUM_CHARS_IN_QUESTION,
 )
-from datasets import Dataset, DatasetDict, Split, load_dataset
-from huggingface_hub import HfApi
 
 
 def main() -> None:
     """Create the SQAD-mini Czech dataset and upload it to the HF Hub."""
     # Load the dataset
     dataset = load_dataset("CZLC/sqad_3.2_filtered")
+    assert isinstance(dataset, DatasetDict)
 
     # Convert to DataFrames
     train_df = dataset["train"].to_pandas()
     test_df = dataset["test"].to_pandas()
+
+    assert isinstance(train_df, pd.DataFrame)
+    assert isinstance(test_df, pd.DataFrame)
 
     # Filter out data points with more than one answer
     train_df = train_df[train_df["answers"].apply(len) == 1]
@@ -52,6 +58,9 @@ def main() -> None:
             MIN_NUM_CHARS_IN_QUESTION, MAX_NUM_CHARS_IN_QUESTION
         )
     ]
+
+    assert isinstance(train_df, pd.DataFrame)
+    assert isinstance(test_df, pd.DataFrame)
 
     # Extract answer start positions
     train_df["answer_start"] = train_df.apply(
@@ -77,6 +86,9 @@ def main() -> None:
         axis=1,
     )
 
+    assert isinstance(train_df, pd.DataFrame)
+    assert isinstance(test_df, pd.DataFrame)
+
     # Define split sizes
     train_size = 1024
     val_size = 256
@@ -84,7 +96,7 @@ def main() -> None:
 
     # Create new train and validation splits from the train split
     final_train_df = train_df.sample(n=train_size, random_state=4242)
-    remaining_df = train_df.drop(final_train_df.index)
+    remaining_df = train_df.drop(final_train_df.index.tolist())
     final_val_df = remaining_df.sample(n=val_size, random_state=4242)
 
     # Use the existing test split
@@ -122,9 +134,11 @@ def main() -> None:
 
     # Create DatasetDict
     dataset_dict = DatasetDict(
-        train=Dataset.from_pandas(final_train_df, split=Split.TRAIN),
-        val=Dataset.from_pandas(final_val_df, split=Split.VALIDATION),
-        test=Dataset.from_pandas(final_test_df, split=Split.TEST),
+        {
+            "train": Dataset.from_pandas(final_train_df, split=Split.TRAIN),
+            "val": Dataset.from_pandas(final_val_df, split=Split.VALIDATION),
+            "test": Dataset.from_pandas(final_test_df, split=Split.TEST),
+        }
     )
 
     # Push to Hugging Face Hub

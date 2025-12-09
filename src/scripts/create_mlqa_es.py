@@ -32,15 +32,17 @@ def main() -> None:
     # (256 samples) and test (2048 samples)
     val_df = dataset["validation"].to_pandas()
     test_df = dataset["test"].to_pandas()
+    assert isinstance(val_df, pd.DataFrame)
+    assert isinstance(test_df, pd.DataFrame)
 
     # Create training split from validation data and random sample of test data
     train_test_sample = test_df.sample(n=524, random_state=42)
     train_df = pd.concat([val_df, train_test_sample])
-    test_df = test_df.drop(train_test_sample.index)
+    test_df = test_df.drop(train_test_sample.index.tolist())
 
     # Create validation split from remaining test data
     val_df = test_df.sample(n=256, random_state=42)
-    test_df = test_df.drop(val_df.index)
+    test_df = test_df.drop(val_df.index.tolist())
 
     # Create test split with 2048 samples
     test_df = test_df.sample(n=2024, random_state=42)
@@ -50,9 +52,11 @@ def main() -> None:
 
     # Collect datasets in a dataset dictionary
     dataset = DatasetDict(
-        train=Dataset.from_pandas(train_df, split=Split.TRAIN),
-        val=Dataset.from_pandas(val_df, split=Split.VALIDATION),
-        test=Dataset.from_pandas(test_df, split=Split.TEST),
+        {
+            "train": Dataset.from_pandas(train_df, split=Split.TRAIN),
+            "val": Dataset.from_pandas(val_df, split=Split.VALIDATION),
+            "test": Dataset.from_pandas(test_df, split=Split.TEST),
+        }
     )
 
     # Create dataset ID

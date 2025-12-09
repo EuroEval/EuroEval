@@ -11,6 +11,7 @@
 
 """Create the Atsiliepimai sentiment dataset and upload to HF Hub."""
 
+import pandas as pd
 from datasets import Dataset, DatasetDict, load_dataset
 from huggingface_hub import HfApi
 from sklearn.model_selection import train_test_split
@@ -23,13 +24,15 @@ def main() -> None:
 
     # Download the dataset
     dataset = load_dataset(repo_id, split="train")
+    assert isinstance(dataset, Dataset)
 
     # Convert to dataframe
     df = dataset.to_pandas()
+    assert isinstance(df, pd.DataFrame)
 
     # Fix columns
     df = df.rename(columns={"rating": "label"})
-    df = df[["text", "label"]]
+    df = df.loc[["text", "label"]]
 
     # Map labels
     label_mapping = {
@@ -63,9 +66,11 @@ def main() -> None:
 
     # Create a dataset dictionary with custom splits
     dataset_dict = DatasetDict(
-        train=Dataset.from_pandas(final_train_df),
-        val=Dataset.from_pandas(final_val_df),
-        test=Dataset.from_pandas(final_test_df),
+        {
+            "train": Dataset.from_pandas(final_train_df),
+            "val": Dataset.from_pandas(final_val_df),
+            "test": Dataset.from_pandas(final_test_df),
+        }
     )
 
     # Push the dataset to the Hugging Face Hub

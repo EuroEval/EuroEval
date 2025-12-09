@@ -10,6 +10,7 @@ import numpy as np
 
 from ..enums import TaskGroup
 from ..exceptions import InvalidBenchmark
+from ..types import Predictions
 from ..utils import (
     extract_multiple_choice_labels,
     log_once,
@@ -26,7 +27,7 @@ if t.TYPE_CHECKING:
         GenerativeModelOutput,
         ModelConfig,
     )
-    from ..types import Labels, Predictions
+    from ..types import Labels
 
 
 def compute_metrics(
@@ -67,8 +68,7 @@ def compute_metrics(
     else:
         predictions = model_outputs
 
-    assert not isinstance(model_outputs, tuple)
-    raise_if_model_output_contains_nan_values(model_output=model_outputs)
+    raise_if_model_output_contains_nan_values(model_output=model_outputs)  # type: ignore[bad-argument-type]
 
     prompt_label_to_label_mapping = {
         prompt_label: label
@@ -80,7 +80,7 @@ def compute_metrics(
             if isinstance(pred, str)
             else pred
         )
-        for pred in predictions
+        for pred in predictions  # type: ignore[not-iterable]
     ]
 
     label_ids = [

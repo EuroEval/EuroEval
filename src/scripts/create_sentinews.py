@@ -23,13 +23,16 @@ def main() -> None:
 
     # Download the dataset
     dataset = load_dataset(repo_id, "sentence_level", split="train")
+    assert isinstance(dataset, Dataset)
 
     # Convert to dataframe
     df = dataset.to_pandas()
+    assert isinstance(df, pd.DataFrame)
 
     # Fix columns
     df = df.rename(columns={"content": "text", "sentiment": "label"})
     df = df[["text", "label"]]
+    assert isinstance(df, pd.DataFrame)
 
     # Make splits
     test_size = 2048
@@ -44,13 +47,20 @@ def main() -> None:
     df = df[~df.index.isin(final_test_df.index)]
     final_val_df = df.sample(n=val_size, random_state=42).reset_index(drop=True)
     df = df[~df.index.isin(final_val_df.index)]
+    assert isinstance(df, pd.DataFrame)
     final_train_df = df.sample(n=train_size, random_state=42).reset_index(drop=True)
+
+    assert isinstance(final_train_df, pd.DataFrame)
+    assert isinstance(final_val_df, pd.DataFrame)
+    assert isinstance(final_test_df, pd.DataFrame)
 
     # Create a dataset dictionary with custom splits
     dataset_dict = DatasetDict(
-        train=Dataset.from_pandas(final_train_df),
-        val=Dataset.from_pandas(final_val_df),
-        test=Dataset.from_pandas(final_test_df),
+        {
+            "train": Dataset.from_pandas(final_train_df),
+            "val": Dataset.from_pandas(final_val_df),
+            "test": Dataset.from_pandas(final_test_df),
+        }
     )
 
     # Push the dataset to the Hugging Face Hub
@@ -79,7 +89,7 @@ def create_uniform_label_distribution(
     min_size = min(len(class_df) for class_df in class_dfs)
 
     # Resample each class to the size of the smallest class
-    resampled_dfs = [
+    resampled_dfs: list[pd.DataFrame] = [
         resample(class_df, replace=False, n_samples=min_size, random_state=random_state)
         for class_df in class_dfs
     ]

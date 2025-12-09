@@ -4,8 +4,14 @@ import collections.abc as c
 import typing as t
 
 from transformers import PreTrainedTokenizer
-from transformers.tokenization_mistral_common import MistralCommonTokenizer
 from transformers.trainer_utils import EvalPrediction
+
+try:
+    from transformers.tokenization_mistral_common import MistralCommonTokenizer
+except ImportError:
+    from transformers.tokenization_mistral_common import (
+        MistralCommonBackend as MistralCommonTokenizer,
+    )
 
 if t.TYPE_CHECKING:
     from datasets.arrow_dataset import Dataset

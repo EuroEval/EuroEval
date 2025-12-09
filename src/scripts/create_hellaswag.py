@@ -14,7 +14,11 @@
 from collections import Counter
 
 import pandas as pd
-from constants import (
+from datasets import Dataset, DatasetDict, Split, load_dataset
+from huggingface_hub import HfApi
+from sklearn.model_selection import train_test_split
+
+from .constants import (
     CHOICES_MAPPING,
     MAX_NUM_CHARS_IN_INSTRUCTION,
     MAX_NUM_CHARS_IN_OPTION,
@@ -22,9 +26,6 @@ from constants import (
     MIN_NUM_CHARS_IN_INSTRUCTION,
     MIN_NUM_CHARS_IN_OPTION,
 )
-from datasets import Dataset, DatasetDict, Split, load_dataset
-from huggingface_hub import HfApi
-from sklearn.model_selection import train_test_split
 
 LANGUAGES = ["da", "de", "en", "es", "fr", "is", "it", "nl", "no", "pt", "sv"]
 
@@ -66,7 +67,7 @@ def main() -> None:
             return max_repetitions > MAX_REPETITIONS
 
         # Remove overly repetitive samples
-        df = df[
+        df = df.loc[
             ~df.ctx.apply(is_repetitive)
             & ~df.endings.map(
                 lambda endings: any(is_repetitive(ending) for ending in endings)
@@ -94,7 +95,7 @@ def main() -> None:
             for activity_label, count in df["activity_label"].value_counts().items()
             if count >= 3
         ]
-        df = df[df["activity_label"].isin(acceptable_activity_labels)]
+        df = df.loc[df["activity_label"].isin(acceptable_activity_labels)]
 
         # Remove duplicates
         df.drop_duplicates(subset="text", inplace=True)
@@ -136,9 +137,11 @@ def main() -> None:
 
         # Collect datasets in a dataset dictionary
         dataset = DatasetDict(
-            train=Dataset.from_pandas(train_df, split=Split.TRAIN),
-            val=Dataset.from_pandas(val_df, split=Split.VALIDATION),
-            test=Dataset.from_pandas(test_df, split=Split.TEST),
+            {
+                "train": Dataset.from_pandas(train_df, split=Split.TRAIN),
+                "val": Dataset.from_pandas(val_df, split=Split.VALIDATION),
+                "test": Dataset.from_pandas(test_df, split=Split.TEST),
+            }
         )
 
         # Create dataset ID

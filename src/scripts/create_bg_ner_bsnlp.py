@@ -50,7 +50,7 @@ def main() -> None:
     # Create validation split from train
     val_size = 256
     val_df = train_df.sample(n=val_size, random_state=4242)
-    train_df = train_df.drop(val_df.index)
+    train_df = train_df.drop(val_df.index.tolist())
 
     # Create test split
     test_size = 2048
@@ -67,9 +67,11 @@ def main() -> None:
 
     # Collect datasets in a dataset dictionary
     dataset = DatasetDict(
-        train=Dataset.from_pandas(train_df, split=Split.TRAIN),
-        val=Dataset.from_pandas(val_df, split=Split.VALIDATION),
-        test=Dataset.from_pandas(test_df, split=Split.TEST),
+        {
+            "train": Dataset.from_pandas(train_df, split=Split.TRAIN),
+            "val": Dataset.from_pandas(val_df, split=Split.VALIDATION),
+            "test": Dataset.from_pandas(test_df, split=Split.TEST),
+        }
     )
 
     # Create dataset ID

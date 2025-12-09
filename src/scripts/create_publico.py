@@ -25,7 +25,8 @@ TOTAL = 1024 + 256 + 2048
 def main() -> None:
     """Create the Público-mini dataset."""
     raw = load_dataset("duarteocarmo/cc_news_publico", split="train")
-    processed = [_extract_fields(x) for x in raw]
+    assert isinstance(raw, Dataset)
+    processed = [_extract_fields(example=dict(x)) for x in raw]
     processed = [x for x in processed if x]
 
     random.seed(42)

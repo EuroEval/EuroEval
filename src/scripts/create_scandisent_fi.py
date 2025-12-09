@@ -11,9 +11,10 @@
 """Create the Finnish part of the ScandiSent dataset and upload it to the HF Hub."""
 
 import pandas as pd
-from constants import MAX_NUM_CHARS_IN_DOCUMENT, MIN_NUM_CHARS_IN_DOCUMENT  # noqa
 from datasets import Dataset, DatasetDict, Split, load_dataset
 from huggingface_hub import HfApi
+
+from .constants import MAX_NUM_CHARS_IN_DOCUMENT, MIN_NUM_CHARS_IN_DOCUMENT  # noqa
 
 
 def main() -> None:
@@ -35,19 +36,20 @@ def main() -> None:
     # Drop all columns except for `text` and `label_text`
     columns_to_drop = [col for col in df.columns if col not in ["text", "label"]]
     df.drop(columns=columns_to_drop, inplace=True)
+    assert isinstance(df, pd.DataFrame)
 
     # Change labels from integer to string
-    df["label"] = df["label"].map({0: "negative", 1: "positive"})
+    df["label"] = df["label"].map(lambda x: {0: "negative", 1: "positive"}[x])
 
     # Create validation split
     val_size = 256
     val_df = df.sample(n=val_size, random_state=4242)
-    df = df.drop(val_df.index)
+    df = df.drop(val_df.index.tolist())
 
     # Create test split
     test_size = 2048
     test_df = df.sample(n=test_size, random_state=4242)
-    df = df.drop(test_df.index)
+    df = df.drop(test_df.index.tolist())
 
     # Create train split
     train_size = 1024
@@ -79,9 +81,11 @@ def main() -> None:
 
     # Collect datasets in a dataset dictionary
     dataset = DatasetDict(
-        train=Dataset.from_pandas(train_df, split=Split.TRAIN),
-        val=Dataset.from_pandas(val_df, split=Split.VALIDATION),
-        test=Dataset.from_pandas(test_df, split=Split.TEST),
+        {
+            "train": Dataset.from_pandas(new_train_df, split=Split.TRAIN),
+            "val": Dataset.from_pandas(new_val_df, split=Split.VALIDATION),
+            "test": Dataset.from_pandas(new_test_df, split=Split.TEST),
+        }
     )
 
     # Push the dataset to the Hugging Face Hub

@@ -24,7 +24,9 @@ def main() -> None:
     dataset = load_dataset(
         repo_id, "named_entity_recognition", split="train", trust_remote_code=True
     )
+    assert isinstance(dataset, Dataset)
     df = dataset.to_pandas()
+    assert isinstance(df, pd.DataFrame)
 
     # Process the dataframe
     df = process(df=df)
@@ -38,13 +40,15 @@ def main() -> None:
     val_df = df.sample(n=val_size, random_state=42)
 
     # Remove validation samples from the full dataset
-    temp_df = df.drop(val_df.index)
+    temp_df = df.drop(val_df.index.tolist())
 
     # Create test split
     test_df = temp_df.sample(n=test_size, random_state=42)
 
     # Create train split
-    train_df = temp_df.drop(test_df.index).sample(n=train_size, random_state=42)
+    train_df = temp_df.drop(test_df.index.tolist()).sample(
+        n=train_size, random_state=42
+    )
 
     # Reset indices for each split
     train_df = train_df.reset_index(drop=True)
@@ -53,9 +57,11 @@ def main() -> None:
 
     # Collect datasets in a dataset dictionary
     dataset_dict = DatasetDict(
-        train=Dataset.from_pandas(train_df),
-        val=Dataset.from_pandas(val_df),
-        test=Dataset.from_pandas(test_df),
+        {
+            "train": Dataset.from_pandas(train_df),
+            "val": Dataset.from_pandas(val_df),
+            "test": Dataset.from_pandas(test_df),
+        }
     )
 
     # Set dataset ID for the Hugging Face Hub
@@ -80,7 +86,7 @@ def process(df: pd.DataFrame) -> pd.DataFrame:
     df.rename(columns={"words": "tokens", "ne_tags": "labels"}, inplace=True)
 
     keep_columns = ["tokens", "labels"]
-    df = df[keep_columns]
+    df = df.loc[keep_columns]
 
     assert all(
         len(tokens) == len(labels) for tokens, labels in zip(df["tokens"], df["labels"])

@@ -13,7 +13,18 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   [zebra_puzzles](https://huggingface.co/datasets/alexandrainst/zebra_puzzles). The split
   is given by 128 / 1,024 samples for train / test, respectively. It is marked as
   `unofficial` for now. This was contributed by @sofiehb ✨
-- Drafted the logical reasoning task. This was contributed by @sofiehb ✨
+
+### Fixed
+
+- When a model has registered the number of parameters wrongly within their safetensors
+  files, we collect all the potential parameter counts from the safetensors file and
+  pick the largest one.
+- We now pinned vLLM to v0.11.0, as all future versions (up to and including v0.12.0)
+  have breaking changes regarding loading of Mistral models. We aim to unpin this when a
+  new vLLM version fixes this.
+- Removed mentions of `hf_transfer` and the associated environment variable
+  `HF_HUB_ENABLE_HF_TRANSFER`, since this has been removed from the `transformers`
+  library now.
 
 ## [v16.8.0] - 2025-11-25
 
@@ -2743,8 +2754,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Deprecated
 
-- Deprecated support for evaluating finetuned models, as the package was primarily used to
-  benchmark pretrained models anyway, and the change in datasets means that many
+- Deprecated support for evaluating finetuned models, as the package was primarily used
+  to benchmark pretrained models anyway, and the change in datasets means that many
   finetuned models would have been trained on (part of) the test sets, resulting in
   artificially large scores. For evaluation of finetuned models, please check out the
   `aiai_eval` Python package instead (under development).

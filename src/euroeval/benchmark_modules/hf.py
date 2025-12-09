@@ -33,7 +33,6 @@ from transformers.modelcard import TASK_MAPPING
 from transformers.modeling_utils import PreTrainedModel
 from transformers.models.auto.configuration_auto import AutoConfig
 from transformers.models.auto.tokenization_auto import AutoTokenizer
-from transformers.tokenization_mistral_common import MistralCommonTokenizer
 from transformers.tokenization_utils_base import PreTrainedTokenizerBase
 from transformers.trainer import Trainer
 from urllib3.exceptions import RequestError
@@ -79,6 +78,13 @@ from ..utils import (
     split_model_id,
 )
 from .base import BenchmarkModule
+
+try:
+    from transformers.tokenization_mistral_common import MistralCommonTokenizer
+except ImportError:
+    from transformers.tokenization_mistral_common import (
+        MistralCommonBackend as MistralCommonTokenizer,
+    )
 
 if t.TYPE_CHECKING:
     from transformers.configuration_utils import PretrainedConfig
@@ -175,7 +181,16 @@ class HuggingFaceEncoderModel(BenchmarkModule):
             and repo_info.safetensors is not None
             and "total" in repo_info.safetensors
         ):
-            num_params = repo_info.safetensors["total"]
+            num_params_candidates: list[int] = [repo_info.safetensors["total"]]
+            if "parameters" in repo_info.safetensors and isinstance(
+                repo_info.safetensors["parameters"], dict
+            ):
+                num_params_candidates.extend(
+                    int(v)
+                    for v in repo_info.safetensors["parameters"].values()
+                    if isinstance(v, int) or (isinstance(v, str) and v.isdigit())
+                )
+            num_params = max(num_params_candidates)
         elif (
             hasattr(self._model.config, "num_params")
             and self._model.config.num_params is not None
@@ -1146,7 +1161,7 @@ def setup_model_for_question_answering(model: "PreTrainedModel") -> "PreTrainedM
                     "The token type embeddings of the model do not have a `data` "
                     "attribute, which is needed to modify the embeddings."
                 )
-            token_type_embeddings.weight.data = torch.cat(  # type: ignore[missing-attribute]
+            token_type_embeddings.weight.data = torch.cat(
                 (
                     token_type_embedding_tensor,
                     torch.rand_like(token_type_embedding_tensor),

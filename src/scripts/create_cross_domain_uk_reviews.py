@@ -29,9 +29,15 @@ def main() -> None:
     df = pd.read_csv(file_path)
     df.rename(columns={"review_translate": "text"}, inplace=True)
     df["label"] = df["rating"].map(
-        {1: "negative", 2: "negative", 3: "neutral", 4: "positive", 5: "positive"}
+        lambda x: {
+            1: "negative",
+            2: "negative",
+            3: "neutral",
+            4: "positive",
+            5: "positive",
+        }[x]
     )
-    df = df[["text", "label"]]
+    df = df.loc[["text", "label"]]
     df.drop_duplicates(inplace=True)
     df = create_uniform_label_distribution(df=df, random_state=4242)
     df = df.reset_index(drop=True)
@@ -41,15 +47,17 @@ def main() -> None:
     val_size = 256
     test_size = 2048
 
-    train_df = df[:train_size]
-    val_df = df[train_size : train_size + val_size]
-    test_df = df[train_size + val_size : train_size + val_size + test_size]
+    train_df = df.iloc[:train_size]
+    val_df = df.iloc[train_size : train_size + val_size]
+    test_df = df.iloc[train_size + val_size : train_size + val_size + test_size]
 
     # Create dataset
     dataset = DatasetDict(
-        train=Dataset.from_pandas(train_df, split=Split.TRAIN),
-        val=Dataset.from_pandas(val_df, split=Split.VALIDATION),
-        test=Dataset.from_pandas(test_df, split=Split.TEST),
+        {
+            "train": Dataset.from_pandas(train_df, split=Split.TRAIN),
+            "val": Dataset.from_pandas(val_df, split=Split.VALIDATION),
+            "test": Dataset.from_pandas(test_df, split=Split.TEST),
+        }
     )
 
     # Push the dataset to the Hugging Face Hub

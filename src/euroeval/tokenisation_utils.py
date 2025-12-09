@@ -6,13 +6,19 @@ import re
 import typing as t
 
 import torch
-from transformers.tokenization_mistral_common import MistralCommonTokenizer
 
 from .constants import BOS_TOKENS, EOS_TOKENS, PAD_TOKENS
 from .enums import GenerativeType
 from .exceptions import InvalidModel
 from .logging_utils import log, log_once
 from .types import Tokeniser
+
+try:
+    from transformers.tokenization_mistral_common import MistralCommonTokenizer
+except ImportError:
+    from transformers.tokenization_mistral_common import (
+        MistralCommonBackend as MistralCommonTokenizer,
+    )
 
 if t.TYPE_CHECKING:
     from transformers.tokenization_utils_base import PreTrainedTokenizerBase

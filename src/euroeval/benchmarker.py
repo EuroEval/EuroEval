@@ -12,7 +12,6 @@ from pathlib import Path
 from shutil import rmtree
 from time import sleep
 
-from huggingface_hub.constants import HF_HUB_ENABLE_HF_TRANSFER
 from torch.distributed import destroy_process_group
 
 from .benchmark_config_factory import build_benchmark_config
@@ -32,7 +31,6 @@ from .speed_benchmark import benchmark_speed
 from .tasks import SPEED
 from .utils import (
     enforce_reproducibility,
-    get_package_version,
     internet_connection_available,
     split_model_id,
 )
@@ -193,15 +191,6 @@ class Benchmarker:
             else:
                 msg += "the argument `download_only` was set to True."
             raise ValueError(msg)
-
-        # Bail early if hf_transfer is enabled but not installed.
-        if HF_HUB_ENABLE_HF_TRANSFER and get_package_version("hf_transfer") is None:
-            raise ImportError(
-                "Fast download using 'hf_transfer' is enabled "
-                "(HF_HUB_ENABLE_HF_TRANSFER=1) but the 'hf_transfer' "
-                "package is not available in your environment. "
-                "Try installing it with `pip install hf_transfer`."
-            )
 
         # Deprecation warnings
         if batch_size is not None:

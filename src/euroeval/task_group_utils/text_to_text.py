@@ -57,8 +57,7 @@ def compute_metrics(
     if isinstance(model_outputs, tuple) and len(model_outputs) == 2:
         model_outputs = model_outputs[0]
 
-    assert not isinstance(model_outputs, tuple)
-    raise_if_model_output_contains_nan_values(model_output=model_outputs)
+    raise_if_model_output_contains_nan_values(model_output=model_outputs)  # type: ignore[bad-argument-type]
 
     labels = raw_labels
     model_output_dtype = np.asarray(model_outputs).dtype
@@ -81,8 +80,8 @@ def compute_metrics(
         for _ in range(num_attempts := 5):
             try:
                 score: float | None = metric(
-                    predictions=predictions,
-                    references=labels,
+                    predictions=predictions,  #  type: ignore[bad-argument-type]
+                    references=labels,  #  type: ignore[bad-argument-type]
                     dataset=dataset,
                     dataset_config=dataset_config,
                     benchmark_config=benchmark_config,

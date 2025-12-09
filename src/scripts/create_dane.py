@@ -12,7 +12,6 @@
 
 import re
 from collections import defaultdict
-from typing import Dict, List, Union
 
 import pandas as pd
 import requests
@@ -46,7 +45,7 @@ def main() -> None:
     for split, lines in data.items():
         # Initialise the records, data dictionary and document
         records = list()
-        data_dict: Dict[str, List[Union[int, str]]] = defaultdict(list)
+        data_dict: dict[str, list[int | str]] = defaultdict(list)
         doc = ""
 
         # Iterate over the data for the given split
@@ -63,7 +62,7 @@ def main() -> None:
             # list of records and reset the data dictionary and document
             elif line == "":
                 if len(data_dict["tokens"]) > 0:
-                    merged_data_dict: Dict[str, Union[str, List[Union[int, str]]]]
+                    merged_data_dict: dict[str, str | list[int | str]]
                     merged_data_dict = {**data_dict, "doc": doc}
                     records.append(merged_data_dict)
                 data_dict = defaultdict(list)
@@ -89,9 +88,9 @@ def main() -> None:
 
     # Create new splits
     val_df = df.sample(n=256, random_state=4242)
-    df_filtered = df[~df.index.isin(val_df.index)]
+    df_filtered = df.loc[~df.index.isin(val_df.index)]
     test_df = df_filtered.sample(n=2048, random_state=4242)
-    full_train_df = df_filtered[~df_filtered.index.isin(test_df.index)]
+    full_train_df = df_filtered.loc[~df_filtered.index.isin(test_df.index)]
     train_df = full_train_df.sample(n=1024, random_state=4242)
 
     # Collect datasets in a dataset dictionary
@@ -99,7 +98,7 @@ def main() -> None:
         train=Dataset.from_pandas(train_df, split=Split.TRAIN),
         val=Dataset.from_pandas(val_df, split=Split.VALIDATION),
         test=Dataset.from_pandas(test_df, split=Split.TEST),
-        full_train=Dataset.from_pandas(full_train_df, split="full_train"),
+        full_train=Dataset.from_pandas(full_train_df, split="full_train"),  # type: ignore[bad-argument-type]
     )
 
     # Create dataset ID

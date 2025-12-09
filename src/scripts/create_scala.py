@@ -14,14 +14,16 @@
 import random
 import re
 import warnings
-from typing import List, Tuple, Union
 
 import pandas as pd
-from constants import MAX_NUM_CHARS_IN_DOCUMENT, MIN_NUM_CHARS_IN_DOCUMENT  # noqa
 from datasets.arrow_dataset import Dataset
 from datasets.dataset_dict import DatasetDict
 from huggingface_hub.hf_api import HfApi
-from load_ud_pos import (
+from pandas.errors import SettingWithCopyWarning
+from tqdm.auto import tqdm
+
+from .constants import MAX_NUM_CHARS_IN_DOCUMENT, MIN_NUM_CHARS_IN_DOCUMENT  # noqa
+from .load_ud_pos import (
     load_bgdt_pos,
     load_cadt_pos,
     load_csdt_pos,
@@ -52,8 +54,6 @@ from load_ud_pos import (
     load_svdt_pos,
     load_ukdt_pos,
 )
-from pandas.errors import SettingWithCopyWarning
-from tqdm.auto import tqdm
 
 
 def main() -> None:
@@ -103,28 +103,36 @@ def main() -> None:
             # Merge the DDT POS dataframes to a single dataframe, with columns `ids`,
             # `tokens`, `doc` and `pos_tags`
             df = pd.concat(pos_dataset.values(), ignore_index=True)
+            assert isinstance(df, pd.DataFrame)
 
             # Drop the duplicates
             df = df.drop_duplicates(subset="doc").reset_index(drop=True)
+            assert isinstance(df, pd.DataFrame)
 
             # Remove samples with five or fewer tokens
             df = df[df.tokens.map(lambda lst: len(lst) > 5)]
+            assert isinstance(df, pd.DataFrame)
 
             # Remove samples with five or fewer distinct POS tags
             df = df[df.pos_tags.map(lambda lst: len(set(lst)) > 5)]
+            assert isinstance(df, pd.DataFrame)
 
             # Remove samples with an odd number of quotes
             df = df[df.doc.map(lambda doc: doc.count('"') % 2 == 0)]
+            assert isinstance(df, pd.DataFrame)
 
             # Remove samples which starts with punctuation
             df = df[df.pos_tags.map(lambda lst: lst[0] not in ["PUNCT", "SYM"])]
+            assert isinstance(df, pd.DataFrame)
 
             # Remove samples containing more than one '=' character, as this is used to
             # indicate a tag
             df = df[df.doc.map(lambda doc: doc.count("=") <= 1)]
+            assert isinstance(df, pd.DataFrame)
 
             # Remove samples containing 'SLUTORD', as this is used to indicate a tag
             df = df[~df.doc.str.contains("SLUTORD")]
+            assert isinstance(df, pd.DataFrame)
 
             # Create a training, validation, test and small training set. Note that we
             # will corrupt the data, so this is only half the size of the final
@@ -138,6 +146,7 @@ def main() -> None:
                     df_filtered = df[~df.index.isin(val_df.index)]
                     test_df = df_filtered.sample(n=test_size, random_state=4242)
                     full_train_df = df_filtered[~df_filtered.index.isin(test_df.index)]
+                    assert isinstance(full_train_df, pd.DataFrame)
                     train_df = full_train_df.sample(n=512, random_state=4242)
                     break
                 except ValueError:
@@ -147,6 +156,11 @@ def main() -> None:
                     f"Not enough samples to create the splits. Found {len(df):,} "
                     f"samples, but need at least 768."
                 )
+
+            assert isinstance(train_df, pd.DataFrame)
+            assert isinstance(val_df, pd.DataFrame)
+            assert isinstance(test_df, pd.DataFrame)
+            assert isinstance(full_train_df, pd.DataFrame)
 
             # Only work with samples where the document is not very large or small We do
             # it after we have made the splits to ensure that the dataset is minimally
@@ -181,7 +195,7 @@ def main() -> None:
 
             # Collect datasets in a dataset dictionary
             dataset = DatasetDict(
-                train=train, val=val, test=test, full_train=full_train
+                {"train": train, "val": val, "test": test, "full_train": full_train}
             )
 
             # Push the dataset to the Hugging Face Hub
@@ -190,7 +204,7 @@ def main() -> None:
             dataset.push_to_hub(dataset_id, private=True)
 
 
-def join_tokens(tokens: List[str]) -> str:
+def join_tokens(tokens: list[str]) -> str:
     """Joins a list of tokens into a string.
 
     Args:
@@ -227,7 +241,7 @@ def join_tokens(tokens: List[str]) -> str:
     return doc
 
 
-def delete(tokens: List[str], pos_tags: List[str]) -> Union[str, None]:
+def delete(tokens: list[str], pos_tags: list[str]) -> str | None:
     """Delete a random token from a list of tokens.
 
     The POS tags are used to prevent deletion of a token which does not make the
@@ -281,7 +295,7 @@ def delete(tokens: List[str], pos_tags: List[str]) -> Union[str, None]:
     return join_tokens(new_tokens)
 
 
-def flip_neighbours(tokens: List[str], pos_tags: List[str]) -> Union[str, None]:
+def flip_neighbours(tokens: list[str], pos_tags: list[str]) -> str | None:
     """Flip a pair of neighbouring tokens.
 
     The POS tags are used to prevent flipping of tokens which does not make the
@@ -358,8 +372,8 @@ def flip_neighbours(tokens: List[str], pos_tags: List[str]) -> Union[str, None]:
 
 
 def corrupt(
-    tokens: List[str], pos_tags: List[str], num_corruptions: int = 1
-) -> List[Tuple[str, str]]:
+    tokens: list[str], pos_tags: list[str], num_corruptions: int = 1
+) -> list[tuple[str, str]]:
     """Corrupt a list of tokens.
 
     This randomly either flips two neighbouring tokens or deletes a random token.
@@ -376,7 +390,7 @@ def corrupt(
         The list of (corrupted_string, corruption_type)
     """
     # Define the list of corruptions
-    corruptions: List[Tuple[str, str]] = list()
+    corruptions: list[tuple[str, str]] = list()
 
     # Continue until we have achieved the desired number of corruptions
     while len(corruptions) < num_corruptions:
@@ -447,7 +461,7 @@ def prepare_df(df: pd.DataFrame, split: str) -> Dataset:
     df = df.sample(frac=1.0, random_state=4242).reset_index(drop=True)
 
     # Convert the dataframe to a Hugging Face Dataset and return it
-    return Dataset.from_pandas(df, split=split)
+    return Dataset.from_pandas(df, split=split)  # type: ignore[bad-argument-type]
 
 
 if __name__ == "__main__":

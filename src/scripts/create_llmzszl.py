@@ -14,7 +14,11 @@
 from collections import Counter
 
 import pandas as pd
-from constants import (
+from datasets import Dataset, DatasetDict, Split, load_dataset
+from huggingface_hub import HfApi
+from sklearn.model_selection import train_test_split
+
+from .constants import (
     CHOICES_MAPPING,
     MAX_NUM_CHARS_IN_INSTRUCTION,
     MAX_NUM_CHARS_IN_OPTION,
@@ -22,9 +26,6 @@ from constants import (
     MIN_NUM_CHARS_IN_INSTRUCTION,
     MIN_NUM_CHARS_IN_OPTION,
 )
-from datasets import Dataset, DatasetDict, Split, load_dataset
-from huggingface_hub import HfApi
-from sklearn.model_selection import train_test_split
 
 
 def main() -> None:
@@ -48,12 +49,13 @@ def main() -> None:
 
     # Create label column from correct_answer_index (convert 0,1,2,3 to a,b,c,d)
     index_to_letter = {0: "a", 1: "b", 2: "c", 3: "d"}
-    df["label"] = df["correct_answer_index"].map(index_to_letter)
+    df["label"] = df["correct_answer_index"].map(lambda x: index_to_letter[x])
 
     # Remove all samples with a null value in any of the option columns
     df = df[
         df["a"].notnull() & df["b"].notnull() & df["c"].notnull() & df["d"].notnull()
     ]
+    assert isinstance(df, pd.DataFrame)
 
     # Remove samples with empty options
     df = df[
@@ -76,6 +78,7 @@ def main() -> None:
         & (df.d.str.len() >= MIN_NUM_CHARS_IN_OPTION)
         & (df.d.str.len() <= MAX_NUM_CHARS_IN_OPTION)
     ]
+    assert isinstance(df, pd.DataFrame)
 
     def is_repetitive(text: str) -> bool:
         """Return True if the text is repetitive."""
@@ -103,7 +106,7 @@ def main() -> None:
     ]
 
     # Only keep the `text` and `label` columns
-    df = df[["text", "label"]]
+    df = df.loc[["text", "label"]]
 
     # Remove duplicates
     df.drop_duplicates(inplace=True)
@@ -134,9 +137,11 @@ def main() -> None:
 
     # Collect datasets in a dataset dictionary
     dataset = DatasetDict(
-        train=Dataset.from_pandas(train_df, split=Split.TRAIN),
-        val=Dataset.from_pandas(val_df, split=Split.VALIDATION),
-        test=Dataset.from_pandas(test_df, split=Split.TEST),
+        {
+            "train": Dataset.from_pandas(train_df, split=Split.TRAIN),
+            "val": Dataset.from_pandas(val_df, split=Split.VALIDATION),
+            "test": Dataset.from_pandas(test_df, split=Split.TEST),
+        }
     )
 
     # Create dataset ID

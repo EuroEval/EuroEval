@@ -17,7 +17,6 @@ import shutil
 import subprocess
 from collections import defaultdict
 from pathlib import Path
-from typing import Dict, List, Union
 
 import pandas as pd
 from datasets import Dataset, DatasetDict, Split
@@ -73,6 +72,7 @@ def main() -> None:
 
     test_df = df_filtered.sample(n=test_size, random_state=4242)
     df_filtered = df_filtered[~df_filtered.index.isin(test_df.index)]
+    assert isinstance(df_filtered, pd.DataFrame)
 
     train_df = df_filtered.sample(n=train_size, random_state=4242)
 
@@ -81,11 +81,17 @@ def main() -> None:
     val_df = val_df.reset_index(drop=True)
     test_df = test_df.reset_index(drop=True)
 
+    assert isinstance(train_df, pd.DataFrame)
+    assert isinstance(val_df, pd.DataFrame)
+    assert isinstance(test_df, pd.DataFrame)
+
     # Collect datasets in a dataset dictionary
     dataset = DatasetDict(
-        train=Dataset.from_pandas(train_df, split=Split.TRAIN),
-        val=Dataset.from_pandas(val_df, split=Split.VALIDATION),
-        test=Dataset.from_pandas(test_df, split=Split.TEST),
+        {
+            "train": Dataset.from_pandas(train_df, split=Split.TRAIN),
+            "val": Dataset.from_pandas(val_df, split=Split.VALIDATION),
+            "test": Dataset.from_pandas(test_df, split=Split.TEST),
+        }
     )
 
     # Create dataset ID
@@ -105,10 +111,11 @@ def clone_fullstack_repository(repo_name: str = "FullStack") -> Path:
     """Clone the FullStack repository if it doesn't already exist.
 
     Args:
-        repo_name (str): Name of the directory to clone into.
+        repo_name:
+            Name of the directory to clone into.
 
     Returns:
-        Path: Path to the cloned repository.
+        Path to the cloned repository.
     """
     if not Path(repo_name).exists():
         print("Cloning FullStack repository...")
@@ -134,14 +141,15 @@ def clone_fullstack_repository(repo_name: str = "FullStack") -> Path:
     return Path(repo_name)
 
 
-def load_fullstack_data(repo_path: Path) -> List[Dict[str, Union[List[str], str]]]:
+def load_fullstack_data(repo_path: Path) -> list[dict[str, list[str] | str]]:
     """Load and parse all FullStack NER data from the specified repository path.
 
     Args:
-        repo_path (Path): Path to the FullStack repository directory.
+        repo_path:
+            Path to the FullStack repository directory.
 
     Returns:
-        List[Dict[str, Union[List[str], str]]]: A list of sentence records.
+        A list of sentence records.
     """
     # Path to the data directory within the repository
     data_dir = repo_path / "NamedEntities" / "data"
@@ -168,20 +176,20 @@ def load_fullstack_data(repo_path: Path) -> List[Dict[str, Union[List[str], str]
     return all_records
 
 
-def parse_conllu_data(raw_data: str) -> List[Dict[str, Union[List[str], str]]]:
+def parse_conllu_data(raw_data: str) -> list[dict[str, list[str] | str]]:
     """Parse CoNLL-U format data and return a list of sentence records.
 
     Args:
-        raw_data (str): The raw data in CoNLL-U format.
+        raw_data: The raw data in CoNLL-U format.
 
     Returns:
-        List[Dict[str, Union[List[str], str]]]: A list of sentence records.
+        A list of sentence records.
     """
     records = []
     lines = raw_data.strip().split("\n")
 
     # Initialize data dictionary for current sentence
-    data_dict: Dict[str, List[str]] = defaultdict(list)  # type: ignore[assignment]
+    data_dict: dict[str, list[str]] = defaultdict(list)  # type: ignore[assignment]
 
     for line in lines:
         line = line.strip()
@@ -233,7 +241,8 @@ def delete_fullstack_repository(repo_path: Path) -> None:
     """Delete the FullStack repository.
 
     Args:
-        repo_path (Path): Path to the FullStack repository.
+        repo_path:
+            Path to the FullStack repository.
     """
     if repo_path.exists():
         shutil.rmtree(repo_path)

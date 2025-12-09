@@ -15,9 +15,10 @@
 """Create umimeto-qa knowledge dataset."""
 
 import pandas as pd
-from constants import CHOICES_MAPPING
 from datasets import Dataset, DatasetDict, Split, concatenate_datasets, load_dataset
 from huggingface_hub import HfApi
+
+from .constants import CHOICES_MAPPING
 
 
 def main() -> None:
@@ -61,9 +62,11 @@ def main() -> None:
 
     # Collect datasets in a dataset dictionary
     dataset = DatasetDict(
-        train=Dataset.from_pandas(train_df, split=Split.TRAIN),
-        val=Dataset.from_pandas(val_df, split=Split.VALIDATION),
-        test=Dataset.from_pandas(test_df, split=Split.TEST),
+        {
+            "train": Dataset.from_pandas(train_df, split=Split.TRAIN),
+            "val": Dataset.from_pandas(val_df, split=Split.VALIDATION),
+            "test": Dataset.from_pandas(test_df, split=Split.TEST),
+        }
     )
 
     # Create dataset ID
