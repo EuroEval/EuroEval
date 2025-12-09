@@ -58,6 +58,7 @@ def test_benchmark_encoder(
             time.sleep(5)
     else:
         pytest.skip(reason="Hugging Face Hub is down, so we skip this test.")
+        return
     assert isinstance(benchmark_result, list)
     assert all(isinstance(result, BenchmarkResult) for result in benchmark_result)
 
@@ -454,10 +455,27 @@ class TestClearCacheFn:
     argnames=["dataset_names", "dataset_configs"],
     argvalues=[
         ([], []),
-        (["angry-tweets"], [get_dataset_config("angry-tweets")]),
+        (
+            ["angry-tweets"],
+            [
+                get_dataset_config(
+                    dataset_name="angry-tweets",
+                    custom_datasets_file=Path("custom_datasets.py"),
+                )
+            ],
+        ),
         (
             ["angry-tweets", "dansk"],
-            [get_dataset_config("angry-tweets"), get_dataset_config("dansk")],
+            [
+                get_dataset_config(
+                    dataset_name="angry-tweets",
+                    custom_datasets_file=Path("custom_datasets.py"),
+                ),
+                get_dataset_config(
+                    dataset_name="dansk",
+                    custom_datasets_file=Path("custom_datasets.py"),
+                ),
+            ],
         ),
     ],
 )
@@ -465,4 +483,9 @@ def test_prepare_dataset_configs(
     dataset_names: list[str], dataset_configs: list[DatasetConfig]
 ) -> None:
     """Test that the `prepare_dataset_configs` function works as expected."""
-    assert prepare_dataset_configs(dataset_names=dataset_names) == dataset_configs
+    assert (
+        prepare_dataset_configs(
+            dataset_names=dataset_names, custom_datasets_file=Path("custom_datasets.py")
+        )
+        == dataset_configs
+    )

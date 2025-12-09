@@ -167,7 +167,7 @@ class BenchmarkModule(ABC):
 
     @property
     @abstractmethod
-    def data_collator(self) -> c.Callable[[c.Sequence[t.Any]], dict[str, t.Any]]:
+    def data_collator(self) -> c.Callable[[list[dict[str, t.Any]]], dict[str, t.Any]]:
         """The data collator used to prepare samples during finetuning.
 
         Returns:
@@ -285,10 +285,10 @@ class BenchmarkModule(ABC):
 
             datasets_dict: dict[str, Dataset] = dict()
             for split_name, split in prepared_dataset.items():
-                datasets_dict[split_name] = split
+                datasets_dict[str(split_name)] = split
             for split_name, split in dataset.items():
                 datasets_dict[f"original_{split_name}"] = split
-            datasets[idx] = DatasetDict(datasets_dict)
+            datasets[idx] = DatasetDict(datasets_dict)  # type: ignore[no-matching-overload]
         return datasets
 
     @abstractmethod

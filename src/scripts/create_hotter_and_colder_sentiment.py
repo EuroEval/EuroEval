@@ -1,7 +1,7 @@
 # /// script
 # requires-python = ">=3.10,<4.0"
 # dependencies = [
-#     "beautifulsoup4",
+#     "beautifulsoup4==4.14.2",
 #     "datasets==3.5.0",
 #     "huggingface-hub==0.24.0",
 #     "joblib==1.4.2",
@@ -24,11 +24,12 @@ from zipfile import ZipFile
 import joblib
 import pandas as pd
 import requests as rq
-from bs4 import BeautifulSoup, NavigableString, Tag
-from constants import MAX_NUM_CHARS_IN_DOCUMENT, MIN_NUM_CHARS_IN_DOCUMENT  # noqa
+from bs4 import BeautifulSoup, NavigableString, Tag  #  type: ignore[missing-import]
 from datasets import Dataset, DatasetDict, Split
 from huggingface_hub import HfApi
 from tqdm.auto import tqdm
+
+from .constants import MAX_NUM_CHARS_IN_DOCUMENT, MIN_NUM_CHARS_IN_DOCUMENT  # noqa
 
 logging.basicConfig(format="%(asctime)s ⋅ %(message)s", level=logging.INFO)
 logger = logging.getLogger("create_hotter_and_colder")
@@ -108,9 +109,11 @@ def main() -> None:
     )
 
     dataset = DatasetDict(
-        train=Dataset.from_pandas(new_train_df, split=Split.TRAIN),
-        val=Dataset.from_pandas(new_val_df, split=Split.VALIDATION),
-        test=Dataset.from_pandas(new_test_df, split=Split.TEST),
+        {
+            "train": Dataset.from_pandas(new_train_df, split=Split.TRAIN),
+            "val": Dataset.from_pandas(new_val_df, split=Split.VALIDATION),
+            "test": Dataset.from_pandas(new_test_df, split=Split.TEST),
+        }
     )
 
     dataset_id = "EuroEval/hotter-and-colder-sentiment"

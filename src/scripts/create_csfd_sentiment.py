@@ -37,7 +37,9 @@ def main() -> None:
 
         # Create the label column based on gold index
         # gold: 0 = negativní, 1 = neutrální, 2 = pozitivní
-        df["label"] = df["gold"].map({0: "negative", 1: "neutral", 2: "positive"})
+        df["label"] = df["gold"].map(
+            lambda x: {0: "negative", 1: "neutral", 2: "positive"}[x]
+        )
 
         # Keep only columns text and label
         df = df[["text", "label"]]
@@ -82,9 +84,11 @@ def main() -> None:
 
     # Create dataset dictionary with custom splits
     dataset = DatasetDict(
-        train=Dataset.from_pandas(final_train_df, split=Split.TRAIN),
-        val=Dataset.from_pandas(final_val_df, split=Split.VALIDATION),
-        test=Dataset.from_pandas(final_test_df, split=Split.TEST),
+        {
+            "train": Dataset.from_pandas(final_train_df, split=Split.TRAIN),
+            "val": Dataset.from_pandas(final_val_df, split=Split.VALIDATION),
+            "test": Dataset.from_pandas(final_test_df, split=Split.TEST),
+        }
     )
 
     # Push the dataset to the Hugging Face Hub

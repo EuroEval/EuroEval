@@ -11,9 +11,10 @@
 """Create the Schibsted summarisation dataset."""
 
 import pandas as pd
-from constants import MAX_NUM_CHARS_IN_ARTICLE, MIN_NUM_CHARS_IN_ARTICLE
 from datasets import Dataset, DatasetDict, Split, load_dataset
 from huggingface_hub import HfApi
+
+from .constants import MAX_NUM_CHARS_IN_ARTICLE, MIN_NUM_CHARS_IN_ARTICLE
 
 NEWSROOM_TO_LANGUAGE = {
     "sno-commercial": "no",
@@ -71,14 +72,20 @@ def main() -> None:
     val_df = val_df[val_lengths.between(lower_bound, upper_bound)]
     test_df = test_df[test_lengths.between(lower_bound, upper_bound)]
 
+    assert isinstance(train_df, pd.DataFrame)
+    assert isinstance(val_df, pd.DataFrame)
+    assert isinstance(test_df, pd.DataFrame)
+
     for df in [train_df, val_df, test_df]:
         # make column language based on newsroom
-        df["language"] = df["newsroom"].map(NEWSROOM_TO_LANGUAGE)
+        df["language"] = df["newsroom"].map(lambda x: NEWSROOM_TO_LANGUAGE[x])
 
     dataset = DatasetDict(
-        train=Dataset.from_pandas(train_df, split=Split.TRAIN),
-        val=Dataset.from_pandas(val_df, split=Split.VALIDATION),
-        test=Dataset.from_pandas(test_df, split=Split.TEST),
+        {
+            "train": Dataset.from_pandas(train_df, split=Split.TRAIN),
+            "val": Dataset.from_pandas(val_df, split=Split.VALIDATION),
+            "test": Dataset.from_pandas(test_df, split=Split.TEST),
+        }
     )
 
     # Dataset is a mix of Swedish and Norwegian articles.

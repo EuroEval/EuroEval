@@ -76,8 +76,9 @@ def main() -> None:
 
         token_list: list[str] = list()
         ner_tag_list: list[str] = list()
-        in_named_entity = None
+        in_named_entity: str | None = None
         for token in tokens:
+            pass
             token_str = sample["text"][token.start : token.end]
             token_list.append(token_str)
             matched_named_entities = [
@@ -167,9 +168,11 @@ def main() -> None:
 
     # Collect datasets in a dataset dictionary
     dataset = DatasetDict(
-        train=Dataset.from_pandas(train_df, split=Split.TRAIN),
-        val=Dataset.from_pandas(val_df, split=Split.VALIDATION),
-        test=Dataset.from_pandas(test_df, split=Split.TEST),
+        {
+            "train": Dataset.from_pandas(train_df, split=Split.TRAIN),
+            "val": Dataset.from_pandas(val_df, split=Split.VALIDATION),
+            "test": Dataset.from_pandas(test_df, split=Split.TEST),
+        }
     )
 
     # Create dataset ID

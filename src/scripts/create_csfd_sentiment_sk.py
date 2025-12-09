@@ -33,7 +33,7 @@ def main() -> None:
         assert isinstance(df, pd.DataFrame)
 
         # Keep only columns comment and rating_int for sentiment analysis
-        df = df[["comment", "rating_int"]]
+        df = df.loc[["comment", "rating_int"]]
 
         # Map rating_int to sentiment labels
         # ratings: 0-1 = negative, 2-3 = neutral, 4-5 = positive
@@ -77,9 +77,11 @@ def main() -> None:
 
     # Create dataset dictionary with custom splits
     dataset = DatasetDict(
-        train=Dataset.from_pandas(final_train_df, split=Split.TRAIN),
-        val=Dataset.from_pandas(final_val_df, split=Split.VALIDATION),
-        test=Dataset.from_pandas(final_test_df, split=Split.TEST),
+        {
+            "train": Dataset.from_pandas(final_train_df, split=Split.TRAIN),
+            "val": Dataset.from_pandas(final_val_df, split=Split.VALIDATION),
+            "test": Dataset.from_pandas(final_test_df, split=Split.TEST),
+        }
     )
 
     # Push the dataset to the Hugging Face Hub

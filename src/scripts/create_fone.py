@@ -102,7 +102,7 @@ def main() -> None:
 
     # Create test split
     test_size = 2048
-    filtered_df = df[~df.index.isin(val_df.index)]
+    filtered_df = df.loc[~df.index.isin(val_df.index)]
     test_df = filtered_df.sample(
         n=test_size,
         random_state=4242,
@@ -113,7 +113,7 @@ def main() -> None:
 
     # Create train split
     train_size = 1024
-    filtered_df = filtered_df[~filtered_df.index.isin(test_df.index)]
+    filtered_df = filtered_df.loc[~filtered_df.index.isin(test_df.index)]
     train_df = filtered_df.sample(
         n=train_size,
         random_state=4242,
@@ -129,9 +129,11 @@ def main() -> None:
 
     # Collect datasets in a dataset dictionary
     dataset = DatasetDict(
-        train=Dataset.from_pandas(train_df, split=Split.TRAIN),
-        val=Dataset.from_pandas(val_df, split=Split.VALIDATION),
-        test=Dataset.from_pandas(test_df, split=Split.TEST),
+        {
+            "train": Dataset.from_pandas(train_df, split=Split.TRAIN),
+            "val": Dataset.from_pandas(val_df, split=Split.VALIDATION),
+            "test": Dataset.from_pandas(test_df, split=Split.TEST),
+        }
     )
 
     # Create dataset ID

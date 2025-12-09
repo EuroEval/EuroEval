@@ -11,9 +11,10 @@
 """Create the Latvian Twitter Sentiment dataset and upload it to the HF Hub."""
 
 import pandas as pd
-from constants import MAX_NUM_CHARS_IN_DOCUMENT, MIN_NUM_CHARS_IN_DOCUMENT  # noqa
 from datasets import Dataset, DatasetDict, Split, load_dataset
 from huggingface_hub import HfApi
+
+from .constants import MAX_NUM_CHARS_IN_DOCUMENT, MIN_NUM_CHARS_IN_DOCUMENT  # noqa
 
 
 def main() -> None:
@@ -40,17 +41,18 @@ def main() -> None:
     # Map integer labels to text labels
     # According to the dataset: 0=neutral, 1=positive, 2=negative
     label_mapping = {0: "neutral", 1: "positive", 2: "negative"}
-    train_df["label"] = train_df["label"].map(label_mapping)
-    test_df["label"] = test_df["label"].map(label_mapping)
+    train_df["label"] = train_df["label"].map(lambda x: label_mapping[int(x)])
+    test_df["label"] = test_df["label"].map(lambda x: label_mapping[int(x)])
 
     def filter_by_length(df: pd.DataFrame) -> pd.DataFrame:
         """Filter dataframe by text length.
 
         Args:
-            df (pd.DataFrame): The dataframe to filter.
+            df:
+                The dataframe to filter.
 
         Returns:
-            pd.DataFrame: The filtered dataframe.
+            The filtered dataframe.
         """
         new_df = df.copy()
         new_df["text_len"] = new_df.text.str.len()
@@ -83,11 +85,17 @@ def main() -> None:
     val_df = val_df.reset_index(drop=True)
     test_df = test_df.reset_index(drop=True)
 
+    assert isinstance(train_df, pd.DataFrame)
+    assert isinstance(val_df, pd.DataFrame)
+    assert isinstance(test_df, pd.DataFrame)
+
     # Create DatasetDict
     dataset = DatasetDict(
-        train=Dataset.from_pandas(train_df, split=Split.TRAIN),
-        val=Dataset.from_pandas(val_df, split=Split.VALIDATION),
-        test=Dataset.from_pandas(test_df, split=Split.TEST),
+        {
+            "train": Dataset.from_pandas(train_df, split=Split.TRAIN),
+            "val": Dataset.from_pandas(val_df, split=Split.VALIDATION),
+            "test": Dataset.from_pandas(test_df, split=Split.TEST),
+        }
     )
 
     # Create dataset ID

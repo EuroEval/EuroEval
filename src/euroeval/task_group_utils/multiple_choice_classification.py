@@ -1,6 +1,5 @@
 """Utility functions related to the multiple-choice classification task group."""
 
-import collections.abc as c
 import hashlib
 import re
 import typing as t
@@ -25,7 +24,7 @@ class MultipleChoiceClassificationTrainer(Trainer):
     def evaluate(  # type: ignore[override]
         self,
         eval_dataset: "Dataset | None" = None,
-        ignore_keys: c.Sequence[str] | None = None,
+        ignore_keys: list[str] | None = None,
         metric_key_prefix: str = "eval",
     ) -> dict[str, float]:
         """Evaluate the model on the given dataset.
@@ -42,7 +41,7 @@ class MultipleChoiceClassificationTrainer(Trainer):
         Returns:
             The metrics computed on the evaluation dataset.
         """
-        eval_dataloader = self.get_eval_dataloader(eval_dataset)
+        eval_dataloader = self.get_eval_dataloader(eval_dataset)  #  type: ignore[bad-argument-type]
 
         eval_loop = (
             self.prediction_loop
@@ -66,6 +65,9 @@ class MultipleChoiceClassificationTrainer(Trainer):
         assert metrics is not None
 
         if metric_key_prefix == "test":
+            assert eval_dataset is not None, (
+                "eval_dataset must be provided when metric_key_prefix is 'test'."
+            )
             preds_and_labels = postprocess_predictions_and_labels(
                 predictions=predictions, dataset=eval_dataset
             )
@@ -105,7 +107,7 @@ def prepare_examples(
     Returns:
         The prepared examples.
     """
-    doc: str = examples["text"][0]
+    doc: str = examples["text"][0]  # type: ignore[bad-index]
     sections = doc.split("\n")
 
     candidate_choice_idxs = [
@@ -143,7 +145,7 @@ def prepare_examples(
         truncation=True,
     )
     new_examples["label"] = [
-        int(choice.startswith(f"{letter}. ") and letter == examples["label"][0])
+        int(choice.startswith(f"{letter}. ") and letter == examples["label"][0])  #  type: ignore[bad-index]
         for letter, choice in zip("abcdefghijklmnopqrstuvwxyz", choices)
     ]
     new_examples["id"] = [hashlib.md5(string=doc.encode()).hexdigest()] * len(choices)
@@ -178,7 +180,7 @@ def postprocess_predictions_and_labels(
 
     pred_label_dict = defaultdict(list)
     for pred_arr, example in zip(predictions, dataset):
-        pred_label_dict[example["id"]].append((pred_arr[1], example["label"]))
+        pred_label_dict[example["id"]].append((pred_arr[1], example["label"]))  #  type: ignore[bad-index]
 
     # Compute the final predictions and labels
     for id_ in set(dataset["id"]):

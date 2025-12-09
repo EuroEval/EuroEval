@@ -14,10 +14,11 @@
 import logging
 
 import pandas as pd
-from constants import MAX_NUM_CHARS_IN_DOCUMENT, MIN_NUM_CHARS_IN_DOCUMENT  # noqa
 from datasets import Dataset, DatasetDict, Split, load_dataset
 from huggingface_hub import HfApi
 from sklearn.model_selection import train_test_split
+
+from .constants import MAX_NUM_CHARS_IN_DOCUMENT, MIN_NUM_CHARS_IN_DOCUMENT  # noqa
 
 logging.basicConfig(format="%(asctime)s ⋅ %(message)s", level=logging.INFO)
 logger = logging.getLogger("create_cs_gec")
@@ -27,10 +28,13 @@ def main() -> None:
     """Create the CS GEC linguistic acceptability dataset and upload to HF Hub."""
     # Load the dataset using Hugging Face datasets library
     dataset = load_dataset("CZLC/cs_gec")
+    assert isinstance(dataset, DatasetDict)
 
     # Convert the train and test datasets to pandas DataFrames
     train_df = dataset["train"].to_pandas()
     test_df = dataset["test"].to_pandas()
+    assert isinstance(train_df, pd.DataFrame)
+    assert isinstance(test_df, pd.DataFrame)
 
     # Rename columns to match the expected format
     train_df = train_df.rename(columns={"query": "text", "gold": "label"})
@@ -59,9 +63,17 @@ def main() -> None:
 
     # Create a DatasetDict
     dataset_dict = DatasetDict(
-        train=Dataset.from_pandas(train_df, split=Split.TRAIN, preserve_index=False),
-        val=Dataset.from_pandas(val_df, split=Split.VALIDATION, preserve_index=False),
-        test=Dataset.from_pandas(test_df, split=Split.TEST, preserve_index=False),
+        {
+            "train": Dataset.from_pandas(
+                train_df, split=Split.TRAIN, preserve_index=False
+            ),
+            "val": Dataset.from_pandas(
+                val_df, split=Split.VALIDATION, preserve_index=False
+            ),
+            "test": Dataset.from_pandas(
+                test_df, split=Split.TEST, preserve_index=False
+            ),
+        }
     )
 
     # Upload to Hugging Face Hub

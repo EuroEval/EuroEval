@@ -14,7 +14,6 @@
 import bz2
 import io
 import re
-from typing import Dict, List, Union
 
 import pandas as pd
 import requests
@@ -57,9 +56,9 @@ def main() -> None:
     ner_tag = "O"
 
     # Iterate over the context
-    records: List[Dict[str, Union[str, List[str]]]] = list()
-    tokens: List[str] = list()
-    ner_tags: List[str] = list()
+    records: list[dict[str, str | list[str]]] = list()
+    tokens: list[str] = list()
+    ner_tags: list[str] = list()
     for action, elt in context:
         # If the current element begins a name then set the `ner_tag` to the
         # corresponding `B` value
@@ -113,13 +112,20 @@ def main() -> None:
     df_filtered = df[~df.index.isin(val_df.index)]
     test_df = df_filtered.sample(n=2048, random_state=4242)
     full_train_df = df_filtered[~df_filtered.index.isin(test_df.index)]
+    assert isinstance(full_train_df, pd.DataFrame)
     train_df = full_train_df.sample(n=1024, random_state=4242)
+
+    assert isinstance(train_df, pd.DataFrame)
+    assert isinstance(val_df, pd.DataFrame)
+    assert isinstance(test_df, pd.DataFrame)
 
     # Collect datasets in a dataset dictionary
     dataset = DatasetDict(
-        train=Dataset.from_pandas(train_df, split=Split.TRAIN),
-        val=Dataset.from_pandas(val_df, split=Split.VALIDATION),
-        test=Dataset.from_pandas(test_df, split=Split.TEST),
+        {
+            "train": Dataset.from_pandas(train_df, split=Split.TRAIN),
+            "val": Dataset.from_pandas(val_df, split=Split.VALIDATION),
+            "test": Dataset.from_pandas(test_df, split=Split.TEST),
+        }
     )
 
     # Push the dataset to the Hugging Face Hub

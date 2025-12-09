@@ -2,11 +2,11 @@
 
 import collections.abc as c
 import json
-import pathlib
 import re
 import typing as t
 from copy import deepcopy
 from dataclasses import dataclass, field
+from pathlib import Path
 
 import pydantic
 import torch
@@ -601,6 +601,7 @@ class BenchmarkConfigParams(pydantic.BaseModel):
     download_only: bool
     gpu_memory_utilization: float
     generative_type: GenerativeType | None
+    custom_datasets_file: Path
     force: bool
     verbose: bool
     debug: bool
@@ -668,7 +669,7 @@ class BenchmarkResult(pydantic.BaseModel):
 
         return cls(**config)
 
-    def append_to_results(self, results_path: pathlib.Path) -> None:
+    def append_to_results(self, results_path: Path) -> None:
         """Append the benchmark result to the results file.
 
         Args:

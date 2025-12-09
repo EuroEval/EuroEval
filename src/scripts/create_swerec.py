@@ -15,12 +15,13 @@ import io
 
 import pandas as pd
 import requests
-from constants import MAX_NUM_CHARS_IN_DOCUMENT, MIN_NUM_CHARS_IN_DOCUMENT  # noqa
 from datasets import Split
 from datasets.arrow_dataset import Dataset
 from datasets.dataset_dict import DatasetDict
 from huggingface_hub.hf_api import HfApi
 from sklearn.model_selection import train_test_split
+
+from .constants import MAX_NUM_CHARS_IN_DOCUMENT, MIN_NUM_CHARS_IN_DOCUMENT  # noqa
 
 
 def main() -> None:
@@ -36,7 +37,7 @@ def main() -> None:
     csv_file = io.StringIO(csv_str)
 
     # Convert the dataset to a dataframe
-    df = pd.read_csv(csv_file, sep=",", usecols=["text", "rating"])
+    df = pd.read_csv(csv_file, sep=",", usecols=["text", "rating"])  #  type: ignore[no-matching-overload]
     df.columns = ["text", "label"]
 
     # Strip trailing whitespace
@@ -52,12 +53,18 @@ def main() -> None:
     full_train_df, val_test_df = train_test_split(
         df, test_size=2048 + 256, random_state=4242, stratify=df.label
     )
+    assert isinstance(full_train_df, pd.DataFrame)
+    assert isinstance(val_test_df, pd.DataFrame)
     val_df, test_df = train_test_split(
         val_test_df, test_size=2048, random_state=4242, stratify=val_test_df.label
     )
     _, train_df = train_test_split(
         full_train_df, test_size=1024, random_state=4242, stratify=full_train_df.label
     )
+
+    assert isinstance(train_df, pd.DataFrame)
+    assert isinstance(val_df, pd.DataFrame)
+    assert isinstance(test_df, pd.DataFrame)
 
     # Reset the index
     train_df = train_df.reset_index(drop=True)
@@ -141,9 +148,11 @@ def main() -> None:
 
     # Collect datasets in a dataset dictionary
     dataset = DatasetDict(
-        train=Dataset.from_pandas(train_df, split=Split.TRAIN),
-        val=Dataset.from_pandas(val_df, split=Split.VALIDATION),
-        test=Dataset.from_pandas(test_df, split=Split.TEST),
+        {
+            "train": Dataset.from_pandas(train_df, split=Split.TRAIN),
+            "val": Dataset.from_pandas(val_df, split=Split.VALIDATION),
+            "test": Dataset.from_pandas(test_df, split=Split.TEST),
+        }
     )
 
     # Push the dataset to the Hugging Face Hub

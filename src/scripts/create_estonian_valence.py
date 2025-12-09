@@ -9,7 +9,7 @@
 
 """Create the Estonian valence dataset and upload to HF Hub."""
 
-from datasets import DatasetDict, concatenate_datasets, load_dataset
+from datasets import Dataset, DatasetDict, concatenate_datasets, load_dataset
 from huggingface_hub import HfApi
 
 
@@ -19,6 +19,7 @@ def main() -> None:
 
     # Use the reupload available on HuggingFace
     ds = load_dataset("kardosdrur/estonian-valence")
+    assert isinstance(ds, DatasetDict)
 
     # Standardize the columns
     ds = ds.rename_columns({"paragraph": "text", "valence": "label"})
@@ -52,15 +53,11 @@ def main() -> None:
     # Reallocate the samples to the splits
     new_train = ds["train"].select(range(train_size))
     new_val = ds["train"].skip(train_size).select(range(val_size))
-    new_test = concatenate_datasets(
-        [
-            ds["test"],
-            ds["train"]
-            .skip(train_size)
-            .skip(val_size)
-            .select(range(missing_test_size)),
-        ]
-    )
+    assert isinstance(new_train, Dataset)
+    assert isinstance(new_val, Dataset)
+    new_test = ds["train"].skip(train_size + val_size).select(range(missing_test_size))
+    assert isinstance(new_test, Dataset)
+    new_test = concatenate_datasets([ds["test"], new_test])
 
     new_ds = DatasetDict({"train": new_train, "val": new_val, "test": new_test})
 

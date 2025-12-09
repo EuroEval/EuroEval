@@ -110,7 +110,7 @@ def main() -> None:
 
         # Sanity check that the offsets and text match
         if not all(
-            text[entity["offset"] : entity["offset"] + len(entity["text"])]
+            text[entity["offset"] : int(entity["offset"]) + len(str(entity["text"]))]
             == entity["text"]
             for entity in entities
         ):
@@ -132,7 +132,7 @@ def main() -> None:
         ner_tags = ["O"] * len(tokens)
         for entity in entities:
             start_idx = entity["offset"]
-            end_idx = start_idx + len(entity["text"])
+            end_idx = int(start_idx) + len(str(entity["text"]))
             token_idxs = [
                 token_idx
                 for token_idx, (
@@ -177,7 +177,7 @@ def main() -> None:
 
     # Create test split. We add weights to the sampling as with the validation split.
     test_size = 1024
-    df = df[~df.index.isin(val_df.index)]
+    df = df.loc[~df.index.isin(val_df.index)]
     test_df = df.sample(
         n=test_size,
         random_state=4242,
@@ -186,7 +186,7 @@ def main() -> None:
 
     # Create train split. We add weights to the sampling as with the validation split.
     train_size = 1024
-    df = df[~df.index.isin(test_df.index)]
+    df = df.loc[~df.index.isin(test_df.index)]
     train_df = df.sample(
         n=train_size,
         random_state=4242,
@@ -200,9 +200,11 @@ def main() -> None:
 
     # Collect datasets in a dataset dictionary
     dataset = DatasetDict(
-        train=Dataset.from_pandas(train_df, split=Split.TRAIN),
-        val=Dataset.from_pandas(val_df, split=Split.VALIDATION),
-        test=Dataset.from_pandas(test_df, split=Split.TEST),
+        {
+            "train": Dataset.from_pandas(train_df, split=Split.TRAIN),
+            "val": Dataset.from_pandas(val_df, split=Split.VALIDATION),
+            "test": Dataset.from_pandas(test_df, split=Split.TEST),
+        }
     )
 
     # Create dataset ID

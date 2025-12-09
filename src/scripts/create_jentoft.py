@@ -13,9 +13,10 @@
 import logging
 
 import pandas as pd
-from constants import MAX_NUM_CHARS_IN_DOCUMENT, MIN_NUM_CHARS_IN_DOCUMENT  # noqa
 from datasets import Dataset, DatasetDict, Split
 from huggingface_hub import HfApi
+
+from .constants import MAX_NUM_CHARS_IN_DOCUMENT, MIN_NUM_CHARS_IN_DOCUMENT  # noqa
 
 logging.basicConfig(format="%(asctime)s ⋅ %(message)s", level=logging.INFO)
 logger = logging.getLogger("create_jentoft")
@@ -80,13 +81,17 @@ def main() -> None:
 
     # Collect datasets in a dataset dictionary
     dataset = DatasetDict(
-        train=Dataset.from_pandas(
-            new_train_df, split=Split.TRAIN, preserve_index=False
-        ),
-        val=Dataset.from_pandas(
-            new_val_df, split=Split.VALIDATION, preserve_index=False
-        ),
-        test=Dataset.from_pandas(new_test_df, split=Split.TEST, preserve_index=False),
+        {
+            "train": Dataset.from_pandas(
+                new_train_df, split=Split.TRAIN, preserve_index=False
+            ),
+            "val": Dataset.from_pandas(
+                new_val_df, split=Split.VALIDATION, preserve_index=False
+            ),
+            "test": Dataset.from_pandas(
+                new_test_df, split=Split.TEST, preserve_index=False
+            ),
+        }
     )
 
     # Create dataset ID
@@ -120,7 +125,7 @@ def prepare_dataset(dataset_url: str) -> pd.DataFrame:
     df = df.rename(columns={"SOURCE": "text"})
 
     # Only keep relevant columns
-    df = df[["text", "label"]]
+    df = df.loc[["text", "label"]]
 
     # Remove text duplicates
     df = df.drop_duplicates(subset=["text"])

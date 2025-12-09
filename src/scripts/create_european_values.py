@@ -16,7 +16,6 @@ import logging
 from collections import defaultdict
 
 import pandas as pd
-from constants import CHOICES_MAPPING
 from datasets import (
     Dataset,
     DatasetDict,
@@ -27,6 +26,8 @@ from datasets import (
 )
 from huggingface_hub import HfApi
 from tqdm.auto import tqdm
+
+from .constants import CHOICES_MAPPING
 
 logging.basicConfig(format="%(asctime)s ⋅ %(message)s", level=logging.INFO)
 logger = logging.getLogger("create_european_values")
@@ -277,7 +278,9 @@ def main() -> None:
             new_df = pd.DataFrame(data_dict)
 
             # Collect dataset in a dataset dictionary
-            dataset = DatasetDict(test=Dataset.from_pandas(new_df, split=Split.TEST))
+            dataset = DatasetDict(
+                {"test": Dataset.from_pandas(new_df, split=Split.TEST)}
+            )
 
             # Push the dataset to the Hugging Face Hub, and replace the existing one, if
             # it exists already

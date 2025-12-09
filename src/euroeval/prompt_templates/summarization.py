@@ -5,6 +5,7 @@ import typing as t
 from ..data_models import PromptConfig
 from ..languages import (
     BOSNIAN,
+    CATALAN,
     CZECH,
     DANISH,
     DUTCH,
@@ -14,6 +15,7 @@ from ..languages import (
     FRENCH,
     GERMAN,
     GREEK,
+    HUNGARIAN,
     ICELANDIC,
     ITALIAN,
     LATVIAN,
@@ -23,6 +25,7 @@ from ..languages import (
     NORWEGIAN_NYNORSK,
     POLISH,
     PORTUGUESE,
+    ROMANIAN,
     SERBIAN,
     SPANISH,
     SWEDISH,
@@ -35,19 +38,25 @@ if t.TYPE_CHECKING:
 # TODO: Missing Faroese
 SUMM_TEMPLATES: dict["Language", PromptConfig] = {
     BOSNIAN: PromptConfig(
-        default_prompt_prefix=("Slijede dokumenti s priloženim sažecima."),
-        default_prompt_template=("Dokument: {text}\nSažetak: {target_text}"),
-        default_instruction_prompt=(
-            "Dokument: {text}\n\nNapišite sažetak gornjeg dokumenta."
-        ),
+        default_prompt_prefix="Slijede dokumenti s priloženim sažecima.",
+        default_prompt_template="Dokument: {text}\nSažetak: {target_text}",
+        default_instruction_prompt="Dokument: {text}\n\nNapišite sažetak gornjeg "
+        "dokumenta.",
+        default_prompt_label_mapping=dict(),
+    ),
+    CATALAN: PromptConfig(
+        default_prompt_prefix="A continuació es mostren els documents amb els "
+        "resums adjunts.",
+        default_prompt_template="Document: {text}\nResum: {target_text}",
+        default_instruction_prompt="Document: {text}\n\nEscriu un resum del "
+        "document anterior.",
         default_prompt_label_mapping=dict(),
     ),
     CZECH: PromptConfig(
-        default_prompt_prefix=("Následující jsou dokumenty s přiloženými souhrny."),
-        default_prompt_template=("Dokument: {text}\nSouhrn: {target_text}"),
-        default_instruction_prompt=(
-            "Dokument: {text}\n\nNapište souhrn výše uvedeného dokumentu."
-        ),
+        default_prompt_prefix="Následující jsou dokumenty s přiloženými souhrny.",
+        default_prompt_template="Dokument: {text}\nSouhrn: {target_text}",
+        default_instruction_prompt="Dokument: {text}\n\nNapište souhrn výše "
+        "uvedeného dokumentu.",
         default_prompt_label_mapping=dict(),
     ),
     DANISH: PromptConfig(
@@ -70,6 +79,14 @@ SUMM_TEMPLATES: dict["Language", PromptConfig] = {
         default_prompt_template="Έγγραφο: {text}\nΠερίληψη: {target_text}",
         default_instruction_prompt="Έγγραφο: {text}\n\nΓράψτε μια περίληψη του "
         "παραπάνω εγγράφου.",
+        default_prompt_label_mapping=dict(),
+    ),
+    HUNGARIAN: PromptConfig(
+        default_prompt_prefix="Az alábbiakban összefoglalókkal ellátott szövegek "
+        "találhatók.",
+        default_prompt_template="Szöveg: {text}\nÖsszefoglaló: {target_text}",
+        default_instruction_prompt="Szöveg: {text}\n\nÍrj egy összefoglalót a fenti "
+        "szövegről.",
         default_prompt_label_mapping=dict(),
     ),
     ENGLISH: PromptConfig(
@@ -119,20 +136,16 @@ SUMM_TEMPLATES: dict["Language", PromptConfig] = {
     LATVIAN: PromptConfig(
         default_prompt_prefix="Tālāk ir dokumenti ar pievienotām kopsavilkumiem.",
         default_prompt_template="Dokuments: {text}\nKopsavilkums: {target_text}",
-        default_instruction_prompt=(
-            "Dokuments: {text}\n\n"
-            "Uzrakstiet kopsavilkumu par iepriekš minēto dokumentu."
-        ),
+        default_instruction_prompt="Dokuments: {text}\n\nUzrakstiet kopsavilkumu "
+        "par iepriekš minēto dokumentu.",
         default_prompt_label_mapping=dict(),
     ),
     LITHUANIAN: PromptConfig(
-        default_prompt_prefix=(
-            "Žemiau pateikiami dokumentai su pridėtomis santraukomis."
-        ),
-        default_prompt_template=("Dokumentas: {text}\nSantrauka: {target_text}"),
-        default_instruction_prompt=(
-            "Dokumentas: {text}\n\nParašykite aukščiau pateikto dokumento santrauką."
-        ),
+        default_prompt_prefix="Žemiau pateikiami dokumentai su pridėtomis "
+        "santraukomis.",
+        default_prompt_template="Dokumentas: {text}\nSantrauka: {target_text}",
+        default_instruction_prompt="Dokumentas: {text}\n\nParašykite aukščiau "
+        "pateikto dokumento santrauką.",
         default_prompt_label_mapping=dict(),
     ),
     ITALIAN: PromptConfig(
@@ -179,6 +192,13 @@ SUMM_TEMPLATES: dict["Language", PromptConfig] = {
         "dokumentet ovenfor.",
         default_prompt_label_mapping=dict(),
     ),
+    ROMANIAN: PromptConfig(
+        default_prompt_prefix="Mai jos sunt articolele însoțite de rezumate.",
+        default_prompt_template="Articol: {text}\nRezumat: {target_text}",
+        default_instruction_prompt="Articol: {text}\n\nScrie un rezumat al "
+        "articolului de mai sus.",
+        default_prompt_label_mapping=dict(),
+    ),
     POLISH: PromptConfig(
         default_prompt_prefix="Poniżej znajdują się artykuły z towarzyszącymi "
         "im streszczeniami.",
@@ -204,9 +224,8 @@ SUMM_TEMPLATES: dict["Language", PromptConfig] = {
     UKRAINIAN: PromptConfig(
         default_prompt_prefix="Нижче наведено документи з супровідними резюме.",
         default_prompt_template="Документ: {text}\nРезюме: {target_text}",
-        default_instruction_prompt=(
-            "Документ: {text}\n\nНапишіть резюме наведеного вище документа."
-        ),
+        default_instruction_prompt="Документ: {text}\n\nНапишіть резюме наведеного "
+        "вище документа.",
         default_prompt_label_mapping=dict(),
     ),
 }

@@ -10,6 +10,7 @@
 
 """Create the PONER NER dataset and upload it to the HF Hub."""
 
+import pandas as pd
 from datasets import Dataset, DatasetDict, Split, load_dataset
 from huggingface_hub import HfApi
 
@@ -27,6 +28,10 @@ def main() -> None:
     train_df = dataset["train"].to_pandas()
     test_df = dataset["test"].to_pandas()
     val_df = dataset["dev"].to_pandas()
+
+    assert isinstance(train_df, pd.DataFrame)
+    assert isinstance(test_df, pd.DataFrame)
+    assert isinstance(val_df, pd.DataFrame)
 
     # Process the dataframes
     columns_to_drop = [
@@ -75,9 +80,11 @@ def main() -> None:
 
     # Collect datasets in a dataset dictionary
     dataset = DatasetDict(
-        train=Dataset.from_pandas(train_df, split=Split.TRAIN),
-        val=Dataset.from_pandas(val_df, split=Split.VALIDATION),
-        test=Dataset.from_pandas(test_df, split=Split.TEST),
+        {
+            "train": Dataset.from_pandas(train_df, split=Split.TRAIN),
+            "val": Dataset.from_pandas(val_df, split=Split.VALIDATION),
+            "test": Dataset.from_pandas(test_df, split=Split.TEST),
+        }
     )
 
     # Create dataset ID

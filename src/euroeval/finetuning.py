@@ -101,7 +101,7 @@ def finetune(
                 )
 
                 itr_scores = finetune_single_iteration(
-                    model=model if model_already_initialized else None,
+                    model=model if model_already_initialized else None,  # type: ignore[unbound-name]
                     dataset=datasets[idx],
                     training_args=training_args,
                     model_config=model_config,
@@ -238,13 +238,14 @@ def finetune_single_iteration(
     with torch.inference_mode():
         try:
             test_scores = trainer.evaluate(
-                eval_dataset=dataset["test"],
-                orig_eval_dataset=dataset["original_test"],
+                eval_dataset=dataset["test"],  #  type: ignore[bad-argument-type]
+                orig_eval_dataset=dataset["original_test"],  # type: ignore[unexpected-keyword]
                 metric_key_prefix="test",
             )
         except TypeError:
             test_scores = trainer.evaluate(
-                eval_dataset=dataset["test"], metric_key_prefix="test"
+                eval_dataset=dataset["test"],  #  type: ignore[bad-argument-type]
+                metric_key_prefix="test",
             )
         except NaNValueInModelOutput as e:
             del trainer

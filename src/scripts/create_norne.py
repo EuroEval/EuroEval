@@ -127,14 +127,24 @@ def main() -> None:
             df_filtered = df[~df.index.isin(val_df.index)]
             test_df = df_filtered.sample(n=2048, random_state=4242)
             full_train_df = df_filtered[~df_filtered.index.isin(test_df.index)]
+            assert isinstance(full_train_df, pd.DataFrame)
             train_df = full_train_df.sample(n=1024, random_state=4242)
+
+            assert isinstance(train_df, pd.DataFrame)
+            assert isinstance(val_df, pd.DataFrame)
+            assert isinstance(test_df, pd.DataFrame)
 
             # Collect datasets in a dataset dictionary
             dataset = DatasetDict(
-                train=Dataset.from_pandas(train_df, split=Split.TRAIN),
-                val=Dataset.from_pandas(val_df, split=Split.VALIDATION),
-                test=Dataset.from_pandas(test_df, split=Split.TEST),
-                full_train=Dataset.from_pandas(full_train_df, split="full_train"),
+                {
+                    "train": Dataset.from_pandas(train_df, split=Split.TRAIN),
+                    "val": Dataset.from_pandas(val_df, split=Split.VALIDATION),
+                    "test": Dataset.from_pandas(test_df, split=Split.TEST),
+                    "full_train": Dataset.from_pandas(
+                        full_train_df,
+                        split="full_train",  # type: ignore[bad-argument-type]
+                    ),
+                }
             )
 
             # Push the dataset to the Hugging Face Hub

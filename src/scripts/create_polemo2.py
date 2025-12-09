@@ -11,10 +11,11 @@
 """Create the PolEmo2-mini sentiment dataset and upload it to the HF Hub."""
 
 import pandas as pd
-from constants import MAX_NUM_CHARS_IN_DOCUMENT, MIN_NUM_CHARS_IN_DOCUMENT  # noqa
 from datasets import Dataset, DatasetDict, Split, load_dataset
 from huggingface_hub import HfApi
 from requests import HTTPError
+
+from .constants import MAX_NUM_CHARS_IN_DOCUMENT, MIN_NUM_CHARS_IN_DOCUMENT  # noqa
 
 
 def main() -> None:
@@ -53,7 +54,7 @@ def main() -> None:
         additional_test_df = train_df.sample(n=needed_samples, random_state=4242)
         test_df = pd.concat([test_df, additional_test_df], ignore_index=True)
         # Remove the samples we used for test from train
-        train_df = train_df.drop(additional_test_df.index)
+        train_df = train_df.drop(additional_test_df.index.tolist())
 
     # Create train split (remaining samples from train)
     train_size = 1024
@@ -66,9 +67,11 @@ def main() -> None:
 
     # Collect datasets in a dataset dictionary
     dataset = DatasetDict(
-        train=Dataset.from_pandas(train_df, split=Split.TRAIN),
-        val=Dataset.from_pandas(val_df, split=Split.VALIDATION),
-        test=Dataset.from_pandas(test_df, split=Split.TEST),
+        {
+            "train": Dataset.from_pandas(train_df, split=Split.TRAIN),
+            "val": Dataset.from_pandas(val_df, split=Split.VALIDATION),
+            "test": Dataset.from_pandas(test_df, split=Split.TEST),
+        }
     )
 
     # Create dataset ID
@@ -105,13 +108,13 @@ def process(df: pd.DataFrame) -> pd.DataFrame:
     #   3 (ambiguous)
     # We map to: positive, neutral, negative and exclude ambiguous samples
     label_mapping = {2: "positive", 0: "neutral", 1: "negative"}
-    df["label"] = df["label"].map(label_mapping)
+    df["label"] = df["label"].map(lambda x: label_mapping[x])
 
     # Remove rows with unmapped labels (excludes ambiguous samples)
     df = df.dropna(subset=["label"])
 
     # Keep only text and label columns
-    df = df[["text", "label"]]
+    df = df.loc[["text", "label"]]
 
     # Remove duplicates
     df = df.drop_duplicates().reset_index(drop=True)

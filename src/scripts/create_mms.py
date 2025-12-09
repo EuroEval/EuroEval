@@ -36,10 +36,13 @@ def main() -> None:
         df = df_all_languages[df_all_languages["language"] == language].reset_index(
             drop=True
         )
+        assert isinstance(df, pd.DataFrame)
 
         # Map numeric labels to string labels
         # 0: negative, 1: neutral, 2: positive
-        df["label"] = df["label"].map({0: "negative", 1: "neutral", 2: "positive"})
+        df["label"] = df["label"].map(
+            lambda x: {0: "negative", 1: "neutral", 2: "positive"}[x]
+        )
 
         # Remove duplicates
         df = df.drop_duplicates().reset_index(drop=True)
@@ -52,6 +55,7 @@ def main() -> None:
             df=df_uniform_original_dataset, column="label"
         )
         df_remaining = df[~df.index.isin(df_uniform_label.index)]
+        assert isinstance(df_remaining, pd.DataFrame)
         df_remaining_uniform_label = create_uniform_distribution(
             df=df_remaining, column="label"
         )
@@ -85,9 +89,11 @@ def main() -> None:
 
         # Create dataset dictionary with custom splits
         dataset_dict = DatasetDict(
-            train=Dataset.from_pandas(train_df, split=Split.TRAIN),
-            val=Dataset.from_pandas(val_df, split=Split.VALIDATION),
-            test=Dataset.from_pandas(test_df, split=Split.TEST),
+            {
+                "train": Dataset.from_pandas(train_df, split=Split.TRAIN),
+                "val": Dataset.from_pandas(val_df, split=Split.VALIDATION),
+                "test": Dataset.from_pandas(test_df, split=Split.TEST),
+            }
         )
 
         # Push the dataset to the Hugging Face Hub

@@ -9,8 +9,8 @@ information about what these constitute.
 ### MMS-sr
 
 This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2306.07902).
-The corpus consists of 79 manually selected datasets from over 350 datasets reported in the
-scientific literature based on strict quality criteria.
+The corpus consists of 79 manually selected datasets from over 350 datasets reported in
+the scientific literature based on strict quality criteria.
 
 The original dataset contains a single split with 76,368 Serbian samples. We use
 1,024 / 256 / 2,048 samples for our training, validation and test splits, respectively.

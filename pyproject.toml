@@ -1,6 +1,6 @@
 [project]
 name = "EuroEval"
-version = "16.7.1.dev"
+version = "16.8.0.dev"
 description = "The robust European language model benchmark."
 readme = "README.md"
 authors = [
@@ -15,6 +15,7 @@ dependencies = [
     "pandas>=2.2.0",
     "numpy>=2.0.0",
     "transformers[mistral-common]>=4.56.0",
+    "mistral-common[soundfile]",
     "accelerate>=1.9.0",
     "evaluate>=0.4.1",
     "datasets>=3.5.0",
@@ -45,13 +46,13 @@ dependencies = [
 [project.optional-dependencies]
 generative = [
     "bitsandbytes>=0.43.1; platform_system == 'Linux'",
-    "vllm[flashinfer]>=0.11.0; platform_system == 'Linux'",
+    "vllm[flashinfer]==0.11.0; platform_system == 'Linux'",
     "fbgemm-gpu>=1.0.0; platform_system == 'Linux'",
     "timm>=1.0.19",
 ]
 all = [
     "bitsandbytes>=0.43.1; platform_system == 'Linux'",
-    "vllm[flashinfer]>=0.11.0; platform_system == 'Linux'",
+    "vllm[flashinfer]==0.11.0; platform_system == 'Linux'",
     "fbgemm-gpu>=1.0.0; platform_system == 'Linux'",
     "timm>=1.0.19",
 ]
@@ -75,7 +76,6 @@ dev = [
     "readme-coverage-badger>=0.1.2",
     "click>=8.1.7",
     "ruff>=0.7.1",
-    "mypy>=1.15.0",
     "nbstripout>=0.7.1",
     "coverage>=5.5",
     "lxml>=5.1.0",
@@ -103,6 +103,7 @@ dev = [
     "pytest-socket>=0.7.0",
     "pytest-rerunfailures>=16.1",
     "pytest-depends>=1.0.1",
+    "pyrefly>=0.43.1",
 ]
 
 [tool.ruff]
@@ -110,7 +111,6 @@ target-version = "py311"
 line-length = 88
 exclude = [
     ".git",
-    ".mypy_cache",
     ".pytest_cache",
     ".ruff_cache",
     ".euroeval_cache",
@@ -166,6 +166,10 @@ split-on-trailing-comma = false
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
+
+[tool.pyrefly.errors]
+missing-import = false
+missing-attribute = false
 
 [tool.pytest.ini_options]
 minversion = "7.0"

@@ -11,18 +11,19 @@
 """Create the PoQuaD-mini dataset and upload it to the HF Hub."""
 
 import pandas as pd
-from constants import (
-    MAX_NUM_CHARS_IN_CONTEXT,
-    MAX_NUM_CHARS_IN_QUESTION,
-    MIN_NUM_CHARS_IN_CONTEXT,
-    MIN_NUM_CHARS_IN_QUESTION,
-)
 from datasets.arrow_dataset import Dataset
 from datasets.dataset_dict import DatasetDict
 from datasets.load import load_dataset
 from datasets.splits import Split
 from huggingface_hub.hf_api import HfApi
 from requests.exceptions import HTTPError
+
+from .constants import (
+    MAX_NUM_CHARS_IN_CONTEXT,
+    MAX_NUM_CHARS_IN_QUESTION,
+    MIN_NUM_CHARS_IN_CONTEXT,
+    MIN_NUM_CHARS_IN_QUESTION,
+)
 
 
 def main() -> None:
@@ -37,8 +38,13 @@ def main() -> None:
     assert isinstance(train, Dataset)
     assert isinstance(val, Dataset)
 
+    train_df = train.to_pandas()
+    val_df = val.to_pandas()
+    assert isinstance(train_df, pd.DataFrame)
+    assert isinstance(val_df, pd.DataFrame)
+
     # Merge the splits
-    df = pd.concat([train.to_pandas(), val.to_pandas()], ignore_index=True)
+    df = pd.concat([train_df, val_df], ignore_index=True)
 
     # Ignore impossible questions
     df = df[df.is_impossible == "False"]
@@ -55,6 +61,7 @@ def main() -> None:
     df_with_no_outliers = df[
         lengths.between(MIN_NUM_CHARS_IN_QUESTION, MAX_NUM_CHARS_IN_QUESTION)
     ]
+    assert isinstance(df_with_no_outliers, pd.DataFrame)
 
     # Only work with the questions having answers in the context
     has_answer: pd.Series = df_with_no_outliers.answers.map(
@@ -86,9 +93,11 @@ def main() -> None:
 
     # Collect datasets in a dataset dictionary
     dataset = DatasetDict(
-        train=Dataset.from_pandas(train_df, split=Split.TRAIN),
-        val=Dataset.from_pandas(val_df, split=Split.VALIDATION),
-        test=Dataset.from_pandas(test_df, split=Split.TEST),
+        {
+            "train": Dataset.from_pandas(train_df, split=Split.TRAIN),
+            "val": Dataset.from_pandas(val_df, split=Split.VALIDATION),
+            "test": Dataset.from_pandas(test_df, split=Split.TEST),
+        }
     )
 
     # Create dataset ID

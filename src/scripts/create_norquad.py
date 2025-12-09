@@ -12,16 +12,17 @@
 
 import pandas as pd
 import requests
-from constants import (
+from datasets import Dataset
+from datasets.dataset_dict import DatasetDict
+from datasets.splits import Split
+from huggingface_hub.hf_api import HfApi
+
+from .constants import (
     MAX_NUM_CHARS_IN_CONTEXT,
     MAX_NUM_CHARS_IN_QUESTION,
     MIN_NUM_CHARS_IN_CONTEXT,
     MIN_NUM_CHARS_IN_QUESTION,
 )
-from datasets import Dataset
-from datasets.dataset_dict import DatasetDict
-from datasets.splits import Split
-from huggingface_hub.hf_api import HfApi
 
 
 def main() -> None:
@@ -81,6 +82,7 @@ def main() -> None:
     # Only work with samples where the question is not very large or small
     lengths = df.question.str.len()
     df = df[lengths.between(MIN_NUM_CHARS_IN_QUESTION, MAX_NUM_CHARS_IN_QUESTION)]
+    assert isinstance(df, pd.DataFrame)
 
     # Ensure that the `id` column is a string
     df["id"] = df["id"].astype(str)
@@ -111,9 +113,11 @@ def main() -> None:
 
     # Collect datasets in a dataset dictionary
     dataset = DatasetDict(
-        train=Dataset.from_pandas(train_df, split=Split.TRAIN),
-        val=Dataset.from_pandas(val_df, split=Split.VALIDATION),
-        test=Dataset.from_pandas(test_df, split=Split.TEST),
+        {
+            "train": Dataset.from_pandas(train_df, split=Split.TRAIN),
+            "val": Dataset.from_pandas(val_df, split=Split.VALIDATION),
+            "test": Dataset.from_pandas(test_df, split=Split.TEST),
+        }
     )
 
     # Push the dataset to the Hugging Face Hub
