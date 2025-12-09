@@ -1161,7 +1161,7 @@ def setup_model_for_question_answering(model: "PreTrainedModel") -> "PreTrainedM
                     "The token type embeddings of the model do not have a `data` "
                     "attribute, which is needed to modify the embeddings."
                 )
-            token_type_embeddings.weight.data = torch.cat(  # type: ignore[missing-attribute]
+            token_type_embeddings.weight.data = torch.cat(
                 (
                     token_type_embedding_tensor,
                     torch.rand_like(token_type_embedding_tensor),

@@ -139,10 +139,7 @@ class QuestionAnsweringTrainer(Trainer):
             self.log(metrics)
 
         self.control = self.callback_handler.on_evaluate(
-            self.args,
-            self.state,
-            self.control,  # type: ignore[has-type]
-            metrics,
+            args=self.args, state=self.state, control=self.control, metrics=metrics
         )
         return metrics
 

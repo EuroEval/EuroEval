@@ -257,7 +257,5 @@ fluency_metric = LLMAsAJudgeMetric(
     "Text: {prediction!r}\n\n"
     "Output your rating as a JSON object with a single key 'fluency'.",
     response_format=Fluency,
-    scoring_fn=lambda output: (output.fluency - 1) / 4.0  # type: ignore[missing-attribute]
-    if output is not None
-    else 0.0,
+    scoring_fn=lambda output: (output.fluency - 1) / 4.0 if output is not None else 0.0,
 )

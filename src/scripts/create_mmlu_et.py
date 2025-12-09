@@ -39,7 +39,7 @@ def main() -> None:
         config["config_name"]
         for config in HfApi()
         .repo_info(repo_id=repo_id, repo_type="dataset")
-        .card_data.configs  # type: ignore[missing-attribute]
+        .card_data.configs
     ]
 
     # Download the dataset
