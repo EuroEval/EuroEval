@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 
+- Added the Swedish factual knowledge dataset SwedishFacts, which is based on the
+  [liu-nlp/swedish-facts-v1](https://huggingface.co/datasets/liu-nlp/swedish-facts-v1)
+  dataset.
 - Added support for Catalan! This includes the sentiment classification dataset
   GuiaCat, the linguistic acceptability dataset ScaLA-ca, the named entity recognition
   dataset WikiANN-ca, the reading comprehension dataset MultiWikiQA-ca, the summarisation
