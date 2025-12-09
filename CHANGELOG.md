@@ -7,14 +7,16 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Changed
+
+- Updated `vllm` to `>=0.12.0`, which offers compatibility with the upcoming
+  `transformers` v5 release.
+
 ### Fixed
 
 - When a model has registered the number of parameters wrongly within their safetensors
   files, we collect all the potential parameter counts from the safetensors file and
   pick the largest one.
-- We now pinned vLLM to v0.11.0, as all future versions (up to and including v0.12.0)
-  have breaking changes regarding loading of Mistral models. We aim to unpin this when a
-  new vLLM version fixes this.
 - Removed mentions of `hf_transfer` and the associated environment variable
   `HF_HUB_ENABLE_HF_TRANSFER`, since this has been removed from the `transformers`
   library now.
