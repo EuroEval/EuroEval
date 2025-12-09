@@ -709,8 +709,8 @@ In the [dataset card](https://huggingface.co/datasets/liu-nlp/swedish-facts-v1)
 it is mentioned that a paper with more information is coming soon.
 
 Since the dataset does not include candidate answers, we generate them using GPT-4o.
-The original dataset consists of 1.289 samples. We
-use a 128 / 64 / 1.097 split for training, validation and testing, respectively.
+The original dataset consists of 1,289 samples. We
+use a 128 / 64 / 1,097 split for training, validation and testing, respectively.
 
 Here are a few examples from the training split:
 
