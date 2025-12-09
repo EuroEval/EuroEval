@@ -35,6 +35,7 @@ def main() -> None:
 
     final_train_df = train_df.sample(n=train_size, random_state=4242)
     remaining_train_df = train_df[~train_df.index.isin(final_train_df.index)]
+    assert isinstance(remaining_train_df, pd.DataFrame)
 
     final_val_df = val_df.sample(n=val_size, random_state=4242)
 
@@ -49,11 +50,17 @@ def main() -> None:
     final_val_df = final_val_df.reset_index(drop=True)
     final_test_df = final_test_df.reset_index(drop=True)
 
+    assert isinstance(final_train_df, pd.DataFrame)
+    assert isinstance(final_val_df, pd.DataFrame)
+    assert isinstance(final_test_df, pd.DataFrame)
+
     # Create dataset dictionary
     dataset = DatasetDict(
-        train=Dataset.from_pandas(final_train_df, split=Split.TRAIN),
-        val=Dataset.from_pandas(final_val_df, split=Split.VALIDATION),
-        test=Dataset.from_pandas(final_test_df, split=Split.TEST),
+        {
+            "train": Dataset.from_pandas(final_train_df, split=Split.TRAIN),
+            "val": Dataset.from_pandas(final_val_df, split=Split.VALIDATION),
+            "test": Dataset.from_pandas(final_test_df, split=Split.TEST),
+        }
     )
 
     # Create dataset ID
@@ -147,7 +154,7 @@ def _create_uniform_dataset_distribution(
     min_size = min(len(dataset_df) for dataset_df in dataset_dfs)
 
     # Resample each class to the size of the smallest class
-    resampled_dfs = [
+    resampled_dfs: list[pd.DataFrame] = [
         resample(
             dataset_df, replace=False, n_samples=min_size, random_state=random_state
         )

@@ -11,9 +11,10 @@
 
 from typing import MutableMapping
 
-from constants import CHOICES_MAPPING
-from datasets import DatasetDict, load_dataset
+from datasets import Dataset, DatasetDict, load_dataset
 from huggingface_hub import HfApi
+
+from .constants import CHOICES_MAPPING
 
 
 def main() -> None:
@@ -23,25 +24,29 @@ def main() -> None:
     # start from the official source
     human_ds = load_dataset("tartuNLP/winogrande_et", "human_translated")
     mt_ds = load_dataset("tartuNLP/winogrande_et", "machine_translated")
+    assert isinstance(human_ds, DatasetDict)
+    assert isinstance(mt_ds, DatasetDict)
 
     # target split sizes
     train_size = 1024
     val_size = 256
     test_size = 2048
 
+    train = mt_ds["train"].select(range(train_size))
+    val = mt_ds["dev"].select(range(val_size))
+    test = human_ds["test"].select(range(min(test_size, len(human_ds["test"]))))
+
+    assert isinstance(train, Dataset)
+    assert isinstance(val, Dataset)
+    assert isinstance(test, Dataset)
+
     # we don't have human translations for train and dev
-    ds = DatasetDict(
-        {
-            "train": mt_ds["train"].select(range(train_size)),
-            "val": mt_ds["dev"].select(range(val_size)),
-            "test": human_ds["test"].select(
-                range(min(test_size, len(human_ds["test"])))
-            ),
-        }
-    )
+    ds = DatasetDict({"train": train, "val": val, "test": test})
 
     # please don't share the answers explicitly though
-    ds["test"] = ds["test"].map(lambda row: {"answer": row["qID"][-1]})
+    mapped_test = ds["test"].map(lambda row: {"answer": row["qID"][-1]})
+    assert isinstance(mapped_test, type(ds["test"]))
+    ds["test"] = mapped_test
 
     # add options to the text and transform labels to letters
     ds = ds.map(add_options_and_label)

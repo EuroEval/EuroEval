@@ -46,6 +46,7 @@ body:
       - label: Norwegian (Bokmål or Nynorsk)
       - label: Polish
       - label: Portuguese
+      - label: Romanian
       - label: Serbian
       - label: Slovak
       - label: Slovenian

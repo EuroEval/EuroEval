@@ -9,14 +9,14 @@ import typing as t
 from collections import defaultdict
 from dataclasses import asdict
 
+from datasets import Dataset
+
 from .constants import NUM_GENERATION_TOKENS_FOR_CLASSIFICATION
 from .data_models import GenerativeModelOutput, SingleGenerativeModelOutput
 from .logging_utils import get_pbar, log, log_once
 
 if t.TYPE_CHECKING:
     from pathlib import Path
-
-    from datasets import Dataset
 
 
 class ModelCache:
@@ -259,6 +259,13 @@ def split_dataset_into_cached_and_non_cached(
 
     cached = dataset.select(cached_ids)
     non_cached = dataset.select(unique_non_cached_ids)
+
+    assert isinstance(cached, Dataset), (
+        f"Expected the cached dataset to be a Dataset, but got {type(cached)}"
+    )
+    assert isinstance(non_cached, Dataset), (
+        f"Expected the non-cached dataset to be a Dataset, but got {type(non_cached)}"
+    )
     return cached, non_cached
 
 

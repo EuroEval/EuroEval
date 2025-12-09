@@ -27,6 +27,7 @@ from ..languages import (
     NORWEGIAN_NYNORSK,
     POLISH,
     PORTUGUESE,
+    ROMANIAN,
     SERBIAN,
     SLOVAK,
     SLOVENE,
@@ -48,24 +49,18 @@ LA_TEMPLATES: dict["Language", PromptConfig] = {
     ),
     CATALAN: PromptConfig(
         default_prompt_label_mapping=dict(correct="sí", incorrect="no"),
-        default_prompt_prefix=(
-            "Les següents oracions indiquen si són gramaticalment correctes."
-        ),
-        default_prompt_template=("Oració: {text}\nGramaticalment correcta: {label}"),
-        default_instruction_prompt=(
-            "Oració: {text}\n\nDetermina si l'oració és "
-            "gramaticalment correcta o no. Respon amb {labels_str}, i res més."
-        ),
+        default_prompt_prefix="Les següents oracions indiquen si són gramaticalment "
+        "correctes.",
+        default_prompt_template="Oració: {text}\nGramaticalment correcta: {label}",
+        default_instruction_prompt="Oració: {text}\n\nDetermina si l'oració és "
+        "gramaticalment correcta o no. Respon amb {labels_str}, i res més.",
     ),
     CROATIAN: PromptConfig(
         default_prompt_label_mapping=dict(correct="da", incorrect="ne"),
         default_prompt_prefix="Sljedeće su rečenice i jesu li gramatički ispravne.",
         default_prompt_template="Rečenica: {text}\nGramatički ispravna: {label}",
-        default_instruction_prompt=(
-            "Rečenica: {text}\n\n"
-            "Odredite je li rečenica gramatički ispravna ili ne. "
-            "Odgovorite s {labels_str}, i ništa drugo."
-        ),
+        default_instruction_prompt="Rečenica: {text}\n\nOdredite je li rečenica "
+        "gramatički ispravna ili ne. Odgovorite s {labels_str}, i ništa drugo.",
     ),
     CZECH: PromptConfig(
         default_prompt_label_mapping=dict(correct="ano", incorrect="ne"),
@@ -100,15 +95,11 @@ LA_TEMPLATES: dict["Language", PromptConfig] = {
     ),
     HUNGARIAN: PromptConfig(
         default_prompt_label_mapping=dict(correct="igen", incorrect="nem"),
-        default_prompt_prefix=(
-            "A következő mondatok, és hogy helyesek-e nyelvtanilag."
-        ),
-        default_prompt_template=("Mondat: {text}\nNyelvtanilag helyes: {label}"),
-        default_instruction_prompt=(
-            "Mondat: {text}\n\n"
-            "Határozza meg, hogy a mondat nyelvtanilag helyes-e vagy sem. "
-            "Csak {labels_str}-val válaszoljon, és semmi mással."
-        ),
+        default_prompt_prefix="A következő mondatok, és hogy helyesek-e nyelvtanilag.",
+        default_prompt_template="Mondat: {text}\nNyelvtanilag helyes: {label}",
+        default_instruction_prompt="Mondat: {text}\n\nHatározza meg, hogy a mondat "
+        "nyelvtanilag helyes-e vagy sem. Csak {labels_str}-val válaszoljon, és "
+        "semmi mással.",
     ),
     ENGLISH: PromptConfig(
         default_prompt_label_mapping=dict(correct="yes", incorrect="no"),
@@ -239,32 +230,33 @@ LA_TEMPLATES: dict["Language", PromptConfig] = {
         default_instruction_prompt="Setning: {text}\n\nBestem om setningen er "
         "grammatisk korrekt eller ikke. Svar med {labels_str}, og ikke noe annet.",
     ),
+    ROMANIAN: PromptConfig(
+        default_prompt_label_mapping=dict(correct="da", incorrect="nu"),
+        default_prompt_prefix="Următoarele sunt fraze și dacă sunt gramatical corecte.",
+        default_prompt_template="Fraza: {text}\nGramatical corect: {label}",
+        default_instruction_prompt="Fraza: {text}\n\nStabiliți dacă fraza este "
+        "gramatical corectă sau nu. Răspundeți cu {labels_str}, și nimic altceva.",
+    ),
     SLOVAK: PromptConfig(
         default_prompt_label_mapping=dict(correct="áno", incorrect="nie"),
         default_prompt_prefix="Nasledujú vety a či sú gramaticky správne.",
         default_prompt_template="Veta: {text}\nGramaticky správna: {label}",
-        default_instruction_prompt=(
-            "Veta: {text}\n\nUrčite, či je veta gramaticky správna alebo nie. "
-            "Odpovedzte so {labels_str}, a nič iné."
-        ),
+        default_instruction_prompt="Veta: {text}\n\nUrčite, či je veta gramaticky "
+        "správna alebo nie. Odpovedzte so {labels_str}, a nič iné.",
     ),
     SLOVENE: PromptConfig(
         default_prompt_label_mapping=dict(correct="da", incorrect="ne"),
         default_prompt_prefix="Sledeče so stavki in ali so slovnično pravilni.",
         default_prompt_template="Stavek: {text}\nSlovnično pravilno: {label}",
-        default_instruction_prompt=(
-            "Stavek: {text}\n\nUgotovite, ali je stavek slovnično pravilen ali ne. "
-            "Odgovorite z {labels_str}, in nič drugega."
-        ),
+        default_instruction_prompt="Stavek: {text}\n\nUgotovite, ali je stavek "
+        "slovnično pravilen ali ne. Odgovorite z {labels_str}, in nič drugega.",
     ),
     SERBIAN: PromptConfig(
         default_prompt_label_mapping=dict(correct="da", incorrect="ne"),
         default_prompt_prefix="U nastavku su rečenice i da li su gramatički ispravne.",
         default_prompt_template="Rečenica: {text}\nGramatički ispravna: {label}",
-        default_instruction_prompt=(
-            "Rečenica: {text}\n\nOdredite da li je rečenica gramatički ispravna ili "
-            "ne. Odgovorite sa {labels_str}, i ništa drugo."
-        ),
+        default_instruction_prompt="Rečenica: {text}\n\nOdredite da li je rečenica "
+        "gramatički ispravna ili ne. Odgovorite sa {labels_str}, i ništa drugo.",
     ),
     SWEDISH: PromptConfig(
         default_prompt_label_mapping=dict(correct="ja", incorrect="nej"),
@@ -276,13 +268,9 @@ LA_TEMPLATES: dict["Language", PromptConfig] = {
     ),
     UKRAINIAN: PromptConfig(
         default_prompt_label_mapping=dict(correct="так", incorrect="ні"),
-        default_prompt_prefix=(
-            "Нижче наведені речення і їхня граматична правильність."
-        ),
-        default_prompt_template=("Речення: {text}\nГраматично правильно: {label}"),
-        default_instruction_prompt=(
-            "Речення: {text}\n\nВизначте, чи речення граматично правильне чи ні. "
-            "Відповідайте {labels_str}, і нічого більше."
-        ),
+        default_prompt_prefix="Нижче наведені речення і їхня граматична правильність.",
+        default_prompt_template="Речення: {text}\nГраматично правильно: {label}",
+        default_instruction_prompt="Речення: {text}\n\nВизначте, чи речення "
+        "граматично правильне чи ні. Відповідайте {labels_str}, і нічого більше.",
     ),
 }

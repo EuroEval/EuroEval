@@ -11,6 +11,7 @@ from time import sleep
 
 import litellm
 import ollama
+from datasets import Dataset
 from huggingface_hub import HfApi
 from huggingface_hub.errors import (
     HFValidationError,
@@ -420,13 +421,18 @@ class LiteLLMModel(BenchmarkModule):
 
             # Attempt to handle the exceptions, to improve the chance of getting
             # successful generations next time around
+            time_to_wait = 0
             for _, error in failures:
-                generation_kwargs = self._handle_exception(
+                generation_kwargs, wait_time = self._handle_exception(
                     error=error, **generation_kwargs
                 )
-
-            # Sleep for a second to avoid pinging the API server too quickly
-            sleep(1)
+                time_to_wait = max(time_to_wait, wait_time)
+            if time_to_wait > 0:
+                log(
+                    f"Waiting {time_to_wait} second(s) before retrying...",
+                    level=logging.DEBUG,
+                )
+                sleep(time_to_wait)
         else:
             raise InvalidBenchmark(
                 message=f"Failed to generate text, after {num_attempts:,} attempts."
@@ -446,7 +452,9 @@ class LiteLLMModel(BenchmarkModule):
 
         return model_output
 
-    def _handle_exception(self, error: Exception, **generation_kwargs) -> dict:
+    def _handle_exception(
+        self, error: Exception, **generation_kwargs
+    ) -> tuple[dict, int]:
         """Handle an exception from the model.
 
         Args:
@@ -456,7 +464,9 @@ class LiteLLMModel(BenchmarkModule):
                 The generation kwargs to pass to the model.
 
         Returns:
-            The updated generation kwargs to pass to the model.
+            A pair (generation_kwargs, retry_delay_seconds), where `generation_kwargs`
+            is the updated generation kwargs to pass to the model, and
+            `retry_delay_seconds` is the number of seconds to wait before retrying.
         """
         error_msg = str(error).lower()
         model_id = self.model_config.model_id
@@ -519,7 +529,7 @@ class LiteLLMModel(BenchmarkModule):
                 level=logging.DEBUG,
             )
             generation_kwargs["stop"] = None
-            return generation_kwargs
+            return generation_kwargs, 0
         elif (
             any(msg.lower() in error_msg for msg in logprobs_messages)
             or logprobs_pattern.search(string=error_msg) is not None
@@ -536,7 +546,7 @@ class LiteLLMModel(BenchmarkModule):
             generation_kwargs.pop("logprobs", None)
             generation_kwargs.pop("top_logprobs", None)
             generation_kwargs.pop("response_format", None)
-            return generation_kwargs
+            return generation_kwargs, 0
         elif (
             any(msg.lower() in error_msg for msg in top_logprobs_messages)
             or top_logprobs_pattern.search(string=error_msg) is not None
@@ -547,7 +557,7 @@ class LiteLLMModel(BenchmarkModule):
                 level=logging.DEBUG,
             )
             generation_kwargs["logprobs"] = generation_kwargs.pop("top_logprobs", None)
-            return generation_kwargs
+            return generation_kwargs, 0
         elif max_completion_tokens_pattern.search(string=error_msg):
             log_once(
                 f"The model {model_id!r} does not support max_completion_tokens, so "
@@ -557,7 +567,7 @@ class LiteLLMModel(BenchmarkModule):
             generation_kwargs["max_tokens"] = generation_kwargs.pop(
                 "max_completion_tokens", None
             )
-            return generation_kwargs
+            return generation_kwargs, 0
         elif any(msg.lower() in error_msg for msg in temperature_messages):
             log_once(
                 f"The model {model_id!r} does not support "
@@ -565,7 +575,7 @@ class LiteLLMModel(BenchmarkModule):
                 level=logging.DEBUG,
             )
             generation_kwargs.pop("temperature", None)
-            return generation_kwargs
+            return generation_kwargs, 0
         elif any(msg.lower() in error_msg for msg in temperature_must_be_one_messages):
             log_once(
                 f"The model {model_id!r} requires "
@@ -573,7 +583,7 @@ class LiteLLMModel(BenchmarkModule):
                 level=logging.DEBUG,
             )
             generation_kwargs["temperature"] = 1.0
-            return generation_kwargs
+            return generation_kwargs, 0
         elif (
             any(msg.lower() in error_msg for msg in max_items_messages)
             and self.dataset_config.task == NER
@@ -587,9 +597,9 @@ class LiteLLMModel(BenchmarkModule):
             keys_and_their_types = {
                 tag_name: (c.Sequence[str], ...) for tag_name in ner_tag_names
             }
-            pydantic_class = create_model("AnswerFormat", **keys_and_their_types)
+            pydantic_class = create_model("AnswerFormat", **keys_and_their_types)  #  type: ignore[no-matching-overload]
             generation_kwargs["response_format"] = pydantic_class
-            return generation_kwargs
+            return generation_kwargs, 0
         elif any(msg.lower() in error_msg for msg in no_json_schema_messages):
             log_once(
                 f"The model {self.model_config.model_id!r} does not support "
@@ -597,7 +607,7 @@ class LiteLLMModel(BenchmarkModule):
                 level=logging.DEBUG,
             )
             generation_kwargs["response_format"] = dict(type="json_object")
-            return generation_kwargs
+            return generation_kwargs, 0
         elif thinking_match := thinking_budget_pattern.search(string=error_msg):
             thinking_budget = int(thinking_match.group(1))
             if thinking_budget >= REASONING_MAX_TOKENS:
@@ -617,7 +627,7 @@ class LiteLLMModel(BenchmarkModule):
             generation_kwargs["thinking"] = dict(
                 type="enabled", budget_tokens=thinking_budget - 1
             )
-            return generation_kwargs
+            return generation_kwargs, 0
         elif (
             any(msg.lower() in error_msg for msg in requires_thinking_disabled_messages)
             and self.generative_type != GenerativeType.REASONING
@@ -629,7 +639,7 @@ class LiteLLMModel(BenchmarkModule):
                 level=logging.DEBUG,
             )
             generation_kwargs["thinking"] = dict(type="disabled")
-            return generation_kwargs
+            return generation_kwargs, 0
         elif re.search(pattern=seed_pattern, string=error_msg):
             log_once(
                 f"The model {model_id!r} does not support the `seed` parameter, so "
@@ -637,7 +647,7 @@ class LiteLLMModel(BenchmarkModule):
                 level=logging.DEBUG,
             )
             generation_kwargs.pop("seed", None)
-            return generation_kwargs
+            return generation_kwargs, 0
         elif any(msg.lower() in error_msg for msg in response_format_messages):
             log_once(
                 f"The model {model_id!r} does not support the `response_format` "
@@ -645,7 +655,7 @@ class LiteLLMModel(BenchmarkModule):
                 level=logging.DEBUG,
             )
             generation_kwargs.pop("response_format", None)
-            return generation_kwargs
+            return generation_kwargs, 0
         # If there are too many I/O connections, we increase the number of allowed file
         # descriptors
         elif "too many open files" in error_msg:
@@ -657,13 +667,12 @@ class LiteLLMModel(BenchmarkModule):
         elif isinstance(
             error, (Timeout, ServiceUnavailableError, InternalServerError, SystemError)
         ):
-            log(
+            log_once(
                 f"Service temporarily unavailable. The error message was: {error}. "
                 "Retrying in 10 seconds...",
                 level=logging.DEBUG,
             )
-            sleep(10)
-            return generation_kwargs
+            return generation_kwargs, 10
         elif isinstance(error, UnsupportedParamsError):
             unsupported_param_match = re.search(
                 pattern=r"(?<=does not support parameters\: \[')([^ ']+)(?='\])",
@@ -689,33 +698,29 @@ class LiteLLMModel(BenchmarkModule):
                 "and try again."
             ) from error
 
-        if isinstance(error, RateLimitError):
-            log(
-                f"You have encountered your rate limit for model {model_id!r}. "
-                "Retrying in 10 seconds...",
-                level=logging.DEBUG,
-            )
-            sleep(10)
-            return generation_kwargs
-
         if (
-            isinstance(error, BadRequestError)
+            isinstance(error, (RateLimitError, BadRequestError))
             and (
                 retry_match := re.search(
                     pattern=r"\bretry in ([0-9]+(.[0-9]+)?) ?(s|seconds)\b",
                     string=error_msg,
+                    flags=re.IGNORECASE,
                 )
             )
             is not None
         ):
             retry_seconds = float(retry_match.group(1))
-            log(
-                f"Bad request error encountered. Retrying in {retry_seconds:.1f} "
-                "seconds...",
+            log_once(
+                f"You have encountered your rate limit for model {model_id!r}.",
                 level=logging.DEBUG,
             )
-            sleep(retry_seconds)
-            return generation_kwargs
+            return generation_kwargs, int(retry_seconds)
+        elif isinstance(error, RateLimitError):
+            log_once(
+                f"You have encountered your rate limit for model {model_id!r}.",
+                level=logging.DEBUG,
+            )
+            return generation_kwargs, 10
 
         if isinstance(error, AuthenticationError):
             raise NeedsAdditionalArgument(
@@ -1216,7 +1221,7 @@ class LiteLLMModel(BenchmarkModule):
         return -1
 
     @property
-    def data_collator(self) -> c.Callable[[c.Sequence[t.Any]], dict[str, t.Any]]:
+    def data_collator(self) -> c.Callable[[list[dict[str, t.Any]]], dict[str, t.Any]]:
         """The data collator used to prepare samples during finetuning.
 
         Returns:
@@ -1300,7 +1305,7 @@ class LiteLLMModel(BenchmarkModule):
         num_attempts = 10
         for _ in range(num_attempts):
             try:
-                litellm.completion(
+                litellm.completion(  # type: ignore[not-callable]
                     messages=[dict(role="user", content="X")],
                     model=clean_model_id(
                         model_id=model_id, benchmark_config=benchmark_config
@@ -1478,7 +1483,7 @@ class LiteLLMModel(BenchmarkModule):
         else:
             few_shot_examples = list()
 
-        dataset["test"] = dataset["test"].map(
+        mapped_dataset = dataset["test"].map(
             partial(
                 apply_prompt,
                 few_shot_examples=few_shot_examples,
@@ -1492,6 +1497,10 @@ class LiteLLMModel(BenchmarkModule):
             load_from_cache_file=False,
             keep_in_memory=True,
         )
+        assert isinstance(mapped_dataset, Dataset), (
+            "Mapped dataset is not a Dataset instance."
+        )
+        dataset["test"] = mapped_dataset
 
         return dataset
 
@@ -1572,7 +1581,7 @@ class LiteLLMModel(BenchmarkModule):
                 for label in self.dataset_config.labels
             ]
             keys_and_their_types = {
-                LITELLM_CLASSIFICATION_OUTPUT_KEY: (t.Literal[*localised_labels], ...)
+                LITELLM_CLASSIFICATION_OUTPUT_KEY: (t.Literal[*localised_labels], ...)  #  type: ignore[invalid-literal]
             }
             pydantic_class = create_model("AnswerFormat", **keys_and_their_types)
             generation_kwargs["response_format"] = pydantic_class
@@ -1636,10 +1645,18 @@ class LiteLLMModel(BenchmarkModule):
             )
             if not failures:
                 break
+            time_to_wait = 0
             for _, error in failures:
-                generation_kwargs = self._handle_exception(
+                generation_kwargs, wait_time = self._handle_exception(
                     error=error, **generation_kwargs
                 )
+                time_to_wait = max(time_to_wait, wait_time)
+            if time_to_wait > 0:
+                log(
+                    f"Waiting {time_to_wait} second(s) before retrying...",
+                    level=logging.DEBUG,
+                )
+                sleep(time_to_wait)
         else:
             raise InvalidModel(
                 "Failed to get a successful response from the model "

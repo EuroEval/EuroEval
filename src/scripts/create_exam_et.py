@@ -14,7 +14,11 @@
 from collections import Counter
 
 import pandas as pd
-from constants import (
+from datasets import Dataset, DatasetDict, load_dataset
+from huggingface_hub import HfApi
+from sklearn.model_selection import train_test_split
+
+from .constants import (
     CHOICES_MAPPING,
     MAX_NUM_CHARS_IN_INSTRUCTION,
     MAX_NUM_CHARS_IN_OPTION,
@@ -22,9 +26,6 @@ from constants import (
     MIN_NUM_CHARS_IN_INSTRUCTION,
     MIN_NUM_CHARS_IN_OPTION,
 )
-from datasets import Dataset, DatasetDict, load_dataset
-from huggingface_hub import HfApi
-from sklearn.model_selection import train_test_split
 
 
 def main() -> None:
@@ -35,7 +36,7 @@ def main() -> None:
     # Get all the subsets of the dataset
     api = HfApi(token=True)
     repo_info = api.repo_info(repo_id=repo_id, repo_type="dataset")
-    subsets = [config["config_name"] for config in repo_info.card_data.configs]
+    subsets = [config["config_name"] for config in repo_info.card_data.configs]  #  type: ignore[missing-attribute]
 
     # Download all subsets and merge them
     rename_mapping = {
@@ -122,11 +123,11 @@ def main() -> None:
 
     # Convert to DatasetDict
     dataset = DatasetDict(
-        dict(
-            train=Dataset.from_pandas(train_df),
-            val=Dataset.from_pandas(val_df),
-            test=Dataset.from_pandas(test_df),
-        )
+        {
+            "train": Dataset.from_pandas(train_df),
+            "val": Dataset.from_pandas(val_df),
+            "test": Dataset.from_pandas(test_df),
+        }
     )
 
     api.delete_repo(repo_id=target_repo_id, repo_type="dataset", missing_ok=True)

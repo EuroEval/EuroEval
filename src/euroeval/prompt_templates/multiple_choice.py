@@ -26,6 +26,7 @@ from ..languages import (
     NORWEGIAN_NYNORSK,
     POLISH,
     PORTUGUESE,
+    ROMANIAN,
     SERBIAN,
     SLOVAK,
     SLOVENE,
@@ -47,36 +48,27 @@ MULTIPLE_CHOICE_TEMPLATES: dict["Language", PromptConfig] = {
         default_prompt_label_mapping="auto",
     ),
     CATALAN: PromptConfig(
-        default_prompt_prefix=(
-            "Les següents són preguntes de selecció múltiple (amb respostes)."
-        ),
+        default_prompt_prefix="Les següents són preguntes de selecció múltiple "
+        "(amb respostes).",
         default_prompt_template="Pregunta: {text}\nResposta: {label}",
-        default_instruction_prompt=(
-            "Pregunta: {text}\n\nRespon a la pregunta anterior utilitzant només "
-            "{labels_str}, i res més."
-        ),
+        default_instruction_prompt="Pregunta: {text}\n\nRespon a la pregunta "
+        "anterior utilitzant només {labels_str}, i res més.",
         default_prompt_label_mapping="auto",
     ),
     CROATIAN: PromptConfig(
-        default_prompt_prefix=(
-            "Sljedeća su pitanja s višestrukim izborom (s odgovorima)."
-        ),
-        default_prompt_template=("Pitanje: {text}\nOdgovor: {label}"),
-        default_instruction_prompt=(
-            "Pitanje: {text}\n\n"
-            "Odgovorite na gornje pitanje koristeći {labels_str}, i ništa drugo."
-        ),
+        default_prompt_prefix="Sljedeća su pitanja s višestrukim izborom "
+        "(s odgovorima).",
+        default_prompt_template="Pitanje: {text}\nOdgovor: {label}",
+        default_instruction_prompt="Pitanje: {text}\n\nOdgovorite na gornje pitanje "
+        "koristeći {labels_str}, i ništa drugo.",
         default_prompt_label_mapping="auto",
     ),
     CZECH: PromptConfig(
-        default_prompt_prefix=(
-            "Následující jsou otázky s výběrem z více možností (s odpověďmi)."
-        ),
+        default_prompt_prefix="Následující jsou otázky s výběrem z více možností "
+        "(s odpověďmi).",
         default_prompt_template="Otázka: {text}\nOdpověď: {label}",
-        default_instruction_prompt=(
-            "Otázka: {text}\n\nOdpovězte na výše uvedenou otázku "
-            "pomocí {labels_str}, a nic jiného."
-        ),
+        default_instruction_prompt="Otázka: {text}\n\nOdpovězte na výše uvedenou "
+        "otázku pomocí {labels_str}, a nic jiného.",
         default_prompt_label_mapping="auto",
     ),
     DANISH: PromptConfig(
@@ -103,17 +95,11 @@ MULTIPLE_CHOICE_TEMPLATES: dict["Language", PromptConfig] = {
         default_prompt_label_mapping="auto",
     ),
     HUNGARIAN: PromptConfig(
-        default_prompt_prefix=(
-            "Az alábbiakban több választási lehetőséget tartalmazó kérdések "
-            "találhatók (válaszokkal együtt)."
-        ),
+        default_prompt_prefix="Az alábbiakban több választási lehetőséget tartalmazó "
+        "kérdések találhatók (válaszokkal együtt).",
         default_prompt_template="Kérdés: {text}\nVálasz: {label}",
-        default_instruction_prompt=(
-            "Kérdés: {text}\n\n"
-            "Válaszoljon a fenti kérdésre az elérhető lehetőségek közül "
-            "{labels_str} használatával, "
-            "és semmi mással."
-        ),
+        default_instruction_prompt="Kérdés: {text}\n\nVálaszoljon a fenti kérdésre "
+        "az elérhető lehetőségek közül {labels_str} használatával, és semmi mással.",
         default_prompt_label_mapping="auto",
     ),
     ENGLISH: PromptConfig(
@@ -222,6 +208,14 @@ MULTIPLE_CHOICE_TEMPLATES: dict["Language", PromptConfig] = {
         "{labels_str}, og ikke noe annet.",
         default_prompt_label_mapping="auto",
     ),
+    ROMANIAN: PromptConfig(
+        default_prompt_prefix="Următorul este un set de întrebări cu mai multe "
+        "opțiuni (cu răspunsuri).",
+        default_prompt_template="Întrebare: {text}\nRăspuns: {label}",
+        default_instruction_prompt="Întrebare: {text}\n\nRăspundeți la următoarea "
+        "întrebare folosind {labels_str},\nși nimic altceva.",
+        default_prompt_label_mapping="auto",
+    ),
     POLISH: PromptConfig(
         default_prompt_prefix="Poniżej znajdują się pytania wielokrotnego wyboru "
         "(z odpowiedziami).",
@@ -231,32 +225,24 @@ MULTIPLE_CHOICE_TEMPLATES: dict["Language", PromptConfig] = {
         default_prompt_label_mapping="auto",
     ),
     SLOVAK: PromptConfig(
-        default_prompt_prefix=(
-            "Nasledujú otázky s viacerými možnosťami (s odpoveďami)."
-        ),
+        default_prompt_prefix="Nasledujú otázky s viacerými možnosťami (s odpoveďami).",
         default_prompt_template="Otázka: {text}\nOdpoveď: {label}",
-        default_instruction_prompt=(
-            "Otázka: {text}\n\n"
-            "Odpovedzte na nasledujúcu otázku použitím {labels_str}, a nič iné."
-        ),
+        default_instruction_prompt="Otázka: {text}\n\nOdpovedzte na nasledujúcu "
+        "otázku použitím {labels_str}, a nič iné.",
         default_prompt_label_mapping="auto",
     ),
     SLOVENE: PromptConfig(
         default_prompt_prefix="Naslednja so vprašanja z več možnostmi (z odgovori).",
         default_prompt_template="Vprašanje: {text}\nOdgovor: {label}",
-        default_instruction_prompt=(
-            "Vprašanje: {text}\n\n"
-            "Odgovorite na navedeno vprašanje z uporabo {labels_str}, in nič drugega."
-        ),
+        default_instruction_prompt="Vprašanje: {text}\n\nOdgovorite na navedeno "
+        "vprašanje z uporabo {labels_str}, in nič drugega.",
         default_prompt_label_mapping="auto",
     ),
     SERBIAN: PromptConfig(
-        default_prompt_prefix=("Slede pitanja višestrukog izbora (sa odgovorima)."),
+        default_prompt_prefix="Slede pitanja višestrukog izbora (sa odgovorima).",
         default_prompt_template="Pitanje: {text}\nOdgovor: {label}",
-        default_instruction_prompt=(
-            "Pitanje: {text}\n\n"
-            "Odgovorite na navedeno pitanje koristeći {labels_str}, i ništa drugo."
-        ),
+        default_instruction_prompt="Pitanje: {text}\n\nOdgovorite na navedeno "
+        "pitanje koristeći {labels_str}, i ništa drugo.",
         default_prompt_label_mapping="auto",
     ),
     SWEDISH: PromptConfig(
@@ -267,15 +253,11 @@ MULTIPLE_CHOICE_TEMPLATES: dict["Language", PromptConfig] = {
         default_prompt_label_mapping="auto",
     ),
     UKRAINIAN: PromptConfig(
-        default_prompt_prefix=(
-            "Нижче наведено питання з кількома варіантами відповідей (з відповідями)."
-        ),
-        default_prompt_template=("Питання: {text}\nВідповідь: {label}"),
-        default_instruction_prompt=(
-            "Питання: {text}\n\n"
-            "Дайте відповідь на наведене вище питання, використовуючи "
-            "{labels_str}, і нічого іншого."
-        ),
+        default_prompt_prefix="Нижче наведено питання з кількома варіантами "
+        "відповідей (з відповідями).",
+        default_prompt_template="Питання: {text}\nВідповідь: {label}",
+        default_instruction_prompt="Питання: {text}\n\nДайте відповідь на наведене "
+        "вище питання, використовуючи {labels_str}, і нічого іншого.",
         default_prompt_label_mapping="auto",
     ),
 }

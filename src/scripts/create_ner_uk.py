@@ -29,6 +29,10 @@ def main() -> None:
     val_df = dataset["validation"].to_pandas()
     test_df = dataset["test"].to_pandas()
 
+    assert isinstance(train_df, pd.DataFrame)
+    assert isinstance(val_df, pd.DataFrame)
+    assert isinstance(test_df, pd.DataFrame)
+
     # Add a `text` column by joining tokens
     train_df["text"] = train_df["tokens"].map(lambda tokens: " ".join(tokens))
     val_df["text"] = val_df["tokens"].map(lambda tokens: " ".join(tokens))
@@ -80,7 +84,7 @@ def main() -> None:
 
     # Add these samples to the test set and remove them from the train set
     test_df = pd.concat([test_df, extra_test_samples]).reset_index(drop=True)
-    train_df = train_df.drop(extra_test_samples.index).reset_index(drop=True)
+    train_df = train_df.drop(extra_test_samples.index.tolist()).reset_index(drop=True)
 
     # Sample the desired sizes
     train_df = train_df.sample(n=train_size, random_state=4242)
@@ -94,11 +98,17 @@ def main() -> None:
     val_df.reset_index(drop=True, inplace=True)
     test_df.reset_index(drop=True, inplace=True)
 
+    assert isinstance(train_df, pd.DataFrame)
+    assert isinstance(val_df, pd.DataFrame)
+    assert isinstance(test_df, pd.DataFrame)
+
     # Create the dataset dictionary after resetting the index
     dataset = DatasetDict(
-        train=Dataset.from_pandas(train_df, split=Split.TRAIN),
-        val=Dataset.from_pandas(val_df, split=Split.VALIDATION),
-        test=Dataset.from_pandas(test_df, split=Split.TEST),
+        {
+            "train": Dataset.from_pandas(train_df, split=Split.TRAIN),
+            "val": Dataset.from_pandas(val_df, split=Split.VALIDATION),
+            "test": Dataset.from_pandas(test_df, split=Split.TEST),
+        }
     )
 
     # Create dataset ID

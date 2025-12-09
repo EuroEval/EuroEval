@@ -11,9 +11,10 @@
 """Create the CNN-DailyMail-mini summarisation dataset."""
 
 import pandas as pd
-from constants import MAX_NUM_CHARS_IN_ARTICLE, MIN_NUM_CHARS_IN_ARTICLE
 from datasets import Dataset, DatasetDict, Split, load_dataset
 from huggingface_hub import HfApi
+
+from .constants import MAX_NUM_CHARS_IN_ARTICLE, MIN_NUM_CHARS_IN_ARTICLE
 
 
 def main() -> None:
@@ -40,9 +41,9 @@ def main() -> None:
     test_lengths = test_df.text.str.len()
     lower_bound = MIN_NUM_CHARS_IN_ARTICLE
     upper_bound = MAX_NUM_CHARS_IN_ARTICLE
-    train_df = train_df[train_lengths.between(lower_bound, upper_bound)]
-    val_df = val_df[val_lengths.between(lower_bound, upper_bound)]
-    test_df = test_df[test_lengths.between(lower_bound, upper_bound)]
+    train_df = train_df.loc[train_lengths.between(lower_bound, upper_bound)]
+    val_df = val_df.loc[val_lengths.between(lower_bound, upper_bound)]
+    test_df = test_df.loc[test_lengths.between(lower_bound, upper_bound)]
 
     # Create validation split
     val_size = 256
@@ -61,9 +62,11 @@ def main() -> None:
 
     # Collect datasets in a dataset dictionary
     dataset = DatasetDict(
-        train=Dataset.from_pandas(train_df, split=Split.TRAIN),
-        val=Dataset.from_pandas(val_df, split=Split.VALIDATION),
-        test=Dataset.from_pandas(test_df, split=Split.TEST),
+        {
+            "train": Dataset.from_pandas(train_df, split=Split.TRAIN),
+            "val": Dataset.from_pandas(val_df, split=Split.VALIDATION),
+            "test": Dataset.from_pandas(test_df, split=Split.TEST),
+        }
     )
 
     # Create dataset ID

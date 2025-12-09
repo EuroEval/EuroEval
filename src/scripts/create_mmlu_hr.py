@@ -14,7 +14,10 @@
 from collections import Counter
 
 import pandas as pd
-from constants import (
+from datasets import Dataset, DatasetDict, Split, load_dataset
+from huggingface_hub import HfApi
+
+from .constants import (
     CHOICES_MAPPING,
     MAX_NUM_CHARS_IN_INSTRUCTION,
     MAX_NUM_CHARS_IN_OPTION,
@@ -22,8 +25,6 @@ from constants import (
     MIN_NUM_CHARS_IN_INSTRUCTION,
     MIN_NUM_CHARS_IN_OPTION,
 )
-from datasets import Dataset, DatasetDict, Split, load_dataset
-from huggingface_hub import HfApi
 
 
 def main() -> None:
@@ -31,8 +32,11 @@ def main() -> None:
     # Read source dataset
     repo_id = "aialt/MuBench"
     dataset = load_dataset(path=repo_id, name="MMLUDataset_local_template_hr")
+    assert isinstance(dataset, DatasetDict)
     df_test = dataset["test"].to_pandas()
     df_validation = dataset["validation"].to_pandas()
+    assert isinstance(df_test, pd.DataFrame)
+    assert isinstance(df_validation, pd.DataFrame)
     df = pd.concat([df_test, df_validation], ignore_index=True)
 
     # Extract the question and options from the prompt
@@ -114,9 +118,11 @@ def main() -> None:
 
     # Collect datasets in a dataset dictionary
     dataset = DatasetDict(
-        train=Dataset.from_pandas(train_df, split=Split.TRAIN),
-        val=Dataset.from_pandas(val_df, split=Split.VALIDATION),
-        test=Dataset.from_pandas(test_df, split=Split.TEST),
+        {
+            "train": Dataset.from_pandas(train_df, split=Split.TRAIN),
+            "val": Dataset.from_pandas(val_df, split=Split.VALIDATION),
+            "test": Dataset.from_pandas(test_df, split=Split.TEST),
+        }
     )
 
     # Push the dataset to the Hugging Face Hub

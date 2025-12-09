@@ -17,7 +17,6 @@ from huggingface_hub import snapshot_download
 from pydantic import conlist, create_model
 from transformers.models.auto.configuration_auto import AutoConfig
 from transformers.models.auto.tokenization_auto import AutoTokenizer
-from transformers.tokenization_mistral_common import MistralCommonTokenizer
 from urllib3.exceptions import RequestError
 
 from ..constants import (
@@ -68,11 +67,11 @@ from ..tokenisation_utils import (
     has_chat_template,
     should_prompts_be_stripped,
 )
-from ..types import ExtractLabelsFunction
+from ..types import ExtractLabelsFunction, Tokeniser
 from ..utils import (
+    attention_backend,
     clear_memory,
     create_model_cache_dir,
-    flash_attention_backend,
     get_hf_token,
     get_min_cuda_compute_capability,
     internet_connection_available,
@@ -81,26 +80,37 @@ from ..utils import (
 )
 from .hf import HuggingFaceEncoderModel, get_model_repo_info, load_hf_model_config
 
+try:
+    from transformers.tokenization_mistral_common import MistralCommonTokenizer
+except ImportError:
+    from transformers.tokenization_mistral_common import (
+        MistralCommonBackend as MistralCommonTokenizer,
+    )
+
 if t.TYPE_CHECKING or importlib.util.find_spec("vllm") is not None:
-    from vllm import LLM, SamplingParams
-    from vllm.distributed.parallel_state import (
+    from vllm import LLM, SamplingParams  # type: ignore[missing-import]
+    from vllm.distributed.parallel_state import (  # type: ignore[missing-import]
         destroy_distributed_environment,
         destroy_model_parallel,
     )
-    from vllm.lora.request import LoRARequest
-    from vllm.sampling_params import StructuredOutputsParams
+    from vllm.lora.request import LoRARequest  # type: ignore[missing-import]
+    from vllm.sampling_params import (  #  type: ignore[missing-import]
+        StructuredOutputsParams,
+    )
 
 if t.TYPE_CHECKING:
     from datasets import DatasetDict
-    from transformers.tokenization_utils import PreTrainedTokenizer
     from transformers.trainer import Trainer
 
     from ..data_models import BenchmarkConfig, DatasetConfig, Task
 
 
-MODELS_REQUIRING_FLASH_ATTENTION: list[re.Pattern] = [
-    re.compile(r".*gpt-oss.*", flags=re.IGNORECASE)
-]
+MODELS_REQUIRING_CUSTOM_ATTENTION_BACKENDS: dict[re.Pattern, str] = {
+    re.compile(r".*gpt-oss.*", flags=re.IGNORECASE): "FLASH_ATTN",
+    re.compile(r"google/gemma-3-1b.*", flags=re.IGNORECASE): "FLASH_ATTN",
+    re.compile(r"google/gemma-3n.*", flags=re.IGNORECASE): "FLASH_ATTN",
+    re.compile(r"google/gemma-3-(4|12|27)b.*", flags=re.IGNORECASE): "TRITON_ATTN",
+}
 
 
 class VLLMModel(HuggingFaceEncoderModel):
@@ -150,20 +160,22 @@ class VLLMModel(HuggingFaceEncoderModel):
             model_config=model_config, allowed_params=self.allowed_params
         )
 
+        # See if the model requires a particular attention backend
+        default_flash_attention_backend = None
+        for pattern, backend in MODELS_REQUIRING_CUSTOM_ATTENTION_BACKENDS.items():
+            if re.search(pattern=pattern, string=model_config.model_id):
+                default_flash_attention_backend = backend
+                break
+
         with (
             no_terminal_output(disable=benchmark_config.verbose),
-            flash_attention_backend(
-                disabled=all(
-                    not re.search(pattern=pattern, string=model_config.model_id)
-                    for pattern in MODELS_REQUIRING_FLASH_ATTENTION
-                )
-            ),
+            attention_backend(value=default_flash_attention_backend),
         ):
             model, tokeniser = load_model_and_tokeniser(
                 model_config=model_config, benchmark_config=benchmark_config
             )
         self._model: "LLM" = model
-        self._tokeniser: "PreTrainedTokenizer" = tokeniser
+        self._tokeniser: Tokeniser = tokeniser
 
         # We specify `HuggingFaceEncoderModel` here instead of `VLLMModel`, as we want
         # to call the `__init__` method of the `BenchmarkModule` class.
@@ -339,7 +351,7 @@ class VLLMModel(HuggingFaceEncoderModel):
         else:
             few_shot_examples = list()
 
-        dataset["test"] = dataset["test"].map(
+        dataset["test"] = dataset["test"].map(  # type: ignore[unsupported-operation]
             partial(
                 apply_prompt,
                 few_shot_examples=few_shot_examples,
@@ -392,7 +404,7 @@ class VLLMModel(HuggingFaceEncoderModel):
                 self._tokeniser.pad_token = self._tokeniser.eos_token
         if self.end_of_chat_token_ids is not None:
             end_of_chat_token = self._tokeniser.decode(
-                self.end_of_chat_token_ids
+                list(self.end_of_chat_token_ids)
             ).strip()
             if end_of_chat_token:
                 stop_tokens.append(end_of_chat_token)
@@ -610,9 +622,7 @@ class VLLMModel(HuggingFaceEncoderModel):
             list(output.outputs[0].token_ids) for output in raw_outputs
         ]
         completions = self._tokeniser.batch_decode(
-            sequences=[
-                torch.LongTensor(completion_id) for completion_id in completion_ids
-            ],
+            sequences=[list(completion_id) for completion_id in completion_ids],
             skip_special_tokens=False,
         )
         if (
@@ -784,7 +794,7 @@ class VLLMModel(HuggingFaceEncoderModel):
         return model_config
 
     @property
-    def data_collator(self) -> c.Callable[[c.Sequence[t.Any]], dict[str, t.Any]]:
+    def data_collator(self) -> c.Callable[[list[dict[str, t.Any]]], dict[str, t.Any]]:
         """The data collator used to prepare samples during finetuning.
 
         Returns:
@@ -808,7 +818,7 @@ class VLLMModel(HuggingFaceEncoderModel):
 
 def load_model_and_tokeniser(
     model_config: "ModelConfig", benchmark_config: "BenchmarkConfig"
-) -> tuple["LLM", "PreTrainedTokenizer"]:
+) -> tuple["LLM", Tokeniser]:
     """Load the model and tokeniser.
 
     Args:
@@ -1032,7 +1042,7 @@ def load_tokeniser(
     model_max_length: int,
     model_config: "ModelConfig",
     token: str | bool,
-) -> "PreTrainedTokenizer":
+) -> Tokeniser:
     """Load the tokeniser.
 
     Args:
@@ -1151,7 +1161,7 @@ def clear_vllm() -> None:
 
 
 def get_end_of_reasoning_token(
-    model: "LLM", tokeniser: "PreTrainedTokenizer", model_config: "ModelConfig"
+    model: "LLM", tokeniser: Tokeniser, model_config: "ModelConfig"
 ) -> str | re.Pattern | None:
     """Get the end-of-reasoning token for a generative model.
 
@@ -1272,7 +1282,7 @@ def get_end_of_reasoning_token(
 
 def get_custom_stop_tokens(
     model: "LLM",
-    tokeniser: "PreTrainedTokenizer",
+    tokeniser: Tokeniser,
     model_id: str,
     generative_type: GenerativeType | None,
 ) -> list[str]:
@@ -1333,7 +1343,7 @@ def get_custom_stop_tokens(
 
 
 def get_vllm_tokenisation_params(
-    tokeniser: "PreTrainedTokenizer", model_config: "ModelConfig"
+    tokeniser: Tokeniser, model_config: "ModelConfig"
 ) -> dict[str, t.Any]:
     """Get the tokenisation parameters for vLLM.
 

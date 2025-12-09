@@ -14,7 +14,11 @@
 from collections import Counter
 
 import pandas as pd
-from constants import (
+from datasets import Dataset, DatasetDict, Split, load_dataset
+from huggingface_hub import HfApi
+from sklearn.model_selection import train_test_split
+
+from .constants import (
     CHOICES_MAPPING,
     MAX_NUM_CHARS_IN_INSTRUCTION,
     MAX_NUM_CHARS_IN_OPTION,
@@ -22,9 +26,6 @@ from constants import (
     MIN_NUM_CHARS_IN_INSTRUCTION,
     MIN_NUM_CHARS_IN_OPTION,
 )
-from datasets import Dataset, DatasetDict, Split, load_dataset
-from huggingface_hub import HfApi
-from sklearn.model_selection import train_test_split
 
 
 def main() -> None:
@@ -49,11 +50,13 @@ def main() -> None:
         val_dataset = load_dataset(
             path=repo_id, name=subset_name, token=True, split="validation"
         )
+        assert isinstance(val_dataset, Dataset)
         val_df = process_(dataset=val_dataset, language_code=language_code)
 
         train_dataset = load_dataset(
             path=repo_id, name=subset_name, token=True, split="train"
         )
+        assert isinstance(train_dataset, Dataset)
         train_df = process_(dataset=train_dataset, language_code=language_code)
 
         total_dataset = pd.concat([train_df, val_df])
@@ -73,9 +76,11 @@ def main() -> None:
 
         # Collect datasets in a dataset dictionary
         dataset = DatasetDict(
-            train=Dataset.from_pandas(train_df, split=Split.TRAIN),
-            val=Dataset.from_pandas(val_df, split=Split.VALIDATION),
-            test=Dataset.from_pandas(test_df, split=Split.TEST),
+            {
+                "train": Dataset.from_pandas(train_df, split=Split.TRAIN),
+                "val": Dataset.from_pandas(val_df, split=Split.VALIDATION),
+                "test": Dataset.from_pandas(test_df, split=Split.TEST),
+            }
         )
 
         dataset_id = f"EuroEval/goldenswag-{language_code}-mini"
@@ -126,7 +131,7 @@ def process_(dataset: Dataset, language_code: str) -> pd.DataFrame:
         return max_repetitions > MAX_REPETITIONS
 
     # Remove overly repetitive samples
-    df = df[
+    df = df.loc[
         ~df.ctx.apply(is_repetitive)
         & ~df.endings.map(
             lambda endings: any(is_repetitive(ending) for ending in endings)
@@ -164,7 +169,7 @@ def process_(dataset: Dataset, language_code: str) -> pd.DataFrame:
     df.label = df.label.str.lower()
 
     # Only keep the columns `text`, `label` and `activity_label`
-    df = df[["text", "label", "activity_label"]]
+    df = df.loc[["text", "label", "activity_label"]]
     return df
 
 

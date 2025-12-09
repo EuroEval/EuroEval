@@ -48,7 +48,7 @@ def main() -> None:
     # Sort data by length, to make sure we do not get exceedingly long examples
     ds = ds.map(lambda x: {"length": len(x["text"].split())})
     for split in ds.keys():
-        ds[split] = ds[split].sort("length")
+        ds[split] = ds[split].sort("length")  #  type: ignore[bad-argument-type]
     ds = ds.remove_columns("length")
 
     train_size = 1024
@@ -58,13 +58,18 @@ def main() -> None:
     new_ds = DatasetDict()
 
     # Create new splits
-    new_ds["train"] = ds["train"].select(range(train_size))
-    new_ds["val"] = ds["val"].select(range(val_size))
-    new_ds["test"] = concatenate_datasets(
-        [
-            ds["test"],
-            ds["train"].skip(train_size).select(range(test_size - len(ds["test"]))),
-        ]
+    new_train_ds = ds["train"].select(range(train_size))
+    new_val_ds = ds["val"].select(range(val_size))
+    new_test_ds = (
+        ds["train"].skip(train_size).select(range(test_size - len(ds["test"])))
+    )
+    assert isinstance(new_test_ds, Dataset)
+    new_test_ds = concatenate_datasets([ds["test"], new_test_ds])
+    assert isinstance(new_train_ds, Dataset)
+    assert isinstance(new_val_ds, Dataset)
+
+    new_ds = DatasetDict(
+        {"train": new_train_ds, "val": new_val_ds, "test": new_test_ds}
     )
 
     # Delete the existing dataset repository if it exists

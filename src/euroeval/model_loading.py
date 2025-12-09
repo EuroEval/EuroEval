@@ -39,7 +39,7 @@ def load_model(
 
     # The order matters; the first model type that matches will be used. For this
     # reason, they have been ordered in terms of the most common model types.
-    model_class: t.Type[BenchmarkModule]
+    model_class: t.Type["BenchmarkModule"]
     match (model_config.model_type, model_config.inference_backend, model_config.fresh):
         case (ModelType.GENERATIVE, InferenceBackend.VLLM, False):
             model_class = VLLMModel

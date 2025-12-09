@@ -14,13 +14,14 @@ import json
 import os
 
 import pandas as pd
-from constants import MAX_NUM_CHARS_IN_ARTICLE, MIN_NUM_CHARS_IN_ARTICLE
 from datasets import Dataset, DatasetDict, Split, load_dataset
 from dotenv import load_dotenv
 from huggingface_hub import HfApi
 from openai import OpenAI
 from openai.types.chat import ChatCompletionUserMessageParam
 from pydantic import BaseModel
+
+from .constants import MAX_NUM_CHARS_IN_ARTICLE, MIN_NUM_CHARS_IN_ARTICLE
 
 load_dotenv()
 
@@ -87,6 +88,10 @@ def main() -> None:
     val_df = dataset["validation"].to_pandas()
     test_df = dataset["test"].to_pandas()
 
+    assert isinstance(train_df, pd.DataFrame)
+    assert isinstance(val_df, pd.DataFrame)
+    assert isinstance(test_df, pd.DataFrame)
+
     train_df = process(df=train_df)
     val_df = process(df=val_df)
     test_df = process(df=test_df)
@@ -97,9 +102,11 @@ def main() -> None:
 
     # Collect datasets in a dataset dictionary
     mini_dataset = DatasetDict(
-        train=Dataset.from_pandas(train_df_final, split=Split.TRAIN),
-        val=Dataset.from_pandas(val_df_final, split=Split.VALIDATION),
-        test=Dataset.from_pandas(test_df_final, split=Split.TEST),
+        {
+            "train": Dataset.from_pandas(train_df_final, split=Split.TRAIN),
+            "val": Dataset.from_pandas(val_df_final, split=Split.VALIDATION),
+            "test": Dataset.from_pandas(test_df_final, split=Split.TEST),
+        }
     )
 
     # Create dataset ID
@@ -123,7 +130,7 @@ def process(df: pd.DataFrame) -> pd.DataFrame:
     """
     # Validate samples using an LLM
     df["is_valid_summary"] = df.apply(_text_summary_alignment, axis=1)
-    df = df[df["is_valid_summary"]]
+    df = df.loc[df["is_valid_summary"]]
 
     keep_columns = ["text", "target_text"]
     df = df[keep_columns]
@@ -163,7 +170,10 @@ def _text_summary_alignment(row: pd.Series) -> bool:
     completion = client.beta.chat.completions.parse(
         model="gpt-4o", messages=messages, response_format=SummaryValidation
     )
-    is_valid_summary = completion.choices[0].message.parsed.is_valid_summary
+    parsed = completion.choices[0].message.parsed
+    if parsed is None:
+        raise ValueError("Parsed response is None")
+    is_valid_summary = parsed.is_valid_summary
 
     # Cache the result
     summary_cache[summary] = is_valid_summary
@@ -200,7 +210,7 @@ def create_splits(
         n=n_missing_val_samples, random_state=4242
     )
     val_df_final = pd.concat([val_df, val_df_additional], ignore_index=True)
-    train_df_remaining = train_df_remaining[
+    train_df_remaining = train_df_remaining.loc[
         ~train_df_remaining.index.isin(val_df_additional.index)
     ]
 
@@ -215,6 +225,10 @@ def create_splits(
     train_df_final = train_df_final.reset_index(drop=True)
     val_df_final = val_df_final.reset_index(drop=True)
     test_df_final = test_df_final.reset_index(drop=True)
+
+    assert isinstance(train_df_final, pd.DataFrame)
+    assert isinstance(val_df_final, pd.DataFrame)
+    assert isinstance(test_df_final, pd.DataFrame)
 
     return train_df_final, val_df_final, test_df_final
 

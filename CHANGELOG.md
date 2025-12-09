@@ -7,24 +7,43 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Fixed
+
+- When a model has registered the number of parameters wrongly within their safetensors
+  files, we collect all the potential parameter counts from the safetensors file and
+  pick the largest one.
+- We now pinned vLLM to v0.11.0, as all future versions (up to and including v0.12.0)
+  have breaking changes regarding loading of Mistral models. We aim to unpin this when a
+  new vLLM version fixes this.
+- Removed mentions of `hf_transfer` and the associated environment variable
+  `HF_HUB_ENABLE_HF_TRANSFER`, since this has been removed from the `transformers`
+  library now.
+
+## [v16.8.0] - 2025-11-25
+
 ### Added
 
 - Added the Swedish factual knowledge dataset SwedishFacts, which is based on the
   [liu-nlp/swedish-facts-v1](https://huggingface.co/datasets/liu-nlp/swedish-facts-v1)
   dataset.
-- Added support for Catalan! This includes the sentiment classification dataset
-  GuiaCat, the linguistic acceptability dataset ScaLA-ca, the named entity recognition
-  dataset WikiANN-ca, the reading comprehension dataset MultiWikiQA-ca, the summarisation
-  dataset DACSA-ca, the knowledge dataset MMLU-ca, and the common-sense reasoning dataset
-  Winogrande-ca.
-- Added Spanish summarisation dataset DACSA-es as an unofficial dataset.
-- Added Lithuanian sentiment classification dataset Atsiliepimai to replace the now
-  unofficial Lithuanian Emotions dataset.
+- Added support for Romanian 🇷🇴! This includes the sentiment classification dataset
+  RoSent, the linguistic acceptability dataset ScaLA-ro, the named entity recognition
+  dataset RoNEC, the reading comprehension dataset MultiWikiQA-ro, the summarisation
+  dataset SumO-Ro, the knowledge dataset Global-MMLU-ro, and the common-sense
+  reasoning dataset Winogrande-ro. This was contributed by @oliverkinch ✨
 - Added support for Hungarian 🇭🇺! This includes the sentiment classification dataset
   HuSST, the linguistic acceptability dataset ScaLA-hu, the named entity recognition
   dataset SzegedNER, the reading comprehension dataset MultiWikiQA-hu, the
   summarisation dataset HunSum, the knowledge dataset MMLU-hu, and the common-sense
-  reasoning dataset Winogrande-hu.
+  reasoning dataset Winogrande-hu. This was contributed by @oliverkinch ✨
+- Added support for Catalan! This includes the sentiment classification dataset
+  GuiaCat, the linguistic acceptability dataset ScaLA-ca, the named entity recognition
+  dataset WikiANN-ca, the reading comprehension dataset MultiWikiQA-ca, the summarisation
+  dataset DACSA-ca, the knowledge dataset MMLU-ca, and the common-sense reasoning dataset
+  Winogrande-ca. This was contributed by @oliverkinch ✨
+- Added Spanish summarisation dataset DACSA-es as an unofficial dataset.
+- Added Lithuanian sentiment classification dataset Atsiliepimai to replace the now
+  unofficial Lithuanian Emotions dataset. This was contributed by @oliverkinch ✨
 - Added new `--custom-datasets-file` (`custom_datasets_file` in the `Benchmarker` API)
   argument, which can be used to specify a custom Python file containing custom dataset
   definitions. It defaults to `custom_datasets.py` in the current working directory.
@@ -34,6 +53,16 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - When evaluating models with the `--debug` flag (`debug=True` in the `Benchmarker`
   API), we now include the full model inputs and outputs in the JSON file stored to the
   current working directory, where we previously only included the model outputs.
+
+### Fixed
+
+- When encountering rate limits for API inference models, we ended up waiting 10 seconds
+  for each request, which was unnecessarily long. We now only wait 10 seconds for each
+  batch of requests.
+- Uses the `FLASH_ATTN` backend with vLLM for Gemma-3-1b and Gemma-3n models now and the
+  `TRITON_ATTN` with the other Gemma-3 models, as their architecture is currently not
+  supported by the default `FLASHINFER` backend. Note that this can always be changed
+  manually with the `VLLM_ATTENTION_BACKEND` environment variable.
 
 ## [v16.7.1] - 2025-11-18
 
@@ -51,7 +80,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 - Added support for Bosnian 🇧🇦! This includes the sentiment classification dataset
   MMS-bs, the named entity recognition dataset WikiANN-bs, the reading comprehension
-  dataset MultiWikiQA-bs, and the summarisation dataset LR-Sum-bs.
+  dataset MultiWikiQA-bs, and the summarisation dataset LR-Sum-bs. This was contributed
+  by @oliverkinch ✨
 - Now allows the 'low', 'medium' and 'high' reasoning effort parameters for the GPT-OSS
   models, which can be set by appending `#low`, `#medium` or `#high` to the model ID.
 
@@ -93,7 +123,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Added support for Croatian 🇭🇷! This includes the sentiment classification dataset
   MMS-hr, the linguistic acceptability dataset ScaLA-hr, the named entity recognition
   dataset WikiANN-hr, the reading comprehension dataset MultiWikiQA-hr, the knowledge
-  dataset MMLU-hr, and the common-sense reasoning dataset Winogrande-hr.
+  dataset MMLU-hr, and the common-sense reasoning dataset Winogrande-hr. This was
+  contributed by @oliverkinch ✨
 - Added a system dependency check for `nvcc` in the `VLLMModel.__init__` method to
   ensure the CUDA Toolkit is installed. Raises an error with installation instructions
   if NVCC is not available in the system PATH.
@@ -114,11 +145,6 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 
-- Added support for Slovene 🇸🇮! This includes the sentiment classification dataset
-  Sentinews, the linguistic acceptability dataset ScaLA-sl, the named entity recognition
-  dataset ssj500k-NER, the reading comprehension
-  dataset MultiWikiQA-sl, the knowledge dataset MMLU-sl, and the common-sense reasoning
-  dataset Winogrande-sl.
 - Added better support for evaluating on custom datasets, by allowing `DatasetConfig`
   objects directly in the `Benchmarker.benchmark` method. We also support custom
   datasets with the CLI, by simply defining the desired `DatasetConfig`s in a
@@ -127,6 +153,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   with the new `source` argument. This argument can both be the Hugging Face Hub ID of
   the dataset or a dictionary with 'train', 'val' and 'test', and values the paths to
   the CSV files.
+- Added support for Slovene 🇸🇮! This includes the sentiment classification dataset
+  Sentinews, the linguistic acceptability dataset ScaLA-sl, the named entity recognition
+  dataset ssj500k-NER, the reading comprehension
+  dataset MultiWikiQA-sl, the knowledge dataset MMLU-sl, and the common-sense reasoning
+  dataset Winogrande-sl. This was contributed by @oliverkinch ✨
 - Added support for Serbian 🇷🇸! This includes the sentiment classification dataset
   MMS-sr, the linguistic acceptability dataset ScaLA-sr, the named entity recognition
   dataset UNER-sr, the reading comprehension dataset MultiWikiQA-sr, the summarisation

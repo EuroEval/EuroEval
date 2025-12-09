@@ -24,16 +24,26 @@ FINAL_REPO_ID = "EuroEval/sst2-pt-mini"
 def main() -> None:
     """Create the dataset and upload to HF Hub."""
     ds_raw = load_dataset(ORIGINAL_REPO_ID, name="sst2_pt-PT")
-    train_base = cleanup(ds_raw["train"].to_pandas())
-    val_df = cleanup(ds_raw["validation"].to_pandas(), n=VAL_SIZE)
+    assert isinstance(ds_raw, DatasetDict)
+
+    train_df = ds_raw["train"].to_pandas()
+    val_df = ds_raw["validation"].to_pandas()
+
+    assert isinstance(train_df, pd.DataFrame)
+    assert isinstance(val_df, pd.DataFrame)
+
+    train_base = cleanup(df=train_df)
+    val_df = cleanup(df=val_df, n=VAL_SIZE)
 
     train_df, rest = stratified_sample(train_base, TRAIN_SIZE)
     test_df, _ = stratified_sample(rest, TEST_SIZE)
 
     dataset = DatasetDict(
-        train=Dataset.from_pandas(train_df, split=Split.TRAIN),
-        val=Dataset.from_pandas(val_df, split=Split.VALIDATION),
-        test=Dataset.from_pandas(test_df, split=Split.TEST),
+        {
+            "train": Dataset.from_pandas(train_df, split=Split.TRAIN),
+            "val": Dataset.from_pandas(val_df, split=Split.VALIDATION),
+            "test": Dataset.from_pandas(test_df, split=Split.TEST),
+        }
     )
 
     assert not set(dataset["train"]["text"]) & set(dataset["val"]["text"])
@@ -56,8 +66,8 @@ def cleanup(df: pd.DataFrame, n: int | None = None) -> pd.DataFrame:
         Cleaned DataFrame with 'text' and 'label' columns.
     """
     df = df.rename(columns={"sentence": "text"})
-    df["label"] = df["label"].map({0: "negative", 1: "positive"})
-    df = df[["text", "label"]].drop_duplicates()
+    df["label"] = df["label"].map(lambda x: {0: "negative", 1: "positive"}[x])
+    df = df.loc[["text", "label"]].drop_duplicates()
     if n:
         df = df.sample(n=min(n, len(df)), random_state=RANDOM_STATE)
     return df.reset_index(drop=True)
@@ -74,11 +84,15 @@ def stratified_sample(df: pd.DataFrame, n: int) -> tuple[pd.DataFrame, pd.DataFr
         Tuple of (sampled DataFrame, remainder DataFrame).
     """
     per_class = n // 2
-    pos = df[df["label"] == "positive"].sample(n=per_class, random_state=RANDOM_STATE)  # noqa: E501
-    neg = df[df["label"] == "negative"].sample(n=per_class, random_state=RANDOM_STATE)  # noqa: E501
+    pos = df[df["label"] == "positive"].sample(n=per_class, random_state=RANDOM_STATE)
+    neg = df[df["label"] == "negative"].sample(n=per_class, random_state=RANDOM_STATE)
     sample = pd.concat([pos, neg])
-    rest = df.drop(sample.index)
-    return sample.reset_index(drop=True), rest.reset_index(drop=True)
+    rest = df.drop(sample.index.tolist())
+    sample.reset_index(drop=True, inplace=True)
+    rest.reset_index(drop=True, inplace=True)
+    assert isinstance(sample, pd.DataFrame)
+    assert isinstance(rest, pd.DataFrame)
+    return sample, rest
 
 
 if __name__ == "__main__":

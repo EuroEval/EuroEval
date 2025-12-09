@@ -11,11 +11,12 @@
 """Create the Lithuanian Emotions dataset and upload it to the HF Hub."""
 
 import pandas as pd
-from constants import MAX_NUM_CHARS_IN_DOCUMENT, MIN_NUM_CHARS_IN_DOCUMENT  # noqa
 from datasets import Dataset, DatasetDict, Split, load_dataset
 from huggingface_hub import HfApi
 from sklearn.model_selection import train_test_split
 from sklearn.utils import resample
+
+from .constants import MAX_NUM_CHARS_IN_DOCUMENT, MIN_NUM_CHARS_IN_DOCUMENT  # noqa
 
 
 def main() -> None:
@@ -32,6 +33,10 @@ def main() -> None:
     val_df = dataset["comb_validation"].to_pandas()
     test_df1 = dataset["lt_go_emotions_test"].to_pandas()
     test_df2 = dataset["lt_twitter_emotions_test"].to_pandas()
+    assert isinstance(train_df, pd.DataFrame)
+    assert isinstance(val_df, pd.DataFrame)
+    assert isinstance(test_df1, pd.DataFrame)
+    assert isinstance(test_df2, pd.DataFrame)
 
     # Combine the two test splits
     test_df = pd.concat([test_df1, test_df2], ignore_index=True)
@@ -46,7 +51,7 @@ def main() -> None:
             The processed dataframe.
         """
         # Filter to only keep samples with single labels (ignore multi-label samples)
-        df = df[df["labels"].apply(lambda x: len(x) == 1)].copy()
+        df = df.loc[df["labels"].apply(lambda x: len(x) == 1)].copy()
 
         # Extract the single integer from the labels list
         df["label_int"] = df["labels"].apply(lambda x: x[0])
@@ -109,9 +114,11 @@ def main() -> None:
 
     # Create DatasetDict
     dataset = DatasetDict(
-        train=Dataset.from_pandas(train_df, split=Split.TRAIN),
-        val=Dataset.from_pandas(val_df, split=Split.VALIDATION),
-        test=Dataset.from_pandas(test_df, split=Split.TEST),
+        {
+            "train": Dataset.from_pandas(train_df, split=Split.TRAIN),
+            "val": Dataset.from_pandas(val_df, split=Split.VALIDATION),
+            "test": Dataset.from_pandas(test_df, split=Split.TEST),
+        }
     )
 
     # Create dataset ID

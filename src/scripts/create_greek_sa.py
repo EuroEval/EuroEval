@@ -11,10 +11,11 @@
 """Create the Greek sentiment analysis dataset and upload it to the HF Hub."""
 
 import pandas as pd
-from constants import MAX_NUM_CHARS_IN_DOCUMENT, MIN_NUM_CHARS_IN_DOCUMENT  # noqa
 from datasets import Dataset, DatasetDict, Split, load_dataset
 from huggingface_hub import HfApi
 from sklearn.utils import resample
+
+from .constants import MAX_NUM_CHARS_IN_DOCUMENT, MIN_NUM_CHARS_IN_DOCUMENT  # noqa
 
 
 def main() -> None:
@@ -47,7 +48,9 @@ def main() -> None:
     final_test_df = pd.concat([test_df, additional_test_samples], ignore_index=True)
 
     # Remove the additional samples from train set
-    remaining_train_df = train_df[~train_df.index.isin(additional_test_samples.index)]
+    remaining_train_df = train_df.loc[
+        ~train_df.index.isin(additional_test_samples.index.tolist())
+    ]
 
     # Sample final splits
     final_test_df = final_test_df.sample(n=test_size, random_state=4242).reset_index(
@@ -63,9 +66,11 @@ def main() -> None:
 
     # Collect datasets in a dataset dictionary
     dataset = DatasetDict(
-        train=Dataset.from_pandas(final_train_df, split=Split.TRAIN),
-        val=Dataset.from_pandas(final_val_df, split=Split.VALIDATION),
-        test=Dataset.from_pandas(final_test_df, split=Split.TEST),
+        {
+            "train": Dataset.from_pandas(final_train_df, split=Split.TRAIN),
+            "val": Dataset.from_pandas(final_val_df, split=Split.VALIDATION),
+            "test": Dataset.from_pandas(final_test_df, split=Split.TEST),
+        }
     )
 
     # Push the dataset to the Hugging Face Hub
@@ -85,14 +90,14 @@ def process_split(dataset: Dataset) -> pd.DataFrame:
     """
     df = dataset.to_pandas()
     assert isinstance(df, pd.DataFrame)
-    df["label"] = df["label"].map({0: "negative", 1: "positive"})
+    df["label"] = df["label"].map(lambda x: {0: "negative", 1: "positive"}[x])
     df["text_len"] = df["text"].str.len()
     df = df.query("text_len >= @MIN_NUM_CHARS_IN_DOCUMENT").query(
         "text_len <= @MAX_NUM_CHARS_IN_DOCUMENT"
     )
     df = df.drop(columns=["text_len"]).reset_index(drop=True)
     keep_columns = ["text", "label"]
-    return df[keep_columns]
+    return df.loc[keep_columns]
 
 
 def create_uniform_label_distribution(

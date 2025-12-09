@@ -11,17 +11,18 @@
 """Create the TydiQA-mini Finnish dataset and upload it to the HF Hub."""
 
 import pandas as pd
-from constants import (
-    MAX_NUM_CHARS_IN_CONTEXT,
-    MAX_NUM_CHARS_IN_QUESTION,
-    MIN_NUM_CHARS_IN_CONTEXT,
-    MIN_NUM_CHARS_IN_QUESTION,
-)
 from datasets.arrow_dataset import Dataset
 from datasets.dataset_dict import DatasetDict
 from datasets.load import load_dataset
 from datasets.splits import Split
 from huggingface_hub.hf_api import HfApi
+
+from .constants import (
+    MAX_NUM_CHARS_IN_CONTEXT,
+    MAX_NUM_CHARS_IN_QUESTION,
+    MIN_NUM_CHARS_IN_CONTEXT,
+    MIN_NUM_CHARS_IN_QUESTION,
+)
 
 
 def main() -> None:
@@ -39,9 +40,13 @@ def main() -> None:
     # Make train_df and val_df
     train_df = train.to_pandas()
     val_df = val.to_pandas()
+    assert isinstance(train_df, pd.DataFrame)
+    assert isinstance(val_df, pd.DataFrame)
 
     # Extract all Finnish samples
     train_df, val_df = [df[df.id.str.contains("finnish")] for df in (train_df, val_df)]
+    assert isinstance(train_df, pd.DataFrame)
+    assert isinstance(val_df, pd.DataFrame)
 
     train_df, val_df = [process_df(df=df) for df in (train_df, val_df)]
 
@@ -77,9 +82,11 @@ def main() -> None:
 
     # Collect datasets in a dataset dictionary
     dataset = DatasetDict(
-        train=Dataset.from_pandas(final_train_df, split=Split.TRAIN),
-        val=Dataset.from_pandas(final_val_df, split=Split.VALIDATION),
-        test=Dataset.from_pandas(final_test_df, split=Split.TEST),
+        {
+            "train": Dataset.from_pandas(final_train_df, split=Split.TRAIN),
+            "val": Dataset.from_pandas(final_val_df, split=Split.VALIDATION),
+            "test": Dataset.from_pandas(final_test_df, split=Split.TEST),
+        }
     )
 
     # Push the dataset to the Hugging Face Hub
@@ -99,7 +106,7 @@ def process_df(df: pd.DataFrame) -> pd.DataFrame:
     """
     # Only work with samples where the context is not very large or small
     lengths = df.context.str.len()
-    df = df[lengths.between(MIN_NUM_CHARS_IN_CONTEXT, MAX_NUM_CHARS_IN_CONTEXT)]
+    df = df.loc[lengths.between(MIN_NUM_CHARS_IN_CONTEXT, MAX_NUM_CHARS_IN_CONTEXT)]
 
     # Only work with samples where the context is not very large or small
     lengths = df.question.str.len()

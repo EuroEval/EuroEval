@@ -28,6 +28,7 @@ from ..languages import (
     NORWEGIAN_NYNORSK,
     POLISH,
     PORTUGUESE,
+    ROMANIAN,
     SERBIAN,
     SLOVAK,
     SLOVENE,
@@ -42,14 +43,10 @@ if t.TYPE_CHECKING:
 RC_TEMPLATES: dict["Language", PromptConfig] = {
     BOSNIAN: PromptConfig(
         default_prompt_prefix="Slijede tekstovi s pitanjima i odgovorima.",
-        default_prompt_template=(
-            "Tekst: {text}\nPitanje: {question}\nOdgovor s najviše 3 riječi: {label}"
-        ),
-        default_instruction_prompt=(
-            "Tekst: {text}\n\n"
-            "Odgovorite na sljedeće pitanje o gornjem tekstu s najviše 3 riječi.\n\n"
-            "Pitanje: {question}"
-        ),
+        default_prompt_template="Tekst: {text}\nPitanje: {question}\nOdgovor s "
+        "najviše 3 riječi: {label}",
+        default_instruction_prompt="Tekst: {text}\n\nOdgovorite na sljedeće "
+        "pitanje o gornjem tekstu s najviše 3 riječi.\n\nPitanje: {question}",
         default_prompt_label_mapping=dict(),
     ),
     BULGARIAN: PromptConfig(
@@ -61,42 +58,27 @@ RC_TEMPLATES: dict["Language", PromptConfig] = {
         default_prompt_label_mapping=dict(),
     ),
     CATALAN: PromptConfig(
-        default_prompt_prefix=("Els textos següents contenen preguntes i respostes."),
-        default_prompt_template=(
-            "Text: {text}\nPregunta: {question}\n"
-            "Resposta amb un màxim de 3 paraules: {label}"
-        ),
-        default_instruction_prompt=(
-            "Text: {text}\n\n"
-            "Respon a la següent pregunta sobre el text anterior amb un màxim "
-            "de 3 paraules.\n\n"
-            "Pregunta: {question}"
-        ),
+        default_prompt_prefix="Els textos següents contenen preguntes i respostes.",
+        default_prompt_template="Text: {text}\nPregunta: {question}\nResposta amb un "
+        "màxim de 3 paraules: {label}",
+        default_instruction_prompt="Text: {text}\n\nRespon a la següent pregunta "
+        "sobre el text anterior amb un màxim de 3 paraules.\n\nPregunta: {question}",
         default_prompt_label_mapping=dict(),
     ),
     CROATIAN: PromptConfig(
-        default_prompt_prefix=("Sljedeći tekstovi sadrže pitanja i odgovore."),
-        default_prompt_template=(
-            "Tekst: {text}\nPitanje: {question}\nOdgovor s najviše 3 riječi: {label}"
-        ),
-        default_instruction_prompt=(
-            "Tekst: {text}\n\n"
-            "Odgovorite na sljedeće pitanje o gornjem tekstu s najviše 3 riječi.\n\n"
-            "Pitanje: {question}"
-        ),
+        default_prompt_prefix="Sljedeći tekstovi sadrže pitanja i odgovore.",
+        default_prompt_template="Tekst: {text}\nPitanje: {question}\nOdgovor s "
+        "najviše 3 riječi: {label}",
+        default_instruction_prompt="Tekst: {text}\n\nOdgovorite na sljedeće pitanje "
+        "o gornjem tekstu s najviše 3 riječi.\n\nPitanje: {question}",
         default_prompt_label_mapping=dict(),
     ),
     CZECH: PromptConfig(
         default_prompt_prefix="Následující texty obsahují otázky a odpovědi.",
-        default_prompt_template=(
-            "Text: {text}\nOtázka: {question}\nOdpověď maximálně 3 slovy: {label}"
-        ),
-        default_instruction_prompt=(
-            "Text: {text}\n\n"
-            "Odpovězte na následující otázku k výše uvedenému textu "
-            "maximálně 3 slovy.\n\n"
-            "Otázka: {question}"
-        ),
+        default_prompt_template="Text: {text}\nOtázka: {question}\nOdpověď maximálně "
+        "3 slovy: {label}",
+        default_instruction_prompt="Text: {text}\n\nOdpovězte na následující otázku k "
+        "výše uvedenému textu maximálně 3 slovy.\n\nOtázka: {question}",
         default_prompt_label_mapping=dict(),
     ),
     DANISH: PromptConfig(
@@ -126,18 +108,12 @@ RC_TEMPLATES: dict["Language", PromptConfig] = {
         default_prompt_label_mapping=dict(),
     ),
     HUNGARIAN: PromptConfig(
-        default_prompt_prefix=(
-            "Az alábbiakban szövegek szerepelnek a hozzájuk "
-            "tartozó kérdésekkel és válaszokkal."
-        ),
-        default_prompt_template=(
-            "Szöveg: {text}\nKérdés: {question}\nVálasz legfeljebb 3 szóban: {label}"
-        ),
-        default_instruction_prompt=(
-            "Szöveg: {text}\n\n"
-            "Válaszoljon az alábbi kérdésre a fenti szöveg alapján "
-            "legfeljebb 3 szóban.\n\nKérdés: {question}"
-        ),
+        default_prompt_prefix="Az alábbiakban szövegek szerepelnek a hozzájuk tartozó "
+        "kérdésekkel és válaszokkal.",
+        default_prompt_template="Szöveg: {text}\nKérdés: {question}\nVálasz "
+        "legfeljebb 3 szóban: {label}",
+        default_instruction_prompt="Szöveg: {text}\n\nVálaszoljon az alábbi kérdésre "
+        "a fenti szöveg alapján legfeljebb 3 szóban.\n\nKérdés: {question}",
         default_prompt_label_mapping=dict(),
     ),
     ENGLISH: PromptConfig(
@@ -262,10 +238,18 @@ RC_TEMPLATES: dict["Language", PromptConfig] = {
         "teksten ovenfor med maks 3 ord.\n\nSpørsmål: {question}",
         default_prompt_label_mapping=dict(),
     ),
+    ROMANIAN: PromptConfig(
+        default_prompt_prefix="Iată texte cu întrebări și răspunsuri însoțite.",
+        default_prompt_template="Text: {text}\nÎntrebare: {question}\nRăspuns de "
+        "maxim 3 cuvinte: {label}",
+        default_instruction_prompt="Text: {text}\n\nRăspunde la următoarea întrebare "
+        "referitoare la textul de mai sus folosind maxim 3 cuvinte.\n\nÎntrebare: "
+        "{question}",
+        default_prompt_label_mapping=dict(),
+    ),
     POLISH: PromptConfig(
-        default_prompt_prefix=(
-            "Poniżej znajdują się teksty z towarzyszącymi pytaniami i odpowiedziami."
-        ),
+        default_prompt_prefix="Poniżej znajdują się teksty z towarzyszącymi "
+        "pytaniami i odpowiedziami.",
         default_prompt_template="Tekst: {text}\nPytanie: {question}\nOdpowiedź z "
         "użyciem maksymalnie 3 słów: {label}",
         default_instruction_prompt="Tekst: {text}\n\nOdpowiedz na następujące pytanie "
@@ -283,46 +267,28 @@ RC_TEMPLATES: dict["Language", PromptConfig] = {
         default_prompt_label_mapping=dict(),
     ),
     SLOVENE: PromptConfig(
-        default_prompt_prefix=(
-            "Spodaj so besedila z ustreznimi vprašanji in odgovori."
-        ),
-        default_prompt_template=(
-            "Besedilo: {text}\n"
-            "Vprašanje: {question}\n"
-            "Odgovor v največ 3 besedah: {label}"
-        ),
-        default_instruction_prompt=(
-            "Besedilo: {text}\n\n"
-            "Odgovorite na naslednje vprašanje o zgornjem besedilu "
-            "v največ 3 besedah.\n\n"
-            "Vprašanje: {question}"
-        ),
+        default_prompt_prefix="Spodaj so besedila z ustreznimi vprašanji in odgovori.",
+        default_prompt_template="Besedilo: {text}\nVprašanje: {question}\nOdgovor v "
+        "največ 3 besedah: {label}",
+        default_instruction_prompt="Besedilo: {text}\n\nOdgovorite na naslednje "
+        "vprašanje o zgornjem besedilu v največ 3 besedah.\n\nVprašanje: {question}",
         default_prompt_label_mapping=dict(),
     ),
     SLOVAK: PromptConfig(
-        default_prompt_prefix=("Nasledujú texty s pridruženými otázkami a odpoveďami."),
-        default_prompt_template=(
-            "Text: {text}\nOtázka: {question}\nOdpoveď na maximálne 3 slová: {label}"
-        ),
-        default_instruction_prompt=(
-            "Text: {text}\n\n"
-            "Odpovedzte na nasledujúcu otázku týkajúcu sa textu uvedeného vyššie "
-            "maximálne 3 slovami.\n\nOtázka: {question}"
-        ),
+        default_prompt_prefix="Nasledujú texty s pridruženými otázkami a odpoveďami.",
+        default_prompt_template="Text: {text}\nOtázka: {question}\nOdpoveď na "
+        "maximálne 3 slová: {label}",
+        default_instruction_prompt="Text: {text}\n\nOdpovedzte na nasledujúcu "
+        "otázku týkajúcu sa textu uvedeného vyššie maximálne 3 slovami.\n\nOtázka: "
+        "{question}",
         default_prompt_label_mapping=dict(),
     ),
     SERBIAN: PromptConfig(
-        default_prompt_prefix=(
-            "Следе текстови са одговарајућим питањима и одговорима."
-        ),
-        default_prompt_template=(
-            "Текст: {text}\nПитање: {question}\nОдговор у максимум 3 речи: {label}"
-        ),
-        default_instruction_prompt=(
-            "Текст: {text}\n\n"
-            "Одговорите на следеће питање о горњем тексту у максимум 3 речи.\n\n"
-            "Питање: {question}"
-        ),
+        default_prompt_prefix="Следе текстови са одговарајућим питањима и одговорима.",
+        default_prompt_template="Текст: {text}\nПитање: {question}\nОдговор у "
+        "максимум 3 речи: {label}",
+        default_instruction_prompt="Текст: {text}\n\nОдговорите на следеће питање о "
+        "горњем тексту у максимум 3 речи.\n\nПитање: {question}",
         default_prompt_label_mapping=dict(),
     ),
     SWEDISH: PromptConfig(
@@ -334,17 +300,12 @@ RC_TEMPLATES: dict["Language", PromptConfig] = {
         default_prompt_label_mapping=dict(),
     ),
     UKRAINIAN: PromptConfig(
-        default_prompt_prefix=(
-            "Нижче наведені тексти з відповідними питаннями та відповідями."
-        ),
-        default_prompt_template=(
-            "Текст: {text}\nПитання: {question}\nВідповідь максимум 3 словами: {label}"
-        ),
-        default_instruction_prompt=(
-            "Текст: {text}\n\n"
-            "Відповідь на наступне питання про вищезазначений текст максимум 3 "
-            "словами.\n\nПитання: {question}"
-        ),
+        default_prompt_prefix="Нижче наведені тексти з відповідними питаннями та "
+        "відповідями.",
+        default_prompt_template="Текст: {text}\nПитання: {question}\nВідповідь "
+        "максимум 3 словами: {label}",
+        default_instruction_prompt="Текст: {text}\n\nВідповідь на наступне питання "
+        "про вищезазначений текст максимум 3 словами.\n\nПитання: {question}",
         default_prompt_label_mapping=dict(),
     ),
 }

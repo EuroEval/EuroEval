@@ -8,6 +8,8 @@ import random
 import re
 import typing as t
 
+from datasets import Dataset
+
 from .enums import GenerativeType, TaskGroup
 from .exceptions import InvalidBenchmark, InvalidModel
 from .logging_utils import log_once
@@ -68,6 +70,10 @@ def extract_few_shot_examples(
     num_few_shots = dataset_config.num_few_shot_examples
     few_shot_examples: list[dict[str, t.Any]] = list()
     shuffled_train = dataset["train"].shuffle(seed=random_seed)
+    assert isinstance(shuffled_train, Dataset), (
+        f"Expected `shuffled_train` to be a Dataset, but got {type(shuffled_train)} "
+        "instead."
+    )
 
     match dataset_config.task.task_group:
         case (
@@ -86,7 +92,6 @@ def extract_few_shot_examples(
                     "Could not find enough short examples for few-shot learning."
                 )
 
-            shuffled_train = train_with_short_examples.shuffle(seed=random_seed)
             labels = it.cycle(dataset_config.labels)
             labels_with_no_samples: set[str] = set()
             while len(few_shot_examples) < num_few_shots and len(shuffled_train) > 0:
@@ -99,10 +104,17 @@ def extract_few_shot_examples(
                 possible_examples = shuffled_train.filter(
                     lambda x: x["label"].lower() == label.lower()
                 )
+                assert isinstance(possible_examples, Dataset), (
+                    f"Expected `possible_examples` to be a Dataset, but got "
+                    f"{type(possible_examples)} instead."
+                )
                 if len(possible_examples) == 0:
                     labels_with_no_samples.add(label)
                     continue
                 example = possible_examples.select(range(1))[0]
+                assert isinstance(example, dict), (
+                    f"Expected `example` to be a dict, but got {type(example)} instead."
+                )
                 few_shot_examples.append(example)
                 shuffled_train = shuffled_train.filter(
                     lambda x: x["text"] != example["text"]
@@ -111,6 +123,9 @@ def extract_few_shot_examples(
         case TaskGroup.TEXT_TO_TEXT:
             while len(few_shot_examples) < num_few_shots and len(shuffled_train) > 0:
                 example = shuffled_train.select(range(1))[0]
+                assert isinstance(example, dict), (
+                    f"Expected `example` to be a dict, but got {type(example)} instead."
+                )
                 few_shot_examples.append(example)
                 shuffled_train = shuffled_train.filter(
                     lambda x: x["text"] != example["text"]
@@ -129,9 +144,16 @@ def extract_few_shot_examples(
                 possible_examples = shuffled_train.filter(
                     lambda x: label in [tag.lower() for tag in x["labels"]]
                 )
+                assert isinstance(possible_examples, Dataset), (
+                    f"Expected `possible_examples` to be a Dataset, but got "
+                    f"{type(possible_examples)} instead."
+                )
                 if len(possible_examples) == 0:
                     continue
                 example = possible_examples.select(range(1))[0]
+                assert isinstance(example, dict), (
+                    f"Expected `example` to be a dict, but got {type(example)} instead."
+                )
                 few_shot_examples.append(example)
                 shuffled_train = shuffled_train.filter(
                     lambda x: x["tokens"] != example["tokens"]
@@ -152,8 +174,15 @@ def extract_few_shot_examples(
                 )
 
             shuffled_train = train_with_short_examples.shuffle(seed=random_seed)
+            assert isinstance(shuffled_train, Dataset), (
+                f"Expected `shuffled_train` to be a Dataset, but got "
+                f"{type(shuffled_train)} instead."
+            )
             while len(few_shot_examples) < num_few_shots and len(shuffled_train) > 0:
                 example = shuffled_train.select(range(1))[0]
+                assert isinstance(example, dict), (
+                    f"Expected `example` to be a dict, but got {type(example)} instead."
+                )
                 few_shot_examples.append(example)
                 shuffled_train = shuffled_train.filter(
                     lambda x: x["context"] != example["context"]

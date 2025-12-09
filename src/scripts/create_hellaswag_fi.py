@@ -15,7 +15,11 @@ import warnings
 from collections import Counter
 
 import pandas as pd
-from constants import (
+from datasets import Dataset, DatasetDict, Split, load_dataset
+from huggingface_hub import HfApi
+from pandas.errors import SettingWithCopyWarning
+
+from .constants import (
     CHOICES_MAPPING,
     MAX_NUM_CHARS_IN_INSTRUCTION,
     MAX_NUM_CHARS_IN_OPTION,
@@ -23,9 +27,6 @@ from constants import (
     MIN_NUM_CHARS_IN_INSTRUCTION,
     MIN_NUM_CHARS_IN_OPTION,
 )
-from datasets import Dataset, DatasetDict, Split, load_dataset
-from huggingface_hub import HfApi
-from pandas.errors import SettingWithCopyWarning
 
 logging.basicConfig(format="%(asctime)s ⋅ %(message)s", level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -79,9 +80,11 @@ def main() -> None:
 
     # Collect datasets in a dataset dictionary
     dataset = DatasetDict(
-        train=Dataset.from_pandas(train_df, split=Split.TRAIN),
-        val=Dataset.from_pandas(val_df, split=Split.VALIDATION),
-        test=Dataset.from_pandas(test_df, split=Split.TEST),
+        {
+            "train": Dataset.from_pandas(train_df, split=Split.TRAIN),
+            "val": Dataset.from_pandas(val_df, split=Split.VALIDATION),
+            "test": Dataset.from_pandas(test_df, split=Split.TEST),
+        }
     )
 
     dataset_id = "EuroEval/hellaswag-fi-mini"
@@ -186,7 +189,7 @@ def process_split(df: pd.DataFrame, split: str) -> pd.DataFrame:
     df.label = df.label.map(label_mapping)
 
     # Only keep the columns `text`, `label` and `activity_label`
-    df = df[["text", "label", "activity_label"]]
+    df = df.loc[["text", "label", "activity_label"]]
 
     return df
 
@@ -258,7 +261,9 @@ def _print_filtering_stats(df: pd.DataFrame, split: str) -> None:
     )
 
     activity_label_counts = df["activity_label"].value_counts()
-    infrequent_labels = activity_label_counts[activity_label_counts < 3].index.tolist()
+    infrequent_labels = activity_label_counts.loc[
+        activity_label_counts < 3
+    ].index.tolist()
     infrequent_label_count = sum(df["activity_label"].isin(infrequent_labels))
 
     logger.info(

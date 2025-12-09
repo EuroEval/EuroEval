@@ -3,7 +3,15 @@
 import collections.abc as c
 import typing as t
 
+from transformers import PreTrainedTokenizer
 from transformers.trainer_utils import EvalPrediction
+
+try:
+    from transformers.tokenization_mistral_common import MistralCommonTokenizer
+except ImportError:
+    from transformers.tokenization_mistral_common import (
+        MistralCommonBackend as MistralCommonTokenizer,
+    )
 
 if t.TYPE_CHECKING:
     from datasets.arrow_dataset import Dataset
@@ -14,6 +22,7 @@ if t.TYPE_CHECKING:
 ScoreDict: t.TypeAlias = dict[str, dict[str, float] | c.Sequence[dict[str, float]]]
 Predictions: t.TypeAlias = "NDArray | c.Sequence[str] | c.Sequence[c.Sequence[str]]"
 Labels: t.TypeAlias = "NDArray | c.Sequence[str] | c.Sequence[c.Sequence[str]]"
+Tokeniser: t.TypeAlias = PreTrainedTokenizer | MistralCommonTokenizer
 
 
 class ComputeMetricsFunction(t.Protocol):

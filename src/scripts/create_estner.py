@@ -11,7 +11,7 @@
 
 from typing import MutableMapping
 
-from datasets import DatasetDict, load_dataset
+from datasets import Dataset, DatasetDict, load_dataset
 from huggingface_hub import HfApi
 
 
@@ -21,6 +21,7 @@ def main() -> None:
 
     # start from the official source
     ds = load_dataset("tartuNLP/EstNER")
+    assert isinstance(ds, DatasetDict)
 
     # target split sizes
     train_size = 1024
@@ -32,8 +33,11 @@ def main() -> None:
     train_ds = ds["train"].select(range(train_size))
     val_ds = ds["dev"].select(range(val_size))
     test_ds = ds["test"].select(range(test_size))
+    assert isinstance(train_ds, Dataset)
+    assert isinstance(val_ds, Dataset)
+    assert isinstance(test_ds, Dataset)
 
-    ds = DatasetDict(train=train_ds, val=val_ds, test=test_ds)
+    ds = DatasetDict({"train": train_ds, "val": val_ds, "test": test_ds})
 
     ds = ds.rename_column("ner_tags", "labels")
     # a separate text column is not available

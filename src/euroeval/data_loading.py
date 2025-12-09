@@ -62,7 +62,7 @@ def load_data(
     # If we are testing then truncate the test set, unless we need the full set for
     # evaluation
     if hasattr(sys, "_called_from_test") and dataset_config.task != EUROPEAN_VALUES:
-        dataset["test"] = dataset["test"].select(range(1))
+        dataset["test"] = dataset["test"].select(range(1))  # type: ignore[unsupported-operation]
 
     # Bootstrap the splits, if applicable
     if dataset_config.bootstrap_samples:
@@ -73,12 +73,12 @@ def load_data(
                 len(dataset[split]),
                 size=(benchmark_config.num_iterations, len(dataset[split])),
             )
-            bootstrapped_splits[split] = [
+            bootstrapped_splits[split] = [  # type: ignore[unsupported-operation]
                 dataset[split].select(bootstrap_indices[idx])
                 for idx in range(benchmark_config.num_iterations)
             ]
         datasets = [
-            DatasetDict(
+            DatasetDict(  # type: ignore[no-matching-overload]
                 {
                     split: bootstrapped_splits[split][idx]
                     for split in dataset_config.splits
@@ -189,4 +189,4 @@ def load_raw_data(dataset_config: "DatasetConfig", cache_dir: str) -> "DatasetDi
             "The dataset is missing the following required splits: "
             f"{', '.join(missing_keys)}"
         )
-    return DatasetDict({key: dataset[key] for key in dataset_config.splits})
+    return DatasetDict({key: dataset[key] for key in dataset_config.splits})  # type: ignore[no-matching-overload]

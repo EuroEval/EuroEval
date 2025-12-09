@@ -11,10 +11,11 @@
 """Create the ilpost summarisation dataset."""
 
 import pandas as pd
-from constants import MAX_NUM_CHARS_IN_ARTICLE, MIN_NUM_CHARS_IN_ARTICLE
 from datasets import Dataset, DatasetDict, Split
 from datasets.load import load_dataset
 from huggingface_hub import HfApi
+
+from .constants import MAX_NUM_CHARS_IN_ARTICLE, MIN_NUM_CHARS_IN_ARTICLE
 
 
 def main() -> None:
@@ -67,11 +68,17 @@ def main() -> None:
     test_size = 2048
     test_df = test_df.sample(n=test_size, random_state=4242)
 
+    assert isinstance(train_df, pd.DataFrame)
+    assert isinstance(val_df, pd.DataFrame)
+    assert isinstance(test_df, pd.DataFrame)
+
     # Collect datasets in a dataset dictionary
     dataset = DatasetDict(
-        train=Dataset.from_pandas(train_df, split=Split.TRAIN),
-        val=Dataset.from_pandas(val_df, split=Split.VALIDATION),
-        test=Dataset.from_pandas(test_df, split=Split.TEST),
+        {
+            "train": Dataset.from_pandas(train_df, split=Split.TRAIN),
+            "val": Dataset.from_pandas(val_df, split=Split.VALIDATION),
+            "test": Dataset.from_pandas(test_df, split=Split.TEST),
+        }
     )
 
     # Create dataset ID

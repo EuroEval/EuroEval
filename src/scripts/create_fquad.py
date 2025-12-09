@@ -16,14 +16,15 @@ from pathlib import Path
 
 import click
 import pandas as pd
-from constants import (
+from datasets import Dataset, DatasetDict, Split
+from huggingface_hub import HfApi
+
+from .constants import (
     MAX_NUM_CHARS_IN_CONTEXT,
     MAX_NUM_CHARS_IN_QUESTION,
     MIN_NUM_CHARS_IN_CONTEXT,
     MIN_NUM_CHARS_IN_QUESTION,
 )
-from datasets import Dataset, DatasetDict, Split
-from huggingface_hub import HfApi
 
 
 @click.command(
@@ -73,10 +74,10 @@ def main(data_dir: str) -> None:
     # Only work with samples where the context is not very large or small
     train_lengths = train_df.context.str.len()
     valtest_lengths = valtest_df.context.str.len()
-    train_df = train_df[
+    train_df = train_df.loc[
         train_lengths.between(MIN_NUM_CHARS_IN_CONTEXT, MAX_NUM_CHARS_IN_CONTEXT)
     ]
-    valtest_df = valtest_df[
+    valtest_df = valtest_df.loc[
         valtest_lengths.between(MIN_NUM_CHARS_IN_CONTEXT, MAX_NUM_CHARS_IN_CONTEXT)
     ]
 
@@ -126,9 +127,11 @@ def main(data_dir: str) -> None:
 
     # Collect datasets in a dataset dictionary
     dataset = DatasetDict(
-        train=Dataset.from_pandas(train_df, split=Split.TRAIN),
-        val=Dataset.from_pandas(val_df, split=Split.VALIDATION),
-        test=Dataset.from_pandas(test_df, split=Split.TEST),
+        {
+            "train": Dataset.from_pandas(train_df, split=Split.TRAIN),
+            "val": Dataset.from_pandas(val_df, split=Split.VALIDATION),
+            "test": Dataset.from_pandas(test_df, split=Split.TEST),
+        }
     )
 
     def add_answer_start(example: dict) -> dict:

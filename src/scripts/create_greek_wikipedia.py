@@ -10,9 +10,11 @@
 
 """Create the Greek Wikipedia summarisation dataset."""
 
-from constants import MAX_NUM_CHARS_IN_ARTICLE, MIN_NUM_CHARS_IN_ARTICLE
+import pandas as pd
 from datasets import Dataset, DatasetDict, Split, load_dataset
 from huggingface_hub import HfApi
+
+from .constants import MAX_NUM_CHARS_IN_ARTICLE, MIN_NUM_CHARS_IN_ARTICLE
 
 
 def main() -> None:
@@ -41,8 +43,9 @@ def main() -> None:
 
     dataset = dataset.map(make_columns)
     df = dataset["train"].to_pandas()
+    assert isinstance(df, pd.DataFrame)
     keep_columns = ["text", "target_text"]
-    df = df[keep_columns]
+    df = df.loc[keep_columns]
 
     # Only work with samples where the text is not very large or small
     lengths = df.text.str.len()
@@ -70,9 +73,11 @@ def main() -> None:
 
     # Collect datasets in a dataset dictionary
     mini_dataset = DatasetDict(
-        train=Dataset.from_pandas(train_df, split=Split.TRAIN),
-        val=Dataset.from_pandas(val_df, split=Split.VALIDATION),
-        test=Dataset.from_pandas(test_df, split=Split.TEST),
+        {
+            "train": Dataset.from_pandas(train_df, split=Split.TRAIN),
+            "val": Dataset.from_pandas(val_df, split=Split.VALIDATION),
+            "test": Dataset.from_pandas(test_df, split=Split.TEST),
+        }
     )
 
     # Create dataset ID

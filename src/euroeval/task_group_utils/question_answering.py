@@ -13,6 +13,7 @@ from transformers.trainer import Trainer
 
 from ..exceptions import InvalidBenchmark
 from ..tokenisation_utils import get_special_token_metadata
+from ..types import Predictions
 from ..utils import raise_if_model_output_contains_nan_values
 
 if t.TYPE_CHECKING:
@@ -26,7 +27,7 @@ if t.TYPE_CHECKING:
     from transformers.training_args import TrainingArguments
 
     from ..data_models import BenchmarkConfig, DatasetConfig, GenerativeModelOutput
-    from ..types import Labels, Predictions
+    from ..types import Labels
 
 
 class QuestionAnsweringTrainer(Trainer):
@@ -70,7 +71,7 @@ class QuestionAnsweringTrainer(Trainer):
         self,
         eval_dataset: "Dataset | None" = None,
         orig_eval_dataset: "Dataset | None" = None,
-        ignore_keys: c.Sequence[str] | None = None,
+        ignore_keys: list[str] | None = None,
         metric_key_prefix: str = "eval",
     ) -> dict[str, float]:
         """Evaluate the model on the given dataset.
@@ -90,7 +91,7 @@ class QuestionAnsweringTrainer(Trainer):
         Returns:
             The metrics computed on the evaluation dataset.
         """
-        eval_dataloader = self.get_eval_dataloader(eval_dataset)
+        eval_dataloader = self.get_eval_dataloader(eval_dataset)  #  type: ignore[bad-argument-type]
 
         # Temporarily disable metric computation, we will do it in the loop here.
         compute_metrics = self.compute_metrics  # type: ignore[has-type]
@@ -117,7 +118,7 @@ class QuestionAnsweringTrainer(Trainer):
         metrics = output.metrics
         assert metrics is not None
 
-        if orig_eval_dataset is not None:
+        if orig_eval_dataset is not None and eval_dataset is not None:
             preds_and_labels = postprocess_predictions_and_labels(
                 predictions=predictions,  # type: ignore[arg-type]
                 dataset=orig_eval_dataset,
@@ -177,8 +178,7 @@ def compute_metrics(
     if isinstance(model_outputs, tuple) and len(model_outputs) == 2:
         model_outputs = model_outputs[0]
 
-    assert not isinstance(model_outputs, tuple)
-    raise_if_model_output_contains_nan_values(model_output=model_outputs)
+    raise_if_model_output_contains_nan_values(model_output=model_outputs)  # type: ignore[bad-argument-type]
 
     model_output_dtype = np.asarray(model_outputs).dtype
     if model_output_dtype in [np.float16, np.float32, np.float64]:
@@ -189,8 +189,8 @@ def compute_metrics(
     results: dict[str, float] = dict()
     for metric in dataset_config.task.metrics:
         score: float | None = metric(
-            predictions=predictions,
-            references=labels,
+            predictions=predictions,  #  type: ignore[bad-argument-type]
+            references=labels,  #  type: ignore[bad-argument-type]
             dataset=dataset,
             dataset_config=dataset_config,
             benchmark_config=benchmark_config,
@@ -244,7 +244,7 @@ def prepare_train_examples(
     # Some of the questions have lots of whitespace on the left, which is not useful
     # and will make the truncation of the context fail (the tokenized question will
     # take a lots of space). So we remove that left whitespace
-    examples["question"] = [q.lstrip() for q in examples["question"]]
+    examples["question"] = [q.lstrip() for q in examples["question"]]  #  type: ignore[not-iterable]
 
     # Extract special token metadata from the tokeniser
     special_token_metadata = get_special_token_metadata(tokeniser=tokeniser)
@@ -259,7 +259,7 @@ def prepare_train_examples(
         examples["question"] = [
             f"{cls_token}{q}{sep_token}" for q in examples["question"]
         ]
-        examples["context"] = [f"{c}{sep_token}" for c in examples["context"]]
+        examples["context"] = [f"{c}{sep_token}" for c in examples["context"]]  #  type: ignore[not-iterable]
 
     # Set the stride used during tokenisation, when the context is long enough to be
     # split into several features. Since we are always keeping the question tokens, we
@@ -328,7 +328,7 @@ def prepare_train_examples(
         # One example can give several spans, this is the index of the example
         # containing this span of text.
         sample_index = sample_mapping[i]
-        answers = examples["answers"][sample_index]
+        answers = examples["answers"][sample_index]  #  type: ignore[bad-index]
 
         # If no answers are given, set the cls_index as answer.
         if len(answers["answer_start"]) == 0:
@@ -407,7 +407,7 @@ def prepare_test_examples(
     # Some of the questions have lots of whitespace on the left, which is not useful
     # and will make the truncation of the context fail (the tokenised question will
     # take a lots of space). So we remove that left whitespace
-    examples["question"] = [q.lstrip() for q in examples["question"]]
+    examples["question"] = [q.lstrip() for q in examples["question"]]  #  type: ignore[not-iterable]
 
     # Extract special token metadata from the tokeniser
     special_token_metadata = get_special_token_metadata(tokeniser=tokeniser)
@@ -421,7 +421,7 @@ def prepare_test_examples(
         examples["question"] = [
             f"{cls_token}{q}{sep_token}" for q in examples["question"]
         ]
-        examples["context"] = [f"{c}{sep_token}" for c in examples["context"]]
+        examples["context"] = [f"{c}{sep_token}" for c in examples["context"]]  #  type: ignore[not-iterable]
 
     # Set the stride used during tokenisation, when the context is long enough to be
     # split into several features. Since we are always keeping the question tokens, we
@@ -470,7 +470,7 @@ def prepare_test_examples(
         # One example can give several spans, this is the index of the example
         # containing this span of text.
         sample_index = sample_mapping[i]
-        tokenised_examples.id.append(examples["id"][sample_index])
+        tokenised_examples.id.append(examples["id"][sample_index])  #  type: ignore[bad-index]
 
         # Set to (-1, -1) the offset_mapping that are not part of the context so it's
         # easy to determine if a token position is part of the context or not.
@@ -518,6 +518,10 @@ def postprocess_predictions_and_labels(
     id_to_index = {k: i for i, k in enumerate(dataset["id"])}
     features_per_example = defaultdict(list)
     for i, feature in enumerate(prepared_dataset):
+        assert isinstance(feature, dict), (
+            "Each feature in the prepared dataset should be a dictionary, "
+            f"but got {type(feature)} instead."
+        )
         id = feature["id"]
         example_index = id_to_index[id]
         features_per_example[example_index].append(i)
@@ -526,13 +530,23 @@ def postprocess_predictions_and_labels(
     prediction_list: list[dict[str, t.Any]] = list()
     labels = list()
     for example_index, example in enumerate(dataset):
+        assert isinstance(example, dict), (
+            "Each example in the dataset should be a dictionary, but got "
+            f"{type(example)} instead."
+        )
+        context = example["context"]
+        assert isinstance(context, str), (
+            f"Each example's context should be a string, but got {type(context)} "
+            "instead."
+        )
+
         # Extract the best valid answer associated with the current example
         best_answer = find_best_answer(
             all_start_logits=all_start_logits,
             all_end_logits=all_end_logits,
             prepared_dataset=prepared_dataset,
             feature_indices=features_per_example[example_index],
-            context=example["context"],
+            context=context,
             max_answer_length=30,
             num_best_logits=20,
             min_null_score=0.0,

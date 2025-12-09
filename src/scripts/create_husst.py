@@ -22,8 +22,11 @@ def main() -> None:
     # Load the dataset
     dataset_id = "NYTK/HuSST"
     dataset = load_dataset(dataset_id)
+    assert isinstance(dataset, DatasetDict)
     train_df = dataset["train"].to_pandas()
     val_df = dataset["validation"].to_pandas()
+    assert isinstance(train_df, pd.DataFrame)
+    assert isinstance(val_df, pd.DataFrame)
 
     train_df = process(df=train_df)
     val_df = process(df=val_df)
@@ -55,11 +58,17 @@ def main() -> None:
     )
     val_df_final = pd.concat([val_df_uniform, val_df_additional], ignore_index=True)
 
+    assert isinstance(train_df_final, pd.DataFrame)
+    assert isinstance(val_df_final, pd.DataFrame)
+    assert isinstance(test_df_final, pd.DataFrame)
+
     # Create DatasetDict
     dataset_dict = DatasetDict(
-        train=Dataset.from_pandas(train_df_final),
-        val=Dataset.from_pandas(val_df_final),
-        test=Dataset.from_pandas(test_df_final),
+        {
+            "train": Dataset.from_pandas(train_df_final),
+            "val": Dataset.from_pandas(val_df_final),
+            "test": Dataset.from_pandas(test_df_final),
+        }
     )
 
     # Push to HF Hub
@@ -80,7 +89,7 @@ def process(df: pd.DataFrame) -> pd.DataFrame:
     renames = {"sentence": "text"}
     df = df.rename(columns=renames)
     keep_columns = ["text", "label"]
-    df = df[keep_columns]
+    df = df.loc[keep_columns]
     return df
 
 
