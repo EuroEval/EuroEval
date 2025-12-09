@@ -206,8 +206,8 @@ def _print_filtering_stats(df: pd.DataFrame, split: str) -> None:
         df: The dataframe to print statistics for.
         split: The split of the dataframe
     """
-    short_ctx_count = sum(df.ctx.str.len() < MIN_NUM_CHARS_IN_INSTRUCTION)
-    long_ctx_count = sum(df.ctx.str.len() > MAX_NUM_CHARS_IN_INSTRUCTION)
+    short_ctx_count: int = (df.ctx.str.len() < MIN_NUM_CHARS_IN_INSTRUCTION).sum()
+    long_ctx_count: int = (df.ctx.str.len() > MAX_NUM_CHARS_IN_INSTRUCTION).sum()
 
     short_endings_count = sum(
         df.endings.map(

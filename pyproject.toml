@@ -169,6 +169,7 @@ convention = "google"
 
 [tool.pyrefly.errors]
 missing-import = false
+missing-attribute = false
 
 [tool.pytest.ini_options]
 minversion = "7.0"

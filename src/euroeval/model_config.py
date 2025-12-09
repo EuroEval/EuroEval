@@ -41,7 +41,7 @@ def get_model_config(
     needs_extras: list[str] = list()
     needs_env_vars: list[str] = list()
     for benchmark_module in all_benchmark_modules:
-        exists_or_err = benchmark_module.model_exists(  # type: ignore[missing-attribute]
+        exists_or_err = benchmark_module.model_exists(
             model_id=model_id, benchmark_config=benchmark_config
         )
         if isinstance(exists_or_err, NeedsExtraInstalled):
@@ -54,7 +54,7 @@ def get_model_config(
                 f"{benchmark_module.__name__} benchmark module.",
                 logging.DEBUG,
             )
-            model_config = benchmark_module.get_model_config(  # type: ignore[missing-attribute]
+            model_config = benchmark_module.get_model_config(
                 model_id=model_id, benchmark_config=benchmark_config
             )
             return model_config

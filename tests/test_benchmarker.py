@@ -58,6 +58,7 @@ def test_benchmark_encoder(
             time.sleep(5)
     else:
         pytest.skip(reason="Hugging Face Hub is down, so we skip this test.")
+        return
     assert isinstance(benchmark_result, list)
     assert all(isinstance(result, BenchmarkResult) for result in benchmark_result)
 

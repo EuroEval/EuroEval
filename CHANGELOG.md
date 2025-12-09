@@ -2747,8 +2747,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Deprecated
 
-- Deprecated support for evaluating finetuned models, as the package was primarily used to
-  benchmark pretrained models anyway, and the change in datasets means that many
+- Deprecated support for evaluating finetuned models, as the package was primarily used
+  to benchmark pretrained models anyway, and the change in datasets means that many
   finetuned models would have been trained on (part of) the test sets, resulting in
   artificially large scores. For evaluation of finetuned models, please check out the
   `aiai_eval` Python package instead (under development).

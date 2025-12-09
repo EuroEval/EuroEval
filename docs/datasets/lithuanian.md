@@ -9,9 +9,9 @@ information about what these constitute.
 ### Atsiliepimai
 
 This dataset was published
-[here](https://huggingface.co/datasets/alexandrainst/lithuanian-sentiment-analysis). It was
-scraped from [atsiliepimai.lt](https://atsiliepimai.lt/) and
-contains reviews similar to trustpilot reviews.
+[here](https://huggingface.co/datasets/alexandrainst/lithuanian-sentiment-analysis). It
+was scraped from [atsiliepimai.lt](https://atsiliepimai.lt/) and contains reviews
+similar to trustpilot reviews.
 
 The original dataset consists of 1,796 samples. We use 512 / 256 / 1,028
 samples for our training, validation and test splits, respectively.
