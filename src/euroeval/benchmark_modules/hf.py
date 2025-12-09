@@ -1306,3 +1306,6 @@ def task_group_to_class_name(task_group: TaskGroup) -> str:
     )
     pascal_case = special_case_mapping.get(pascal_case, pascal_case)
     return f"AutoModelFor{pascal_case}"
+
+
+# TODO: Add support for logical reasoning tasks
