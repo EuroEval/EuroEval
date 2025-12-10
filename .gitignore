@@ -125,3 +125,8 @@ gfx/different-poses/*
 
 # Contracts
 generated_contracts/
+
+*.jsonl
+*.pdf
+*.xlsx
+.cursor/
