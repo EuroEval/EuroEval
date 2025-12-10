@@ -18,6 +18,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Removed mentions of `hf_transfer` and the associated environment variable
   `HF_HUB_ENABLE_HF_TRANSFER`, since this has been removed from the `transformers`
   library now.
+- Marked the `PleIAs/Pleias-3b-Preview` as requiring the `FLASH_ATTN` backend over the
+  default `FLASHINFER` backend, as the model architecture is currently not supported by
+  the default backend.
 
 ## [v16.8.0] - 2025-11-25
 
