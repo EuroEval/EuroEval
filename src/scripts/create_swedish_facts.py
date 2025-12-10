@@ -20,7 +20,6 @@ import logging
 import os
 import random
 import re
-from typing import Tuple
 
 import pandas as pd
 from constants import CHOICES_MAPPING
@@ -103,33 +102,6 @@ def main() -> None:
     dataset_dict.push_to_hub(dataset_id, private=True)
 
 
-def _get_qa_column_names(df: pd.DataFrame) -> Tuple[str, str]:
-    """Identify the question and answer column names from the raw dataset."""
-    question_candidates = [
-        "Question",
-        "Question (Swedish)",
-        "Question (Swedish) string",
-        "question",
-    ]
-    answer_candidates = [
-        "Answer",
-        "Answer (Swedish)",
-        "Answer (Swedish) string",
-        "answer",
-    ]
-
-    question_col = next((c for c in question_candidates if c in df.columns), None)
-    answer_col = next((c for c in answer_candidates if c in df.columns), None)
-
-    if question_col is None or answer_col is None:
-        raise KeyError(
-            "Could not identify question/answer columns. "
-            f"Available columns: {list(df.columns)}"
-        )
-
-    return question_col, answer_col
-
-
 def drop_duplicate_questions(dataset: Dataset) -> Dataset:
     """Normalise text fields and drop duplicate questions from the dataset.
 
@@ -146,7 +118,7 @@ def drop_duplicate_questions(dataset: Dataset) -> Dataset:
     # Strip all leading and trailing whitespace
     df = df.map(lambda x: x.strip() if isinstance(x, str) else x)
 
-    question_col, answer_col = _get_qa_column_names(df)
+    question_col, answer_col = "Question (Swedish)", "Answer (Swedish)"
 
     # Remove trailing periods from answers
     df[answer_col] = df[answer_col].str.rstrip(".")
