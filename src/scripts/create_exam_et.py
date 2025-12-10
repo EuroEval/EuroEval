@@ -36,7 +36,7 @@ def main() -> None:
     # Get all the subsets of the dataset
     api = HfApi(token=True)
     repo_info = api.repo_info(repo_id=repo_id, repo_type="dataset")
-    subsets = [config["config_name"] for config in repo_info.card_data.configs]  #  type: ignore[missing-attribute]
+    subsets = [config["config_name"] for config in repo_info.card_data.configs]
 
     # Download all subsets and merge them
     rename_mapping = {

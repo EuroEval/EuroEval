@@ -723,7 +723,7 @@ Here are a few examples from the training split:
 
 ```json
 {
-  "text": "Vad ehetr skivbolaget Titiyo Jah kontrakt med år 1988?\nSvarsalternativ:\na. Virgin Records\nb. Telegram\nc. Sony Music\nd. Warner Music",
+  "text": "Vad heter skivbolaget Titiyo Jah kontrakt med år 1988?\nSvarsalternativ:\na. Virgin Records\nb. Telegram\nc. Sony Music\nd. Warner Music",
   "label": "b"
 }
 ```

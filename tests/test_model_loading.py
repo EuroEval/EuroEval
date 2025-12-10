@@ -12,7 +12,6 @@ from euroeval.model_config import get_model_config
 from euroeval.model_loading import load_model
 
 
-@pytest.mark.flaky(reruns=3, reruns_delay=5)
 def test_load_non_generative_model(
     encoder_model_id: str, benchmark_config: BenchmarkConfig
 ) -> None:
@@ -33,7 +32,6 @@ def test_load_non_generative_model(
 @pytest.mark.skipif(
     condition=not torch.cuda.is_available(), reason="CUDA is not available."
 )
-@pytest.mark.flaky(reruns=3, reruns_delay=5)
 def test_load_generative_model(
     generative_model_id: str, benchmark_config: BenchmarkConfig
 ) -> None:
@@ -51,7 +49,6 @@ def test_load_generative_model(
     assert model is not None
 
 
-@pytest.mark.flaky(reruns=3, reruns_delay=5)
 def test_load_non_generative_model_with_generative_data(
     encoder_model_id: str, benchmark_config: BenchmarkConfig
 ) -> None:

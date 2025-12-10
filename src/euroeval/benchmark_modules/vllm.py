@@ -110,6 +110,7 @@ MODELS_REQUIRING_CUSTOM_ATTENTION_BACKENDS: dict[re.Pattern, str] = {
     re.compile(r"google/gemma-3-1b.*", flags=re.IGNORECASE): "FLASH_ATTN",
     re.compile(r"google/gemma-3n.*", flags=re.IGNORECASE): "FLASH_ATTN",
     re.compile(r"google/gemma-3-(4|12|27)b.*", flags=re.IGNORECASE): "TRITON_ATTN",
+    re.compile(r"PleIAs/Pleias-3b-Preview", flags=re.IGNORECASE): "FLASH_ATTN",
 }
 
 

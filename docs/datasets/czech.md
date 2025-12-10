@@ -12,10 +12,10 @@ This dataset was published in [this paper](https://aclanthology.org/R13-1016/) a
 consists of reviews from the the Czech Movie
 Database (CSFD).
 
-The original dataset contains 85,948 / 894 / 1503 samples for the training, validation, and
-and test splits, respectively. We use 1,024 / 256 / 2,048 samples for our training,
-validation and test splits, respectively. The train and validation splits are subsets
-of the original splits. For the test split, we use all available test samples and
+The original dataset contains 85,948 / 894 / 1503 samples for the training, validation,
+and and test splits, respectively. We use 1,024 / 256 / 2,048 samples for our training,
+validation and test splits, respectively. The train and validation splits are subsets of
+the original splits. For the test split, we use all available test samples and
 supplement with additional samples from the training set to reach 2,048 samples in
 total.
 
