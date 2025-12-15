@@ -3531,7 +3531,7 @@
                     <span class="s2">&quot;The token type embeddings of the model do not have a `data` &quot;</span>
                     <span class="s2">&quot;attribute, which is needed to modify the embeddings.&quot;</span>
                 <span class="p">)</span>
-            <span class="n">token_type_embeddings</span><span class="o">.</span><span class="n">weight</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">(</span>  <span class="c1"># type: ignore[missing-attribute]</span>
+            <span class="n">token_type_embeddings</span><span class="o">.</span><span class="n">weight</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">(</span>
                 <span class="p">(</span>
                     <span class="n">token_type_embedding_tensor</span><span class="p">,</span>
                     <span class="n">torch</span><span class="o">.</span><span class="n">rand_like</span><span class="p">(</span><span class="n">token_type_embedding_tensor</span><span class="p">),</span>

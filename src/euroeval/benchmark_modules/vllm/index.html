@@ -2395,7 +2395,8 @@
 <span class="normal">1377</span>
 <span class="normal">1378</span>
 <span class="normal">1379</span>
-<span class="normal">1380</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Generative models using the vLLM inference framework.&quot;&quot;&quot;</span>
+<span class="normal">1380</span>
+<span class="normal">1381</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Generative models using the vLLM inference framework.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">c</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">contextlib</span>
@@ -2503,10 +2504,11 @@
 
 
 <span class="n">MODELS_REQUIRING_CUSTOM_ATTENTION_BACKENDS</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="n">re</span><span class="o">.</span><span class="n">Pattern</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;.*gpt-oss.*&quot;</span><span class="p">,</span> <span class="n">flags</span><span class="o">=</span><span class="n">re</span><span class="o">.</span><span class="n">IGNORECASE</span><span class="p">):</span> <span class="s2">&quot;FLASH_ATTN&quot;</span><span class="p">,</span>
-    <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;google/gemma-3-1b.*&quot;</span><span class="p">,</span> <span class="n">flags</span><span class="o">=</span><span class="n">re</span><span class="o">.</span><span class="n">IGNORECASE</span><span class="p">):</span> <span class="s2">&quot;FLASH_ATTN&quot;</span><span class="p">,</span>
-    <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;google/gemma-3n.*&quot;</span><span class="p">,</span> <span class="n">flags</span><span class="o">=</span><span class="n">re</span><span class="o">.</span><span class="n">IGNORECASE</span><span class="p">):</span> <span class="s2">&quot;FLASH_ATTN&quot;</span><span class="p">,</span>
+    <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;.*gpt-oss.*&quot;</span><span class="p">,</span> <span class="n">flags</span><span class="o">=</span><span class="n">re</span><span class="o">.</span><span class="n">IGNORECASE</span><span class="p">):</span> <span class="s2">&quot;TRITON_ATTN&quot;</span><span class="p">,</span>
+    <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;google/gemma-3-1b.*&quot;</span><span class="p">,</span> <span class="n">flags</span><span class="o">=</span><span class="n">re</span><span class="o">.</span><span class="n">IGNORECASE</span><span class="p">):</span> <span class="s2">&quot;TRITON_ATTN&quot;</span><span class="p">,</span>
+    <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;google/gemma-3n.*&quot;</span><span class="p">,</span> <span class="n">flags</span><span class="o">=</span><span class="n">re</span><span class="o">.</span><span class="n">IGNORECASE</span><span class="p">):</span> <span class="s2">&quot;TRITON_ATTN&quot;</span><span class="p">,</span>
     <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;google/gemma-3-(4|12|27)b.*&quot;</span><span class="p">,</span> <span class="n">flags</span><span class="o">=</span><span class="n">re</span><span class="o">.</span><span class="n">IGNORECASE</span><span class="p">):</span> <span class="s2">&quot;TRITON_ATTN&quot;</span><span class="p">,</span>
+    <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;PleIAs/Pleias-3b-Preview&quot;</span><span class="p">,</span> <span class="n">flags</span><span class="o">=</span><span class="n">re</span><span class="o">.</span><span class="n">IGNORECASE</span><span class="p">):</span> <span class="s2">&quot;TRITON_ATTN&quot;</span><span class="p">,</span>
 <span class="p">}</span>
 
 
@@ -3408,8 +3410,8 @@
                     <span class="s2">&quot;Since you&#39;re running in verbose mode, you might see a descriptive &quot;</span>
                     <span class="s2">&quot;error above already. Note however that if the error message urges &quot;</span>
                     <span class="s2">&quot;you to set the environment variable `VLLM_ATTENTION_BACKEND` to &quot;</span>
-                    <span class="s2">&quot;&#39;FLEX_ATTENTION&#39;, please try setting it to &#39;FLASH_ATTN&#39; first, as &quot;</span>
-                    <span class="s2">&quot;that often solves the issue, whereas &#39;FLEX_ATTENTION&#39; usually &quot;</span>
+                    <span class="s2">&quot;&#39;FLEX_ATTENTION&#39;, please try setting it to &#39;TRITON_ATTN&#39; first, &quot;</span>
+                    <span class="s2">&quot;as that often solves the issue, whereas &#39;FLEX_ATTENTION&#39; usually &quot;</span>
                     <span class="s2">&quot;doesn&#39;t. If you don&#39;t see any descriptive error above, then you &quot;</span>
                     <span class="s2">&quot;can try &quot;</span>
                 <span class="p">)</span>

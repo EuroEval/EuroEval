@@ -1153,9 +1153,7 @@
 <span class="normal">258</span>
 <span class="normal">259</span>
 <span class="normal">260</span>
-<span class="normal">261</span>
-<span class="normal">262</span>
-<span class="normal">263</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Metrics based on LLM-as-a-judge.&quot;&quot;&quot;</span>
+<span class="normal">261</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Metrics based on LLM-as-a-judge.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">c</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
@@ -1414,9 +1412,7 @@
     <span class="s2">&quot;Text: </span><span class="si">{prediction!r}</span><span class="se">\n\n</span><span class="s2">&quot;</span>
     <span class="s2">&quot;Output your rating as a JSON object with a single key &#39;fluency&#39;.&quot;</span><span class="p">,</span>
     <span class="n">response_format</span><span class="o">=</span><span class="n">Fluency</span><span class="p">,</span>
-    <span class="n">scoring_fn</span><span class="o">=</span><span class="k">lambda</span> <span class="n">output</span><span class="p">:</span> <span class="p">(</span><span class="n">output</span><span class="o">.</span><span class="n">fluency</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">/</span> <span class="mf">4.0</span>  <span class="c1"># type: ignore[missing-attribute]</span>
-    <span class="k">if</span> <span class="n">output</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
-    <span class="k">else</span> <span class="mf">0.0</span><span class="p">,</span>
+    <span class="n">scoring_fn</span><span class="o">=</span><span class="k">lambda</span> <span class="n">output</span><span class="p">:</span> <span class="p">(</span><span class="n">output</span><span class="o">.</span><span class="n">fluency</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">/</span> <span class="mf">4.0</span> <span class="k">if</span> <span class="n">output</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="mf">0.0</span><span class="p">,</span>
 <span class="p">)</span>
 </code></pre></div></td></tr></table></div>
 
