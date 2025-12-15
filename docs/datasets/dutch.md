@@ -732,8 +732,68 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset hellaswag-nl
 ```
 
-### Unofficial: GoldenSwag-nl
+### Unofficial: COPA-NL
 
+This dataset was created by Wietse de Vries _et al._ for the [Dutch Model Benchmark (DUMB)](https://dumbench.nl) and introduced in the paper
+[DUMB: A Benchmark for Smart Evaluation of Dutch Models](https://aclanthology.org/2023.emnlp-main.447/).
+It is a Causal Reasoning dataset based on the English-language
+[Choice of Plausible Alternatives (COPA)](https://web.archive.org/web/20240402061922/https://people.ict.usc.edu/~gordon/copa.html)
+dataset under the BSD 2-Clause License.
+
+COPA-NL was translated to Dutch using Google Translate and manually corrected by
+native Dutch speakers.
+
+The dataset consists of two different types of challenges. In each case, a premise is
+given together with two choices. For about half of the dataset, the question is
+which of those two choices is a plausible _effect_ of the premise. For the other
+half, the question is which of the two choices is a plausible _cause_ of the premise.
+
+The original dataset consists of 400 / 100 / 500 samples for training, validation and
+testing, respectively. We keep the same splits for EuroEval.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Premisse: Mijn lichaam wierp een schaduw over het gras.\n\nWat is hier de logische oorzaak van?\na. De zon kwam op.\nb. Het gras was gemaaid.",
+  "label": "a"
+}
+```
+
+```json
+{
+  "text": "Premisse: De vrouw tolereerde het lastige gedrag van haar vriendin.\n\nWat is hier de logische oorzaak van?\na. De vrouw wist dat haar vriendin het moeilijk had.\nb. De vrouw had het gevoel dat haar vriendin misbruik maakte van haar vriendelijkheid.",
+  "label": "a"
+}
+```
+
+```json
+{
+  "text": "Premisse: De bejaarde vrouw kreeg een beroerte.\n\nWat is hier het logisch gevolg van?\na. De dochter van de vrouw kwam langs om haar huis schoon te maken.\nb. De dochter van de vrouw trok bij haar in om voor haar te zorgen.",
+  "label": "b"
+}
+```
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+  ```
+  Hieronder staan meerkeuzevragen (met antwoorden).
+  ```
+- Base prompt template:
+  ```
+  Vraag: {text}
+  Antwoord: {label}
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+$ euroeval --model <model-id> --dataset copa-nl
+```
+
+### Unofficial: GoldenSwag-nl
 This dataset is a filtered and machine translated version of the English [HellaSwag
 dataset](https://aclanthology.org/P19-1472/), featuring both video descriptions from
 ActivityNet as well as how-to articles from WikiHow. The machine translated version was

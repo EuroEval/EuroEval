@@ -140,3 +140,13 @@ WINOGRANDE_NL_CONFIG = DatasetConfig(
     _labels=["a", "b"],
     unofficial=True,
 )
+
+COPA_NL_CONFIG = DatasetConfig(
+    name="copa-nl",
+    pretty_name="the Dutch common sense causal reasoning dataset copa-nl, "
+    "translated from the English Choice of Plausible Alternatives (COPA) dataset",
+    source="EuroEval/copa-nl",
+    task=COMMON_SENSE,
+    languages=[DUTCH],
+    unofficial=True,
+)
