@@ -10,6 +10,7 @@ import io
 import os
 import tarfile
 import tempfile
+from typing import Any
 import urllib.request
 
 import datasets
@@ -20,7 +21,9 @@ from requests import HTTPError
 def main() -> None:
     """Create the Dutch Copa dataset and upload it to the HF Hub."""
     # Define the base download URL
-    source_url = "https://github.com/wietsedv/NLP-NL/archive/refs/tags/copa-nl-v1.0.tar.gz"
+    source_url = (
+        "https://github.com/wietsedv/NLP-NL/archive/refs/tags/copa-nl-v1.0.tar.gz"
+    )
     dataset_id_euroeval = "EuroEval/copa-nl"
 
     # Download the dataset
@@ -50,9 +53,8 @@ def main() -> None:
     dataset.push_to_hub(dataset_id_euroeval, private=True)
 
 
-def format(row):
+def format(row: dict[str, Any]) -> dict[str, str]:
     """Format the dataset rows into promptable questions.
-
     There are two different types of questions in the dataset: cause and effect.
     A slightly different prompt is created for both.
 
@@ -73,7 +75,6 @@ def format(row):
 
     text += f"a. {row['choice1']}\n"
     text += f"b. {row['choice2']}"
-
     return {
         "text": text,
         "label": ["a", "b"][row["label"]],  # 0 -> "a", 1 -> "b"
