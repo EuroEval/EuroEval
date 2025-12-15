@@ -22,6 +22,7 @@ from urllib3.exceptions import RequestError
 
 from ..constants import (
     CUSTOM_STOP_TOKENS,
+    GENERATION_KWARGS,
     GENERATIVE_PIPELINE_TAGS,
     MAX_CONTEXT_LENGTH,
     MAX_VLLM_LOGPROBS,
@@ -79,7 +80,6 @@ from ..utils import (
     resolve_model_path,
     split_model_id,
 )
-from .constants import GENERATION_KWARGS
 from .hf import HuggingFaceEncoderModel, get_model_repo_info, load_hf_model_config
 
 try:
