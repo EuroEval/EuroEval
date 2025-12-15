@@ -122,6 +122,16 @@ MULTI_WIKI_QA_NL_CONFIG = DatasetConfig(
     unofficial=True,
 )
 
+COPA_NL_CONFIG = DatasetConfig(
+    name="copa-nl",
+    pretty_name="the Dutch common sense causal reasoning dataset copa-nl, "
+    "translated from the English Choice of Plausible Alternatives (COPA) dataset",
+    source="GPT-NL/copa-nl",
+    task=COMMON_SENSE,
+    languages=[DUTCH],
+    unofficial=True,
+)
+
 GOLDENSWAG_NL_CONFIG = DatasetConfig(
     name="goldenswag-nl",
     pretty_name="GoldenSwag-nl",
@@ -141,12 +151,3 @@ WINOGRANDE_NL_CONFIG = DatasetConfig(
     unofficial=True,
 )
 
-COPA_NL_CONFIG = DatasetConfig(
-    name="copa-nl",
-    pretty_name="the Dutch common sense causal reasoning dataset copa-nl, "
-    "translated from the English Choice of Plausible Alternatives (COPA) dataset",
-    source="EuroEval/copa-nl",
-    task=COMMON_SENSE,
-    languages=[DUTCH],
-    unofficial=True,
-)
