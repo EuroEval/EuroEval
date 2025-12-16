@@ -2,7 +2,7 @@
 
 from ..data_models import DatasetConfig
 from ..languages import DUTCH
-from ..tasks import COMMON_SENSE, EUROPEAN_VALUES, KNOW, LA, MCRC, NER, RC, SENT, SUMM
+from ..tasks import COMMON_SENSE, EUROPEAN_VALUES, KNOW, LA, MCRC, NER, RC, SENT, SUMM, MCSTEREO
 
 ### Official datasets ###
 
@@ -139,4 +139,13 @@ WINOGRANDE_NL_CONFIG = DatasetConfig(
     languages=[DUTCH],
     _labels=["a", "b"],
     unofficial=True,
+)
+
+MBBQ_NL_CONFIG = DatasetConfig(
+    name="mbbq-nl",
+    pretty_name="The Dutch part of the Multilingual Bias Benchmark for Question Answering (MBBQ), "
+    "a carefully curated version of the English BBQ dataset, which measures stereotypes in LLM's.",
+    source="EuroEval/mbbq-nl",
+    task=MCSTEREO,
+    languages=[DUTCH],
 )
