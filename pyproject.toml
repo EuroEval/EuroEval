@@ -101,7 +101,6 @@ dev = [
     "types-simplejson>=3.2.0.2025032",
     "debugpy>=1.8.13",
     "pytest-socket>=0.7.0",
-    "pytest-rerunfailures>=16.1",
     "pytest-depends>=1.0.1",
     "pyrefly>=0.43.1",
 ]
