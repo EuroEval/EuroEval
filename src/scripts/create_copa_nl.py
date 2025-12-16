@@ -6,12 +6,16 @@
 #     "requests==2.32.3",
 # ]
 # ///
+
+
+"""Create a Dutch common sense reasoning dataset based on the English COPA."""
+
 import io
 import os
 import tarfile
 import tempfile
-from typing import Any
 import urllib.request
+from typing import Any
 
 import datasets
 from huggingface_hub import HfApi
@@ -36,7 +40,8 @@ def main() -> None:
 
         target_dir = os.path.join(temp_dir, "NLP-NL-copa-nl-v1.0", "COPA-NL")
 
-        # HuggingFace Datasets can directly load the jsonl train, test and dev files from disk
+        # HuggingFace Datasets can directly load the jsonl
+        # train, test and dev files from disk
         dataset = datasets.load_dataset(target_dir)
         dataset["val"] = dataset.pop("validation")
         dataset = dataset.shuffle(4242)
@@ -55,6 +60,7 @@ def main() -> None:
 
 def format(row: dict[str, Any]) -> dict[str, str]:
     """Format the dataset rows into promptable questions.
+
     There are two different types of questions in the dataset: cause and effect.
     A slightly different prompt is created for both.
 
@@ -63,7 +69,8 @@ def format(row: dict[str, Any]) -> dict[str, str]:
             A row of the original dataset containing multiple columns
 
     Returns:
-        A dict with the prepared question in `text` and the correct answer in `label`"""
+        A dict with the prepared question in `text` and the correct answer in `label`
+    """
     text = f"Premisse: {row['premise']}\n"
 
     if row["question"] == "effect":
@@ -71,7 +78,7 @@ def format(row: dict[str, Any]) -> dict[str, str]:
     elif row["question"] == "cause":
         text += "Wat is hier de logische oorzaak van?\n"
     else:
-        raise ValueError(f"Unknown question: {row["question"]}")
+        raise ValueError(f"Unknown question: {row['question']}")
 
     text += f"a. {row['choice1']}\n"
     text += f"b. {row['choice2']}"

@@ -45,6 +45,7 @@ When evaluating generative models, we use the following setup (see the
 [methodology](/methodology) for more information on how these are used):
 
 - Number of few-shot examples: 12
+
 - Prefix prompt:
 
   ```text
@@ -67,6 +68,7 @@ When evaluating generative models, we use the following setup (see the
   ```
 
 - Label mapping:
+
   - `positive` ➡️ `positief`
   - `negative` ➡️ `negatief`
 
@@ -82,7 +84,7 @@ euroeval --model <model-id> --dataset dbrd
 
 This dataset was published in [this paper](https://aclanthology.org/W02-2024/) and
 consists of named entity recognition annotations of the Belgian newspaper "De Morgen" of
-2000.
+2000\.
 
 The original full dataset consists of 8,324 / 1,916 / 1,518 samples for training,
 validation and testing, respectively (so 11,758 samples used in total). We use a 1,024 /
@@ -116,6 +118,7 @@ When evaluating generative models, we use the following setup (see the
 [methodology](/methodology) for more information on how these are used):
 
 - Number of few-shot examples: 8
+
 - Prefix prompt:
 
   ```text
@@ -138,6 +141,7 @@ When evaluating generative models, we use the following setup (see the
   ```
 
 - Label mapping:
+
   - `B-PER` ➡️ `persoon`
   - `I-PER` ➡️ `persoon`
   - `B-LOC` ➡️ `locatie`
@@ -197,6 +201,7 @@ When evaluating generative models, we use the following setup (see the
 [methodology](/methodology) for more information on how these are used):
 
 - Number of few-shot examples: 12
+
 - Prefix prompt:
 
   ```text
@@ -219,6 +224,7 @@ When evaluating generative models, we use the following setup (see the
   ```
 
 - Label mapping:
+
   - `correct` ➡️ `ja`
   - `incorrect` ➡️ `nee`
 
@@ -318,6 +324,7 @@ When evaluating generative models, we use the following setup (see the
 [methodology](/methodology) for more information on how these are used):
 
 - Number of few-shot examples: 4
+
 - Prefix prompt:
 
   ```text
@@ -384,6 +391,7 @@ When evaluating generative models, we use the following setup (see the
 [methodology](/methodology) for more information on how these are used):
 
 - Number of few-shot examples: 5
+
 - Prefix prompt:
 
   ```text
@@ -469,6 +477,7 @@ When evaluating generative models, we use the following setup (see the
 [methodology](/methodology) for more information on how these are used):
 
 - Number of few-shot examples: 4
+
 - Prefix prompt:
 
   ```text
@@ -542,6 +551,7 @@ When evaluating generative models, we use the following setup (see the
 [methodology](/methodology) for more information on how these are used):
 
 - Number of few-shot examples: 5
+
 - Prefix prompt:
 
   ```text
@@ -618,6 +628,7 @@ When evaluating generative models, we use the following setup (see the
 [methodology](/methodology) for more information on how these are used):
 
 - Number of few-shot examples: 5
+
 - Prefix prompt:
 
   ```text
@@ -695,6 +706,7 @@ When evaluating generative models, we use the following setup (see the
 [methodology](/methodology) for more information on how these are used):
 
 - Number of few-shot examples: 5
+
 - Prefix prompt:
 
   ```text
@@ -734,7 +746,8 @@ euroeval --model <model-id> --dataset hellaswag-nl
 
 ### Unofficial: COPA-NL
 
-This dataset was created by Wietse de Vries _et al._ for the [Dutch Model Benchmark (DUMB)](https://dumbench.nl) and introduced in the paper
+This dataset was created by Wietse de Vries _et al._ for the
+[Dutch Model Benchmark (DUMB)](https://dumbench.nl) and introduced in the paper
 [DUMB: A Benchmark for Smart Evaluation of Dutch Models](https://aclanthology.org/2023.emnlp-main.447/).
 It is a Causal Reasoning dataset based on the English-language
 [Choice of Plausible Alternatives (COPA)](https://web.archive.org/web/20240402061922/https://people.ict.usc.edu/~gordon/copa.html)
@@ -773,16 +786,20 @@ Here are a few examples from the training split:
   "label": "b"
 }
 ```
+
 When evaluating generative models, we use the following setup (see the
 [methodology](/methodology) for more information on how these are used):
 
 - Number of few-shot examples: 5
 - Prefix prompt:
-  ```
+
+  ```text
   Hieronder staan meerkeuzevragen (met antwoorden).
   ```
+
 - Base prompt template:
-  ```
+
+  ```text
   Vraag: {text}
   Antwoord: {label}
   ```
@@ -790,10 +807,11 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-$ euroeval --model <model-id> --dataset copa-nl
+euroeval --model <model-id> --dataset copa-nl
 ```
 
 ### Unofficial: GoldenSwag-nl
+
 This dataset is a filtered and machine translated version of the English [HellaSwag
 dataset](https://aclanthology.org/P19-1472/), featuring both video descriptions from
 ActivityNet as well as how-to articles from WikiHow. The machine translated version was
@@ -833,6 +851,7 @@ When evaluating generative models, we use the following setup (see the
 [methodology](/methodology) for more information on how these are used):
 
 - Number of few-shot examples: 5
+
 - Prefix prompt:
 
   ```text
@@ -907,6 +926,7 @@ When evaluating generative models, we use the following setup (see the
 [methodology](/methodology) for more information on how these are used):
 
 - Number of few-shot examples: 5
+
 - Prefix prompt:
 
   ```text
@@ -981,6 +1001,7 @@ When evaluating generative models, we use the following setup (see the
 [methodology](/methodology) for more information on how these are used):
 
 - Number of few-shot examples: 1
+
 - Prefix prompt:
 
   ```text
