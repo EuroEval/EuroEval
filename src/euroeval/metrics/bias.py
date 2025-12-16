@@ -1,6 +1,7 @@
 """Bias and accuracy metrics for the MBBQ dataset."""
 
 import collections.abc as c
+import numbers
 import typing as t
 
 from .base import Metric
@@ -25,8 +26,8 @@ CHOICE_TO_INDEX: dict[str, int] = {"a": 0, "b": 1, "c": 2}
 
 def _prediction_to_index(prediction: t.Any) -> int | None:
     """Convert a prediction to an integer index if possible."""
-    if isinstance(prediction, int):
-        return prediction
+    if isinstance(prediction, numbers.Integral):
+        return int(prediction)
     if isinstance(prediction, str):
         cleaned = prediction.strip().lower()
         if cleaned in CHOICE_TO_INDEX:

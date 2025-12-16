@@ -1,3 +1,4 @@
+import numpy as np
 import pytest
 from datasets import Dataset
 
@@ -65,6 +66,12 @@ def test_accuracy_ambig_mixed(make_dataset):
     ds    = make_dataset("ambig", [1, 2, 0], None, n=4)
     preds = [0, 1, 0, 2]  # two correct 'unknown', two wrong
     assert accuracy_ambig_metric(preds, [], ds, None, None) == pytest.approx(0.5)
+
+
+def test_accuracy_ambig_accepts_numpy_ints(make_dataset):
+    ds = make_dataset("ambig", [1, 2, 0], None, n=3)
+    preds = np.array([0, 0, 0], dtype=np.int64)
+    assert accuracy_ambig_metric(preds, [], ds, None, None) == pytest.approx(1.0)
 
 # --- BiasD tests (disambiguated contexts) ---
 
