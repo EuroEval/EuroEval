@@ -33,7 +33,6 @@ def test_all_classes_are_dataclasses_or_pydantic_models() -> None:
         )
 
 
-@pytest.mark.flaky(reruns=3, reruns_delay=5)
 class TestMetric:
     """Tests for the `Metric` class."""
 
