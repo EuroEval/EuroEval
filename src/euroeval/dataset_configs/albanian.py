@@ -2,7 +2,7 @@
 
 from ..data_models import DatasetConfig
 from ..languages import ALBANIAN
-from ..tasks import COMMON_SENSE, KNOW, NER, RC, SENT, SUMM
+from ..tasks import COMMON_SENSE, KNOW, LA, NER, RC, SENT, SUMM
 
 ### Official datasets ###
 
@@ -11,6 +11,14 @@ MMS_SQ_CONFIG = DatasetConfig(
     pretty_name="MMS-sq",
     source="EuroEval/mms-sq-mini",
     task=SENT,
+    languages=[ALBANIAN],
+)
+
+SCALA_SQ_CONFIG = DatasetConfig(
+    name="scala-sq",
+    pretty_name="ScaLA-sq",
+    source="EuroEval/scala-sq",
+    task=LA,
     languages=[ALBANIAN],
 )
 

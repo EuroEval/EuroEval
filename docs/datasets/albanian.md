@@ -156,6 +156,83 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset wikiann-sq
 ```
 
+## Linguistic Acceptability
+
+### ScaLA-sq
+
+This dataset was published in [this paper](https://aclanthology.org/2023.nodalida-1.20/)
+and was automatically created from the [Albanian Universal Dependencies
+treebank](https://github.com/UniversalDependencies/UD_Albanian-STAF) and
+[Albanian TSA](https://github.com/UniversalDependencies/UD_Albanian-TSA/tree/master)
+by assuming that
+the documents in the treebank are correct, and corrupting the samples to create
+grammatically incorrect samples. The corruptions were done by either removing a word
+from a sentence, or by swapping two neighbouring words in a sentence. To ensure that
+this does indeed break the grammaticality of the sentence, a set of rules were used on
+the part-of-speech tags of the words in the sentence.
+
+The original full dataset consists of 160 / 20 / 80 samples for training,
+validation and testing, respectively.
+We use a 128 / 64 / 210 split for training, validation and testing, respectively.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Ishte fillimi i shtatorit '99, vjeshta e fundit e mijëvjeçarit të dytë.",
+  "label": "correct"
+}
+```
+
+```json
+{
+  "text": "Ja, përsëri rashë brenda me këmbët e mia, siç bie miza në rrjetën e merimangës.",
+  "label": "correct"
+}
+```
+
+```json
+{
+  "text": "Do të vënë buzën në gaz, do t'u shkojë mendja te nofka ime.",
+  "label": "correct"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 12
+- Prefix prompt:
+
+  ```text
+  Më poshtë janë fjali dhe nëse janë gramatikisht të sakta.
+  ```
+
+- Base prompt template:
+
+  ```text
+  Fjali: {text}
+  Gramatikisht e saktë: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Fjali: {text}
+
+  Përcaktoni nëse fjalia është gramatikisht e saktë apo jo. Përgjigjuni me po, ose jo, dhe asgjë tjetër.
+  ```
+
+- Label mapping:
+  - `correct` ➡️ `po`
+  - `incorrect` ➡️ `jo`
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset scala-sq
+```
+
 ## Reading Comprehension
 
 ### MultiWikiQA-sq
