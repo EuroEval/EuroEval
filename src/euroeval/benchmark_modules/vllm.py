@@ -15,12 +15,14 @@ from time import sleep
 import torch
 from huggingface_hub import snapshot_download
 from pydantic import conlist, create_model
+from transformers.generation.configuration_utils import GenerationConfig
 from transformers.models.auto.configuration_auto import AutoConfig
 from transformers.models.auto.tokenization_auto import AutoTokenizer
 from urllib3.exceptions import RequestError
 
 from ..constants import (
     CUSTOM_STOP_TOKENS,
+    GENERATION_KWARGS,
     GENERATIVE_PIPELINE_TAGS,
     MAX_CONTEXT_LENGTH,
     MAX_VLLM_LOGPROBS,
@@ -485,6 +487,41 @@ class VLLMModel(HuggingFaceEncoderModel):
             )
 
         # Define the parameters used for vLLM generation
+        generation_kwargs = GENERATION_KWARGS.copy()
+        if (generation_config := self.model_config.generation_config) is not None:
+            changed_params = generation_config.to_diff_dict()
+            if "temperature" in changed_params:
+                temperature = changed_params["temperature"]
+                generation_kwargs["temperature"] = temperature
+                log_once(
+                    f"Using temperature={temperature} with the model "
+                    f"{self.model_config.model_id!r} as specified in its "
+                    "generation configuration."
+                )
+            if "top_p" in changed_params:
+                top_p = changed_params["top_p"]
+                generation_kwargs["top_p"] = top_p
+                log_once(
+                    f"Using top_p={top_p} with the model "
+                    f"{self.model_config.model_id!r} as specified in its "
+                    "generation configuration."
+                )
+            if "top_k" in changed_params:
+                top_k = changed_params["top_k"]
+                generation_kwargs["top_k"] = top_k
+                log_once(
+                    f"Using top_k={top_k} with the model "
+                    f"{self.model_config.model_id!r} as specified in its "
+                    "generation configuration."
+                )
+            if "repetition_penalty" in changed_params:
+                repetition_penalty = changed_params["repetition_penalty"]
+                generation_kwargs["repetition_penalty"] = repetition_penalty
+                log_once(
+                    f"Using repetition_penalty={repetition_penalty} with the model "
+                    f"{self.model_config.model_id!r} as specified in its "
+                    "generation configuration."
+                )
         max_tokens: int = (
             REASONING_MAX_TOKENS
             if self.generative_type == GenerativeType.REASONING
@@ -495,7 +532,10 @@ class VLLMModel(HuggingFaceEncoderModel):
             logprobs=MAX_VLLM_LOGPROBS
             if self.buffer["first_label_token_mapping"]
             else None,
-            temperature=0.0,
+            temperature=generation_kwargs["temperature"],
+            top_p=generation_kwargs["top_p"],
+            top_k=generation_kwargs["top_k"],
+            repetition_penalty=generation_kwargs["repetition_penalty"],
             stop=[stop_token for stop_token in stop_tokens if stop_token],
             structured_outputs=structured_outputs,
         )
@@ -769,6 +809,16 @@ class VLLMModel(HuggingFaceEncoderModel):
         if model_info is None:
             raise InvalidModel(f"The model {model_id!r} could not be found.")
 
+        try:
+            generation_config = GenerationConfig.from_pretrained(
+                pretrained_model_name=model_id_components.model_id,
+                revision=model_id_components.revision,
+                cache_dir=benchmark_config.cache_dir,
+                token=benchmark_config.api_key,
+            )
+        except OSError:
+            generation_config = None
+
         language_mapping = get_all_languages()
         language_codes = list(language_mapping.keys())
 
@@ -790,6 +840,7 @@ class VLLMModel(HuggingFaceEncoderModel):
                 cache_dir=benchmark_config.cache_dir, model_id=model_id
             ),
             adapter_base_model_id=model_info.adapter_base_model_id,
+            generation_config=generation_config,
         )
 
         return model_config

@@ -20,6 +20,12 @@ Dutch [DUMB benchmark](https://github.com/wietsedv/dumb)
   [liu-nlp/swedish-facts-v1](https://huggingface.co/datasets/liu-nlp/swedish-facts-v1)
   dataset. This was contributed by @oliverkinch ✨
 
+### Changed
+
+- When benchmarking generative models, we now use their generation parameters as
+  specified in the `generation_config.json` file in the model repository on the Hugging
+  Face Hub, if it exists. We log this to the user if verbose mode is enabled.
+
 ### Fixed
 
 - When a model has registered the number of parameters wrongly within their safetensors
