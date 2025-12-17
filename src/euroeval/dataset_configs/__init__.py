@@ -6,6 +6,7 @@ from ..data_models import DatasetConfig
 from ..languages import get_all_languages
 from ..tasks import SPEED
 from ..utils import load_custom_datasets_module
+from .albanian import *  # noqa: F403
 from .bosnian import *  # noqa: F403
 from .bulgarian import *  # noqa: F403
 from .catalan import *  # noqa: F403
