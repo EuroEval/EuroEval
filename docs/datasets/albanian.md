@@ -79,7 +79,7 @@ euroeval --model <model-id> --dataset mms-sq
 
 ## Named Entity Recognition
 
-### WikiANN-bs
+### WikiANN-sq
 
 This dataset was published in [this paper](https://aclanthology.org/P17-1178/) and is
 part of a cross-lingual named entity recognition framework for 282 languages from
@@ -87,7 +87,7 @@ Wikipedia. It uses silver-standard annotations transferred from English through
 cross-lingual links and performs both name tagging and linking to an english Knowledge
 Base.
 
-The original full dataset consists of 10,000 / 10,000 / 10,000 samples for the training,
+The original full dataset consists of 5,000 / 1,000 / 1,000 samples for the training,
 validation and test splits, respectively. We use 1,024 / 256 / 2,048 samples for our
 training, validation and test splits, respectively. All the new splits are subsets of
 the original splits.
@@ -96,22 +96,22 @@ Here are a few examples from the training split:
 
 ```json
 {
-    "tokens": ["Čehoslovačka", ",", "Francuska", ",", "Mađarska", ",", "Meksiko", ",", "Švicarska", ",", "Urugvaj"],
-    "labels": ["B-LOC", "O", "B-LOC", "O", "B-LOC", "O", "B-LOC", "O", "B-LOC", "O", "B-LOC"],
+  "tokens": ["Enver", "Hoxha", ",", "politikan", ",", "ministër", ",", "kryeministër", ",", "burrë", "shteti", ",", "diktator"],
+  "labels": ["B-PER", "I-PER", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O"],
 }
 ```
 
 ```json
 {
-    "tokens": ["godine", ",", "naselje", "je", "ukinuto", "i", "pripojeno", "naselju", "Bribir", "."],
-    "labels": ["O", "O", "O", "O", "O", "O", "O", "O", "B-LOC", "O"],
+  "tokens": ["'", "''", "Meksika", "''", "'", "-"],
+  "labels": ["O", "O", "B-LOC", "O", "O", "O"],
 }
 ```
 
 ```json
 {
-    "tokens": ["Administrativno", "središte", "oblasti", "je", "Tjumenj", "."],
-    "labels": ["O", "O", "O", "O", "B-LOC", "O"],
+    "tokens": ["Devil", "May", "Cry", "(", "anime", ")"],
+    "labels": ["B-ORG", "I-ORG", "I-ORG", "I-ORG", "I-ORG", "I-ORG"],
 }
 ```
 
@@ -122,38 +122,38 @@ When evaluating generative models, we use the following setup (see the
 - Prefix prompt:
 
   ```text
-  Slijede rečenice i JSON riječnici s imenovanim entitetima koji se pojavljuju u rečenicama.
+  Më poshtë janë fjali dhe fjalorë JSON me entitetet e emërtuara që shfaqen në fjalinë e dhënë.
   ```
 
 - Base prompt template:
 
   ```text
-  Rečenica: {text}
-  Imenovani entiteti: {label}
+  Fjali: {text}
+  Entitete të emërtuara: {label}
   ```
 
 - Instruction-tuned prompt template:
 
   ```text
-  Rečenica: {text}
+  Fjali: {text}
 
-  Identificirajte imenovane entitete u rečenici. Prikažite ih kao JSON riječnik s ključevima 'osoba', 'mjesto', 'organizacija' i 'razno'. Vrijednosti trebaju biti popisi imenovanih entiteta navedenog tipa, točno kako se pojavljuju u rečenici.
+  Identifikoni entitetet e emërtuara në fjali. Duhet t’i jepni ato si një fjalor JSON me çelësat 'person', 'vendndodhje', 'organizatë' dhe 'të ndryshme'. Vlerat duhet të jenë lista të entiteteve të emërtuara të atij lloji, saktësisht ashtu siç shfaqen në fjali.
   ```
 
 - Label mapping:
-  - `B-PER` ➡️ `osoba`
-  - `I-PER` ➡️ `osoba`
-  - `B-LOC` ➡️ `mjesto`
-  - `I-LOC` ➡️ `mjesto`
-  - `B-ORG` ➡️ `organizacija`
-  - `I-ORG` ➡️ `organizacija`
-  - `B-MISC` ➡️ `razno`
-  - `I-MISC` ➡️ `razno`
+  - `B-PER` ➡️ `person`
+  - `I-PER` ➡️ `person`
+  - `B-LOC` ➡️ `vendndodhje`
+  - `I-LOC` ➡️ `vendndodhje`
+  - `B-ORG` ➡️ `organizatë`
+  - `I-ORG` ➡️ `organizatë`
+  - `B-MISC` ➡️ `të ndryshme`
+  - `I-MISC` ➡️ `të ndryshme`
 
 You can evaluate this dataset directly as follows:
 
 ```bash
-euroeval --model <model-id> --dataset wikiann-bs
+euroeval --model <model-id> --dataset wikiann-sq
 ```
 
 ## Reading Comprehension

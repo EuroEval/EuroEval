@@ -14,10 +14,10 @@ MMS_SQ_CONFIG = DatasetConfig(
     languages=[ALBANIAN],
 )
 
-WIKIANN_BS_CONFIG = DatasetConfig(
-    name="wikiann-bs",
-    pretty_name="WikiANN-bs",
-    source="EuroEval/wikiann-bs-mini",
+WIKIANN_SQ_CONFIG = DatasetConfig(
+    name="wikiann-sq",
+    pretty_name="WikiANN-sq",
+    source="EuroEval/wikiann-sq-mini",
     task=NER,
     languages=[ALBANIAN],
 )
