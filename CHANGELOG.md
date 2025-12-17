@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Added
+
+- Added the Dutch common sense reasoning dataset COPA-NL, which is part of the
+Dutch [DUMB benchmark](https://github.com/wietsedv/dumb)
+
 ## [v16.9.0] - 2025-12-16
 
 ### Added

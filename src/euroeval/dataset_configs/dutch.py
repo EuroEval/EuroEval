@@ -122,6 +122,16 @@ MULTI_WIKI_QA_NL_CONFIG = DatasetConfig(
     unofficial=True,
 )
 
+COPA_NL_CONFIG = DatasetConfig(
+    name="copa-nl",
+    pretty_name="COPA-nl",
+    source="EuroEval/copa-nl",
+    task=COMMON_SENSE,
+    languages=[DUTCH],
+    unofficial=True,
+    _labels=["a", "b"],
+)
+
 GOLDENSWAG_NL_CONFIG = DatasetConfig(
     name="goldenswag-nl",
     pretty_name="GoldenSwag-nl",
