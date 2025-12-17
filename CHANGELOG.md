@@ -11,7 +11,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 - Added support for Albanian 🇦🇱! This includes the sentiment classification dataset
   MMS-sq, the named entity recognition dataset WikiANN-sq, and the reading comprehension
-  dataset MultiWikiQA-sq, the summarisation dataset LR-Sum-sq.
+  dataset MultiWikiQA-sq, the summarisation dataset LR-Sum-sq, the knowledge dataset
+  Global-MMLU-Lite-sq.
 - Added the Dutch common sense reasoning dataset COPA-NL, which is part of the
 Dutch [DUMB benchmark](https://github.com/wietsedv/dumb)
 

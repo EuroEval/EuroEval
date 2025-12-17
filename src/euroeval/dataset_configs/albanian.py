@@ -2,7 +2,7 @@
 
 from ..data_models import DatasetConfig
 from ..languages import ALBANIAN
-from ..tasks import NER, RC, SENT, SUMM
+from ..tasks import KNOW, NER, RC, SENT, SUMM
 
 ### Official datasets ###
 
@@ -35,5 +35,13 @@ LR_SUM_SQ_CONFIG = DatasetConfig(
     pretty_name="LRSum-sq",
     source="EuroEval/lr-sum-sq-mini",
     task=SUMM,
+    languages=[ALBANIAN],
+)
+
+GLOBAL_MMLU_LITE_SQ_CONFIG = DatasetConfig(
+    name="global-mmlu-lite-sq",
+    pretty_name="GlobalMMLULite-sq",
+    source="EuroEval/global-mmlu-lite-sq",
+    task=KNOW,
     languages=[ALBANIAN],
 )

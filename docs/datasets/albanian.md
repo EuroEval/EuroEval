@@ -236,6 +236,75 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset multi-wiki-qa-sq
 ```
 
+## Knowledge
+
+### MMLU-sq
+
+Global-MMLU is a machine translated version of the English [MMLU
+dataset](https://openreview.net/forum?id=d7KBjmI3GmQ) and features questions within 57
+different topics, such as elementary mathematics, US history and law. The translation to
+Ukrainian was done by the [Cohere Labs Community](https://cohere.com/research).
+
+The original full dataset consists of 215 / 400 samples for
+validation and testing, respectively. We use a 128 / 64 / 404 split for training,
+validation and testing, respectively (so 3,328 samples used in total).
+The train set is sample from the validation set. Remaining validation samples
+are used in the test set.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Projektimi ambiental që sjell bashkë kafshë shtëpiake dhe bimë në shtëpi kujdesi, si dhe të rinj e fëmijë si vizitorë të rregullt, njihet si\nOpsione:\na. Projektimi Instrumental i Jetesës\nb. Zgjedhja humaniste\nc. Harmonia njeri-ambient\nd. Alternativa e Edenit",
+  "label": "d",
+}
+```
+
+```json
+{
+  "text": "Cilën nga të mëposhtmet duhet të bëjë një përdorues kompjuteri për të parandaluar lodhjen e syve të shkaktuar nga ekrani?\nOpsione:\na. Të përdorë pika sysh rregullisht\nb. Të ndryshojë zgjedhjen e softuereve\nc. Të kufizojë rezolucionin në monitor\nd. Të bëjë pushime të rregullta për të parë dritën natyrore",
+  "label": "d",
+}
+```
+
+```json
+{
+  "text": "Cila nga alternativat vijuese është më e gjatë?\nOpsione:\na. Jetëgjatësia në lindje (LEAB)\nb. Kohëzgjatja e jetës\nc. Jetëgjatësia deri në një moshë të caktuar (LEASA)\nd. Nuk ka mënyrë për ta ditur",
+  "label": "b",
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  Më poshtë janë pyetje me zgjedhje të shumëfishtë (me përgjigje).
+  ```
+
+- Base prompt template:
+
+  ```text
+  Pyetje: {text}
+  Përgjigje: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Pyetje: {text}
+
+  Përgjigjuni pyetjes së mësipërme duke u përgjigjur me {labels_str}, dhe asgjë tjetër.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset mmlu-sq
+```
+
 ## Summarisation
 
 ### LR-Sum-sq
