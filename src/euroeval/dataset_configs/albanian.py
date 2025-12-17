@@ -30,10 +30,10 @@ MULTI_WIKI_QA_SQ_CONFIG = DatasetConfig(
     languages=[ALBANIAN],
 )
 
-LR_SUM_BS_CONFIG = DatasetConfig(
-    name="lr-sum-bs",
-    pretty_name="LRSum-bs",
-    source="EuroEval/lr-sum-bs-mini",
+LR_SUM_SQ_CONFIG = DatasetConfig(
+    name="lr-sum-sq",
+    pretty_name="LRSum-sq",
+    source="EuroEval/lr-sum-sq-mini",
     task=SUMM,
     languages=[ALBANIAN],
 )

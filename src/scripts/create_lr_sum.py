@@ -16,7 +16,7 @@ from huggingface_hub import HfApi
 
 from .constants import MAX_NUM_CHARS_IN_ARTICLE, MIN_NUM_CHARS_IN_ARTICLE
 
-LANGUAGES = {"uk": "ukr", "sr": "srp", "bs": "bos"}
+LANGUAGES = {"uk": "ukr", "sr": "srp", "bs": "bos", "sq": "sqi"}
 
 
 def main() -> None:
@@ -47,11 +47,13 @@ def main() -> None:
 
         # Calculate how many additional samples needed for test split
         additional_test_samples_needed = test_size - len(test_df)
-
-        # Take additional samples from training set for test split
-        additional_test_samples = train_df.sample(
-            n=additional_test_samples_needed, random_state=4242
-        )
+        if additional_test_samples_needed > 0:
+            # Take additional samples from training set for test split
+            additional_test_samples = train_df.sample(
+                n=additional_test_samples_needed, random_state=4242
+            )
+        else:
+            additional_test_samples = pd.DataFrame()
 
         # Combine original test with additional samples from train
         final_test_df = pd.concat([test_df, additional_test_samples], ignore_index=True)
