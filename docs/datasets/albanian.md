@@ -158,47 +158,47 @@ euroeval --model <model-id> --dataset wikiann-sq
 
 ## Reading Comprehension
 
-### MultiWikiQA-bs
+### MultiWikiQA-sq
 
 This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2509.04111)
 and contains Wikipedia articles with LLM-generated questions and answers in 300+
 languages.
 
-The original full dataset consists of 5,000 samples in a single split. We use a 1,024 /
+The original full dataset consists of 5,006 samples in a single split. We use a 1,024 /
 256 / 2,048 split for training, validation and testing, respectively, sampled randomly.
 
 Here are a few examples from the training split:
 
 ```json
 {
-    "context": "NGC 3803 (također poznat kao PGC 36204) je eliptična galaksija koja je udaljena oko 164 miliona sg od Zemlje i nalazi se u sazviježđu Lav. Najveći prečnik je 0,40 (19 hiljada sg) a najmanji 0,4 uglovnih minuta (19 hiljada sg). Prvo otkriće je napravio R. J. Mitchell 27. marta 1856. godine.\n\nNajbliži NGC/IC objekti \nSljedeći spisak sadrži deset najbližih NGC/IC objekata.\n\nTakođer pogledajte \n Novi opći katalog\n Spisak NGC objekata\n Spisak galaksija\n\nBilješke \n  Prividna magnituda od 15,5 – Apsolutna magnituda: M = m - 5 ((log10 DL) - 1), gdje je m=15,5 i DL=50,4 * 106.\n  0,40 uglovnih minuta – S = A * D * 0,000291 * P, gdje je A=0,40, D=50,4 i P = 3,2616.\n  Bazirano na euklidsku udaljenost.\n\nReference\n\nLiteratura\n\nVanjski linkovi\n\nNGC 3803 \n\n  NGC 3803 na Aladin pregledaču\n\nNGC katalog \n  Interaktivni NGC Online Katalog\n  Astronomska baza podataka SIMBAD\n  NGC katalog na Messier45.com \n  NGC/IC projekt\n  NGC2000 na NASA sajtu\n  NGC na The Night Sky Atlas sajtu\n\nEliptične galaksije\nLav (sazviježđe)\nNGC objekti\nPGC objekti",
-    "question": "Koliki je najmanji kutni promjer NGC 3803 izražen u kutnim minutama?",
-    "answers": {
-        "answer_start": [158],
-        "text": ["0,4"]
-    }
+  "context": "E drejta e lindjes është koncepti i gjërave që i detyrohen një personi me ose nga fakti i lindjes së tij, ose për shkak të rendit të lindjes së tyre. Këto mund të përfshijnë të drejtat e shtetësisë bazuar në vendin ku ka lindur personi ose shtetësinë e prindërve të tyre, dhe të drejtat e trashëgimisë për pronën e prindërve ose të tjerëve.\n\nKoncepti i të drejtës së lindjes është i lashtë dhe shpesh përkufizohet pjesërisht me konceptet e patriarkatit dhe rendit të lindjes. Për shembull, \"[në] gjithë Biblën koncepti i së drejtës së lindjes është absolutisht i ndërthurur me të parëlindurin. Kjo do të thotë, i parëlinduri trashëgon të drejtën e lindjes dhe ka pritshmëri të parësore\",  që historikisht i referohej së drejtës, me ligj ose zakoni, që fëmija i parëlindur legjitim të trashëgojë të gjithë pasurinë ose pasurinë kryesore të prindit në përparësi ndaj trashëgimisë së përbashkët midis të gjithë ose disa fëmijëve, çdo fëmije jashtëmartesor ose ndonjë të afërmi kolateral.  Në shekullin e shtatëmbëdhjetë, aktivisti anglez John Lilburne përdori termin në lidhje me të drejtat e anglezëve \"për të nënkuptuar gjithçka që i takon një qytetari\" të Anglisë, gjë që \"pretendohet nga ligji anglez tek autoritetet më të larta\".  Termi u popullarizua në mënyrë të ngjashme në Indi nga avokati i vetëqeverisjes Bal Gangadhar Tilak në vitet 1890, kur Tilak miratoi sloganin e shpikur nga bashkëpunëtori i tij Kaka Baptista: \"Swaraj (vetëqeverisja) është e drejta ime e lindjes dhe unë do ta kem atë\".  Termi më pas \"arriti statusin e një slogani politik\". \n\nNë kontekstin e të drejtave të qytetarisë, \"[t] termi e drejta e lindjes sinjalizon jo vetëm që anëtarësimi fitohet në lindje ose në bazë të lindjes, por gjithashtu se anëtarësimi është supozuar një status i përjetshëm për individin dhe i vazhdueshëm përgjatë brezave për qytetarin. si kolektiv”.  Shtetësia e të drejtës së lindjes ka qenë prej kohësh një tipar i ligjit të përbashkët anglez .  Rasti i Calvinit, [9] ishte veçanërisht i rëndësishëm pasi vendosi se, sipas ligjit të zakonshëm anglez, \"statusi i një personi ishte dhënë në lindje, dhe bazuar në vendin e lindjes - një person i lindur brenda dominimit të mbretit i detyrohej besnikërisë ndaj sovranit, dhe në nga ana tjetër, kishte të drejtën e mbrojtjes së mbretit.\"  I njëjti parim u pranua nga Shtetet e Bashkuara si \"i lashtë dhe themelor\", d.m.th., e drejta e zakonshme e themeluar mirë, siç thuhet nga Gjykata e Lartë në interpretimin e saj të vitit 1898 të Amendamentit të Katërmbëdhjetë të Kushtetutës së Shteteve të Bashkuara në Shtetet e Bashkuara. v. Wong Kim Ark: \"Amendamenti i Katërmbëdhjetë pohon rregullin e lashtë dhe themelor të shtetësisë me lindje brenda territorit, në besnikëri dhe nën mbrojtjen e vendit, duke përfshirë të gjithë fëmijët e lindur këtu nga të huajt rezidentë, me përjashtime ose kualifikime ( aq i vjetër sa vetë rregulli) të fëmijëve të sovranëve të huaj ose ministrave të tyre, ose të lindur në anije publike të huaja, ose të armiqve brenda dhe gjatë një pushtimi armiqësor të një pjese të territorit tonë, dhe me përjashtimin e vetëm shtesë të fëmijëve të anëtarëve të Fiset indiane për shkak të besnikërisë së drejtpërdrejtë ndaj disa fiseve të tyre\". \n\nKoncepti i së drejtës së lindjes që rrjedh nga pjesëmarrja në një kulturë të caktuar është demonstruar në programin Birthright Israel, i iniciuar në 1994.  Programi ofron udhëtime falas për të vizituar Izraelin për personat që kanë të paktën një prind me prejardhje të njohur hebreje, ose që janë konvertuar në judaizëm nëpërmjet një lëvizjeje të njohur hebraike dhe që nuk praktikojnë në mënyrë aktive një fe tjetër. Ata gjithashtu duhet të jenë nga mosha 18 deri në 32 vjeç, pas shkollës së mesme, as të kenë udhëtuar më parë në Izrael në një udhëtim arsimor ose program studimi për bashkëmoshatarët pas moshës 18 vjeç dhe as të kenë jetuar në Izrael mbi moshën 12 vjeç.\n\nShiko gjithashtu \n\n Shtetësia\n Diskriminim\n Monarki trashëgimore\n Monarkia\n Pabarazia ekonomike\n\nReferencat \n\nTë drejtat e njeriut",
+  "question": "Cilat koncepte lidhen me konceptin e së drejtës për t'u lindur?",
+  "answers": {
+    "answer_start": [440],
+    "text": ["patriarkatit dhe rendit të lindjes"]
+  }
 }
 ```
 
 ```json
 {
-    "context": "Po popisu stanovništva, domaćinstava i stanova 2011. u  Srbiji, koji je proveden od 1. do 15. oktobra 2011, u općini Crna Trava živjelo je ukupno 1663 stanovnika, što predstavlja 0,02% od ukupnog broja stanovnika Srbije, odnosno 0,77% od od ukupnog broja stanovnika Jablaničkog okruga.  Popis stanovništva provoden je na temelju Zakona o popisu stanovništva, domaćinstava i stanova u 2011. Godini ("Službeni glasnik RS", br. 104/09 i 24/11).\n\nRezultati popisa\n\nNacionalna pripadnost\n\nMaternji jezik\n\nVjeroispovijest\n\nStarosna piramida \nOd ukupnog broja stanovnika u općini Crna Trava bilo je 838 (50,39%) muškaraca i 825 (49,61%) žena, što predstavlja omjer muškaraca i žena 1.016:1000. Prosječna starost stanovništva bila je 53,7 godina, muškaraca 51,4 godina, a žena 56,1 godina. Udio osoba starijih od 18 godina je 91,5% (1.521), kod muškaraca 92,0% (771), a kod žena 90,9% (750).\n\nTakođer pogledajte\n\nNapomene\n\nReference\n\nVanjski linkovi \n Republički zavod za statistiku Srbije \n\nCrna Trava\nCrna Trava",
-    "question": "Koliko godina u prosjeku imaju stanovnici općine Crna Trava?",
-    "answers": {
-        "answer_start": [726],
-        "text": ["53,7 godina"]
-    }
+  "context": "Në fizikë, nxitimi këndor (simboli α, alfa) është shkalla kohore e ndryshimit të shpejtësisë këndore. Pas dy llojeve të shpejtësisë këndore, shpejtësia këndore e rrotullimit dhe shpejtësia këndore orbitale, llojet përkatëse të nxitimit këndor janë: nxitimi këndor rrotullues, që përfshin një trup të ngurtë rreth një boshti rrotullimi që kryqëzon qendrën e trupit; dhe nxitimi këndor orbital, që përfshin një pikë materiale dhe një bosht të jashtëm.\n\nNxitimi këndor ka dimensione fizike të këndit për kohë në katror, të matur në njësi SI të radianeve për sekondë në katror (rad ⋅ s⁻²). Në dy dimensione, nxitimi këndor është një pseudoskalar, shenja e të cilit merret si pozitive nëse shpejtësia këndore rritet në të kundërt ose zvogëlohet në drejtim të akrepave të orës, dhe merret si negative nëse shpejtësia këndore rritet ose zvogëlohet në drejtim të kundërt. Në tre dimensione, nxitimi këndor është një pseudovektor.\n\nPër trupat e ngurtë, nxitimi këndor duhet të shkaktohet nga një çift rrotullues i jashtëm neto. Megjithatë, kjo nuk është kështu për trupat jo të ngurtë: Për shembull, një patinator mund të përshpejtojë rrotullimin e tij (duke marrë kështu një nxitim këndor) thjesht duke kontraktuar krahët dhe këmbët nga brenda, gjë që nuk përfshin asnjë çift rrotullues të jashtëm.\n\nNxitimi këndor orbital i një pike materiale\n\nPika në dy dimensione\nNë dy dimensione, nxitimi këndor orbital është shpejtësia me të cilën ndryshon shpejtësia këndore orbitale dydimensionale e grimcës rreth origjinës. Shpejtësia këndore e çastit në çdo moment të kohës jepet nga ...\n\nPrandaj, nxitimi këndor i çastit α i grimcës jepet nga ...\n\nNë rastin e veçantë kur grimca pëson lëvizje rrethore rreth origjinës, ...\n\nPika materiale në tre dimensione\nNë tre dimensione, nxitimi këndor orbital është shpejtësia në të cilën vektori i shpejtësisë këndore orbitale tredimensionale ndryshon me kalimin e kohës. Vektori i shpejtësisë këndore të çastit në çdo moment në kohë jepet nga ...\n\nPrandaj, nxitimi këndor orbital është vektori i përcaktuar nga ...\n\nNë rastin kur largësia e grimcës nga origjina nuk ndryshon me kalimin e kohës (e cila përfshin lëvizjen rrethore si nënrast), formula e mësipërme thjeshtohet në ...\n\nNga ekuacioni i mësipërm, mund të rikuperohet nxitimi kryq rrezor në këtë rast të veçantë si ...",
+  "question": "Cilat janë njësitë e nxitimit këndor?",
+  "answers": {
+    "answer_start": [489],
+    "text": ["të këndit për kohë në katror"]
+  }
 }
 ```
 
 ```json
 {
-    "context": "IC 910 (također poznat kao IRAS 13387+2331, MCG 4-32-25 i PGC 48424) je spiralna galaksija koja je udaljena oko 374 miliona sg od Zemlje i nalazi se u sazviježđu Volar. Najveći prečnik je 0,50 (54 hiljade sg) a najmanji 0,4 uglovnih minuta (44 hiljade sg). Prvo otkriće je napravio Stephane Javelle 16. juna 1892. godine.\n\nNajbliži NGC/IC objekti \nSljedeći spisak sadrži deset najbližih NGC/IC objekata.\n\nTakođer pogledajte \n Novi opći katalog\n Spisak IC objekata\n Spisak galaksija\n\nBilješke \n  Prividna magnituda od 14,4 – Apsolutna magnituda: M = m - 5 ((log10 DL) - 1), gdje je m=14,4 i DL=114,6 * 106.\n  0,50 uglovnih minuta – S = A * D * 0,000291 * P, gdje je A=0,50, D=114,6 i P = 3,2616.\n  Bazirano na euklidsku udaljenost.\n\nReference\n\nLiteratura\n\nVanjski linkovi\n\nIC 910 \n\n  IC 910 na Aladin pregledaču\n\nIC katalog \n  Interaktivni NGC Online Katalog\n  Astronomska baza podataka SIMBAD\n  IC katalog na Messier45.com \n  NGC/IC projekt\n  NGC2000 na NASA sajtu\n  IC na The Night Sky Atlas sajtu\n\nIC objekti\nIRAS objekti\nMCG objekti\nPGC objekti\nSpiralne galaksije\nVolar (sazviježđe)",
-    "question": "Kolika je distanca između Zemlje i galaksije IC 910?",
-    "answers": {
-        "answer_start": [108],
-        "text": ["oko 374 miliona sg"]
-    }
+  "context": "\n\nNgjarje \n 1910 – Theodore Roosevelt mbajti fjalimin e njohur si Njeriu në Arenë.\n 1932 – U dogj De Adriaan Windmill 153 vite i vjetër në Haarlem, Holandë.\n 1985 – Coca-Cola ndryshon formulën dhe paraqet në treg produktin e ri New Coke. Pritja ishte e pa pritur, negative, dhe brenda tre muajve u rikthye formula e vjetër.\n 1993 – Eritreanët votuar për pavarësi nga Etiopia. Referendumi u vrojtua Bashkimi Evropian.\n 1997 – U realizua masakra në Omaria, Algjeri ku mbetën të vrarë 42 fshatarë.\n 2003 – Në Bejxhin u mbyllën shkollat për dy javë për shkak të virusit SARS.\n\nLindje \n 1185 - Afonso II, mbret i Portugalisë (v. 1233) \n 1858 - Max Planck, fizikan gjerman (v. 1947)\n 1564 - William Shakespeare, shkrimtar anglez (v. 1616)\n 2001 Berat Emini futbollist i njohur Shqipetar\n\nVdekje \n 997 - Shën Vojciech Sławnikowic, peshkop i Pragës, mbrojtës i Polonisë\n 1605 - Boris Godunov, perandor i Rusisë (lindi më 1551)\n 1616 - William Shakespeare\n 1998 - Konstantinos Karamanlis, politikan grek (l. 1907)\n 2007 - Boris Yeltsin, politikan rus, presidenti i parë i Rusisë (l. 1931)\n\nFesta dhe përvjetore \n Dita ndërkombetare e librit dhe të drejtave të autorit\n\nPrill",
+  "question": "Cili ishte mulli me erë që u shkatërrua nga zjarri në Haarlem të Holandës më 1932?",
+  "answers": {
+    "answer_start": [98],
+    "text": ["De Adriaan Windmill"]
+  }
 }
 ```
 
@@ -209,31 +209,31 @@ When evaluating generative models, we use the following setup (see the
 - Prefix prompt:
 
 ```text
-Slijede tekstovi s pitanjima i odgovorima.
+Më poshtë janë tekste me pyetje dhe përgjigje.
 ```
 
 - Base prompt template:
 
 ```text
-Tekst: {text}
-Pitanje: {question}
-Odgovor s najviše 3 riječi:
+Teksti: {text}
+Pyetja: {question}
+Përgjigje me jo më shumë se 3 fjalë:
 ```
 
 - Instruction-tuned prompt template:
 
 ```text
-Tekst: {text}
+Teksti: {text}
 
-Odgovorite na sljedeće pitanje o gornjem tekstu s najviše 3 riječi.
+Përgjigjuni pyetjes së mëposhtme rreth tekstit të mësipërm me jo më shumë se 3 fjalë.
 
-Pitanje: {question}
+Pyetja: {question}
 ```
 
 You can evaluate this dataset directly as follows:
 
 ```bash
-euroeval --model <model-id> --dataset multi-wiki-qa-bs
+euroeval --model <model-id> --dataset multi-wiki-qa-sq
 ```
 
 ## Summarisation

@@ -22,10 +22,10 @@ WIKIANN_SQ_CONFIG = DatasetConfig(
     languages=[ALBANIAN],
 )
 
-MULTI_WIKI_QA_BS_CONFIG = DatasetConfig(
-    name="multi-wiki-qa-bs",
-    pretty_name="MultiWikiQA-bs",
-    source="EuroEval/multi-wiki-qa-bs-mini",
+MULTI_WIKI_QA_SQ_CONFIG = DatasetConfig(
+    name="multi-wiki-qa-sq",
+    pretty_name="MultiWikiQA-sq",
+    source="EuroEval/multi-wiki-qa-sq-mini",
     task=RC,
     languages=[ALBANIAN],
 )
