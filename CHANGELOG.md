@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Added
+
+- Added the Dutch common sense reasoning dataset COPA-NL, which is part of the
+Dutch [DUMB benchmark](https://github.com/wietsedv/dumb)
+
+## [v16.9.0] - 2025-12-16
+
+### Added
+
+- Added the Swedish factual knowledge dataset SwedishFacts, which is based on the
+  [liu-nlp/swedish-facts-v1](https://huggingface.co/datasets/liu-nlp/swedish-facts-v1)
+  dataset. This was contributed by @oliverkinch ✨
+
+### Changed
+
+- When benchmarking generative models, we now use their generation parameters as
+  specified in the `generation_config.json` file in the model repository on the Hugging
+  Face Hub, if it exists. We log this to the user if verbose mode is enabled.
+
 ### Fixed
 
 - When a model has registered the number of parameters wrongly within their safetensors
@@ -18,6 +37,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Removed mentions of `hf_transfer` and the associated environment variable
   `HF_HUB_ENABLE_HF_TRANSFER`, since this has been removed from the `transformers`
   library now.
+- Marked the `PleIAs/Pleias-3b-Preview` as requiring the `TRITON_ATTN` backend over the
+  default `FLASHINFER` backend, as the model architecture is currently not supported by
+  the default backend.
 
 ## [v16.8.0] - 2025-11-25
 

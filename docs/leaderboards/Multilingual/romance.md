@@ -2,7 +2,7 @@
 hide:
     - toc
 ---
-# 🇫🇷🇮🇹🇵🇹🇪🇸 Romance
+# <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/ce/Flag_of_Catalonia.svg/960px-Flag_of_Catalonia.svg.png" width="35" alt="Flag of Catalonia"/>🇫🇷🇮🇹🇵🇹🇪🇸 Romance
 
 See the [leaderboard page](/leaderboards) for more information about all the columns.
 
