@@ -305,6 +305,78 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset mmlu-sq
 ```
 
+## Common-sense Reasoning
+
+### Winogrande-sq
+
+This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2506.19468)
+and is a translated and filtered version of the English [Winogrande
+dataset](https://doi.org/10.1145/3474381).
+
+The original full dataset consists of 47 / 1,210 samples for training and testing, and
+we use 128 of the test samples for validation, resulting in a 47 / 128 / 1,085 split for
+training, validation and testing, respectively.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Nuk mund ta kontrolloja lagështinë siç kontrolloja shiun, sepse _ po vinte nga kudo. Çfarë i referohet boshllëku _?\nOpsione:\na. lagështia\nb. shiu",
+  "label": "a"
+}
+```
+
+```json
+{
+  "text": "Jessica mendoi se \"Sandstorm\" ishte kënga më e mirë e shkruar ndonjëherë, por Patricia e urrente atë. _ bleu një biletë për koncertin e xhazit. Çfarë i referohet boshllëku _?\nOpsione:\na. Jessica\nb. Patricia",
+  "label": "b"
+}
+```
+
+```json
+{
+  "text": "Termostati tregoi se ishte njëzet gradë më ftohtë poshtë se sa ishte lart, kështu që Byron qëndroi në _ sepse ai ishte ftohtë. Çfarë i referohet boshllëku _?\nOpsione:\na. poshtë\nb. lart",
+  "label": "b"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  Më poshtë janë pyetje me zgjedhje të shumëfishtë (me përgjigje).
+  ```
+
+- Base prompt template:
+
+  ```text
+  Pyetje: {text}
+  Opsione:
+  a. {option_a}
+  b. {option_b}
+  Përgjigje: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Pyetje: {text}
+  Opsione:
+  a. {option_a}
+  b. {option_b}
+
+  Përgjigjuni pyetjes së mësipërme duke u përgjigjur me 'a' ose 'b', dhe asgjë tjetër.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset winogrande-sq
+```
+
 ## Summarisation
 
 ### LR-Sum-sq

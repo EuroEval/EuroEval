@@ -2,7 +2,7 @@
 
 from ..data_models import DatasetConfig
 from ..languages import ALBANIAN
-from ..tasks import KNOW, NER, RC, SENT, SUMM
+from ..tasks import COMMON_SENSE, KNOW, NER, RC, SENT, SUMM
 
 ### Official datasets ###
 
@@ -44,4 +44,13 @@ GLOBAL_MMLU_LITE_SQ_CONFIG = DatasetConfig(
     source="EuroEval/global-mmlu-lite-sq",
     task=KNOW,
     languages=[ALBANIAN],
+)
+
+WINOGRANDE_SQ_CONFIG = DatasetConfig(
+    name="winogrande-sq",
+    pretty_name="Winogrande-sq",
+    source="EuroEval/winogrande-sq",
+    task=COMMON_SENSE,
+    languages=[ALBANIAN],
+    _labels=["a", "b"],
 )
