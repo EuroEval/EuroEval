@@ -1,6 +1,7 @@
 """Tests for the `model_loading` module."""
 
 from pathlib import Path
+from shutil import rmtree
 
 import pytest
 import torch
@@ -27,6 +28,7 @@ def test_load_non_generative_model(
         benchmark_config=benchmark_config,
     )
     assert model is not None
+    rmtree(path=benchmark_config.cache_dir, ignore_errors=True)
 
 
 @pytest.mark.skipif(
@@ -47,6 +49,7 @@ def test_load_generative_model(
         benchmark_config=benchmark_config,
     )
     assert model is not None
+    rmtree(path=benchmark_config.cache_dir, ignore_errors=True)
 
 
 def test_load_non_generative_model_with_generative_data(
@@ -65,3 +68,4 @@ def test_load_non_generative_model_with_generative_data(
             ),
             benchmark_config=benchmark_config,
         )
+    rmtree(path=benchmark_config.cache_dir, ignore_errors=True)
