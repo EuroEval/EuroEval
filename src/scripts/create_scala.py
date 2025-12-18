@@ -484,7 +484,6 @@ def make_splits(
     Returns:
         The train, validation, test, and full training splits.
     """
-    # Create the validation split
     val_df = df.sample(n=val_size, random_state=4242)
     df_filtered = df[~df.index.isin(val_df.index)]
     test_df = df_filtered.sample(n=test_size, random_state=4242)
