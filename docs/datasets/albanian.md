@@ -315,7 +315,7 @@ euroeval --model <model-id> --dataset multi-wiki-qa-sq
 
 ## Knowledge
 
-### MMLU-sq
+### GlobalMMLU-lite-sq
 
 Global-MMLU is a machine translated version of the English [MMLU
 dataset](https://openreview.net/forum?id=d7KBjmI3GmQ) and features questions within 57

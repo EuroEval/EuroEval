@@ -96,3 +96,12 @@ NUM_GENERATION_TOKENS_FOR_CLASSIFICATION = 10
 
 # We only allow loading local datasets in these file formats
 SUPPORTED_FILE_FORMATS_FOR_LOCAL_DATASETS = ["csv"]
+
+# These are default generation parameters, and can be overridden if a generative model
+# has a `generation_config.json` file in its repository
+GENERATION_KWARGS = {
+    "temperature": 0.0,
+    "top_p": 1.0,
+    "top_k": 0,
+    "repetition_penalty": 1.0,
+}
