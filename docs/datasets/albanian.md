@@ -379,7 +379,7 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-euroeval --model <model-id> --dataset mmlu-sq
+euroeval --model <model-id> --dataset global-mmlu-lite-sq
 ```
 
 ## Common-sense Reasoning
