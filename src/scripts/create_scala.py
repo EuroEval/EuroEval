@@ -50,6 +50,7 @@ from .load_ud_pos import (
     load_rodt_pos,
     load_skdt_pos,
     load_sldt_pos,
+    load_sqdt_pos,
     load_srdt_pos,
     load_svdt_pos,
     load_ukdt_pos,
@@ -89,6 +90,7 @@ def main() -> None:
         "hu": load_hudt_pos,
         "ro": load_rodt_pos,
         "ca": load_cadt_pos,
+        "sq": load_sqdt_pos,
     }
 
     # Set up the progress bar and iterate over the languages
@@ -142,19 +144,19 @@ def main() -> None:
             test_size = 1024
             while test_size >= 128:
                 try:
-                    val_df = df.sample(n=128, random_state=4242)
-                    df_filtered = df[~df.index.isin(val_df.index)]
-                    test_df = df_filtered.sample(n=test_size, random_state=4242)
-                    full_train_df = df_filtered[~df_filtered.index.isin(test_df.index)]
-                    assert isinstance(full_train_df, pd.DataFrame)
-                    train_df = full_train_df.sample(n=512, random_state=4242)
+                    train_df, val_df, test_df, full_train_df = make_splits(
+                        df=df, train_size=512, val_size=128, test_size=test_size
+                    )
                     break
                 except ValueError:
                     test_size //= 2
             else:
-                raise ValueError(
-                    f"Not enough samples to create the splits. Found {len(df):,} "
-                    f"samples, but need at least 768."
+                train_size = 64
+                val_size = 32
+                test_size = len(df) - train_size - val_size
+                assert test_size > 0, "Not enough samples to create the splits."
+                train_df, val_df, test_df, full_train_df = make_splits(
+                    df=df, train_size=train_size, val_size=val_size, test_size=test_size
                 )
 
             assert isinstance(train_df, pd.DataFrame)
@@ -462,6 +464,33 @@ def prepare_df(df: pd.DataFrame, split: str) -> Dataset:
 
     # Convert the dataframe to a Hugging Face Dataset and return it
     return Dataset.from_pandas(df, split=split)  # type: ignore[bad-argument-type]
+
+
+def make_splits(
+    df: pd.DataFrame, train_size: int, val_size: int, test_size: int
+) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    """Make the splits.
+
+    Args:
+        df:
+            The dataframe to make the splits from.
+        train_size:
+            The size of the training split.
+        val_size:
+            The size of the validation split.
+        test_size:
+            The size of the test split.
+
+    Returns:
+        The train, validation, test, and full training splits.
+    """
+    val_df = df.sample(n=val_size, random_state=4242)
+    df_filtered = df[~df.index.isin(val_df.index)]
+    test_df = df_filtered.sample(n=test_size, random_state=4242)
+    full_train_df = df_filtered[~df_filtered.index.isin(test_df.index)]
+    assert isinstance(full_train_df, pd.DataFrame)
+    train_df = full_train_df.sample(n=train_size, random_state=4242)
+    return train_df, val_df, test_df, full_train_df
 
 
 if __name__ == "__main__":
