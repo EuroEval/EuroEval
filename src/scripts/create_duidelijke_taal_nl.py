@@ -34,8 +34,8 @@ def main() -> None:
     column_mapping = {
         "Wordpress ID": "wordpress_id",
         "Document ID": "doc_id",
-        "Niet synthetische tekst/zin (A)": "sent_a",
-        "Synthetische tekst/zin (B)": "sent_b",
+        "Niet synthetische tekst/zin (A)": "text",
+        "Synthetische tekst/zin (B)": "target_text",
         "Paarsgewijze vergelijking": "clarity",
         "Paarsgewijze vergelijking Gem.": "clarity_avg",
         "Accuratesse": "acc",
@@ -66,10 +66,8 @@ def main() -> None:
 
     for split in ["train", "val", "test"]:
         df = dataset[split].to_pandas().rename(columns=column_mapping)
-        df_filtered = filter_dataset(df)[["sent_a", "sent_b"]]
-        dataset[split] = Dataset.from_pandas(df_filtered).rename_columns(
-            column_mapping=dict(sent_a="text", sent_b="target_text")
-        )
+        df_filtered = filter_dataset(df)[["text", "target_text"]]
+        dataset[split] = Dataset.from_pandas(df_filtered)
 
     processed_dataset_id = "EuroEval/duidelijke-taal-nl"
 
@@ -131,7 +129,7 @@ def filter_dataset(
     """
     bert_score = load("bertscore")
     bert_scores = bert_score.compute(
-        references=df["sent_a"].to_list(), predictions=df["sent_b"].to_list(), lang="nl"
+        references=df["text"].to_list(), predictions=df["target_text"].to_list(), lang="nl"
     )["f1"]
     df["bert"] = bert_scores
 
@@ -161,17 +159,17 @@ def filter_dataset(
     )
 
     if drop_explanations:
-        df_mask &= ~df["sent_b"].str.contains("betekent")
+        df_mask &= ~df["target_text"].str.contains("betekent")
 
     df_filtered = df[df_mask]
 
     if verbosity_threshold > 1:
         df_filtered = df_filtered[
-            verbosity_threshold * df_filtered["sent_a"].str.split().str.len()
-            >= df_filtered["sent_b"].str.split().str.len()
+            verbosity_threshold * df_filtered["text"].str.split().str.len()
+            >= df_filtered["target_text"].str.split().str.len()
         ]
 
-    df_filtered_dedup = df_filtered.drop_duplicates(subset="sent_a")
+    df_filtered_dedup = df_filtered.drop_duplicates(subset="text")
     print(f"Dropped {len(df_filtered) - len(df_filtered_dedup)} duplicate examples.")
     print(
         f"Filtered dataset split contains {len(df_filtered_dedup)} simplification "
