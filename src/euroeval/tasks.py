@@ -153,6 +153,17 @@ SPEED = Task(
 )
 
 
+HALLUCINATION = Task(
+    name="hallucination",
+    task_group=TaskGroup.HALLUCINATION,
+    template_dict={},
+    metrics=[],
+    default_num_few_shot_examples=0,
+    default_max_generated_tokens=5,
+    default_labels=[],
+)
+
+
 # Used for custom datasets
 
 TEXT_CLASSIFICATION = Task(

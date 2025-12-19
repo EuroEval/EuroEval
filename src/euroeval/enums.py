@@ -148,3 +148,4 @@ class TaskGroup(AutoStrEnum):
     QUESTION_ANSWERING = auto()
     TEXT_TO_TEXT = auto()
     SPEED = auto()
+    HALLUCINATION = auto()

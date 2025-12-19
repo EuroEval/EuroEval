@@ -23,12 +23,13 @@ from .enums import Device, GenerativeType, ModelType
 from .exceptions import HuggingFaceHubDown, InvalidBenchmark, InvalidModel
 from .finetuning import finetune
 from .generation import generate
+from .hallucination_benchmark import hallucination_benchmark
 from .logging_utils import adjust_logging_level, get_pbar, log, log_once
 from .model_config import get_model_config
 from .model_loading import load_model
 from .scores import log_scores
 from .speed_benchmark import benchmark_speed
-from .tasks import SPEED
+from .tasks import HALLUCINATION, SPEED
 from .utils import (
     enforce_reproducibility,
     internet_connection_available,
@@ -986,6 +987,12 @@ class Benchmarker:
                 if dataset_config.task == SPEED:
                     scores = benchmark_speed(
                         model=model, benchmark_config=benchmark_config
+                    )
+                elif dataset_config.task == HALLUCINATION:
+                    scores = hallucination_benchmark(
+                        model=model,
+                        dataset_config=dataset_config,
+                        benchmark_config=benchmark_config,
                     )
 
                 else:
