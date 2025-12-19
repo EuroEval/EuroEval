@@ -11,6 +11,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 - Added the Dutch common sense reasoning dataset COPA-NL, which is part of the
 Dutch [DUMB benchmark](https://github.com/wietsedv/dumb)
+- Added new task for simplification and Dutch simplification dataset
+  [Duidelijke Taal](http://hdl.handle.net/10032/tm-a2-y8).
+  dataset.
 
 ## [v16.9.0] - 2025-12-16
 
@@ -19,12 +22,6 @@ Dutch [DUMB benchmark](https://github.com/wietsedv/dumb)
 - Added the Swedish factual knowledge dataset SwedishFacts, which is based on the
   [liu-nlp/swedish-facts-v1](https://huggingface.co/datasets/liu-nlp/swedish-facts-v1)
   dataset. This was contributed by @oliverkinch ✨
-
-### Changed
-
-- When benchmarking generative models, we now use their generation parameters as
-  specified in the `generation_config.json` file in the model repository on the Hugging
-  Face Hub, if it exists. We log this to the user if verbose mode is enabled.
 
 ### Fixed
 

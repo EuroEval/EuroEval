@@ -41,6 +41,7 @@ dependencies = [
     "peft>=0.15.0",
     "protobuf>=2.0.0",
     "cloudpickle>=3.1.1",
+    "sacrebleu>=2.5.1",
 ]
 
 [project.optional-dependencies]

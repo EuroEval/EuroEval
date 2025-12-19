@@ -2,7 +2,18 @@
 
 from ..data_models import DatasetConfig
 from ..languages import DUTCH
-from ..tasks import COMMON_SENSE, EUROPEAN_VALUES, KNOW, LA, MCRC, NER, RC, SENT, SUMM
+from ..tasks import (
+    COMMON_SENSE,
+    EUROPEAN_VALUES,
+    KNOW,
+    LA,
+    MCRC,
+    NER,
+    RC,
+    SENT,
+    SIMPL,
+    SUMM,
+)
 
 ### Official datasets ###
 
@@ -148,5 +159,14 @@ WINOGRANDE_NL_CONFIG = DatasetConfig(
     task=COMMON_SENSE,
     languages=[DUTCH],
     _labels=["a", "b"],
+    unofficial=True,
+)
+
+DUIDELIJKE_TAAL_NL_CONFIG = DatasetConfig(
+    name="duidelijke-taal-nl",
+    pretty_name="the Dutch simplification dataset Duidelijke Taal (IvdNT)",
+    source="EuroEval/duidelijke-taal-nl",
+    task=SIMPL,
+    languages=[DUTCH],
     unofficial=True,
 )
