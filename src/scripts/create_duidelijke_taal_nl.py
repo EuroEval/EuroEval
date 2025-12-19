@@ -139,9 +139,7 @@ def filter_dataset(
         "complexity_a_avg"
     ].astype(float) - df[df["complexity_b_avg"].astype(str).str.len() > 0][
         "complexity_b_avg"
-    ].astype(
-        float
-    )
+    ].astype(float)
 
     df_mask = (
         (
