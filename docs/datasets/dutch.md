@@ -1037,7 +1037,7 @@ MBBQ (Multilingual Bias Benchmark for Question-answering) is a carefully curated
 extended to Dutch, Spanish, and Turkish, which measures stereotypes commonly held across these languages. MBBQ-NL only
 contains the Dutch part of this dataset.
 
-- The paper, describing this dataset can be found [here](https://openreview.net/pdf?id=X9yV4lFHt4)
+- The paper, describing this dataset can be found [here](https://openreview.net/forum?id=X9yV4lFHt4)
 - The original data and code were published [here](https://github.com/Veranep/MBBQ)
 - The original Dutch data was sourced from [Amadeus99 on Huggingface](https://huggingface.co/datasets/Amadeus99/mbbq_nl).
 
