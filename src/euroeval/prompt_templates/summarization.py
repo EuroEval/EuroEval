@@ -4,6 +4,7 @@ import typing as t
 
 from ..data_models import PromptConfig
 from ..languages import (
+    ALBANIAN,
     BOSNIAN,
     CATALAN,
     CZECH,
@@ -37,6 +38,16 @@ if t.TYPE_CHECKING:
 
 # TODO: Missing Faroese
 SUMM_TEMPLATES: dict["Language", PromptConfig] = {
+    ALBANIAN: PromptConfig(
+        default_prompt_prefix=(
+            "Më poshtë janë dokumente me përmbledhje të bashkëngjitura."
+        ),
+        default_prompt_template=("Dokument: {text}\nPërmbledhje: {target_text}"),
+        default_instruction_prompt=(
+            "Dokument: {text}\n\nShkruani një përmbledhje të dokumentit të mësipërm."
+        ),
+        default_prompt_label_mapping=dict(),
+    ),
     BOSNIAN: PromptConfig(
         default_prompt_prefix="Slijede dokumenti s priloženim sažecima.",
         default_prompt_template="Dokument: {text}\nSažetak: {target_text}",

@@ -578,6 +578,36 @@ def load_cadt_pos() -> dict[str, pd.DataFrame]:
     return load_ud_pos(train_url=train_url, val_url=val_url, test_url=test_url)
 
 
+def load_sqdt_pos() -> dict[str, pd.DataFrame]:
+    """Load the part-of-speech part of the Albanian Dependency Treebank.
+
+    Returns:
+        The dataframes, stored in the keys `train`, `val`, and `test`.
+    """
+    # Define download URLs
+    base_url = (
+        "https://raw.githubusercontent.com/UniversalDependencies/UD_Albanian-STAF/refs"
+        "/heads/master/sq_staf-ud-{}.conllu"
+    )
+    train_url = base_url.format("train")
+    val_url = base_url.format("dev")
+    test_url = base_url.format("test")
+
+    df_dict = load_ud_pos(train_url=train_url, val_url=val_url, test_url=test_url)
+
+    # Load additional TSA test data and concatenate with the existing test split
+    tsa_test_url = (
+        "https://raw.githubusercontent.com/UniversalDependencies/UD_Albanian-TSA/refs"
+        "/heads/master/sq_tsa-ud-test.conllu"
+    )
+    tsa_test_lines = _load_file_or_url(url_or_path=tsa_test_url)
+    tsa_test_df = _load_split(lines=tsa_test_lines)
+
+    df_dict["test"] = pd.concat([df_dict["test"], tsa_test_df], ignore_index=True)
+
+    return df_dict
+
+
 def _load_file_or_url(url_or_path: str) -> list[str]:
     """Load a file from a URL or local path.
 

@@ -55,6 +55,7 @@ LANGUAGES = [
     "sl",
     "sr",
     "sv",
+    "sq",
     "uk",
 ]
 
@@ -172,7 +173,7 @@ def prepare_dataframe(df: pd.DataFrame, language: str) -> pd.DataFrame:
     df.label = df.label.map(lambda x: "a" if x == 0 else "b")
 
     # Only keep the `text` and `label` columns
-    df = df.loc[["text", "label"]]
+    df = df.loc[:, ["text", "label"]]
 
     # Remove duplicates
     df.drop_duplicates(inplace=True)

@@ -4,6 +4,7 @@ import typing as t
 
 from ..data_models import PromptConfig
 from ..languages import (
+    ALBANIAN,
     BOSNIAN,
     BULGARIAN,
     CATALAN,
@@ -41,6 +42,14 @@ if t.TYPE_CHECKING:
     from ..languages import Language
 
 RC_TEMPLATES: dict["Language", PromptConfig] = {
+    ALBANIAN: PromptConfig(
+        default_prompt_prefix="Më poshtë janë tekste me pyetje dhe përgjigje.",
+        default_prompt_template="Tekst: {text}\nPyetje: {question}\nPërgjigje me "
+        "maksimum 3 fjalë: {label}",
+        default_instruction_prompt="Tekst: {text}\n\nPërgjigjuni pyetjes së mëposhtme "
+        "rreth tekstit të mësipërm me maksimum 3 fjalë.\n\nPyetje: {question}",
+        default_prompt_label_mapping=dict(),
+    ),
     BOSNIAN: PromptConfig(
         default_prompt_prefix="Slijede tekstovi s pitanjima i odgovorima.",
         default_prompt_template="Tekst: {text}\nPitanje: {question}\nOdgovor s "

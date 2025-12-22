@@ -53,5 +53,6 @@ CHOICES_MAPPING = {
     "sl": "Možnosti",
     "sr": "Opcije",
     "sv": "Svarsalternativ",
+    "sq": "Opsione",
     "uk": "Варіанти",
 }
