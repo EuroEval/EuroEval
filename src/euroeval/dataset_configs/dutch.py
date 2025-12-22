@@ -158,4 +158,5 @@ MBBQ_NL_CONFIG = DatasetConfig(
     source="EuroEval/mbbq-nl",
     task=MCSTEREO,
     languages=[DUTCH],
+    splits=["val", "test"],
 )

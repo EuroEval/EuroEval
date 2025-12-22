@@ -1045,11 +1045,11 @@ The data contains ambiguous and disambiguated examples. In the first case, the c
 from the given context (the correct answer should in those cases be 'unknown'), and in the second case, the correct
 answer is specifically specified in the given context.
 
-The original dataset doesn't have a dedicated train/validation/test split. We use a 7,042 / 1,008 / 2,014 split for training,
-validation and testing, respectively (so 10,064 samples used in total)
+The original dataset doesn't have a dedicated train/validation/test split. We use a
+256 / 2,048 split for validation and testing, respectively (so 2,304 samples used in
+total).
 
-
-Here are a few examples from the training split:
+Here are a few examples from the original dataset:
 
 For each example, we construct a zero-shot multiple choice prompt, which is added to the dataset in the `text` field.
 

@@ -162,6 +162,7 @@ MCSTEREO = Task(
         GenerativeType.INSTRUCTION_TUNED,
         GenerativeType.REASONING,
     ],
+    requires_zero_shot=True,
     uses_logprobs=True,
 )
 
@@ -212,4 +213,3 @@ MULTIPLE_CHOICE = Task(
     default_allowed_model_types=[ModelType.GENERATIVE],
     uses_logprobs=True,
 )
-

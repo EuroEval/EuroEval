@@ -37,23 +37,20 @@ def main() -> None:
     df = dataset["test"].to_pandas()
     assert isinstance(df, pd.DataFrame)
 
-    val_frac = 0.10  # 10% validation
-    test_frac = 0.20  # 20% test
+    val_size = 256
+    test_size = 2048
 
-    # Make a first split: train vs. test+val
-    train_df, temp_df = train_test_split(
+    # Create fixed-size validation and test splits
+    temp_df, test_df = train_test_split(
         df,
-        test_size=val_frac + test_frac,
+        test_size=test_size,
         shuffle=True,
         stratify=df["category"],
         random_state=42,
     )
-
-    # Now split the rest into test and validation
-    relative_test_frac = test_frac / (test_frac + val_frac)
-    val_df, test_df = train_test_split(
+    _, val_df = train_test_split(
         temp_df,
-        test_size=relative_test_frac,
+        test_size=val_size,
         shuffle=True,
         stratify=temp_df["category"],
         random_state=42,
@@ -62,9 +59,6 @@ def main() -> None:
     # Convert back to Hugging Face Datasets
     new_dataset = DatasetDict(
         {
-            "train": Dataset.from_pandas(
-                train_df.reset_index(drop=True), split=Split.TRAIN
-            ),
             "val": Dataset.from_pandas(
                 val_df.reset_index(drop=True), split=Split.VALIDATION
             ),
