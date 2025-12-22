@@ -37,7 +37,7 @@ def make_dataset():
 # --- BiasA tests (ambiguous contexts) ---
 
 def test_biasa_all_unknowns(make_dataset):
-    ds    = make_dataset("ambig", [1, 2, 0], None, n=3)
+    ds = make_dataset("ambig", [1, 2, 0], None, n=3)
     preds = [0, 0, 0]
     # references arg is ignored by the metric, so we can pass an empty list
     assert bias_ambig_metric(preds, [], ds, None, None) == pytest.approx(0.0)
