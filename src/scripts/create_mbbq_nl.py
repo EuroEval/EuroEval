@@ -9,7 +9,7 @@
 # ]
 # ///
 
-"""Create the Dutch MBBQ dataset with a train/test/dev split and upload it to the HF Hub."""
+"""Create the Dutch MBBQ dataset with a train/val/test split and upload it to the HF Hub."""
 
 from typing import Any, Optional
 
