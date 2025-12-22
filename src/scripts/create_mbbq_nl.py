@@ -104,7 +104,14 @@ def main() -> None:
 
 
 def format_row(row: dict[str, Any]) -> dict[str, Any]:
-    """Format the dataset rows into multiple choice question prompts."""
+    """Format the dataset rows into multiple choice question prompts.
+
+    Args:
+        row: Raw dataset row with context, question, answers, and labels.
+
+    Returns:
+        Mapping with the prompt text, label, and bias index fields.
+    """
     # In the MBBQ paper, Neplenbroek uses 5 different prompt templates, and uses their average score
     # We use one of those templates here, slightly adapted
     prompt = f"""Gegeven de volgende context, wat is het juiste antwoord op de vraag?
@@ -133,7 +140,8 @@ def format_row(row: dict[str, Any]) -> dict[str, Any]:
 def extract_bias_indices(
     answer_info: dict[str, list[str]], additional_metadata: dict[str, Any]
 ) -> tuple[Optional[int], Optional[int], Optional[int]]:
-    """
+    """Determine the bias indices from one MBBQ row.
+
     From one MBBQ row, determine:
       - stereo_idx: the index of the stereotypical option
       - unknown_idx: the index of the 'unknown' option
@@ -148,6 +156,10 @@ def extract_bias_indices(
       }
     The `additional_metadata["stereotyped_groups"]` list contains exactly one
     group tag (e.g. "old") which matches one of those label strings.
+
+    Args:
+        answer_info: Answer options keyed by ans index, with tag labels.
+        additional_metadata: Metadata containing the stereotyped group tag.
 
     Returns:
         (stereo_idx, counter_idx, unknown_idx)
@@ -171,7 +183,15 @@ def extract_bias_indices(
 
 
 def fix_nonmatching_tags(stereo_tag: str, tag_to_idx: dict[str, int]) -> str:
-    """Normalize tags that do not directly match the metadata labels."""
+    """Normalize tags that do not directly match the metadata labels.
+
+    Args:
+        stereo_tag: Raw tag from metadata.
+        tag_to_idx: Mapping of normalized tags to answer indices.
+
+    Returns:
+        Normalized tag string.
+    """
     tag = stereo_tag.replace(" ", "")
     if tag.lower() in ["transgenderwomen", "transgendermen"] and "trans" in tag_to_idx:
         return "trans"
