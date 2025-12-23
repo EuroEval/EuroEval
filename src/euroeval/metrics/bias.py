@@ -120,7 +120,7 @@ class BiasMetric(Metric):
         - Disambiguated accuracy (accuracy_disambig): correct answers / n_disambig
         - Bias-adjusted accuracy: accuracy minus |bias| for the same context type, clamped at zero.
 
-        Notes
+        Notes:
         - “Unknown/not enough info” answers are ignored in bias numerators.
         - Returns None when the relevant context type is absent.
         """  # noqa: E501

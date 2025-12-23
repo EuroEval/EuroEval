@@ -42,11 +42,7 @@ def main() -> None:
 
     # Create fixed-size validation and test splits
     temp_df, test_df = train_test_split(
-        df,
-        test_size=test_size,
-        shuffle=True,
-        stratify=df["category"],
-        random_state=42,
+        df, test_size=test_size, shuffle=True, stratify=df["category"], random_state=42
     )
     _, val_df = train_test_split(
         temp_df,
@@ -158,7 +154,6 @@ def extract_bias_indices(
     Returns:
         (stereo_idx, counter_idx, unknown_idx)
     """
-
     # Map the tags to the correct indices
     tag_to_idx = {tag: int(ans_key[-1]) for ans_key, (_, tag) in answer_info.items()}
 

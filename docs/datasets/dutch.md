@@ -1120,5 +1120,5 @@ For each example, we construct a zero-shot multiple choice prompt, which is adde
   ```
 
 ```bash
-$ euroeval --model <model-id> --language nl --dataset mbbq-nl
+euroeval --model <model-id> --language nl --dataset mbbq-nl
 ```
