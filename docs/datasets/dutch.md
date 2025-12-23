@@ -1031,7 +1031,7 @@ euroeval --model <model-id> --dataset wiki-lingua-nl
 
 ## Simplification
 
-### Duidelijke Taal
+### Unofficial: Duidelijke Taal
 
 The [Duidelijke Taal dataset](http://hdl.handle.net/10032/tm-a2-y8) was created by
 Instituut voor
