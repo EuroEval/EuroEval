@@ -32,15 +32,6 @@ against the reference and the source sentence. It explicitly measures the qualit
 words that are added, deleted and
 kept compared to the source.
 
-[BERTScore](https://doi.org/10.48550/arXiv.1904.09675) is also reported, which uses a
-pretrained
-encoder model (`microsoft/mdeberta-v3-base`) to encode each token in both the reference
-text and the generated
-text, and then uses cosine similarity to measure how the tokens match up. While this is
-a good measure for capturing
-meaning preservation,
-it does not provide insights into the complexity of a text.
-
 ## 🛠️ How to run
 
 In the command line interface of the [EuroEval Python package](/python-package.md), you
