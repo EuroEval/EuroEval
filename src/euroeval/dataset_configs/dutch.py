@@ -153,8 +153,7 @@ WINOGRANDE_NL_CONFIG = DatasetConfig(
 
 MBBQ_NL_CONFIG = DatasetConfig(
     name="mbbq-nl",
-    pretty_name="The Dutch part of the Multilingual Bias Benchmark for Question Answering (MBBQ), "
-    "a carefully curated version of the English BBQ dataset, which measures stereotypes in LLM's.",
+    pretty_name="MBBQ-nl",
     source="EuroEval/mbbq-nl",
     task=MCSTEREO,
     languages=[DUTCH],
